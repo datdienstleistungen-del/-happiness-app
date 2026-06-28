@@ -1,50 +1,91 @@
-# Happiness App
+# 🌈 Happiness App
 
-Social-Community-Plattform für Glück, Vernetzung und persönliche Entwicklung.
+**Europas Social-Community-Plattform für Glück, Vernetzung und persönliche Entwicklung.**
+
+Happiness ist eine Plattform, die Menschen zusammenbringt – nicht um sie zusucht zu halten, sondern um ihnen echtes Glück und persönliches Wachstum zu ermöglichen. Inspiriert von der Philosophie, dass Glück kein Ziel ist, sondern ein Weg, bietet Happiness einen geschützten Raum für ehrliche Verbindungen, gemeinsames Lernen und gegenseitige Unterstützung.
+
+## Was ist Happiness?
+
+- **Community** – Teile Gedanken, Erfahrungen undMomente mit Gleichgesinnten
+- **Freunde** – Finde und vernetze dich mit Menschen, die dir wichtig sind
+- **Marktplatz** – Entdecke Angebote aus der Community oder teile deine eigenen
+- **Jobbörse** – Finde Jobs, die nicht nur deinen Lebensunterhalt sichern, sondern dir auch Freude bereiten
+- **Kurse** – Lerne Neues in Bereichen wie Glück, Wellness, Persönlichkeitsentwicklung und mehr
+- **Profil** – Zeige, wer du bist und entwickle dich weiter
+
+## Warum Happiness?
+
+In einer Welt, die zunehmend von Algorithmen und Aufmerksamkeitsökonomie geprägt ist, setzen wir auf:
+
+- 🇪🇺 **Europäisch** – Datenschutz nach DSGVO, Server in Europa
+- 🔒 **Sicher** – Deine Daten gehören dir
+- 💚 **Glücksorientiert** – Keine Likes-Jagd, sondern echte Verbindung
+- 🌱 **Wachstum** – Persönliche Entwicklung im Mittelpunkt
+
+## Entwickler
+
+**Harro Goerndt**
+- E-Mail: datdienstleistungen@gmail.com
+- GitHub: [hgoerndt](https://github.com/hgoerndt)
 
 ## Tech Stack
 
-- **Frontend:** React + Vite
-- **Backend:** Supabase (Auth + Datenbank)
+- **Frontend:** React 19 + Vite
+- **Backend:** Supabase (Auth + PostgreSQL)
 - **Deployment:** Netlify
+- **Styling:** Custom CSS (Dark Mode)
 
-## Setup
+## Funktionen
 
-### 1. Supabase
+| Feature | Status |
+|---------|--------|
+| Login / Registrierung | ✅ |
+| Community-Feed | ✅ |
+| Likes & Kommentare | ✅ |
+| Freundesystem | ✅ |
+| Marktplatz | ✅ |
+| Jobbörse | ✅ |
+| Kurse | ✅ |
+| Profilverwaltung | ✅ |
+| Benachrichtigungen | ✅ |
+| Verlauf | ✅ |
+| Admin-Bereich | ✅ |
+| Dark Mode | ✅ |
+| Mobile responsive | ✅ |
 
-1. Erstelle ein Konto auf [supabase.com](https://supabase.com)
-2. Erstelle ein neues Projekt
-3. Öffne den SQL Editor und führe den Inhalt von `supabase-schema.sql` aus
-4. Kopiere deine **Project URL** und **anon key** aus den Supabase Settings
+## Lokale Entwicklung
 
-### 2. Umgebungsvariablen
+```bash
+# Abhängigkeiten installieren
+npm install
 
-Erstelle eine `.env` Datei im Projektroot:
+# Entwicklungsserver starten
+npm run dev
 
+# App öffnen
+http://localhost:5173
 ```
+
+## Deployment
+
+```bash
+# Build erstellen
+npm run build
+
+# Build-Verzeichnis: dist/
+```
+
+## Umgebungsvariablen
+
+```env
 VITE_SUPABASE_URL=https://dein-projekt.supabase.co
 VITE_SUPABASE_ANON_KEY=dein-anon-key
 ```
 
-### 3. Installieren & Starten
+## Lizenz
 
-```bash
-npm install
-npm run dev
-```
+MIT License - Frei für alle!
 
-### 4. Deploy auf Netlify
+---
 
-1. Push das Repo auf GitHub
-2. Verbinde es mit [Netlify](https://netlify.com)
-3. Setze die Umgebungsvariablen in den Netlify Settings
-4. Build-Befehl: `npm run build`
-5. Publish-Verzeichnis: `dist`
-
-## Admin-Rechte
-
-Um Admin-Rechte zu erhalten, ändere in der Supabase Datenbank den `role` Wert deines Profils auf `admin`:
-
-```sql
-UPDATE profiles SET role = 'admin' WHERE email = 'deine-email@example.com';
-```
+*Gebaut mit 💚 in Europa*

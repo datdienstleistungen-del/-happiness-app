@@ -3,6 +3,9 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "description": "Europas Social-Community-Plattform für Glück, Vernetzung und persönliche Entwicklung.",
+  "author": "Harro Goerndt <datdienstleistungen@gmail.com>",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
