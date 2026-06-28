@@ -46,7 +46,7 @@ export default function VideoUpload({ onUploadComplete }) {
       const filePath = `videos/${fileName}`
 
       const { error: uploadError } = await supabase.storage
-        .from('videos')
+        .from('video')
         .upload(filePath, video, {
           onUploadProgress: (progress) => {
             const percent = (progress.loaded / progress.total) * 100
@@ -57,7 +57,7 @@ export default function VideoUpload({ onUploadComplete }) {
       if (uploadError) throw uploadError
 
       const { data: urlData } = supabase.storage
-        .from('videos')
+        .from('video')
         .getPublicUrl(filePath)
 
       const { error: dbError } = await supabase.from('videos').insert({
