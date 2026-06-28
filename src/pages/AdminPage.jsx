@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../App'
 import { supabase } from '../lib/supabase'
+import { useLanguage } from '../i18n/translations.jsx'
 
 export default function AdminPage() {
   const { profile } = useAuth()
+  const { t } = useLanguage()
   const [tab, setTab] = useState('stats')
   const [users, setUsers] = useState([])
   const [posts, setPosts] = useState([])
@@ -58,28 +60,28 @@ export default function AdminPage() {
     fetchAll()
   }
 
-  if (!isAdmin) return <div className="container"><div className="empty-state"><div className="empty-icon">🔒</div><p>Kein Zugriff. Nur für Admins.</p></div></div>
+  if (!isAdmin) return <div className="container"><div className="empty-state"><div className="empty-icon">🔒</div><p>{t('admin.noAccess')}</p></div></div>
 
   return (
     <div className="container">
-      <div className="page-header"><h1>⚙️ Admin-Bereich</h1></div>
+      <div className="page-header"><h1>⚙️ {t('admin.title')}</h1></div>
 
       {loading ? <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Laden...</p> : (
         <>
           <div className="stats-row">
-            <div className="stat-card"><div className="stat-value">{users.length}</div><div className="stat-label">Nutzer</div></div>
-            <div className="stat-card"><div className="stat-value">{posts.length}</div><div className="stat-label">Beiträge</div></div>
-            <div className="stat-card"><div className="stat-value">{items.filter(i => i.active).length}</div><div className="stat-label">Anzeigen</div></div>
-            <div className="stat-card"><div className="stat-value">{jobs.filter(j => j.active).length}</div><div className="stat-label">Jobs</div></div>
-            <div className="stat-card"><div className="stat-value">{courses.filter(c => c.active).length}</div><div className="stat-label">Kurse</div></div>
+            <div className="stat-card"><div className="stat-value">{users.length}</div><div className="stat-label">{t('admin.users')}</div></div>
+            <div className="stat-card"><div className="stat-value">{posts.length}</div><div className="stat-label">{t('admin.posts')}</div></div>
+            <div className="stat-card"><div className="stat-value">{items.filter(i => i.active).length}</div><div className="stat-label">{t('admin.items')}</div></div>
+            <div className="stat-card"><div className="stat-value">{jobs.filter(j => j.active).length}</div><div className="stat-label">{t('nav.jobs')}</div></div>
+            <div className="stat-card"><div className="stat-value">{courses.filter(c => c.active).length}</div><div className="stat-label">{t('nav.courses')}</div></div>
           </div>
 
           <div className="tabs">
-            <button className={`tab ${tab === 'stats' ? 'active' : ''}`} onClick={() => setTab('stats')}>Nutzer</button>
-            <button className={`tab ${tab === 'posts' ? 'active' : ''}`} onClick={() => setTab('posts')}>Beiträge</button>
-            <button className={`tab ${tab === 'items' ? 'active' : ''}`} onClick={() => setTab('items')}>Anzeigen</button>
-            <button className={`tab ${tab === 'jobs' ? 'active' : ''}`} onClick={() => setTab('jobs')}>Jobs</button>
-            <button className={`tab ${tab === 'courses' ? 'active' : ''}`} onClick={() => setTab('courses')}>Kurse</button>
+            <button className={`tab ${tab === 'stats' ? 'active' : ''}`} onClick={() => setTab('stats')}>{t('admin.users')}</button>
+            <button className={`tab ${tab === 'posts' ? 'active' : ''}`} onClick={() => setTab('posts')}>{t('admin.posts')}</button>
+            <button className={`tab ${tab === 'items' ? 'active' : ''}`} onClick={() => setTab('items')}>{t('admin.items')}</button>
+            <button className={`tab ${tab === 'jobs' ? 'active' : ''}`} onClick={() => setTab('jobs')}>{t('nav.jobs')}</button>
+            <button className={`tab ${tab === 'courses' ? 'active' : ''}`} onClick={() => setTab('courses')}>{t('nav.courses')}</button>
           </div>
 
           {tab === 'stats' && users.map(u => (
@@ -88,7 +90,7 @@ export default function AdminPage() {
                 <div className="list-item-avatar">{u.name?.[0]?.toUpperCase()}</div>
                 <div><strong>{u.name}</strong> <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>@{u.username} · {u.email} · {u.role || 'user'}</span></div>
               </div>
-              <button className="btn btn-sm btn-danger" onClick={() => deleteUser(u.id)}>Löschen</button>
+              <button className="btn btn-sm btn-danger" onClick={() => deleteUser(u.id)}>{t('admin.delete')}</button>
             </div>
           ))}
 
@@ -96,7 +98,7 @@ export default function AdminPage() {
             <div key={p.id} className="card">
               <div className="card-header"><span className="card-author">{p.profiles?.name}</span><span className="card-time">{new Date(p.created_at).toLocaleDateString('de-DE')}</span></div>
               <p>{p.content}</p>
-              <button className="btn btn-sm btn-danger" style={{ marginTop: '0.5rem' }} onClick={() => deletePost(p.id)}>Löschen</button>
+              <button className="btn btn-sm btn-danger" style={{ marginTop: '0.5rem' }} onClick={() => deletePost(p.id)}>{t('admin.delete')}</button>
             </div>
           ))}
 
@@ -104,7 +106,7 @@ export default function AdminPage() {
             <div key={i.id} className="card">
               <div className="card-header"><span className="card-author">{i.title} - {i.profiles?.name}</span><span className="badge badge-primary">{i.category}</span></div>
               <p>{i.description}</p>
-              <button className="btn btn-sm btn-danger" style={{ marginTop: '0.5rem' }} onClick={() => deleteItem(i.id)}>Löschen</button>
+              <button className="btn btn-sm btn-danger" style={{ marginTop: '0.5rem' }} onClick={() => deleteItem(i.id)}>{t('admin.delete')}</button>
             </div>
           ))}
 
@@ -112,7 +114,7 @@ export default function AdminPage() {
             <div key={j.id} className="card">
               <div className="card-header"><span className="card-author">{j.title} - {j.profiles?.name}</span><span className="badge badge-primary">{j.job_type}</span></div>
               <p>{j.description}</p>
-              <button className="btn btn-sm btn-danger" style={{ marginTop: '0.5rem' }} onClick={() => deleteJob(j.id)}>Löschen</button>
+              <button className="btn btn-sm btn-danger" style={{ marginTop: '0.5rem' }} onClick={() => deleteJob(j.id)}>{t('admin.delete')}</button>
             </div>
           ))}
 
@@ -120,7 +122,7 @@ export default function AdminPage() {
             <div key={c.id} className="card">
               <div className="card-header"><span className="card-author">{c.title} - {c.profiles?.name}</span><span className="badge badge-primary">{c.category}</span></div>
               <p>{c.description}</p>
-              <button className="btn btn-sm btn-danger" style={{ marginTop: '0.5rem' }} onClick={() => deleteCourse(c.id)}>Löschen</button>
+              <button className="btn btn-sm btn-danger" style={{ marginTop: '0.5rem' }} onClick={() => deleteCourse(c.id)}>{t('admin.delete')}</button>
             </div>
           ))}
         </>

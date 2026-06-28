@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../App'
 import { supabase } from '../lib/supabase'
+import { useLanguage } from '../i18n/translations.jsx'
 
 const CATEGORIES = ['Glück', 'Wellness', 'Persönlichkeitsentwicklung', 'Beruf', 'Sport', 'Kreativität', 'Sonstiges']
 
 export default function CoursesPage() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [tab, setTab] = useState('browse')
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
@@ -58,41 +60,41 @@ export default function CoursesPage() {
 
   return (
     <div className="container">
-      <div className="page-header"><h1>📚 Kurse</h1><p>Lerne Neues und wachse</p></div>
+      <div className="page-header"><h1>📚 {t('courses.title')}</h1><p>{t('courses.browse')}</p></div>
 
       <div className="tabs">
-        <button className={`tab ${tab === 'browse' ? 'active' : ''}`} onClick={() => setTab('browse')}>Kurse entdecken</button>
-        <button className={`tab ${tab === 'create' ? 'active' : ''}`} onClick={() => setTab('create')}>Kurs anbieten</button>
+        <button className={`tab ${tab === 'browse' ? 'active' : ''}`} onClick={() => setTab('browse')}>{t('courses.browse')}</button>
+        <button className={`tab ${tab === 'create' ? 'active' : ''}`} onClick={() => setTab('create')}>{t('courses.create')}</button>
       </div>
 
       {tab === 'create' && (
         <div className="card">
-          <div className="form-group"><label>Kurstitel</label><input className="form-input" value={form.title} onChange={e => setForm({...form, title: e.target.value})} /></div>
-          <div className="form-group"><label>Beschreibung</label><textarea className="form-input" value={form.description} onChange={e => setForm({...form, description: e.target.value})} /></div>
+          <div className="form-group"><label>{t('courses.titleField')}</label><input className="form-input" value={form.title} onChange={e => setForm({...form, title: e.target.value})} /></div>
+          <div className="form-group"><label>{t('courses.desc')}</label><textarea className="form-input" value={form.description} onChange={e => setForm({...form, description: e.target.value})} /></div>
           <div style={{ display: 'flex', gap: '1rem' }}>
-            <div className="form-group" style={{ flex: 1 }}><label>Kategorie</label><select className="form-input" value={form.category} onChange={e => setForm({...form, category: e.target.value})}>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></div>
-            <div className="form-group" style={{ flex: 1 }}><label>Dauer</label><input className="form-input" placeholder="z.B. 4 Wochen" value={form.duration} onChange={e => setForm({...form, duration: e.target.value})} /></div>
+            <div className="form-group" style={{ flex: 1 }}><label>{t('courses.category')}</label><select className="form-input" value={form.category} onChange={e => setForm({...form, category: e.target.value})}>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></div>
+            <div className="form-group" style={{ flex: 1 }}><label>{t('courses.duration')}</label><input className="form-input" placeholder="z.B. 4 Wochen" value={form.duration} onChange={e => setForm({...form, duration: e.target.value})} /></div>
           </div>
           <div style={{ display: 'flex', gap: '1rem' }}>
-            <div className="form-group" style={{ flex: 1 }}><label>Preis (€)</label><input type="number" className="form-input" value={form.price} onChange={e => setForm({...form, price: e.target.value})} /></div>
-            <div className="form-group" style={{ flex: 1 }}><label>Max. Teilnehmer</label><input type="number" className="form-input" value={form.maxParticipants} onChange={e => setForm({...form, maxParticipants: e.target.value})} /></div>
+            <div className="form-group" style={{ flex: 1 }}><label>{t('courses.price')}</label><input type="number" className="form-input" value={form.price} onChange={e => setForm({...form, price: e.target.value})} /></div>
+            <div className="form-group" style={{ flex: 1 }}><label>{t('courses.max')}</label><input type="number" className="form-input" value={form.maxParticipants} onChange={e => setForm({...form, maxParticipants: e.target.value})} /></div>
           </div>
-          <button className="btn btn-primary" onClick={handleCreate}>Kurs erstellen</button>
+          <button className="btn btn-primary" onClick={handleCreate}>{t('courses.createBtn')}</button>
         </div>
       )}
 
       {tab === 'browse' && (
         <>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-            <input className="form-input" placeholder="Suchen..." value={search} onChange={e => setSearch(e.target.value)} />
+            <input className="form-input" placeholder={t('courses.search')} value={search} onChange={e => setSearch(e.target.value)} />
             <select className="form-input" style={{ width: 'auto' }} value={catFilter} onChange={e => setCatFilter(e.target.value)}>
-              <option value="">Alle Kategorien</option>
+              <option value="">{t('courses.allCategories')}</option>
               {CATEGORIES.map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
 
           {loading ? <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Laden...</p> : filtered.length === 0 ? (
-            <div className="empty-state"><div className="empty-icon">📚</div><p>Keine Kurse gefunden.</p></div>
+            <div className="empty-state"><div className="empty-icon">📚</div><p>{t('courses.noCourses')}</p></div>
           ) : filtered.map(course => {
             const enrollments = course.course_enrollments || []
             const isEnrolled = enrollments.some(e => e.user_id === user.id)
@@ -124,10 +126,10 @@ export default function CoursesPage() {
                 <div style={{ marginTop: '1rem' }}>
                   {course.user_id !== user.id && (
                     isEnrolled ? (
-                      <button className="btn btn-sm btn-danger" onClick={() => handleLeave(course.id)}>Abmelden</button>
+                      <button className="btn btn-sm btn-danger" onClick={() => handleLeave(course.id)}>{t('courses.leave')}</button>
                     ) : (
                       <button className="btn btn-sm btn-primary" onClick={() => handleEnroll(course.id)} disabled={isFull}>
-                        {isFull ? 'Ausgebucht' : 'Teilnehmen'}
+                        {isFull ? t('courses.full') : t('courses.join')}
                       </button>
                     )
                   )}

@@ -155,6 +155,21 @@
   font-size: 0.85rem;
 }
 
+.lang-select {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.lang-select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
 /* Buttons */
 .btn {
   display: inline-flex;

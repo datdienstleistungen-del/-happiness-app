@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useLanguage } from '../i18n/translations.jsx'
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({ email: '', password: '', name: '', username: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { t } = useLanguage()
 
   function handleChange(e) {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -64,12 +66,12 @@ export default function RegisterPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1>🌈 Registrieren</h1>
-        <p className="subtitle">Erstelle dein Konto</p>
+        <h1>🌈 {t('auth.register')}</h1>
+        <p className="subtitle">{t('auth.createAccount')}</p>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Name</label>
+            <label>{t('auth.name')}</label>
             <input
               type="text"
               name="name"
@@ -80,7 +82,7 @@ export default function RegisterPage() {
             />
           </div>
           <div className="form-group">
-            <label>Benutzername</label>
+            <label>{t('auth.username')}</label>
             <input
               type="text"
               name="username"
@@ -91,7 +93,7 @@ export default function RegisterPage() {
             />
           </div>
           <div className="form-group">
-            <label>E-Mail</label>
+            <label>{t('auth.email')}</label>
             <input
               type="email"
               name="email"
@@ -102,7 +104,7 @@ export default function RegisterPage() {
             />
           </div>
           <div className="form-group">
-            <label>Passwort</label>
+            <label>{t('auth.password')}</label>
             <input
               type="password"
               name="password"
@@ -116,12 +118,12 @@ export default function RegisterPage() {
           {error && <p style={{ color: 'var(--danger)', marginBottom: '1rem', fontSize: '0.9rem' }}>{error}</p>}
 
           <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
-            {loading ? 'Wird registriert...' : 'Registrieren'}
+            {loading ? t('auth.registering') : t('auth.register')}
           </button>
         </form>
 
         <p className="link">
-          Bereits ein Konto? <Link to="/login">Hier anmelden</Link>
+          {t('auth.hasAccount')} <Link to="/login">{t('auth.loginHere')}</Link>
         </p>
       </div>
     </div>

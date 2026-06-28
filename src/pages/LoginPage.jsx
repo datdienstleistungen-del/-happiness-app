@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useLanguage } from '../i18n/translations.jsx'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -8,6 +9,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { t } = useLanguage()
 
   function translateError(msg) {
     if (msg.includes('security purposes')) return 'Aus Sicherheitsgründen kannst du dies erst nach einigen Sekunden erneut anfordern.'
@@ -35,11 +37,11 @@ export default function LoginPage() {
     <div className="auth-page">
       <div className="auth-card">
         <h1>🌈 Happiness</h1>
-        <p className="subtitle">Melde dich an, um fortzufahren</p>
+        <p className="subtitle">{t('auth.loginSubtitle')}</p>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>E-Mail</label>
+            <label>{t('auth.email')}</label>
             <input
               type="email"
               className="form-input"
@@ -49,7 +51,7 @@ export default function LoginPage() {
             />
           </div>
           <div className="form-group">
-            <label>Passwort</label>
+            <label>{t('auth.password')}</label>
             <input
               type="password"
               className="form-input"
@@ -62,12 +64,12 @@ export default function LoginPage() {
           {error && <p style={{ color: 'var(--danger)', marginBottom: '1rem', fontSize: '0.9rem' }}>{error}</p>}
 
           <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
-            {loading ? 'Wird angemeldet...' : 'Anmelden'}
+            {loading ? t('auth.logging') : t('auth.login')}
           </button>
         </form>
 
         <p className="link">
-          Noch kein Konto? <Link to="/register">Hier registrieren</Link>
+          {t('auth.noAccount')} <Link to="/register">{t('auth.registerHere')}</Link>
         </p>
       </div>
     </div>

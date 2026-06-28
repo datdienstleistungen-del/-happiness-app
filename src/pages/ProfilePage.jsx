@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../App'
 import { supabase } from '../lib/supabase'
+import { useLanguage } from '../i18n/translations.jsx'
 
 export default function ProfilePage() {
   const { user, profile, fetchProfile } = useAuth()
+  const { t } = useLanguage()
   const [tab, setTab] = useState('profile')
   const [form, setForm] = useState({ name: '', username: '', bio: '', avatar_url: '' })
   const [pwForm, setPwForm] = useState({ newPw: '', newPw2: '' })
@@ -45,11 +47,11 @@ export default function ProfilePage() {
 
   return (
     <div className="container">
-      <div className="page-header"><h1>👤 Profil</h1></div>
+      <div className="page-header"><h1>👤 {t('profile.title')}</h1></div>
 
       <div className="tabs">
-        <button className={`tab ${tab === 'profile' ? 'active' : ''}`} onClick={() => setTab('profile')}>Profil</button>
-        <button className={`tab ${tab === 'settings' ? 'active' : ''}`} onClick={() => setTab('settings')}>Einstellungen</button>
+        <button className={`tab ${tab === 'profile' ? 'active' : ''}`} onClick={() => setTab('profile')}>{t('profile.title')}</button>
+        <button className={`tab ${tab === 'settings' ? 'active' : ''}`} onClick={() => setTab('settings')}>{t('profile.settings')}</button>
       </div>
 
       {tab === 'profile' && profile && (
@@ -67,7 +69,7 @@ export default function ProfilePage() {
           </div>
           <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
             <h3>Deine Beiträge</h3>
-            {posts.length === 0 ? <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Noch keine Beiträge.</p> : posts.map(p => (
+            {posts.length === 0 ? <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t('profile.noPosts')}</p> : posts.map(p => (
               <div key={p.id} style={{ padding: '0.75rem 0', borderBottom: '1px solid var(--border)' }}>
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{new Date(p.created_at).toLocaleDateString('de-DE')}</span>
                 <p>{p.content}</p>
@@ -80,19 +82,19 @@ export default function ProfilePage() {
       {tab === 'settings' && (
         <>
           <div className="card">
-            <h3 style={{ marginBottom: '1rem' }}>Profil bearbeiten</h3>
-            <div className="form-group"><label>Name</label><input className="form-input" value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></div>
-            <div className="form-group"><label>Benutzername</label><input className="form-input" value={form.username} onChange={e => setForm({...form, username: e.target.value})} /></div>
-            <div className="form-group"><label>Über mich</label><textarea className="form-input" value={form.bio} onChange={e => setForm({...form, bio: e.target.value})} /></div>
-            <div className="form-group"><label>Avatar-URL</label><input className="form-input" value={form.avatar_url} onChange={e => setForm({...form, avatar_url: e.target.value})} /></div>
-            <button className="btn btn-primary" onClick={handleSave}>Speichern</button>
+            <h3 style={{ marginBottom: '1rem' }}>{t('profile.edit')}</h3>
+            <div className="form-group"><label>{t('auth.name')}</label><input className="form-input" value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></div>
+            <div className="form-group"><label>{t('auth.username')}</label><input className="form-input" value={form.username} onChange={e => setForm({...form, username: e.target.value})} /></div>
+            <div className="form-group"><label>{t('profile.bio')}</label><textarea className="form-input" value={form.bio} onChange={e => setForm({...form, bio: e.target.value})} /></div>
+            <div className="form-group"><label>{t('profile.avatar')}</label><input className="form-input" value={form.avatar_url} onChange={e => setForm({...form, avatar_url: e.target.value})} /></div>
+            <button className="btn btn-primary" onClick={handleSave}>{t('profile.save')}</button>
           </div>
 
           <div className="card">
-            <h3 style={{ marginBottom: '1rem' }}>Passwort ändern</h3>
-            <div className="form-group"><label>Neues Passwort</label><input type="password" className="form-input" value={pwForm.newPw} onChange={e => setPwForm({...pwForm, newPw: e.target.value})} /></div>
-            <div className="form-group"><label>Neues Passwort wiederholen</label><input type="password" className="form-input" value={pwForm.newPw2} onChange={e => setPwForm({...pwForm, newPw2: e.target.value})} /></div>
-            <button className="btn btn-primary" onClick={handleChangePw}>Passwort ändern</button>
+            <h3 style={{ marginBottom: '1rem' }}>{t('profile.changePw')}</h3>
+            <div className="form-group"><label>{t('profile.newPw')}</label><input type="password" className="form-input" value={pwForm.newPw} onChange={e => setPwForm({...pwForm, newPw: e.target.value})} /></div>
+            <div className="form-group"><label>{t('profile.confirmPw')}</label><input type="password" className="form-input" value={pwForm.newPw2} onChange={e => setPwForm({...pwForm, newPw2: e.target.value})} /></div>
+            <button className="btn btn-primary" onClick={handleChangePw}>{t('profile.changePw')}</button>
           </div>
         </>
       )}

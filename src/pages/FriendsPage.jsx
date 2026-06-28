@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../App'
 import { supabase } from '../lib/supabase'
+import { useLanguage } from '../i18n/translations.jsx'
 
 export default function FriendsPage() {
   const { user, profile } = useAuth()
+  const { t } = useLanguage()
   const [tab, setTab] = useState('friends')
   const [friends, setFriends] = useState([])
   const [requests, setRequests] = useState([])
@@ -95,18 +97,18 @@ export default function FriendsPage() {
   return (
     <div className="container">
       <div className="page-header">
-        <h1>👥 Freunde</h1>
+        <h1>👥 {t('friends.title')}</h1>
       </div>
 
       <div className="tabs">
         <button className={`tab ${tab === 'friends' ? 'active' : ''}`} onClick={() => setTab('friends')}>
-          Freunde ({friends.length})
+          {t('friends.yourFriends')} ({friends.length})
         </button>
         <button className={`tab ${tab === 'requests' ? 'active' : ''}`} onClick={() => setTab('requests')}>
-          Anfragen ({requests.length})
+          {t('friends.requests')} ({requests.length})
         </button>
         <button className={`tab ${tab === 'search' ? 'active' : ''}`} onClick={() => setTab('search')}>
-          Nutzer finden
+          {t('friends.findUsers')}
         </button>
       </div>
 
@@ -114,7 +116,7 @@ export default function FriendsPage() {
         <>
           {tab === 'friends' && (
             friends.length === 0 ? (
-              <div className="empty-state"><div className="empty-icon">👥</div><p>Noch keine Freunde.</p></div>
+              <div className="empty-state"><div className="empty-icon">👥</div><p>{t('friends.noFriends')}</p></div>
             ) : friends.map(f => (
               <div key={f.id} className="list-item">
                 <div className="list-item-info">
@@ -125,7 +127,7 @@ export default function FriendsPage() {
                   </div>
                 </div>
                 <div className="list-item-actions">
-                  <button className="btn btn-sm btn-danger" onClick={() => removeFriend(f.id)}>Entfernen</button>
+                  <button className="btn btn-sm btn-danger" onClick={() => removeFriend(f.id)}>{t('friends.remove')}</button>
                 </div>
               </div>
             ))
@@ -133,7 +135,7 @@ export default function FriendsPage() {
 
           {tab === 'requests' && (
             requests.length === 0 ? (
-              <div className="empty-state"><div className="empty-icon">📩</div><p>Keine ausstehenden Anfragen.</p></div>
+              <div className="empty-state"><div className="empty-icon">📩</div><p>{t('friends.noRequests')}</p></div>
             ) : requests.map(r => (
               <div key={r.id} className="list-item">
                 <div className="list-item-info">
@@ -144,8 +146,8 @@ export default function FriendsPage() {
                   </div>
                 </div>
                 <div className="list-item-actions">
-                  <button className="btn btn-sm btn-primary" onClick={() => acceptRequest(r.id)}>✓ Akzeptieren</button>
-                  <button className="btn btn-sm btn-outline" onClick={() => declineRequest(r.id)}>✗ Ablehnen</button>
+                  <button className="btn btn-sm btn-primary" onClick={() => acceptRequest(r.id)}>✓ {t('friends.accept')}</button>
+                  <button className="btn btn-sm btn-outline" onClick={() => declineRequest(r.id)}>✗ {t('friends.decline')}</button>
                 </div>
               </div>
             ))
@@ -156,7 +158,7 @@ export default function FriendsPage() {
               <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
                 <input
                   className="form-input"
-                  placeholder="Name oder Benutzername suchen..."
+                  placeholder={t('friends.search')}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -174,7 +176,7 @@ export default function FriendsPage() {
                   </div>
                   <div className="list-item-actions">
                     <button className="btn btn-sm btn-primary" onClick={() => sendRequest(u.id)}>
-                      Freundschaftsanfrage senden
+                      {t('friends.sendRequest')}
                     </button>
                   </div>
                 </div>

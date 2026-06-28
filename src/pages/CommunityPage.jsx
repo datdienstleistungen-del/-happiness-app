@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../App'
 import { supabase } from '../lib/supabase'
+import { useLanguage } from '../i18n/translations.jsx'
 
 export default function CommunityPage() {
   const { user, profile } = useAuth()
+  const { t } = useLanguage()
   const [posts, setPosts] = useState([])
   const [newPost, setNewPost] = useState('')
   const [loading, setLoading] = useState(true)
@@ -48,21 +50,21 @@ export default function CommunityPage() {
   return (
     <div className="container">
       <div className="page-header">
-        <h1>💬 Community</h1>
-        <p>Teile deine Gedanken mit der Community</p>
+        <h1>💬 {t('community.title')}</h1>
+        <p>{t('community.share')}</p>
       </div>
 
       <div className="card">
         <textarea
           className="form-input"
-          placeholder="Was möchtest du teilen?"
+          placeholder={t('community.placeholder')}
           value={newPost}
           onChange={(e) => setNewPost(e.target.value)}
           rows={3}
         />
         <div style={{ marginTop: '0.75rem', textAlign: 'right' }}>
           <button className="btn btn-primary" onClick={handlePost} disabled={!newPost.trim()}>
-            Posten
+            {t('community.post')}
           </button>
         </div>
       </div>
@@ -72,7 +74,7 @@ export default function CommunityPage() {
       ) : posts.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">💬</div>
-          <p>Noch keine Beiträge. Sei der Erste!</p>
+          <p>{t('community.noPosts')}</p>
         </div>
       ) : (
         posts.map((post) => (
@@ -88,6 +90,7 @@ function PostCard({ post, currentUserId, onLike }) {
   const [comments, setComments] = useState([])
   const [commentText, setCommentText] = useState('')
   const [showComments, setShowComments] = useState(false)
+  const { t } = useLanguage()
 
   useEffect(() => { fetchInteractions() }, [post.id])
 
@@ -160,12 +163,12 @@ function PostCard({ post, currentUserId, onLike }) {
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
             <input
               className="form-input"
-              placeholder="Kommentar schreiben..."
+              placeholder={t('community.comment')}
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addComment()}
             />
-            <button className="btn btn-primary btn-sm" onClick={addComment}>Senden</button>
+            <button className="btn btn-primary btn-sm" onClick={addComment}>{t('community.send')}</button>
           </div>
         </div>
       )}

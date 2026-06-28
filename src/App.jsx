@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext } from 'react'
 import { Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabase'
+import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.jsx'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import CommunityPage from './pages/CommunityPage'
@@ -22,6 +23,7 @@ export function useAuth() {
 
 function Navbar() {
   const { user, profile, signOut } = useAuth()
+  const { lang, setLang, t } = useLanguage()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -31,19 +33,19 @@ function Navbar() {
   }
 
   const links = [
-    { to: '/', label: '🏠 Start' },
-    { to: '/community', label: '💬 Community' },
-    { to: '/friends', label: '👥 Freunde' },
-    { to: '/marketplace', label: '🛒 Marktplatz' },
-    { to: '/jobs', label: '💼 Jobs' },
-    { to: '/courses', label: '📚 Kurse' },
-    { to: '/profile', label: '👤 Profil' },
-    { to: '/notifications', label: '🔔 Benachrichtigungen' },
-    { to: '/history', label: '📜 Verlauf' },
+    { to: '/', label: `🏠 ${t('nav.home')}` },
+    { to: '/community', label: `💬 ${t('nav.community')}` },
+    { to: '/friends', label: `👥 ${t('nav.friends')}` },
+    { to: '/marketplace', label: `🛒 ${t('nav.marketplace')}` },
+    { to: '/jobs', label: `💼 ${t('nav.jobs')}` },
+    { to: '/courses', label: `📚 ${t('nav.courses')}` },
+    { to: '/profile', label: `👤 ${t('nav.profile')}` },
+    { to: '/notifications', label: `🔔 ${t('nav.notifications')}` },
+    { to: '/history', label: `📜 ${t('nav.history')}` },
   ]
 
   if (profile?.role === 'admin') {
-    links.push({ to: '/admin', label: '⚙️ Admin' })
+    links.push({ to: '/admin', label: `⚙️ ${t('nav.admin')}` })
   }
 
   return (
@@ -60,8 +62,17 @@ function Navbar() {
         ))}
       </div>
       <div className="navbar-user">
+        <select
+          className="lang-select"
+          value={lang}
+          onChange={(e) => setLang(e.target.value)}
+        >
+          {LANGUAGES.map((l) => (
+            <option key={l.code} value={l.code}>{l.flag} {l.label}</option>
+          ))}
+        </select>
         <span>{profile?.name || user?.email}</span>
-        <button className="btn btn-sm btn-outline" onClick={handleSignOut}>Logout</button>
+        <button className="btn btn-sm btn-outline" onClick={handleSignOut}>{t('nav.logout')}</button>
       </div>
     </nav>
   )
@@ -69,7 +80,8 @@ function Navbar() {
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <div className="loading">Laden...</div>
+  const { t } = useLanguage()
+  if (loading) return <div className="loading">{t('auth.logging')}</div>
   if (!user) return <Navigate to="/login" />
   return children
 }
@@ -113,71 +125,85 @@ export default function App() {
     setProfile(null)
   }
 
-  if (loading) {
-    return <div className="loading-screen">🌈 Happiness App wird geladen...</div>
-  }
-
   return (
-    <AuthContext.Provider value={{ user, profile, loading, fetchProfile, signOut }}>
-      {user && <Navbar />}
-      <main className={user ? 'main-content' : 'main-content full'}>
-        <Routes>
-          <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
-          <Route path="/register" element={user ? <Navigate to="/" /> : <RegisterPage />} />
-          <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-          <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
-          <Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
-          <Route path="/marketplace" element={<ProtectedRoute><MarketplacePage /></ProtectedRoute>} />
-          <Route path="/jobs" element={<ProtectedRoute><JobsPage /></ProtectedRoute>} />
-          <Route path="/courses" element={<ProtectedRoute><CoursesPage /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-          <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-          <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
-        </Routes>
-      </main>
-    </AuthContext.Provider>
+    <LanguageProvider>
+      <AuthContext.Provider value={{ user, profile, loading, fetchProfile, signOut }}>
+        {loading ? (
+          <LoadingScreen />
+        ) : (
+          <>
+            {user && <Navbar />}
+            <main className={user ? 'main-content' : 'main-content full'}>
+              <Routes>
+                <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
+                <Route path="/register" element={user ? <Navigate to="/" /> : <RegisterPage />} />
+                <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+                <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
+                <Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
+                <Route path="/marketplace" element={<ProtectedRoute><MarketplacePage /></ProtectedRoute>} />
+                <Route path="/jobs" element={<ProtectedRoute><JobsPage /></ProtectedRoute>} />
+                <Route path="/courses" element={<ProtectedRoute><CoursesPage /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+                <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
+                <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+              </Routes>
+            </main>
+          </>
+        )}
+      </AuthContext.Provider>
+    </LanguageProvider>
   )
+}
+
+function LoadingScreen() {
+  const { t } = useLanguage()
+  return <div className="loading-screen">🌈 Happiness App wird geladen...</div>
 }
 
 function HomePage() {
   const { profile } = useAuth()
+  const { t } = useLanguage()
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? t('welcome.morning') : hour < 18 ? t('welcome.afternoon') : t('welcome.evening')
+
   return (
     <div className="container">
       <div className="hero">
-        <h1>🌈 Willkommen bei der Happiness App!</h1>
-        <p>Schön, dass du da bist, <strong>{profile?.name}</strong>!</p>
+        <h1>🌈 {t('home.welcome')}</h1>
+        <p>{greeting}, <strong>{profile?.name}</strong>!</p>
+        <p style={{color: 'rgba(255,255,255,0.8)', fontSize: '0.95rem', marginTop: '0.5rem'}}>{t('home.desc')}</p>
       </div>
       <div className="dashboard-grid">
         <Link to="/community" className="dash-card">
           <span className="dash-icon">💬</span>
-          <h3>Community</h3>
-          <p>Teile Gedanken und vernetze dich</p>
+          <h3>{t('nav.community')}</h3>
+          <p>{t('community.share')}</p>
         </Link>
         <Link to="/friends" className="dash-card">
           <span className="dash-icon">👥</span>
-          <h3>Freunde</h3>
-          <p>Finde und verbinde dich mit Freunden</p>
+          <h3>{t('nav.friends')}</h3>
+          <p>{t('friends.noFriends')}</p>
         </Link>
         <Link to="/marketplace" className="dash-card">
           <span className="dash-icon">🛒</span>
-          <h3>Marktplatz</h3>
-          <p>Angebote entdecken und teilen</p>
+          <h3>{t('nav.marketplace')}</h3>
+          <p>{t('marketplace.browse')}</p>
         </Link>
         <Link to="/jobs" className="dash-card">
           <span className="dash-icon">💼</span>
-          <h3>Jobbörse</h3>
-          <p>Finde deinen nächsten Job</p>
+          <h3>{t('nav.jobs')}</h3>
+          <p>{t('jobs.browse')}</p>
         </Link>
         <Link to="/courses" className="dash-card">
           <span className="dash-icon">📚</span>
-          <h3>Kurse</h3>
-          <p>Lerne Neues und wachse</p>
+          <h3>{t('nav.courses')}</h3>
+          <p>{t('courses.browse')}</p>
         </Link>
         <Link to="/profile" className="dash-card">
           <span className="dash-icon">👤</span>
-          <h3>Profil</h3>
-          <p>Verwalte dein Profil</p>
+          <h3>{t('nav.profile')}</h3>
+          <p>{t('profile.edit')}</p>
         </Link>
       </div>
     </div>

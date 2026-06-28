@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../App'
 import { supabase } from '../lib/supabase'
+import { useLanguage } from '../i18n/translations.jsx'
 
 const JOB_TYPES = ['Vollzeit', 'Teilzeit', 'Freelance', 'Praktikum', 'Homeoffice']
 
 export default function JobsPage() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [tab, setTab] = useState('browse')
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
@@ -47,38 +49,38 @@ export default function JobsPage() {
 
   return (
     <div className="container">
-      <div className="page-header"><h1>💼 Jobbörse</h1><p>Finde deinen nächsten Job</p></div>
+      <div className="page-header"><h1>💼 {t('jobs.title')}</h1><p>{t('jobs.browse')}</p></div>
 
       <div className="tabs">
-        <button className={`tab ${tab === 'browse' ? 'active' : ''}`} onClick={() => setTab('browse')}>Jobs suchen</button>
-        <button className={`tab ${tab === 'create' ? 'active' : ''}`} onClick={() => setTab('create')}>Job ausschreiben</button>
+        <button className={`tab ${tab === 'browse' ? 'active' : ''}`} onClick={() => setTab('browse')}>{t('jobs.browse')}</button>
+        <button className={`tab ${tab === 'create' ? 'active' : ''}`} onClick={() => setTab('create')}>{t('jobs.create')}</button>
       </div>
 
       {tab === 'create' && (
         <div className="card">
-          <div className="form-group"><label>Jobtitel</label><input className="form-input" value={form.title} onChange={e => setForm({...form, title: e.target.value})} /></div>
-          <div className="form-group"><label>Beschreibung</label><textarea className="form-input" value={form.description} onChange={e => setForm({...form, description: e.target.value})} /></div>
+          <div className="form-group"><label>{t('jobs.titleField')}</label><input className="form-input" value={form.title} onChange={e => setForm({...form, title: e.target.value})} /></div>
+          <div className="form-group"><label>{t('jobs.desc')}</label><textarea className="form-input" value={form.description} onChange={e => setForm({...form, description: e.target.value})} /></div>
           <div style={{ display: 'flex', gap: '1rem' }}>
-            <div className="form-group" style={{ flex: 1 }}><label>Standort</label><input className="form-input" value={form.location} onChange={e => setForm({...form, location: e.target.value})} /></div>
-            <div className="form-group" style={{ flex: 1 }}><label>Jobtyp</label><select className="form-input" value={form.type} onChange={e => setForm({...form, type: e.target.value})}>{JOB_TYPES.map(t => <option key={t}>{t}</option>)}</select></div>
+            <div className="form-group" style={{ flex: 1 }}><label>{t('jobs.location')}</label><input className="form-input" value={form.location} onChange={e => setForm({...form, location: e.target.value})} /></div>
+            <div className="form-group" style={{ flex: 1 }}><label>{t('jobs.type')}</label><select className="form-input" value={form.type} onChange={e => setForm({...form, type: e.target.value})}>{JOB_TYPES.map(t => <option key={t}>{t}</option>)}</select></div>
           </div>
-          <div className="form-group"><label>Kontakt (E-Mail)</label><input className="form-input" value={form.contact} onChange={e => setForm({...form, contact: e.target.value})} /></div>
-          <button className="btn btn-primary" onClick={handleCreate}>Ausschreiben</button>
+          <div className="form-group"><label>{t('jobs.contact')}</label><input className="form-input" value={form.contact} onChange={e => setForm({...form, contact: e.target.value})} /></div>
+          <button className="btn btn-primary" onClick={handleCreate}>{t('jobs.createBtn')}</button>
         </div>
       )}
 
       {tab === 'browse' && (
         <>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-            <input className="form-input" placeholder="Suchen..." value={search} onChange={e => setSearch(e.target.value)} />
+            <input className="form-input" placeholder={t('jobs.search')} value={search} onChange={e => setSearch(e.target.value)} />
             <select className="form-input" style={{ width: 'auto' }} value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
-              <option value="">Alle Typen</option>
+              <option value="">{t('jobs.allTypes')}</option>
               {JOB_TYPES.map(t => <option key={t}>{t}</option>)}
             </select>
           </div>
 
           {loading ? <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Laden...</p> : filtered.length === 0 ? (
-            <div className="empty-state"><div className="empty-icon">💼</div><p>Keine Jobs gefunden.</p></div>
+            <div className="empty-state"><div className="empty-icon">💼</div><p>{t('jobs.noJobs')}</p></div>
           ) : filtered.map(job => (
             <div key={job.id} className="card">
               <div className="card-header">
@@ -94,7 +96,7 @@ export default function JobsPage() {
               <p>{job.description}</p>
               {job.user_id !== user.id && (
                 <div style={{ marginTop: '1rem' }}>
-                  <button className="btn btn-sm btn-outline" onClick={() => alert(`Bewerbung an: ${job.contact}`)}>Bewerben</button>
+                  <button className="btn btn-sm btn-outline" onClick={() => alert(`Bewerbung an: ${job.contact}`)}>{t('jobs.apply')}</button>
                 </div>
               )}
             </div>

@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../App'
 import { supabase } from '../lib/supabase'
+import { useLanguage } from '../i18n/translations.jsx'
 
 const CATEGORIES = ['Dienstleistung', 'Produkt', 'Geschenk', 'Tausch', 'Sonstiges']
 
 export default function MarketplacePage() {
   const { user, profile } = useAuth()
+  const { t } = useLanguage()
   const [tab, setTab] = useState('browse')
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -44,39 +46,39 @@ export default function MarketplacePage() {
   return (
     <div className="container">
       <div className="page-header">
-        <h1>🛒 Marktplatz</h1>
-        <p>Entdecke Angebote aus der Community</p>
+        <h1>🛒 {t('marketplace.title')}</h1>
+        <p>{t('marketplace.browse')}</p>
       </div>
 
       <div className="tabs">
-        <button className={`tab ${tab === 'browse' ? 'active' : ''}`} onClick={() => setTab('browse')}>Anzeigen</button>
-        <button className={`tab ${tab === 'create' ? 'active' : ''}`} onClick={() => setTab('create')}>Neue Anzeige</button>
+        <button className={`tab ${tab === 'browse' ? 'active' : ''}`} onClick={() => setTab('browse')}>{t('marketplace.browse')}</button>
+        <button className={`tab ${tab === 'create' ? 'active' : ''}`} onClick={() => setTab('create')}>{t('marketplace.newAd')}</button>
       </div>
 
       {tab === 'create' && (
         <div className="card">
-          <div className="form-group"><label>Titel</label><input className="form-input" value={form.title} onChange={e => setForm({...form, title: e.target.value})} /></div>
-          <div className="form-group"><label>Beschreibung</label><textarea className="form-input" value={form.description} onChange={e => setForm({...form, description: e.target.value})} /></div>
+          <div className="form-group"><label>{t('marketplace.titleField')}</label><input className="form-input" value={form.title} onChange={e => setForm({...form, title: e.target.value})} /></div>
+          <div className="form-group"><label>{t('marketplace.desc')}</label><textarea className="form-input" value={form.description} onChange={e => setForm({...form, description: e.target.value})} /></div>
           <div style={{ display: 'flex', gap: '1rem' }}>
-            <div className="form-group" style={{ flex: 1 }}><label>Preis (€)</label><input type="number" className="form-input" value={form.price} onChange={e => setForm({...form, price: e.target.value})} /></div>
-            <div className="form-group" style={{ flex: 1 }}><label>Kategorie</label><select className="form-input" value={form.category} onChange={e => setForm({...form, category: e.target.value})}>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></div>
+            <div className="form-group" style={{ flex: 1 }}><label>{t('marketplace.price')}</label><input type="number" className="form-input" value={form.price} onChange={e => setForm({...form, price: e.target.value})} /></div>
+            <div className="form-group" style={{ flex: 1 }}><label>{t('marketplace.category')}</label><select className="form-input" value={form.category} onChange={e => setForm({...form, category: e.target.value})}>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></div>
           </div>
-          <button className="btn btn-primary" onClick={handleCreate}>Erstellen</button>
+          <button className="btn btn-primary" onClick={handleCreate}>{t('marketplace.createBtn')}</button>
         </div>
       )}
 
       {tab === 'browse' && (
         <>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-            <input className="form-input" placeholder="Suchen..." value={search} onChange={e => setSearch(e.target.value)} />
+            <input className="form-input" placeholder={t('marketplace.search')} value={search} onChange={e => setSearch(e.target.value)} />
             <select className="form-input" style={{ width: 'auto' }} value={filter} onChange={e => setFilter(e.target.value)}>
-              <option value="">Alle Kategorien</option>
+              <option value="">{t('marketplace.allCategories')}</option>
               {CATEGORIES.map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
 
           {loading ? <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Laden...</p> : filtered.length === 0 ? (
-            <div className="empty-state"><div className="empty-icon">🛒</div><p>Keine Anzeigen gefunden.</p></div>
+            <div className="empty-state"><div className="empty-icon">🛒</div><p>{t('marketplace.noItems')}</p></div>
           ) : filtered.map(item => (
             <div key={item.id} className="card">
               <div className="card-header">
@@ -92,7 +94,7 @@ export default function MarketplacePage() {
               <p>{item.description}</p>
               {item.user_id !== user.id && (
                 <div style={{ marginTop: '1rem' }}>
-                  <button className="btn btn-sm btn-outline" onClick={() => alert(`Kontakt: ${item.user_id}`)}>Kontaktieren</button>
+                  <button className="btn btn-sm btn-outline" onClick={() => alert(`Kontakt: ${item.user_id}`)}>{t('marketplace.contact')}</button>
                 </div>
               )}
             </div>
