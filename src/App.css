@@ -245,6 +245,26 @@
   border-top: 1px solid #e5e7eb;
 }
 
+.sidebar-legal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.sidebar-legal-link {
+  font-size: 0.7rem;
+  color: #999;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.sidebar-legal-link:hover {
+  color: var(--primary);
+}
+
 .sidebar-lang {
   width: 100%;
   padding: 8px 10px;

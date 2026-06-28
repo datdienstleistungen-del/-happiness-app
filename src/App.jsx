@@ -17,6 +17,7 @@ import HistoryPage from './pages/HistoryPage'
 import AdminPage from './pages/AdminPage'
 import VideoMakerPage from './pages/VideoMakerPage'
 import AIChatPage from './pages/AIChatPage'
+import LegalPage from './pages/LegalPage'
 import './App.css'
 
 function Sidebar() {
@@ -94,6 +95,13 @@ function Sidebar() {
       </nav>
 
       <div className="sidebar-footer">
+        {!collapsed && (
+          <div className="sidebar-legal">
+            <Link to="/legal?tab=impressum" className="sidebar-legal-link">{t('legal.impressum') || 'Impressum'}</Link>
+            <Link to="/legal?tab=datenschutz" className="sidebar-legal-link">{t('legal.privacy') || 'Datenschutz'}</Link>
+            <Link to="/legal?tab=agb" className="sidebar-legal-link">AGB</Link>
+          </div>
+        )}
         <select
           className="sidebar-lang"
           value={lang}
@@ -192,6 +200,10 @@ export default function App() {
                 <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
                 <Route path="/video-maker" element={<ProtectedRoute><VideoMakerPage /></ProtectedRoute>} />
                 <Route path="/ai-chat" element={<ProtectedRoute><AIChatPage /></ProtectedRoute>} />
+                <Route path="/legal" element={<LegalPage />} />
+                <Route path="/impressum" element={<LegalPage />} />
+                <Route path="/datenschutz" element={<LegalPage />} />
+                <Route path="/agb" element={<LegalPage />} />
               </Routes>
             </main>
           </>
