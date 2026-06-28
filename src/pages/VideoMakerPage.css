@@ -1,0 +1,218 @@
+.video-maker-page {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.video-maker-page h1 {
+  text-align: center;
+  color: #9b59b6;
+  margin-bottom: 30px;
+}
+
+.video-maker-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+@media (max-width: 900px) {
+  .video-maker-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.preview-section {
+  background: #16213e;
+  border-radius: 15px;
+  padding: 20px;
+}
+
+.preview-section h3 {
+  color: #9b59b6;
+  margin-bottom: 15px;
+}
+
+.video-canvas {
+  width: 100%;
+  border-radius: 10px;
+  background: #0f0f23;
+  max-height: 500px;
+  object-fit: contain;
+}
+
+.controls-section {
+  background: #16213e;
+  border-radius: 15px;
+  padding: 20px;
+}
+
+.control-group {
+  margin-bottom: 15px;
+}
+
+.control-group label {
+  display: block;
+  color: #9b59b6;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.control-group input[type="color"] {
+  width: 100%;
+  height: 40px;
+  border: 2px solid #9b59b6;
+  border-radius: 8px;
+  background: #0f0f23;
+  cursor: pointer;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.3s;
+}
+
+.btn-primary {
+  background: #9b59b6;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #8e44ad;
+}
+
+.btn-success {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #219a52;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 20px;
+  background: #0f0f23;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #9b59b6, #3498db);
+  transition: width 0.1s;
+}
+
+.status-text {
+  text-align: center;
+  color: #3498db;
+}
+
+.scenes-section {
+  background: #16213e;
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 30px;
+}
+
+.scenes-section h3 {
+  color: #9b59b6;
+  margin-bottom: 15px;
+}
+
+.scene-card {
+  background: #0f0f23;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-left: 4px solid #9b59b6;
+}
+
+.scene-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.scene-number {
+  color: #9b59b6;
+  font-weight: bold;
+}
+
+.btn-delete {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.btn-delete:hover {
+  background: #c0392b;
+}
+
+.scene-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+}
+
+.scene-inputs input {
+  padding: 10px;
+  border: 2px solid #9b59b6;
+  border-radius: 8px;
+  background: #16213e;
+  color: white;
+  font-size: 14px;
+}
+
+.duration-input {
+  width: 80px !important;
+}
+
+.tips-section {
+  background: #16213e;
+  border-radius: 15px;
+  padding: 20px;
+}
+
+.tips-section h3 {
+  color: #9b59b6;
+  margin-bottom: 15px;
+}
+
+.tips-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.tips-section li {
+  padding: 8px 0;
+  border-bottom: 1px solid #0f0f23;
+  color: #ecf0f1;
+}
+
+.tips-section li:last-child {
+  border-bottom: none;
+}

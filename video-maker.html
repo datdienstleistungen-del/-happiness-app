@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happiness Video Maker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #9b59b6;
+            margin-bottom: 30px;
+        }
+        
+        .preview-container {
+            background: #16213e;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        #videoCanvas {
+            width: 100%;
+            border-radius: 10px;
+            background: #0f0f23;
+        }
+        
+        .controls {
+            background: #16213e;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #9b59b6;
+            font-weight: bold;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #9b59b6;
+            border-radius: 8px;
+            background: #0f0f23;
+            color: white;
+            font-size: 14px;
+        }
+        
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+            margin-right: 10px;
+        }
+        
+        .btn-primary {
+            background: #9b59b6;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #8e44ad;
+        }
+        
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #219a52;
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        
+        .scenes {
+            background: #16213e;
+            border-radius: 15px;
+            padding: 20px;
+        }
+        
+        .scene {
+            background: #0f0f23;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #9b59b6;
+        }
+        
+        .scene-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .scene-number {
+            color: #9b59b6;
+            font-weight: bold;
+        }
+        
+        .delete-scene {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        
+        .scene-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .progress {
+            width: 100%;
+            height: 20px;
+            background: #0f0f23;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #9b59b6, #3498db);
+            width: 0%;
+            transition: width 0.1s;
+        }
+        
+        .status {
+            text-align: center;
+            margin-top: 10px;
+            color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Happiness Video Maker</h1>
+        
+        <div class="preview-container">
+            <canvas id="videoCanvas" width="1080" height="1920"></canvas>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>Hintergrundfarbe</label>
+                <input type="color" id="bgColor" value="#0f0f23">
+            </div>
+            
+            <div class="control-group">
+                <label>Textfarbe</label>
+                <input type="color" id="textColor" value="#ffffff">
+            </div>
+            
+            <div class="control-group">
+                <label>Text-Geschwindigkeit (Sekunden pro Szene)</label>
+                <input type="number" id="sceneDuration" value="3" min="1" max="10">
+            </div>
+            
+            <button class="btn btn-primary" onclick="addScene()">+ Szene hinzufügen</button>
+            <button class="btn btn-success" onclick="startRecording()">🎥 Video aufnehmen</button>
+            <button class="btn btn-danger" onclick="stopRecording()" disabled id="stopBtn">⏹️ Stop</button>
+            
+            <div class="progress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="status" id="status">Bereit</div>
+        </div>
+        
+        <div class="scenes" id="scenesContainer">
+            <h2 style="margin-bottom: 15px; color: #9b59b6;">Szenen</h2>
+            
+            <div class="scene" id="scene1">
+                <div class="scene-header">
+                    <span class="scene-number">Szene 1</span>
+                    <button class="delete-scene" onclick="deleteScene(1)">🗑️</button>
+                </div>
+                <div class="scene-content">
+                    <input type="text" placeholder="Text Zeile 1" class="scene-text1" value="Deine Daten bleiben">
+                    <input type="text" placeholder="Text Zeile 2" class="scene-text2" value="in Europa">
+                </div>
+            </div>
+            
+            <div class="scene" id="scene2">
+                <div class="scene-header">
+                    <span class="scene-number">Szene 2</span>
+                    <button class="delete-scene" onclick="deleteScene(2)">🗑️</button>
+                </div>
+                <div class="scene-content">
+                    <input type="text" placeholder="Text Zeile 1" class="scene-text1" value="Kein Milliardär">
+                    <input type="text" placeholder="Text Zeile 2" class="scene-text2" value="manipuliert dich">
+                </div>
+            </div>
+            
+            <div class="scene" id="scene3">
+                <div class="scene-header">
+                    <span class="scene-number">Szene 3</span>
+                    <button class="delete-scene" onclick="deleteScene(3)">🗑️</button>
+                </div>
+                <div class="scene-content">
+                    <input type="text" placeholder="Text Zeile 1" class="scene-text1" value="Happiness">
+                    <input type="text" placeholder="Text Zeile 2" class="scene-text2" value="Datenschutz · Demokratie">
+                </div>
+            </div>
+            
+            <div class="scene" id="scene4">
+                <div class="scene-header">
+                    <span class="scene-number">Szene 4</span>
+                    <button class="delete-scene" onclick="deleteScene(4)">🗑️</button>
+                </div>
+                <div class="scene-content">
+                    <input type="text" placeholder="Text Zeile 1" class="scene-text1" value="Kostenlos">
+                    <input type="text" placeholder="Text Zeile 2" class="scene-text2" value="Jetzt ausprobieren!">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('videoCanvas');
+        const ctx = canvas.getContext('2d');
+        let mediaRecorder;
+        let recordedChunks = [];
+        let sceneIndex = 0;
+        let isRecording = false;
+        
+        // Scene-Texte auslesen
+        function getScenes() {
+            const scenes = [];
+            const sceneElements = document.querySelectorAll('.scene');
+            
+            sceneElements.forEach((scene, index) => {
+                const text1 = scene.querySelector('.scene-text1').value;
+                const text2 = scene.querySelector('.scene-text2').value;
+                scenes.push({ text1, text2 });
+            });
+            
+            return scenes;
+        }
+        
+        // Szene zeichnen
+        function drawScene(scene, progress) {
+            const bgColor = document.getElementById('bgColor').value;
+            const textColor = document.getElementById('textColor').value;
+            
+            // Hintergrund
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Text zeichnen mit Animation
+            ctx.fillStyle = textColor;
+            ctx.textAlign = 'center';
+            
+            // Animation: Fade In + Scale
+            const scale = 0.5 + (progress * 0.5);
+            const alpha = Math.min(1, progress * 2);
+            
+            ctx.globalAlpha = alpha;
+            
+            // Text Zeile 1
+            ctx.font = `bold ${80 * scale}px 'Segoe UI', sans-serif`;
+            ctx.fillText(scene.text1, canvas.width / 2, canvas.height / 2 - 50);
+            
+            // Text Zeile 2
+            ctx.font = `${60 * scale}px 'Segoe UI', sans-serif`;
+            ctx.fillText(scene.text2, canvas.width / 2, canvas.height / 2 + 50);
+            
+            ctx.globalAlpha = 1;
+            
+            // Happiness Logo unten
+            ctx.fillStyle = '#9b59b6';
+            ctx.font = 'bold 40px Segoe UI, sans-serif';
+            ctx.fillText('Happiness', canvas.width / 2, canvas.height - 100);
+        }
+        
+        // Vorschau aktualisieren
+        function updatePreview() {
+            const scenes = getScenes();
+            if (scenes.length > 0) {
+                drawScene(scenes[0], 1);
+            }
+        }
+        
+        // Szene hinzufügen
+        function addScene() {
+            const container = document.getElementById('scenesContainer');
+            const sceneCount = container.querySelectorAll('.scene').length + 1;
+            
+            const sceneHTML = `
+                <div class="scene" id="scene${sceneCount}">
+                    <div class="scene-header">
+                        <span class="scene-number">Szene ${sceneCount}</span>
+                        <button class="delete-scene" onclick="deleteScene(${sceneCount})">🗑️</button>
+                    </div>
+                    <div class="scene-content">
+                        <input type="text" placeholder="Text Zeile 1" class="scene-text1">
+                        <input type="text" placeholder="Text Zeile 2" class="scene-text2">
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', sceneHTML);
+        }
+        
+        // Szene löschen
+        function deleteScene(num) {
+            const scene = document.getElementById(`scene${num}`);
+            if (scene) {
+                scene.remove();
+                updatePreview();
+            }
+        }
+        
+        // Video aufnehmen
+        async function startRecording() {
+            const scenes = getScenes();
+            if (scenes.length === 0) {
+                alert('Bitte mindestens eine Szene hinzufügen!');
+                return;
+            }
+            
+            isRecording = true;
+            document.getElementById('stopBtn').disabled = false;
+            recordedChunks = [];
+            sceneIndex = 0;
+            
+            // Stream von Canvas
+            const stream = canvas.captureStream(30);
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+            
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+            
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'happiness-video.webm';
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                document.getElementById('status').textContent = 'Video gespeichert!';
+                document.getElementById('progressBar').style.width = '100%';
+            };
+            
+            mediaRecorder.start();
+            
+            // Szenen abspielen
+            await playScenes(scenes);
+        }
+        
+        // Szenen abspielen
+        async function playScenes(scenes) {
+            const duration = parseInt(document.getElementById('sceneDuration').value) * 1000;
+            
+            for (let i = 0; i < scenes.length; i++) {
+                if (!isRecording) break;
+                
+                sceneIndex = i;
+                document.getElementById('status').textContent = `Szene ${i + 1} von ${scenes.length}`;
+                
+                // Animation für diese Szene
+                await animateScene(scenes[i], duration);
+            }
+            
+            if (isRecording) {
+                stopRecording();
+            }
+        }
+        
+        // Szene animieren
+        function animateScene(scene, duration) {
+            return new Promise((resolve) => {
+                const startTime = Date.now();
+                
+                function animate() {
+                    if (!isRecording) {
+                        resolve();
+                        return;
+                    }
+                    
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(1, elapsed / duration);
+                    
+                    drawScene(scene, progress);
+                    
+                    // Fortschritt aktualisieren
+                    const totalScenes = getScenes().length;
+                    const overallProgress = ((sceneIndex + progress) / totalScenes) * 100;
+                    document.getElementById('progressBar').style.width = `${overallProgress}%`;
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        resolve();
+                    }
+                }
+                
+                animate();
+            });
+        }
+        
+        // Aufnahme stoppen
+        function stopRecording() {
+            isRecording = false;
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            document.getElementById('stopBtn').disabled = true;
+        }
+        
+        // Initialisierung
+        updatePreview();
+    </script>
+</body>
+</html>
