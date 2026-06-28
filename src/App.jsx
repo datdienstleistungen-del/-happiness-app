@@ -1,7 +1,8 @@
-import { useState, useEffect, createContext, useContext } from 'react'
+import { useState, useEffect } from 'react'
 import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.jsx'
+import AuthContext, { useAuth } from './context/AuthContext'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import CommunityPage from './pages/CommunityPage'
@@ -17,12 +18,6 @@ import AdminPage from './pages/AdminPage'
 import VideoMakerPage from './pages/VideoMakerPage'
 import AIChatPage from './pages/AIChatPage'
 import './App.css'
-
-const AuthContext = createContext()
-
-export function useAuth() {
-  return useContext(AuthContext)
-}
 
 function Sidebar() {
   const { user, profile, signOut } = useAuth()

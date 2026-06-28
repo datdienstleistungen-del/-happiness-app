@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import { useAuth } from '../App'
+import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations.jsx'
 
 export default function VideoUpload({ onUploadComplete }) {

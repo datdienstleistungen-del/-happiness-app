@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react'
 
 const translations = {
   de: {
-    nav: { home: 'Start', community: 'Community', friends: 'Freunde', marketplace: 'Marktplatz', jobs: 'Jobbörse', courses: 'Kurse', housing: 'Wohnungen', profile: 'Profil', notifications: 'Benachrichtigungen', history: 'Verlauf', admin: 'Admin', logout: 'Logout' },
+    nav: { home: 'Start', community: 'Community', friends: 'Freunde', marketplace: 'Marktplatz', jobs: 'Jobbörse', courses: 'Kurse', housing: 'Wohnungen', profile: 'Profil', notifications: 'Benachrichtigungen', history: 'Verlauf', admin: 'Admin', logout: 'Logout', aiChat: 'AI Chat', videoMaker: 'Video Maker', more: 'Mehr' },
     home: { welcome: 'Willkommen bei der Happiness App!', subtitle: 'Schön, dass du da bist,', desc: 'Deine europäische Plattform für Glück und Vernetzung' },
     auth: { login: 'Anmelden', register: 'Registrieren', email: 'E-Mail', password: 'Passwort', name: 'Name', username: 'Benutzername', noAccount: 'Noch kein Konto?', hasAccount: 'Bereits ein Konto?', loginHere: 'Hier anmelden', registerHere: 'Hier registrieren', createAccount: 'Erstelle dein Konto', loginSubtitle: 'Melde dich an, um fortzufahren', registering: 'Wird registriert...', logging: 'Wird angemeldet...' },
     community: { title: 'Community', share: 'Teile deine Gedanken mit der Community', placeholder: 'Was möchtest du teilen?', post: 'Posten', comment: 'Kommentar...', send: 'Senden', noPosts: 'Noch keine Beiträge. Sei der Erste!' },
@@ -23,7 +23,7 @@ const translations = {
     welcome: { morning: 'Guten Morgen', afternoon: 'Guten Tag', evening: 'Guten Abend' }
   },
   en: {
-    nav: { home: 'Home', community: 'Community', friends: 'Friends', marketplace: 'Marketplace', jobs: 'Jobs', courses: 'Courses', housing: 'Housing', profile: 'Profile', notifications: 'Notifications', history: 'History', admin: 'Admin', logout: 'Logout' },
+    nav: { home: 'Home', community: 'Community', friends: 'Friends', marketplace: 'Marketplace', jobs: 'Jobs', courses: 'Courses', housing: 'Housing', profile: 'Profile', notifications: 'Notifications', history: 'History', admin: 'Admin', logout: 'Logout', aiChat: 'AI Chat', videoMaker: 'Video Maker', more: 'More' },
     home: { welcome: 'Welcome to the Happiness App!', subtitle: 'Great to have you here,', desc: 'Your European platform for happiness and connection' },
     auth: { login: 'Login', register: 'Register', email: 'Email', password: 'Password', name: 'Name', username: 'Username', noAccount: "Don't have an account?", hasAccount: 'Already have an account?', loginHere: 'Login here', registerHere: 'Register here', createAccount: 'Create your account', loginSubtitle: 'Login to continue', registering: 'Registering...', logging: 'Logging in...' },
     community: { title: 'Community', share: 'Share your thoughts with the community', placeholder: 'What do you want to share?', post: 'Post', comment: 'Comment...', send: 'Send', noPosts: 'No posts yet. Be the first!' },
@@ -44,7 +44,7 @@ const translations = {
     welcome: { morning: 'Good Morning', afternoon: 'Good Afternoon', evening: 'Good Evening' }
   },
   es: {
-    nav: { home: 'Inicio', community: 'Comunidad', friends: 'Amigos', marketplace: 'Mercado', jobs: 'Empleos', courses: 'Cursos', housing: 'Viviendas', profile: 'Perfil', notifications: 'Notificaciones', history: 'Historial', admin: 'Admin', logout: 'Salir' },
+    nav: { home: 'Inicio', community: 'Comunidad', friends: 'Amigos', marketplace: 'Mercado', jobs: 'Empleos', courses: 'Cursos', housing: 'Viviendas', profile: 'Perfil', notifications: 'Notificaciones', history: 'Historial', admin: 'Admin', logout: 'Salir', aiChat: 'AI Chat', videoMaker: 'Creador de Video', more: 'Más' },
     home: { welcome: '¡Bienvenido a la Happiness App!', subtitle: 'Qué alegría que estés aquí,', desc: 'Tu plataforma europea de felicidad y conexión' },
     auth: { login: 'Iniciar sesión', register: 'Registrarse', email: 'Correo', password: 'Contraseña', name: 'Nombre', username: 'Usuario', noAccount: '¿No tienes cuenta?', hasAccount: '¿Ya tienes cuenta?', loginHere: 'Inicia aquí', registerHere: 'Regístrate aquí', createAccount: 'Crea tu cuenta', loginSubtitle: 'Inicia sesión para continuar', registering: 'Registrando...', logging: 'Iniciando sesión...' },
     community: { title: 'Comunidad', share: 'Comparte tus pensamientos con la comunidad', placeholder: '¿Qué quieres compartir?', post: 'Publicar', comment: 'Comentar...', send: 'Enviar', noPosts: '¡Aún no hay publicaciones. Sé el primero!' },
@@ -65,7 +65,7 @@ const translations = {
     welcome: { morning: 'Buenos Días', afternoon: 'Buenas Tardes', evening: 'Buenas Noches' }
   },
   fr: {
-    nav: { home: 'Accueil', community: 'Communauté', friends: 'Amis', marketplace: 'Marché', jobs: 'Emplois', courses: 'Cours', housing: 'Logements', profile: 'Profil', notifications: 'Notifications', history: 'Historique', admin: 'Admin', logout: 'Déconnexion' },
+    nav: { home: 'Accueil', community: 'Communauté', friends: 'Amis', marketplace: 'Marché', jobs: 'Emplois', courses: 'Cours', housing: 'Logements', profile: 'Profil', notifications: 'Notifications', history: 'Historique', admin: 'Admin', logout: 'Déconnexion', aiChat: 'AI Chat', videoMaker: 'Créateur Vidéo', more: 'Plus' },
     home: { welcome: 'Bienvenue sur Happiness App!', subtitle: 'Ravi de vous voir,', desc: 'Votre plateforme européenne de bonheur et de connexion' },
     auth: { login: 'Connexion', register: "S'inscrire", email: 'E-mail', password: 'Mot de passe', name: 'Nom', username: "Nom d'utilisateur", noAccount: 'Pas encore de compte?', hasAccount: 'Déjà un compte?', loginHere: 'Connectez-vous ici', registerHere: 'Inscrivez-vous ici', createAccount: 'Créez votre compte', loginSubtitle: 'Connectez-vous pour continuer', registering: 'Inscription...', logging: 'Connexion...' },
     community: { title: 'Communauté', share: 'Partagez vos pensées avec la communauté', placeholder: 'Que voulez-vous partager?', post: 'Publier', comment: 'Commenter...', send: 'Envoyer', noPosts: "Aucune publication. Soyez le premier!" },
@@ -86,7 +86,7 @@ const translations = {
     welcome: { morning: 'Bonjour', afternoon: 'Bon Après-midi', evening: 'Bonsoir' }
   },
   it: {
-    nav: { home: 'Home', community: 'Community', friends: 'Amici', marketplace: 'Mercato', jobs: 'Lavori', courses: 'Corsi', housing: 'Alloggi', profile: 'Profilo', notifications: 'Notifiche', history: 'Cronologia', admin: 'Admin', logout: 'Esci' },
+    nav: { home: 'Home', community: 'Community', friends: 'Amici', marketplace: 'Mercato', jobs: 'Lavori', courses: 'Corsi', housing: 'Alloggi', profile: 'Profilo', notifications: 'Notifiche', history: 'Cronologia', admin: 'Admin', logout: 'Esci', aiChat: 'AI Chat', videoMaker: 'Creatore Video', more: 'Altro' },
     home: { welcome: 'Benvenuto nella Happiness App!', subtitle: 'Felice di averti qui,', desc: 'La tua piattaforma europea per la felicità e la connessione' },
     auth: { login: 'Accedi', register: 'Registrati', email: 'Email', password: 'Password', name: 'Nome', username: 'Username', noAccount: 'Non hai un account?', hasAccount: 'Hai già un account?', loginHere: 'Accedi qui', registerHere: 'Registrati qui', createAccount: 'Crea il tuo account', loginSubtitle: 'Accedi per continuare', registering: 'Registrazione...', logging: 'Accesso...' },
     community: { title: 'Community', share: 'Condividi i tuoi pensieri con la community', placeholder: 'Cosa vuoi condividere?', post: 'Pubblica', comment: 'Commenta...', send: 'Invia', noPosts: 'Nessun post ancora. Sii il primo!' },
@@ -107,7 +107,7 @@ const translations = {
     welcome: { morning: 'Buongiorno', afternoon: 'Buon Pomeriggio', evening: 'Buonasera' }
   },
   nl: {
-    nav: { home: 'Home', community: 'Community', friends: 'Vrienden', marketplace: 'Marktplaats', jobs: 'Banen', courses: 'Cursussen', housing: 'Woningen', profile: 'Profiel', notifications: 'Meldingen', history: 'Geschiedenis', admin: 'Admin', logout: 'Uitloggen' },
+    nav: { home: 'Home', community: 'Community', friends: 'Vrienden', marketplace: 'Marktplaats', jobs: 'Banen', courses: 'Cursussen', housing: 'Woningen', profile: 'Profiel', notifications: 'Meldingen', history: 'Geschiedenis', admin: 'Admin', logout: 'Uitloggen', aiChat: 'AI Chat', videoMaker: 'Video Maker', more: 'Meer' },
     home: { welcome: 'Welkom bij de Happiness App!', subtitle: 'Fijn dat je er bent,', desc: 'Jouw Europese platform voor geluk en verbinding' },
     auth: { login: 'Inloggen', register: 'Registreren', email: 'E-mail', password: 'Wachtwoord', name: 'Naam', username: 'Gebruikersnaam', noAccount: 'Nog geen account?', hasAccount: 'Al een account?', loginHere: 'Log hier in', registerHere: 'Registreer hier', createAccount: 'Maak je account aan', loginSubtitle: 'Log in om verder te gaan', registering: 'Registreren...', logging: 'Inloggen...' },
     community: { title: 'Community', share: 'Deel je gedachten met de community', placeholder: 'Wat wil je delen?', post: 'Plaatsen', comment: 'Reageren...', send: 'Verzenden', noPosts: 'Nog geen berichten. Wees de eerste!' },
