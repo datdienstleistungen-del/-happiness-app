@@ -9,6 +9,7 @@ import FriendsPage from './pages/FriendsPage'
 import MarketplacePage from './pages/MarketplacePage'
 import JobsPage from './pages/JobsPage'
 import CoursesPage from './pages/CoursesPage'
+import HousingPage from './pages/HousingPage'
 import ProfilePage from './pages/ProfilePage'
 import NotificationsPage from './pages/NotificationsPage'
 import HistoryPage from './pages/HistoryPage'
@@ -39,6 +40,7 @@ function Navbar() {
     { to: '/marketplace', label: `🛒 ${t('nav.marketplace')}` },
     { to: '/jobs', label: `💼 ${t('nav.jobs')}` },
     { to: '/courses', label: `📚 ${t('nav.courses')}` },
+    { to: '/housing', label: `🏠 ${t('nav.housing')}` },
     { to: '/profile', label: `👤 ${t('nav.profile')}` },
     { to: '/notifications', label: `🔔 ${t('nav.notifications')}` },
     { to: '/history', label: `📜 ${t('nav.history')}` },
@@ -142,8 +144,9 @@ export default function App() {
                 <Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
                 <Route path="/marketplace" element={<ProtectedRoute><MarketplacePage /></ProtectedRoute>} />
                 <Route path="/jobs" element={<ProtectedRoute><JobsPage /></ProtectedRoute>} />
-                <Route path="/courses" element={<ProtectedRoute><CoursesPage /></ProtectedRoute>} />
-                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/courses" element={<ProtectedRoute><CoursesPage /></ProtectedRoute>} />
+          <Route path="/housing" element={<ProtectedRoute><HousingPage /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
                 <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
@@ -199,6 +202,11 @@ function HomePage() {
           <span className="dash-icon">📚</span>
           <h3>{t('nav.courses')}</h3>
           <p>{t('courses.browse')}</p>
+        </Link>
+        <Link to="/housing" className="dash-card">
+          <span className="dash-icon">🏠</span>
+          <h3>{t('nav.housing')}</h3>
+          <p>{t('housing.subtitle')}</p>
         </Link>
         <Link to="/profile" className="dash-card">
           <span className="dash-icon">👤</span>
