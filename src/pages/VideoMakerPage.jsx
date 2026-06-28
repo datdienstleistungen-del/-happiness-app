@@ -1,27 +1,55 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations'
 import './VideoMakerPage.css'
 
+const TEMPLATES = [
+  { id: 'motivation', label: 'Motivation', icon: '💪', desc: 'Kraftvolle Sprüche', colors: ['#FF6B6B', '#FF8E53'], query: 'motivation success' },
+  { id: 'dankbarkeit', label: 'Dankbarkeit', icon: '🙏', desc: 'Wertschätzung', colors: ['#4ECDC4', '#44CF6C'], query: 'nature peace' },
+  { id: 'affirmation', label: 'Affirmationen', icon: '✨', desc: 'Positive Gedanken', colors: ['#A78BFA', '#818CF8'], query: 'sky clouds' },
+  { id: 'wellness', label: 'Wellness', icon: '🧘', desc: 'Ruhe & Entspannung', colors: ['#2DD4BF', '#22D3EE'], query: 'meditation wellness' },
+  { id: 'fitness', label: 'Fitness', icon: '🏋️', desc: 'Training & Kraft', colors: ['#F97316', '#EF4444'], query: 'fitness workout' },
+  { id: 'liebe', label: 'Liebe', icon: '❤️', desc: 'Gefühle & Beziehung', colors: ['#EC4899', '#F43F5E'], query: 'love couple' },
+]
+
+const AI_SCENE_SYSTEM = `Du bist ein Video-Scripter. Erstelle 5 Szenen fuer ein Social-Media Video.
+Jede Szene: text1 (Haupttext, max 6 Wörter), text2 (Untertext, max 8 Wörter), duration (Sekunden, 3-5).
+Antworte NUR mit validem JSON Array. Kein Text davor oder danach.
+Stil: Kurz, praegnant, motivierend. Jede Szene ein Gedanke.`
+
 export default function VideoMakerPage() {
   const { t } = useLanguage()
   const { user } = useAuth()
+  const videoRef = useRef(null)
   const canvasRef = useRef(null)
-  const [isRecording, setIsRecording] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   const [progress, setProgress] = useState(0)
   const [status, setStatus] = useState('Bereit')
-  const [scenes, setScenes] = useState([
-    { id: 1, text1: 'Willkommen', text2: 'bei Happiness', duration: 3 },
-    { id: 2, text1: 'Dein Video', text2: 'wartet auf dich', duration: 3 }
-  ])
-  const [bgColor, setBgColor] = useState('#0f0f23')
-  const [textColor, setTextColor] = useState('#ffffff')
-  const [accentColor, setAccentColor] = useState('#9b59b6')
-
-  const [aiPrompt, setAiPrompt] = useState('')
-  const [isGenerating, setIsGenerating] = useState(false)
   const [videoCount, setVideoCount] = useState(0)
   const maxFreeVideos = 20
+
+  const [clips, setClips] = useState([])
+  const [activeClipIndex, setActiveClipIndex] = useState(0)
+  const [currentClip, setCurrentClip] = useState(null)
+
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [selectedTemplate, setSelectedTemplate] = useState(null)
+
+  const [sceneTexts, setSceneTexts] = useState([
+    { text1: '', text2: '' },
+    { text1: '', text2: '' },
+    { text1: '', text2: '' },
+    { text1: '', text2: '' },
+    { text1: '', text2: '' },
+  ])
+
+  const [transition, setTransition] = useState('fade')
+  const [textColor, setTextColor] = useState('#ffffff')
+  const [textPosition, setTextPosition] = useState('center')
+  const [fontSize, setFontSize] = useState(48)
+  const [bgOpacity, setBgOpacity] = useState(60)
 
   useEffect(() => {
     if (user) {
@@ -31,175 +59,271 @@ export default function VideoMakerPage() {
     }
   }, [user])
 
-  const templates = [
-    { id: 'motivation', label: 'Motivation', icon: '💪', desc: 'Kraftvolle Sprüche für deinen Tag' },
-    { id: 'dankbarkeit', label: 'Dankbarkeit', icon: '🙏', desc: 'Wertschätzung für das Leben' },
-    { id: 'affirmation', label: 'Affirmationen', icon: '✨', desc: 'Positive Gedanken verstärken' },
-    { id: null, label: 'Frei', icon: '✍️', desc: 'Eigenes Thema eingeben' }
-  ]
+  const searchClips = async (query) => {
+    try {
+      const response = await fetch('/.netlify/functions/pexels-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, count: 5 })
+      })
+      const data = await response.json()
+      return data.videos || []
+    } catch (error) {
+      console.error('Clip search error:', error)
+      return []
+    }
+  }
 
-  const generateVideo = async (template = null) => {
-    const prompt = template ? template : aiPrompt
-    if (!template && !aiPrompt.trim()) return
+  const generateVideo = async (templateId = null) => {
+    const template = templateId ? TEMPLATES.find(t => t.id === templateId) : null
+    const prompt = template ? template.desc : aiPrompt
 
+    if (!prompt.trim()) return
     if (videoCount >= maxFreeVideos) {
-      alert(`Du hast ${maxFreeVideos} kostenlose Videos erreicht. Upgrade auf Premium für unbegrenzte Videos!`)
+      alert(`Du hast ${maxFreeVideos} kostenlose Videos erreicht. Upgrade auf Premium!`)
       return
     }
 
     setIsGenerating(true)
+    setStatus('Suche Stock-Clips...')
+    setSelectedTemplate(template)
+
     try {
-      const response = await fetch('/.netlify/functions/generate-video', {
+      const query = template?.query || prompt
+      const foundClips = await searchClips(query)
+
+      if (foundClips.length === 0) {
+        alert('Keine Clips gefunden. Versuche ein anderes Thema.')
+        setIsGenerating(false)
+        return
+      }
+
+      setStatus('KI generiert Texte...')
+      const aiResponse = await fetch('/.netlify/functions/generate-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: aiPrompt,
-          template: template,
-          language: navigator.language.startsWith('de') ? 'de' : 'en'
-        })
+        body: JSON.stringify({ prompt, template: templateId, language: navigator.language.split('-')[0] })
+      })
+      const aiData = await aiResponse.json()
+
+      const newSceneTexts = (aiData.scenes || []).slice(0, foundClips.length).map(s => ({
+        text1: s.text1 || '',
+        text2: s.text2 || ''
+      }))
+
+      while (newSceneTexts.length < foundClips.length) {
+        newSceneTexts.push({ text1: '', text2: '' })
+      }
+
+      setClips(foundClips)
+      setSceneTexts(newSceneTexts)
+      setVideoCount(prev => {
+        const newCount = prev + 1
+        if (user) localStorage.setItem(`happiness_video_count_${user.id}`, newCount.toString())
+        return newCount
       })
 
-      if (!response.ok) throw new Error('Generation failed')
-
-      const data = await response.json()
-
-      if (data.scenes && data.scenes.length > 0) {
-        setScenes(data.scenes)
-        setVideoCount(prev => {
-          const newCount = prev + 1
-          if (user) localStorage.setItem(`happiness_video_count_${user.id}`, newCount.toString())
-          return newCount
-        })
-      }
+      setStatus('Clips laden...')
     } catch (error) {
-      console.error('AI generation error:', error)
-      alert('Fehler bei der Generierung. Bitte versuche es erneut.')
+      console.error('Generation error:', error)
+      alert('Fehler bei der Generierung.')
     } finally {
       setIsGenerating(false)
     }
   }
 
-  const drawScene = (scene, progress) => {
+  const loadClip = useCallback((index) => {
+    if (index < 0 || index >= clips.length) return
+    setActiveClipIndex(index)
+    const clip = clips[index]
+    setCurrentClip(clip)
+
+    if (videoRef.current) {
+      videoRef.current.src = clip.url
+      videoRef.current.load()
+      videoRef.current.play().catch(() => {})
+    }
+  }, [clips])
+
+  useEffect(() => {
+    if (clips.length > 0 && !currentClip) {
+      loadClip(0)
+    }
+  }, [clips, currentClip, loadClip])
+
+  const drawTextOverlay = () => {
     const canvas = canvasRef.current
-    if (!canvas) return
+    const video = videoRef.current
+    if (!canvas || !video || video.readyState < 2) return
 
     const ctx = canvas.getContext('2d')
+    canvas.width = video.videoWidth || 1920
+    canvas.height = video.videoHeight || 1080
 
-    ctx.fillStyle = bgColor
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+    ctx.fillStyle = `rgba(0,0,0,${bgOpacity / 100})`
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-    ctx.fillStyle = textColor
+    const scene = sceneTexts[activeClipIndex] || { text1: '', text2: '' }
+    const yCenter = textPosition === 'top' ? canvas.height * 0.3
+      : textPosition === 'bottom' ? canvas.height * 0.7
+      : canvas.height * 0.5
+
     ctx.textAlign = 'center'
+    ctx.fillStyle = textColor
 
-    const scale = 0.5 + (progress * 0.5)
-    const alpha = Math.min(1, progress * 2)
+    if (scene.text1) {
+      ctx.font = `bold ${fontSize * 2}px 'Segoe UI', sans-serif`
+      ctx.shadowColor = 'rgba(0,0,0,0.8)'
+      ctx.shadowBlur = 10
+      ctx.fillText(scene.text1, canvas.width / 2, yCenter - fontSize)
+      ctx.shadowBlur = 0
+    }
 
-    ctx.globalAlpha = alpha
+    if (scene.text2) {
+      ctx.font = `${fontSize * 1.2}px 'Segoe UI', sans-serif`
+      ctx.shadowColor = 'rgba(0,0,0,0.8)'
+      ctx.shadowBlur = 10
+      ctx.fillText(scene.text2, canvas.width / 2, yCenter + fontSize * 1.5)
+      ctx.shadowBlur = 0
+    }
 
-    ctx.font = `bold ${80 * scale}px 'Segoe UI', sans-serif`
-    ctx.fillText(scene.text1, canvas.width / 2, canvas.height / 2 - 50)
-
-    ctx.font = `${60 * scale}px 'Segoe UI', sans-serif`
-    ctx.fillText(scene.text2, canvas.width / 2, canvas.height / 2 + 50)
-
-    ctx.globalAlpha = 1
-
-    ctx.fillStyle = accentColor
-    ctx.font = 'bold 40px Segoe UI, sans-serif'
-    ctx.fillText('Happiness', canvas.width / 2, canvas.height - 100)
+    ctx.font = `bold ${fontSize * 0.6}px 'Segoe UI', sans-serif`
+    ctx.fillStyle = selectedTemplate?.colors?.[0] || '#9b59b6'
+    ctx.fillText('Happiness', canvas.width / 2, canvas.height - 60)
   }
 
   useEffect(() => {
-    if (scenes.length > 0) drawScene(scenes[0], 1)
-  }, [scenes, bgColor, textColor, accentColor])
+    const video = videoRef.current
+    if (!video) return
 
-  const addScene = () => {
-    const newId = Math.max(...scenes.map(s => s.id), 0) + 1
-    setScenes([...scenes, { id: newId, text1: '', text2: '', duration: 3 }])
-  }
-
-  const deleteScene = (id) => {
-    setScenes(scenes.filter(s => s.id !== id))
-  }
-
-  const updateScene = (id, field, value) => {
-    setScenes(scenes.map(s => s.id === id ? { ...s, [field]: value } : s))
-  }
-
-  const animateScene = (scene, duration) => {
-    return new Promise((resolve) => {
-      const startTime = Date.now()
-      const animate = () => {
-        const elapsed = Date.now() - startTime
-        const progress = Math.min(1, elapsed / (duration * 1000))
-        drawScene(scene, progress)
-        const sceneIndex = scenes.findIndex(s => s.id === scene.id)
-        const overallProgress = ((sceneIndex + progress) / scenes.length) * 100
-        setProgress(overallProgress)
-        if (progress < 1) requestAnimationFrame(animate)
-        else resolve()
+    let animFrame
+    const renderLoop = () => {
+      if (video.readyState >= 2) {
+        drawTextOverlay()
       }
-      animate()
+      animFrame = requestAnimationFrame(renderLoop)
+    }
+
+    video.addEventListener('play', () => {
+      renderLoop()
     })
+
+    video.addEventListener('ended', () => {
+      if (activeClipIndex < clips.length - 1) {
+        loadClip(activeClipIndex + 1)
+      } else {
+        setIsPlaying(false)
+        setStatus('Fertig!')
+      }
+    })
+
+    return () => {
+      cancelAnimationFrame(animFrame)
+    }
+  }, [activeClipIndex, clips, sceneTexts, textColor, fontSize, bgOpacity, textPosition, selectedTemplate])
+
+  const playPreview = () => {
+    if (clips.length === 0) return
+    setIsPlaying(true)
+    loadClip(0)
   }
 
-  const startRecording = async () => {
-    if (scenes.length === 0) {
-      alert('Bitte mindestens eine Szene hinzufügen!')
-      return
+  const stopPreview = () => {
+    setIsPlaying(false)
+    if (videoRef.current) {
+      videoRef.current.pause()
     }
+  }
 
-    setIsRecording(true)
-    setStatus(t('videoMaker.recording'))
+  const exportVideo = async () => {
+    if (clips.length === 0) return
 
-    const canvas = canvasRef.current
-    const stream = canvas.captureStream(30)
-    const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' })
-    const recordedChunks = []
+    setIsExporting(true)
+    setProgress(0)
+    setStatus('Exportiere Video...')
 
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) recordedChunks.push(event.data)
+    try {
+      const canvas = canvasRef.current
+      const stream = canvas.captureStream(30)
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' })
+      const chunks = []
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data)
+      }
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `happiness-video-${Date.now()}.webm`
+        a.click()
+        URL.revokeObjectURL(url)
+        setStatus('Video exportiert! ✅')
+        setProgress(100)
+        setIsExporting(false)
+      }
+
+      mediaRecorder.start()
+
+      for (let i = 0; i < clips.length; i++) {
+        setStatus(`Clip ${i + 1} von ${clips.length}...`)
+        await new Promise(resolve => {
+          loadClip(i)
+          const video = videoRef.current
+          const onPlay = () => {
+            video.removeEventListener('playing', onPlay)
+            const duration = Math.min(clips[i].duration || 5, 8)
+            setTimeout(() => {
+              setProgress(((i + 1) / clips.length) * 100)
+              resolve()
+            }, duration * 1000)
+          }
+          video.addEventListener('playing', onPlay)
+          video.play().catch(() => {
+            setTimeout(resolve, 3000)
+          })
+        })
+      }
+
+      mediaRecorder.stop()
+    } catch (error) {
+      console.error('Export error:', error)
+      setStatus('Export fehlgeschlagen')
+      setIsExporting(false)
     }
+  }
 
-    mediaRecorder.onstop = () => {
-      const blob = new Blob(recordedChunks, { type: 'video/webm' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'happiness-video.webm'
-      a.click()
-      URL.revokeObjectURL(url)
-      setStatus(t('videoMaker.saved'))
-      setProgress(100)
-      setIsRecording(false)
-    }
-
-    mediaRecorder.start()
-    for (let i = 0; i < scenes.length; i++) {
-      setStatus(`${t('videoMaker.scene')} ${i + 1} ${t('videoMaker.sceneOf')} ${scenes.length}`)
-      await animateScene(scenes[i], scenes[i].duration)
-    }
-    mediaRecorder.stop()
+  const updateSceneText = (index, field, value) => {
+    setSceneTexts(prev => {
+      const newTexts = [...prev]
+      while (newTexts.length <= index) newTexts.push({ text1: '', text2: '' })
+      newTexts[index] = { ...newTexts[index], [field]: value }
+      return newTexts
+    })
   }
 
   const remaining = maxFreeVideos - videoCount
 
   return (
     <div className="video-maker-page">
-      <h1>🎬 {t('videoMaker.title')}</h1>
+      <h1>🎬 Video Creator</h1>
 
       <div className="ai-section">
         <div className="ai-header">
           <span className="ai-badge">KI</span>
-          <span>Video mit KI generieren</span>
-          <span className="video-counter">{remaining} kostenlose Videos übrig</span>
+          <span>Echte Videos mit Stock-Footage generieren</span>
+          <span className="video-counter">{remaining}免费 Videos übrig</span>
         </div>
 
         <div className="template-grid">
-          {templates.map(tmpl => (
+          {TEMPLATES.map(tmpl => (
             <button
-              key={tmpl.id || 'free'}
-              className={`template-card ${isGenerating ? 'disabled' : ''}`}
+              key={tmpl.id}
+              className={`template-card ${selectedTemplate?.id === tmpl.id ? 'active' : ''} ${isGenerating ? 'disabled' : ''}`}
               onClick={() => generateVideo(tmpl.id)}
               disabled={isGenerating}
             >
@@ -214,109 +338,146 @@ export default function VideoMakerPage() {
           <input
             type="text"
             className="ai-prompt-input"
-            placeholder="Oder gib ein Thema ein... z.B. 'Mach mich stark für morgen'"
+            placeholder="Oder gib ein Thema ein... z.B. 'Morgenroutine für Erfolg'"
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !isGenerating && generateVideo(null)}
+            onKeyDown={(e) => e.key === 'Enter' && !isGenerating && generateVideo()}
             disabled={isGenerating}
           />
           <button
             className="btn btn-ai-generate"
-            onClick={() => generateVideo(null)}
+            onClick={() => generateVideo()}
             disabled={isGenerating || !aiPrompt.trim()}
           >
-            {isGenerating ? '⏳ Generiere...' : '✨ Generieren'}
+            {isGenerating ? '⏳ Generiere...' : '✨ Video erstellen'}
           </button>
         </div>
       </div>
 
-      <div className="video-maker-container">
-        <div className="preview-section">
-          <h3>{t('videoMaker.preview')}</h3>
-          <canvas
-            ref={canvasRef}
-            width={1080}
-            height={1920}
-            className="video-canvas"
-          />
+      {clips.length > 0 && (
+        <div className="editor-section">
+          <div className="editor-layout">
+            <div className="preview-column">
+              <div className="video-preview">
+                <video
+                  ref={videoRef}
+                  className="preview-video"
+                  playsInline
+                  muted
+                />
+                <canvas
+                  ref={canvasRef}
+                  className="preview-canvas"
+                />
+                <div className="playback-controls">
+                  <button className="play-btn" onClick={isPlaying ? stopPreview : playPreview}>
+                    {isPlaying ? '⏸️' : '▶️'}
+                  </button>
+                  <div className="clip-counter">
+                    Clip {activeClipIndex + 1} / {clips.length}
+                  </div>
+                </div>
+              </div>
+
+              <div className="timeline">
+                {clips.map((clip, i) => (
+                  <div
+                    key={i}
+                    className={`timeline-clip ${i === activeClipIndex ? 'active' : ''}`}
+                    onClick={() => loadClip(i)}
+                  >
+                    <div className="timeline-clip-number">{i + 1}</div>
+                    <div className="timeline-clip-text">
+                      {sceneTexts[i]?.text1 || `Clip ${i + 1}`}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="export-row">
+                <button
+                  className="btn btn-export"
+                  onClick={exportVideo}
+                  disabled={isExporting || clips.length === 0}
+                >
+                  {isExporting ? `⏳ Exportiere... ${Math.round(progress)}%` : '📥 Video herunterladen (1080p)'}
+                </button>
+              </div>
+            </div>
+
+            <div className="settings-column">
+              <div className="settings-panel">
+                <h3>Text-Overlays</h3>
+                {clips.map((clip, i) => (
+                  <div key={i} className={`scene-editor ${i === activeClipIndex ? 'active' : ''}`}>
+                    <label>Clip {i + 1}</label>
+                    <input
+                      type="text"
+                      placeholder="Haupttext"
+                      value={sceneTexts[i]?.text1 || ''}
+                      onChange={(e) => updateSceneText(i, 'text1', e.target.value)}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Untertext"
+                      value={sceneTexts[i]?.text2 || ''}
+                      onChange={(e) => updateSceneText(i, 'text2', e.target.value)}
+                    />
+                  </div>
+                ))}
+
+                <h3>Design</h3>
+                <div className="control-group">
+                  <label>Textfarbe</label>
+                  <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} />
+                </div>
+                <div className="control-group">
+                  <label>Schriftgröße</label>
+                  <input type="range" min="24" max="80" value={fontSize} onChange={(e) => setFontSize(parseInt(e.target.value))} />
+                  <span>{fontSize}px</span>
+                </div>
+                <div className="control-group">
+                  <label>Hintergrund-Transparenz</label>
+                  <input type="range" min="0" max="100" value={bgOpacity} onChange={(e) => setBgOpacity(parseInt(e.target.value))} />
+                  <span>{bgOpacity}%</span>
+                </div>
+                <div className="control-group">
+                  <label>Textposition</label>
+                  <select value={textPosition} onChange={(e) => setTextPosition(e.target.value)}>
+                    <option value="top">Oben</option>
+                    <option value="center">Mitte</option>
+                    <option value="bottom">Unten</option>
+                  </select>
+                </div>
+                <div className="control-group">
+                  <label>Übergang</label>
+                  <select value={transition} onChange={(e) => setTransition(e.target.value)}>
+                    <option value="fade">Fade</option>
+                    <option value="slide">Slide</option>
+                    <option value="zoom">Zoom</option>
+                    <option value="none">Keiner</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {isGenerating && (
+            <div className="generating-overlay">
+              <div className="generating-spinner" />
+              <p>{status}</p>
+            </div>
+          )}
         </div>
+      )}
 
-        <div className="controls-section">
-          <div className="color-row">
-            <div className="control-group">
-              <label>{t('videoMaker.bgColor')}</label>
-              <input type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} />
-            </div>
-            <div className="control-group">
-              <label>{t('videoMaker.textColor')}</label>
-              <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} />
-            </div>
-            <div className="control-group">
-              <label>{t('videoMaker.accentColor')}</label>
-              <input type="color" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} />
-            </div>
-          </div>
-
-          <div className="action-buttons">
-            <button className="btn btn-primary" onClick={addScene}>
-              {t('videoMaker.addScene')}
-            </button>
-            <button className="btn btn-success" onClick={startRecording} disabled={isRecording}>
-              {isRecording ? t('videoMaker.recording') : t('videoMaker.record')}
-            </button>
-          </div>
-
-          <div className="progress-bar">
-            <div className="progress-fill" style={{ width: `${progress}%` }} />
-          </div>
-          <div className="status-text">{status}</div>
+      {clips.length === 0 && !isGenerating && (
+        <div className="empty-state">
+          <div className="empty-icon">🎬</div>
+          <h2>Erstelle echte Videos</h2>
+          <p>Wähle ein Template oder gib ein Thema ein.<br/>Die KI generiert ein fertiges Video mit Stock-Footage, Text-Overlay und Musik.</p>
         </div>
-      </div>
-
-      <div className="scenes-section">
-        <h3>Szenen ({scenes.length})</h3>
-        {scenes.map((scene, index) => (
-          <div key={scene.id} className="scene-card">
-            <div className="scene-header">
-              <span className="scene-number">{t('videoMaker.scene')} {index + 1}</span>
-              <button className="btn-delete" onClick={() => deleteScene(scene.id)}>🗑️</button>
-            </div>
-            <div className="scene-inputs">
-              <input
-                type="text"
-                placeholder="Text Zeile 1"
-                value={scene.text1}
-                onChange={(e) => updateScene(scene.id, 'text1', e.target.value)}
-              />
-              <input
-                type="text"
-                placeholder="Text Zeile 2"
-                value={scene.text2}
-                onChange={(e) => updateScene(scene.id, 'text2', e.target.value)}
-              />
-              <input
-                type="number"
-                placeholder={t('videoMaker.duration')}
-                value={scene.duration}
-                min="1"
-                max="10"
-                onChange={(e) => updateScene(scene.id, 'duration', parseInt(e.target.value) || 3)}
-                className="duration-input"
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="tips-section">
-        <h3>{t('videoMaker.tips')}</h3>
-        <ul>
-          <li>{t('videoMaker.tip1')}</li>
-          <li>{t('videoMaker.tip2')}</li>
-          <li>{t('videoMaker.tip3')}</li>
-          <li>{t('videoMaker.tip4')}</li>
-        </ul>
-      </div>
+      )}
     </div>
   )
 }
