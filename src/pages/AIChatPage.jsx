@@ -437,8 +437,8 @@ WENN DU NICHT ANTWORTEN KANNST:
 
               <div className="paywall-iban">
                 <p className="iban-label">Überweise an:</p>
-                <p className="iban-number">DE89 3704 0044 0532 0130 00</p>
-                <p className="iban-name">Happiness GmbH</p>
+                <p className="iban-number">DE95 1101 0101 5620 5272 07</p>
+                <p className="iban-name">Harro Goerndt</p>
                 <p className="iban-text">Verwendungszweck: <strong>{user?.email}</strong></p>
               </div>
 
