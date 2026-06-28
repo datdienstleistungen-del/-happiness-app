@@ -38,16 +38,14 @@ function Navbar() {
   const links = [
     { to: '/', label: `🏠 ${t('nav.home')}` },
     { to: '/community', label: `💬 ${t('nav.community')}` },
+    { to: '/ai-chat', label: `🤖 ${t('nav.aiChat')}` },
     { to: '/friends', label: `👥 ${t('nav.friends')}` },
     { to: '/marketplace', label: `🛒 ${t('nav.marketplace')}` },
     { to: '/jobs', label: `💼 ${t('nav.jobs')}` },
     { to: '/courses', label: `📚 ${t('nav.courses')}` },
     { to: '/housing', label: `🏠 ${t('nav.housing')}` },
-    { to: '/profile', label: `👤 ${t('nav.profile')}` },
-    { to: '/notifications', label: `🔔 ${t('nav.notifications')}` },
     { to: '/video-maker', label: `🎬 ${t('nav.videoMaker')}` },
-    { to: '/ai-chat', label: `🤖 ${t('nav.aiChat')}` },
-    { to: '/history', label: `📜 ${t('nav.history')}` },
+    { to: '/notifications', label: `🔔 ${t('nav.notifications')}` },
   ]
 
   if (profile?.role === 'admin') {
