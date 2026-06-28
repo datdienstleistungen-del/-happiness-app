@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Happiness TikTok — Kurz & Knackig</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #1a1a2e; color: white; font-family: 'Segoe UI', system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
+h1 { margin-bottom: 10px; font-size: 1.5rem; }
+p { color: #a0a0b0; margin-bottom: 20px; }
+canvas { border: 2px solid #9b59b6; border-radius: 12px; max-width: 100%; }
+.controls { margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+button { padding: 12px 24px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-record { background: #e74c3c; color: white; }
+.btn-record:hover { background: #c0392b; }
+.btn-record.recording { animation: pulse 1s infinite; }
+.btn-stop { background: #636e72; color: white; }
+.btn-stop:hover { background: #2d3436; }
+.btn-download { background: #00b894; color: white; }
+.btn-download:hover { background: #00a884; }
+.btn-preview { background: #6c5ce7; color: white; }
+.btn-preview:hover { background: #5a4bd1; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+.status { margin-top: 12px; color: #a29bfe; font-size: 0.9rem; }
+.preview-info { color: #fdcb6e; margin-top: 10px; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+
+<h1>🎬 Happiness TikTok — Kurz & Knackig</h1>
+<p>~20 Sekunden · 7 Szenen · Schnelle Schnitte</p>
+
+<canvas id="canvas" width="1080" height="1920"></canvas>
+
+<div class="controls">
+  <button class="btn-preview" onclick="previewSlideshow()">▶ Vorschau</button>
+  <button class="btn-record" id="recBtn" onclick="startRecording()">⏺ Aufnahme starten</button>
+  <button class="btn-stop" onclick="stopRecording()">⏹ Stopp</button>
+  <button class="btn-download" id="dlBtn" onclick="downloadVideo()" disabled>💾 Video runterladen</button>
+</div>
+<div class="status" id="status">Bereit.</div>
+<div class="preview-info">💡 Zuerst Vorschau, dann aufnehmen.</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let mediaRecorder;
+let chunks = [];
+let recording = false;
+
+const scenes = [
+  { bg: '#000000', text: 'Facebook.\nGoogle.\nTikTok.', color: '#ff6b6b', duration: 1800, font: 80, bold: true },
+  { bg: '#000000', text: 'Sie wissen\nalles über dich.', color: '#ffffff', duration: 1800, font: 72 },
+  { bg: '#6c5ce7', text: 'HAPPINESS', color: '#ffffff', duration: 1200, font: 130, bold: true },
+  { bg: '#1a1a2e', text: '🇪🇺', color: '#ffffff', duration: 1000, font: 200 },
+  { bg: '#000000', text: 'Deine Daten.\nDein Leben.\nKein Verkauf.', color: '#00b894', duration: 2200, font: 64 },
+  { bg: '#000000', text: '✨ KI-Chat\nWie ChatGPT.\nKostenlos.', color: '#a29bfe', duration: 2200, font: 64 },
+  { bg: '#000000', text: 'Link in Bio 👆', color: '#ffffff', duration: 2000, font: 80, bold: true },
+];
+
+function drawScene(scene) {
+  ctx.fillStyle = scene.bg;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = scene.color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `${scene.bold ? 'bold ' : ''}${scene.font}px 'Segoe UI', system-ui, sans-serif`;
+
+  const lines = scene.text.split('\n');
+  const lineHeight = scene.font * 1.3;
+  const totalHeight = lines.length * lineHeight;
+  const startY = (canvas.height - totalHeight) / 2 + lineHeight / 2;
+
+  lines.forEach((line, i) => {
+    ctx.fillText(line, canvas.width / 2, startY + i * lineHeight);
+  });
+}
+
+let previewTimeout;
+
+function previewSlideshow() {
+  clearTimeout(previewTimeout);
+  let i = 0;
+
+  function showNext() {
+    if (i >= scenes.length) {
+      document.getElementById('status').textContent = 'Vorschau beendet.';
+      return;
+    }
+    drawScene(scenes[i]);
+    document.getElementById('status').textContent = `Vorschau: Szene ${i + 1}/${scenes.length}`;
+    previewTimeout = setTimeout(() => {
+      i++;
+      showNext();
+    }, scenes[i - 1].duration);
+  }
+  showNext();
+}
+
+function startRecording() {
+  chunks = [];
+  const stream = canvas.captureStream(30);
+  mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+
+  mediaRecorder.ondataavailable = (e) => {
+    if (e.data.size > 0) chunks.push(e.data);
+  };
+
+  mediaRecorder.onstop = () => {
+    document.getElementById('dlBtn').disabled = false;
+    document.getElementById('status').textContent = '✅ Fertig! Video runterladen.';
+  };
+
+  mediaRecorder.start();
+  recording = true;
+  document.getElementById('recBtn').classList.add('recording');
+  document.getElementById('recBtn').textContent = '⏺ Nimmt auf...';
+  document.getElementById('dlBtn').disabled = true;
+
+  let i = 0;
+  function playNext() {
+    if (i >= scenes.length || !recording) {
+      stopRecording();
+      return;
+    }
+    drawScene(scenes[i]);
+    document.getElementById('status').textContent = `⏺ Szene ${i + 1}/${scenes.length}`;
+    setTimeout(() => {
+      i++;
+      playNext();
+    }, scenes[i - 1].duration);
+  }
+  playNext();
+}
+
+function stopRecording() {
+  recording = false;
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+  document.getElementById('recBtn').classList.remove('recording');
+  document.getElementById('recBtn').textContent = '⏺ Aufnahme starten';
+}
+
+function downloadVideo() {
+  const blob = new Blob(chunks, { type: 'video/webm' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'happiness-tiktok-kurz.webm';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+drawScene(scenes[0]);
+</script>
+</body>
+</html>
