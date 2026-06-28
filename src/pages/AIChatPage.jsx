@@ -15,6 +15,7 @@ export default function AIChatPage() {
   const [showProfile, setShowProfile] = useState(false)
   const [questionCount, setQuestionCount] = useState(0)
   const [showPaywall, setShowPaywall] = useState(false)
+  const [isPremium, setIsPremium] = useState(false)
   const messagesEndRef = useRef(null)
   const FREE_QUESTIONS = 20
 
@@ -29,11 +30,17 @@ export default function AIChatPage() {
   const loadUserData = async () => {
     const { data: settings } = await supabase
       .from('ai_settings')
-      .select('data_consent')
+      .select('data_consent, is_premium')
       .eq('user_id', user.id)
       .single()
 
-    if (settings) setConsent(settings.data_consent)
+    if (settings) {
+      setConsent(settings.data_consent)
+      if (settings.is_premium) {
+        setIsPremium(true)
+        setShowPaywall(false)
+      }
+    }
 
     const { data: profileData } = await supabase
       .from('ai_profiles')
@@ -107,7 +114,7 @@ export default function AIChatPage() {
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return
-    if (showPaywall) return
+    if (showPaywall && !isPremium) return
 
     const userMessage = input.trim()
     setInput('')
@@ -182,7 +189,7 @@ WENN DU NICHT ANTWORTEN KANNST:
 
       const newCount = questionCount + 1
       setQuestionCount(newCount)
-      if (newCount >= FREE_QUESTIONS) {
+      if (newCount >= FREE_QUESTIONS && !isPremium) {
         setShowPaywall(true)
       }
 
@@ -193,6 +200,22 @@ WENN DU NICHT ANTWORTEN KANNST:
       setMessages(prev => [...prev, { role: 'assistant', content: fallbackResponse }])
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleCheckout = async () => {
+    try {
+      const response = await fetch('/api/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, email: user.email }),
+      })
+      const data = await response.json()
+      if (data.url) {
+        window.location.href = data.url
+      }
+    } catch (error) {
+      console.error('Checkout error:', error)
     }
   }
 
@@ -422,7 +445,7 @@ WENN DU NICHT ANTWORTEN KANNST:
           </div>
         )}
 
-        {showPaywall ? (
+        {showPaywall && !isPremium ? (
           <div className="paywall">
             <div className="paywall-card">
               <div className="paywall-icon">🧠</div>
@@ -435,24 +458,17 @@ WENN DU NICHT ANTWORTEN KANNST:
                 <span className="price-period">/ Monat</span>
               </div>
 
-              <div className="paywall-iban">
-                <p className="iban-label">Überweise an:</p>
-                <p className="iban-number">DE95 1101 0101 5620 5272 07</p>
-                <p className="iban-name">Harro Goerndt</p>
-                <p className="iban-text">Verwendungszweck: <strong>{user?.email}</strong></p>
-              </div>
+              <button className="paywall-btn stripe-btn" onClick={handleCheckout}>
+                💳 Jetzt freischalten
+              </button>
 
               <div className="paywall-steps">
-                <p>1. Überweise 4,99€ per SEPA/IBAN</p>
-                <p>2. Sende uns den Beleg per E-Mail</p>
-                <p>3. Zugang wird freigeschaltet ✓</p>
+                <p>✅ Sofortige Freischaltung</p>
+                <p>✅ Kündbar jederzeit</p>
+                <p>✅ SEPA-Überweisung</p>
               </div>
 
-              <a href="mailto:admin@happiness-eu.net?subject=KI-Zugang&body=Beleg angeh%C3%A4ngt" className="paywall-btn">
-                📧 Beleg senden
-              </a>
-
-              <p className="paywall-note">Keine Kreditkarte nötig. Nur IBAN.</p>
+              <p className="paywall-note">Keine Kreditkarte nötig. Per Sofortüberweisung.</p>
             </div>
           </div>
         ) : (

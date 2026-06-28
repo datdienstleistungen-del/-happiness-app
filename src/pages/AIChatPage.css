@@ -598,6 +598,12 @@
   margin-top: 12px !important;
 }
 
+.stripe-btn {
+  width: 100%;
+  padding: 14px 24px !important;
+  font-size: 1.05rem !important;
+}
+
 /* ── Question Counter ── */
 .question-counter {
   text-align: center;
