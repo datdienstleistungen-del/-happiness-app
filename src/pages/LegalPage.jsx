@@ -15,14 +15,25 @@ export default function LegalPage() {
 
 **Verantwortlich für den Inhalt:**
 Harro Goerndt
-D.A.T.Dienstleistungen
+D.A.T Dienstleistungen
+Weserstraße 16
+26382 Wilhelmshaven
 E-Mail: datdienstleistungen@gmail.com
 
 ## Kontakt
+D.A.T Dienstleistungen
+Weserstraße 16
+26382 Wilhelmshaven
 E-Mail: datdienstleistungen@gmail.com
+
+## Umsatzsteuer-ID
+Umsatzsteuer-Identifikationsnummer gemäß § 27a Umsatzsteuergesetz: [wird nachgetragen]
 
 ## Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV
 Harro Goerndt
+D.A.T Dienstleistungen
+Weserstraße 16
+26382 Wilhelmshaven
 
 ## Streitschlichtung
 Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: https://ec.europa.eu/consumers/odr/. Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.
@@ -41,10 +52,15 @@ Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir
 
 **Responsible for content:**
 Harro Goerndt
-D.A.T.Dienstleistungen
+D.A.T Dienstleistungen
+Weserstraße 16
+26382 Wilhelmshaven, Germany
 Email: datdienstleistungen@gmail.com
 
 ## Contact
+D.A.T Dienstleistungen
+Weserstraße 16
+26382 Wilhelmshaven, Germany
 Email: datdienstleistungen@gmail.com
 
 ## Dispute Resolution
@@ -65,7 +81,10 @@ Die folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren 
 
 **Wer ist verantwortlich für die Datenerfassung auf dieser Website?**
 Die Datenverarbeitung auf dieser Website erfolgt durch den Websitebetreiber:
-Harro Goerndt, D.A.T.Dienstleistungen
+Harro Goerndt
+D.A.T Dienstleistungen
+Weserstraße 16
+26382 Wilhelmshaven
 E-Mail: datdienstleistungen@gmail.com
 
 ### Wie erfassen wir Ihre Daten?
@@ -178,7 +197,10 @@ The following information provides a simple overview of what happens to your per
 
 **Who is responsible for data collection on this website?**
 Data processing on this website is carried out by the website operator:
-Harro Goerndt, D.A.T.Dienstleistungen
+Harro Goerndt
+D.A.T Dienstleistungen
+Weserstraße 16
+26382 Wilhelmshaven, Germany
 Email: datdienstleistungen@gmail.com
 
 ### How do we collect your data?
@@ -229,7 +251,9 @@ You have the right at any time:
 Diese Allgemeinen Geschäftsbedingungen (nachfolgend „AGB") gelten für alle Verträge über die Lieferung von Waren und die Erbringung von Dienstleistungen zwischen
 
 Harro Goerndt
-D.A.T.Dienstleistungen
+D.A.T Dienstleistungen
+Weserstraße 16
+26382 Wilhelmshaven
 E-Mail: datdienstleistungen@gmail.com
 
 und ihren Kunden. Die AGB gelten in der jeweils zum Zeitpunkt des Vertragsschlusses gültigen Fassung.
@@ -309,7 +333,9 @@ Es gilt das Recht der Bundesrepublik Deutschland. Ausgeschlossen ist die Anwendu
 These Terms of Service apply to all contracts for the delivery of goods and the provision of services between:
 
 Harro Goerndt
-D.A.T.Dienstleistungen
+D.A.T Dienstleistungen
+Weserstraße 16
+26382 Wilhelmshaven, Germany
 Email: datdienstleistungen@gmail.com
 
 and their customers.
@@ -398,7 +424,7 @@ German law applies. Should individual provisions of these terms be or become inv
         </div>
 
         <div className="legal-footer">
-          <p>© {new Date().getFullYear()} Happiness App · Harro Goerndt · D.A.T.Dienstleistungen</p>
+          <p>© {new Date().getFullYear()} Harro Goerndt · D.A.T Dienstleistungen · Wilhelmshaven</p>
         </div>
       </div>
     </div>
