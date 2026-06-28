@@ -13,15 +13,7 @@ exports.handler = async (event) => {
       customer_email: email,
       line_items: [
         {
-          price_data: {
-            currency: 'eur',
-            product_data: {
-              name: 'Happiness KI-Zugang',
-              description: 'Monatlicher Zugang zum Happiness AI Chat',
-            },
-            unit_amount: 499,
-            recurring: { interval: 'month' },
-          },
+          price: 'price_1TnM1u2LYA3KKe2WtUxr8wXS',
           quantity: 1,
         },
       ],
