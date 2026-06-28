@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../App'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations.jsx'
+import VideoUpload from '../components/VideoUpload.jsx'
+import VideoFeed from '../components/VideoFeed.jsx'
 
 export default function CommunityPage() {
   const { user, profile } = useAuth()
   const { t } = useLanguage()
+  const [tab, setTab] = useState('posts')
   const [posts, setPosts] = useState([])
   const [newPost, setNewPost] = useState('')
   const [loading, setLoading] = useState(true)
@@ -54,32 +57,54 @@ export default function CommunityPage() {
         <p>{t('community.share')}</p>
       </div>
 
-      <div className="card">
-        <textarea
-          className="form-input"
-          placeholder={t('community.placeholder')}
-          value={newPost}
-          onChange={(e) => setNewPost(e.target.value)}
-          rows={3}
-        />
-        <div style={{ marginTop: '0.75rem', textAlign: 'right' }}>
-          <button className="btn btn-primary" onClick={handlePost} disabled={!newPost.trim()}>
-            {t('community.post')}
-          </button>
-        </div>
+      <div className="tabs">
+        <button className={`tab ${tab === 'posts' ? 'active' : ''}`} onClick={() => setTab('posts')}>
+          📝 {t('community.title')}
+        </button>
+        <button className={`tab ${tab === 'videos' ? 'active' : ''}`} onClick={() => setTab('videos')}>
+          🎬 {t('video.title')}
+        </button>
       </div>
 
-      {loading ? (
-        <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Laden...</p>
-      ) : posts.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">💬</div>
-          <p>{t('community.noPosts')}</p>
-        </div>
-      ) : (
-        posts.map((post) => (
-          <PostCard key={post.id} post={post} currentUserId={user.id} onLike={handleLike} />
-        ))
+      {tab === 'posts' && (
+        <>
+          <div className="card">
+            <textarea
+              className="form-input"
+              placeholder={t('community.placeholder')}
+              value={newPost}
+              onChange={(e) => setNewPost(e.target.value)}
+              rows={3}
+            />
+            <div style={{ marginTop: '0.75rem', textAlign: 'right' }}>
+              <button className="btn btn-primary" onClick={handlePost} disabled={!newPost.trim()}>
+                {t('community.post')}
+              </button>
+            </div>
+          </div>
+
+          {loading ? (
+            <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Laden...</p>
+          ) : posts.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">💬</div>
+              <p>{t('community.noPosts')}</p>
+            </div>
+          ) : (
+            posts.map((post) => (
+              <PostCard key={post.id} post={post} currentUserId={user.id} onLike={handleLike} />
+            ))
+          )}
+        </>
+      )}
+
+      {tab === 'videos' && (
+        <>
+          <VideoUpload onUploadComplete={() => {}} />
+          <div style={{ marginTop: '1.5rem' }}>
+            <VideoFeed />
+          </div>
+        </>
       )}
     </div>
   )
