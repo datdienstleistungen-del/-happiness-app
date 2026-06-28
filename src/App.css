@@ -139,7 +139,7 @@
 
 /* Sidebar */
 .sidebar {
-  width: 260px;
+  width: 220px;
   height: 100vh;
   background: #0f0f23;
   border-right: 1px solid rgba(155, 89, 182, 0.2);
@@ -304,7 +304,7 @@
 }
 
 .main-content.with-sidebar {
-  margin-left: 260px;
+  margin-left: 220px;
   transition: margin-left 0.3s ease;
 }
 
@@ -691,7 +691,7 @@ textarea.form-input {
   }
 
   .sidebar {
-    width: 70px;
+    width: 60px;
   }
 
   .sidebar.collapsed {
@@ -726,7 +726,7 @@ textarea.form-input {
   }
 
   .main-content.with-sidebar {
-    margin-left: 70px;
+    margin-left: 60px;
   }
 
   .sidebar.collapsed ~ .main-content.with-sidebar {
