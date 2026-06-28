@@ -370,21 +370,21 @@ WENN DU NICHT ANTWORTEN KANNST:
               <p>{t('ai.welcomeDesc') || 'Was kann ich heute für dich tun?'}</p>
 
               <div className="suggestion-chips">
-                <button onClick={() => setInput('Was soll ich heute kochen?')}>
+                <button onClick={() => setInput(t('ai.chip1Q'))}>
                   <span className="chip-icon">🍳</span>
-                  Was kochen?
+                  {t('ai.chip1')}
                 </button>
-                <button onClick={() => setInput('Soll ich ein Elektroauto kaufen?')}>
+                <button onClick={() => setInput(t('ai.chip2Q'))}>
                   <span className="chip-icon">🚗</span>
-                  Elektroauto?
+                  {t('ai.chip2')}
                 </button>
-                <button onClick={() => setInput('Meine Kinder sind picky eater')}>
+                <button onClick={() => setInput(t('ai.chip3Q'))}>
                   <span className="chip-icon">👨‍👩‍👧</span>
-                  Kinder essen nicht
+                  {t('ai.chip3')}
                 </button>
-                <button onClick={() => setInput('Ich such einen neuen Job')}>
+                <button onClick={() => setInput(t('ai.chip4Q'))}>
                   <span className="chip-icon">💼</span>
-                  Jobwechsel-Tipps
+                  {t('ai.chip4')}
                 </button>
               </div>
             </div>
