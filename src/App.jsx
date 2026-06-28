@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react'
-import { Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom'
+import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.jsx'
 import LoginPage from './pages/LoginPage'
@@ -24,53 +24,83 @@ export function useAuth() {
   return useContext(AuthContext)
 }
 
-function Navbar() {
+function Sidebar() {
   const { user, profile, signOut } = useAuth()
   const { lang, setLang, t } = useLanguage()
   const navigate = useNavigate()
-  const [menuOpen, setMenuOpen] = useState(false)
+  const location = useLocation()
+  const [collapsed, setCollapsed] = useState(false)
 
   const handleSignOut = async () => {
     await signOut()
     navigate('/login')
   }
 
-  const links = [
-    { to: '/', label: `🏠 ${t('nav.home')}` },
-    { to: '/community', label: `💬 ${t('nav.community')}` },
-    { to: '/ai-chat', label: `🤖 ${t('nav.aiChat')}` },
-    { to: '/friends', label: `👥 ${t('nav.friends')}` },
-    { to: '/marketplace', label: `🛒 ${t('nav.marketplace')}` },
-    { to: '/jobs', label: `💼 ${t('nav.jobs')}` },
-    { to: '/courses', label: `📚 ${t('nav.courses')}` },
-    { to: '/housing', label: `🏠 ${t('nav.housing')}` },
-    { to: '/video-maker', label: `🎬 ${t('nav.videoMaker')}` },
-    { to: '/notifications', label: `🔔 ${t('nav.notifications')}` },
+  const mainLinks = [
+    { to: '/', icon: '🏠', label: t('nav.home') },
+    { to: '/ai-chat', icon: '✨', label: t('nav.aiChat') },
+    { to: '/community', icon: '💬', label: t('nav.community') },
+    { to: '/friends', icon: '👥', label: t('nav.friends') },
+    { to: '/marketplace', icon: '🛒', label: t('nav.marketplace') },
+  ]
+
+  const moreLinks = [
+    { to: '/jobs', icon: '💼', label: t('nav.jobs') },
+    { to: '/courses', icon: '📚', label: t('nav.courses') },
+    { to: '/housing', icon: '🏠', label: t('nav.housing') },
+    { to: '/video-maker', icon: '🎬', label: t('nav.videoMaker') },
+    { to: '/notifications', icon: '🔔', label: t('nav.notifications') },
   ]
 
   if (profile?.role === 'admin') {
-    links.push({ to: '/admin', label: `⚙️ ${t('nav.admin')}` })
+    moreLinks.push({ to: '/admin', icon: '⚙️', label: t('nav.admin') })
   }
 
   return (
-    <nav className="navbar">
-      <div className="navbar-brand">
-        <Link to="/">
-          <img src="/favicon.svg" alt="Happiness" style={{ height: '28px', verticalAlign: 'middle', marginRight: '6px' }} />
-          Happiness
+    <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+      <div className="sidebar-header">
+        <Link to="/" className="sidebar-brand">
+          <img src="/favicon.svg" alt="H" style={{ width: '32px', height: '32px' }} />
+          {!collapsed && <span>Happiness</span>}
         </Link>
-        <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>☰</button>
+        <button className="sidebar-toggle" onClick={() => setCollapsed(!collapsed)}>
+          {collapsed ? '»' : '«'}
+        </button>
       </div>
-      <div className={`navbar-links ${menuOpen ? 'open' : ''}`}>
-        {links.map((link) => (
-          <Link key={link.to} to={link.to} onClick={() => setMenuOpen(false)}>
-            {link.label}
+
+      <nav className="sidebar-nav">
+        {mainLinks.map((link) => (
+          <Link
+            key={link.to}
+            to={link.to}
+            className={`sidebar-link ${location.pathname === link.to ? 'active' : ''}`}
+            title={collapsed ? link.label : undefined}
+          >
+            <span className="sidebar-icon">{link.icon}</span>
+            {!collapsed && <span>{link.label}</span>}
           </Link>
         ))}
-      </div>
-      <div className="navbar-user">
+
+        <div className="sidebar-divider"></div>
+
+        {!collapsed && <div className="sidebar-section-title">{t('nav.more') || 'Mehr'}</div>}
+
+        {moreLinks.map((link) => (
+          <Link
+            key={link.to}
+            to={link.to}
+            className={`sidebar-link ${location.pathname === link.to ? 'active' : ''}`}
+            title={collapsed ? link.label : undefined}
+          >
+            <span className="sidebar-icon">{link.icon}</span>
+            {!collapsed && <span>{link.label}</span>}
+          </Link>
+        ))}
+      </nav>
+
+      <div className="sidebar-footer">
         <select
-          className="lang-select"
+          className="sidebar-lang"
           value={lang}
           onChange={(e) => setLang(e.target.value)}
         >
@@ -78,10 +108,20 @@ function Navbar() {
             <option key={l.code} value={l.code}>{l.flag} {l.label}</option>
           ))}
         </select>
-        <span>{profile?.name || user?.email}</span>
-        <button className="btn btn-sm btn-outline" onClick={handleSignOut}>{t('nav.logout')}</button>
+
+        <div className="sidebar-user">
+          <div className="sidebar-avatar">
+            {(profile?.name || user?.email || '?')[0].toUpperCase()}
+          </div>
+          {!collapsed && (
+            <div className="sidebar-user-info">
+              <div className="sidebar-user-name">{profile?.name || user?.email}</div>
+              <button className="sidebar-logout" onClick={handleSignOut}>{t('nav.logout')}</button>
+            </div>
+          )}
+        </div>
       </div>
-    </nav>
+    </aside>
   )
 }
 
@@ -139,8 +179,8 @@ export default function App() {
           <LoadingScreen />
         ) : (
           <>
-            {user && <Navbar />}
-            <main className={user ? 'main-content' : 'main-content full'}>
+            {user && <Sidebar />}
+            <main className={user ? 'main-content with-sidebar' : 'main-content full'}>
               <Routes>
                 <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
                 <Route path="/register" element={user ? <Navigate to="/" /> : <RegisterPage />} />
