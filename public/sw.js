@@ -1,4 +1,4 @@
-const CACHE_NAME = 'happiness-v1';
+const CACHE_NAME = 'happiness-v2';
 const urlsToCache = [
   '/',
   '/index.html',
