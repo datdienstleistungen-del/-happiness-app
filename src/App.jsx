@@ -53,7 +53,10 @@ function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-brand">
-        <Link to="/">🌈 Happiness</Link>
+        <Link to="/">
+          <img src="/favicon.svg" alt="Happiness" style={{ height: '28px', verticalAlign: 'middle', marginRight: '6px' }} />
+          Happiness
+        </Link>
         <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>☰</button>
       </div>
       <div className={`navbar-links ${menuOpen ? 'open' : ''}`}>
