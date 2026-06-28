@@ -453,3 +453,157 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Paywall ── */
+.paywall {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: #f9fafb;
+}
+
+.paywall-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 2.5rem;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.paywall-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+
+.paywall-card h2 {
+  color: #1a1a2e;
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+}
+
+.paywall-card p {
+  color: #6b7280;
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
+.paywall-sub {
+  color: #9ca3af !important;
+  font-size: 0.85rem !important;
+  margin-bottom: 16px !important;
+}
+
+.paywall-price {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 24px;
+}
+
+.price-amount {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #9b59b6, #8e44ad);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.price-period {
+  color: #9ca3af;
+  font-size: 1rem;
+}
+
+.paywall-iban {
+  background: #f3f4f6;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.iban-label {
+  color: #9ca3af !important;
+  font-size: 0.75rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px !important;
+}
+
+.iban-number {
+  font-family: 'Courier New', monospace;
+  font-size: 1.1rem !important;
+  font-weight: 700;
+  color: #1a1a2e !important;
+  letter-spacing: 1px;
+  margin-bottom: 4px !important;
+}
+
+.iban-name {
+  font-size: 0.85rem !important;
+  color: #6b7280 !important;
+  margin-bottom: 8px !important;
+}
+
+.iban-text {
+  font-size: 0.8rem !important;
+  color: #9ca3af !important;
+}
+
+.iban-text strong {
+  color: #6c5ce7;
+}
+
+.paywall-steps {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.paywall-steps p {
+  font-size: 0.85rem !important;
+  color: #6b7280 !important;
+  padding: 6px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.paywall-steps p:last-child {
+  border-bottom: none;
+}
+
+.paywall-btn {
+  display: inline-block;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #9b59b6, #8e44ad);
+  color: white;
+  text-decoration: none !important;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  box-shadow: 0 4px 15px rgba(155, 89, 182, 0.3);
+}
+
+.paywall-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(155, 89, 182, 0.5);
+}
+
+.paywall-note {
+  font-size: 0.75rem !important;
+  color: #9ca3af !important;
+  margin-top: 12px !important;
+}
+
+/* ── Question Counter ── */
+.question-counter {
+  text-align: center;
+  padding: 6px;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+}

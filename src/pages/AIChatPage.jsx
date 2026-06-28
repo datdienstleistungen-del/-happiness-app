@@ -13,7 +13,10 @@ export default function AIChatPage() {
   const [consent, setConsent] = useState(false)
   const [profile, setProfile] = useState(null)
   const [showProfile, setShowProfile] = useState(false)
+  const [questionCount, setQuestionCount] = useState(0)
+  const [showPaywall, setShowPaywall] = useState(false)
   const messagesEndRef = useRef(null)
+  const FREE_QUESTIONS = 20
 
   useEffect(() => {
     loadUserData()
@@ -53,6 +56,10 @@ export default function AIChatPage() {
         loadedMessages.push({ role: 'assistant', content: conv.response })
       })
       setMessages(loadedMessages)
+      setQuestionCount(history.length)
+      if (history.length >= FREE_QUESTIONS) {
+        setShowPaywall(true)
+      }
     }
   }
 
@@ -100,16 +107,49 @@ export default function AIChatPage() {
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return
+    if (showPaywall) return
 
     const userMessage = input.trim()
     setInput('')
     setMessages(prev => [...prev, { role: 'user', content: userMessage }])
     setIsLoading(true)
 
-    const systemPrompt = `Du bist der Happiness AI Assistent — freundlich, hilfsbereut und europäisch. 
-Sprich auf Deutsch. Halte Antworten kurz (3-5 Sätze max). 
-Du hilfst bei: Kochen, Familie, Auto, Beruf, Wohnung, Bildung.
-Antworte NUR auf die Frage des Users. Kein Smalltalk.`
+    const systemPrompt = `Du bist der Happiness AI — ein freundlicher, cooler Begleiter für Kinder, Jugendliche und Erwachsene.
+
+SPRACHE: Deutsch. Kurze Sätze. Emojis sparsam.
+
+STIL: Wie ein cooler Onkel / eine coole Tante. Nie belehrend. Immer respektvoll.
+
+WAS DU DARFST BEANTWORTEN:
+- Schule, Mathe, Naturwissenschaften
+- Musik, Filme, Spiele, Sport
+- Kochen, Rezepte
+- Beruf, Wohnung, Alltag
+- Emotionen, Freundschaften
+- Kreativität, Ideen
+
+SOKRATISCHER METHOD (bei sensiblen Themen):
+Stelle IMMER Gegenfragen statt direkte Antworten:
+- "Was denkst du darüber?"
+- "Was hast du schon gehört?"
+- "Warum interessiert dich das?"
+- "Was würdest du raten?"
+
+THEMEN MIT SOKRATISCHER METHODE:
+- Sexuelle Themen → "Was denkst du darüber? Sprich mit jemandem, dem du vertraust."
+- Gewalt → "Warum interessiert dich das? Gewalt ist nie die Lösung."
+- Drogen/Alkohol → "Was hast du schon darüber gehört? Es gibt bessere Wege."
+- Politik → "Dazu gibt es viele Meinungen. Was ist DEINE Meinung?"
+- Religion → "Glaube ist persönlich. Was ist dir wichtig?"
+
+ABSOLUT VERBOTEN:
+- Explizite Inhalte
+- Anleitungen zu gefährlichen Dingen
+- Beleidigungen oder Hass
+- Politische Propaganda
+
+WENN DU NICHT ANTWORTEN KANNST:
+"Das kann ich dir nicht erklären. Aber du kannst mit jemandem reden, dem du vertraust — Eltern, Lehrer, oder Freunde."`
 
     try {
       const response = await fetch('/api/chat', {
@@ -140,6 +180,12 @@ Antworte NUR auf die Frage des Users. Kein Smalltalk.`
 
       analyzeAndExtractProfile(userMessage, aiResponse)
 
+      const newCount = questionCount + 1
+      setQuestionCount(newCount)
+      if (newCount >= FREE_QUESTIONS) {
+        setShowPaywall(true)
+      }
+
     } catch (error) {
       console.error('AI Error:', error)
       
@@ -153,23 +199,30 @@ Antworte NUR auf die Frage des Users. Kein Smalltalk.`
   const generateFallbackResponse = (message) => {
     const lower = message.toLowerCase()
     
+    const socraticTopics = ['sex', 'drogen', 'gewalt', 'alkohol', 'rauchen', 'tot', 'sterben', 'blut', 'angst', 'selbstmord']
+    const isSensitive = socraticTopics.some(topic => lower.includes(topic))
+    
+    if (isSensitive) {
+      return "Das ist eine interessante Frage. 🤔\n\nWas denkst DU darüber?\n\nManche Dinge sind komplizierter als sie klingen. Sprich am besten mit jemandem, dem du vertraust — Eltern, Lehrer, oder eine Vertrauensperson. Das ist keine Schwäche, sondern schlau."
+    }
+    
     if (lower.includes('kochen') || lower.includes('essen') || lower.includes('rezept')) {
-      return "Hier sind ein paar Ideen für heute:\n\n🍝 Pasta mit frischer Tomatensoße\n🥗 Griechischer Salat mit Feta\n🍛 Einfaches Curry mit Gemüse\n\nSoll ich ein genaues Rezept geben?"
+      return "Gute Idee! Was hast du denn daheim? 🍳\n\nIch kann dir helfen mit:\n- Schnellen Gerichten\n- Gesundem Essen\n- Snacks für unterwegs\n\nWas klingt gut?"
     }
     
     if (lower.includes('auto') || lower.includes('verbrenner')) {
-      return "Die Frage Verbrenner vs. Elektro ist aktuell!\n\n🔋 Elektro: Günstiger im Betrieb, Umweltfreundlich\n⛽ Verbrenner: Höhere Reichweite, günstiger in der Anschaffung\n\nWelche Faktoren sind dir wichtig?"
+      return "Auto-Frage! 🚗\n\nWas ist dir wichtiger: Umwelt oder Reichweite?\n\nEs gibt gute Argumente für beide Seiten."
     }
     
     if (lower.includes('kind') || lower.includes('kinder')) {
-      return "Kinder verstehen ist manchmal schwierig! 🤔\n\nErzähl mir mehr:\n- Wie alt sind sie?\n- Was genau ist das Problem?\n\nDann kann ich dir gezielt helfen!"
+      return "Kinder verstehen ist manchmal schwierig! 🤔\n\nWas genau ist los? Erzähl mir mehr."
     }
     
     if (lower.includes('hallo') || lower.includes('hi') || lower.includes('hey')) {
-      return "Hallo! 👋 Ich bin dein Happiness AI Assistent.\n\nIch kann dir helfen bei:\n🍳 Kochideen\n🚗 Auto-Fragen\n👨‍👩‍👧 Familienprobleme\n💼 Beruf\n🏠 Wohnung\n\nWas beschäftigt dich heute?"
+      return "Hey! 👋 Willkommen bei Happiness AI.\n\nWas beschäftigt dich heute? Frag mich alles!"
     }
     
-    return "Das ist eine interessante Frage! 🤔\n\nErzähl mir mehr Details, damit ich dir besser helfen kann.\n\nIch kann dir helfen bei:\n- Kochen & Rezepte\n- Auto & Mobilität\n- Familie & Beziehungen\n- Arbeit & Beruf\n- Wohnungssuche\n- Bildung & Kurse"
+    return "Interessant! 🤔\n\nWas denkst du denn darüber?\n\nIch kann dir helfen bei:\n- Schule & Lernen\n- Musik & Filme\n- Kochen\n- Sport\n- Oder einfach nur quatschen"
   }
 
   const handleKeyPress = (e) => {
@@ -369,6 +422,40 @@ Antworte NUR auf die Frage des Users. Kein Smalltalk.`
           </div>
         )}
 
+        {showPaywall ? (
+          <div className="paywall">
+            <div className="paywall-card">
+              <div className="paywall-icon">🧠</div>
+              <h2>Weiter fragen!</h2>
+              <p>Du hast {FREE_QUESTIONS} Fragen gestellt. Toll!</p>
+              <p className="paywall-sub">Um weiter mit der KI zu chatten:</p>
+              
+              <div className="paywall-price">
+                <span className="price-amount">4,99 €</span>
+                <span className="price-period">/ Monat</span>
+              </div>
+
+              <div className="paywall-iban">
+                <p className="iban-label">Überweise an:</p>
+                <p className="iban-number">DE89 3704 0044 0532 0130 00</p>
+                <p className="iban-name">Happiness GmbH</p>
+                <p className="iban-text">Verwendungszweck: <strong>{user?.email}</strong></p>
+              </div>
+
+              <div className="paywall-steps">
+                <p>1. Überweise 4,99€ per SEPA/IBAN</p>
+                <p>2. Sende uns den Beleg per E-Mail</p>
+                <p>3. Zugang wird freigeschaltet ✓</p>
+              </div>
+
+              <a href="mailto:admin@happiness-eu.net?subject=KI-Zugang&body=Beleg angeh%C3%A4ngt" className="paywall-btn">
+                📧 Beleg senden
+              </a>
+
+              <p className="paywall-note">Keine Kreditkarte nötig. Nur IBAN.</p>
+            </div>
+          </div>
+        ) : (
         <div className="ai-input-bar">
           <textarea
             value={input}
@@ -384,6 +471,10 @@ Antworte NUR auf die Frage des Users. Kein Smalltalk.`
           >
             ➤
           </button>
+        </div>
+        )}
+        <div className="question-counter">
+          {questionCount}/{FREE_QUESTIONS} Fragen
         </div>
       </div>
     </div>
