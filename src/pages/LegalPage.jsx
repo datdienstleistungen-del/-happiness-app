@@ -306,11 +306,31 @@ Das Widerrufsrecht erlischt vorzeitig, wenn der Verbraucher ausdrücklich zugest
 
 ## 7. Haftung
 
-### Haftung für Inhalte
-Der Anbieter haftet für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen. Eine Haftung für die Inhalte der verlinkten Seiten besteht jedoch nur, wenn Kenntnis von einem Rechtsverstoß vorliegt und die Entfernung technisch möglich und zumutbar ist.
+### Haftung für eigene Inhalte
+Der Anbieter haftet für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen.
 
-### Haftung für Fehler in der KI
+### Haftung für Nutzerinhalte (Haftungsausschluss)
+Der Anbieter ist **nicht** verantwortlich für Inhalte, die von Nutzern auf der Plattform erstellt, gepostet oder geteilt werden. Dies betrifft insbesondere:
+- Beiträge in Communitys und Kommentaren
+- Nachrichten an andere Nutzer
+- Inhalte in Kursen, Gruppen oder Foren
+- Inhalte im Marktplatz oder bei Stellenanzeigen
+
+Der Anbieter haftet **nicht** für:
+- Beleidigungen, rassistische, rechtsextreme oder anderweitig rechtswidrige Äußerungen von Nutzern
+- Falsche oder irreführende Inhalte von Nutzern
+- Schäden die durch Nutzerinhalte entstehen
+- Rechtsstreitigkeiten zwischen Nutzern
+
+Der Anbieter verpflichtet sich, auf Hinweis hin rechtswidrige Inhalte **zeitnah zu entfernen** (§ 7 Abs. 1 TMG). Eine proaktive Überwachung von Nutzerinhalten erfolgt **nicht**.
+
+Jeder Nutzer ist selbst verantwortlich für die Inhalte die er erstellt und teilt.
+
+### Haftung für KI-Inhalte
 Die Antworten des Happiness AI basieren auf künstlicher Intelligenz und können Fehler enthalten. Der Anbieter haftet nicht für Schäden, die durch die Nutzung der KI-Antworten entstehen.
+
+### Haftung für verlinkte Seiten
+Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter verantwortlich.
 
 ## 8. Urheberrecht
 
