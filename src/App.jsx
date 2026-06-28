@@ -15,6 +15,7 @@ import NotificationsPage from './pages/NotificationsPage'
 import HistoryPage from './pages/HistoryPage'
 import AdminPage from './pages/AdminPage'
 import VideoMakerPage from './pages/VideoMakerPage'
+import AIChatPage from './pages/AIChatPage'
 import './App.css'
 
 const AuthContext = createContext()
@@ -45,6 +46,7 @@ function Navbar() {
     { to: '/profile', label: `👤 ${t('nav.profile')}` },
     { to: '/notifications', label: `🔔 ${t('nav.notifications')}` },
     { to: '/video-maker', label: `🎬 ${t('nav.videoMaker')}` },
+    { to: '/ai-chat', label: `🤖 ${t('nav.aiChat')}` },
     { to: '/history', label: `📜 ${t('nav.history')}` },
   ]
 
@@ -156,6 +158,7 @@ export default function App() {
                 <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
                 <Route path="/video-maker" element={<ProtectedRoute><VideoMakerPage /></ProtectedRoute>} />
+                <Route path="/ai-chat" element={<ProtectedRoute><AIChatPage /></ProtectedRoute>} />
               </Routes>
             </main>
           </>
