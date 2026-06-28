@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useLanguage } from '../App'
+import { useLanguage } from '../i18n/translations'
 import './VideoMakerPage.css'
 
 export default function VideoMakerPage() {

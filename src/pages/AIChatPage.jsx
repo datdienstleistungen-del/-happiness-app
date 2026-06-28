@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useLanguage } from '../App'
+import { useLanguage } from '../i18n/translations'
 import { useAuth } from '../App'
 import { supabase } from '../lib/supabase'
 import './AIChatPage.css'
