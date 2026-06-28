@@ -247,49 +247,25 @@ Antworte NUR auf die Frage des Users. Kein Smalltalk.`
 
   return (
     <div className="ai-chat-page">
-      <div className="ai-sidebar-panel">
-        <div className="ai-sidebar-header">
-          <span className="ai-logo">🧠</span>
-          <span>Happiness AI</span>
-        </div>
-
-        <button
-          className="new-chat-btn"
-          onClick={() => setMessages([])}
-        >
-          ✨ {t('ai.newChat') || 'Neuer Chat'}
-        </button>
-
-        <div className="ai-sidebar-divider" />
-
-        <button className="ai-sidebar-btn" onClick={() => setShowProfile(!showProfile)}>
-          👤 {t('ai.profile')}
-        </button>
-        <button className="ai-sidebar-btn" onClick={exportData}>
-          📥 {t('ai.export')}
-        </button>
-        <button className="ai-sidebar-btn danger" onClick={deleteAllData}>
-          🗑️ {t('ai.delete')}
-        </button>
-
-        <div className="ai-sidebar-footer">
-          <div className="ai-status">
-            <span className="ai-status-dot" />
-            {consent ? 'Profil aktiv' : 'Profil inaktiv'}
-          </div>
-          <label className="consent-switch">
-            <input
-              type="checkbox"
-              checked={consent}
-              onChange={toggleConsent}
-            />
-            <span className="consent-label">{t('ai.dataConsent')}</span>
-          </label>
-          <p className="ai-eu-badge">🇪🇺 {t('ai.footer')}</p>
-        </div>
-      </div>
-
       <div className="ai-main">
+        <div className="ai-topbar">
+          <span className="ai-logo">🧠</span>
+          <strong>Happiness AI</strong>
+          <div className="ai-topbar-actions">
+            <button className="ai-topbar-btn" onClick={() => setMessages([])}>
+              ✨ {t('ai.newChat') || 'Neuer Chat'}
+            </button>
+            <button className="ai-topbar-btn" onClick={() => setShowProfile(!showProfile)}>
+              👤 {t('ai.profile')}
+            </button>
+            <button className="ai-topbar-btn" onClick={exportData}>
+              📥 {t('ai.export')}
+            </button>
+            <button className="ai-topbar-btn danger" onClick={deleteAllData}>
+              🗑️ {t('ai.delete')}
+            </button>
+          </div>
+        </div>
         {showProfile && (
           <div className="profile-panel">
             <div className="profile-panel-header">
@@ -316,6 +292,19 @@ Antworte NUR auf die Frage des Users. Kein Smalltalk.`
             <div className="profile-section">
               <h4>💼 {t('ai.occupation')}</h4>
               <pre>{JSON.stringify(profile?.occupation || {}, null, 2)}</pre>
+            </div>
+
+            <div className="profile-section">
+              <h4>🔒 DSGVO</h4>
+              <label className="consent-switch">
+                <input
+                  type="checkbox"
+                  checked={consent}
+                  onChange={toggleConsent}
+                />
+                <span className="consent-label">{t('ai.dataConsent')}</span>
+              </label>
+              <p className="ai-eu-badge">🇪🇺 {t('ai.footer')}</p>
             </div>
           </div>
         )}
