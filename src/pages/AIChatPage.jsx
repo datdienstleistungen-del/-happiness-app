@@ -78,25 +78,81 @@ export default function AIChatPage() {
   }
 
   const analyzeAndExtractProfile = async (userMessage, aiResponse) => {
-    const lowerMsg = userMessage.toLowerCase()
+    const lower = userMessage.toLowerCase()
 
     const updates = {}
 
-    if (lowerMsg.includes('mein name') || lowerMsg.includes('ich heiße')) {
-      const nameMatch = userMessage.match(/(?:mein name ist|ich heiße) (\w+)/i)
-      if (nameMatch) updates.display_name = nameMatch[1]
+    const namePatterns = [
+      /(?:mein name ist|ich heisse|ich bin|man nennt mich|i'm|my name is)\s+(\w+)/i,
+      /(?:ich bin der|ich bin die|ich bin das)\s+(\w+)/i,
+      /(?:hi|hallo|moin|servus|hey)\s*,?\s*ich bin\s+(\w+)/i
+    ]
+    for (const pattern of namePatterns) {
+      const match = userMessage.match(pattern)
+      if (match) {
+        updates.display_name = match[1]
+        break
+      }
     }
 
-    if (lowerMsg.includes('kinder') || lowerMsg.includes('sohn') || lowerMsg.includes('tochter')) {
+    const jobPatterns = [
+      /(?:ich arbeite als|mein beruf ist|ich bin)\s+(?:ein|eine|der|die)\s+(.+)/i,
+      /(?:ich arbeite im|ich bin im bereich)\s+(.+)/i,
+      /(?:mein job|meine arbeit)\s+(?:ist|heisst)\s+(.+)/i
+    ]
+    for (const pattern of jobPatterns) {
+      const match = userMessage.match(pattern)
+      if (match) {
+        updates.occupation = { ...profile?.occupation, job: match[1].trim(), mentioned_work: true }
+        break
+      }
+    }
+
+    const interestPatterns = [
+      /(?:ich mag|ich liebe|ich fuere gerne|mein hobby ist|ich spiele gerne|ich hoere gerne)\s+(.+)/i,
+      /(?:interessiere mich fuer|fasziniert mich)\s+(.+)/i
+    ]
+    const currentInterests = { ...profile?.interests } || {}
+    for (const pattern of interestPatterns) {
+      const match = userMessage.match(pattern)
+      if (match) {
+        const interest = match[1].trim().replace(/[.!?]+$/, '').substring(0, 50)
+        const key = `interest_${Object.keys(currentInterests).length}`
+        currentInterests[key] = interest
+      }
+    }
+    if (Object.keys(currentInterests).length > Object.keys(profile?.interests || {}).length) {
+      updates.interests = currentInterests
+    }
+
+    const foodPatterns = [
+      /(?:ich esse kein|ich bin|mag ich nicht|mag ich gerne|liebe ich)\s+(.+)/i,
+      /(?:vegetarier|veganer|laktoseintolerant|glutenfrei)\s*$/i
+    ]
+    for (const pattern of foodPatterns) {
+      const match = userMessage.match(pattern)
+      if (match) {
+        const food = match[1] ? match[1].trim().substring(0, 50) : match[0]
+        updates.preferences = { ...profile?.preferences, food }
+        break
+      }
+    }
+
+    if (lower.includes('kinder') || lower.includes('sohn') || lower.includes('tochter')) {
       updates.family_info = { ...profile?.family_info, has_children: true }
     }
-
-    if (lowerMsg.includes('beruf') || lowerMsg.includes('job') || lowerMsg.includes('arbeit')) {
-      updates.occupation = { ...profile?.occupation, mentioned_work: true }
+    if (lower.includes('mein mann') || lower.includes('meine frau') || lower.includes('mein partner') || lower.includes('meine partnerin')) {
+      updates.family_info = { ...profile?.family_info, has_partner: true }
     }
 
-    if (lowerMsg.includes('wohnung') || lowerMsg.includes('zimmer') || lowerMsg.includes('haus')) {
+    if (lower.includes('wohnung') || lower.includes('haus') || lower.includes('mieter') || lower.includes('eigentum')) {
       updates.location = { ...profile?.location, housing_interest: true }
+    }
+    if (lower.includes('wahne in') || lower.includes('lebe in') || lower.includes('komme aus')) {
+      const cityMatch = userMessage.match(/(?:wohne in|lebe in|komme aus)\s+(\w[\w\s]*)/i)
+      if (cityMatch) {
+        updates.location = { ...profile?.location, city: cityMatch[1].trim() }
+      }
     }
 
     if (Object.keys(updates).length > 0) {
@@ -146,6 +202,27 @@ export default function AIChatPage() {
     setMessages(prev => [...prev, { role: 'user', content: userMessage, image: imagePreview }])
     setIsLoading(true)
 
+    // Profile context for the AI
+    let profileContext = ''
+    if (profile) {
+      if (profile.display_name) profileContext += `\n\nDU SPRICHST MIT: ${profile.display_name}`
+      if (profile.occupation?.job) profileContext += `\nBeruf: ${profile.occupation.job}`
+      if (profile.family_info?.has_children) profileContext += `\nHat Kinder`
+      if (profile.interests) {
+        const interests = Object.values(profile.interests).filter(v => v && typeof v === 'string')
+        if (interests.length) profileContext += `\nInteressen: ${interests.join(', ')}`
+      }
+      if (profile.preferences?.food) profileContext += `\nEssensvorlieben: ${profile.preferences.food}`
+      if (profile.location?.city) profileContext += `\nWohnt in: ${profile.location.city}`
+    }
+
+    // Last conversation topics as context
+    const recentMsgs = messages.slice(-6)
+    if (recentMsgs.length > 0) {
+      const topics = recentMsgs.map(m => m.content).join(' | ')
+      profileContext += `\n\nVorherige Themen in diesem Chat: ${topics}`
+    }
+
     const systemPrompt = `Du bist ein guter Freund. Nicht-assistent, nicht steif — einfach jemand, den man gerne mag.
 
 SPRACHE: Deutsch, Umgangssprache. Kurze Saeetze. Manchmal witzig, immer ehrlich.
@@ -155,6 +232,15 @@ WER DU BIST:
 - Du hast Ahnung von allem: Kochen, Auto, Handwerk, Schule, Job, Leben
 - Du denkst mit, aber du drueckst nichts auf
 - Du stellst Fragen die zum Nachdenken anregen (sokratisch), aber nur bei unbedenklichen Themen
+
+GRUESSFORMEL: Wechsle immer zwischen verschiedenen Gruessen:
+- "Hallo!" / "Hallo [Name]!"
+- "Moin!"
+- "Servus!"
+- "Na hallo!"
+- "Guten Tag!"
+- "Hi!"
+Benutze NIE zweimal hintereinander denselben Gruess. Wenn du den Namen kennst, verwende ihn gelegentlich.
 
 THEMEN WORUEBER DU REDEN KANNST:
 - Kochen, Rezepte, Essen
@@ -187,7 +273,7 @@ VERBOTEN:
 - Anleitungen zu gefaehrlichen Dingen
 - Beleidigungen oder Hass
 
-WICHTIG: Antworte NIE mit "Wie kann ich dir helfen?" oder "Was beschaeftigt dich?" — das ist langweilig. Starte direkt mit hilfreichen Inhalt oder einer konkreten Frage.`
+WICHTIG: Antworte NIE mit "Wie kann ich dir helfen?" oder "Was beschaeftigt dich?" — das ist langweilig. Starte direkt mit hilfreichen Inhalt oder einer konkreten Frage.${profileContext}`
 
     // Build history from previous messages (before the current one was added)
     const historyMessages = messages.slice(-20).map(msg => ({
