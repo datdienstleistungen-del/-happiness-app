@@ -16,6 +16,19 @@ const FILTERS = [
   { id: 'dramatic', label: 'Dramatisch', css: 'contrast(1.4) brightness(0.85) saturate(0.7)' },
 ]
 
+const ANIMATION_PRESETS = [
+  { id: 'none', label: 'Keine', type: 'none' },
+  { id: 'fade', label: 'Fade In/Out', type: 'fade' },
+  { id: 'slide-up', label: 'Slide Up', type: 'slide', direction: 'up' },
+  { id: 'slide-down', label: 'Slide Down', type: 'slide', direction: 'down' },
+  { id: 'slide-left', label: 'Slide Left', type: 'slide', direction: 'left' },
+  { id: 'slide-right', label: 'Slide Right', type: 'slide', direction: 'right' },
+  { id: 'scale', label: 'Zoom In/Out', type: 'scale' },
+  { id: 'typewriter', label: 'Typewriter', type: 'typewriter' },
+  { id: 'bounce', label: 'Bounce', type: 'bounce' },
+  { id: 'rotate', label: 'Rotate In', type: 'rotate' },
+]
+
 const isMobile = () => /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
 
 const getAspectRatios = () => {
@@ -53,6 +66,11 @@ export default function VideoMakerPage() {
   const [textOverlays, setTextOverlays] = useState([])
   const [activeTextId, setActiveTextId] = useState(null)
   const [showTextPanel, setShowTextPanel] = useState(false)
+  const [activeAnimTab, setActiveAnimTab] = useState('presets') // 'presets' | 'keyframes'
+  const [editingKeyframeIndex, setEditingKeyframeIndex] = useState(null)
+  const [keyframeTime, setKeyframeTime] = useState(0)
+  const [keyframeOpacity, setKeyframeOpacity] = useState(1)
+  const [keyframeTransform, setKeyframeTransform] = useState('')
 
   const [audioFile, setAudioFile] = useState(null)
   const [audioUrl, setAudioUrl] = useState(null)
@@ -143,6 +161,15 @@ export default function VideoMakerPage() {
       fontWeight: 'bold',
       opacity: 100,
       shadow: true,
+      // Animation properties
+      animation: {
+        preset: 'fade',
+        keyframes: [
+          { time: 0, opacity: 0, transform: 'translateY(20px) scale(0.9)' },
+          { time: 0.5, opacity: 1, transform: 'translateY(0) scale(1)' },
+          { time: 1, opacity: 1, transform: 'translateY(0) scale(1)' },
+        ]
+      }
     }])
     setActiveTextId(id)
     setShowTextPanel(true)
@@ -162,6 +189,161 @@ export default function VideoMakerPage() {
     if (!file) return
     setAudioFile(file)
     setAudioUrl(URL.createObjectURL(file))
+  }
+
+  // Animation helpers
+  const getTextAnimation = (id) => {
+    const overlay = textOverlays.find(t => t.id === id)
+    return overlay?.animation || { preset: 'fade', keyframes: [] }
+  }
+
+  const updateTextAnimation = (id, animUpdate) => {
+    setTextOverlays(prev => prev.map(t => 
+      t.id === id ? { ...t, animation: { ...t.animation, ...animUpdate } } : t
+    ))
+  }
+
+  const getPresetIcon = (presetId) => {
+    const icons = {
+      none: '✕',
+      fade: '⚬',
+      'slide-up': '⬆',
+      'slide-down': '⬇',
+      'slide-left': '⬅',
+      'slide-right': '➡',
+      scale: '🔍',
+      typewriter: '⌨',
+      bounce: '⚽',
+      rotate: '🔄',
+    }
+    return icons[presetId] || '✦'
+  }
+
+  const applyAnimationPreset = (presetId) => {
+    const presets = {
+      fade: {
+        keyframes: [
+          { time: 0, opacity: 0, transform: 'translateY(0) scale(1)' },
+          { time: 0.3, opacity: 1, transform: 'translateY(0) scale(1)' },
+          { time: 0.7, opacity: 1, transform: 'translateY(0) scale(1)' },
+          { time: 1, opacity: 0, transform: 'translateY(0) scale(1)' },
+        ]
+      },
+      'slide-up': {
+        keyframes: [
+          { time: 0, opacity: 0, transform: 'translateY(30px) scale(1)' },
+          { time: 0.4, opacity: 1, transform: 'translateY(0) scale(1)' },
+          { time: 0.6, opacity: 1, transform: 'translateY(0) scale(1)' },
+          { time: 1, opacity: 0, transform: 'translateY(-20px) scale(1)' },
+        ]
+      },
+      'slide-down': {
+        keyframes: [
+          { time: 0, opacity: 0, transform: 'translateY(-30px) scale(1)' },
+          { time: 0.4, opacity: 1, transform: 'translateY(0) scale(1)' },
+          { time: 0.6, opacity: 1, transform: 'translateY(0) scale(1)' },
+          { time: 1, opacity: 0, transform: 'translateY(20px) scale(1)' },
+        ]
+      },
+      'slide-left': {
+        keyframes: [
+          { time: 0, opacity: 0, transform: 'translateX(-40px) scale(1)' },
+          { time: 0.4, opacity: 1, transform: 'translateX(0) scale(1)' },
+          { time: 0.6, opacity: 1, transform: 'translateX(0) scale(1)' },
+          { time: 1, opacity: 0, transform: 'translateX(30px) scale(1)' },
+        ]
+      },
+      'slide-right': {
+        keyframes: [
+          { time: 0, opacity: 0, transform: 'translateX(40px) scale(1)' },
+          { time: 0.4, opacity: 1, transform: 'translateX(0) scale(1)' },
+          { time: 0.6, opacity: 1, transform: 'translateX(0) scale(1)' },
+          { time: 1, opacity: 0, transform: 'translateX(-30px) scale(1)' },
+        ]
+      },
+      scale: {
+        keyframes: [
+          { time: 0, opacity: 0, transform: 'scale(0.5)' },
+          { time: 0.3, opacity: 1, transform: 'scale(1.1)' },
+          { time: 0.5, opacity: 1, transform: 'scale(1)' },
+          { time: 1, opacity: 0, transform: 'scale(1.5)' },
+        ]
+      },
+      typewriter: {
+        keyframes: [
+          { time: 0, opacity: 0, transform: 'scale(1)' },
+          { time: 0.05, opacity: 1, transform: 'scale(1)' },
+          { time: 0.95, opacity: 1, transform: 'scale(1)' },
+          { time: 1, opacity: 0, transform: 'scale(1)' },
+        ]
+      },
+      bounce: {
+        keyframes: [
+          { time: 0, opacity: 0, transform: 'translateY(50px) scale(0.8)' },
+          { time: 0.2, opacity: 1, transform: 'translateY(-10px) scale(1.05)' },
+          { time: 0.4, opacity: 1, transform: 'translateY(0) scale(1)' },
+          { time: 0.6, opacity: 1, transform: 'translateY(-5px) scale(1.02)' },
+          { time: 1, opacity: 0, transform: 'translateY(0) scale(1)' },
+        ]
+      },
+      rotate: {
+        keyframes: [
+          { time: 0, opacity: 0, transform: 'rotate(-90deg) scale(0.5)' },
+          { time: 0.4, opacity: 1, transform: 'rotate(0deg) scale(1.1)' },
+          { time: 0.6, opacity: 1, transform: 'rotate(0deg) scale(1)' },
+          { time: 1, opacity: 0, transform: 'rotate(90deg) scale(0.5)' },
+        ]
+      },
+    }
+    return presets[presetId] || presets.fade
+  }
+
+  // Keyframe editor handlers
+  const openKeyframeEditor = (index) => {
+    const anim = getTextAnimation(activeTextId)
+    const kf = anim.keyframes?.[index]
+    if (kf) {
+      setEditingKeyframeIndex(index)
+      setKeyframeTime(kf.time)
+      setKeyframeOpacity(kf.opacity)
+      setKeyframeTransform(kf.transform || '')
+    }
+  }
+
+  const handleTimelineClick = (e) => {
+    if (!activeTextId || editingKeyframeIndex !== null) return
+    const rect = timelineRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width))
+    const time = x / rect.width
+    const anim = getTextAnimation(activeTextId)
+    const newKeyframe = { time, opacity: 1, transform: 'translateY(0) scale(1)' }
+    const keyframes = [...(anim.keyframes || []), newKeyframe].sort((a, b) => a.time - b.time)
+    updateTextAnimation(activeTextId, { keyframes })
+  }
+
+  const saveKeyframe = () => {
+    if (editingKeyframeIndex === null || !activeTextId) return
+    const anim = getTextAnimation(activeTextId)
+    const keyframes = [...(anim.keyframes || [])]
+    keyframes[editingKeyframeIndex] = { time: keyframeTime, opacity: keyframeOpacity, transform: keyframeTransform }
+    keyframes.sort((a, b) => a.time - b.time)
+    updateTextAnimation(activeTextId, { keyframes })
+    setEditingKeyframeIndex(null)
+  }
+
+  const deleteKeyframe = () => {
+    if (editingKeyframeIndex === null || !activeTextId) return
+    const anim = getTextAnimation(activeTextId)
+    const keyframes = (anim.keyframes || []).filter((_, i) => i !== editingKeyframeIndex)
+    updateTextAnimation(activeTextId, { keyframes })
+    setEditingKeyframeIndex(null)
+  }
+
+  const applyPresetToActive = (presetId) => {
+    if (!activeTextId) return
+    const preset = applyAnimationPreset(presetId)
+    updateTextAnimation(activeTextId, { preset: presetId, keyframes: preset.keyframes })
   }
 
   const getFilterCSS = () => {
@@ -243,14 +425,89 @@ export default function VideoMakerPage() {
         if (filterMap[filter]) filters.push(filterMap[filter])
       }
       
-      // Text overlays as drawtext
-      const cw = videoRef.current.videoWidth || 1920
-      const ch = videoRef.current.videoHeight || 1080
+      // Helper to generate drawtext filter with animation support
+  const buildDrawTextFilter = (overlay, clipDuration) => {
+    const cw = videoRef.current?.videoWidth || 1920
+    const ch = videoRef.current?.videoHeight || 1080
+    const x = (overlay.x / 100) * cw
+    const y = (overlay.y / 100) * ch
+    const escaped = overlay.text.replace(/'/g, "\\'").replace(/:/g, "\\:")
+    const baseParams = `text='${escaped}':x=${x}:y=${y}:fontsize=${overlay.fontSize * 2}:fontcolor=${overlay.color}:shadowcolor=black:shadowx=2:shadowy=2:alpha=${overlay.opacity / 100}`
+    
+    const anim = overlay.animation
+    if (!anim || !anim.keyframes || anim.keyframes.length < 2) {
+      // No animation or insufficient keyframes
+      return `drawtext=${baseParams}`
+    }
+    
+    // Build drawtext with enable expressions for each keyframe segment
+    const keyframes = [...anim.keyframes].sort((a, b) => a.time - b.time)
+    const drawtextFilters = []
+    
+    for (let i = 0; i < keyframes.length - 1; i++) {
+      const kf1 = keyframes[i]
+      const kf2 = keyframes[i + 1]
+      const startTime = kf1.time * clipDuration
+      const endTime = kf2.time * clipDuration
+      const duration = endTime - startTime
+      
+      if (duration <= 0) continue
+      
+      // Interpolate opacity and transform
+      const opacityExpr = `lerp(${kf1.opacity}, ${kf2.opacity}, (t-${startTime})/${duration})`
+      const transform = kf2.transform || 'translateY(0) scale(1)'
+      
+      // For simplicity, use enable with static values per segment
+      // FFmpeg drawtext doesn't easily support animated transform, so we approximate
+      const filter = `drawtext=${baseParams}:enable='between(t,${startTime.toFixed(3)},${endTime.toFixed(3)})':alpha=${kf2.opacity}`
+      drawtextFilters.push(filter)
+    }
+    
+    return drawtextFilters.join(',')
+  }
+
+  const exportVideo = async () => {
+    if (!videoRef.current || !videoLoaded || !videoFile) return
+    
+    setIsExporting(true)
+    setExportProgress(0)
+    
+    try {
+      const ffmpeg = await loadFFmpeg()
+      
+      // Write input file
+      await ffmpeg.writeFile('input.mp4', await fetchFile(videoFile))
+      
+      // Build filter chain
+      const filters = []
+      
+      // Color adjustments
+      const brightnessVal = (brightness - 100) / 200
+      const contrastVal = contrast / 100
+      const saturationVal = saturation / 100
+      if (brightnessVal !== 0 || contrastVal !== 1 || saturationVal !== 1) {
+        filters.push(`eq=brightness=${brightnessVal}:contrast=${contrastVal}:saturation=${saturationVal}`)
+      }
+      
+      // Preset filter
+      if (filter !== 'none') {
+        const filterMap = {
+          warm: 'colorbalance=rs=0.1:gs=0.05:bs=-0.1',
+          cold: 'colorbalance=rs=-0.1:gs=0:bs=0.1',
+          vintage: 'curves=vintage',
+          bw: 'hue=s=0',
+          vivid: 'eq=saturation=1.5',
+          film: 'curves=vintage,eq=saturation=0.8',
+          dramatic: 'eq=contrast=1.3:brightness=-0.05',
+        }
+        if (filterMap[filter]) filters.push(filterMap[filter])
+      }
+      
+      // Text overlays with animation support
+      const clipDuration = (trimEnd / 100) * videoDuration - (trimStart / 100) * videoDuration
       textOverlays.forEach(overlay => {
-        const x = (overlay.x / 100) * cw
-        const y = (overlay.y / 100) * ch
-        const escaped = overlay.text.replace(/'/g, "\\'").replace(/:/g, "\\:")
-        filters.push(`drawtext=text='${escaped}':x=${x}:y=${y}:fontsize=${overlay.fontSize * 2}:fontcolor=${overlay.color}:shadowcolor=black:shadowx=2:shadowy=2:alpha=${overlay.opacity / 100}`)
+        const drawtextFilter = buildDrawTextFilter(overlay, clipDuration)
+        if (drawtextFilter) filters.push(drawtextFilter)
       })
       
       // Build FFmpeg args
@@ -439,6 +696,7 @@ export default function VideoMakerPage() {
             <div className="sidebar-tabs">
               <button className={`tab ${activeTab === 'trim' ? 'active' : ''}`} onClick={() => setActiveTab('trim')}>Zuschneiden</button>
               <button className={`tab ${activeTab === 'text' ? 'active' : ''}`} onClick={() => setActiveTab('text')}>Text</button>
+              <button className={`tab ${activeTab === 'animation' ? 'active' : ''}`} onClick={() => setActiveTab('animation')}>Animation</button>
               <button className={`tab ${activeTab === 'filter' ? 'active' : ''}`} onClick={() => setActiveTab('filter')}>Filter</button>
               <button className={`tab ${activeTab === 'audio' ? 'active' : ''}`} onClick={() => setActiveTab('audio')}>Audio</button>
             </div>
@@ -557,6 +815,81 @@ export default function VideoMakerPage() {
                     <div className="control">
                       <label>Musik-Lautstaerke: {audioVolume}%</label>
                       <input type="range" min="0" max="100" value={audioVolume} onChange={e => setAudioVolume(+e.target.value)} />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'animation' && activeTextId && (
+                <div className="panel">
+                  <h3>Animation</h3>
+                  <div className="anim-tabs">
+                    <button className={`anim-tab ${activeAnimTab === 'presets' ? 'active' : ''}`} onClick={() => setActiveAnimTab('presets')}>Presets</button>
+                    <button className={`anim-tab ${activeAnimTab === 'keyframes' ? 'active' : ''}`} onClick={() => setActiveAnimTab('keyframes')}>Keyframes</button>
+                  </div>
+
+                  {activeAnimTab === 'presets' && (
+                    <div className="presets-grid">
+                      {ANIMATION_PRESETS.map(preset => (
+                        <button
+                          key={preset.id}
+                          className={`preset-btn ${getTextAnimation(activeTextId)?.preset === preset.id ? 'active' : ''}`}
+                          onClick={() => {
+                            const applied = applyAnimationPreset(preset.id)
+                            updateTextAnimation(activeTextId, { preset: preset.id, keyframes: applied.keyframes })
+                          }}
+                          title={preset.label}
+                        >
+                          <span className="preset-icon">{getPresetIcon(preset.id)}</span>
+                          <span className="preset-label">{preset.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {activeAnimTab === 'keyframes' && (
+                    <div className="keyframe-editor">
+                      <p className="keyframe-hint">Klicke auf die Timeline um Keyframes zu setzen. Zeit in % der Clip-Dauer.</p>
+                      <div className="keyframe-timeline" ref={timelineRef} onClick={handleTimelineClick}>
+                        <div className="keyframe-track">
+                          <div className="keyframe-playhead" style={{ left: `${(currentTime / videoDuration) * 100}%` }} />
+                          {getTextAnimation(activeTextId)?.keyframes?.map((kf, i) => (
+                            <button
+                              key={i}
+                              className="keyframe-marker"
+                              style={{ left: `${kf.time * 100}%` }}
+                              onClick={e => { e.stopPropagation(); openKeyframeEditor(i) }}
+                              title={`Keyframe ${i+1}: ${Math.round(kf.time*100)}%`}
+                            />
+                          ))}
+                        </div>
+                        <div className="keyframe-time-ruler">
+                          {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(t => (
+                            <span key={t} style={{ left: `${t}%` }}>{t}%</span>
+                          ))}
+                        </div>
+                      </div>
+                      {editingKeyframeIndex !== null && (
+                        <div className="keyframe-editor-panel">
+                          <h4>Keyframe {editingKeyframeIndex + 1} bearbeiten</h4>
+                          <div className="control">
+                            <label>Zeit (%): {Math.round(keyframeTime * 100)}</label>
+                            <input type="range" min="0" max="100" value={keyframeTime * 100} onChange={e => setKeyframeTime(e.target.value / 100)} />
+                          </div>
+                          <div className="control">
+                            <label>Opacity: {Math.round(keyframeOpacity * 100)}%</label>
+                            <input type="range" min="0" max="100" value={keyframeOpacity * 100} onChange={e => setKeyframeOpacity(e.target.value / 100)} />
+                          </div>
+                          <div className="control">
+                            <label>Transform (CSS):</label>
+                            <input type="text" value={keyframeTransform} onChange={e => setKeyframeTransform(e.target.value)} placeholder="z.B. translateY(20px) scale(0.9)" />
+                          </div>
+                          <div className="control-row">
+                            <button className="btn btn-secondary" onClick={saveKeyframe}>Speichern</button>
+                            <button className="btn btn-danger" onClick={deleteKeyframe}>Loeschen</button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
