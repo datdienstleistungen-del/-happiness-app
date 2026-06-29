@@ -196,6 +196,25 @@ export default function App() {
         ) : (
           <>
             {user && <Sidebar />}
+            {!user && location.pathname !== '/login' && location.pathname !== '/register' && (
+              <nav className="public-topbar">
+                <Link to="/" className="public-topbar-brand">
+                  <img src="/favicon.svg" alt="H" style={{ width: '28px', height: '28px' }} />
+                  <span>Happiness</span>
+                </Link>
+                <div className="public-topbar-links">
+                  <Link to="/marketplace" className={location.pathname === '/marketplace' ? 'active' : ''}>Marktplatz</Link>
+                  <Link to="/jobs" className={location.pathname === '/jobs' ? 'active' : ''}>Jobs</Link>
+                  <Link to="/courses" className={location.pathname === '/courses' ? 'active' : ''}>Kurse</Link>
+                  <Link to="/housing" className={location.pathname === '/housing' ? 'active' : ''}>Wohnungen</Link>
+                  <Link to="/community" className={location.pathname === '/community' ? 'active' : ''}>Community</Link>
+                </div>
+                <div className="public-topbar-actions">
+                  <Link to="/login" className="btn btn-outline btn-sm">Anmelden</Link>
+                  <Link to="/register" className="btn btn-primary btn-sm">Registrieren</Link>
+                </div>
+              </nav>
+            )}
             <main className={user ? 'main-content with-sidebar' : 'main-content full'}>
               <Routes>
                 <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
