@@ -17,6 +17,7 @@ import HistoryPage from './pages/HistoryPage'
 import AdminPage from './pages/AdminPage'
 import VideoMakerPage from './pages/VideoMakerPage'
 import PhotoEditorPage from './pages/PhotoEditorPage'
+import FotostoryPage from './pages/FotostoryPage'
 import AIChatPage from './pages/AIChatPage'
 import LegalPage from './pages/LegalPage'
 import './App.css'
@@ -47,6 +48,7 @@ function Sidebar() {
     { to: '/housing', icon: '🏠', label: t('nav.housing') },
     { to: '/video-maker', icon: '🎬', label: t('nav.videoMaker') },
     { to: '/photo-editor', icon: '📷', label: 'Foto Editor' },
+    { to: '/fotostory', icon: '🎞️', label: 'Fotostory' },
     { to: '/notifications', icon: '🔔', label: t('nav.notifications') },
   ]
 
@@ -202,6 +204,7 @@ export default function App() {
                 <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
                 <Route path="/video-maker" element={<ProtectedRoute><VideoMakerPage /></ProtectedRoute>} />
                 <Route path="/photo-editor" element={<ProtectedRoute><PhotoEditorPage /></ProtectedRoute>} />
+                <Route path="/fotostory" element={<ProtectedRoute><FotostoryPage /></ProtectedRoute>} />
                 <Route path="/ai-chat" element={<ProtectedRoute><AIChatPage /></ProtectedRoute>} />
                 <Route path="/legal" element={<LegalPage />} />
                 <Route path="/impressum" element={<LegalPage />} />
