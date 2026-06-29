@@ -46,7 +46,7 @@ exports.handler = async (event) => {
       messages.push({ role: 'user', content: message })
     }
 
-    const model = hasImage ? 'llama-3.2-90b-vision-preview' : 'llama-3.3-70b-versatile'
+    const model = 'groq/compound'
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
