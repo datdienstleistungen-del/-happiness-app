@@ -9,7 +9,7 @@ exports.handler = async (event) => {
     const { userId, email } = JSON.parse(event.body);
 
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['sepa_debit', 'card'],
+      payment_method_types: ['card'],
       customer_email: email,
       line_items: [
         {
