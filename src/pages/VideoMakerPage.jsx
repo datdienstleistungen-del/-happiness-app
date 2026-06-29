@@ -13,11 +13,11 @@ const TEMPLATES = [
 ]
 
 const MUSIC_LIBRARY = [
-  { id: 'none', label: 'Keine', icon: '🔇' },
-  { id: 'epic', label: 'Epic', icon: '🎵' },
-  { id: 'calm', label: 'Ruhig', icon: '🎶' },
-  { id: 'piano', label: 'Piano', icon: '🎹' },
-  { id: 'upbeat', label: 'Upbeat', icon: '🎸' },
+  { id: 'none', label: 'Keine', icon: '🔇', url: '' },
+  { id: 'epic', label: 'Epic', icon: '🎵', url: 'https://cdn.pixabay.com/audio/2022/10/14/audio_2af9e5748c.mp3' },
+  { id: 'calm', label: 'Ruhig', icon: '🎶', url: 'https://cdn.pixabay.com/audio/2022/08/02/audio_884fe92c38.mp3' },
+  { id: 'piano', label: 'Piano', icon: '🎹', url: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3' },
+  { id: 'upbeat', label: 'Upbeat', icon: '🎸', url: 'https://cdn.pixabay.com/audio/2023/10/30/audio_3713e23867.mp3' },
 ]
 
 const FALLBACK_SCENES = [
@@ -134,10 +134,11 @@ export default function VideoMakerPage() {
   }
 
   const playMusic = () => {
-    if (selectedMusic === 'none' || !audioRef.current) return
-    audioRef.current.src = `/.netlify/functions/audio-proxy?id=${selectedMusic}`
+    const music = MUSIC_LIBRARY.find(m => m.id === selectedMusic)
+    if (!music?.url || !audioRef.current) return
+    audioRef.current.src = music.url
     audioRef.current.volume = 0.3
-    audioRef.current.play().catch(() => {})
+    audioRef.current.play().catch(e => console.warn('Audio play failed:', e))
   }
 
   const stopMusic = () => {
