@@ -6,6 +6,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations'
+import ReactMarkdown from 'react-markdown'
 import './AIChatPage.css'
 
 export default function AIChatPage() {
@@ -654,7 +655,7 @@ WICHTIG: Antworte NIE mit "Wie kann ich dir helfen?" oder "Was beschaeftigt dich
                 )}
                 {msg.role === 'assistant' && (
                   <div className={`message-bubble ${msg.role}`}>
-                    {msg.content}
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
                   </div>
                 )}
               </div>
