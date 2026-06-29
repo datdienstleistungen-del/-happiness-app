@@ -46,7 +46,7 @@ exports.handler = async (event) => {
       messages.push({ role: 'user', content: message })
     }
 
-    const model = 'llama-3.2-90b-vision-preview'
+    const model = 'llama-3.2-11b-vision-preview'
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -65,6 +65,7 @@ exports.handler = async (event) => {
     if (!response.ok) {
       const error = await response.text()
       console.error('Groq API error for model', model, ':', error)
+      // Return error details to frontend can help debug
       return {
         statusCode: 502,
         body: JSON.stringify({ 
