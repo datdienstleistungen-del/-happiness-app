@@ -200,14 +200,14 @@ export default function App() {
               <Routes>
                 <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
                 <Route path="/register" element={user ? <Navigate to="/" /> : <RegisterPage />} />
-                <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-                <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
-                <Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
+                <Route path="/" element={user ? <HomePage /> : <LandingPage />} />
+                <Route path="/community" element={<CommunityPage />} />
+                <Route path="/friends" element={<FriendsPage />} />
                 <Route path="/marketplace" element={<MarketplacePage />} />
                 <Route path="/jobs" element={<JobsPage />} />
                 <Route path="/courses" element={<CoursesPage />} />
                 <Route path="/housing" element={<HousingPage />} />
-          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
                 <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
@@ -231,6 +231,47 @@ export default function App() {
 function LoadingScreen() {
   const { t } = useLanguage()
   return <div className="loading-screen">Wird geladen…</div>
+}
+
+function LandingPage() {
+  return (
+    <div className="container">
+      <div className="hero landing-hero">
+        <h1>Happiness</h1>
+        <p>Europas Community fuer Glueck, Vernetzung und persoenliche Entwicklung.</p>
+        <div className="landing-actions">
+          <Link to="/register" className="btn btn-primary">Kostenlos registrieren</Link>
+          <Link to="/login" className="btn btn-outline">Anmelden</Link>
+        </div>
+      </div>
+      <div className="landing-sections">
+        <Link to="/marketplace" className="dash-card">
+          <span className="dash-icon"><ShoppingCart size={20} /></span>
+          <div><h3>Marktplatz</h3><p>Dienstleistungen, Produkte und mehr</p></div>
+        </Link>
+        <Link to="/jobs" className="dash-card">
+          <span className="dash-icon"><Briefcase size={20} /></span>
+          <div><h3>Stellenangebote</h3><p>Jobs, Freelance, Praktika</p></div>
+        </Link>
+        <Link to="/courses" className="dash-card">
+          <span className="dash-icon"><BookOpen size={20} /></span>
+          <div><h3>Kurse</h3><p>Lernen und weiterbilden</p></div>
+        </Link>
+        <Link to="/housing" className="dash-card">
+          <span className="dash-icon"><Building2 size={20} /></span>
+          <div><h3>Wohnungen</h3><p>WG, Wohnung, Haus</p></div>
+        </Link>
+        <Link to="/community" className="dash-card">
+          <span className="dash-icon"><MessageCircle size={20} /></span>
+          <div><h3>Community</h3><p>Vernetzen und austauschen</p></div>
+        </Link>
+        <Link to="/ai-chat" className="dash-card">
+          <span className="dash-icon"><Sparkles size={20} /></span>
+          <div><h3>KI-Assistent</h3><p>20 Fragen kostenlos</p></div>
+        </Link>
+      </div>
+    </div>
+  )
 }
 
 function HomePage() {
