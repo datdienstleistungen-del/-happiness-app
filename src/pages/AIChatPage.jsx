@@ -39,7 +39,7 @@ export default function AIChatPage() {
   const loadUserData = async () => {
     const { data: settings } = await supabase
       .from('ai_settings')
-      .select('data_consent, is_premium')
+      .select('data_consent, is_premium, questions_used')
       .eq('user_id', user.id)
       .single()
 
@@ -48,6 +48,13 @@ export default function AIChatPage() {
       if (settings.is_premium) {
         setIsPremium(true)
         setShowPaywall(false)
+      }
+      // Fallback: questions_used from ai_settings (persists across logins)
+      if (settings.questions_used && settings.questions_used > 0) {
+        setQuestionCount(settings.questions_used)
+        if (settings.questions_used >= FREE_QUESTIONS && !settings.is_premium) {
+          setShowPaywall(true)
+        }
       }
     }
 
@@ -72,8 +79,10 @@ export default function AIChatPage() {
         loadedMessages.push({ role: 'assistant', content: conv.response })
       })
       setMessages(loadedMessages)
-      setQuestionCount(history.length)
-      if (history.length >= FREE_QUESTIONS) {
+      // Use MAX of history.length and current questionCount (from settings fallback)
+      const histCount = history.length
+      setQuestionCount(prev => Math.max(prev, histCount))
+      if (histCount >= FREE_QUESTIONS) {
         setShowPaywall(true)
       }
     }
@@ -287,6 +296,14 @@ SEI IMMER:
 - Ermutigend: "Das schaffst du. Ich bleib dran."
 - Community-orientiert: "Teil das Ergebnis, andere lernen davon."
 
+GESPRÄCHSKONTINUITÄT (KRITISCH):
+- Du führst EIN durchgehendes Gespräch. Keine "neuen Chats".
+- BEZIEHE DICH IMMER auf vorherige Antworten: "Wie ich vorhin sagte...", "Auf dein Beispiel mit X zurückkommend...", "Das passt zu dem, was du vorhin über Y meintest..."
+- ERINNERN: Namen, Berufe, Probleme, Vorlieben aus früheren Nachrichten. Nutze sie natürlich.
+- VERKNÜPFE neue Fragen mit altem Kontext: "Das ist wie bei deinem Wasserhahn-Problem — wieder ein Dichtungs-Thema."
+- KEINE Wiederholungen: Wenn du was schon erklärt hast, sag "Wie besprochen..." und geh weiter.
+- BAUE AUF: Jede Antwort soll das Gespräch vertiefen, nicht neu starten.
+
 WICHTIG:
 - NIE "Wie kann ich helfen?" oder "Was beschäftigt dich?" — langweilig.
 - STARTE direkt: mit Analyse, Frage, Impuls oder konkretem ersten Schritt.
@@ -340,17 +357,28 @@ WICHTIG:
 
       setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }])
 
-      await supabase.from('ai_conversations').insert({
+      // Save conversation with error handling
+      const { error: convError } = await supabase.from('ai_conversations').insert({
         user_id: user.id,
         message: `USER:${userMessage}`,
         response: aiResponse,
         context: { profile }
       })
+      if (convError) {
+        console.error('Conversation save failed:', convError)
+      }
 
       analyzeAndExtractProfile(userMessage, aiResponse)
 
       const newCount = questionCount + 1
       setQuestionCount(newCount)
+
+      // Redundant count save in ai_settings for persistence across logins
+      await supabase.from('ai_settings').upsert({
+        user_id: user.id,
+        questions_used: newCount
+      }, { onConflict: 'user_id' })
+
       if (newCount >= FREE_QUESTIONS && !isPremium) {
         setShowPaywall(true)
       }
