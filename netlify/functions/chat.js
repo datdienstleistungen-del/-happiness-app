@@ -7,7 +7,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { message, systemPrompt, userId } = JSON.parse(event.body)
+    const { message, systemPrompt, userId, history, imageUrl } = JSON.parse(event.body)
 
     const apiKey = process.env.GROQ_API_KEY
 
@@ -18,6 +18,36 @@ exports.handler = async (event) => {
       }
     }
 
+    const hasImage = !!imageUrl
+
+    // Build messages array
+    const messages = [
+      { role: 'system', content: systemPrompt || 'Du bist ein guter Freund und Assistent.' }
+    ]
+
+    // Add history (last 20 messages for context)
+    if (history && Array.isArray(history)) {
+      const recentHistory = history.slice(-20)
+      for (const msg of recentHistory) {
+        messages.push({ role: msg.role, content: msg.content })
+      }
+    }
+
+    // Add current user message (with or without image)
+    if (hasImage) {
+      messages.push({
+        role: 'user',
+        content: [
+          { type: 'text', text: message },
+          { type: 'image_url', image_url: { url: imageUrl } }
+        ]
+      })
+    } else {
+      messages.push({ role: 'user', content: message })
+    }
+
+    const model = hasImage ? 'llama-3.2-90b-vision-preview' : 'llama-3.3-70b-versatile'
+
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -25,11 +55,8 @@ exports.handler = async (event) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          { role: 'system', content: systemPrompt || 'Du bist Happiness AI, ein freundlicher europäischer Assistent.' },
-          { role: 'user', content: message }
-        ],
+        model,
+        messages,
         max_tokens: 1024,
         temperature: 0.7
       })

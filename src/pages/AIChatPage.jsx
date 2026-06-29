@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import {
   Sparkles, User, Download, Trash2, X, Heart, MapPin, Briefcase,
-  Lock, ChefHat, Car, Users, CreditCard, Check, Send, Brain
+  Lock, ChefHat, Car, Users, CreditCard, Check, Send, Brain, Wrench
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -21,6 +21,9 @@ export default function AIChatPage() {
   const [showPaywall, setShowPaywall] = useState(false)
   const [isPremium, setIsPremium] = useState(false)
   const messagesEndRef = useRef(null)
+  const [selectedImage, setSelectedImage] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
+  const fileInputRef = useRef(null)
   const FREE_QUESTIONS = 5
 
   useEffect(() => {
@@ -116,47 +119,91 @@ export default function AIChatPage() {
     }
   }
 
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) return
+    if (file.size > 10 * 1024 * 1024) {
+      setError('Bild ist zu gross. Maximal 10 MB.')
+      return
+    }
+    setSelectedImage(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
+
+  const removeImage = () => {
+    setSelectedImage(null)
+    setImagePreview(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   const sendMessage = async () => {
-    if (!input.trim() || isLoading) return
+    if ((!input.trim() && !selectedImage) || isLoading) return
     if (showPaywall && !isPremium) return
 
     const userMessage = input.trim()
     setInput('')
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }])
+    setMessages(prev => [...prev, { role: 'user', content: userMessage, image: imagePreview }])
     setIsLoading(true)
 
-    const systemPrompt = `Du bist der Happiness AI — ein freundlicher Assistent für alle Altersgruppen.
+    const systemPrompt = `Du bist ein guter Freund. Nicht-assistent, nicht steif — einfach jemand, den man gerne mag.
 
-SPRACHE: Deutsch. Kurze Sätze. Emojis sparsam.
+SPRACHE: Deutsch, Umgangssprache. Kurze Saeetze. Manchmal witzig, immer ehrlich.
 
-STIL: Neutral, hilfsbereut, professionell. Wie ein Assistent, nicht wie ein Freund.
+WER DU BIST:
+- Ein kluger Freund fuer ALLE Altersgruppen: Kinder, Jugendliche, Erwachsene, Senioren
+- Du hast Ahnung von allem: Kochen, Auto, Handwerk, Schule, Job, Leben
+- Du denkst mit, aber du drueckst nichts auf
+- Du stellst Fragen die zum Nachdenken anregen (sokratisch), aber nur bei unbedenklichen Themen
 
-WAS DU DARFST BEANTWORTEN:
+THEMEN WORUEBER DU REDEN KANNST:
+- Kochen, Rezepte, Essen
+- Auto, Motor, Reparaturen
+- Handwerk: Elektrik, Wasser, Heizung, Bau, Renovierung, Werkzeug
 - Schule, Mathe, Naturwissenschaften
 - Musik, Filme, Spiele, Sport
-- Kochen, Rezepte
-- Beruf, Wohnung, Alltag
-- Kreativität, Ideen
-- Allgemeinwissen
+- Beruf, Job, Wohnung, Alltag
+- Gesundheit, Fitness, Ernaehrung
+- Kreativitaet, Ideen, Hobby
+- Geld, Finanzen, Versicherungen
 
-WICHTIG: NIEMALS nach persönlichen Daten fragen. Kein "Was denkst du?" bei sensiblen Themen. Keine persönlichen Fragen an Minderjährige.
+SOKRATISCH (bei normalen Themen):
+Stell Fragen die zum Nachdenken anregen. Beispiel:
+- "Was denkst du denn?"
+- "Hast du schon mal versucht...?"
+- "Was waere wenn...?"
+- "Was ist dir dabei am wichtigsten?"
 
-THEMEN — DIREKT VERWEISEN:
-- Sexuelle Themen → "Das ist ein Thema, das du mit deinen Eltern oder einem Erwachsenen besprechen solltest."
-- Gewalt → "Bei Gewalt solltest du mit einem Erwachsenen sprechen."
-- Drogen/Alkohol → "Das ist ein Thema für Erwachsene. Sprich mit deinen Eltern."
-- Psychische Gesundheit → "Wenn es dir nicht gut geht, sprich mit einem Erwachsenen dem du vertraust."
-- Politik → "Dazu gibt es verschiedene Meinungen."
-- Religion → "Glaube ist persönlich."
+KEIN SOKRATISCH (bei sensiblen Themen):
+- Sexuelle Themen → Direkt: "Das ist ein Thema fuer Erwachsene. Sprich mit jemandem dem du vertraust."
+- Gewalt → Direkt: "Bei Gewalt solltest du mit einem Erwachsenen sprechen."
+- Drogen/Alkohol → Direkt: "Das ist ein Thema fuer Erwachsene."
+- Psychische Gesundheit → Direkt: "Wenn es dir nicht gut geht, hol dir Hilfe. Das ist nichts wofuer man sich schaemen muss."
+- Politik → Neutral: "Dazu gibt es verschiedene Meinungen."
+- Religion → Respektvoll: "Glaube ist persoenlich."
 
-ABSOLUT VERBOTEN:
-- Nach persönlichen Daten fragen
-- Persönliche Gespräche mit Minderjährigen
-- Anleitungen zu gefährlichen Dingen
+VERBOTEN:
+- Nach persoenlichen Daten fragen (Name, Adresse, Alter)
+- Anleitungen zu gefaehrlichen Dingen
 - Beleidigungen oder Hass
 
-WENN DU NICHT ANTWORTEN KANNST:
-"Das kann ich dir nicht beantworten. Bitte sprich mit einem Erwachsenen dem du vertraust."`
+WICHTIG: Antworte NIE mit "Wie kann ich dir helfen?" oder "Was beschaeftigt dich?" — das ist langweilig. Starte direkt mit hilfreichen Inhalt oder einer konkreten Frage.`
+
+    // Build history from previous messages (before the current one was added)
+    const historyMessages = messages.slice(-20).map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }))
+
+    // Convert image to base64
+    let imageUrl = null
+    if (selectedImage) {
+      const reader = new FileReader()
+      imageUrl = await new Promise((resolve) => {
+        reader.onload = () => resolve(reader.result)
+        reader.readAsDataURL(selectedImage)
+      })
+    }
 
     try {
       const response = await fetch('/api/chat', {
@@ -165,7 +212,9 @@ WENN DU NICHT ANTWORTEN KANNST:
         body: JSON.stringify({
           message: userMessage,
           systemPrompt,
-          userId: user.id
+          userId: user.id,
+          history: historyMessages,
+          imageUrl: imageUrl
         })
       })
 
@@ -192,6 +241,8 @@ WENN DU NICHT ANTWORTEN KANNST:
       if (newCount >= FREE_QUESTIONS && !isPremium) {
         setShowPaywall(true)
       }
+
+      removeImage()
 
     } catch (error) {
       console.error('AI Error:', error)
@@ -397,21 +448,21 @@ WENN DU NICHT ANTWORTEN KANNST:
               <p>{t('ai.welcomeDesc') || 'Was kann ich heute für dich tun?'}</p>
 
               <div className="suggestion-chips">
-                <button onClick={() => setInput(t('ai.chip1Q'))}>
+                <button onClick={() => setInput('Was soll ich heute kochen?')}>
                   <span className="chip-icon"><ChefHat size={16} /></span>
-                  {t('ai.chip1')}
+                  Was kochen?
                 </button>
-                <button onClick={() => setInput(t('ai.chip2Q'))}>
+                <button onClick={() => setInput('Mein Wasserhahn tropft, wie repariere ich das?')}>
+                  <span className="chip-icon"><Wrench size={16} /></span>
+                  Handwerk
+                </button>
+                <button onClick={() => setInput('Soll ich ein Elektroauto kaufen?')}>
                   <span className="chip-icon"><Car size={16} /></span>
-                  {t('ai.chip2')}
+                  Auto
                 </button>
-                <button onClick={() => setInput(t('ai.chip3Q'))}>
-                  <span className="chip-icon"><Users size={16} /></span>
-                  {t('ai.chip3')}
-                </button>
-                <button onClick={() => setInput(t('ai.chip4Q'))}>
+                <button onClick={() => setInput('Tipps fuer einen Jobwechsel?')}>
                   <span className="chip-icon"><Briefcase size={16} /></span>
-                  {t('ai.chip4')}
+                  Job
                 </button>
               </div>
             </div>
@@ -427,9 +478,17 @@ WENN DU NICHT ANTWORTEN KANNST:
                   {msg.content}
                 </div>
                 {msg.role === 'user' && (
-                  <div className="msg-avatar user-avatar">
-                    {user?.email?.[0]?.toUpperCase() || 'U'}
-                  </div>
+                  <>
+                    {msg.image && (
+                      <img src={msg.image} alt="" style={{ maxWidth: '200px', borderRadius: '8px', marginBottom: '0.5rem', display: 'block' }} />
+                    )}
+                    <div className={`message-bubble ${msg.role}`}>
+                      {msg.content}
+                    </div>
+                    <div className="msg-avatar user-avatar">
+                      {user?.email?.[0]?.toUpperCase() || 'U'}
+                    </div>
+                  </>
                 )}
               </div>
             ))}
@@ -469,29 +528,65 @@ WENN DU NICHT ANTWORTEN KANNST:
 
               <div className="paywall-steps">
                 <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Sofortige Freischaltung</p>
-                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Kündbar jederzeit</p>
-                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />SEPA-Überweisung</p>
+                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Kuendbar jederzeit</p>
+                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Per Kreditkarte</p>
               </div>
 
-              <p className="paywall-note">Keine Kreditkarte nötig. Per Sofortüberweisung.</p>
+              <p className="paywall-note">Sicher bezahlen mit Stripe.</p>
             </div>
           </div>
         ) : (
         <div className="ai-input-bar">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyPress}
-            placeholder={t('ai.placeholder')}
-            rows="1"
-          />
-          <button
-            className="send-btn"
-            onClick={sendMessage}
-            disabled={!input.trim() || isLoading}
-          >
-            <Send size={16} />
-          </button>
+          {imagePreview && (
+            <div style={{ position: 'relative', marginBottom: '0.5rem' }}>
+              <img src={imagePreview} alt="" style={{ maxWidth: '120px', borderRadius: '8px', border: '2px solid var(--border)' }} />
+              <button
+                onClick={removeImage}
+                style={{
+                  position: 'absolute', top: -8, right: -8,
+                  background: 'var(--danger, #e53e3e)', color: 'white',
+                  border: 'none', borderRadius: '50%', width: 22, height: 22,
+                  cursor: 'pointer', fontSize: '12px', lineHeight: '22px', textAlign: 'center'
+                }}
+              >X</button>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              style={{ display: 'none' }}
+            />
+            <button
+              className="send-btn"
+              onClick={() => fileInputRef.current?.click()}
+              style={{ background: 'var(--border)', color: 'var(--text)' }}
+              title="Bild hochladen"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+            </button>
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder={t('ai.placeholder')}
+              rows="1"
+              style={{ flex: 1 }}
+            />
+            <button
+              className="send-btn"
+              onClick={sendMessage}
+              disabled={(!input.trim() && !selectedImage) || isLoading}
+            >
+              <Send size={16} />
+            </button>
+          </div>
         </div>
         )}
         <div className="question-counter">
