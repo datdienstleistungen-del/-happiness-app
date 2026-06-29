@@ -482,12 +482,6 @@ export default function VideoMakerPage() {
     updateOverlayAnimation(activeOverlayId, { preset: presetId, keyframes: preset.keyframes })
   }
 
-  const getFilterCSS = () => {
-    const f = FILTERS.find(fi => fi.id === filter)
-    const custom = `brightness(${brightness / 100}) contrast(${contrast / 100}) saturate(${saturation / 100})`
-    return f?.css !== 'none' ? `${f.css} ${custom}` : custom
-  }
-
   const loadFFmpeg = async () => {
     if (ffmpegRef.current) return ffmpegRef.current
     setFfmpegLoading(true)
