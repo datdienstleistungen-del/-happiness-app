@@ -1,174 +1,206 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations'
 import './VideoMakerPage.css'
 
-const TEMPLATES = [
-  { id: 'motivation', label: 'Motivation', icon: '💪', desc: 'Kraftvolle Sprueche', colors: ['#FF6B6B', '#FF8E53'] },
-  { id: 'dankbarkeit', label: 'Dankbarkeit', icon: '🙏', desc: 'Wertschaetzung', colors: ['#4ECDC4', '#44CF6C'] },
-  { id: 'affirmation', label: 'Affirmationen', icon: '✨', desc: 'Positive Gedanken', colors: ['#A78BFA', '#818CF8'] },
-  { id: 'wellness', label: 'Wellness', icon: '🧘', desc: 'Ruhe & Entspannung', colors: ['#2DD4BF', '#22D3EE'] },
-  { id: 'fitness', label: 'Fitness', icon: '🏋️', desc: 'Training & Kraft', colors: ['#F97316', '#EF4444'] },
-  { id: 'liebe', label: 'Liebe', icon: '❤️', desc: 'Gefuehle', colors: ['#EC4899', '#F43F5E'] },
+const FILTERS = [
+  { id: 'none', label: 'Original', css: 'none' },
+  { id: 'warm', label: 'Waerme', css: 'sepia(0.3) saturate(1.4) brightness(1.1)' },
+  { id: 'cold', label: 'Kalt', css: 'saturate(0.8) hue-rotate(20deg) brightness(1.05)' },
+  { id: 'vintage', label: 'Vintage', css: 'sepia(0.5) contrast(1.1) brightness(0.9)' },
+  { id: 'bw', label: 'S/W', css: 'grayscale(1) contrast(1.2)' },
+  { id: 'vivid', label: 'Lebhaft', css: 'saturate(1.8) contrast(1.1) brightness(1.05)' },
+  { id: 'film', label: 'Film', css: 'contrast(1.2) saturate(0.9) brightness(0.95) sepia(0.1)' },
+  { id: 'dramatic', label: 'Dramatisch', css: 'contrast(1.4) brightness(0.85) saturate(0.7)' },
 ]
 
-const MUSIC_URLS = {
-  epic: 'https://cdn.pixabay.com/audio/2022/10/14/audio_2af9e5748c.mp3',
-  calm: 'https://cdn.pixabay.com/audio/2022/08/02/audio_884fe92c38.mp3',
-  piano: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3',
-}
-
-const SCENE_TEXTS = {
-  motivation: [
-    { t1: 'Du bist', t2: 'staerker als du denkst' },
-    { t1: 'Jeder Tag', t2: 'ist eine neue Chance' },
-    { t1: 'Glaube an', t2: 'dich selbst' },
-    { t1: 'Deine Zeit', t2: 'ist jetzt' },
-    { t1: 'Los gehts', t2: 'Happiness' },
-  ],
-  dankbarkeit: [
-    { t1: 'Sei dankbar', t2: 'fuer das was du hast' },
-    { t1: 'Jeder Moment', t2: 'ist ein Geschenk' },
-    { t1: 'Kleines Glueck', t2: 'grosser Unterschied' },
-    { t1: 'Danke', t2: 'fuer diesen Tag' },
-    { t1: 'Happiness', t2: 'Dankbarkeit' },
-  ],
-  affirmation: [
-    { t1: 'Ich bin', t2: 'genug so wie ich bin' },
-    { t1: 'Ich verdiene', t2: 'Glueck und Erfolg' },
-    { t1: 'Ich waechse', t2: 'jeden Tag' },
-    { t1: 'Ich bin', t2: 'mein bestes Ich' },
-    { t1: 'Happiness', t2: 'Affirmationen' },
-  ],
-  wellness: [
-    { t1: 'Atme tief', t2: 'ein und aus' },
-    { t1: 'Lass los', t2: 'was dich belastet' },
-    { t1: 'Ruhe', t2: 'kommt von innen' },
-    { t1: 'Dein Körper', t2: 'dankt es dir' },
-    { t1: 'Happiness', t2: 'Wellness' },
-  ],
-  fitness: [
-    { t1: 'Staerke', t2: 'kommt von innen' },
-    { t1: 'Jeder Tropfen', t2: 'Schweiss zaehlt' },
-    { t1: 'Gib alles', t2: 'heute' },
-    { t1: 'Du bist', t2: 'unbesiegbar' },
-    { t1: 'Happiness', t2: 'Fitness' },
-  ],
-  liebe: [
-    { t1: 'Liebe', t2: 'ist die groesste Kraft' },
-    { t1: 'Oeffne dein Herz', t2: 'fuer andere' },
-    { t1: 'Gemeinsam', t2: 'sind wir staerker' },
-    { t1: 'Du bist', t2: 'geliebt' },
-    { t1: 'Happiness', t2: 'Liebe' },
-  ],
-}
-
-function generateGradient(seed) {
-  const palettes = [
-    ['#667eea', '#764ba2'], ['#f093fb', '#f5576c'], ['#4facfe', '#00f2fe'],
-    ['#43e97b', '#38f9d7'], ['#fa709a', '#fee140'], ['#a18cd1', '#fbc2eb'],
-    ['#ffecd2', '#fcb69f'], ['#ff9a9e', '#fecfef'], ['#a1c4fd', '#c2e9fb'],
-    ['#d4fc79', '#96e6a1'], ['#84fab0', '#8fd3f4'], ['#cfd9df', '#e2ebf0'],
-  ]
-  const p = palettes[seed % palettes.length]
-  return `linear-gradient(135deg, ${p[0]}, ${p[1]})`
-}
+const ASPECT_RATIOS = [
+  { id: '16:9', label: 'Landscape (16:9)', width: 1920, height: 1080 },
+  { id: '9:16', label: 'Vertical (9:16)', width: 1080, height: 1920 },
+  { id: '1:1', label: 'Quadrat (1:1)', width: 1080, height: 1080 },
+  { id: '4:5', label: 'Instagram (4:5)', width: 1080, height: 1350 },
+]
 
 export default function VideoMakerPage() {
   const { t } = useLanguage()
   const { user } = useAuth()
-  const audioRef = useRef(null)
+  const videoRef = useRef(null)
   const canvasRef = useRef(null)
-  const [isGenerating, setIsGenerating] = useState(false)
+  const fileInputRef = useRef(null)
+  const audioInputRef = useRef(null)
+  const timelineRef = useRef(null)
+
+  const [videoFile, setVideoFile] = useState(null)
+  const [videoUrl, setVideoUrl] = useState(null)
+  const [videoDuration, setVideoDuration] = useState(0)
+  const [videoLoaded, setVideoLoaded] = useState(false)
+
+  const [trimStart, setTrimStart] = useState(0)
+  const [trimEnd, setTrimEnd] = useState(100)
+  const [currentTime, setCurrentTime] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
+
+  const [filter, setFilter] = useState('none')
+  const [aspectRatio, setAspectRatio] = useState('16:9')
+
+  const [textOverlays, setTextOverlays] = useState([])
+  const [activeTextId, setActiveTextId] = useState(null)
+  const [showTextPanel, setShowTextPanel] = useState(false)
+
+  const [audioFile, setAudioFile] = useState(null)
+  const [audioUrl, setAudioUrl] = useState(null)
+  const [audioVolume, setAudioVolume] = useState(70)
+  const [originalVolume, setOriginalVolume] = useState(100)
+
+  const [brightness, setBrightness] = useState(100)
+  const [contrast, setContrast] = useState(100)
+  const [saturation, setSaturation] = useState(100)
+
   const [isExporting, setIsExporting] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [status, setStatus] = useState('Bereit')
-  const [videoCount, setVideoCount] = useState(0)
-  const maxFreeVideos = 20
+  const [exportProgress, setExportProgress] = useState(0)
+  const [activeTab, setActiveTab] = useState('trim')
 
-  const [scenes, setScenes] = useState([])
-  const [activeScene, setActiveScene] = useState(0)
-  const [selectedTemplate, setSelectedTemplate] = useState(null)
-  const [selectedMusic, setSelectedMusic] = useState('none')
-  const [textColor, setTextColor] = useState('#ffffff')
-  const [fontSize, setFontSize] = useState(48)
-
-  useEffect(() => {
-    if (user) {
-      const saved = parseInt(localStorage.getItem(`happiness_video_count_${user.id}`) || '0')
-      setVideoCount(saved)
-    }
-  }, [user])
-
-  const generateVideo = (templateId) => {
-    const tmpl = TEMPLATES.find(t => t.id === templateId)
-    if (!tmpl) return
-    if (videoCount >= maxFreeVideos) {
-      alert(`${maxFreeVideos} Videos erreicht. Upgrade!`)
-      return
-    }
-
-    setIsGenerating(true)
-    setSelectedTemplate(tmpl)
-
-    setTimeout(() => {
-      const texts = SCENE_TEXTS[templateId] || SCENE_TEXTS.motivation
-      setScenes(texts.map((s, i) => ({
-        ...s,
-        gradient: generateGradient(i + templateId.length),
-        duration: 4
-      })))
-      setVideoCount(prev => {
-        const n = prev + 1
-        if (user) localStorage.setItem(`happiness_video_count_${user.id}`, n.toString())
-        return n
-      })
-      setIsGenerating(false)
-    }, 500)
+  const handleVideoUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setVideoFile(file)
+    const url = URL.createObjectURL(file)
+    setVideoUrl(url)
+    setVideoLoaded(false)
+    setTextOverlays([])
+    setFilter('none')
+    setBrightness(100)
+    setContrast(100)
+    setSaturation(100)
   }
 
-  const playPreview = () => {
-    if (scenes.length === 0) return
-    setIsPlaying(true)
+  const handleVideoLoaded = () => {
+    const v = videoRef.current
+    if (!v) return
+    setVideoDuration(v.duration)
+    setTrimEnd(100)
+    setVideoLoaded(true)
+    v.currentTime = 0
+  }
 
-    if (selectedMusic !== 'none' && MUSIC_URLS[selectedMusic] && audioRef.current) {
-      audioRef.current.src = MUSIC_URLS[selectedMusic]
-      audioRef.current.volume = 0.3
-      audioRef.current.play().catch(() => {})
+  const handleTimeUpdate = () => {
+    const v = videoRef.current
+    if (!v) return
+    setCurrentTime(v.currentTime)
+
+    const startSec = (trimStart / 100) * videoDuration
+    const endSec = (trimEnd / 100) * videoDuration
+    if (v.currentTime >= endSec) {
+      v.pause()
+      setIsPlaying(false)
     }
+  }
 
-    let idx = 0
-    const play = (i) => {
-      if (i >= scenes.length) {
-        setIsPlaying(false)
-        audioRef.current?.pause()
-        return
+  const togglePlay = () => {
+    const v = videoRef.current
+    if (!v) return
+    if (isPlaying) {
+      v.pause()
+    } else {
+      const startSec = (trimStart / 100) * videoDuration
+      if (v.currentTime < startSec || v.currentTime >= (trimEnd / 100) * videoDuration) {
+        v.currentTime = startSec
       }
-      setActiveScene(i)
-      setTimeout(() => play(i + 1), scenes[i].duration * 1000)
+      v.play()
     }
-    play(0)
+    setIsPlaying(!isPlaying)
   }
 
-  const stopPreview = () => {
-    setIsPlaying(false)
-    audioRef.current?.pause()
-    if (audioRef.current) audioRef.current.currentTime = 0
+  const seekTo = (e) => {
+    const v = videoRef.current
+    if (!v) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const percent = x / rect.width
+    v.currentTime = percent * videoDuration
+  }
+
+  const addTextOverlay = () => {
+    const id = Date.now()
+    setTextOverlays(prev => [...prev, {
+      id,
+      text: 'Text hier',
+      x: 50,
+      y: 50,
+      fontSize: 36,
+      color: '#ffffff',
+      fontWeight: 'bold',
+      opacity: 100,
+      shadow: true,
+    }])
+    setActiveTextId(id)
+    setShowTextPanel(true)
+  }
+
+  const updateTextOverlay = (id, field, value) => {
+    setTextOverlays(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t))
+  }
+
+  const removeTextOverlay = (id) => {
+    setTextOverlays(prev => prev.filter(t => t.id !== id))
+    if (activeTextId === id) setActiveTextId(null)
+  }
+
+  const handleAudioUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setAudioFile(file)
+    setAudioUrl(URL.createObjectURL(file))
+  }
+
+  const getFilterCSS = () => {
+    const f = FILTERS.find(fi => fi.id === filter)
+    const custom = `brightness(${brightness / 100}) contrast(${contrast / 100}) saturate(${saturation / 100})`
+    return f?.css !== 'none' ? `${f.css} ${custom}` : custom
   }
 
   const exportVideo = async () => {
-    if (scenes.length === 0) return
+    if (!videoRef.current || !videoLoaded) return
     setIsExporting(true)
-    setProgress(0)
+    setExportProgress(0)
 
+    const v = videoRef.current
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
-    canvas.width = 1080
-    canvas.height = 1920
+
+    const ar = ASPECT_RATIOS.find(a => a.id === aspectRatio)
+    canvas.width = ar.width
+    canvas.height = ar.height
+
+    const startSec = (trimStart / 100) * videoDuration
+    const endSec = (trimEnd / 100) * videoDuration
+    const exportDuration = endSec - startSec
+
+    v.currentTime = startSec
+    v.muted = false
 
     const stream = canvas.captureStream(30)
-    const mr = new MediaRecorder(stream, { mimeType: 'video/webm' })
+
+    if (audioUrl) {
+      try {
+        const audioCtx = new AudioContext()
+        const audioEl = new Audio(audioUrl)
+        audioEl.volume = audioVolume / 100
+        const source = audioCtx.createMediaElementSource(audioEl)
+        const dest = audioCtx.createMediaStreamDestination()
+        source.connect(dest)
+        source.connect(audioCtx.destination)
+        const audioTracks = dest.stream.getTracks()
+        audioTracks.forEach(track => stream.addTrack(track))
+        audioEl.play()
+      } catch (e) {
+        console.warn('Audio mixing failed')
+      }
+    }
+
+    const mr = new MediaRecorder(stream, {
+      mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm'
+    })
     const chunks = []
     mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data) }
     mr.onstop = () => {
@@ -176,191 +208,304 @@ export default function VideoMakerPage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `happiness-${Date.now()}.webm`
+      a.download = `happiness-video-${Date.now()}.webm`
       a.click()
       URL.revokeObjectURL(url)
       setIsExporting(false)
+      v.pause()
     }
 
-    if (selectedMusic !== 'none' && MUSIC_URLS[selectedMusic] && audioRef.current) {
-      audioRef.current.src = MUSIC_URLS[selectedMusic]
-      audioRef.current.volume = 0.3
-      audioRef.current.play().catch(() => {})
-    }
-
+    v.play()
     mr.start()
 
-    for (let i = 0; i < scenes.length; i++) {
-      setStatus(`Szene ${i+1}/${scenes.length}`)
-      setActiveScene(i)
-      await new Promise(resolve => {
-        const start = Date.now()
-        const dur = scenes[i].duration * 1000
-        const animate = () => {
-          const elapsed = Date.now() - start
-          const p = Math.min(1, elapsed / dur)
-          setProgress(((i + p) / scenes.length) * 100)
+    const animate = () => {
+      if (v.currentTime >= endSec || v.paused) {
+        mr.stop()
+        return
+      }
 
-          const w = canvas.width
-          const h = canvas.height
+      const vw = v.videoWidth
+      const vh = v.videoHeight
+      const cw = canvas.width
+      const ch = canvas.height
 
-          const grad = ctx.createLinearGradient(0, 0, w, h)
-          const colors = scenes[i].gradient.match(/#[a-f0-9]+/gi) || ['#9b59b6', '#3498db']
-          grad.addColorStop(0, colors[0])
-          grad.addColorStop(1, colors[1])
-          ctx.fillStyle = grad
-          ctx.fillRect(0, 0, w, h)
+      const scale = Math.max(cw / vw, ch / vh)
+      const sw = cw / scale
+      const sh = ch / scale
+      const sx = (vw - sw) / 2
+      const sy = (vh - sh) / 2
 
-          ctx.fillStyle = 'rgba(0,0,0,0.4)'
-          ctx.fillRect(0, 0, w, h)
+      ctx.filter = getFilterCSS()
+      ctx.drawImage(v, sx, sy, sw, sh, 0, 0, cw, ch)
+      ctx.filter = 'none'
 
-          ctx.textAlign = 'center'
-          ctx.shadowColor = 'rgba(0,0,0,0.9)'
-          ctx.shadowBlur = 20
-
-          ctx.fillStyle = textColor
-          ctx.font = `bold ${fontSize * 2}px Arial`
-          ctx.fillText(scenes[i].t1, w/2, h/2 - fontSize)
-
-          ctx.font = `${fontSize * 1.2}px Arial`
-          ctx.fillText(scenes[i].t2, w/2, h/2 + fontSize * 1.5)
-
-          ctx.shadowBlur = 0
-          ctx.fillStyle = selectedTemplate?.colors?.[0] || '#9b59b6'
-          ctx.font = `bold ${fontSize}px Arial`
-          ctx.fillText('Happiness', w/2, h - 120)
-
-          if (p < 1) requestAnimationFrame(animate)
-          else resolve()
+      textOverlays.forEach(overlay => {
+        const tx = (overlay.x / 100) * cw
+        const ty = (overlay.y / 100) * ch
+        ctx.textAlign = 'center'
+        ctx.globalAlpha = overlay.opacity / 100
+        if (overlay.shadow) {
+          ctx.shadowColor = 'rgba(0,0,0,0.8)'
+          ctx.shadowBlur = 10
         }
-        animate()
+        ctx.fillStyle = overlay.color
+        ctx.font = `${overlay.fontWeight} ${overlay.fontSize * 2}px 'Segoe UI', Arial, sans-serif`
+        ctx.fillText(overlay.text, tx, ty)
+        ctx.shadowBlur = 0
+        ctx.globalAlpha = 1
       })
+
+      const progress = ((v.currentTime - startSec) / exportDuration) * 100
+      setExportProgress(progress)
+      requestAnimationFrame(animate)
     }
-    mr.stop()
-    audioRef.current?.pause()
+    animate()
   }
 
-  const remaining = maxFreeVideos - videoCount
+  const formatTime = (sec) => {
+    const m = Math.floor(sec / 60)
+    const s = Math.floor(sec % 60)
+    return `${m}:${s.toString().padStart(2, '0')}`
+  }
 
   return (
-    <div className="video-maker-page">
-      <audio ref={audioRef} loop preload="auto" />
-      <canvas ref={canvasRef} style={{ display: 'none' }} />
-
-      <h1>🎬 Video Creator</h1>
-
-      <div className="ai-section">
-        <div className="ai-header">
-          <span className="ai-badge">KI</span>
-          <span>Erstelle echte Social-Media Videos</span>
-          <span className="video-counter">{remaining}免费 uebrig</span>
-        </div>
-        <div className="template-grid">
-          {TEMPLATES.map(tmpl => (
-            <button
-              key={tmpl.id}
-              className={`template-card ${selectedTemplate?.id === tmpl.id ? 'active' : ''} ${isGenerating ? 'disabled' : ''}`}
-              onClick={() => generateVideo(tmpl.id)}
-              disabled={isGenerating}
-            >
-              <span className="template-icon">{tmpl.icon}</span>
-              <span className="template-label">{tmpl.label}</span>
-              <span className="template-desc">{tmpl.desc}</span>
-            </button>
-          ))}
-        </div>
+    <div className="editor-page">
+      <div className="editor-header">
+        <h1>Video Editor</h1>
+        {videoLoaded && (
+          <button className="btn btn-export" onClick={exportVideo} disabled={isExporting}>
+            {isExporting ? `Exportiere... ${Math.round(exportProgress)}%` : 'Video exportieren'}
+          </button>
+        )}
       </div>
 
-      {scenes.length > 0 && (
-        <div className="editor-section">
-          <div className="editor-layout">
-            <div className="preview-column">
-              <div className="video-preview">
-                {scenes.map((scene, i) => (
-                  <div
-                    key={i}
-                    className={`preview-slide ${i === activeScene ? 'active' : ''}`}
-                    style={{ background: scene.gradient }}
-                  >
-                    <div className="slide-overlay" />
-                    <div className="slide-content">
-                      <div className="slide-text1" style={{ color: textColor, fontSize: `${fontSize * 0.8}px` }}>
-                        {scene.t1}
-                      </div>
-                      <div className="slide-text2" style={{ color: textColor, fontSize: `${fontSize * 0.5}px` }}>
-                        {scene.t2}
-                      </div>
-                      <div className="slide-brand" style={{ color: selectedTemplate?.colors?.[0] }}>
-                        Happiness
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <div className="playback-controls">
-                  <button className="play-btn" onClick={isPlaying ? stopPreview : playPreview}>
-                    {isPlaying ? '⏸️' : '▶️'}
-                  </button>
-                  <span className="clip-counter">Szene {activeScene + 1}/{scenes.length}</span>
+      {!videoLoaded ? (
+        <div className="upload-area" onClick={() => fileInputRef.current?.click()}>
+          <input ref={fileInputRef} type="file" accept="video/*" onChange={handleVideoUpload} style={{ display: 'none' }} />
+          <div className="upload-icon">+</div>
+          <div className="upload-text">Video hochladen</div>
+          <div className="upload-hint">MP4, WebM, MOV — max. 500MB</div>
+        </div>
+      ) : (
+        <div className="editor-layout">
+          <div className="preview-area">
+            <div className="video-container" style={{ aspectRatio: aspectRatio.replace(':', '/') }}>
+              <video
+                ref={videoRef}
+                src={videoUrl}
+                onLoadedMetadata={handleVideoLoaded}
+                onTimeUpdate={handleTimeUpdate}
+                onEnded={() => setIsPlaying(false)}
+                className="video-element"
+                style={{ filter: getFilterCSS() }}
+              />
+              {textOverlays.map(overlay => (
+                <div
+                  key={overlay.id}
+                  className={`text-overlay ${overlay.id === activeTextId ? 'active' : ''}`}
+                  style={{
+                    left: `${overlay.x}%`,
+                    top: `${overlay.y}%`,
+                    fontSize: `${overlay.fontSize}px`,
+                    color: overlay.color,
+                    fontWeight: overlay.fontWeight,
+                    opacity: overlay.opacity / 100,
+                    textShadow: overlay.shadow ? '0 2px 10px rgba(0,0,0,0.8)' : 'none',
+                  }}
+                  onClick={() => { setActiveTextId(overlay.id); setShowTextPanel(true) }}
+                >
+                  {overlay.text}
                 </div>
-              </div>
-
-              <div className="timeline">
-                {scenes.map((s, i) => (
-                  <div
-                    key={i}
-                    className={`timeline-clip ${i === activeScene ? 'active' : ''}`}
-                    onClick={() => setActiveScene(i)}
-                    style={{ background: s.gradient }}
-                  >
-                    <div className="timeline-clip-num">{i + 1}</div>
-                    <div className="timeline-clip-text">{s.t1}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="export-row">
-                <button className="btn btn-export" onClick={exportVideo} disabled={isExporting}>
-                  {isExporting ? `⏳ ${Math.round(progress)}%` : '📥 Video herunterladen (1080p)'}
-                </button>
-              </div>
+              ))}
             </div>
 
-            <div className="settings-column">
-              <div className="settings-panel">
-                <h3>Design</h3>
-                <div className="control-group">
-                  <label>Textfarbe</label>
-                  <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} />
-                </div>
-                <div className="control-group">
-                  <label>Schriftgroesse</label>
-                  <input type="range" min="24" max="72" value={fontSize} onChange={e => setFontSize(+e.target.value)} />
-                </div>
-                <h3>Musik</h3>
-                <div className="music-grid">
-                  <button className={`music-card ${selectedMusic === 'none' ? 'active' : ''}`} onClick={() => setSelectedMusic('none')}>🔇 Keine</button>
-                  <button className={`music-card ${selectedMusic === 'epic' ? 'active' : ''}`} onClick={() => setSelectedMusic('epic')}>🎵 Epic</button>
-                  <button className={`music-card ${selectedMusic === 'calm' ? 'active' : ''}`} onClick={() => setSelectedMusic('calm')}>🎶 Ruhig</button>
-                  <button className={`music-card ${selectedMusic === 'piano' ? 'active' : ''}`} onClick={() => setSelectedMusic('piano')}>🎹 Piano</button>
-                </div>
+            <div className="timeline-area">
+              <div className="timeline-bar" onClick={seekTo} ref={timelineRef}>
+                <div className="timeline-progress" style={{ width: `${(currentTime / videoDuration) * 100}%` }} />
+                <div className="timeline-trim" style={{ left: `${trimStart}%`, width: `${trimEnd - trimStart}%` }} />
+                <div className="timeline-handle left" style={{ left: `${trimStart}%` }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation()
+                    const onMove = (ev) => {
+                      const rect = timelineRef.current.getBoundingClientRect()
+                      const x = Math.max(0, Math.min(ev.clientX - rect.left, rect.width))
+                      setTrimStart((x / rect.width) * 100)
+                    }
+                    const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+                    document.addEventListener('mousemove', onMove)
+                    document.addEventListener('mouseup', onUp)
+                  }}
+                />
+                <div className="timeline-handle right" style={{ left: `${trimEnd}%` }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation()
+                    const onMove = (ev) => {
+                      const rect = timelineRef.current.getBoundingClientRect()
+                      const x = Math.max(0, Math.min(ev.clientX - rect.left, rect.width))
+                      setTrimEnd((x / rect.width) * 100)
+                    }
+                    const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+                    document.addEventListener('mousemove', onMove)
+                    document.addEventListener('mouseup', onUp)
+                  }}
+                />
+              </div>
+              <div className="timeline-info">
+                <span>{formatTime(currentTime)} / {formatTime(videoDuration)}</span>
+                <span>Schnitt: {formatTime((trimStart / 100) * videoDuration)} — {formatTime((trimEnd / 100) * videoDuration)}</span>
+              </div>
+              <div className="timeline-controls">
+                <button className="btn btn-play" onClick={togglePlay}>
+                  {isPlaying ? 'Pause' : 'Abspielen'}
+                </button>
+                <button className="btn btn-secondary" onClick={() => { setTrimStart(0); setTrimEnd(100) }}>
+                  Zuruecksetzen
+                </button>
               </div>
             </div>
           </div>
 
-          {isGenerating && (
-            <div className="generating-overlay">
-              <div className="generating-spinner" />
-              <p>Video wird erstellt...</p>
+          <div className="sidebar">
+            <div className="sidebar-tabs">
+              <button className={`tab ${activeTab === 'trim' ? 'active' : ''}`} onClick={() => setActiveTab('trim')}>Zuschneiden</button>
+              <button className={`tab ${activeTab === 'text' ? 'active' : ''}`} onClick={() => setActiveTab('text')}>Text</button>
+              <button className={`tab ${activeTab === 'filter' ? 'active' : ''}`} onClick={() => setActiveTab('filter')}>Filter</button>
+              <button className={`tab ${activeTab === 'audio' ? 'active' : ''}`} onClick={() => setActiveTab('audio')}>Audio</button>
             </div>
-          )}
+
+            <div className="sidebar-content">
+              {activeTab === 'trim' && (
+                <div className="panel">
+                  <h3>Video zuschneiden</h3>
+                  <div className="control">
+                    <label>Start: {formatTime((trimStart / 100) * videoDuration)}</label>
+                    <input type="range" min="0" max="100" value={trimStart} onChange={e => setTrimStart(+e.target.value)} />
+                  </div>
+                  <div className="control">
+                    <label>Ende: {formatTime((trimEnd / 100) * videoDuration)}</label>
+                    <input type="range" min="0" max="100" value={trimEnd} onChange={e => setTrimEnd(+e.target.value)} />
+                  </div>
+                  <div className="control">
+                    <label>Seitenverhaeltnis</label>
+                    <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value)}>
+                      {ASPECT_RATIOS.map(ar => (
+                        <option key={ar.id} value={ar.id}>{ar.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'text' && (
+                <div className="panel">
+                  <h3>Text hinzufuegen</h3>
+                  <button className="btn btn-primary" onClick={addTextOverlay}>+ Text hinzufuegen</button>
+                  {textOverlays.map(overlay => (
+                    <div key={overlay.id} className={`text-item ${overlay.id === activeTextId ? 'active' : ''}`}>
+                      <div className="text-item-header">
+                        <span>{overlay.text}</span>
+                        <button className="btn-icon" onClick={() => removeTextOverlay(overlay.id)}>x</button>
+                      </div>
+                      {overlay.id === activeTextId && (
+                        <div className="text-controls">
+                          <input type="text" value={overlay.text} onChange={e => updateTextOverlay(overlay.id, 'text', e.target.value)} placeholder="Text" />
+                          <div className="control-row">
+                            <input type="range" min="12" max="72" value={overlay.fontSize} onChange={e => updateTextOverlay(overlay.id, 'fontSize', +e.target.value)} />
+                            <span>{overlay.fontSize}px</span>
+                          </div>
+                          <div className="control-row">
+                            <label>X:</label>
+                            <input type="range" min="0" max="100" value={overlay.x} onChange={e => updateTextOverlay(overlay.id, 'x', +e.target.value)} />
+                            <label>Y:</label>
+                            <input type="range" min="0" max="100" value={overlay.y} onChange={e => updateTextOverlay(overlay.id, 'y', +e.target.value)} />
+                          </div>
+                          <div className="control-row">
+                            <input type="color" value={overlay.color} onChange={e => updateTextOverlay(overlay.id, 'color', e.target.value)} />
+                            <select value={overlay.fontWeight} onChange={e => updateTextOverlay(overlay.id, 'fontWeight', e.target.value)}>
+                              <option value="normal">Normal</option>
+                              <option value="bold">Fett</option>
+                            </select>
+                            <div className="control-row">
+                              <label>Deckkraft:</label>
+                              <input type="range" min="0" max="100" value={overlay.opacity} onChange={e => updateTextOverlay(overlay.id, 'opacity', +e.target.value)} />
+                            </div>
+                          </div>
+                          <label className="checkbox-label">
+                            <input type="checkbox" checked={overlay.shadow} onChange={e => updateTextOverlay(overlay.id, 'shadow', e.target.checked)} />
+                            Schatten
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {activeTab === 'filter' && (
+                <div className="panel">
+                  <h3>Filter & Farben</h3>
+                  <div className="filter-grid">
+                    {FILTERS.map(f => (
+                      <button key={f.id} className={`filter-btn ${filter === f.id ? 'active' : ''}`} onClick={() => setFilter(f.id)}>
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="control">
+                    <label>Helligkeit: {brightness}%</label>
+                    <input type="range" min="50" max="150" value={brightness} onChange={e => setBrightness(+e.target.value)} />
+                  </div>
+                  <div className="control">
+                    <label>Kontrast: {contrast}%</label>
+                    <input type="range" min="50" max="150" value={contrast} onChange={e => setContrast(+e.target.value)} />
+                  </div>
+                  <div className="control">
+                    <label>Saettigung: {saturation}%</label>
+                    <input type="range" min="0" max="200" value={saturation} onChange={e => setSaturation(+e.target.value)} />
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'audio' && (
+                <div className="panel">
+                  <h3>Audio</h3>
+                  <div className="control">
+                    <label>Originalton</label>
+                    <div className="control-row">
+                      <input type="range" min="0" max="100" value={originalVolume} onChange={e => { setOriginalVolume(+e.target.value); if (videoRef.current) videoRef.current.volume = e.target.value / 100 }} />
+                      <span>{originalVolume}%</span>
+                    </div>
+                  </div>
+                  <div className="control">
+                    <label>Musik hinzufuegen</label>
+                    <button className="btn btn-secondary" onClick={() => audioInputRef.current?.click()}>
+                      {audioFile ? audioFile.name : 'Audio-Datei waehlen'}
+                    </button>
+                    <input ref={audioInputRef} type="file" accept="audio/*" onChange={handleAudioUpload} style={{ display: 'none' }} />
+                  </div>
+                  {audioUrl && (
+                    <div className="control">
+                      <label>Musik-Lautstaerke: {audioVolume}%</label>
+                      <input type="range" min="0" max="100" value={audioVolume} onChange={e => setAudioVolume(+e.target.value)} />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
-      {scenes.length === 0 && !isGenerating && (
-        <div className="empty-state">
-          <div className="empty-icon">🎬</div>
-          <h2>Erstelle echte Videos</h2>
-          <p>Waehle ein Template oben und dein Video wird automatisch erstellt.<br/>5 Szenen mit professionellem Design.</p>
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+      {isExporting && (
+        <div className="export-overlay">
+          <div className="export-box">
+            <div className="export-bar">
+              <div className="export-fill" style={{ width: `${exportProgress}%` }} />
+            </div>
+            <p>Video wird exportiert... {Math.round(exportProgress)}%</p>
+          </div>
         </div>
       )}
     </div>
