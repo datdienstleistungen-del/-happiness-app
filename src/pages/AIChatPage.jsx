@@ -179,8 +179,8 @@ export default function AIChatPage() {
     const file = e.target.files[0]
     if (!file) return
     if (!file.type.startsWith('image/')) return
-    if (file.size > 10 * 1024 * 1024) {
-      setError('Bild ist zu gross. Maximal 10 MB.')
+    if (file.size > 20 * 1024 * 1024) {
+      setError('Bild ist zu gross. Maximal 20 MB.')
       return
     }
     setSelectedImage(file)
@@ -288,14 +288,20 @@ WICHTIG: Antworte NIE mit "Wie kann ich dir helfen?" oder "Was beschaeftigt dich
       content: msg.content
     }))
 
-    // Convert image to base64
+    // Upload image to Supabase Storage and get URL
     let imageUrl = null
     if (selectedImage) {
-      const reader = new FileReader()
-      imageUrl = await new Promise((resolve) => {
-        reader.onload = () => resolve(reader.result)
-        reader.readAsDataURL(selectedImage)
-      })
+      const filePath = `chat-images/${user.id}/${Date.now()}.jpg`
+      const { error: uploadError } = await supabase.storage
+        .from('chat-images')
+        .upload(filePath, selectedImage, { contentType: selectedImage.type })
+      
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage
+          .from('chat-images')
+          .getPublicUrl(filePath)
+        imageUrl = urlData.publicUrl
+      }
     }
 
     try {
