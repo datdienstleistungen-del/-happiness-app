@@ -34,6 +34,7 @@ export default function VideoMakerPage() {
   const [videoUrl, setVideoUrl] = useState(null)
   const [videoDuration, setVideoDuration] = useState(0)
   const [videoLoaded, setVideoLoaded] = useState(false)
+  const [videoError, setVideoError] = useState(null)
 
   const [trimStart, setTrimStart] = useState(0)
   const [trimEnd, setTrimEnd] = useState(100)
@@ -279,12 +280,12 @@ export default function VideoMakerPage() {
         )}
       </div>
 
-      {!videoLoaded ? (
+      {!videoUrl ? (
         <div className="upload-area" onClick={() => fileInputRef.current?.click()}>
           <input ref={fileInputRef} type="file" accept="video/*" onChange={handleVideoUpload} style={{ display: 'none' }} />
           <div className="upload-icon">+</div>
           <div className="upload-text">Video hochladen</div>
-          <div className="upload-hint">MP4, WebM, MOV — max. 500MB</div>
+          <div className="upload-hint">MP4, WebM, MOV</div>
         </div>
       ) : (
         <div className="editor-layout">
@@ -296,8 +297,11 @@ export default function VideoMakerPage() {
                 onLoadedMetadata={handleVideoLoaded}
                 onTimeUpdate={handleTimeUpdate}
                 onEnded={() => setIsPlaying(false)}
+                onError={(e) => setVideoError('Video konnte nicht geladen werden: ' + (e.target.error?.message || 'Unbekannter Fehler'))}
                 className="video-element"
                 style={{ filter: getFilterCSS() }}
+                playsInline
+                preload="auto"
               />
               {textOverlays.map(overlay => (
                 <div
@@ -360,6 +364,9 @@ export default function VideoMakerPage() {
                 </button>
                 <button className="btn btn-secondary" onClick={() => { setTrimStart(0); setTrimEnd(100) }}>
                   Zuruecksetzen
+                </button>
+                <button className="btn btn-secondary" onClick={() => { setVideoUrl(null); setVideoFile(null); setVideoLoaded(false); setScenes([]) }}>
+                  Neues Video
                 </button>
               </div>
             </div>
@@ -493,6 +500,13 @@ export default function VideoMakerPage() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {videoError && (
+        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '12px 16px', marginTop: '16px', color: '#991b1b', fontSize: '14px' }}>
+          {videoError}
+          <button onClick={() => setVideoError(null)} style={{ marginLeft: '12px', background: 'none', border: 'none', color: '#991b1b', cursor: 'pointer', textDecoration: 'underline' }}>Schliessen</button>
         </div>
       )}
 
