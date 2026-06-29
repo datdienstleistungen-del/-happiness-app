@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations'
+import { FFmpeg } from '@ffmpeg/ffmpeg'
+import { fetchFile, toBlobURL } from '@ffmpeg/util'
 import './VideoMakerPage.css'
 
 const FILTERS = [
@@ -30,7 +32,6 @@ export default function VideoMakerPage() {
   const { t } = useLanguage()
   const { user } = useAuth()
   const videoRef = useRef(null)
-  const canvasRef = useRef(null)
   const fileInputRef = useRef(null)
   const audioInputRef = useRef(null)
   const timelineRef = useRef(null)
@@ -65,6 +66,10 @@ export default function VideoMakerPage() {
   const [isExporting, setIsExporting] = useState(false)
   const [exportProgress, setExportProgress] = useState(0)
   const [activeTab, setActiveTab] = useState('trim')
+
+  const ffmpegRef = useRef(null)
+  const [ffmpegLoaded, setFfmpegLoaded] = useState(false)
+  const [ffmpegLoading, setFfmpegLoading] = useState(false)
 
   const handleVideoUpload = (e) => {
     const file = e.target.files?.[0]
@@ -165,12 +170,36 @@ export default function VideoMakerPage() {
     return f?.css !== 'none' ? `${f.css} ${custom}` : custom
   }
 
-  const downloadBlob = (blob, mimeType) => {
+  const loadFFmpeg = async () => {
+    if (ffmpegRef.current) return ffmpegRef.current
+    setFfmpegLoading(true)
+    const ffmpeg = new FFmpeg()
+    ffmpegRef.current = ffmpeg
+    
+    ffmpeg.on('log', ({ message }) => {
+      console.log('[FFmpeg]', message)
+    })
+    
+    ffmpeg.on('progress', ({ progress }) => {
+      setExportProgress(Math.round(progress * 100))
+    })
+    
+    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm'
+    await ffmpeg.load({
+      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+    })
+    
+    setFfmpegLoaded(true)
+    setFfmpegLoading(false)
+    return ffmpeg
+  }
+
+  const downloadBlob = (blob) => {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    const ext = mimeType.includes('mp4') ? 'mp4' : 'webm'
-    a.download = `happiness-video-${Date.now()}.${ext}`
+    a.download = `happiness-video-${Date.now()}.mp4`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -178,128 +207,98 @@ export default function VideoMakerPage() {
   }
 
   const exportVideo = async () => {
-    if (!videoRef.current || !videoLoaded) return
+    if (!videoRef.current || !videoLoaded || !videoFile) return
+    
     setIsExporting(true)
     setExportProgress(0)
-
-    const v = videoRef.current
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
-
-    const ar = getAspectRatios().find(a => a.id === aspectRatio)
-    canvas.width = ar.width
-    canvas.height = ar.height
-
-    const startSec = (trimStart / 100) * videoDuration
-    const endSec = (trimEnd / 100) * videoDuration
-    const exportDuration = endSec - startSec
-
-    v.currentTime = startSec
-    v.muted = false
-
+    
     try {
-      const stream = canvas.captureStream(30)
-
-      if (audioUrl && !isMobile()) {
+      const ffmpeg = await loadFFmpeg()
+      
+      // Write input file
+      await ffmpeg.writeFile('input.mp4', await fetchFile(videoFile))
+      
+      // Build filter chain
+      const filters = []
+      
+      // Color adjustments
+      const brightnessVal = (brightness - 100) / 200
+      const contrastVal = contrast / 100
+      const saturationVal = saturation / 100
+      if (brightnessVal !== 0 || contrastVal !== 1 || saturationVal !== 1) {
+        filters.push(`eq=brightness=${brightnessVal}:contrast=${contrastVal}:saturation=${saturationVal}`)
+      }
+      
+      // Preset filter
+      if (filter !== 'none') {
+        const filterMap = {
+          warm: 'colorbalance=rs=0.1:gs=0.05:bs=-0.1',
+          cold: 'colorbalance=rs=-0.1:gs=0:bs=0.1',
+          vintage: 'curves=vintage',
+          bw: 'hue=s=0',
+          vivid: 'eq=saturation=1.5',
+          film: 'curves=vintage,eq=saturation=0.8',
+          dramatic: 'eq=contrast=1.3:brightness=-0.05',
+        }
+        if (filterMap[filter]) filters.push(filterMap[filter])
+      }
+      
+      // Text overlays as drawtext
+      const cw = videoRef.current.videoWidth || 1920
+      const ch = videoRef.current.videoHeight || 1080
+      textOverlays.forEach(overlay => {
+        const x = (overlay.x / 100) * cw
+        const y = (overlay.y / 100) * ch
+        const escaped = overlay.text.replace(/'/g, "\\'").replace(/:/g, "\\:")
+        filters.push(`drawtext=text='${escaped}':x=${x}:y=${y}:fontsize=${overlay.fontSize * 2}:fontcolor=${overlay.color}:shadowcolor=black:shadowx=2:shadowy=2:alpha=${overlay.opacity / 100}`)
+      })
+      
+      // Build FFmpeg args
+      const startSec = (trimStart / 100) * videoDuration
+      const endSec = (trimEnd / 100) * videoDuration
+      
+      const args = ['-i', 'input.mp4', '-ss', String(startSec), '-to', String(endSec)]
+      
+      if (filters.length > 0) {
+        args.push('-vf', filters.join(','))
+      }
+      
+      if (audioUrl && audioFile) {
+        await ffmpeg.writeFile('audio.mp3', await fetchFile(audioFile))
+        args.push('-i', 'audio.mp3', '-filter_complex', `amix=inputs=2:duration=first:volume=${audioVolume / 100}`, '-c:a', 'aac')
+      }
+      
+      args.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '23', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', 'output.mp4')
+      
+      await ffmpeg.exec(args)
+      
+      const data = await ffmpeg.readFile('output.mp4')
+      const blob = new Blob([data.buffer], { type: 'video/mp4' })
+      
+      // Download or share
+      if (isMobile() && navigator.share) {
         try {
-          const audioCtx = new AudioContext()
-          const audioEl = new Audio(audioUrl)
-          audioEl.volume = audioVolume / 100
-          const source = audioCtx.createMediaElementSource(audioEl)
-          const dest = audioCtx.createMediaStreamDestination()
-          source.connect(dest)
-          source.connect(audioCtx.destination)
-          dest.stream.getTracks().forEach(track => stream.addTrack(track))
-          audioEl.play()
-        } catch (e) {
-          console.warn('Audio mixing failed:', e)
-        }
-      }
-
-      let mimeType = 'video/webm;codecs=vp9'
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'video/webm;codecs=vp8'
-      }
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'video/webm'
-      }
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'video/mp4'
-      }
-
-      const mr = new MediaRecorder(stream, { mimeType })
-      const chunks = []
-      mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data) }
-      mr.onstop = async () => {
-        const blob = new Blob(chunks, { type: mr.mimeType })
-
-        if (isMobile() && navigator.share) {
-          try {
-            const ext = mr.mimeType.includes('mp4') ? 'mp4' : 'webm'
-            const file = new File([blob], `happiness-video.${ext}`, { type: mr.mimeType })
-            await navigator.share({ files: [file], title: 'Happiness Video' })
-          } catch (shareErr) {
-            if (shareErr.name !== 'AbortError') {
-              downloadBlob(blob, mr.mimeType)
-            }
+          const file = new File([blob], 'happiness-video.mp4', { type: 'video/mp4' })
+          await navigator.share({ files: [file], title: 'Happiness Video' })
+        } catch (shareErr) {
+          if (shareErr.name !== 'AbortError') {
+            downloadBlob(blob)
           }
-        } else {
-          downloadBlob(blob, mr.mimeType)
         }
-
-        setIsExporting(false)
-        v.pause()
+      } else {
+        downloadBlob(blob)
       }
-
-      v.play()
-      mr.start()
-
-      const animate = () => {
-        if (v.currentTime >= endSec || v.paused) {
-          mr.stop()
-          return
-        }
-
-        const vw = v.videoWidth
-        const vh = v.videoHeight
-        const cw = canvas.width
-        const ch = canvas.height
-
-        const scale = Math.max(cw / vw, ch / vh)
-        const sw = cw / scale
-        const sh = ch / scale
-        const sx = (vw - sw) / 2
-        const sy = (vh - sh) / 2
-
-        ctx.filter = getFilterCSS()
-        ctx.drawImage(v, sx, sy, sw, sh, 0, 0, cw, ch)
-        ctx.filter = 'none'
-
-        textOverlays.forEach(overlay => {
-          const tx = (overlay.x / 100) * cw
-          const ty = (overlay.y / 100) * ch
-          ctx.textAlign = 'center'
-          ctx.globalAlpha = overlay.opacity / 100
-          if (overlay.shadow) {
-            ctx.shadowColor = 'rgba(0,0,0,0.8)'
-            ctx.shadowBlur = 10
-          }
-          ctx.fillStyle = overlay.color
-          ctx.font = `${overlay.fontWeight} ${overlay.fontSize * 2}px 'Segoe UI', Arial, sans-serif`
-          ctx.fillText(overlay.text, tx, ty)
-          ctx.shadowBlur = 0
-          ctx.globalAlpha = 1
-        })
-
-        const progress = ((v.currentTime - startSec) / exportDuration) * 100
-        setExportProgress(progress)
-        requestAnimationFrame(animate)
-      }
-      animate()
+      
+      // Cleanup
+      await ffmpeg.deleteFile('input.mp4')
+      await ffmpeg.deleteFile('output.mp4')
+      if (audioUrl) await ffmpeg.deleteFile('audio.mp3').catch(() => {})
+      
     } catch (err) {
       console.error('Export failed:', err)
+      setVideoError('Export fehlgeschlagen. Bitte versuche es mit einem kuerzeren Video.')
+    } finally {
       setIsExporting(false)
-      setVideoError('Export fehlgeschlagen. Bitte versuche es mit einem kuerzeren Video oder einem anderen Browser.')
     }
   }
 
@@ -314,8 +313,8 @@ export default function VideoMakerPage() {
       <div className="editor-header">
         <h1>Video Editor</h1>
         {videoLoaded && (
-          <button className="btn btn-export" onClick={exportVideo} disabled={isExporting}>
-            {isExporting ? `Exportiere... ${Math.round(exportProgress)}%` : 'Video exportieren'}
+          <button className="btn btn-export" onClick={exportVideo} disabled={isExporting || ffmpegLoading}>
+            {ffmpegLoading ? 'Video-Engine wird geladen...' : isExporting ? `Exportiere... ${Math.round(exportProgress)}%` : 'Video exportieren'}
           </button>
         )}
       </div>
@@ -573,8 +572,6 @@ export default function VideoMakerPage() {
           <button onClick={() => setVideoError(null)} style={{ marginLeft: '12px', background: 'none', border: 'none', color: '#991b1b', cursor: 'pointer', textDecoration: 'underline' }}>Schliessen</button>
         </div>
       )}
-
-      <canvas ref={canvasRef} style={{ display: 'none' }} />
 
       {isExporting && (
         <div className="export-overlay">
