@@ -1,7 +1,7 @@
 -- Videos table
 CREATE TABLE IF NOT EXISTS videos (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   video_url TEXT NOT NULL,
   caption TEXT,
   file_path TEXT NOT NULL,
