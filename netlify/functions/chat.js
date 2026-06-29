@@ -46,7 +46,7 @@ exports.handler = async (event) => {
       messages.push({ role: 'user', content: message })
     }
 
-    const model = 'meta-llama/llama-4-scout-17b-16e-instruct'
+    const model = 'llama-3.2-90b-vision-preview'
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',

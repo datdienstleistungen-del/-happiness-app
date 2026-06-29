@@ -921,6 +921,11 @@ export default function VideoMakerPage() {
                 <div className="panel">
                   <h3>Text hinzufuegen</h3>
                   <button className="btn btn-primary" onClick={addTextOverlay}>+ Text hinzufuegen</button>
+                  {textOverlays.length === 0 && (
+                    <div className="text-controls" style={{ marginTop: '12px', padding: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
+                      <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 8px' }}>Klicke auf \"+ Text hinzufuegen\" um ein Text-Element zu erstellen.</p>
+                    </div>
+                  )}
                   {textOverlays.map(overlay => (
                     <div key={overlay.id} className={`text-item ${overlay.id === activeTextId ? 'active' : ''}`}>
                       <div className="text-item-header">
