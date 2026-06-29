@@ -23,6 +23,7 @@ export default function AIChatPage() {
   const messagesEndRef = useRef(null)
   const [selectedImage, setSelectedImage] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
+  const [error, setError] = useState('')
   const fileInputRef = useRef(null)
   const FREE_QUESTIONS = 5
 
@@ -179,6 +180,7 @@ export default function AIChatPage() {
     const file = e.target.files[0]
     if (!file) return
     if (!file.type.startsWith('image/')) return
+    setError('')
     if (file.size > 20 * 1024 * 1024) {
       setError('Bild ist zu gross. Maximal 20 MB.')
       return
@@ -190,6 +192,7 @@ export default function AIChatPage() {
   const removeImage = () => {
     setSelectedImage(null)
     setImagePreview(null)
+    setError('')
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -650,6 +653,7 @@ WICHTIG: Antworte NIE mit "Wie kann ich dir helfen?" oder "Was beschaeftigt dich
               >X</button>
             </div>
           )}
+          {error && <p style={{ color: '#e74c3c', fontSize: '0.85rem', marginTop: '0.5rem' }}>{error}</p>}
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
             <input
               ref={fileInputRef}

@@ -428,7 +428,7 @@ export default function VideoMakerPage() {
                 <button className="btn btn-secondary" onClick={() => { setTrimStart(0); setTrimEnd(100) }}>
                   Zuruecksetzen
                 </button>
-                <button className="btn btn-secondary" onClick={() => { setVideoUrl(null); setVideoFile(null); setVideoLoaded(false); setScenes([]) }}>
+                <button className="btn btn-secondary" onClick={() => { setVideoUrl(null); setVideoFile(null); setVideoLoaded(false) }}>
                   Neues Video
                 </button>
               </div>
