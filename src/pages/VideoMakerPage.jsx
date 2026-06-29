@@ -208,6 +208,7 @@ export default function VideoMakerPage() {
     }])
     setActiveTextId(id)
     setShowTextPanel(true)
+    setActiveTab('text')
   }
 
   const updateTextOverlay = (id, field, value) => {
