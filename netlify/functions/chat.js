@@ -57,7 +57,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         model,
         messages,
-        max_tokens: 8192,
+        max_completion_tokens: 8192,
         temperature: 0.7
       })
     })

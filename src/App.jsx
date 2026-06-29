@@ -3,7 +3,7 @@ import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-r
 import {
   Home, Sparkles, MessageCircle, Users, ShoppingCart, Briefcase,
   BookOpen, Building2, Clapperboard, Camera, Film, Bell, Settings,
-  Heart, MessageSquare, User, ChevronLeft, ChevronRight
+  User, ChevronLeft, ChevronRight
 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.jsx'
@@ -287,7 +287,7 @@ function LandingPage() {
         </Link>
         <Link to="/ai-chat" className="dash-card">
           <span className="dash-icon"><Sparkles size={20} /></span>
-          <div><h3>KI-Assistent</h3><p>20 Fragen kostenlos</p></div>
+          <div><h3>KI-Assistent</h3><p>5 Fragen kostenlos</p></div>
         </Link>
       </div>
     </div>
