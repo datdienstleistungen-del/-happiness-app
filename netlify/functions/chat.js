@@ -46,7 +46,7 @@ exports.handler = async (event) => {
       messages.push({ role: 'user', content: message })
     }
 
-    const model = hasImage ? 'llama-3.2-11b-vision-preview' : 'llama-3.3-70b-versatile'
+    const model = 'qwen/qwen3.6-27b'
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -57,7 +57,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         model,
         messages,
-        max_tokens: 4096,
+        max_tokens: 8192,
         temperature: 0.7
       })
     })
@@ -66,8 +66,12 @@ exports.handler = async (event) => {
       const error = await response.text()
       console.error('Groq API error for model', model, ':', error)
       return {
-        statusCode: 500,
-        body: JSON.stringify({ error: 'AI service temporarily unavailable' })
+        statusCode: 502,
+        body: JSON.stringify({ 
+          error: 'AI service temporarily unavailable',
+          details: error,
+          model: model 
+        })
       }
     }
 
