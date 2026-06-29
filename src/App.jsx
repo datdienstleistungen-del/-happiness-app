@@ -287,7 +287,7 @@ function LandingPage() {
         </Link>
         <Link to="/ai-chat" className="dash-card">
           <span className="dash-icon"><Sparkles size={20} /></span>
-          <div><h3>KI-Assistent</h3><p>5 Fragen kostenlos</p></div>
+          <div><h3>KI-Assistent</h3><p>15 Fragen kostenlos</p></div>
         </Link>
       </div>
     </div>

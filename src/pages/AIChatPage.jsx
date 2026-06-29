@@ -26,7 +26,7 @@ export default function AIChatPage() {
   const [imagePreview, setImagePreview] = useState(null)
   const [error, setError] = useState('')
   const fileInputRef = useRef(null)
-  const FREE_QUESTIONS = 5
+  const FREE_QUESTIONS = 15
 
   useEffect(() => {
     loadUserData()
