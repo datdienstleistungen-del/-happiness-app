@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Users } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations.jsx'
@@ -97,7 +98,7 @@ export default function FriendsPage() {
   return (
     <div className="container">
       <div className="page-header">
-        <h1>👥 {t('friends.title')}</h1>
+        <h1>{t('friends.title')}</h1>
       </div>
 
       <div className="tabs">
@@ -116,7 +117,7 @@ export default function FriendsPage() {
         <>
           {tab === 'friends' && (
             friends.length === 0 ? (
-              <div className="empty-state"><div className="empty-icon">👥</div><p>{t('friends.noFriends')}</p></div>
+              <div className="empty-state"><div className="empty-icon"><Users /></div><p>{t('friends.noFriends')}</p></div>
             ) : friends.map(f => (
               <div key={f.id} className="list-item">
                 <div className="list-item-info">

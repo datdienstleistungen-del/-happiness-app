@@ -1,4 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
+import {
+  Sparkles, User, Download, Trash2, X, Heart, MapPin, Briefcase,
+  Lock, ChefHat, Car, Users, CreditCard, Check, Send, Brain
+} from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations'
@@ -321,53 +325,57 @@ WENN DU NICHT ANTWORTEN KANNST:
     <div className="ai-chat-page">
       <div className="ai-main">
         <div className="ai-topbar">
-          <span className="ai-logo">🧠</span>
+          <span className="ai-logo"><Brain size={20} /></span>
           <strong>Happiness AI</strong>
           <div className="ai-topbar-actions">
             <button className="ai-topbar-btn" onClick={() => setMessages([])}>
-              ✨ {t('ai.newChat') || 'Neuer Chat'}
+              <Sparkles size={14} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
+              {t('ai.newChat') || 'Neuer Chat'}
             </button>
             <button className="ai-topbar-btn" onClick={() => setShowProfile(!showProfile)}>
-              👤 {t('ai.profile')}
+              <User size={14} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
+              {t('ai.profile')}
             </button>
             <button className="ai-topbar-btn" onClick={exportData}>
-              📥 {t('ai.export')}
+              <Download size={14} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
+              {t('ai.export')}
             </button>
             <button className="ai-topbar-btn danger" onClick={deleteAllData}>
-              🗑️ {t('ai.delete')}
+              <Trash2 size={14} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
+              {t('ai.delete')}
             </button>
           </div>
         </div>
         {showProfile && (
           <div className="profile-panel">
             <div className="profile-panel-header">
-              <h3>👤 {t('ai.yourProfile')}</h3>
-              <button className="close-btn" onClick={() => setShowProfile(false)}>✕</button>
+              <h3><User size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />{t('ai.yourProfile')}</h3>
+              <button className="close-btn" onClick={() => setShowProfile(false)}><X size={16} /></button>
             </div>
             <p className="profile-info">{t('ai.profileInfo')}</p>
             
             <div className="profile-section">
-              <h4>👨‍👩‍👧 {t('ai.family')}</h4>
+              <h4><Users size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />{t('ai.family')}</h4>
               <pre>{JSON.stringify(profile?.family_info || {}, null, 2)}</pre>
             </div>
             
             <div className="profile-section">
-              <h4>❤️ {t('ai.preferences')}</h4>
+              <h4><Heart size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />{t('ai.preferences')}</h4>
               <pre>{JSON.stringify(profile?.preferences || {}, null, 2)}</pre>
             </div>
             
             <div className="profile-section">
-              <h4>📍 {t('ai.location')}</h4>
+              <h4><MapPin size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />{t('ai.location')}</h4>
               <pre>{JSON.stringify(profile?.location || {}, null, 2)}</pre>
             </div>
             
             <div className="profile-section">
-              <h4>💼 {t('ai.occupation')}</h4>
+              <h4><Briefcase size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />{t('ai.occupation')}</h4>
               <pre>{JSON.stringify(profile?.occupation || {}, null, 2)}</pre>
             </div>
 
             <div className="profile-section">
-              <h4>🔒 DSGVO</h4>
+              <h4><Lock size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />DSGVO</h4>
               <label className="consent-switch">
                 <input
                   type="checkbox"
@@ -376,7 +384,7 @@ WENN DU NICHT ANTWORTEN KANNST:
                 />
                 <span className="consent-label">{t('ai.dataConsent')}</span>
               </label>
-              <p className="ai-eu-badge">🇪🇺 {t('ai.footer')}</p>
+              <p className="ai-eu-badge">{t('ai.footer')}</p>
             </div>
           </div>
         )}
@@ -384,25 +392,25 @@ WENN DU NICHT ANTWORTEN KANNST:
         {!hasMessages ? (
           <div className="ai-center">
             <div className="ai-welcome">
-              <div className="ai-welcome-icon">🧠</div>
+              <div className="ai-welcome-icon"><Brain size={32} /></div>
               <h1>Happiness AI</h1>
               <p>{t('ai.welcomeDesc') || 'Was kann ich heute für dich tun?'}</p>
 
               <div className="suggestion-chips">
                 <button onClick={() => setInput(t('ai.chip1Q'))}>
-                  <span className="chip-icon">🍳</span>
+                  <span className="chip-icon"><ChefHat size={16} /></span>
                   {t('ai.chip1')}
                 </button>
                 <button onClick={() => setInput(t('ai.chip2Q'))}>
-                  <span className="chip-icon">🚗</span>
+                  <span className="chip-icon"><Car size={16} /></span>
                   {t('ai.chip2')}
                 </button>
                 <button onClick={() => setInput(t('ai.chip3Q'))}>
-                  <span className="chip-icon">👨‍👩‍👧</span>
+                  <span className="chip-icon"><Users size={16} /></span>
                   {t('ai.chip3')}
                 </button>
                 <button onClick={() => setInput(t('ai.chip4Q'))}>
-                  <span className="chip-icon">💼</span>
+                  <span className="chip-icon"><Briefcase size={16} /></span>
                   {t('ai.chip4')}
                 </button>
               </div>
@@ -413,7 +421,7 @@ WENN DU NICHT ANTWORTEN KANNST:
             {messages.map((msg, index) => (
               <div key={index} className={`message-row ${msg.role}`}>
                 {msg.role === 'assistant' && (
-                  <div className="msg-avatar assistant-avatar">🧠</div>
+                  <div className="msg-avatar assistant-avatar"><Brain size={16} /></div>
                 )}
                 <div className={`message-bubble ${msg.role}`}>
                   {msg.content}
@@ -428,7 +436,7 @@ WENN DU NICHT ANTWORTEN KANNST:
 
             {isLoading && (
               <div className="message-row assistant">
-                <div className="msg-avatar assistant-avatar">🧠</div>
+                <div className="msg-avatar assistant-avatar"><Brain size={16} /></div>
                 <div className="message-bubble assistant loading-bubble">
                   <span className="typing-dot"></span>
                   <span className="typing-dot"></span>
@@ -444,7 +452,7 @@ WENN DU NICHT ANTWORTEN KANNST:
         {showPaywall && !isPremium ? (
           <div className="paywall">
             <div className="paywall-card">
-              <div className="paywall-icon">🧠</div>
+              <div className="paywall-icon"><Brain size={32} /></div>
               <h2>Weiter fragen!</h2>
               <p>Du hast {FREE_QUESTIONS} Fragen gestellt. Toll!</p>
               <p className="paywall-sub">Um weiter mit der KI zu chatten:</p>
@@ -455,13 +463,14 @@ WENN DU NICHT ANTWORTEN KANNST:
               </div>
 
               <button className="paywall-btn stripe-btn" onClick={handleCheckout}>
-                💳 Jetzt freischalten
+                <CreditCard size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
+                Jetzt freischalten
               </button>
 
               <div className="paywall-steps">
-                <p>✅ Sofortige Freischaltung</p>
-                <p>✅ Kündbar jederzeit</p>
-                <p>✅ SEPA-Überweisung</p>
+                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Sofortige Freischaltung</p>
+                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Kündbar jederzeit</p>
+                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />SEPA-Überweisung</p>
               </div>
 
               <p className="paywall-note">Keine Kreditkarte nötig. Per Sofortüberweisung.</p>
@@ -481,7 +490,7 @@ WENN DU NICHT ANTWORTEN KANNST:
             onClick={sendMessage}
             disabled={!input.trim() || isLoading}
           >
-            ➤
+            <Send size={16} />
           </button>
         </div>
         )}

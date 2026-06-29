@@ -66,7 +66,10 @@ export default function RegisterPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1>🌈 {t('auth.register')}</h1>
+        <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
+          <img src="/favicon.svg" alt="Happiness" style={{ width: '40px', height: '40px' }} />
+        </div>
+        <h1 style={{ textAlign: 'center', fontSize: '1.5rem' }}>{t('auth.register')}</h1>
         <p className="subtitle">{t('auth.createAccount')}</p>
 
         <form onSubmit={handleSubmit}>

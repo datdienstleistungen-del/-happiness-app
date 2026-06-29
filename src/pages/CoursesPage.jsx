@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { BookOpen } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations.jsx'
@@ -103,7 +104,7 @@ export default function CoursesPage() {
           </div>
 
           {loading ? <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Laden...</p> : filtered.length === 0 ? (
-            <div className="empty-state"><div className="empty-icon">📚</div><p>{t('courses.noCourses')}</p></div>
+            <div className="empty-state"><div className="empty-icon"><BookOpen /></div><p>{t('courses.noCourses')}</p></div>
           ) : filtered.map(course => {
             const enrollments = course.course_enrollments || []
             const isEnrolled = user ? enrollments.some(e => e.user_id === user.id) : false

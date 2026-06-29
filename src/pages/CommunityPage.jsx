@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { MessageCircle, FileText, Clapperboard, Heart } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations.jsx'
@@ -53,16 +54,18 @@ export default function CommunityPage() {
   return (
     <div className="container">
       <div className="page-header">
-        <h1>💬 {t('community.title')}</h1>
+        <h1>{t('community.title')}</h1>
         <p>{t('community.share')}</p>
       </div>
 
       <div className="tabs">
         <button className={`tab ${tab === 'posts' ? 'active' : ''}`} onClick={() => setTab('posts')}>
-          📝 {t('community.title')}
+          <FileText size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
+          {t('community.title')}
         </button>
         <button className={`tab ${tab === 'videos' ? 'active' : ''}`} onClick={() => setTab('videos')}>
-          🎬 {t('video.title')}
+          <Clapperboard size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
+          {t('video.title')}
         </button>
       </div>
 
@@ -87,7 +90,7 @@ export default function CommunityPage() {
             <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Laden...</p>
           ) : posts.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">💬</div>
+              <div className="empty-icon"><MessageCircle /></div>
               <p>{t('community.noPosts')}</p>
             </div>
           ) : (
@@ -164,13 +167,15 @@ function PostCard({ post, currentUserId, onLike }) {
           className={`btn btn-sm ${isLiked ? 'btn-primary' : 'btn-outline'}`}
           onClick={() => onLike(post.id)}
         >
-          {isLiked ? '❤️' : '🤍'} {likes.length}
+          <Heart size={14} fill={isLiked ? 'currentColor' : 'none'} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
+          {likes.length}
         </button>
         <button
           className="btn btn-sm btn-outline"
           onClick={() => setShowComments(!showComments)}
         >
-          💬 {comments.length}
+          <MessageCircle size={14} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
+          {comments.length}
         </button>
       </div>
 

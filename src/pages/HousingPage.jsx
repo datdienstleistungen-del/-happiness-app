@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { Building2, Calendar } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations.jsx'
@@ -161,7 +162,7 @@ export default function HousingPage() {
           </div>
 
           {loading ? <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Laden...</p> : filtered.length === 0 ? (
-            <div className="empty-state"><div className="empty-icon">🏠</div><p>{t('housing.noResults')}</p></div>
+            <div className="empty-state"><div className="empty-icon"><Building2 /></div><p>{t('housing.noResults')}</p></div>
           ) : filtered.map(item => {
             const housingType = parseHousingType(item.description)
             const size = parseSize(item.description)
@@ -176,7 +177,7 @@ export default function HousingPage() {
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                       <span className="badge badge-primary">{housingType}</span>
                       {size && <span className="badge" style={{ background: 'var(--border)', color: 'var(--text)' }}>📐 {size}</span>}
-                      {available && <span className="badge" style={{ background: 'var(--border)', color: 'var(--text)' }}>📅 {available}</span>}
+                      {available && <span className="badge" style={{ background: 'var(--border)', color: 'var(--text)' }}><Calendar size={12} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />{available}</span>}
                     </div>
                   </div>
                   <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--success)' }}>{item.price.toFixed(0)} €<span style={{ fontSize: '0.8rem', fontWeight: 400, color: 'var(--text-muted)' }}>/Monat</span></span>

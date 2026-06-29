@@ -36,7 +36,10 @@ export default function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1>🌈 Happiness</h1>
+        <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
+          <img src="/favicon.svg" alt="Happiness" style={{ width: '40px', height: '40px' }} />
+        </div>
+        <h1 style={{ textAlign: 'center', fontSize: '1.5rem' }}>Happiness</h1>
         <p className="subtitle">{t('auth.loginSubtitle')}</p>
 
         <form onSubmit={handleSubmit}>

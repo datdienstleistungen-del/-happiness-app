@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom'
+import {
+  Home, Sparkles, MessageCircle, Users, ShoppingCart, Briefcase,
+  BookOpen, Building2, Clapperboard, Camera, Film, Bell, Settings,
+  Heart, MessageSquare, User, ChevronLeft, ChevronRight
+} from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.jsx'
 import AuthContext, { useAuth } from './context/AuthContext'
@@ -35,26 +40,44 @@ function Sidebar() {
   }
 
   const mainLinks = [
-    { to: '/', icon: '🏠', label: t('nav.home') },
-    { to: '/ai-chat', icon: '✨', label: t('nav.aiChat') },
-    { to: '/community', icon: '💬', label: t('nav.community') },
-    { to: '/friends', icon: '👥', label: t('nav.friends') },
-    { to: '/marketplace', icon: '🛒', label: t('nav.marketplace') },
+    { to: '/', icon: Home, label: t('nav.home') },
+    { to: '/ai-chat', icon: Sparkles, label: t('nav.aiChat') },
   ]
 
-  const moreLinks = [
-    { to: '/jobs', icon: '💼', label: t('nav.jobs') },
-    { to: '/courses', icon: '📚', label: t('nav.courses') },
-    { to: '/housing', icon: '🏠', label: t('nav.housing') },
-    { to: '/video-maker', icon: '🎬', label: t('nav.videoMaker') },
-    { to: '/photo-editor', icon: '📷', label: 'Foto Editor' },
-    { to: '/fotostory', icon: '🎞️', label: 'Fotostory' },
-    { to: '/notifications', icon: '🔔', label: t('nav.notifications') },
+  const socialLinks = [
+    { to: '/community', icon: MessageCircle, label: t('nav.community') },
+    { to: '/friends', icon: Users, label: t('nav.friends') },
+    { to: '/notifications', icon: Bell, label: t('nav.notifications') },
+  ]
+
+  const lifeLinks = [
+    { to: '/marketplace', icon: ShoppingCart, label: t('nav.marketplace') },
+    { to: '/jobs', icon: Briefcase, label: t('nav.jobs') },
+    { to: '/courses', icon: BookOpen, label: t('nav.courses') },
+    { to: '/housing', icon: Building2, label: t('nav.housing') },
+  ]
+
+  const toolLinks = [
+    { to: '/video-maker', icon: Clapperboard, label: t('nav.videoMaker') },
+    { to: '/photo-editor', icon: Camera, label: 'Foto Editor' },
+    { to: '/fotostory', icon: Film, label: 'Fotostory' },
   ]
 
   if (profile?.role === 'admin') {
-    moreLinks.push({ to: '/admin', icon: '⚙️', label: t('nav.admin') })
+    toolLinks.push({ to: '/admin', icon: Settings, label: t('nav.admin') })
   }
+
+  const renderLinks = (links) => links.map((link) => (
+    <Link
+      key={link.to}
+      to={link.to}
+      className={`sidebar-link ${location.pathname === link.to ? 'active' : ''}`}
+      title={collapsed ? link.label : undefined}
+    >
+      <span className="sidebar-icon"><link.icon size={19} /></span>
+      {!collapsed && <span>{link.label}</span>}
+    </Link>
+  ))
 
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
@@ -64,38 +87,24 @@ function Sidebar() {
           {!collapsed && <span>Happiness</span>}
         </Link>
         <button className="sidebar-toggle" onClick={() => setCollapsed(!collapsed)}>
-          {collapsed ? '»' : '«'}
+          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
       </div>
 
       <nav className="sidebar-nav">
-        {mainLinks.map((link) => (
-          <Link
-            key={link.to}
-            to={link.to}
-            className={`sidebar-link ${location.pathname === link.to ? 'active' : ''}`}
-            title={collapsed ? link.label : undefined}
-          >
-            <span className="sidebar-icon">{link.icon}</span>
-            {!collapsed && <span>{link.label}</span>}
-          </Link>
-        ))}
+        {renderLinks(mainLinks)}
 
         <div className="sidebar-divider"></div>
+        {!collapsed && <div className="sidebar-section-title">Sozial</div>}
+        {renderLinks(socialLinks)}
 
-        {!collapsed && <div className="sidebar-section-title">{t('nav.more') || 'Mehr'}</div>}
+        <div className="sidebar-divider"></div>
+        {!collapsed && <div className="sidebar-section-title">Leben & Arbeit</div>}
+        {renderLinks(lifeLinks)}
 
-        {moreLinks.map((link) => (
-          <Link
-            key={link.to}
-            to={link.to}
-            className={`sidebar-link ${location.pathname === link.to ? 'active' : ''}`}
-            title={collapsed ? link.label : undefined}
-          >
-            <span className="sidebar-icon">{link.icon}</span>
-            {!collapsed && <span>{link.label}</span>}
-          </Link>
-        ))}
+        <div className="sidebar-divider"></div>
+        {!collapsed && <div className="sidebar-section-title">Tools</div>}
+        {renderLinks(toolLinks)}
       </nav>
 
       <div className="sidebar-footer">
@@ -221,7 +230,7 @@ export default function App() {
 
 function LoadingScreen() {
   const { t } = useLanguage()
-  return <div className="loading-screen">🌈 Happiness App wird geladen...</div>
+  return <div className="loading-screen">Wird geladen…</div>
 }
 
 function HomePage() {
@@ -233,45 +242,58 @@ function HomePage() {
   return (
     <div className="container">
       <div className="hero">
-        <h1>🌈 {t('home.welcome')}</h1>
-        <p>{greeting}, <strong>{profile?.name}</strong>!</p>
-        <p style={{color: 'rgba(255,255,255,0.8)', fontSize: '0.95rem', marginTop: '0.5rem'}}>{t('home.desc')}</p>
+        <h1>{t('home.welcome')}</h1>
+        <p>{greeting}, <strong>{profile?.name}</strong>! {t('home.desc')}</p>
       </div>
       <div className="dashboard-grid">
         <Link to="/community" className="dash-card">
-          <span className="dash-icon">💬</span>
-          <h3>{t('nav.community')}</h3>
-          <p>{t('community.share')}</p>
+          <span className="dash-icon"><MessageCircle size={20} /></span>
+          <div>
+            <h3>{t('nav.community')}</h3>
+            <p>{t('community.share')}</p>
+          </div>
         </Link>
         <Link to="/friends" className="dash-card">
-          <span className="dash-icon">👥</span>
-          <h3>{t('nav.friends')}</h3>
-          <p>{t('friends.noFriends')}</p>
+          <span className="dash-icon"><Users size={20} /></span>
+          <div>
+            <h3>{t('nav.friends')}</h3>
+            <p>{t('friends.noFriends')}</p>
+          </div>
         </Link>
         <Link to="/marketplace" className="dash-card">
-          <span className="dash-icon">🛒</span>
-          <h3>{t('nav.marketplace')}</h3>
-          <p>{t('marketplace.browse')}</p>
+          <span className="dash-icon"><ShoppingCart size={20} /></span>
+          <div>
+            <h3>{t('nav.marketplace')}</h3>
+            <p>{t('marketplace.browse')}</p>
+          </div>
         </Link>
         <Link to="/jobs" className="dash-card">
-          <span className="dash-icon">💼</span>
-          <h3>{t('nav.jobs')}</h3>
-          <p>{t('jobs.browse')}</p>
+          <span className="dash-icon"><Briefcase size={20} /></span>
+          <div>
+            <h3>{t('nav.jobs')}</h3>
+            <p>{t('jobs.browse')}</p>
+          </div>
         </Link>
         <Link to="/courses" className="dash-card">
-          <span className="dash-icon">📚</span>
-          <h3>{t('nav.courses')}</h3>
-          <p>{t('courses.browse')}</p>
+          <span className="dash-icon"><BookOpen size={20} /></span>
+          <div>
+            <h3>{t('nav.courses')}</h3>
+            <p>{t('courses.browse')}</p>
+          </div>
         </Link>
         <Link to="/housing" className="dash-card">
-          <span className="dash-icon">🏠</span>
-          <h3>{t('nav.housing')}</h3>
-          <p>{t('housing.subtitle')}</p>
+          <span className="dash-icon"><Building2 size={20} /></span>
+          <div>
+            <h3>{t('nav.housing')}</h3>
+            <p>{t('housing.subtitle')}</p>
+          </div>
         </Link>
         <Link to="/profile" className="dash-card">
-          <span className="dash-icon">👤</span>
-          <h3>{t('nav.profile')}</h3>
-          <p>{t('profile.edit')}</p>
+          <span className="dash-icon"><User size={20} /></span>
+          <div>
+            <h3>{t('nav.profile')}</h3>
+            <p>{t('profile.edit')}</p>
+          </div>
         </Link>
       </div>
     </div>

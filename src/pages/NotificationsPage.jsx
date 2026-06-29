@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Bell } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations.jsx'
@@ -32,12 +33,12 @@ export default function NotificationsPage() {
   return (
     <div className="container">
       <div className="page-header">
-        <h1>🔔 {t('notifications.title')}</h1>
+        <h1>{t('notifications.title')}</h1>
         {unreadCount > 0 && <button className="btn btn-sm btn-outline" onClick={markAllRead} style={{ marginTop: '0.5rem' }}>{t('notifications.markAll')}</button>}
       </div>
 
       {loading ? <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Laden...</p> : notifications.length === 0 ? (
-        <div className="empty-state"><div className="empty-icon">🔔</div><p>{t('notifications.none')}</p></div>
+        <div className="empty-state"><div className="empty-icon"><Bell /></div><p>{t('notifications.none')}</p></div>
       ) : (
         notifications.map(n => (
           <div key={n.id} className="card" style={{ borderLeftColor: n.read ? 'var(--border)' : 'var(--primary)', borderLeftWidth: '3px' }}>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { ShoppingCart } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations.jsx'
@@ -87,7 +88,7 @@ export default function MarketplacePage() {
           </div>
 
           {loading ? <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Laden...</p> : filtered.length === 0 ? (
-            <div className="empty-state"><div className="empty-icon">🛒</div><p>{t('marketplace.noItems')}</p></div>
+            <div className="empty-state"><div className="empty-icon"><ShoppingCart /></div><p>{t('marketplace.noItems')}</p></div>
           ) : filtered.map(item => (
             <div key={item.id} className="card">
               <div className="card-header">

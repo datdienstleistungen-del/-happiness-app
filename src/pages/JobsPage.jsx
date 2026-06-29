@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { Briefcase, MapPin } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations.jsx'
@@ -89,14 +90,14 @@ export default function JobsPage() {
           </div>
 
           {loading ? <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Laden...</p> : filtered.length === 0 ? (
-            <div className="empty-state"><div className="empty-icon">💼</div><p>{t('jobs.noJobs')}</p></div>
+            <div className="empty-state"><div className="empty-icon"><Briefcase /></div><p>{t('jobs.noJobs')}</p></div>
           ) : filtered.map(job => (
             <div key={job.id} className="card">
               <div className="card-header">
                 <div>
                   <h3 style={{ marginBottom: '0.25rem' }}>{job.title}</h3>
                   <span className="badge badge-primary">{job.job_type}</span>
-                  {job.location && <span style={{ marginLeft: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>📍 {job.location}</span>}
+                  {job.location && <span style={{ marginLeft: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}><MapPin size={12} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />{job.location}</span>}
                 </div>
               </div>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>

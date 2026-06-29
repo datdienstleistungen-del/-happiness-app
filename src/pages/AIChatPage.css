@@ -16,7 +16,9 @@
 }
 
 .ai-topbar .ai-logo {
-  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  color: #1b6e6e;
 }
 
 .ai-topbar strong {
@@ -43,7 +45,7 @@
 
 .ai-topbar-btn:hover {
   background: #f3f4f6;
-  border-color: #9b59b6;
+  border-color: #1b6e6e;
 }
 
 .ai-topbar-btn.danger {
@@ -80,14 +82,15 @@
 }
 
 .ai-welcome-icon {
-  font-size: 4rem;
-  margin-bottom: 16px;
-  animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(27, 110, 110, 0.1);
+  color: #1b6e6e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
 }
 
 .ai-welcome h1 {
@@ -95,7 +98,7 @@
   font-weight: 700;
   color: #1a1a2e;
   margin: 0 0 10px;
-  background: linear-gradient(135deg, #9b59b6, #3498db);
+  background: linear-gradient(135deg, #1b6e6e, #2a8c8c);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -131,12 +134,14 @@
 
 .suggestion-chips button:hover {
   background: #f3f4f6;
-  border-color: #9b59b6;
+  border-color: #1b6e6e;
   transform: translateY(-1px);
 }
 
 .chip-icon {
-  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  color: #1b6e6e;
 }
 
 /* ── Messages ── */
@@ -187,7 +192,7 @@
 }
 
 .assistant-avatar {
-  background: linear-gradient(135deg, #9b59b6, #8e44ad);
+  background: linear-gradient(135deg, #1b6e6e, #2a8c8c);
   color: white;
   font-size: 1rem;
 }
@@ -216,7 +221,7 @@
 }
 
 .message-bubble.user {
-  background: linear-gradient(135deg, #9b59b6, #8e44ad);
+  background: linear-gradient(135deg, #1b6e6e, #2a8c8c);
   color: white;
   border-top-right-radius: 4px;
 }
@@ -234,7 +239,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #9b59b6;
+  background: #1b6e6e;
   animation: typingPulse 1.4s ease-in-out infinite;
 }
 
@@ -282,7 +287,7 @@
 }
 
 .ai-input-bar textarea:focus {
-  border-color: #9b59b6;
+  border-color: #1b6e6e;
   box-shadow: 0 0 0 2px rgba(155, 89, 182, 0.15);
 }
 
@@ -295,7 +300,7 @@
   height: 44px;
   border-radius: 12px;
   border: none;
-  background: linear-gradient(135deg, #9b59b6, #8e44ad);
+  background: linear-gradient(135deg, #1b6e6e, #2a8c8c);
   color: white;
   font-size: 1.1rem;
   cursor: pointer;
@@ -402,7 +407,7 @@
 }
 
 .consent-switch input {
-  accent-color: #9b59b6;
+  accent-color: #1b6e6e;
   width: 16px;
   height: 16px;
   cursor: pointer;
@@ -476,8 +481,15 @@
 }
 
 .paywall-icon {
-  font-size: 3rem;
-  margin-bottom: 12px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(27, 110, 110, 0.1);
+  color: #1b6e6e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
 }
 
 .paywall-card h2 {
@@ -509,7 +521,7 @@
 .price-amount {
   font-size: 2.5rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #9b59b6, #8e44ad);
+  background: linear-gradient(135deg, #1b6e6e, #2a8c8c);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -555,7 +567,7 @@
 }
 
 .iban-text strong {
-  color: #6c5ce7;
+  color: #1b6e6e;
 }
 
 .paywall-steps {
@@ -577,7 +589,7 @@
 .paywall-btn {
   display: inline-block;
   padding: 12px 24px;
-  background: linear-gradient(135deg, #9b59b6, #8e44ad);
+  background: linear-gradient(135deg, #1b6e6e, #2a8c8c);
   color: white;
   text-decoration: none !important;
   border-radius: 10px;
