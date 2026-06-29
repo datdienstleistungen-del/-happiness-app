@@ -14,12 +14,17 @@ const FILTERS = [
   { id: 'dramatic', label: 'Dramatisch', css: 'contrast(1.4) brightness(0.85) saturate(0.7)' },
 ]
 
-const ASPECT_RATIOS = [
-  { id: '16:9', label: 'Landscape (16:9)', width: 1920, height: 1080 },
-  { id: '9:16', label: 'Vertical (9:16)', width: 1080, height: 1920 },
-  { id: '1:1', label: 'Quadrat (1:1)', width: 1080, height: 1080 },
-  { id: '4:5', label: 'Instagram (4:5)', width: 1080, height: 1350 },
-]
+const isMobile = () => /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+
+const getAspectRatios = () => {
+  const mobile = isMobile()
+  return [
+    { id: '16:9', label: 'Landscape (16:9)', width: mobile ? 1280 : 1920, height: mobile ? 720 : 1080 },
+    { id: '9:16', label: 'Vertical (9:16)', width: mobile ? 720 : 1080, height: mobile ? 1280 : 1920 },
+    { id: '1:1', label: 'Quadrat (1:1)', width: mobile ? 720 : 1080, height: mobile ? 720 : 1080 },
+    { id: '4:5', label: 'Instagram (4:5)', width: mobile ? 720 : 1080, height: mobile ? 900 : 1350 },
+  ]
+}
 
 export default function VideoMakerPage() {
   const { t } = useLanguage()
@@ -160,6 +165,18 @@ export default function VideoMakerPage() {
     return f?.css !== 'none' ? `${f.css} ${custom}` : custom
   }
 
+  const downloadBlob = (blob, mimeType) => {
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    const ext = mimeType.includes('mp4') ? 'mp4' : 'webm'
+    a.download = `happiness-video-${Date.now()}.${ext}`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+
   const exportVideo = async () => {
     if (!videoRef.current || !videoLoaded) return
     setIsExporting(true)
@@ -169,7 +186,7 @@ export default function VideoMakerPage() {
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
 
-    const ar = ASPECT_RATIOS.find(a => a.id === aspectRatio)
+    const ar = getAspectRatios().find(a => a.id === aspectRatio)
     canvas.width = ar.width
     canvas.height = ar.height
 
@@ -180,87 +197,110 @@ export default function VideoMakerPage() {
     v.currentTime = startSec
     v.muted = false
 
-    const stream = canvas.captureStream(30)
+    try {
+      const stream = canvas.captureStream(30)
 
-    if (audioUrl) {
-      try {
-        const audioCtx = new AudioContext()
-        const audioEl = new Audio(audioUrl)
-        audioEl.volume = audioVolume / 100
-        const source = audioCtx.createMediaElementSource(audioEl)
-        const dest = audioCtx.createMediaStreamDestination()
-        source.connect(dest)
-        source.connect(audioCtx.destination)
-        const audioTracks = dest.stream.getTracks()
-        audioTracks.forEach(track => stream.addTrack(track))
-        audioEl.play()
-      } catch (e) {
-        console.warn('Audio mixing failed')
-      }
-    }
-
-    const mr = new MediaRecorder(stream, {
-      mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm'
-    })
-    const chunks = []
-    mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data) }
-    mr.onstop = () => {
-      const blob = new Blob(chunks, { type: 'video/webm' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `happiness-video-${Date.now()}.webm`
-      a.click()
-      URL.revokeObjectURL(url)
-      setIsExporting(false)
-      v.pause()
-    }
-
-    v.play()
-    mr.start()
-
-    const animate = () => {
-      if (v.currentTime >= endSec || v.paused) {
-        mr.stop()
-        return
-      }
-
-      const vw = v.videoWidth
-      const vh = v.videoHeight
-      const cw = canvas.width
-      const ch = canvas.height
-
-      const scale = Math.max(cw / vw, ch / vh)
-      const sw = cw / scale
-      const sh = ch / scale
-      const sx = (vw - sw) / 2
-      const sy = (vh - sh) / 2
-
-      ctx.filter = getFilterCSS()
-      ctx.drawImage(v, sx, sy, sw, sh, 0, 0, cw, ch)
-      ctx.filter = 'none'
-
-      textOverlays.forEach(overlay => {
-        const tx = (overlay.x / 100) * cw
-        const ty = (overlay.y / 100) * ch
-        ctx.textAlign = 'center'
-        ctx.globalAlpha = overlay.opacity / 100
-        if (overlay.shadow) {
-          ctx.shadowColor = 'rgba(0,0,0,0.8)'
-          ctx.shadowBlur = 10
+      if (audioUrl && !isMobile()) {
+        try {
+          const audioCtx = new AudioContext()
+          const audioEl = new Audio(audioUrl)
+          audioEl.volume = audioVolume / 100
+          const source = audioCtx.createMediaElementSource(audioEl)
+          const dest = audioCtx.createMediaStreamDestination()
+          source.connect(dest)
+          source.connect(audioCtx.destination)
+          dest.stream.getTracks().forEach(track => stream.addTrack(track))
+          audioEl.play()
+        } catch (e) {
+          console.warn('Audio mixing failed:', e)
         }
-        ctx.fillStyle = overlay.color
-        ctx.font = `${overlay.fontWeight} ${overlay.fontSize * 2}px 'Segoe UI', Arial, sans-serif`
-        ctx.fillText(overlay.text, tx, ty)
-        ctx.shadowBlur = 0
-        ctx.globalAlpha = 1
-      })
+      }
 
-      const progress = ((v.currentTime - startSec) / exportDuration) * 100
-      setExportProgress(progress)
-      requestAnimationFrame(animate)
+      let mimeType = 'video/webm;codecs=vp9'
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'video/webm;codecs=vp8'
+      }
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'video/webm'
+      }
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'video/mp4'
+      }
+
+      const mr = new MediaRecorder(stream, { mimeType })
+      const chunks = []
+      mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data) }
+      mr.onstop = async () => {
+        const blob = new Blob(chunks, { type: mr.mimeType })
+
+        if (isMobile() && navigator.share) {
+          try {
+            const ext = mr.mimeType.includes('mp4') ? 'mp4' : 'webm'
+            const file = new File([blob], `happiness-video.${ext}`, { type: mr.mimeType })
+            await navigator.share({ files: [file], title: 'Happiness Video' })
+          } catch (shareErr) {
+            if (shareErr.name !== 'AbortError') {
+              downloadBlob(blob, mr.mimeType)
+            }
+          }
+        } else {
+          downloadBlob(blob, mr.mimeType)
+        }
+
+        setIsExporting(false)
+        v.pause()
+      }
+
+      v.play()
+      mr.start()
+
+      const animate = () => {
+        if (v.currentTime >= endSec || v.paused) {
+          mr.stop()
+          return
+        }
+
+        const vw = v.videoWidth
+        const vh = v.videoHeight
+        const cw = canvas.width
+        const ch = canvas.height
+
+        const scale = Math.max(cw / vw, ch / vh)
+        const sw = cw / scale
+        const sh = ch / scale
+        const sx = (vw - sw) / 2
+        const sy = (vh - sh) / 2
+
+        ctx.filter = getFilterCSS()
+        ctx.drawImage(v, sx, sy, sw, sh, 0, 0, cw, ch)
+        ctx.filter = 'none'
+
+        textOverlays.forEach(overlay => {
+          const tx = (overlay.x / 100) * cw
+          const ty = (overlay.y / 100) * ch
+          ctx.textAlign = 'center'
+          ctx.globalAlpha = overlay.opacity / 100
+          if (overlay.shadow) {
+            ctx.shadowColor = 'rgba(0,0,0,0.8)'
+            ctx.shadowBlur = 10
+          }
+          ctx.fillStyle = overlay.color
+          ctx.font = `${overlay.fontWeight} ${overlay.fontSize * 2}px 'Segoe UI', Arial, sans-serif`
+          ctx.fillText(overlay.text, tx, ty)
+          ctx.shadowBlur = 0
+          ctx.globalAlpha = 1
+        })
+
+        const progress = ((v.currentTime - startSec) / exportDuration) * 100
+        setExportProgress(progress)
+        requestAnimationFrame(animate)
+      }
+      animate()
+    } catch (err) {
+      console.error('Export failed:', err)
+      setIsExporting(false)
+      setVideoError('Export fehlgeschlagen. Bitte versuche es mit einem kuerzeren Video oder einem anderen Browser.')
     }
-    animate()
   }
 
   const formatTime = (sec) => {
@@ -339,6 +379,18 @@ export default function VideoMakerPage() {
                     document.addEventListener('mousemove', onMove)
                     document.addEventListener('mouseup', onUp)
                   }}
+                  onTouchStart={(e) => {
+                    e.stopPropagation()
+                    const onMove = (ev) => {
+                      ev.preventDefault()
+                      const rect = timelineRef.current.getBoundingClientRect()
+                      const x = Math.max(0, Math.min(ev.touches[0].clientX - rect.left, rect.width))
+                      setTrimStart((x / rect.width) * 100)
+                    }
+                    const onEnd = () => { document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onEnd) }
+                    document.addEventListener('touchmove', onMove, { passive: false })
+                    document.addEventListener('touchend', onEnd)
+                  }}
                 />
                 <div className="timeline-handle right" style={{ left: `${trimEnd}%` }}
                   onMouseDown={(e) => {
@@ -351,6 +403,18 @@ export default function VideoMakerPage() {
                     const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
                     document.addEventListener('mousemove', onMove)
                     document.addEventListener('mouseup', onUp)
+                  }}
+                  onTouchStart={(e) => {
+                    e.stopPropagation()
+                    const onMove = (ev) => {
+                      ev.preventDefault()
+                      const rect = timelineRef.current.getBoundingClientRect()
+                      const x = Math.max(0, Math.min(ev.touches[0].clientX - rect.left, rect.width))
+                      setTrimEnd((x / rect.width) * 100)
+                    }
+                    const onEnd = () => { document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onEnd) }
+                    document.addEventListener('touchmove', onMove, { passive: false })
+                    document.addEventListener('touchend', onEnd)
                   }}
                 />
               </div>
@@ -395,7 +459,7 @@ export default function VideoMakerPage() {
                   <div className="control">
                     <label>Seitenverhaeltnis</label>
                     <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value)}>
-                      {ASPECT_RATIOS.map(ar => (
+                      {getAspectRatios().map(ar => (
                         <option key={ar.id} value={ar.id}>{ar.label}</option>
                       ))}
                     </select>
