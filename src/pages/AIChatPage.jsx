@@ -21,7 +21,7 @@ export default function AIChatPage() {
   const [showPaywall, setShowPaywall] = useState(false)
   const [isPremium, setIsPremium] = useState(false)
   const messagesEndRef = useRef(null)
-  const FREE_QUESTIONS = 20
+  const FREE_QUESTIONS = 5
 
   useEffect(() => {
     loadUserData()
