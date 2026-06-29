@@ -730,9 +730,12 @@ WICHTIG:
               </button>
 
               <div className="paywall-steps">
-                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Sofortige Freischaltung</p>
-                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Kuendbar jederzeit</p>
-                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Per Kreditkarte</p>
+                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Unbegrenzt Fragen stellen</p>
+                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Bilder & PDFs hochladen & analysieren</p>
+                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Längere, tiefere Antworten</p>
+                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Priorität bei hoher Last</p>
+                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Kündbar jederzeit</p>
+                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Sicher per Kreditkarte (Stripe)</p>
               </div>
 
               <p className="paywall-note">Sicher bezahlen mit Stripe.</p>
