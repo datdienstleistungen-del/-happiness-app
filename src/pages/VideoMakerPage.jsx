@@ -1,15 +1,16 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations'
+import getStockImages from '../lib/stockImages'
 import './VideoMakerPage.css'
 
 const TEMPLATES = [
-  { id: 'motivation', label: 'Motivation', icon: '💪', desc: 'Kraftvolle Sprüche', colors: ['#FF6B6B', '#FF8E53'], query: 'motivation success' },
-  { id: 'dankbarkeit', label: 'Dankbarkeit', icon: '🙏', desc: 'Wertschätzung', colors: ['#4ECDC4', '#44CF6C'], query: 'nature peace' },
-  { id: 'affirmation', label: 'Affirmationen', icon: '✨', desc: 'Positive Gedanken', colors: ['#A78BFA', '#818CF8'], query: 'sky clouds' },
-  { id: 'wellness', label: 'Wellness', icon: '🧘', desc: 'Ruhe & Entspannung', colors: ['#2DD4BF', '#22D3EE'], query: 'meditation wellness' },
-  { id: 'fitness', label: 'Fitness', icon: '🏋️', desc: 'Training & Kraft', colors: ['#F97316', '#EF4444'], query: 'fitness workout' },
-  { id: 'liebe', label: 'Liebe', icon: '❤️', desc: 'Gefühle & Beziehung', colors: ['#EC4899', '#F43F5E'], query: 'love couple' },
+  { id: 'motivation', label: 'Motivation', icon: '💪', desc: 'Kraftvolle Sprüche', colors: ['#FF6B6B', '#FF8E53'] },
+  { id: 'dankbarkeit', label: 'Dankbarkeit', icon: '🙏', desc: 'Wertschätzung', colors: ['#4ECDC4', '#44CF6C'] },
+  { id: 'affirmation', label: 'Affirmationen', icon: '✨', desc: 'Positive Gedanken', colors: ['#A78BFA', '#818CF8'] },
+  { id: 'wellness', label: 'Wellness', icon: '🧘', desc: 'Ruhe & Entspannung', colors: ['#2DD4BF', '#22D3EE'] },
+  { id: 'fitness', label: 'Fitness', icon: '🏋️', desc: 'Training & Kraft', colors: ['#F97316', '#EF4444'] },
+  { id: 'liebe', label: 'Liebe', icon: '❤️', desc: 'Gefühle & Beziehung', colors: ['#EC4899', '#F43F5E'] },
 ]
 
 const MUSIC_LIBRARY = [
@@ -18,14 +19,11 @@ const MUSIC_LIBRARY = [
   { id: 'calm', label: 'Ruhig & Entspannt', icon: '🎶', url: 'https://cdn.pixabay.com/audio/2022/08/02/audio_884fe92c38.mp3' },
   { id: 'upbeat', label: 'Upbeat & Energetisch', icon: '🎸', url: 'https://cdn.pixabay.com/audio/2023/10/30/audio_3713e23867.mp3' },
   { id: 'piano', label: 'Piano Gefühle', icon: '🎹', url: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3' },
-  { id: 'ambient', label: 'Ambient Atmosphere', icon: '🌊', url: 'https://cdn.pixabay.com/audio/2022/01/20/audio_d1718ab41b.mp3' },
-  { id: 'corporate', label: 'Professionell', icon: '💼', url: 'https://cdn.pixabay.com/audio/2023/01/27/audio_08ed025164.mp3' },
 ]
 
 export default function VideoMakerPage() {
   const { t } = useLanguage()
   const { user } = useAuth()
-  const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const audioRef = useRef(null)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -36,27 +34,19 @@ export default function VideoMakerPage() {
   const [videoCount, setVideoCount] = useState(0)
   const maxFreeVideos = 20
 
-  const [clips, setClips] = useState([])
-  const [activeClipIndex, setActiveClipIndex] = useState(0)
-  const [currentClip, setCurrentClip] = useState(null)
+  const [scenes, setScenes] = useState([])
+  const [activeSceneIndex, setActiveSceneIndex] = useState(0)
+  const [imagesLoaded, setImagesLoaded] = useState(false)
+  const [loadedImages, setLoadedImages] = useState([])
 
   const [aiPrompt, setAiPrompt] = useState('')
   const [selectedTemplate, setSelectedTemplate] = useState(null)
-
-  const [sceneTexts, setSceneTexts] = useState([
-    { text1: '', text2: '' },
-    { text1: '', text2: '' },
-    { text1: '', text2: '' },
-    { text1: '', text2: '' },
-    { text1: '', text2: '' },
-  ])
-
-  const [transition, setTransition] = useState('fade')
   const [selectedMusic, setSelectedMusic] = useState('none')
   const [textColor, setTextColor] = useState('#ffffff')
   const [textPosition, setTextPosition] = useState('center')
   const [fontSize, setFontSize] = useState(48)
   const [bgOpacity, setBgOpacity] = useState(60)
+  const [kenBurnsStyle, setKenBurnsStyle] = useState('zoom-in')
 
   useEffect(() => {
     if (user) {
@@ -66,25 +56,36 @@ export default function VideoMakerPage() {
     }
   }, [user])
 
-  const searchClips = async (query) => {
-    try {
-      const response = await fetch('/.netlify/functions/pexels-search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, count: 5 })
+  const loadImages = async (imageUrls) => {
+    const promises = imageUrls.map(url => {
+      return new Promise((resolve) => {
+        const img = new Image()
+        img.crossOrigin = 'anonymous'
+        img.onload = () => resolve(img)
+        img.onerror = () => {
+          const fallback = document.createElement('canvas')
+          fallback.width = 1920
+          fallback.height = 1080
+          const ctx = fallback.getContext('2d')
+          const gradient = ctx.createLinearGradient(0, 0, 1920, 1080)
+          gradient.addColorStop(0, '#9b59b6')
+          gradient.addColorStop(1, '#3498db')
+          ctx.fillStyle = gradient
+          ctx.fillRect(0, 0, 1920, 1080)
+          const canvasImg = new Image()
+          canvasImg.src = fallback.toDataURL()
+          canvasImg.onload = () => resolve(canvasImg)
+          canvasImg.onerror = () => resolve(null)
+        }
+        img.src = url
       })
-      const data = await response.json()
-      return data.videos || []
-    } catch (error) {
-      console.error('Clip search error:', error)
-      return []
-    }
+    })
+    return Promise.all(promises)
   }
 
   const generateVideo = async (templateId = null) => {
     const template = templateId ? TEMPLATES.find(t => t.id === templateId) : null
     const prompt = template ? template.desc : aiPrompt
-
     if (!prompt.trim()) return
     if (videoCount >= maxFreeVideos) {
       alert(`Du hast ${maxFreeVideos} kostenlose Videos erreicht. Upgrade auf Premium!`)
@@ -92,18 +93,16 @@ export default function VideoMakerPage() {
     }
 
     setIsGenerating(true)
-    setStatus('Suche Stock-Clips...')
+    setStatus('Bilder laden...')
     setSelectedTemplate(template)
 
     try {
-      const query = template?.query || prompt
-      const foundClips = await searchClips(query)
+      const category = template?.id || 'motivation'
+      const imageUrls = getStockImages(category)
 
-      if (foundClips.length === 0) {
-        alert('Keine Clips gefunden. Versuche ein anderes Thema.')
-        setIsGenerating(false)
-        return
-      }
+      setStatus('Bilder werden vorbereitet...')
+      const images = await loadImages(imageUrls)
+      setLoadedImages(images)
 
       setStatus('KI generiert Texte...')
       const aiResponse = await fetch('/.netlify/functions/generate-video', {
@@ -113,24 +112,31 @@ export default function VideoMakerPage() {
       })
       const aiData = await aiResponse.json()
 
-      const newSceneTexts = (aiData.scenes || []).slice(0, foundClips.length).map(s => ({
+      const newScenes = (aiData.scenes || []).slice(0, images.length).map((s, i) => ({
+        id: i + 1,
         text1: s.text1 || '',
-        text2: s.text2 || ''
+        text2: s.text2 || '',
+        imageIndex: i,
+        duration: s.duration || 4
       }))
 
-      while (newSceneTexts.length < foundClips.length) {
-        newSceneTexts.push({ text1: '', text2: '' })
+      while (newScenes.length < images.length) {
+        newScenes.push({
+          id: newScenes.length + 1,
+          text1: '',
+          text2: '',
+          imageIndex: newScenes.length,
+          duration: 4
+        })
       }
 
-      setClips(foundClips)
-      setSceneTexts(newSceneTexts)
+      setScenes(newScenes)
+      setImagesLoaded(true)
       setVideoCount(prev => {
         const newCount = prev + 1
         if (user) localStorage.setItem(`happiness_video_count_${user.id}`, newCount.toString())
         return newCount
       })
-
-      setStatus('Clips laden...')
     } catch (error) {
       console.error('Generation error:', error)
       alert('Fehler bei der Generierung.')
@@ -139,102 +145,93 @@ export default function VideoMakerPage() {
     }
   }
 
-  const loadClip = useCallback((index) => {
-    if (index < 0 || index >= clips.length) return
-    setActiveClipIndex(index)
-    const clip = clips[index]
-    setCurrentClip(clip)
-
-    if (videoRef.current) {
-      videoRef.current.src = clip.url
-      videoRef.current.load()
-      videoRef.current.play().catch(() => {})
-    }
-  }, [clips])
-
-  useEffect(() => {
-    if (clips.length > 0 && !currentClip) {
-      loadClip(0)
-    }
-  }, [clips, currentClip, loadClip])
-
-  const drawTextOverlay = () => {
+  const drawScene = (sceneIndex, animationProgress = 1) => {
     const canvas = canvasRef.current
-    const video = videoRef.current
-    if (!canvas || !video || video.readyState < 2) return
+    if (!canvas || !loadedImages[sceneIndex]) return
 
     const ctx = canvas.getContext('2d')
-    canvas.width = video.videoWidth || 1920
-    canvas.height = video.videoHeight || 1080
+    canvas.width = 1920
+    canvas.height = 1080
 
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    const img = loadedImages[sceneIndex]
+    const scene = scenes[sceneIndex]
+
+    ctx.save()
+
+    let scale, offsetX, offsetY
+    const imgAspect = img.width / img.height
+    const canvasAspect = canvas.width / canvas.height
+
+    if (imgAspect > canvasAspect) {
+      scale = canvas.height / img.height
+      offsetX = (canvas.width - img.width * scale) / 2
+      offsetY = 0
+    } else {
+      scale = canvas.width / img.width
+      offsetX = 0
+      offsetY = (canvas.height - img.height * scale) / 2
+    }
+
+    if (kenBurnsStyle === 'zoom-in') {
+      const zoom = 1 + (animationProgress * 0.15)
+      ctx.translate(canvas.width / 2, canvas.height / 2)
+      ctx.scale(zoom, zoom)
+      ctx.translate(-canvas.width / 2, -canvas.height / 2)
+    } else if (kenBurnsStyle === 'zoom-out') {
+      const zoom = 1.15 - (animationProgress * 0.15)
+      ctx.translate(canvas.width / 2, canvas.height / 2)
+      ctx.scale(zoom, zoom)
+      ctx.translate(-canvas.width / 2, -canvas.height / 2)
+    } else if (kenBurnsStyle === 'pan-left') {
+      const pan = animationProgress * 50
+      ctx.translate(-pan, 0)
+    } else if (kenBurnsStyle === 'pan-right') {
+      const pan = animationProgress * 50
+      ctx.translate(pan, 0)
+    }
+
+    ctx.drawImage(img, offsetX, offsetY, img.width * scale, img.height * scale)
+    ctx.restore()
 
     ctx.fillStyle = `rgba(0,0,0,${bgOpacity / 100})`
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-    const scene = sceneTexts[activeClipIndex] || { text1: '', text2: '' }
-    const yCenter = textPosition === 'top' ? canvas.height * 0.3
-      : textPosition === 'bottom' ? canvas.height * 0.7
+    const yCenter = textPosition === 'top' ? canvas.height * 0.25
+      : textPosition === 'bottom' ? canvas.height * 0.75
       : canvas.height * 0.5
 
     ctx.textAlign = 'center'
     ctx.fillStyle = textColor
+    ctx.shadowColor = 'rgba(0,0,0,0.9)'
+    ctx.shadowBlur = 15
 
-    if (scene.text1) {
-      ctx.font = `bold ${fontSize * 2}px 'Segoe UI', sans-serif`
-      ctx.shadowColor = 'rgba(0,0,0,0.8)'
-      ctx.shadowBlur = 10
-      ctx.fillText(scene.text1, canvas.width / 2, yCenter - fontSize)
-      ctx.shadowBlur = 0
+    if (scene?.text1) {
+      ctx.font = `bold ${fontSize * 3}px 'Segoe UI', Arial, sans-serif`
+      ctx.fillText(scene.text1, canvas.width / 2, yCenter - fontSize * 1.5)
     }
 
-    if (scene.text2) {
-      ctx.font = `${fontSize * 1.2}px 'Segoe UI', sans-serif`
-      ctx.shadowColor = 'rgba(0,0,0,0.8)'
-      ctx.shadowBlur = 10
+    if (scene?.text2) {
+      ctx.font = `${fontSize * 1.8}px 'Segoe UI', Arial, sans-serif`
       ctx.fillText(scene.text2, canvas.width / 2, yCenter + fontSize * 1.5)
-      ctx.shadowBlur = 0
     }
 
-    ctx.font = `bold ${fontSize * 0.6}px 'Segoe UI', sans-serif`
+    ctx.shadowBlur = 0
+
+    ctx.font = `bold ${fontSize * 0.8}px 'Segoe UI', Arial, sans-serif`
     ctx.fillStyle = selectedTemplate?.colors?.[0] || '#9b59b6'
-    ctx.fillText('Happiness', canvas.width / 2, canvas.height - 60)
+    ctx.fillText('Happiness', canvas.width / 2, canvas.height - 80)
   }
 
   useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
-
-    let animFrame
-    const renderLoop = () => {
-      if (video.readyState >= 2) {
-        drawTextOverlay()
-      }
-      animFrame = requestAnimationFrame(renderLoop)
+    if (scenes.length > 0 && loadedImages.length > 0 && activeSceneIndex < scenes.length) {
+      drawScene(activeSceneIndex, 1)
     }
-
-    video.addEventListener('play', () => {
-      renderLoop()
-    })
-
-    video.addEventListener('ended', () => {
-      if (activeClipIndex < clips.length - 1) {
-        loadClip(activeClipIndex + 1)
-      } else {
-        setIsPlaying(false)
-        setStatus('Fertig!')
-      }
-    })
-
-    return () => {
-      cancelAnimationFrame(animFrame)
-    }
-  }, [activeClipIndex, clips, sceneTexts, textColor, fontSize, bgOpacity, textPosition, selectedTemplate])
+  }, [activeSceneIndex, scenes, loadedImages, textColor, fontSize, bgOpacity, textPosition, selectedTemplate, kenBurnsStyle])
 
   const playPreview = () => {
-    if (clips.length === 0) return
+    if (scenes.length === 0) return
     setIsPlaying(true)
-    loadClip(0)
+    setActiveSceneIndex(0)
 
     const music = MUSIC_LIBRARY.find(m => m.id === selectedMusic)
     if (music?.url && audioRef.current) {
@@ -242,13 +239,40 @@ export default function VideoMakerPage() {
       audioRef.current.volume = 0.3
       audioRef.current.play().catch(() => {})
     }
+
+    let currentIdx = 0
+    const playScene = (idx) => {
+      if (idx >= scenes.length) {
+        setIsPlaying(false)
+        if (audioRef.current) {
+          audioRef.current.pause()
+          audioRef.current.currentTime = 0
+        }
+        return
+      }
+
+      setActiveSceneIndex(idx)
+      const startTime = Date.now()
+      const duration = (scenes[idx].duration || 4) * 1000
+
+      const animate = () => {
+        const elapsed = Date.now() - startTime
+        const progress = Math.min(1, elapsed / duration)
+        drawScene(idx, progress)
+        if (progress < 1) {
+          requestAnimationFrame(animate)
+        } else {
+          playScene(idx + 1)
+        }
+      }
+      animate()
+    }
+
+    playScene(0)
   }
 
   const stopPreview = () => {
     setIsPlaying(false)
-    if (videoRef.current) {
-      videoRef.current.pause()
-    }
     if (audioRef.current) {
       audioRef.current.pause()
       audioRef.current.currentTime = 0
@@ -256,7 +280,7 @@ export default function VideoMakerPage() {
   }
 
   const exportVideo = async () => {
-    if (clips.length === 0) return
+    if (scenes.length === 0) return
 
     setIsExporting(true)
     setProgress(0)
@@ -273,21 +297,29 @@ export default function VideoMakerPage() {
         audioRef.current.src = music.url
         audioRef.current.volume = 0.3
 
-        const audioCtx = new AudioContext()
-        const source = audioCtx.createMediaElementSource(audioRef.current)
-        const dest = audioCtx.createMediaStreamDestination()
-        source.connect(dest)
-        source.connect(audioCtx.destination)
+        try {
+          const audioCtx = new AudioContext()
+          const source = audioCtx.createMediaElementSource(audioRef.current)
+          const dest = audioCtx.createMediaStreamDestination()
+          source.connect(dest)
+          source.connect(audioCtx.destination)
 
-        combinedStream = new MediaStream([
-          ...videoStream.getTracks(),
-          ...dest.stream.getTracks()
-        ])
+          combinedStream = new MediaStream([
+            ...videoStream.getTracks(),
+            ...dest.stream.getTracks()
+          ])
 
-        audioRef.current.play().catch(() => {})
+          audioRef.current.play().catch(() => {})
+        } catch (e) {
+          console.warn('Audio mixing failed, exporting without audio')
+        }
       }
 
-      const mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9' })
+      const mediaRecorder = new MediaRecorder(combinedStream, {
+        mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+          ? 'video/webm;codecs=vp9'
+          : 'video/webm'
+      })
       const chunks = []
 
       mediaRecorder.ondataavailable = (e) => {
@@ -305,7 +337,6 @@ export default function VideoMakerPage() {
         setStatus('Video exportiert! ✅')
         setProgress(100)
         setIsExporting(false)
-
         if (audioRef.current) {
           audioRef.current.pause()
           audioRef.current.currentTime = 0
@@ -314,23 +345,26 @@ export default function VideoMakerPage() {
 
       mediaRecorder.start()
 
-      for (let i = 0; i < clips.length; i++) {
-        setStatus(`Clip ${i + 1} von ${clips.length}...`)
+      for (let i = 0; i < scenes.length; i++) {
+        setStatus(`Szene ${i + 1} von ${scenes.length}...`)
         await new Promise(resolve => {
-          loadClip(i)
-          const video = videoRef.current
-          const onPlay = () => {
-            video.removeEventListener('playing', onPlay)
-            const duration = Math.min(clips[i].duration || 5, 8)
-            setTimeout(() => {
-              setProgress(((i + 1) / clips.length) * 100)
+          setActiveSceneIndex(i)
+          const startTime = Date.now()
+          const duration = (scenes[i].duration || 4) * 1000
+
+          const animate = () => {
+            const elapsed = Date.now() - startTime
+            const animProgress = Math.min(1, elapsed / duration)
+            drawScene(i, animProgress)
+            setProgress(((i + animProgress) / scenes.length) * 100)
+
+            if (animProgress < 1) {
+              requestAnimationFrame(animate)
+            } else {
               resolve()
-            }, duration * 1000)
+            }
           }
-          video.addEventListener('playing', onPlay)
-          video.play().catch(() => {
-            setTimeout(resolve, 3000)
-          })
+          animate()
         })
       }
 
@@ -343,12 +377,7 @@ export default function VideoMakerPage() {
   }
 
   const updateSceneText = (index, field, value) => {
-    setSceneTexts(prev => {
-      const newTexts = [...prev]
-      while (newTexts.length <= index) newTexts.push({ text1: '', text2: '' })
-      newTexts[index] = { ...newTexts[index], [field]: value }
-      return newTexts
-    })
+    setScenes(prev => prev.map((s, i) => i === index ? { ...s, [field]: value } : s))
   }
 
   const remaining = maxFreeVideos - videoCount
@@ -361,7 +390,7 @@ export default function VideoMakerPage() {
       <div className="ai-section">
         <div className="ai-header">
           <span className="ai-badge">KI</span>
-          <span>Echte Videos mit Stock-Footage generieren</span>
+          <span>Echte Videos mit Stock-Bildern + Musik</span>
           <span className="video-counter">{remaining}免费 Videos übrig</span>
         </div>
 
@@ -400,41 +429,32 @@ export default function VideoMakerPage() {
         </div>
       </div>
 
-      {clips.length > 0 && (
+      {scenes.length > 0 && imagesLoaded && (
         <div className="editor-section">
           <div className="editor-layout">
             <div className="preview-column">
               <div className="video-preview">
-                <video
-                  ref={videoRef}
-                  className="preview-video"
-                  playsInline
-                  muted
-                />
-                <canvas
-                  ref={canvasRef}
-                  className="preview-canvas"
-                />
+                <canvas ref={canvasRef} className="preview-canvas" width={1920} height={1080} />
                 <div className="playback-controls">
                   <button className="play-btn" onClick={isPlaying ? stopPreview : playPreview}>
                     {isPlaying ? '⏸️' : '▶️'}
                   </button>
                   <div className="clip-counter">
-                    Clip {activeClipIndex + 1} / {clips.length}
+                    Szene {activeSceneIndex + 1} / {scenes.length}
                   </div>
                 </div>
               </div>
 
               <div className="timeline">
-                {clips.map((clip, i) => (
+                {scenes.map((scene, i) => (
                   <div
                     key={i}
-                    className={`timeline-clip ${i === activeClipIndex ? 'active' : ''}`}
-                    onClick={() => loadClip(i)}
+                    className={`timeline-clip ${i === activeSceneIndex ? 'active' : ''}`}
+                    onClick={() => { setActiveSceneIndex(i); drawScene(i, 1) }}
                   >
                     <div className="timeline-clip-number">{i + 1}</div>
                     <div className="timeline-clip-text">
-                      {sceneTexts[i]?.text1 || `Clip ${i + 1}`}
+                      {scene.text1 || `Szene ${i + 1}`}
                     </div>
                   </div>
                 ))}
@@ -444,7 +464,7 @@ export default function VideoMakerPage() {
                 <button
                   className="btn btn-export"
                   onClick={exportVideo}
-                  disabled={isExporting || clips.length === 0}
+                  disabled={isExporting || scenes.length === 0}
                 >
                   {isExporting ? `⏳ Exportiere... ${Math.round(progress)}%` : '📥 Video herunterladen (1080p)'}
                 </button>
@@ -454,19 +474,19 @@ export default function VideoMakerPage() {
             <div className="settings-column">
               <div className="settings-panel">
                 <h3>Text-Overlays</h3>
-                {clips.map((clip, i) => (
-                  <div key={i} className={`scene-editor ${i === activeClipIndex ? 'active' : ''}`}>
-                    <label>Clip {i + 1}</label>
+                {scenes.map((scene, i) => (
+                  <div key={i} className={`scene-editor ${i === activeSceneIndex ? 'active' : ''}`}>
+                    <label>Szene {i + 1}</label>
                     <input
                       type="text"
                       placeholder="Haupttext"
-                      value={sceneTexts[i]?.text1 || ''}
+                      value={scene.text1}
                       onChange={(e) => updateSceneText(i, 'text1', e.target.value)}
                     />
                     <input
                       type="text"
                       placeholder="Untertext"
-                      value={sceneTexts[i]?.text2 || ''}
+                      value={scene.text2}
                       onChange={(e) => updateSceneText(i, 'text2', e.target.value)}
                     />
                   </div>
@@ -483,7 +503,7 @@ export default function VideoMakerPage() {
                   <span>{fontSize}px</span>
                 </div>
                 <div className="control-group">
-                  <label>Hintergrund-Transparenz</label>
+                  <label>Transparenz</label>
                   <input type="range" min="0" max="100" value={bgOpacity} onChange={(e) => setBgOpacity(parseInt(e.target.value))} />
                   <span>{bgOpacity}%</span>
                 </div>
@@ -496,12 +516,13 @@ export default function VideoMakerPage() {
                   </select>
                 </div>
                 <div className="control-group">
-                  <label>Übergang</label>
-                  <select value={transition} onChange={(e) => setTransition(e.target.value)}>
-                    <option value="fade">Fade</option>
-                    <option value="slide">Slide</option>
-                    <option value="zoom">Zoom</option>
-                    <option value="none">Keiner</option>
+                  <label>Bewegung</label>
+                  <select value={kenBurnsStyle} onChange={(e) => setKenBurnsStyle(e.target.value)}>
+                    <option value="zoom-in">Zoom rein</option>
+                    <option value="zoom-out">Zoom raus</option>
+                    <option value="pan-left">Nach links</option>
+                    <option value="pan-right">Nach rechts</option>
+                    <option value="none">Statisch</option>
                   </select>
                 </div>
 
@@ -531,11 +552,11 @@ export default function VideoMakerPage() {
         </div>
       )}
 
-      {clips.length === 0 && !isGenerating && (
+      {scenes.length === 0 && !isGenerating && (
         <div className="empty-state">
           <div className="empty-icon">🎬</div>
           <h2>Erstelle echte Videos</h2>
-          <p>Wähle ein Template oder gib ein Thema ein.<br/>Die KI generiert ein fertiges Video mit Stock-Footage, Text-Overlay und Musik.</p>
+          <p>Wähle ein Template oder gib ein Thema ein.<br/>Die KI generiert ein fertiges Video mit echten Stock-Bildern, Ken Burns Effekt und Musik.</p>
         </div>
       )}
     </div>
