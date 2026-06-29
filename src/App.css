@@ -29,6 +29,31 @@
 .container {
   max-width: 900px;
   margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.public-cta {
+  background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.public-cta strong {
+  display: block;
+  font-size: 16px;
+  color: #1e293b;
+  margin-bottom: 6px;
+}
+
+.public-cta p {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 12px;
+}
+  margin: 0 auto;
   padding: 2rem 1.5rem;
   width: 100%;
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations.jsx'
@@ -86,14 +87,22 @@ export default function HousingPage() {
 
   return (
     <div className="container">
+      {!user && (
+        <div className="public-cta">
+          <strong>Willkommen bei den Happiness Wohnungsanzeigen</strong>
+          <p>Kostenlos registrieren um Wohnungen zu inserieren und zu kontaktieren.</p>
+          <Link to="/register" className="btn btn-primary">Kostenlos registrieren</Link>
+        </div>
+      )}
+
       <div className="page-header">
-        <h1>🏠 {t('housing.title')}</h1>
+        <h1>{t('housing.title')}</h1>
         <p>{t('housing.subtitle')}</p>
       </div>
 
       <div className="tabs">
         <button className={`tab ${tab === 'browse' ? 'active' : ''}`} onClick={() => setTab('browse')}>{t('housing.browse')}</button>
-        <button className={`tab ${tab === 'create' ? 'active' : ''}`} onClick={() => setTab('create')}>{t('housing.create')}</button>
+        {user && <button className={`tab ${tab === 'create' ? 'active' : ''}`} onClick={() => setTab('create')}>{t('housing.create')}</button>}
       </div>
 
       {tab === 'create' && (
@@ -176,7 +185,7 @@ export default function HousingPage() {
                   Von <strong>{item.profiles?.name}</strong> · {new Date(item.created_at).toLocaleDateString('de-DE')}
                 </p>
                 <p>{originalDesc}</p>
-                {item.user_id !== user.id && (
+                {user && item.user_id !== user.id && (
                   <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
                     <button className="btn btn-sm btn-primary" onClick={() => alert(`${t('housing.contactInfo')}: ${item.user_id}`)}>
                       ✉️ {t('housing.contactBtn')}

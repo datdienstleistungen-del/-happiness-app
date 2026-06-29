@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations.jsx'
@@ -60,11 +61,19 @@ export default function CoursesPage() {
 
   return (
     <div className="container">
-      <div className="page-header"><h1>📚 {t('courses.title')}</h1><p>{t('courses.browse')}</p></div>
+      {!user && (
+        <div className="public-cta">
+          <strong>Willkommen bei den Happiness Kursen</strong>
+          <p>Kostenlos registrieren um Kurse zu erstellen und teilzunehmen.</p>
+          <Link to="/register" className="btn btn-primary">Kostenlos registrieren</Link>
+        </div>
+      )}
+
+      <div className="page-header"><h1>{t('courses.title')}</h1><p>{t('courses.browse')}</p></div>
 
       <div className="tabs">
         <button className={`tab ${tab === 'browse' ? 'active' : ''}`} onClick={() => setTab('browse')}>{t('courses.browse')}</button>
-        <button className={`tab ${tab === 'create' ? 'active' : ''}`} onClick={() => setTab('create')}>{t('courses.create')}</button>
+        {user && <button className={`tab ${tab === 'create' ? 'active' : ''}`} onClick={() => setTab('create')}>{t('courses.create')}</button>}
       </div>
 
       {tab === 'create' && (
@@ -97,7 +106,7 @@ export default function CoursesPage() {
             <div className="empty-state"><div className="empty-icon">📚</div><p>{t('courses.noCourses')}</p></div>
           ) : filtered.map(course => {
             const enrollments = course.course_enrollments || []
-            const isEnrolled = enrollments.some(e => e.user_id === user.id)
+            const isEnrolled = user ? enrollments.some(e => e.user_id === user.id) : false
             const isFull = enrollments.length >= course.max_participants
             const progress = enrollments.length / course.max_participants
 
@@ -124,7 +133,7 @@ export default function CoursesPage() {
                   </div>
                 </div>
                 <div style={{ marginTop: '1rem' }}>
-                  {course.user_id !== user.id && (
+                  {user && course.user_id !== user.id && (
                     isEnrolled ? (
                       <button className="btn btn-sm btn-danger" onClick={() => handleLeave(course.id)}>{t('courses.leave')}</button>
                     ) : (

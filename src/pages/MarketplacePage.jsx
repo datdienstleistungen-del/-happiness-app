@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations.jsx'
@@ -45,14 +46,22 @@ export default function MarketplacePage() {
 
   return (
     <div className="container">
+      {!user && (
+        <div className="public-cta">
+          <strong>Willkommen beim Happiness Marktplatz</strong>
+          <p>Kostenlos registrieren um Anzeigen zu erstellen und zu kontaktieren.</p>
+          <Link to="/register" className="btn btn-primary">Kostenlos registrieren</Link>
+        </div>
+      )}
+
       <div className="page-header">
-        <h1>🛒 {t('marketplace.title')}</h1>
+        <h1>{t('marketplace.title')}</h1>
         <p>{t('marketplace.browse')}</p>
       </div>
 
       <div className="tabs">
         <button className={`tab ${tab === 'browse' ? 'active' : ''}`} onClick={() => setTab('browse')}>{t('marketplace.browse')}</button>
-        <button className={`tab ${tab === 'create' ? 'active' : ''}`} onClick={() => setTab('create')}>{t('marketplace.newAd')}</button>
+        {user && <button className={`tab ${tab === 'create' ? 'active' : ''}`} onClick={() => setTab('create')}>{t('marketplace.newAd')}</button>}
       </div>
 
       {tab === 'create' && (
@@ -92,7 +101,7 @@ export default function MarketplacePage() {
                 Von <strong>{item.profiles?.name}</strong> · {new Date(item.created_at).toLocaleDateString('de-DE')}
               </p>
               <p>{item.description}</p>
-              {item.user_id !== user.id && (
+              {user && item.user_id !== user.id && (
                 <div style={{ marginTop: '1rem' }}>
                   <button className="btn btn-sm btn-outline" onClick={() => alert(`Kontakt: ${item.user_id}`)}>{t('marketplace.contact')}</button>
                 </div>

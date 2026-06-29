@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations.jsx'
@@ -49,11 +50,19 @@ export default function JobsPage() {
 
   return (
     <div className="container">
-      <div className="page-header"><h1>💼 {t('jobs.title')}</h1><p>{t('jobs.browse')}</p></div>
+      {!user && (
+        <div className="public-cta">
+          <strong>Willkommen bei den Happiness Stellenanzeigen</strong>
+          <p>Kostenlos registrieren um Stellenanzeigen zu erstellen und zu bewerben.</p>
+          <Link to="/register" className="btn btn-primary">Kostenlos registrieren</Link>
+        </div>
+      )}
+
+      <div className="page-header"><h1>{t('jobs.title')}</h1><p>{t('jobs.browse')}</p></div>
 
       <div className="tabs">
         <button className={`tab ${tab === 'browse' ? 'active' : ''}`} onClick={() => setTab('browse')}>{t('jobs.browse')}</button>
-        <button className={`tab ${tab === 'create' ? 'active' : ''}`} onClick={() => setTab('create')}>{t('jobs.create')}</button>
+        {user && <button className={`tab ${tab === 'create' ? 'active' : ''}`} onClick={() => setTab('create')}>{t('jobs.create')}</button>}
       </div>
 
       {tab === 'create' && (
@@ -94,7 +103,7 @@ export default function JobsPage() {
                 Von <strong>{job.profiles?.name}</strong> · {new Date(job.created_at).toLocaleDateString('de-DE')}
               </p>
               <p>{job.description}</p>
-              {job.user_id !== user.id && (
+              {user && job.user_id !== user.id && (
                 <div style={{ marginTop: '1rem' }}>
                   <button className="btn btn-sm btn-outline" onClick={() => alert(`Bewerbung an: ${job.contact}`)}>{t('jobs.apply')}</button>
                 </div>

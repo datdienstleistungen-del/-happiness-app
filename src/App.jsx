@@ -194,10 +194,10 @@ export default function App() {
                 <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
                 <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
                 <Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
-                <Route path="/marketplace" element={<ProtectedRoute><MarketplacePage /></ProtectedRoute>} />
-                <Route path="/jobs" element={<ProtectedRoute><JobsPage /></ProtectedRoute>} />
-          <Route path="/courses" element={<ProtectedRoute><CoursesPage /></ProtectedRoute>} />
-          <Route path="/housing" element={<ProtectedRoute><HousingPage /></ProtectedRoute>} />
+                <Route path="/marketplace" element={<MarketplacePage />} />
+                <Route path="/jobs" element={<JobsPage />} />
+                <Route path="/courses" element={<CoursesPage />} />
+                <Route path="/housing" element={<HousingPage />} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
                 <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
