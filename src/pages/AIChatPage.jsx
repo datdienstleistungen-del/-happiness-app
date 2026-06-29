@@ -660,10 +660,14 @@ WICHTIG: Antworte NIE mit "Wie kann ich dir helfen?" oder "Was beschaeftigt dich
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onInput={(e) => {
+                e.target.style.height = 'auto'
+                e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px'
+              }}
               onKeyDown={handleKeyPress}
               placeholder={t('ai.placeholder')}
-              rows="1"
-              style={{ flex: 1 }}
+              rows={1}
+              style={{ flex: 1, minHeight: '48px' }}
             />
             <button
               className="send-btn"
