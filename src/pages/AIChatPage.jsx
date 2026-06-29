@@ -571,6 +571,66 @@ WICHTIG: Antworte NIE mit "Wie kann ich dir helfen?" oder "Was beschaeftigt dich
                 </button>
               </div>
             </div>
+
+            {!showPaywall && (
+              <div className="ai-input-bar centered">
+                {imagePreview && (
+                  <div style={{ position: 'relative', marginBottom: '0.5rem' }}>
+                    <img src={imagePreview} alt="" style={{ maxWidth: '120px', borderRadius: '8px', border: '2px solid var(--border)' }} />
+                    <button
+                      onClick={removeImage}
+                      style={{
+                        position: 'absolute', top: -8, right: -8,
+                        background: 'var(--danger, #e53e3e)', color: 'white',
+                        border: 'none', borderRadius: '50%', width: 22, height: 22,
+                        cursor: 'pointer', fontSize: '12px', lineHeight: '22px', textAlign: 'center'
+                      }}
+                    >X</button>
+                  </div>
+                )}
+                {error && <p style={{ color: '#e74c3c', fontSize: '0.85rem', marginTop: '0.5rem' }}>{error}</p>}
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    style={{ display: 'none' }}
+                  />
+                  <button
+                    className="send-btn"
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{ background: 'var(--border)', color: 'var(--text)' }}
+                    title="Bild hochladen"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                      <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                  </button>
+                  <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onInput={(e) => {
+                      e.target.style.height = 'auto'
+                      e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px'
+                    }}
+                    onKeyDown={handleKeyPress}
+                    placeholder={t('ai.placeholder')}
+                    rows={1}
+                    style={{ flex: 1, minHeight: '48px' }}
+                  />
+                  <button
+                    className="send-btn"
+                    onClick={sendMessage}
+                    disabled={(!input.trim() && !selectedImage) || isLoading}
+                  >
+                    <Send size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="ai-messages">
@@ -615,7 +675,7 @@ WICHTIG: Antworte NIE mit "Wie kann ich dir helfen?" oder "Was beschaeftigt dich
           </div>
         )}
 
-        {showPaywall && !isPremium ? (
+        {hasMessages && (showPaywall && !isPremium ? (
           <div className="paywall">
             <div className="paywall-card">
               <div className="paywall-icon"><Brain size={32} /></div>
@@ -700,7 +760,7 @@ WICHTIG: Antworte NIE mit "Wie kann ich dir helfen?" oder "Was beschaeftigt dich
             </button>
           </div>
         </div>
-        )}
+        ))}
         <div className="question-counter">
           {questionCount}/{FREE_QUESTIONS} Fragen
         </div>
