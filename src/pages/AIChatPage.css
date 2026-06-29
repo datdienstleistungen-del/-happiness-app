@@ -452,8 +452,9 @@
   }
 
   .ai-topbar-btn {
-    padding: 4px 8px;
-    font-size: 0.75rem;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    min-height: 40px;
   }
 
   .message-bubble {
@@ -472,6 +473,70 @@
 
   .suggestion-chips {
     grid-template-columns: 1fr;
+  }
+
+  /* Profile Panel mobile: full width bottom sheet */
+  .profile-panel {
+    position: fixed;
+    top: auto;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: auto;
+    max-height: 85vh;
+    border-left: none;
+    border-top: 1px solid #e5e7eb;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .profile-panel-header {
+    padding: 16px 20px;
+  }
+
+  .close-btn {
+    font-size: 1.5rem;
+    padding: 8px 12px;
+  }
+
+  /* Welcome screen centered input bar mobile */
+  .ai-input-bar.centered {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-width: 100%;
+    padding: 16px 16px 24px;
+    background: linear-gradient(to top, #f9fafb, transparent);
+    border-top: 1px solid #e5e7eb;
+    z-index: 100;
+  }
+
+  .ai-center {
+    padding-bottom: 140px; /* space for fixed input bar */
+  }
+
+  /* Paywall mobile */
+  .paywall-card {
+    margin: 12px;
+    padding: 1.5rem;
+    border-radius: 12px;
+  }
+
+  .price-amount {
+    font-size: 2rem;
+  }
+
+  .paywall-btn.stripe-btn {
+    padding: 16px 24px !important;
+    font-size: 1rem !important;
   }
 }
 
