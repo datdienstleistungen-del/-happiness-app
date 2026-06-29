@@ -16,10 +16,8 @@ export default function AdminPage() {
   const [marketplaceItems, setMarketplaceItems] = useState([])
   const [jobs, setJobs] = useState([])
   const [courses, setCourses] = useState([])
-  const [housings, setHousings] = useState([])
   const [aiProfiles, setAiProfiles] = useState([])
   const [aiConversations, setAiConversations] = useState([])
-  const [aiSettings, setAiSettings] = useState([])
 
   const isAdmin = profile?.role === 'admin'
 
@@ -27,37 +25,28 @@ export default function AdminPage() {
 
   async function fetchAll() {
     setLoading(true)
-    const [u, p, m, j, c, h, ap, ac, aSet] = await Promise.all([
+    const [u, p, m, j, c, ap, ac] = await Promise.all([
       supabase.from('profiles').select('*'),
       supabase.from('posts').select('*, profiles(name, username)').order('created_at', { ascending: false }),
       supabase.from('marketplace').select('*, profiles(name, username)').order('created_at', { ascending: false }),
       supabase.from('jobs').select('*, profiles(name, username)').order('created_at', { ascending: false }),
       supabase.from('courses').select('*, profiles(name, username)').order('created_at', { ascending: false }),
-      supabase.from('marketplace').select('*, profiles(name, username)').eq('category', 'Wohnung').order('created_at', { ascending: false }).catch(() => ({ data: [] })),
-      supabase.from('ai_profiles').select('*').catch(() => ({ data: [] })),
-      supabase.from('ai_conversations').select('*').order('created_at', { ascending: false }).catch(() => ({ data: [] })),
-      supabase.from('ai_settings').select('user_id, is_premium').catch(() => ({ data: [] })),
+      supabase.from('ai_settings').select('*'),
+      supabase.from('ai_conversations').select('*').order('created_at', { ascending: false }),
     ])
     setUsers(u.data || [])
     setPosts(p.data || [])
     setMarketplaceItems(m.data || [])
     setJobs(j.data || [])
     setCourses(c.data || [])
-    setHousings(h.data || [])
-    setAiSettings(aSet.data || [])
-    const mergedProfiles = (ap.data || []).map(profile => {
-      const settings = (aSet.data || []).find(s => s.user_id === profile.user_id)
-      return { ...profile, is_premium: settings?.is_premium || false }
-    })
-    setAiProfiles(mergedProfiles)
+    setAiProfiles(ap.data || [])
     setAiConversations(ac.data || [])
     setLoading(false)
   }
 
   // Actions
   async function banUser(id, banned) {
-    // Ban feature requires 'banned' column in profiles table
-    // await supabase.from('profiles').update({ banned: !banned }).eq('id', id)
+    await supabase.from('profiles').update({ banned: !banned }).eq('id', id)
     fetchAll()
   }
 
@@ -73,8 +62,8 @@ export default function AdminPage() {
   }
 
   async function resetAiUsage(userId) {
-    // questions_used column not available in ai_profiles
-    // await supabase.from('ai_profiles').update({ questions_used: 0 }).eq('user_id', userId)
+    if (!confirm('KI-Verlauf dieses Nutzers wirklich löschen? Das setzt das Fragenlimit zurück.')) return
+    await supabase.from('ai_conversations').delete().eq('user_id', userId)
     fetchAll()
   }
 
@@ -94,8 +83,8 @@ export default function AdminPage() {
     activeMarketplace: marketplaceItems.filter(i => i.active !== false).length,
     activeJobs: jobs.filter(j => j.active !== false).length,
     activeCourses: courses.filter(c => c.active !== false).length,
-    totalHousings: housings.length,
-    aiQuestionsTotal: 0,
+    totalHousings: marketplaceItems.filter(i => i.category === 'Wohnung').length,
+    aiQuestionsTotal: aiConversations.length,
   }
 
   const tabs = [
@@ -128,9 +117,9 @@ export default function AdminPage() {
       ) : (
         <div className="admin-content">
           {tab === 'dashboard' && <DashboardTab stats={stats} />}
-          {tab === 'users' && <UsersTab users={users} aiProfiles={aiProfiles} onBan={banUser} onPromote={promoteUser} />}
-          {tab === 'moderation' && <ModerationTab posts={posts} marketplace={marketplaceItems} jobs={jobs} courses={courses} housings={housings} onDelete={deleteItem} />}
-          {tab === 'payments' && <PaymentsTab users={users} aiProfiles={aiProfiles} />}
+          {tab === 'users' && <UsersTab users={users} aiProfiles={aiProfiles} aiConversations={aiConversations} onBan={banUser} onPromote={promoteUser} />}
+          {tab === 'moderation' && <ModerationTab posts={posts} marketplace={marketplaceItems} jobs={jobs} courses={courses} onDelete={deleteItem} />}
+          {tab === 'payments' && <PaymentsTab users={users} aiProfiles={aiProfiles} aiConversations={aiConversations} />}
           {tab === 'ai' && <AiTab aiProfiles={aiProfiles} aiConversations={aiConversations} onReset={resetAiUsage} />}
         </div>
       )}
@@ -177,7 +166,7 @@ function DashboardTab({ stats }) {
   )
 }
 
-function UsersTab({ users, aiProfiles, onBan, onPromote }) {
+function UsersTab({ users, aiProfiles, aiConversations, onBan, onPromote }) {
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
 
@@ -189,6 +178,10 @@ function UsersTab({ users, aiProfiles, onBan, onPromote }) {
 
   function getAiProfile(userId) {
     return aiProfiles.find(p => p.user_id === userId)
+  }
+
+  function getQuestionCount(userId) {
+    return aiConversations.filter(c => c.user_id === userId).length
   }
 
   return (
@@ -230,7 +223,8 @@ function UsersTab({ users, aiProfiles, onBan, onPromote }) {
               <div className="user-card-stats">
                 {ai && (
                   <span className="user-stat">
-                    KI: {ai.is_premium ? 'Premium' : 'Free'}
+                    KI: {getQuestionCount(u.id)}/20 Fragen
+                    {ai.is_premium && ' (Premium)'}
                   </span>
                 )}
                 {u.created_at && (
@@ -263,8 +257,9 @@ function UsersTab({ users, aiProfiles, onBan, onPromote }) {
   )
 }
 
-function ModerationTab({ posts, marketplace, jobs, courses, housings, onDelete }) {
+function ModerationTab({ posts, marketplace, jobs, courses, onDelete }) {
   const [section, setSection] = useState('posts')
+  const housings = marketplace.filter(i => i.category === 'Wohnung')
 
   const sections = [
     { id: 'posts', label: `Beitraege (${posts.length})` },
@@ -362,11 +357,10 @@ function ModerationTab({ posts, marketplace, jobs, courses, housings, onDelete }
             </div>
             <div className="mod-card-content">{h.description}</div>
             <div className="mod-card-meta">
-              {h.price && <span className="mod-price">{h.price} €/Monat</span>}
-              {h.location && <span className="mod-location">{h.location}</span>}
+              {h.price > 0 && <span className="mod-price">{h.price} €/Monat</span>}
             </div>
             <div className="mod-card-actions">
-              <button className="admin-btn btn-sm btn-danger" onClick={() => onDelete('housing', h.id)}>Loeschen</button>
+              <button className="admin-btn btn-sm btn-danger" onClick={() => onDelete('marketplace', h.id)}>Loeschen</button>
             </div>
           </div>
         ))}
@@ -383,7 +377,11 @@ function ModerationTab({ posts, marketplace, jobs, courses, housings, onDelete }
   )
 }
 
-function PaymentsTab({ users, aiProfiles }) {
+function PaymentsTab({ users, aiProfiles, aiConversations }) {
+  function getQuestionCount(userId) {
+    return aiConversations.filter(c => c.user_id === userId).length
+  }
+
   const premiumUsers = users.filter(u => {
     const ai = aiProfiles.find(p => p.user_id === u.id)
     return ai?.is_premium
@@ -425,9 +423,9 @@ function PaymentsTab({ users, aiProfiles }) {
                   <div className="payment-meta">
                     Premium seit: {ai?.premium_since ? new Date(ai.premium_since).toLocaleDateString('de-DE') : 'Unbekannt'}
                   </div>
-                   <div className="payment-meta">
-                     KI Fragen: 0
-                   </div>
+                  <div className="payment-meta">
+                    KI Fragen: {getQuestionCount(u.id)}
+                  </div>
                 </div>
                 <div className="payment-status premium-active">4.99 €/Monat</div>
               </div>
@@ -438,7 +436,20 @@ function PaymentsTab({ users, aiProfiles }) {
 
       <h3 style={{ marginTop: '24px' }}>Free Tier Nutzer (ueber 20 Fragen)</h3>
       <div className="payments-list">
-        <div className="empty-state">Keine Daten verfuegbar (questions_used Spalte fehlt)</div>
+        {freeUsers.filter(u => getQuestionCount(u.id) >= 15).map(u => {
+          const count = getQuestionCount(u.id)
+          return (
+            <div key={u.id} className="payment-card near-limit">
+              <div className="payment-card-info">
+                <div className="payment-name">{u.name || u.email}</div>
+                <div className="payment-meta">KI Fragen: {count}/20</div>
+              </div>
+              <div className="payment-status near-limit">
+                {count >= 20 ? 'Limit erreicht' : 'Fast am Limit'}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -451,6 +462,10 @@ function AiTab({ aiProfiles, aiConversations, onReset }) {
     if (!search) return true
     return p.user_id?.toLowerCase().includes(search.toLowerCase())
   })
+
+  function getQuestionCount(userId) {
+    return aiConversations.filter(c => c.user_id === userId).length
+  }
 
   return (
     <div className="ai-panel">
@@ -476,7 +491,7 @@ function AiTab({ aiProfiles, aiConversations, onReset }) {
               </div>
             </div>
             <div className="ai-profile-stats">
-              <span>Fragen: 0/20</span>
+              <span>Fragen: {getQuestionCount(p.user_id)}/20</span>
               <span>Sprache: {p.language || 'de'}</span>
             </div>
             <div className="ai-profile-actions">
@@ -498,11 +513,12 @@ function AiTab({ aiProfiles, aiConversations, onReset }) {
               <span className="conv-time">{new Date(c.created_at).toLocaleString('de-DE')}</span>
             </div>
             <div className="conv-messages">
-              {[{ role: 'user', content: c.message?.replace('USER:', '') }, { role: 'assistant', content: c.response }].map((m, i) => (
-                <div key={i} className={`conv-msg ${m.role}`}>
-                  <strong>{m.role === 'user' ? 'Du' : 'KI'}:</strong> {m.content?.slice(0, 150)}{m.content?.length > 150 ? '...' : ''}
-                </div>
-              ))}
+              <div className="conv-msg user">
+                <strong>Du:</strong> {c.message?.slice(0, 150)}{c.message?.length > 150 ? '...' : ''}
+              </div>
+              <div className="conv-msg assistant">
+                <strong>KI:</strong> {c.response?.slice(0, 150)}{c.response?.length > 150 ? '...' : ''}
+              </div>
             </div>
           </div>
         ))}

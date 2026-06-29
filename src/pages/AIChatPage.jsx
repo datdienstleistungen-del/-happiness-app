@@ -299,7 +299,10 @@ WICHTIG: Antworte NIE mit "Wie kann ich dir helfen?" oder "Was beschaeftigt dich
         .from('chat-images')
         .upload(filePath, selectedImage, { contentType: selectedImage.type })
       
-      if (!uploadError) {
+      if (uploadError) {
+        console.error('Bild-Upload fehlgeschlagen:', uploadError)
+        alert('Das Bild konnte nicht hochgeladen werden. Die Nachricht wird ohne Bild gesendet.')
+      } else {
         const { data: urlData } = supabase.storage
           .from('chat-images')
           .getPublicUrl(filePath)
@@ -576,9 +579,6 @@ WICHTIG: Antworte NIE mit "Wie kann ich dir helfen?" oder "Was beschaeftigt dich
                 {msg.role === 'assistant' && (
                   <div className="msg-avatar assistant-avatar"><Brain size={16} /></div>
                 )}
-                <div className={`message-bubble ${msg.role}`}>
-                  {msg.content}
-                </div>
                 {msg.role === 'user' && (
                   <>
                     {msg.image && (
@@ -591,6 +591,11 @@ WICHTIG: Antworte NIE mit "Wie kann ich dir helfen?" oder "Was beschaeftigt dich
                       {user?.email?.[0]?.toUpperCase() || 'U'}
                     </div>
                   </>
+                )}
+                {msg.role === 'assistant' && (
+                  <div className={`message-bubble ${msg.role}`}>
+                    {msg.content}
+                  </div>
                 )}
               </div>
             ))}
