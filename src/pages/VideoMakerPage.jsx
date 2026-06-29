@@ -29,6 +29,35 @@ const ANIMATION_PRESETS = [
   { id: 'rotate', label: 'Rotate In', type: 'rotate' },
 ]
 
+// Sticker/Emoji/Shape Constants
+const EMOJI_CATEGORIES = {
+  'Gesichter': ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾'],
+  'Hände': ['👋','🤚','🖐','✋','🖖','👌','🤌','🤏','✌','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍','💅','🤳','💪','🦾','🦿','🦵','🦶','👂','🦻','👃','🧠','🫀','🫁','🦷','🦴','👀','👁','👅','👄','🫦'],
+  'Sachen': ['❤','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣','💕','💞','💓','💗','💖','💘','💝','💟','☮','✝','☪','🕉','☸','✡','🔯','🕎','☯','☦','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','⛎','🔯','🕎','🔯'],
+  'Essen': ['🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶','🫑','🌽','🥕','🫒','🧄','🧅','🥔','🍠','🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🦴','🌭','🍔','🍟','🍕','🥪','🥙','🧆','🌮','🌯','🫔','🥗','🥘','🥫','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🦪','🍤','🍙','🍚','🍘','🍥','🥮','🍢','🍡','🥧','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🥛','🍼','☕','🍵','🧃','🥤','🍶','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🧉','🍾','🧊','🥄','🍴','🍽','🥣','🥢','🥤'],
+  'Aktivitäten': ['⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🎱','🪀','🏓','🏸','🏒','🏑','🏏','🪃','🥅','🪁','🏹','🎣','🤿','🥽','🎽','🎿','🛷','🥌','🎯','🪂','🧗','🤺','🏇','⛷','🏂','🏄','🏊','🤽','🚣','🧘','🛀','🛌','🤸','🤾','⛹','🏋','🚴','🚵','🏎','🏍','🛹','🛷','⛸','🥌','🎿','🛹','🛼'],
+  'Reisen': ['🚗','🚕','🚙','🚌','🚎','🏎','🚓','🚑','🚒','🚐','🛻','🚚','🚛','🚜','🦯','🦽','🦼','🛴','🚲','🛵','🏍','🛺','🚨','🚔','🚍','🚘','🚖','🚡','🚠','🚟','🚃','🚋','🚞','🚝','🚄','🚅','🚈','🚂','🚆','🚇','🚊','🚉','✈','🛫','🛬','🛩','🪂','🛰','🚀','🛸','🚁','🛶','⛵','🚤','🛥','🛳','⛴','🚢','🏝','🏖','🏜','🌋','⛰','🏔','🗻','🏕','⛺','🏖','🏝','🏟','🏛','🏗','🏘','🏙','🏚','🏠','🏡','🏢','🏣','🏤','🏥','🏦','🏨','🏩','🏪','🏫','🏬','🏭','🏯','🏰','💒','🗼','🗽','⛪','🕌','🕍','⛩','🕋','⛲','⛱','🏞','🌅','🌄','🌠','🎆','🎇','🎑','🌉','♨','🎠','🎡','🎢','💈','🎪','🎭','🏰','🏯','🗼','⛩','🏛'],
+}
+
+const SHAPES = [
+  { id: 'circle', label: 'Kreis', svg: '<circle cx="50" cy="50" r="45" fill="currentColor" />' },
+  { id: 'square', label: 'Quadrat', svg: '<rect x="10" y="10" width="80" height="80" fill="currentColor" />' },
+  { id: 'triangle', label: 'Dreieck', svg: '<polygon points="50,10 90,90 10,90" fill="currentColor" />' },
+  { id: 'star', label: 'Stern', svg: '<polygon points="50,5 61,35 95,35 68,57 79,90 50,75 21,90 32,57 5,35 39,35" fill="currentColor" />' },
+  { id: 'heart', label: 'Herz', svg: '<path d="M50 90 C50 90 10 55 10 30 C10 10 30 10 50 25 C70 10 90 10 90 30 C90 55 50 90 50 90 Z" fill="currentColor" />' },
+  { id: 'arrow-up', label: 'Pfeil ↑', svg: '<polygon points="50,10 90,70 70,70 70,90 30,90 30,70 10,70" fill="currentColor" />' },
+  { id: 'arrow-down', label: 'Pfeil ↓', svg: '<polygon points="50,90 10,30 30,30 30,10 70,10,10 70,30 90,30" fill="currentColor" />' },
+  { id: 'arrow-left', label: 'Pfeil ←', svg: '<polygon points="10,50 70,10 70,30 90,30 90,70 70,70 70,90" fill="currentColor" />' },
+  { id: 'arrow-right', label: 'Pfeil →', svg: '<polygon points="90,50 30,10 30,30 10,30 10,70 30,70 30,90" fill="currentColor" />' },
+  { id: 'check', label: 'Haken', svg: '<polyline points="20,50 45,75 80,20" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />' },
+  { id: 'cross', label: 'Kreuz', svg: '<line x1="15" y1="15" x2="85" y2="85" stroke="currentColor" stroke-width="12" stroke-linecap="round" /><line x1="85" y1="15" x2="15" y2="85" stroke="currentColor" stroke-width="12" stroke-linecap="round" />' },
+  { id: 'speech', label: 'Sprechblase', svg: '<path d="M10 30 L10 75 L25 75 L40 90 L55 75 L90 75 L90 25 L10 25 Z" fill="currentColor" />' },
+  { id: 'thought', label: 'Gedankenblase', svg: '<circle cx="70" cy="25" r="15" fill="currentColor" /><circle cx="55" cy="40" r="10" fill="currentColor" /><circle cx="40" cy="50" r="7" fill="currentColor" /><path d="M10 30 L10 75 L25 75 L30 90 L45 75 L90 75 L90 25 L10 25 Z" fill="currentColor" />' },
+  { id: 'lightning', label: 'Blitz', svg: '<polygon points="50,10 70,50 55,50 65,90 30,50 45,50 30,10" fill="currentColor" />' },
+]
+
+const STICKER_COLORS = ['#ffffff', '#ff6b6b', '#4ecdc4', '#ffe66d', '#a8e6cf', '#ff8b94', '#96ceb4', '#ffcc5c', '#88d8b0', '#ffaaa5']
+
 const isMobile = () => /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
 
 const getAspectRatios = () => {
@@ -71,6 +100,12 @@ export default function VideoMakerPage() {
   const [keyframeTime, setKeyframeTime] = useState(0)
   const [keyframeOpacity, setKeyframeOpacity] = useState(1)
   const [keyframeTransform, setKeyframeTransform] = useState('')
+
+  // Sticker/Emoji/Shape Overlays
+  const [overlays, setOverlays] = useState([])
+  const [activeOverlayId, setActiveOverlayId] = useState(null)
+  const [stickerInputRef, setStickerInputRef] = useState(null)
+  const [activeStickerTab, setActiveStickerTab] = useState('emoji') // 'emoji' | 'shapes' | 'images'
 
   const [audioFile, setAudioFile] = useState(null)
   const [audioUrl, setAudioUrl] = useState(null)
@@ -352,6 +387,102 @@ export default function VideoMakerPage() {
     return f?.css !== 'none' ? `${f.css} ${custom}` : custom
   }
 
+  // Sticker/Emoji/Shape Overlay Functions
+  const addEmojiOverlay = (emoji) => {
+    const id = Date.now()
+    setOverlays(prev => [...prev, {
+      id,
+      type: 'emoji',
+      content: emoji,
+      x: 50,
+      y: 50,
+      size: 60,
+      color: '#ffffff',
+      opacity: 100,
+      rotation: 0,
+      animation: { preset: 'fade', keyframes: [
+        { time: 0, opacity: 0, transform: 'translateY(20px) scale(0.9)' },
+        { time: 0.5, opacity: 1, transform: 'translateY(0) scale(1)' },
+        { time: 1, opacity: 1, transform: 'translateY(0) scale(1)' },
+      ]}
+    }])
+    setActiveOverlayId(id)
+  }
+
+  const addShapeOverlay = (shape) => {
+    const id = Date.now()
+    setOverlays(prev => [...prev, {
+      id,
+      type: 'shape',
+      shape: shape.id,
+      x: 50,
+      y: 50,
+      size: 80,
+      color: '#ffffff',
+      opacity: 100,
+      rotation: 0,
+      animation: { preset: 'fade', keyframes: [
+        { time: 0, opacity: 0, transform: 'translateY(20px) scale(0.9)' },
+        { time: 0.5, opacity: 1, transform: 'translateY(0) scale(1)' },
+        { time: 1, opacity: 1, transform: 'translateY(0) scale(1)' },
+      ]}
+    }])
+    setActiveOverlayId(id)
+  }
+
+  const handleStickerUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) return
+    const id = Date.now()
+    const url = URL.createObjectURL(file)
+    setOverlays(prev => [...prev, {
+      id,
+      type: 'image',
+      imageUrl: url,
+      x: 50,
+      y: 50,
+      size: 100,
+      opacity: 100,
+      rotation: 0,
+      animation: { preset: 'fade', keyframes: [
+        { time: 0, opacity: 0, transform: 'translateY(20px) scale(0.9)' },
+        { time: 0.5, opacity: 1, transform: 'translateY(0) scale(1)' },
+        { time: 1, opacity: 1, transform: 'translateY(0) scale(1)' },
+      ]}
+    }])
+    setActiveOverlayId(id)
+    if (stickerInputRef.current) stickerInputRef.current.value = ''
+  }
+
+  const updateOverlay = (id, field, value) => {
+    setOverlays(prev => prev.map(o => o.id === id ? { ...o, [field]: value } : o))
+  }
+
+  const removeOverlay = (id) => {
+    setOverlays(prev => prev.filter(o => o.id !== id))
+    if (activeOverlayId === id) setActiveOverlayId(null)
+  }
+
+  const getOverlayAnimation = (id) => {
+    const overlay = overlays.find(o => o.id === id)
+    return overlay?.animation || { preset: 'fade', keyframes: [] }
+  }
+
+  const updateOverlayAnimation = (id, animUpdate) => {
+    setOverlays(prev => prev.map(o => 
+      o.id === id ? { ...o, animation: { ...o.animation, ...animUpdate } } : o
+    ))
+  }
+
+  const applyPresetToOverlay = (presetId) => {
+    if (!activeOverlayId) return
+    const preset = applyAnimationPreset(presetId)
+    updateOverlayAnimation(activeOverlayId, { preset: presetId, keyframes: preset.keyframes })
+  }
+
+  const getFilterCSS = () => {
+
   const loadFFmpeg = async () => {
     if (ffmpegRef.current) return ffmpegRef.current
     setFfmpegLoading(true)
@@ -510,6 +641,37 @@ export default function VideoMakerPage() {
         if (drawtextFilter) filters.push(drawtextFilter)
       })
       
+      // Sticker/Emoji/Shape overlays
+      overlays.forEach(overlay => {
+        if (overlay.type === 'emoji') {
+          const drawtextFilter = buildDrawTextFilter({
+            ...overlay,
+            text: overlay.content,
+            fontSize: overlay.size / 2,
+            color: overlay.color,
+            opacity: overlay.opacity,
+            animation: overlay.animation
+          }, clipDuration)
+          if (drawtextFilter) filters.push(drawtextFilter)
+        } else if (overlay.type === 'shape') {
+          // Shapes are rendered as emoji-like characters via drawtext
+          const shapeChar = { circle: '●', square: '■', triangle: '▲', star: '★', heart: '♥', 'arrow-up': '▲', 'arrow-down': '▼', 'arrow-left': '◀', 'arrow-right': '▶', check: '✓', cross: '✕', speech: '💬', thought: '💭', lightning: '⚡' }[overlay.shape] || '●'
+          const drawtextFilter = buildDrawTextFilter({
+            ...overlay,
+            text: shapeChar,
+            fontSize: overlay.size / 2,
+            color: overlay.color,
+            opacity: overlay.opacity,
+            animation: overlay.animation
+          }, clipDuration)
+          if (drawtextFilter) filters.push(drawtextFilter)
+        } else if (overlay.type === 'image') {
+          // For images, we'd need to use overlay filter in FFmpeg
+          // This is a simplified version - full image overlay requires writing the image file
+          console.log('Image overlay export not fully implemented yet:', overlay)
+        }
+      })
+      
       // Build FFmpeg args
       const startSec = (trimStart / 100) * videoDuration
       const endSec = (trimEnd / 100) * videoDuration
@@ -617,6 +779,35 @@ export default function VideoMakerPage() {
                   {overlay.text}
                 </div>
               ))}
+              {overlays.map(overlay => (
+                <div
+                  key={overlay.id}
+                  className={`overlay-item ${overlay.id === activeOverlayId ? 'active' : ''}`}
+                  style={{
+                    left: `${overlay.x}%`,
+                    top: `${overlay.y}%`,
+                    transform: `translate(-50%, -50%) rotate(${overlay.rotation}deg)`,
+                    opacity: overlay.opacity / 100,
+                    cursor: 'move',
+                    pointerEvents: 'auto',
+                  }}
+                  onClick={(e) => { e.stopPropagation(); setActiveOverlayId(overlay.id); }}
+                >
+                  {overlay.type === 'emoji' && (
+                    <span style={{ fontSize: `${overlay.size}px`, filter: `drop-shadow(0 2px 4px rgba(0,0,0,0.3))` }}>
+                      {overlay.content}
+                    </span>
+                  )}
+                  {overlay.type === 'shape' && (
+                    <svg width={overlay.size} height={overlay.size} style={{ color: overlay.color }}>
+                      {SHAPES.find(s => s.id === overlay.shape)?.svg}
+                    </svg>
+                  )}
+                  {overlay.type === 'image' && (
+                    <img src={overlay.imageUrl} alt="" style={{ width: overlay.size, height: overlay.size, borderRadius: '8px', objectFit: 'cover' }} />
+                  )}
+                </div>
+              ))}
             </div>
 
             <div className="timeline-area">
@@ -697,6 +888,7 @@ export default function VideoMakerPage() {
               <button className={`tab ${activeTab === 'trim' ? 'active' : ''}`} onClick={() => setActiveTab('trim')}>Zuschneiden</button>
               <button className={`tab ${activeTab === 'text' ? 'active' : ''}`} onClick={() => setActiveTab('text')}>Text</button>
               <button className={`tab ${activeTab === 'animation' ? 'active' : ''}`} onClick={() => setActiveTab('animation')}>Animation</button>
+              <button className={`tab ${activeTab === 'stickers' ? 'active' : ''}`} onClick={() => setActiveTab('stickers')}>Sticker</button>
               <button className={`tab ${activeTab === 'filter' ? 'active' : ''}`} onClick={() => setActiveTab('filter')}>Filter</button>
               <button className={`tab ${activeTab === 'audio' ? 'active' : ''}`} onClick={() => setActiveTab('audio')}>Audio</button>
             </div>
@@ -895,9 +1087,132 @@ export default function VideoMakerPage() {
                 </div>
               )}
             </div>
+
+            {activeTab === 'stickers' && (
+              <div className="panel">
+                <h3>Sticker & Emojis</h3>
+                <div className="sticker-tabs">
+                  <button className={`sticker-tab ${activeStickerTab === 'emoji' ? 'active' : ''}`} onClick={() => setActiveStickerTab('emoji')}>Emojis</button>
+                  <button className={`sticker-tab ${activeStickerTab === 'shapes' ? 'active' : ''}`} onClick={() => setActiveStickerTab('shapes')}>Formen</button>
+                  <button className={`sticker-tab ${activeStickerTab === 'images' ? 'active' : ''}`} onClick={() => setActiveStickerTab('images')}>Bilder</button>
+                </div>
+
+                {activeStickerTab === 'emoji' && (
+                  <div className="emoji-picker">
+                    {Object.entries(EMOJI_CATEGORIES).map(([category, emojis]) => (
+                      <div key={category} className="emoji-category">
+                        <h4>{category}</h4>
+                        <div className="emoji-grid">
+                          {emojis.map((emoji, i) => (
+                            <button
+                              key={i}
+                              className="emoji-btn"
+                              onClick={() => addEmojiOverlay(emoji)}
+                              title={emoji}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {activeStickerTab === 'shapes' && (
+                  <div className="shapes-grid">
+                    {SHAPES.map(shape => (
+                      <button
+                        key={shape.id}
+                        className="shape-btn"
+                        onClick={() => addShapeOverlay(shape)}
+                        title={shape.label}
+                      >
+                        <svg width="40" height="40" viewBox="0 0 100 100" style={{ color: '#64748b' }}>
+                          {shape.svg}
+                        </svg>
+                        <span className="shape-label">{shape.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {activeStickerTab === 'images' && (
+                  <div className="sticker-images">
+                    <div className="control">
+                      <label>Eigenes Bild hochladen</label>
+                      <input
+                        ref={stickerInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleStickerUpload}
+                        style={{ display: 'none' }}
+                      />
+                      <button className="btn btn-secondary" onClick={() => stickerInputRef.current?.click()}>
+                        Bild auswaehlen
+                      </button>
+                    </div>
+                    {overlays.filter(o => o.type === 'image').map(overlay => (
+                      <div key={overlay.id} className="uploaded-sticker">
+                        <img src={overlay.imageUrl} alt="" style={{ width: 60, height: 60, borderRadius: '8px', objectFit: 'cover' }} />
+                        <button className="btn-icon" onClick={() => removeOverlay(overlay.id)}>x</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {overlays.length > 0 && (
+                  <div className="sticker-list">
+                    <h4>Hinzugefuegte Sticker</h4>
+                    {overlays.map(overlay => (
+                      <div key={overlay.id} className={`sticker-list-item ${overlay.id === activeOverlayId ? 'active' : ''}`} onClick={() => setActiveOverlayId(overlay.id)}>
+                        <span className="sticker-preview">
+                          {overlay.type === 'emoji' && <span style={{ fontSize: '24px' }}>{overlay.content}</span>}
+                          {overlay.type === 'shape' && <svg width="24" height="24" viewBox="0 0 100 100" style={{ color: overlay.color }}>{SHAPES.find(s => s.id === overlay.shape)?.svg}</svg>}
+                          {overlay.type === 'image' && <img src={overlay.imageUrl} alt="" style={{ width: 24, height: 24, borderRadius: '4px', objectFit: 'cover' }} />}
+                        </span>
+                        <span className="sticker-info">
+                          {overlay.type === 'emoji' && `Emoji: ${overlay.content}`}
+                          {overlay.type === 'shape' && `Form: ${SHAPES.find(s => s.id === overlay.shape)?.label}`}
+                          {overlay.type === 'image' && 'Eigenes Bild'}
+                        </span>
+                        <button className="btn-icon" onClick={(e) => { e.stopPropagation(); removeOverlay(overlay.id) }}>x</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {activeOverlayId && (
+                  <div className="sticker-controls">
+                    <h4>Sticker bearbeiten</h4>
+                    <div className="control">
+                      <label>Groesse: {overlays.find(o => o.id === activeOverlayId)?.size}px</label>
+                      <input type="range" min="20" max="200" value={overlays.find(o => o.id === activeOverlayId)?.size || 60} onChange={e => updateOverlay(activeOverlayId, 'size', +e.target.value)} />
+                    </div>
+                    <div className="control-row">
+                      <label>X:</label>
+                      <input type="range" min="0" max="100" value={overlays.find(o => o.id === activeOverlayId)?.x || 50} onChange={e => updateOverlay(activeOverlayId, 'x', +e.target.value)} />
+                      <label>Y:</label>
+                      <input type="range" min="0" max="100" value={overlays.find(o => o.id === activeOverlayId)?.y || 50} onChange={e => updateOverlay(activeOverlayId, 'y', +e.target.value)} />
+                    </div>
+                    <div className="control-row">
+                      <label>Rotation: {overlays.find(o => o.id === activeOverlayId)?.rotation}°</label>
+                      <input type="range" min="0" max="360" value={overlays.find(o => o.id === activeOverlayId)?.rotation || 0} onChange={e => updateOverlay(activeOverlayId, 'rotation', +e.target.value)} />
+                    </div>
+                    <div className="control-row">
+                      <label>Deckkraft: {overlays.find(o => o.id === activeOverlayId)?.opacity}%</label>
+                      <input type="range" min="0" max="100" value={overlays.find(o => o.id === activeOverlayId)?.opacity || 100} onChange={e => updateOverlay(activeOverlayId, 'opacity', +e.target.value)} />
+                    </div>
+                    <div className="control">
+                      <label>Farbe (Formen/Emojis)</label>
+                      <input type="color" value={overlays.find(o => o.id === activeOverlayId)?.color || '#ffffff'} onChange={e => updateOverlay(activeOverlayId, 'color', e.target.value)} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
-      )}
 
       {videoError && (
         <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '12px 16px', marginTop: '16px', color: '#991b1b', fontSize: '14px' }}>

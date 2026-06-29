@@ -551,3 +551,59 @@
 @media (max-width: 768px) {
   .presets-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ── Stickers Tab Styles ── */
+.sticker-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 8px;
+}
+
+.sticker-tab {
+  padding: 6px 12px;
+  border: none;
+  background: none;
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.sticker-tab:hover { color: #1a1a1a; background: #f8fafc; }
+.sticker-tab.active { color: #2563eb; background: #eff6ff; }
+
+.emoji-picker { max-height: 300px; overflow-y: auto; }
+.emoji-category { margin-bottom: 12px; }
+.emoji-category h4 { font-size: 11px; color: #94a3b8; margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.emoji-btn { padding: 8px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; font-size: 20px; cursor: pointer; transition: all 0.15s; }
+.emoji-btn:hover { border-color: #2563eb; background: #eff6ff; transform: scale(1.2); }
+
+.shapes-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.shape-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; font-size: 10px; color: #475569; cursor: pointer; transition: all 0.15s; }
+.shape-btn:hover { border-color: #2563eb; color: #2563eb; }
+.shape-label { font-size: 9px; text-align: center; }
+
+.sticker-images { margin-top: 8px; }
+.uploaded-sticker { display: flex; align-items: center; gap: 8px; padding: 6px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; }
+
+.sticker-list { margin-top: 16px; }
+.sticker-list h4 { font-size: 11px; color: #94a3b8; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.sticker-list-item { display: flex; align-items: center; gap: 8px; padding: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 6px; cursor: pointer; transition: all 0.15s; }
+.sticker-list-item:hover { border-color: #2563eb; background: #eff6ff; }
+.sticker-list-item.active { border-color: #2563eb; background: #eff6ff; }
+.sticker-preview { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; }
+.sticker-info { flex: 1; font-size: 11px; color: #475569; }
+
+.sticker-controls { margin-top: 16px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+.sticker-controls h4 { font-size: 12px; margin: 0 0 10px; color: #1a1a1a; }
+
+@media (max-width: 768px) {
+  .presets-grid { grid-template-columns: repeat(2, 1fr); }
+  .emoji-grid { grid-template-columns: repeat(6, 1fr); }
+  .shapes-grid { grid-template-columns: repeat(3, 1fr); }
+}
