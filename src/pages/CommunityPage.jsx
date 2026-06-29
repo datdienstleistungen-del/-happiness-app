@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { MessageCircle, FileText, Clapperboard, Heart } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations.jsx'
@@ -71,20 +72,27 @@ export default function CommunityPage() {
 
       {tab === 'posts' && (
         <>
-          <div className="card">
-            <textarea
-              className="form-input"
-              placeholder={t('community.placeholder')}
-              value={newPost}
-              onChange={(e) => setNewPost(e.target.value)}
-              rows={3}
-            />
-            <div style={{ marginTop: '0.75rem', textAlign: 'right' }}>
-              <button className="btn btn-primary" onClick={handlePost} disabled={!newPost.trim()}>
-                {t('community.post')}
-              </button>
+          {user ? (
+            <div className="card">
+              <textarea
+                className="form-input"
+                placeholder={t('community.placeholder')}
+                value={newPost}
+                onChange={(e) => setNewPost(e.target.value)}
+                rows={3}
+              />
+              <div style={{ marginTop: '0.75rem', textAlign: 'right' }}>
+                <button className="btn btn-primary" onClick={handlePost} disabled={!newPost.trim()}>
+                  {t('community.post')}
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="public-cta" style={{ textAlign: 'center', padding: '2rem', marginBottom: '1rem' }}>
+              <p style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>Melde dich an, um Beiträge zu erstellen.</p>
+              <Link to="/login" className="btn btn-primary">Anmelden</Link>
+            </div>
+          )}
 
           {loading ? (
             <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Laden...</p>
@@ -95,7 +103,7 @@ export default function CommunityPage() {
             </div>
           ) : (
             posts.map((post) => (
-              <PostCard key={post.id} post={post} currentUserId={user.id} onLike={handleLike} />
+              <PostCard key={post.id} post={post} currentUserId={user?.id} onLike={handleLike} />
             ))
           )}
         </>

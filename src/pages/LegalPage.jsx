@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useLanguage } from '../i18n/translations'
 import './LegalPage.css'
 
 export default function LegalPage() {
   const { t, lang } = useLanguage()
-  const [activeTab, setActiveTab] = useState('impressum')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'impressum')
 
   const content = {
     impressum: {
@@ -415,7 +417,7 @@ German law applies. Should individual provisions of these terms be or become inv
             <button
               key={tab.id}
               className={`legal-tab ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => { setActiveTab(tab.id); setSearchParams({ tab: tab.id }) }}
             >
               {tab.label}
             </button>

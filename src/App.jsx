@@ -150,6 +150,7 @@ function ProtectedRoute({ children }) {
 }
 
 export default function App() {
+  const location = useLocation()
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -221,12 +222,12 @@ export default function App() {
                 <Route path="/register" element={user ? <Navigate to="/" /> : <RegisterPage />} />
                 <Route path="/" element={user ? <HomePage /> : <LandingPage />} />
                 <Route path="/community" element={<CommunityPage />} />
-                <Route path="/friends" element={<FriendsPage />} />
+                <Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
                 <Route path="/marketplace" element={<MarketplacePage />} />
                 <Route path="/jobs" element={<JobsPage />} />
                 <Route path="/courses" element={<CoursesPage />} />
                 <Route path="/housing" element={<HousingPage />} />
-                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
                 <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />

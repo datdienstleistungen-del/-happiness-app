@@ -77,7 +77,7 @@ export default function VideoFeed() {
         <VideoCard
           key={video.id}
           video={video}
-          currentUserId={user.id}
+          currentUserId={user?.id}
           onLike={handleLike}
           onDelete={handleDelete}
           formatTime={formatTime}
@@ -161,7 +161,7 @@ function VideoCard({ video, currentUserId, onLike, onDelete, formatTime, t }) {
       <div className="card-actions" style={{ padding: '0.75rem 1rem' }}>
         <button
           className={`btn btn-sm ${isLiked ? 'btn-primary' : 'btn-outline'}`}
-          onClick={() => handleLike(video.id)}
+          onClick={() => onLike(video.id)}
         >
           {isLiked ? '❤️' : '🤍'} {likes.length}
         </button>
