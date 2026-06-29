@@ -411,6 +411,40 @@
   border-color: #9b59b6;
 }
 
+/* Music Grid */
+.music-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.music-card {
+  background: #faf8fc;
+  border: 2px solid #e0d0ea;
+  border-radius: 8px;
+  padding: 8px 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.music-card:hover {
+  border-color: #9b59b6;
+  background: #f0e6f6;
+}
+
+.music-card.active {
+  border-color: #9b59b6;
+  background: #f0e6f6;
+  box-shadow: 0 0 0 2px rgba(155, 89, 182, 0.2);
+}
+
+.music-icon { font-size: 18px; }
+.music-label { font-size: 10px; color: #666; text-align: center; }
+
 /* Empty State */
 .empty-state {
   text-align: center;

@@ -12,16 +12,22 @@ const TEMPLATES = [
   { id: 'liebe', label: 'Liebe', icon: '❤️', desc: 'Gefühle & Beziehung', colors: ['#EC4899', '#F43F5E'], query: 'love couple' },
 ]
 
-const AI_SCENE_SYSTEM = `Du bist ein Video-Scripter. Erstelle 5 Szenen fuer ein Social-Media Video.
-Jede Szene: text1 (Haupttext, max 6 Wörter), text2 (Untertext, max 8 Wörter), duration (Sekunden, 3-5).
-Antworte NUR mit validem JSON Array. Kein Text davor oder danach.
-Stil: Kurz, praegnant, motivierend. Jede Szene ein Gedanke.`
+const MUSIC_LIBRARY = [
+  { id: 'none', label: 'Keine Musik', icon: '🔇', url: '' },
+  { id: 'motivation', label: 'Motivation Epic', icon: '🎵', url: 'https://cdn.pixabay.com/audio/2022/10/14/audio_2af9e5748c.mp3' },
+  { id: 'calm', label: 'Ruhig & Entspannt', icon: '🎶', url: 'https://cdn.pixabay.com/audio/2022/08/02/audio_884fe92c38.mp3' },
+  { id: 'upbeat', label: 'Upbeat & Energetisch', icon: '🎸', url: 'https://cdn.pixabay.com/audio/2023/10/30/audio_3713e23867.mp3' },
+  { id: 'piano', label: 'Piano Gefühle', icon: '🎹', url: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3' },
+  { id: 'ambient', label: 'Ambient Atmosphere', icon: '🌊', url: 'https://cdn.pixabay.com/audio/2022/01/20/audio_d1718ab41b.mp3' },
+  { id: 'corporate', label: 'Professionell', icon: '💼', url: 'https://cdn.pixabay.com/audio/2023/01/27/audio_08ed025164.mp3' },
+]
 
 export default function VideoMakerPage() {
   const { t } = useLanguage()
   const { user } = useAuth()
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
+  const audioRef = useRef(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
@@ -46,6 +52,7 @@ export default function VideoMakerPage() {
   ])
 
   const [transition, setTransition] = useState('fade')
+  const [selectedMusic, setSelectedMusic] = useState('none')
   const [textColor, setTextColor] = useState('#ffffff')
   const [textPosition, setTextPosition] = useState('center')
   const [fontSize, setFontSize] = useState(48)
@@ -228,12 +235,23 @@ export default function VideoMakerPage() {
     if (clips.length === 0) return
     setIsPlaying(true)
     loadClip(0)
+
+    const music = MUSIC_LIBRARY.find(m => m.id === selectedMusic)
+    if (music?.url && audioRef.current) {
+      audioRef.current.src = music.url
+      audioRef.current.volume = 0.3
+      audioRef.current.play().catch(() => {})
+    }
   }
 
   const stopPreview = () => {
     setIsPlaying(false)
     if (videoRef.current) {
       videoRef.current.pause()
+    }
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
     }
   }
 
@@ -246,8 +264,30 @@ export default function VideoMakerPage() {
 
     try {
       const canvas = canvasRef.current
-      const stream = canvas.captureStream(30)
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' })
+      const videoStream = canvas.captureStream(30)
+
+      const music = MUSIC_LIBRARY.find(m => m.id === selectedMusic)
+      let combinedStream = videoStream
+
+      if (music?.url && audioRef.current) {
+        audioRef.current.src = music.url
+        audioRef.current.volume = 0.3
+
+        const audioCtx = new AudioContext()
+        const source = audioCtx.createMediaElementSource(audioRef.current)
+        const dest = audioCtx.createMediaStreamDestination()
+        source.connect(dest)
+        source.connect(audioCtx.destination)
+
+        combinedStream = new MediaStream([
+          ...videoStream.getTracks(),
+          ...dest.stream.getTracks()
+        ])
+
+        audioRef.current.play().catch(() => {})
+      }
+
+      const mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9' })
       const chunks = []
 
       mediaRecorder.ondataavailable = (e) => {
@@ -265,6 +305,11 @@ export default function VideoMakerPage() {
         setStatus('Video exportiert! ✅')
         setProgress(100)
         setIsExporting(false)
+
+        if (audioRef.current) {
+          audioRef.current.pause()
+          audioRef.current.currentTime = 0
+        }
       }
 
       mediaRecorder.start()
@@ -310,6 +355,7 @@ export default function VideoMakerPage() {
 
   return (
     <div className="video-maker-page">
+      <audio ref={audioRef} loop preload="auto" />
       <h1>🎬 Video Creator</h1>
 
       <div className="ai-section">
@@ -457,6 +503,20 @@ export default function VideoMakerPage() {
                     <option value="zoom">Zoom</option>
                     <option value="none">Keiner</option>
                   </select>
+                </div>
+
+                <h3>Musik</h3>
+                <div className="music-grid">
+                  {MUSIC_LIBRARY.map(music => (
+                    <button
+                      key={music.id}
+                      className={`music-card ${selectedMusic === music.id ? 'active' : ''}`}
+                      onClick={() => setSelectedMusic(music.id)}
+                    >
+                      <span className="music-icon">{music.icon}</span>
+                      <span className="music-label">{music.label}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
