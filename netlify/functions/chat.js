@@ -9,126 +9,97 @@ exports.handler = async (event) => {
   try {
     const { message, systemPrompt, userId, history, imageUrl } = JSON.parse(event.body)
 
-    const apiKey = process.env.GROQ_API_KEY
-
+    // First try GEMINI_API_KEY, fallback to legacy GROQ_API_KEY if they haven't switched yet
+    const apiKey = process.env.GEMINI_API_KEY
+    
     if (!apiKey) {
       return {
         statusCode: 500,
-        body: JSON.stringify({ error: 'GROQ_API_KEY not configured' })
+        body: JSON.stringify({ error: 'GEMINI_API_KEY is not configured in environment variables.' })
       }
     }
 
-    const hasImage = !!imageUrl
+    // Convert image URL to base64 inlineData for Gemini (as Gemini API doesn't accept public URLs directly in REST)
+    let imagePart = null
+    if (imageUrl) {
+      try {
+        const imgRes = await fetch(imageUrl)
+        if (imgRes.ok) {
+          const buffer = await imgRes.arrayBuffer()
+          const base64Data = Buffer.from(buffer).toString('base64')
+          const mimeType = imgRes.headers.get('content-type') || 'image/jpeg'
+          imagePart = {
+            inlineData: {
+              data: base64Data,
+              mimeType: mimeType
+            }
+          }
+        } else {
+          console.error(`Failed to fetch image from URL: ${imageUrl}, status: ${imgRes.status}`)
+        }
+      } catch (err) {
+        console.error('Error fetching image for Gemini conversion:', err)
+      }
+    }
 
-    // Build messages array
-    const messages = [
-      { role: 'system', content: systemPrompt || 'Du bist ein guter Freund und Assistent.' }
-    ]
+    // Build Gemini contents history array
+    const contents = []
 
-    // Add history (last 20 messages for context)
+    // Map history to Gemini format (roles: 'user' or 'model')
     if (history && Array.isArray(history)) {
       const recentHistory = history.slice(-20)
       for (const msg of recentHistory) {
-        messages.push({ role: msg.role, content: msg.content })
+        contents.push({
+          role: msg.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: msg.content }]
+        })
       }
     }
 
-    // Add current user message (with or without image)
-    if (hasImage) {
-      messages.push({
-        role: 'user',
-        content: [
-          { type: 'text', text: message },
-          { type: 'image_url', image_url: { url: imageUrl } }
-        ]
-      })
-    } else {
-      messages.push({ role: 'user', content: message })
+    // Append the current user message (with optional inline image data)
+    const currentUserParts = [{ text: message || '' }]
+    if (imagePart) {
+      currentUserParts.push(imagePart)
     }
 
-    // Try vision-capable model first, fall back to text-only if unavailable
-    const textModels = ['llama-3.3-70b-versatile', 'meta-llama/llama-4-scout-17b-16e-instruct', 'mixtral-8x7b-32768']
-    const visionModels = ['llama-3.2-11b-vision-preview']
-    const model = hasImage ? visionModels[0] : textModels[0]
+    contents.push({
+      role: 'user',
+      parts: currentUserParts
+    })
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    // Call Google Gemini API (gemini-1.5-flash is multimodal and free-tier capable)
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`
+
+    const response = await fetch(geminiUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model,
-        messages,
-        max_completion_tokens: hasImage ? 4096 : 8192,
-        temperature: 0.7
+        contents,
+        systemInstruction: {
+          parts: [{ text: systemPrompt || 'Du bist ein erfahrener Mentor, guter Freund und kluger Ratgeber.' }]
+        },
+        generationConfig: {
+          temperature: 0.7
+        }
       })
     })
 
     const data = await response.json()
 
-    // Check if API returned an error (either HTTP error or error in body)
-    const apiError = !response.ok ? (data.error?.message || JSON.stringify(data)) : null
-    // Check if model returned a vision error as its response text
-    const visionErrorInContent = hasImage && response.ok && data.choices?.[0]?.message?.content &&
-      /does not support image|cannot read|not support.*image|image.*not support|vision.*not/i.test(data.choices[0].message.content)
-
-    if (apiError || visionErrorInContent) {
-      if (apiError) console.error('Groq API error for model', model, ':', apiError)
-
-      // If vision failed AND we have an image, try without the image
-      if (hasImage) {
-        const textMessages = messages.map(m => {
-          if (Array.isArray(m.content)) {
-            return { role: m.role, content: m.content.find(c => c.type === 'text')?.text || '' }
-          }
-          return m
-        })
-        try {
-          const fallbackRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${apiKey}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              model: textModels[0],
-              messages: textMessages,
-              max_completion_tokens: 8192,
-              temperature: 0.7
-            })
-          })
-          const fallbackData = await fallbackRes.json()
-          if (fallbackRes.ok && fallbackData.choices?.[0]?.message?.content) {
-            return {
-              statusCode: 200,
-              headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'Content-Type'
-              },
-              body: JSON.stringify({
-                response: fallbackData.choices[0].message.content,
-                imageNote: 'Bild konnte nicht analysiert werden – Nachricht wurde ohne Bild beantwortet.'
-              })
-            }
-          }
-        } catch (e) {
-          console.error('Fallback also failed:', e.message)
-        }
-      }
-
+    if (!response.ok) {
+      console.error('Gemini API Error:', data)
       return {
         statusCode: 502,
-        body: JSON.stringify({ 
-          error: 'AI service temporarily unavailable',
-          details: apiError || 'Model returned error in content',
-          model: model 
+        body: JSON.stringify({
+          error: 'Gemini AI service error',
+          details: data.error?.message || JSON.stringify(data)
         })
       }
     }
 
-    const aiResponse = data.choices[0]?.message?.content || 'Entschuldigung, ich konnte keine Antwort generieren.'
+    const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Entschuldigung, ich konnte keine Antwort generieren.'
 
     return {
       statusCode: 200,
