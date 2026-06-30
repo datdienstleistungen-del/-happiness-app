@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { ShoppingCart } from 'lucide-react'
+import { ShoppingCart, Image as ImageIcon, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations.jsx'
@@ -16,6 +16,9 @@ export default function MarketplacePage() {
   const [filter, setFilter] = useState('')
   const [search, setSearch] = useState('')
   const [form, setForm] = useState({ title: '', description: '', price: '', category: 'Sonstiges' })
+  const [selectedImage, setSelectedImage] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
+  const fileInputRef = useRef(null)
 
   useEffect(() => { fetchItems() }, [])
 
@@ -27,14 +30,33 @@ export default function MarketplacePage() {
 
   async function handleCreate() {
     if (!form.title.trim() || !form.description.trim()) return
+
+    let imageUrl = ''
+    if (selectedImage) {
+      const ext = selectedImage.name.split('.').pop() || 'jpg'
+      const filePath = `marketplace/${user.id}/${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage
+        .from('community-images')
+        .upload(filePath, selectedImage, { contentType: selectedImage.type })
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage
+          .from('community-images')
+          .getPublicUrl(filePath)
+        imageUrl = urlData.publicUrl
+      }
+    }
+
     await supabase.from('marketplace').insert({
       user_id: user.id,
       title: form.title.trim(),
       description: form.description.trim(),
       price: parseFloat(form.price) || 0,
       category: form.category,
+      image_url: imageUrl,
     })
     setForm({ title: '', description: '', price: '', category: 'Sonstiges' })
+    setSelectedImage(null)
+    setImagePreview(null)
     setTab('browse')
     fetchItems()
   }
@@ -73,6 +95,19 @@ export default function MarketplacePage() {
             <div className="form-group" style={{ flex: 1 }}><label>{t('marketplace.price')}</label><input type="number" className="form-input" value={form.price} onChange={e => setForm({...form, price: e.target.value})} /></div>
             <div className="form-group" style={{ flex: 1 }}><label>{t('marketplace.category')}</label><select className="form-input" value={form.category} onChange={e => setForm({...form, category: e.target.value})}>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></div>
           </div>
+          <div style={{ marginTop: '0.75rem' }}>
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => { const f = e.target.files[0]; if (f) { setSelectedImage(f); setImagePreview(URL.createObjectURL(f)) } }} style={{ display: 'none' }} />
+            <button className="btn btn-sm btn-outline" onClick={() => fileInputRef.current?.click()}>
+              <ImageIcon size={14} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
+              Bild hinzufuegen
+            </button>
+            {imagePreview && (
+              <div style={{ position: 'relative', display: 'inline-block', marginLeft: '0.5rem' }}>
+                <img src={imagePreview} alt="" style={{ maxWidth: '120px', maxHeight: '80px', borderRadius: '6px', objectFit: 'cover' }} />
+                <button onClick={() => { setSelectedImage(null); setImagePreview(null) }} style={{ position: 'absolute', top: -6, right: -6, background: 'var(--danger, #e53e3e)', color: 'white', border: 'none', borderRadius: '50%', width: 18, height: 18, cursor: 'pointer', fontSize: 10, lineHeight: '18px', textAlign: 'center' }}><X size={10} /></button>
+              </div>
+            )}
+          </div>
           <button className="btn btn-primary" onClick={handleCreate}>{t('marketplace.createBtn')}</button>
         </div>
       )}
@@ -101,6 +136,9 @@ export default function MarketplacePage() {
               <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
                 Von <strong>{item.profiles?.name}</strong> · {new Date(item.created_at).toLocaleDateString('de-DE')}
               </p>
+              {item.image_url && (
+                <img src={item.image_url} alt="" style={{ width: '100%', maxHeight: '300px', objectFit: 'cover', borderRadius: '8px', marginBottom: '0.75rem' }} />
+              )}
               <p>{item.description}</p>
               {user && item.user_id !== user.id && (
                 <div style={{ marginTop: '1rem' }}>

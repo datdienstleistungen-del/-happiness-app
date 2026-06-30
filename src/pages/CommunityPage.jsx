@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { MessageCircle, FileText, Clapperboard, Heart } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { MessageCircle, FileText, Clapperboard, Heart, Image as ImageIcon, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -14,6 +14,9 @@ export default function CommunityPage() {
   const [posts, setPosts] = useState([])
   const [newPost, setNewPost] = useState('')
   const [loading, setLoading] = useState(true)
+  const [selectedImage, setSelectedImage] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
+  const fileInputRef = useRef(null)
 
   useEffect(() => { fetchPosts() }, [])
 
@@ -27,12 +30,31 @@ export default function CommunityPage() {
   }
 
   async function handlePost() {
-    if (!newPost.trim()) return
+    if (!newPost.trim() && !selectedImage) return
+
+    let imageUrl = ''
+    if (selectedImage) {
+      const ext = selectedImage.name.split('.').pop() || 'jpg'
+      const filePath = `posts/${user.id}/${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage
+        .from('community-images')
+        .upload(filePath, selectedImage, { contentType: selectedImage.type })
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage
+          .from('community-images')
+          .getPublicUrl(filePath)
+        imageUrl = urlData.publicUrl
+      }
+    }
+
     await supabase.from('posts').insert({
       user_id: user.id,
-      content: newPost.trim(),
+      content: newPost.trim() || '',
+      image_url: imageUrl,
     })
     setNewPost('')
+    setSelectedImage(null)
+    setImagePreview(null)
     fetchPosts()
   }
 
@@ -81,8 +103,24 @@ export default function CommunityPage() {
                 onChange={(e) => setNewPost(e.target.value)}
                 rows={3}
               />
-              <div style={{ marginTop: '0.75rem', textAlign: 'right' }}>
-                <button className="btn btn-primary" onClick={handlePost} disabled={!newPost.trim()}>
+              {imagePreview && (
+                <div style={{ position: 'relative', marginTop: '0.5rem', display: 'inline-block' }}>
+                  <img src={imagePreview} alt="" style={{ maxWidth: '200px', maxHeight: '150px', borderRadius: '8px', objectFit: 'cover' }} />
+                  <button
+                    onClick={() => { setSelectedImage(null); setImagePreview(null) }}
+                    style={{ position: 'absolute', top: -8, right: -8, background: 'var(--danger, #e53e3e)', color: 'white', border: 'none', borderRadius: '50%', width: 22, height: 22, cursor: 'pointer', fontSize: 12, lineHeight: '22px', textAlign: 'center' }}
+                  ><X size={12} /></button>
+                </div>
+              )}
+              <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => { const f = e.target.files[0]; if (f) { setSelectedImage(f); setImagePreview(URL.createObjectURL(f)) } }} style={{ display: 'none' }} />
+                  <button className="btn btn-sm btn-outline" onClick={() => fileInputRef.current?.click()}>
+                    <ImageIcon size={14} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
+                    Bild
+                  </button>
+                </div>
+                <button className="btn btn-primary" onClick={handlePost} disabled={!newPost.trim() && !selectedImage}>
                   {t('community.post')}
                 </button>
               </div>
@@ -168,6 +206,9 @@ function PostCard({ post, currentUserId, onLike }) {
         </span>
       </div>
       <div className="card-body">
+        {post.image_url && (
+          <img src={post.image_url} alt="" style={{ width: '100%', maxHeight: '400px', objectFit: 'cover', borderRadius: '8px', marginBottom: '0.75rem' }} />
+        )}
         <p>{post.content}</p>
       </div>
       <div className="card-actions">

@@ -19,6 +19,7 @@ CREATE TABLE posts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   content TEXT NOT NULL,
+  image_url TEXT DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -69,6 +70,7 @@ CREATE TABLE marketplace (
   price NUMERIC(10,2) DEFAULT 0,
   category TEXT DEFAULT 'Sonstiges',
   active BOOLEAN DEFAULT TRUE,
+  image_url TEXT DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
