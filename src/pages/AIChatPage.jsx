@@ -712,35 +712,96 @@ WICHTIG:
         )}
 
         {hasMessages && (showPaywall && !isPremium ? (
-          <div className="paywall">
-            <div className="paywall-card">
-              <div className="paywall-icon"><Brain size={32} /></div>
-              <h2>Weiter fragen!</h2>
-              <p>Du hast {FREE_QUESTIONS} Fragen gestellt. Toll!</p>
-              <p className="paywall-sub">Um weiter mit der KI zu chatten:</p>
-              
-              <div className="paywall-price">
-                <span className="price-amount">4,99 €</span>
-                <span className="price-period">/ Monat</span>
+          <>
+            <div className="paywall">
+              <div className="paywall-card">
+                <div className="paywall-icon"><Brain size={32} /></div>
+                <h2>Weiter fragen!</h2>
+                <p>Du hast {FREE_QUESTIONS} Fragen gestellt. Toll!</p>
+                <p className="paywall-sub">Um weiter mit der KI zu chatten:</p>
+                
+                <div className="paywall-price">
+                  <span className="price-amount">4,99 €</span>
+                  <span className="price-period">/ Monat</span>
+                </div>
+
+                <button className="paywall-btn stripe-btn" onClick={handleCheckout}>
+                  <CreditCard size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
+                  Jetzt freischalten
+                </button>
+
+                <div className="paywall-steps">
+                  <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Unbegrenzt Fragen stellen</p>
+                  <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Bilder & PDFs hochladen & analysieren</p>
+                  <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Längere, tiefere Antworten</p>
+                  <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Priorität bei hoher Last</p>
+                  <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Kündbar jederzeit</p>
+                  <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Sicher per Kreditkarte (Stripe)</p>
+                </div>
+
+                <p className="paywall-note">Sicher bezahlen mit Stripe.</p>
               </div>
-
-              <button className="paywall-btn stripe-btn" onClick={handleCheckout}>
-                <CreditCard size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
-                Jetzt freischalten
-              </button>
-
-              <div className="paywall-steps">
-                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Unbegrenzt Fragen stellen</p>
-                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Bilder & PDFs hochladen & analysieren</p>
-                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Längere, tiefere Antworten</p>
-                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Priorität bei hoher Last</p>
-                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Kündbar jederzeit</p>
-                <p><Check size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />Sicher per Kreditkarte (Stripe)</p>
-              </div>
-
-              <p className="paywall-note">Sicher bezahlen mit Stripe.</p>
             </div>
-          </div>
+
+            <div className="ai-input-bar">
+              {imagePreview && (
+                <div style={{ position: 'relative', marginBottom: '0.5rem' }}>
+                  <img src={imagePreview} alt="" style={{ maxWidth: '120px', borderRadius: '8px', border: '2px solid var(--border)' }} />
+                  <button
+                    onClick={removeImage}
+                    style={{
+                      position: 'absolute', top: -8, right: -8,
+                      background: 'var(--danger, #e53e3e)', color: 'white',
+                      border: 'none', borderRadius: '50%', width: 22, height: 22,
+                      cursor: 'pointer', fontSize: '12px', lineHeight: '22px', textAlign: 'center'
+                    }}
+                  >X</button>
+                </div>
+              )}
+              {error && <p style={{ color: '#e74c3c', fontSize: '0.85rem', marginTop: '0.5rem' }}>{error}</p>}
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  style={{ display: 'none' }}
+                />
+                <button
+                  className="send-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{ background: 'var(--border)', color: 'var(--text)' }}
+                  title="Bild hochladen"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                  </svg>
+                </button>
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onInput={(e) => {
+                    e.target.style.height = 'auto'
+                    e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px'
+                  }}
+                  onKeyDown={handleKeyPress}
+                  placeholder="Upgrade für unbegrenzte Fragen..."
+                  rows={1}
+                  disabled={true}
+                  style={{ flex: 1, minHeight: '48px', opacity: 0.6 }}
+                />
+                <button
+                  className="send-btn"
+                  onClick={sendMessage}
+                  disabled={true}
+                >
+                  <Send size={16} />
+                </button>
+              </div>
+            </div>
+          </>
         ) : (
         <div className="ai-input-bar">
           {imagePreview && (
