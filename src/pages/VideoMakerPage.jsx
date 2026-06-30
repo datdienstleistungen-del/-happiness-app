@@ -919,11 +919,18 @@ export default function VideoMakerPage() {
                 <div className="panel">
                   <h3>Text hinzufuegen</h3>
                   <button className="btn btn-primary" onClick={addTextOverlay}>+ Text hinzufuegen</button>
-                  {textOverlays.length === 0 && (
+                  {textOverlays.length === 0 ? (
                     <div className="text-controls" style={{ marginTop: '12px', padding: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
-                      <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 8px' }}>Klicke auf \"+ Text hinzufuegen\" um ein Text-Element zu erstellen.</p>
+                      <input 
+                        type="text" 
+                        placeholder="Text eingeben..." 
+                        style={{ width: '100%', padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: '4px', fontSize: '14px', marginBottom: '8px' }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') addTextOverlay(); }}
+                        ref={(el) => { if (el) el.focus(); }}
+                      />
+                      <p style={{ fontSize: '12px', color: '#64748b', margin: '8px 0 0' }}>Enter drücken zum Erstellen</p>
                     </div>
-                  )}
+                  ) : null}
                   {textOverlays.map(overlay => (
                     <div key={overlay.id} className={`text-item ${overlay.id === activeTextId ? 'active' : ''}`}>
                       <div className="text-item-header">
@@ -962,6 +969,12 @@ export default function VideoMakerPage() {
                       )}
                     </div>
                   ))}
+                  {textOverlays.length > 0 && !activeTextId && (
+                    <div className="text-controls" style={{ marginTop: '12px', padding: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
+                      <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 8px' }}>Wähle einen Text aus der Liste oder erstelle einen neuen:</p>
+                      <button className="btn btn-primary" onClick={addTextOverlay} style={{ width: '100%' }}>+ Neuer Text</button>
+                    </div>
+                  )}
                 </div>
               )}
 
