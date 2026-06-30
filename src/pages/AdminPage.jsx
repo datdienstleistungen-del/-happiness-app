@@ -87,9 +87,12 @@ export default function AdminPage() {
     aiQuestionsTotal: aiConversations.length,
   }
 
+  const sortedByActivity = [...users].sort((a, b) => new Date(b.last_seen || 0) - new Date(a.last_seen || 0))
+
   const tabs = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'users', label: `Nutzer (${users.length})` },
+    { id: 'activity', label: 'Aktivität' },
     { id: 'moderation', label: 'Moderation' },
     { id: 'payments', label: 'Zahlungen' },
     { id: 'ai', label: 'KI Chat' },
@@ -120,6 +123,7 @@ export default function AdminPage() {
           {tab === 'users' && <UsersTab users={users} aiProfiles={aiProfiles} aiConversations={aiConversations} onBan={banUser} onPromote={promoteUser} />}
           {tab === 'moderation' && <ModerationTab posts={posts} marketplace={marketplaceItems} jobs={jobs} courses={courses} onDelete={deleteItem} />}
           {tab === 'payments' && <PaymentsTab users={users} aiProfiles={aiProfiles} aiConversations={aiConversations} />}
+          {tab === 'activity' && <ActivityTab users={sortedByActivity} />}
           {tab === 'ai' && <AiTab aiProfiles={aiProfiles} aiConversations={aiConversations} onReset={resetAiUsage} />}
         </div>
       )}
@@ -522,6 +526,59 @@ function AiTab({ aiProfiles, aiConversations, onReset }) {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+function ActivityTab({ users }) {
+  const formatTime = (iso) => {
+    if (!iso) return 'Nie'
+    const diff = Date.now() - new Date(iso).getTime()
+    const mins = Math.floor(diff / 60000)
+    if (mins < 1) return 'Gerade eben'
+    if (mins < 60) return `Vor ${mins} Min.`
+    const hours = Math.floor(mins / 60)
+    if (hours < 24) return `Vor ${hours} Std.`
+    const days = Math.floor(hours / 24)
+    if (days < 7) return `Vor ${days} Tagen`
+    return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  }
+
+  return (
+    <div className="admin-panel">
+      <h2>Wer war auf der App?</h2>
+      <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>Alle Nutzer sortiert nach letzter Aktivität</p>
+      <div className="activity-list">
+        {users.length === 0 ? (
+          <p>Keine Nutzer.</p>
+        ) : (
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Username</th>
+                <th>Rolle</th>
+                <th>Registriert</th>
+                <th>Letzte Aktivität</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map(u => (
+                <tr key={u.id}>
+                  <td><strong>{u.name}</strong></td>
+                  <td>@{u.username}</td>
+                  <td>{u.role === 'admin' ? '🛡️ Admin' : u.banned ? '🚫 Gebannt' : 'User'}</td>
+                  <td>{new Date(u.created_at).toLocaleDateString('de-DE')}</td>
+                  <td style={{ color: u.last_seen && Date.now() - new Date(u.last_seen).getTime() < 300000 ? 'var(--success)' : 'inherit' }}>
+                    {formatTime(u.last_seen)}
+                    {u.last_seen && Date.now() - new Date(u.last_seen).getTime() < 300000 && ' 🟢'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   )

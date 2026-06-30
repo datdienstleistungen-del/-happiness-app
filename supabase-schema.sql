@@ -11,6 +11,7 @@ CREATE TABLE profiles (
   bio TEXT DEFAULT '',
   avatar_url TEXT DEFAULT '',
   role TEXT DEFAULT 'user',
+  last_seen TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

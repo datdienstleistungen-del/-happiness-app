@@ -177,6 +177,13 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
+  // Track page views for activity monitoring
+  useEffect(() => {
+    if (user) {
+      supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', user.id).then()
+    }
+  }, [location.pathname])
+
   async function fetchProfile(userId) {
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
     setProfile(data)
