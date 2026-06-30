@@ -318,20 +318,22 @@ WICHTIG:
 
     // Upload image to Supabase Storage and get URL
     let imageUrl = null
+    let sentImage = false
     if (selectedImage) {
-      const filePath = `chat-images/${user.id}/${Date.now()}.jpg`
+      const ext = selectedImage.name.split('.').pop() || 'jpg'
+      const filePath = `chat-images/${user.id}/${Date.now()}.${ext}`
       const { error: uploadError } = await supabase.storage
         .from('chat-images')
         .upload(filePath, selectedImage, { contentType: selectedImage.type })
       
       if (uploadError) {
         console.error('Bild-Upload fehlgeschlagen:', uploadError)
-        alert('Das Bild konnte nicht hochgeladen werden. Die Nachricht wird ohne Bild gesendet.')
       } else {
         const { data: urlData } = supabase.storage
           .from('chat-images')
           .getPublicUrl(filePath)
         imageUrl = urlData.publicUrl
+        sentImage = true
       }
     }
 
@@ -354,8 +356,9 @@ WICHTIG:
 
       const data = await response.json()
       const aiResponse = data.response
+      const imageNote = data.imageNote || null
 
-      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }])
+      setMessages(prev => [...prev, { role: 'assistant', content: imageNote ? `${imageNote}\n\n${aiResponse}` : aiResponse }])
 
       // Save conversation with error handling
       const { error: convError } = await supabase.from('ai_conversations').insert({

@@ -518,44 +518,7 @@ export default function VideoMakerPage() {
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
 
-  const exportVideo = async () => {
-    if (!videoRef.current || !videoLoaded || !videoFile) return
-    
-    setIsExporting(true)
-    setExportProgress(0)
-    
-    try {
-      const ffmpeg = await loadFFmpeg()
-      
-      // Write input file
-      await ffmpeg.writeFile('input.mp4', await fetchFile(videoFile))
-      
-      // Build filter chain
-      const filters = []
-      
-      // Color adjustments
-      const brightnessVal = (brightness - 100) / 200
-      const contrastVal = contrast / 100
-      const saturationVal = saturation / 100
-      if (brightnessVal !== 0 || contrastVal !== 1 || saturationVal !== 1) {
-        filters.push(`eq=brightness=${brightnessVal}:contrast=${contrastVal}:saturation=${saturationVal}`)
-      }
-      
-      // Preset filter
-      if (filter !== 'none') {
-        const filterMap = {
-          warm: 'colorbalance=rs=0.1:gs=0.05:bs=-0.1',
-          cold: 'colorbalance=rs=-0.1:gs=0:bs=0.1',
-          vintage: 'curves=vintage',
-          bw: 'hue=s=0',
-          vivid: 'eq=saturation=1.5',
-          film: 'curves=vintage,eq=saturation=0.8',
-          dramatic: 'eq=contrast=1.3:brightness=-0.05',
-        }
-        if (filterMap[filter]) filters.push(filterMap[filter])
-      }
-      
-      // Helper to generate drawtext filter with animation support
+  // Helper to generate drawtext filter with animation support
   const buildDrawTextFilter = (overlay, clipDuration) => {
     const cw = videoRef.current?.videoWidth || 1920
     const ch = videoRef.current?.videoHeight || 1080
@@ -1230,6 +1193,7 @@ export default function VideoMakerPage() {
             )}
           </div>
         </div>
+      )}
 
       {videoError && (
         <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '12px 16px', marginTop: '16px', color: '#991b1b', fontSize: '14px' }}>
