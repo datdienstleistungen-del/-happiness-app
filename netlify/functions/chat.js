@@ -65,11 +65,18 @@ exports.handler = async (event) => {
       })
     })
 
-    if (!response.ok) {
-      const error = await response.text()
-      console.error('Groq API error for model', model, ':', error)
+    const data = await response.json()
 
-      // If vision model failed AND we have an image, try without the image
+    // Check if API returned an error (either HTTP error or error in body)
+    const apiError = !response.ok ? (data.error?.message || JSON.stringify(data)) : null
+    // Check if model returned a vision error as its response text
+    const visionErrorInContent = hasImage && response.ok && data.choices?.[0]?.message?.content &&
+      /does not support image|cannot read|not support.*image|image.*not support|vision.*not/i.test(data.choices[0].message.content)
+
+    if (apiError || visionErrorInContent) {
+      if (apiError) console.error('Groq API error for model', model, ':', apiError)
+
+      // If vision failed AND we have an image, try without the image
       if (hasImage) {
         const textMessages = messages.map(m => {
           if (Array.isArray(m.content)) {
@@ -77,34 +84,37 @@ exports.handler = async (event) => {
           }
           return m
         })
-        const fallbackResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: textModels[0],
-            messages: textMessages,
-            max_completion_tokens: 8192,
-            temperature: 0.7
-          })
-        })
-        if (fallbackResponse.ok) {
-          const fallbackData = await fallbackResponse.json()
-          const aiResponse = fallbackData.choices[0]?.message?.content || ''
-          return {
-            statusCode: 200,
+        try {
+          const fallbackRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*',
-              'Access-Control-Allow-Headers': 'Content-Type'
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              response: aiResponse,
-              imageNote: 'Bild konnte nicht analysiert werden – Nachricht wurde ohne Bild beantwortet.'
+              model: textModels[0],
+              messages: textMessages,
+              max_completion_tokens: 8192,
+              temperature: 0.7
             })
+          })
+          const fallbackData = await fallbackRes.json()
+          if (fallbackRes.ok && fallbackData.choices?.[0]?.message?.content) {
+            return {
+              statusCode: 200,
+              headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type'
+              },
+              body: JSON.stringify({
+                response: fallbackData.choices[0].message.content,
+                imageNote: 'Bild konnte nicht analysiert werden – Nachricht wurde ohne Bild beantwortet.'
+              })
+            }
           }
+        } catch (e) {
+          console.error('Fallback also failed:', e.message)
         }
       }
 
@@ -112,13 +122,12 @@ exports.handler = async (event) => {
         statusCode: 502,
         body: JSON.stringify({ 
           error: 'AI service temporarily unavailable',
-          details: error,
+          details: apiError || 'Model returned error in content',
           model: model 
         })
       }
     }
 
-    const data = await response.json()
     const aiResponse = data.choices[0]?.message?.content || 'Entschuldigung, ich konnte keine Antwort generieren.'
 
     return {
