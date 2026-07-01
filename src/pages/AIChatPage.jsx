@@ -316,24 +316,18 @@ WICHTIG:
       content: msg.content
     }))
 
-    // Upload image to Supabase Storage and get URL
-    let imageUrl = null
-    let sentImage = false
+    // Convert image to base64 client-side (bypass Supabase Storage)
+    let imageBase64 = null
     if (selectedImage) {
-      const ext = selectedImage.name.split('.').pop() || 'jpg'
-      const filePath = `chat-images/${user.id}/${Date.now()}.${ext}`
-      const { error: uploadError } = await supabase.storage
-        .from('chat-images')
-        .upload(filePath, selectedImage, { contentType: selectedImage.type })
-      
-      if (uploadError) {
-        console.error('Bild-Upload fehlgeschlagen:', uploadError)
-      } else {
-        const { data: urlData } = supabase.storage
-          .from('chat-images')
-          .getPublicUrl(filePath)
-        imageUrl = urlData.publicUrl
-        sentImage = true
+      try {
+        imageBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result)
+          reader.onerror = reject
+          reader.readAsDataURL(selectedImage)
+        })
+      } catch (e) {
+        console.error('Bild-Konvertierung fehlgeschlagen:', e)
       }
     }
 
@@ -346,7 +340,7 @@ WICHTIG:
           systemPrompt,
           userId: user.id,
           history: historyMessages,
-          imageUrl: imageUrl
+          imageBase64: imageBase64
         })
       })
 

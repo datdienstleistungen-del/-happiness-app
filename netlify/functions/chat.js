@@ -7,7 +7,7 @@ export const handler = async (event) => {
   }
 
   try {
-    const { message, systemPrompt, userId, history, imageUrl } = JSON.parse(event.body)
+    const { message, systemPrompt, userId, history, imageBase64, imageUrl } = JSON.parse(event.body)
 
     const apiKey = process.env.MISTRAL_API_KEY
     if (!apiKey) {
@@ -19,7 +19,6 @@ export const handler = async (event) => {
 
     const MODEL = 'pixtral-large-latest'
 
-    // Build messages array (OpenAI-compatible format)
     const messages = []
     messages.push({ role: 'system', content: systemPrompt || 'Du bist ein erfahrener Mentor, guter Freund und kluger Ratgeber.' })
 
@@ -32,23 +31,28 @@ export const handler = async (event) => {
       }
     }
 
-    // Build user message with optional image
-    let userContent
-    if (imageUrl) {
+    // Bild als base64 direkt vom Frontend oder via URL fetchen
+    let imgData = imageBase64
+    if (!imgData && imageUrl) {
       try {
         const imgRes = await fetch(imageUrl)
         if (imgRes.ok) {
-          const buffer = await imgRes.arrayBuffer()
-          const b64 = Buffer.from(buffer).toString('base64')
+          const buf = await imgRes.arrayBuffer()
+          const b64 = Buffer.from(buf).toString('base64')
           const mime = imgRes.headers.get('content-type') || 'image/jpeg'
-          userContent = [
-            { type: 'text', text: message || 'Was siehst du auf diesem Bild?' },
-            { type: 'image_url', image_url: { url: `data:${mime};base64,${b64}` } }
-          ]
+          imgData = `data:${mime};base64,${b64}`
         }
       } catch (e) {
         console.error('Image fetch error:', e)
       }
+    }
+
+    let userContent
+    if (imgData) {
+      userContent = [
+        { type: 'text', text: message || 'Was siehst du auf diesem Bild?' },
+        { type: 'image_url', image_url: { url: imgData } }
+      ]
     }
 
     if (!userContent) {
