@@ -67,8 +67,8 @@ exports.handler = async (event) => {
       parts: currentUserParts
     })
 
-    // Call Google Gemini API (gemini-1.5-flash is multimodal and free-tier capable)
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`
+    // Call Google Gemini API (gemini-2.0-flash is multimodal and free-tier capable)
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`
 
     const response = await fetch(geminiUrl, {
       method: 'POST',
