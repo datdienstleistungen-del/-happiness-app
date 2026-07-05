@@ -8,6 +8,7 @@ import {
 import { supabase } from './lib/supabase'
 import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.jsx'
 import AuthContext, { useAuth } from './context/AuthContext'
+import Logo from './components/Logo'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import CommunityPage from './pages/CommunityPage'
@@ -84,7 +85,7 @@ function Sidebar() {
       <div className="sidebar-header">
         <Link to="/" className="sidebar-brand">
           <img src="/favicon.svg" alt="H" style={{ width: '32px', height: '32px' }} />
-          {!collapsed && <span>Happiness</span>}
+          {!collapsed && <Logo />}
         </Link>
         <button className="sidebar-toggle" onClick={() => setCollapsed(!collapsed)}>
           {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
@@ -182,6 +183,15 @@ export default function App() {
     if (user) {
       supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', user.id).then()
     }
+    // Log page view (skip admin)
+    if (user && profile && profile.role !== 'admin') {
+      supabase.from('page_views').insert({
+        path: location.pathname,
+        user_id: user?.id || null,
+        user_agent: navigator.userAgent,
+        referrer: document.referrer || null
+      }).then()
+    }
   }, [location.pathname])
 
   async function fetchProfile(userId) {
@@ -208,7 +218,7 @@ export default function App() {
               <nav className="public-topbar">
                 <Link to="/" className="public-topbar-brand">
                   <img src="/favicon.svg" alt="H" style={{ width: '28px', height: '28px' }} />
-                  <span>Happiness</span>
+                  <Logo />
                 </Link>
                 <div className="public-topbar-links">
                   <Link to="/marketplace" className={location.pathname === '/marketplace' ? 'active' : ''}>Marktplatz</Link>
@@ -248,6 +258,30 @@ export default function App() {
                 <Route path="/agb" element={<LegalPage />} />
               </Routes>
             </main>
+            {user && (
+              <nav className="mobile-bottom-nav">
+                <Link to="/" className={`mobile-nav-link ${location.pathname === '/' ? 'active' : ''}`}>
+                  <Home size={20} />
+                  <span>Home</span>
+                </Link>
+                <Link to="/ai-chat" className={`mobile-nav-link ${location.pathname === '/ai-chat' ? 'active' : ''}`}>
+                  <Sparkles size={20} />
+                  <span>AI</span>
+                </Link>
+                <Link to="/community" className={`mobile-nav-link ${location.pathname === '/community' ? 'active' : ''}`}>
+                  <MessageCircle size={20} />
+                  <span>Community</span>
+                </Link>
+                <Link to="/friends" className={`mobile-nav-link ${location.pathname === '/friends' ? 'active' : ''}`}>
+                  <Users size={20} />
+                  <span>Freunde</span>
+                </Link>
+                <Link to="/marketplace" className={`mobile-nav-link ${location.pathname === '/marketplace' ? 'active' : ''}`}>
+                  <ShoppingCart size={20} />
+                  <span>Markt</span>
+                </Link>
+              </nav>
+            )}
           </>
         )}
       </AuthContext.Provider>
@@ -264,37 +298,82 @@ function LandingPage() {
   return (
     <div className="container">
       <div className="hero landing-hero">
-        <h1>Happiness</h1>
+        <h1><Logo /></h1>
         <p>Europas Community fuer Glueck, Vernetzung und persoenliche Entwicklung.</p>
         <div className="landing-actions">
           <Link to="/register" className="btn btn-primary">Kostenlos registrieren</Link>
           <Link to="/login" className="btn btn-outline">Anmelden</Link>
         </div>
       </div>
+
+      <div className="what-we-are">
+        <h2>Was wir sind</h2>
+        <div className="what-we-are-content">
+          <p>Europa braucht eine eigene Social-Media-Plattform.</p>
+          <p>Nicht als Kopie bestehender Netzwerke.<br/>Sondern als echte Alternative.</p>
+          <p>Aus dieser Idee ist eine funktionierende Plattform entstanden.</p>
+          <div className="what-we-are-features">
+            <div className="what-we-are-feature">
+              <span>Direkt im Browser nutzbar.</span>
+            </div>
+            <div className="what-we-are-feature">
+              <span>Ohne Installation.</span>
+            </div>
+            <div className="what-we-are-feature">
+              <span>Auf Smartphone und Desktop.</span>
+            </div>
+          </div>
+          <div className="what-we-are-workflow">
+            <h3>Alles in einem Workflow.</h3>
+            <p>Inhalte erstellen. Inhalte veroeffentlichen. Inhalte mit integrierter KI verbessern.</p>
+            <div className="what-we-are-steps">
+              <span className="step">Posten</span>
+              <span className="step-arrow">&rarr;</span>
+              <span className="step">Analysieren</span>
+              <span className="step-arrow">&rarr;</span>
+              <span className="step">Optimieren</span>
+              <span className="step-arrow">&rarr;</span>
+              <span className="step">Veroeffentlichen</span>
+            </div>
+            <p className="what-we-are-tagline">Ohne Umwege. Ohne Tool-Wechsel.</p>
+          </div>
+          <div className="what-we-are-cta">
+            <p>Einfach oeffnen und selbst ausprobieren, wie sich der Ansatz in der Praxis anfuehlt.</p>
+            <Link to="/register" className="btn btn-primary">Jetzt ausprobieren</Link>
+          </div>
+        </div>
+      </div>
+
       <div className="landing-sections">
         <Link to="/marketplace" className="dash-card">
+          <span className="dash-accent" style={{ background: 'var(--color-petrol)' }}></span>
           <span className="dash-icon"><ShoppingCart size={20} /></span>
           <div><h3>Marktplatz</h3><p>Dienstleistungen, Produkte und mehr</p></div>
         </Link>
         <Link to="/jobs" className="dash-card">
+          <span className="dash-accent" style={{ background: 'var(--color-koralle)' }}></span>
           <span className="dash-icon"><Briefcase size={20} /></span>
           <div><h3>Stellenangebote</h3><p>Jobs, Freelance, Praktika</p></div>
         </Link>
         <Link to="/courses" className="dash-card">
+          <span className="dash-accent" style={{ background: 'var(--color-mint)' }}></span>
           <span className="dash-icon"><BookOpen size={20} /></span>
           <div><h3>Kurse</h3><p>Lernen und weiterbilden</p></div>
         </Link>
         <Link to="/housing" className="dash-card">
+          <span className="dash-accent" style={{ background: 'var(--color-amber)' }}></span>
           <span className="dash-icon"><Building2 size={20} /></span>
           <div><h3>Wohnungen</h3><p>WG, Wohnung, Haus</p></div>
         </Link>
         <Link to="/community" className="dash-card">
+          <span className="dash-accent" style={{ background: 'var(--color-petrol)' }}></span>
           <span className="dash-icon"><MessageCircle size={20} /></span>
           <div><h3>Community</h3><p>Vernetzen und austauschen</p></div>
         </Link>
         <Link to="/ai-chat" className="dash-card">
+          <span className="dash-accent" style={{ background: 'var(--color-koralle)' }}></span>
           <span className="dash-icon"><Sparkles size={20} /></span>
-          <div><h3>KI-Assistent</h3><p>15 Fragen kostenlos</p></div>
+          <div><h3>KI-Assistent</h3><p>Fragen stellen, Bilder analysieren</p></div>
         </Link>
       </div>
     </div>
@@ -309,12 +388,16 @@ function HomePage() {
 
   return (
     <div className="container">
-      <div className="hero">
+      <div className="home-logo-center">
+        <Logo />
+      </div>
+      <div className="hero home-welcome-card">
         <h1>{t('home.welcome')}</h1>
         <p>{greeting}, <strong>{profile?.name}</strong>! {t('home.desc')}</p>
       </div>
       <div className="dashboard-grid">
         <Link to="/community" className="dash-card">
+          <span className="dash-accent" style={{ background: 'var(--color-petrol)' }}></span>
           <span className="dash-icon"><MessageCircle size={20} /></span>
           <div>
             <h3>{t('nav.community')}</h3>
@@ -322,6 +405,7 @@ function HomePage() {
           </div>
         </Link>
         <Link to="/friends" className="dash-card">
+          <span className="dash-accent" style={{ background: 'var(--color-koralle)' }}></span>
           <span className="dash-icon"><Users size={20} /></span>
           <div>
             <h3>{t('nav.friends')}</h3>
@@ -329,6 +413,7 @@ function HomePage() {
           </div>
         </Link>
         <Link to="/marketplace" className="dash-card">
+          <span className="dash-accent" style={{ background: 'var(--color-mint)' }}></span>
           <span className="dash-icon"><ShoppingCart size={20} /></span>
           <div>
             <h3>{t('nav.marketplace')}</h3>
@@ -336,6 +421,7 @@ function HomePage() {
           </div>
         </Link>
         <Link to="/jobs" className="dash-card">
+          <span className="dash-accent" style={{ background: 'var(--color-amber)' }}></span>
           <span className="dash-icon"><Briefcase size={20} /></span>
           <div>
             <h3>{t('nav.jobs')}</h3>
@@ -343,6 +429,7 @@ function HomePage() {
           </div>
         </Link>
         <Link to="/courses" className="dash-card">
+          <span className="dash-accent" style={{ background: 'var(--color-petrol)' }}></span>
           <span className="dash-icon"><BookOpen size={20} /></span>
           <div>
             <h3>{t('nav.courses')}</h3>
@@ -350,20 +437,17 @@ function HomePage() {
           </div>
         </Link>
         <Link to="/housing" className="dash-card">
+          <span className="dash-accent" style={{ background: 'var(--color-koralle)' }}></span>
           <span className="dash-icon"><Building2 size={20} /></span>
           <div>
             <h3>{t('nav.housing')}</h3>
             <p>{t('housing.subtitle')}</p>
           </div>
         </Link>
-        <Link to="/profile" className="dash-card">
-          <span className="dash-icon"><User size={20} /></span>
-          <div>
-            <h3>{t('nav.profile')}</h3>
-            <p>{t('profile.edit')}</p>
-          </div>
-        </Link>
       </div>
+      <Link to="/community" className="btn btn-primary btn-new-post">
+        <span>Neuen Beitrag erstellen</span>
+      </Link>
     </div>
   )
 }
