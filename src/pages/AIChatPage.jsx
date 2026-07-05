@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations'
 import ReactMarkdown from 'react-markdown'
+import { BrandWord } from '../components/Logo'
 import './AIChatPage.css'
 
 export default function AIChatPage() {
@@ -515,7 +516,7 @@ WICHTIG:
       <div className="ai-main">
         <div className="ai-topbar">
           <span className="ai-logo"><Brain size={20} /></span>
-          <strong>Happiness AI</strong>
+          <strong><BrandWord /> AI</strong>
           <div className="ai-topbar-actions">
             <button className="ai-topbar-btn" onClick={() => setMessages([])}>
               <Sparkles size={14} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
@@ -582,7 +583,7 @@ WICHTIG:
           <div className="ai-center">
             <div className="ai-welcome">
               <div className="ai-welcome-icon"><Brain size={32} /></div>
-              <h1>Happiness AI</h1>
+              <h1><BrandWord /> AI</h1>
               <p>{t('ai.welcomeDesc') || 'Was kann ich heute für dich tun?'}</p>
 
               <div className="suggestion-chips">

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ShoppingCart, Image as ImageIcon, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+import { renderBrandText } from '../components/Logo'
 import { useLanguage } from '../i18n/translations.jsx'
 
 const CATEGORIES = ['Dienstleistung', 'Produkt', 'Geschenk', 'Tausch', 'Sonstiges']
@@ -71,7 +72,7 @@ export default function MarketplacePage() {
     <div className="container">
       {!user && (
         <div className="public-cta">
-          <strong>Willkommen beim Happiness Marktplatz</strong>
+          <strong>{renderBrandText('Willkommen beim Happiness Marktplatz')}</strong>
           <p>Kostenlos registrieren um Anzeigen zu erstellen und zu kontaktieren.</p>
           <Link to="/register" className="btn btn-primary">Kostenlos registrieren</Link>
         </div>

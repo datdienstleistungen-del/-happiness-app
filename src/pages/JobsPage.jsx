@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Briefcase, MapPin } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+import { renderBrandText } from '../components/Logo'
 import { useLanguage } from '../i18n/translations.jsx'
 
 const JOB_TYPES = ['Vollzeit', 'Teilzeit', 'Freelance', 'Praktikum', 'Homeoffice']
@@ -53,7 +54,7 @@ export default function JobsPage() {
     <div className="container">
       {!user && (
         <div className="public-cta">
-          <strong>Willkommen bei den Happiness Stellenanzeigen</strong>
+          <strong>{renderBrandText('Willkommen bei den Happiness Stellenanzeigen')}</strong>
           <p>Kostenlos registrieren um Stellenanzeigen zu erstellen und zu bewerben.</p>
           <Link to="/register" className="btn btn-primary">Kostenlos registrieren</Link>
         </div>

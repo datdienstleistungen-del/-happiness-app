@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Building2, Calendar } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+import { renderBrandText } from '../components/Logo'
 import { useLanguage } from '../i18n/translations.jsx'
 
 const HOUSING_TYPES = ['WG-Zimmer', 'Wohnung', 'Haus', 'Temporär', 'Sonstiges']
@@ -90,7 +91,7 @@ export default function HousingPage() {
     <div className="container">
       {!user && (
         <div className="public-cta">
-          <strong>Willkommen bei den Happiness Wohnungsanzeigen</strong>
+          <strong>{renderBrandText('Willkommen bei den Happiness Wohnungsanzeigen')}</strong>
           <p>Kostenlos registrieren um Wohnungen zu inserieren und zu kontaktieren.</p>
           <Link to="/register" className="btn btn-primary">Kostenlos registrieren</Link>
         </div>

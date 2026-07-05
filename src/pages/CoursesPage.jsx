@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { BookOpen } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+import { renderBrandText } from '../components/Logo'
 import { useLanguage } from '../i18n/translations.jsx'
 
 const CATEGORIES = ['Glück', 'Wellness', 'Persönlichkeitsentwicklung', 'Beruf', 'Sport', 'Kreativität', 'Sonstiges']
@@ -64,7 +65,7 @@ export default function CoursesPage() {
     <div className="container">
       {!user && (
         <div className="public-cta">
-          <strong>Willkommen bei den Happiness Kursen</strong>
+          <strong>{renderBrandText('Willkommen bei den Happiness Kursen')}</strong>
           <p>Kostenlos registrieren um Kurse zu erstellen und teilzunehmen.</p>
           <Link to="/register" className="btn btn-primary">Kostenlos registrieren</Link>
         </div>

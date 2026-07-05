@@ -8,7 +8,7 @@ import {
 import { supabase } from './lib/supabase'
 import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.jsx'
 import AuthContext, { useAuth } from './context/AuthContext'
-import Logo from './components/Logo'
+import Logo, { renderBrandText } from './components/Logo'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import CommunityPage from './pages/CommunityPage'
@@ -389,7 +389,7 @@ function HomePage() {
   return (
     <div className="container">
       <div className="hero home-welcome-card">
-        <h1><Logo /></h1>
+        <h1>{renderBrandText(t('home.welcome'))}</h1>
         <p>{greeting}, <strong>{profile?.name}</strong>! {t('home.desc')}</p>
       </div>
       <div className="dashboard-grid">
