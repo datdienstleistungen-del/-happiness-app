@@ -1,11 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <defs>
-    <linearGradient id="rainbow" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#667eea"/>
-      <stop offset="50%" style="stop-color:#764ba2"/>
-      <stop offset="100%" style="stop-color:#f093fb"/>
-    </linearGradient>
-  </defs>
-  <circle cx="50" cy="50" r="50" fill="url(#rainbow)"/>
-  <text x="50" y="68" font-family="Arial, sans-serif" font-size="60" font-weight="bold" fill="white" text-anchor="middle">H</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="108" fill="#ffffff"/>
+  <rect x="2" y="2" width="508" height="508" rx="106" fill="none" stroke="#D3D1C7" stroke-width="4"/>
+  <text x="256" y="370" font-family="Arial, Helvetica, sans-serif" font-size="340" font-weight="700" fill="#085041" text-anchor="middle">h</text>
 </svg>
