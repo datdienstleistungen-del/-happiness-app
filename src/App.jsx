@@ -388,11 +388,8 @@ function HomePage() {
 
   return (
     <div className="container">
-      <div className="home-logo-center">
-        <Logo />
-      </div>
       <div className="hero home-welcome-card">
-        <h1>{t('home.welcome')}</h1>
+        <h1><Logo /></h1>
         <p>{greeting}, <strong>{profile?.name}</strong>! {t('home.desc')}</p>
       </div>
       <div className="dashboard-grid">
