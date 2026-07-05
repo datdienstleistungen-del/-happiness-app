@@ -17,7 +17,7 @@ export const handler = async (event) => {
       }
     }
 
-    const MODEL = 'pixtral-large-latest'
+    const MODEL = 'mistral-small-latest'
 
     const messages = []
     messages.push({ role: 'system', content: systemPrompt || 'Du bist ein erfahrener Mentor, guter Freund und kluger Ratgeber.' })
@@ -50,8 +50,8 @@ export const handler = async (event) => {
     let userContent
     if (imgData) {
       userContent = [
-        { type: 'text', text: message || 'Was siehst du auf diesem Bild?' },
-        { type: 'image_url', image_url: { url: imgData } }
+        { type: 'text', text: message || 'Analysiere dieses Bild detailliert. Erkennbarer Text wird Wort für Wort wiedergegeben. Beschreibe alles was du siehst: UI-Elemente, Texte, Farben, Layout, Funktionen.' },
+        { type: 'image_url', image_url: imgData }
       ]
     }
 
