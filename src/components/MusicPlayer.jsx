@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Play, Pause, Volume2, VolumeX, Music } from 'lucide-react';
-import lofiGenerator from '../utils/LofiGenerator';
+import lofiPlayer from '../utils/LofiGenerator';
 import './MusicPlayer.css';
 
 export default function MusicPlayer({ videoPlaying = false }) {
@@ -34,20 +34,20 @@ export default function MusicPlayer({ videoPlaying = false }) {
   // Duck music when video starts playing
   useEffect(() => {
     if (videoPlaying && !prevVideoPlaying.current) {
-      lofiGenerator.duck(0.15);
+      lofiPlayer.duck(0.15);
     } else if (!videoPlaying && prevVideoPlaying.current) {
-      lofiGenerator.unduck();
+      lofiPlayer.unduck();
     }
     prevVideoPlaying.current = videoPlaying;
   }, [videoPlaying]);
 
   const togglePlay = async () => {
     if (isPlaying) {
-      lofiGenerator.stop();
+      lofiPlayer.stop();
       setIsPlaying(false);
     } else {
-      await lofiGenerator.start();
-      lofiGenerator.setVolume(isMuted ? 0 : volume);
+      await lofiPlayer.start();
+      lofiPlayer.setVolume(isMuted ? 0 : volume);
       setIsPlaying(true);
     }
   };
@@ -55,10 +55,10 @@ export default function MusicPlayer({ videoPlaying = false }) {
   const toggleMute = () => {
     if (isMuted) {
       setIsMuted(false);
-      lofiGenerator.setVolume(volume);
+      lofiPlayer.setVolume(volume);
     } else {
       setIsMuted(true);
-      lofiGenerator.setVolume(0);
+      lofiPlayer.setVolume(0);
     }
   };
 
@@ -66,7 +66,7 @@ export default function MusicPlayer({ videoPlaying = false }) {
     const newVol = parseFloat(e.target.value);
     setVolume(newVol);
     if (!isMuted) {
-      lofiGenerator.setVolume(newVol);
+      lofiPlayer.setVolume(newVol);
     }
   };
 
