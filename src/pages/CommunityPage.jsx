@@ -58,22 +58,6 @@ export default function CommunityPage() {
     fetchPosts()
   }
 
-  async function handleLike(postId) {
-    const existing = await supabase
-      .from('likes')
-      .select('*')
-      .eq('post_id', postId)
-      .eq('user_id', user.id)
-      .single()
-
-    if (existing.data) {
-      await supabase.from('likes').delete().eq('id', existing.data.id)
-    } else {
-      await supabase.from('likes').insert({ post_id: postId, user_id: user.id })
-    }
-    fetchPosts()
-  }
-
   return (
     <div className="container">
       <div className="page-header">
@@ -141,7 +125,7 @@ export default function CommunityPage() {
             </div>
           ) : (
             posts.map((post) => (
-              <PostCard key={post.id} post={post} currentUserId={user?.id} onLike={handleLike} />
+              <PostCard key={post.id} post={post} currentUserId={user?.id} />
             ))
           )}
         </>
@@ -159,8 +143,8 @@ export default function CommunityPage() {
   )
 }
 
-function PostCard({ post, currentUserId, onLike }) {
-  const [likes, setLikes] = useState([])
+function PostCard({ post, currentUserId }) {
+  const [reactions, setReactions] = useState([])
   const [comments, setComments] = useState([])
   const [commentText, setCommentText] = useState('')
   const [showComments, setShowComments] = useState(false)
@@ -168,9 +152,19 @@ function PostCard({ post, currentUserId, onLike }) {
 
   useEffect(() => { fetchInteractions() }, [post.id])
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('reactions-' + post.id)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions', filter: `post_id=eq.${post.id}` }, () => {
+        fetchInteractions()
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [post.id])
+
   async function fetchInteractions() {
-    const { data: likesData } = await supabase.from('likes').select('*').eq('post_id', post.id)
-    setLikes(likesData || [])
+    const { data: reactionsData } = await supabase.from('reactions').select('*').eq('post_id', post.id)
+    setReactions(reactionsData || [])
 
     const { data: commentsData } = await supabase
       .from('comments')
@@ -180,8 +174,27 @@ function PostCard({ post, currentUserId, onLike }) {
     setComments(commentsData || [])
   }
 
+  async function toggleReaction() {
+    if (!currentUserId) return
+    const existing = reactions.find((r) => r.user_id === currentUserId)
+    if (existing) {
+      await supabase.from('reactions').delete().eq('id', existing.id)
+    } else {
+      await supabase.from('reactions').insert({ post_id: post.id, user_id: currentUserId, type: 'like' })
+      if (post.user_id !== currentUserId) {
+        const { data: reactorData } = await supabase.from('profiles').select('name').eq('id', currentUserId).single()
+        await supabase.from('notifications').insert({
+          user_id: post.user_id,
+          content: `${reactorData?.name || 'Jemand'} hat auf deinen Beitrag reagiert`,
+          type: 'reaction',
+        })
+      }
+    }
+    fetchInteractions()
+  }
+
   async function addComment() {
-    if (!commentText.trim()) return
+    if (!commentText.trim() || !currentUserId) return
     await supabase.from('comments').insert({
       post_id: post.id,
       user_id: currentUserId,
@@ -191,7 +204,7 @@ function PostCard({ post, currentUserId, onLike }) {
     fetchInteractions()
   }
 
-  const isLiked = likes.some((l) => l.user_id === currentUserId)
+  const hasReacted = reactions.some((r) => r.user_id === currentUserId)
   const profile = post.profiles
 
   return (
@@ -213,11 +226,12 @@ function PostCard({ post, currentUserId, onLike }) {
       </div>
       <div className="card-actions">
         <button
-          className={`btn btn-sm ${isLiked ? 'btn-primary' : 'btn-outline'}`}
-          onClick={() => onLike(post.id)}
+          className="btn btn-sm btn-outline"
+          onClick={toggleReaction}
+          style={{ color: hasReacted ? 'var(--color-koralle)' : 'var(--color-text-secondary)', borderColor: hasReacted ? 'var(--color-koralle)' : undefined }}
         >
-          <Heart size={14} fill={isLiked ? 'currentColor' : 'none'} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
-          {likes.length}
+          <Heart size={14} fill={hasReacted ? 'var(--color-koralle)' : 'none'} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
+          {reactions.length}
         </button>
         <button
           className="btn btn-sm btn-outline"
