@@ -1,44 +1,50 @@
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || ''
 
 export const handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
+  if (event.httpMethod === 'OPTIONS') {
     return {
-      statusCode: 405,
-      body: JSON.stringify({ error: 'Method not allowed' })
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+      },
+      body: ''
     }
   }
 
-  // Auth-Check: Supabase-JWT verifizieren
-  const authHeader = event.headers.authorization || ''
-  const token = authHeader.replace('Bearer ', '')
-  if (!token) {
-    return {
-      statusCode: 401,
-      body: JSON.stringify({ error: 'Nicht authentifiziert' })
-    }
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
   }
 
   try {
-    // JWT gegen Supabase verifizieren
-    const { data: { user }, error: authError } = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
-    }).then(r => r.json())
-
-    if (authError || !user) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ error: 'Ungueltiges Token' })
-      }
+    const authHeader = event.headers.authorization || ''
+    const token = authHeader.replace('Bearer ', '')
+    if (!token) {
+      return { statusCode: 401, body: JSON.stringify({ error: 'Nicht authentifiziert' }) }
     }
 
-    const { message, systemPrompt, history, imageBase64, imageUrl } = JSON.parse(event.body)
+    let userId = null
+    try {
+      const authRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_SERVICE_KEY }
+      })
+      if (authRes.ok) {
+        const userData = await authRes.json()
+        userId = userData.id
+      }
+    } catch (e) {
+      console.error('Auth check failed:', e.message)
+    }
+
+    const { message, systemPrompt, history, imageBase64 } = JSON.parse(event.body)
 
     const apiKey = process.env.MISTRAL_API_KEY
     if (!apiKey) {
       return {
         statusCode: 500,
-        body: JSON.stringify({ error: 'MISTRAL_API_KEY is not configured in environment variables.' })
+        body: JSON.stringify({ error: 'MISTRAL_API_KEY nicht konfiguriert' })
       }
     }
 
@@ -56,44 +62,19 @@ export const handler = async (event) => {
       }
     }
 
-    // Bild als base64 direkt vom Frontend oder via URL fetchen
-    let imgData = imageBase64
-    if (!imgData && imageUrl) {
-      // SSRF-Schutz: Nur Supabase-Storage-URLs erlauben
-      const allowedDomains = ['irumowvmhvrofezwvnop.supabase.co']
-      try {
-        const urlObj = new URL(imageUrl)
-        if (!allowedDomains.some(domain => urlObj.hostname.includes(domain))) {
-          console.error('SSRF blocked: URL not in whitelist')
-        } else {
-          const imgRes = await fetch(imageUrl)
-          if (imgRes.ok) {
-            const buf = await imgRes.arrayBuffer()
-            const b64 = Buffer.from(buf).toString('base64')
-            const mime = imgRes.headers.get('content-type') || 'image/jpeg'
-            imgData = `data:${mime};base64,${b64}`
-          }
-        }
-      } catch (e) {
-        console.error('Image fetch error:', e)
-      }
-    }
-
     let userContent
-    if (imgData) {
+    if (imageBase64) {
       userContent = [
-        { type: 'text', text: message || 'Analysiere dieses Bild detailliert. Erkennbarer Text wird Wort für Wort wiedergegeben. Beschreibe alles was du siehst: UI-Elemente, Texte, Farben, Layout, Funktionen.' },
-        { type: 'image_url', image_url: imgData }
+        { type: 'text', text: message || 'Analysiere dieses Bild.' },
+        { type: 'image_url', image_url: imageBase64 }
       ]
-    }
-
-    if (!userContent) {
+    } else {
       userContent = message || 'Hallo'
     }
 
     messages.push({ role: 'user', content: userContent })
 
-    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    const mistralRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -107,11 +88,15 @@ export const handler = async (event) => {
       })
     })
 
-    const data = await response.json()
+    const data = await mistralRes.json()
 
-    if (!response.ok) {
+    if (!mistralRes.ok) {
       return {
         statusCode: 502,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
         body: JSON.stringify({
           error: 'AI service error',
           details: data.error?.message || JSON.stringify(data)
@@ -125,8 +110,7 @@ export const handler = async (event) => {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': 'https://happiness-eu.netlify.app',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        'Access-Control-Allow-Origin': '*'
       },
       body: JSON.stringify({ response: aiResponse })
     }
@@ -135,7 +119,11 @@ export const handler = async (event) => {
     console.error('Chat function error:', error.message, error.stack)
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Internal server error' })
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ error: error.message || 'Internal server error' })
     }
   }
 }
