@@ -352,7 +352,9 @@ WICHTIG:
       })
 
       if (!response.ok) {
-        throw new Error('API Fehler')
+        const errData = await response.json().catch(() => ({}))
+        console.error('Chat API error:', response.status, errData)
+        throw new Error(errData.error || errData.details || `API Fehler ${response.status}`)
       }
 
       const data = await response.json()
@@ -392,8 +394,8 @@ WICHTIG:
     } catch (error) {
       console.error('AI Error:', error)
       
-      const fallbackResponse = generateFallbackResponse(userMessage)
-      setMessages(prev => [...prev, { role: 'assistant', content: fallbackResponse }])
+      const errorMsg = error.message || 'Unbekannter Fehler'
+      setMessages(prev => [...prev, { role: 'assistant', content: `⚠️ Fehler: ${errorMsg}\n\nFalls das Problem weiterhin auftritt, melde dich beim Support.` }])
     } finally {
       setIsLoading(false)
     }
