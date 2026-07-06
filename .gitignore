@@ -24,3 +24,12 @@ Thumbs.db
 
 # Netlify
 .netlify/
+
+# SQL migration scripts (managed in Supabase, not repo)
+*.sql
+
+# One-time upload scripts
+*.cjs
+
+# Installers
+*.exe

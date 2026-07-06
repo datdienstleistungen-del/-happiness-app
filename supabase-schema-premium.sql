@@ -1,3 +1,0 @@
-ALTER TABLE ai_settings ADD COLUMN IF NOT EXISTS is_premium BOOLEAN DEFAULT false;
-ALTER TABLE ai_settings ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
-ALTER TABLE ai_settings ADD COLUMN IF NOT EXISTS premium_since TIMESTAMPTZ;
