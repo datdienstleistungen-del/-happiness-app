@@ -1,3 +1,6 @@
+const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || ''
+
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return {
@@ -6,7 +9,29 @@ exports.handler = async (event) => {
     }
   }
 
+  // Auth-Check: Supabase-JWT verifizieren
+  const authHeader = event.headers.authorization || ''
+  const token = authHeader.replace('Bearer ', '')
+  if (!token) {
+    return {
+      statusCode: 401,
+      body: JSON.stringify({ error: 'Nicht authentifiziert' })
+    }
+  }
+
   try {
+    // JWT gegen Supabase verifizieren
+    const { data: { user }, error: authError } = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
+    }).then(r => r.json())
+
+    if (authError || !user) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ error: 'Ungueltiges Token' })
+      }
+    }
+
     const { prompt, template, language } = JSON.parse(event.body)
 
     const apiKey = process.env.GROQ_API_KEY
@@ -117,8 +142,8 @@ Beispiel-Output: [{"text1":"Dein Text hier","text2":"Ergaenzung","duration":3}]`
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type'
+        'Access-Control-Allow-Origin': 'https://happiness-eu.netlify.app',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
       },
       body: JSON.stringify({ scenes })
     }

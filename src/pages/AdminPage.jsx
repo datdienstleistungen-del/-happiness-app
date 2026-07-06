@@ -175,7 +175,7 @@ function UsersTab({ users, aiProfiles, aiConversations, onBan, onPromote }) {
   const [roleFilter, setRoleFilter] = useState('all')
 
   const filtered = users.filter(u => {
-    const matchSearch = !search || u.name?.toLowerCase().includes(search.toLowerCase()) || u.username?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase())
+    const matchSearch = !search || u.name?.toLowerCase().includes(search.toLowerCase()) || u.username?.toLowerCase().includes(search.toLowerCase())
     const matchRole = roleFilter === 'all' || u.role === roleFilter
     return matchSearch && matchRole
   })
@@ -215,7 +215,7 @@ function UsersTab({ users, aiProfiles, aiConversations, onBan, onPromote }) {
                 <div className="user-avatar">{u.name?.[0]?.toUpperCase() || '?'}</div>
                 <div className="user-info">
                   <div className="user-name">{u.name || 'Unbekannt'}</div>
-                  <div className="user-meta">@{u.username || '---'} · {u.email}</div>
+                  <div className="user-meta">@{u.username || '---'}</div>
                 </div>
                 <div className="user-badges">
                   {u.role === 'admin' && <span className="badge badge-admin">Admin</span>}
@@ -423,7 +423,7 @@ function PaymentsTab({ users, aiProfiles, aiConversations }) {
             return (
               <div key={u.id} className="payment-card">
                 <div className="payment-card-info">
-                  <div className="payment-name">{u.name || u.email}</div>
+                  <div className="payment-name">{u.name || 'Unbekannt'}</div>
                   <div className="payment-meta">
                     Premium seit: {ai?.premium_since ? new Date(ai.premium_since).toLocaleDateString('de-DE') : 'Unbekannt'}
                   </div>
@@ -445,7 +445,7 @@ function PaymentsTab({ users, aiProfiles, aiConversations }) {
           return (
             <div key={u.id} className="payment-card near-limit">
               <div className="payment-card-info">
-                <div className="payment-name">{u.name || u.email}</div>
+                <div className="payment-name">{u.name || 'Unbekannt'}</div>
                 <div className="payment-meta">KI Fragen: {count}/20</div>
               </div>
               <div className="payment-status near-limit">

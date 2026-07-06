@@ -1,16 +1,34 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || ''
+
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
+  // Auth-Check
+  const authHeader = event.headers.authorization || ''
+  const token = authHeader.replace('Bearer ', '')
+  if (!token) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'Nicht authentifiziert' }) };
+  }
+
   try {
-    const { userId, email } = JSON.parse(event.body);
+    const { data: { user }, error: authError } = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
+    }).then(r => r.json())
+
+    if (authError || !user) {
+      return { statusCode: 401, body: JSON.stringify({ error: 'Ungueltiges Token' }) };
+    }
+
+    const { email } = JSON.parse(event.body);
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      customer_email: email,
+      customer_email: user.email,
       line_items: [
         {
           price: 'price_1TnM1u2LYA3KKe2WtUxr8wXS',
@@ -21,7 +39,7 @@ exports.handler = async (event) => {
       success_url: `${process.env.URL || 'https://happiness-eu.netlify.app'}/ai-chat?payment=success`,
       cancel_url: `${process.env.URL || 'https://happiness-eu.netlify.app'}/ai-chat?payment=cancel`,
       metadata: {
-        userId: userId,
+        userId: user.id,
       },
     });
 

@@ -1,3 +1,6 @@
+const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || ''
+
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return {
@@ -6,8 +9,30 @@ export const handler = async (event) => {
     }
   }
 
+  // Auth-Check: Supabase-JWT verifizieren
+  const authHeader = event.headers.authorization || ''
+  const token = authHeader.replace('Bearer ', '')
+  if (!token) {
+    return {
+      statusCode: 401,
+      body: JSON.stringify({ error: 'Nicht authentifiziert' })
+    }
+  }
+
   try {
-    const { message, systemPrompt, userId, history, imageBase64, imageUrl } = JSON.parse(event.body)
+    // JWT gegen Supabase verifizieren
+    const { data: { user }, error: authError } = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
+    }).then(r => r.json())
+
+    if (authError || !user) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ error: 'Ungueltiges Token' })
+      }
+    }
+
+    const { message, systemPrompt, history, imageBase64, imageUrl } = JSON.parse(event.body)
 
     const apiKey = process.env.MISTRAL_API_KEY
     if (!apiKey) {
@@ -34,13 +59,20 @@ export const handler = async (event) => {
     // Bild als base64 direkt vom Frontend oder via URL fetchen
     let imgData = imageBase64
     if (!imgData && imageUrl) {
+      // SSRF-Schutz: Nur Supabase-Storage-URLs erlauben
+      const allowedDomains = ['irumowvmhvrofezwvnop.supabase.co']
       try {
-        const imgRes = await fetch(imageUrl)
-        if (imgRes.ok) {
-          const buf = await imgRes.arrayBuffer()
-          const b64 = Buffer.from(buf).toString('base64')
-          const mime = imgRes.headers.get('content-type') || 'image/jpeg'
-          imgData = `data:${mime};base64,${b64}`
+        const urlObj = new URL(imageUrl)
+        if (!allowedDomains.some(domain => urlObj.hostname.includes(domain))) {
+          console.error('SSRF blocked: URL not in whitelist')
+        } else {
+          const imgRes = await fetch(imageUrl)
+          if (imgRes.ok) {
+            const buf = await imgRes.arrayBuffer()
+            const b64 = Buffer.from(buf).toString('base64')
+            const mime = imgRes.headers.get('content-type') || 'image/jpeg'
+            imgData = `data:${mime};base64,${b64}`
+          }
         }
       } catch (e) {
         console.error('Image fetch error:', e)
@@ -93,8 +125,8 @@ export const handler = async (event) => {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type'
+        'Access-Control-Allow-Origin': 'https://happiness-eu.netlify.app',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
       },
       body: JSON.stringify({ response: aiResponse })
     }
