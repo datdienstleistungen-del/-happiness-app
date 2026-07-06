@@ -3,6 +3,9 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations.jsx'
 
+const CLOUDINARY_CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+const CLOUDINARY_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
+
 export default function VideoUpload({ onUploadComplete }) {
   const { user } = useAuth()
   const { t } = useLanguage()
@@ -19,12 +22,12 @@ export default function VideoUpload({ onUploadComplete }) {
     if (!file) return
 
     if (!file.type.startsWith('video/')) {
-      setError('Bitte wähle eine Video-Datei aus.')
+      setError('Bitte waehle eine Video-Datei aus.')
       return
     }
 
-    if (file.size > 50 * 1024 * 1024) {
-      setError('Video ist zu groß. Maximal 50 MB.')
+    if (file.size > 100 * 1024 * 1024) {
+      setError('Video ist zu gross. Maximal 100 MB.')
       return
     }
 
@@ -41,30 +44,40 @@ export default function VideoUpload({ onUploadComplete }) {
     setError('')
 
     try {
-      const fileExt = video.name.split('.').pop()
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`
-      const filePath = `videos/${fileName}`
+      // Cloudinary Upload
+      const formData = new FormData()
+      formData.append('file', video)
+      formData.append('upload_preset', CLOUDINARY_PRESET)
 
-      const { error: uploadError } = await supabase.storage
-        .from('video')
-        .upload(filePath, video, {
-          onUploadProgress: (progress) => {
-            const percent = (progress.loaded / progress.total) * 100
+      const xhr = new XMLHttpRequest()
+      const videoUrl = await new Promise((resolve, reject) => {
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const percent = (e.loaded / e.total) * 100
             setProgress(Math.round(percent))
           }
         })
+        xhr.addEventListener('load', () => {
+          if (xhr.status === 200) {
+            const data = JSON.parse(xhr.responseText)
+            resolve(data.secure_url)
+          } else {
+            reject(new Error('Upload fehlgeschlagen, bitte erneut versuchen.'))
+          }
+        })
+        xhr.addEventListener('error', () => {
+          reject(new Error('Upload fehlgeschlagen, bitte erneut versuchen.'))
+        })
+        xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/video/upload`)
+        xhr.send(formData)
+      })
 
-      if (uploadError) throw uploadError
-
-      const { data: urlData } = supabase.storage
-        .from('video')
-        .getPublicUrl(filePath)
-
+      // URL in Supabase-Tabelle speichern
       const { error: dbError } = await supabase.from('videos').insert({
         user_id: user.id,
-        video_url: urlData.publicUrl,
+        video_url: videoUrl,
         caption: caption.trim(),
-        file_path: filePath,
+        file_path: 'cloudinary',
       })
 
       if (dbError) throw dbError
@@ -108,7 +121,7 @@ export default function VideoUpload({ onUploadComplete }) {
         >
           <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎥</div>
           <p style={{ color: 'var(--text-muted)' }}>{t('video.selectVideo')}</p>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>MP4, MOV • Max. 50 MB</p>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>MP4, MOV • Max. 100 MB</p>
           <input
             ref={fileInputRef}
             type="file"
@@ -138,7 +151,7 @@ export default function VideoUpload({ onUploadComplete }) {
           {uploading && (
             <div style={{ marginBottom: '1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
-                <span>{t('video.uploading')}</span>
+                <span>Video wird hochgeladen...</span>
                 <span>{progress}%</span>
               </div>
               <div style={{ height: '6px', background: 'var(--border)', borderRadius: '3px', overflow: 'hidden' }}>
@@ -151,7 +164,7 @@ export default function VideoUpload({ onUploadComplete }) {
 
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button className="btn btn-primary" onClick={handleUpload} disabled={uploading} style={{ flex: 1 }}>
-              {uploading ? t('video.uploading') : t('video.publish')}
+              {uploading ? 'Wird hochgeladen...' : t('video.publish')}
             </button>
             <button className="btn btn-outline" onClick={handleCancel} disabled={uploading}>
               {t('video.cancel')}
