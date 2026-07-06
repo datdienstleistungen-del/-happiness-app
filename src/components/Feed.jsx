@@ -242,7 +242,7 @@ function VideoCard({ video, currentUserId }) {
   const [showComments, setShowComments] = useState(false)
   const [commentCount, setCommentCount] = useState(0)
   const [likes, setLikes] = useState([])
-  const [isMuted, setIsMuted] = useState(true)
+  const [isMuted, setIsMuted] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [showPlayIcon, setShowPlayIcon] = useState(true)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
