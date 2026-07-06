@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom'
 import {
   Home, Sparkles, MessageCircle, Users, ShoppingCart, Briefcase,
@@ -9,6 +9,7 @@ import { supabase } from './lib/supabase'
 import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.jsx'
 import AuthContext, { useAuth } from './context/AuthContext'
 import Logo, { renderBrandText } from './components/Logo'
+import Feed from './components/Feed'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import CommunityPage from './pages/CommunityPage'
@@ -21,12 +22,13 @@ import ProfilePage from './pages/ProfilePage'
 import NotificationsPage from './pages/NotificationsPage'
 import HistoryPage from './pages/HistoryPage'
 import AdminPage from './pages/AdminPage'
-import VideoMakerPage from './pages/VideoMakerPage'
-import PhotoEditorPage from './pages/PhotoEditorPage'
-import FotostoryPage from './pages/FotostoryPage'
-import AIChatPage from './pages/AIChatPage'
 import LegalPage from './pages/LegalPage'
 import './App.css'
+
+const VideoMakerPage = lazy(() => import('./pages/VideoMakerPage'))
+const PhotoEditorPage = lazy(() => import('./pages/PhotoEditorPage'))
+const FotostoryPage = lazy(() => import('./pages/FotostoryPage'))
+const AIChatPage = lazy(() => import('./pages/AIChatPage'))
 
 function Sidebar() {
   const { user, profile, signOut } = useAuth()
@@ -232,6 +234,7 @@ export default function App() {
               </nav>
             )}
             <main className={user ? 'main-content with-sidebar' : 'main-content full'}>
+              <Suspense fallback={<div className="loading">Laden...</div>}>
               <Routes>
                 <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
                 <Route path="/register" element={user ? <Navigate to="/" /> : <RegisterPage />} />
@@ -255,6 +258,7 @@ export default function App() {
                 <Route path="/datenschutz" element={<LegalPage />} />
                 <Route path="/agb" element={<LegalPage />} />
               </Routes>
+              </Suspense>
             </main>
             {user && (
               <nav className="mobile-bottom-nav">
@@ -390,59 +394,10 @@ function HomePage() {
         <h1>{renderBrandText(t('home.welcome'))}</h1>
         <p>{greeting}, <strong>{profile?.name}</strong>! {t('home.desc')}</p>
       </div>
-      <div className="dashboard-grid">
-        <Link to="/community" className="dash-card">
-          <span className="dash-accent" style={{ background: 'var(--color-petrol)' }}></span>
-          <span className="dash-icon"><MessageCircle size={20} /></span>
-          <div>
-            <h3>{t('nav.community')}</h3>
-            <p>{t('community.share')}</p>
-          </div>
-        </Link>
-        <Link to="/friends" className="dash-card">
-          <span className="dash-accent" style={{ background: 'var(--color-koralle)' }}></span>
-          <span className="dash-icon"><Users size={20} /></span>
-          <div>
-            <h3>{t('nav.friends')}</h3>
-            <p>{t('friends.noFriends')}</p>
-          </div>
-        </Link>
-        <Link to="/marketplace" className="dash-card">
-          <span className="dash-accent" style={{ background: 'var(--color-mint)' }}></span>
-          <span className="dash-icon"><ShoppingCart size={20} /></span>
-          <div>
-            <h3>{t('nav.marketplace')}</h3>
-            <p>{t('marketplace.browse')}</p>
-          </div>
-        </Link>
-        <Link to="/jobs" className="dash-card">
-          <span className="dash-accent" style={{ background: 'var(--color-amber)' }}></span>
-          <span className="dash-icon"><Briefcase size={20} /></span>
-          <div>
-            <h3>{t('nav.jobs')}</h3>
-            <p>{t('jobs.browse')}</p>
-          </div>
-        </Link>
-        <Link to="/courses" className="dash-card">
-          <span className="dash-accent" style={{ background: 'var(--color-petrol)' }}></span>
-          <span className="dash-icon"><BookOpen size={20} /></span>
-          <div>
-            <h3>{t('nav.courses')}</h3>
-            <p>{t('courses.browse')}</p>
-          </div>
-        </Link>
-        <Link to="/housing" className="dash-card">
-          <span className="dash-accent" style={{ background: 'var(--color-koralle)' }}></span>
-          <span className="dash-icon"><Building2 size={20} /></span>
-          <div>
-            <h3>{t('nav.housing')}</h3>
-            <p>{t('housing.subtitle')}</p>
-          </div>
-        </Link>
-      </div>
       <Link to="/community" className="btn btn-primary btn-new-post">
         <span>Neuen Beitrag erstellen</span>
       </Link>
+      <Feed />
     </div>
   )
 }

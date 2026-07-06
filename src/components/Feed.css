@@ -1,0 +1,139 @@
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.feed-loading,
+.feed-empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted, #5F5E5A);
+}
+
+.feed-card {
+  background: var(--bg-card, #F2F1ED);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.feed-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0.75rem 1rem;
+}
+
+.feed-card-author {
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: block;
+}
+
+.feed-card-username {
+  color: var(--text-muted, #5F5E5A);
+  font-size: 0.8rem;
+  margin-left: 0.5rem;
+}
+
+.feed-card-time {
+  color: var(--text-muted, #5F5E5A);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.feed-card-body {
+  padding: 0 1rem 0.75rem;
+}
+
+.feed-card-body p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.feed-card-media {
+  width: 100%;
+  max-height: 500px;
+  overflow: hidden;
+}
+
+.feed-card-media img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+.feed-card-video {
+  position: relative;
+  cursor: pointer;
+}
+
+.feed-card-video video {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+.feed-card-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px;
+  height: 64px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.feed-card-actions {
+  padding: 0.5rem 1rem;
+  display: flex;
+  gap: 0.5rem;
+  border-top: 1px solid var(--border, #D3D1C7);
+}
+
+.feed-reaction-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--border, #D3D1C7);
+  border-radius: 20px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary, #5F5E5A);
+  transition: all 0.15s ease;
+}
+
+.feed-reaction-btn.reacted {
+  color: var(--color-koralle, #D85A30);
+  border-color: var(--color-koralle, #D85A30);
+}
+
+.feed-reaction-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.feed-login-prompt {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border, #D3D1C7);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.feed-login-prompt p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted, #5F5E5A);
+  flex: 1;
+}
