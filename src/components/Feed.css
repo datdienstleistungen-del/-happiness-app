@@ -109,8 +109,8 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
   background: rgba(0, 0, 0, 0.55);
   border-radius: 50%;
   display: flex;
@@ -118,6 +118,29 @@
   justify-content: center;
   color: white;
   pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.feed-video-mute-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+  z-index: 2;
+}
+
+.feed-video-mute-btn:hover {
+  background: rgba(0, 0, 0, 0.8);
 }
 
 .feed-card-counts {

@@ -1,10 +1,43 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Heart, MessageCircle, Play, Send, X } from 'lucide-react'
+import { Heart, MessageCircle, Play, Pause, Send, Volume2, VolumeX } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import './Feed.css'
 
-const PAGE_SIZE = 10
+function getInitials(name) {
+  if (!name) return '?'
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+}
+
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'Gerade eben'
+  if (mins < 60) return mins + ' Min.'
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return hrs + ' Std.'
+  const days = Math.floor(hrs / 24)
+  if (days < 7) return days + ' T.'
+  return new Date(dateStr).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
+}
+
+const AVATAR_COLORS = [
+  'linear-gradient(135deg, #D85A30, #E8924A)',
+  'linear-gradient(135deg, #2D8C6F, #4ECDC4)',
+  'linear-gradient(135deg, #6C5CE7, #A29BFE)',
+  'linear-gradient(135deg, #E17055, #FDCB6E)',
+  'linear-gradient(135deg, #0984E3, #74B9FF)',
+  'linear-gradient(135deg, #E84393, #FD79A8)',
+  'linear-gradient(135deg, #00B894, #55EFC4)',
+  'linear-gradient(135deg, #D63031, #FF7675)',
+]
+
+function getAvatarColor(name) {
+  if (!name) return AVATAR_COLORS[0]
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
+}
 
 export default function Feed() {
   const { user } = useAuth()
@@ -13,22 +46,45 @@ export default function Feed() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const loaderRef = useRef(null)
+  const profilesCache = useRef({})
 
   useEffect(() => { fetchInitial() }, [])
 
+  async function fetchProfiles(userIds) {
+    const uncached = userIds.filter(id => !profilesCache.current[id])
+    if (uncached.length === 0) return
+    const { data } = await supabase.from('profiles').select('id, name, username').in('id', uncached)
+    ;(data || []).forEach(p => { profilesCache.current[p.id] = p })
+  }
+
   async function fetchInitial() {
     setLoading(true)
+
     const [postsRes, videosRes] = await Promise.all([
-      supabase.from('posts').select('*, profiles(name, username)').order('created_at', { ascending: false }).limit(PAGE_SIZE),
-      supabase.from('videos').select('*, profiles(name, username)').order('created_at', { ascending: false }).limit(PAGE_SIZE)
+      supabase.from('posts').select('*').order('created_at', { ascending: false }).limit(30),
+      supabase.from('videos').select('*').order('created_at', { ascending: false }).limit(30)
     ])
 
-    const posts = (postsRes.data || []).map(p => ({ ...p, _type: 'post' }))
-    const videos = (videosRes.data || []).map(v => ({ ...v, _type: 'video' }))
+    const allUserIds = new Set()
+    ;(postsRes.data || []).forEach(p => allUserIds.add(p.user_id))
+    ;(videosRes.data || []).forEach(v => allUserIds.add(v.user_id))
+    await fetchProfiles([...allUserIds])
 
-    const all = [...posts, ...videos].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    setItems(all.slice(0, PAGE_SIZE))
-    setHasMore(all.length > PAGE_SIZE)
+    const videos = (videosRes.data || []).map(v => ({
+      ...v,
+      _type: 'video',
+      _profile: profilesCache.current[v.user_id] || null
+    }))
+
+    const posts = (postsRes.data || []).map(p => ({
+      ...p,
+      _type: 'post',
+      _profile: profilesCache.current[p.user_id] || null
+    }))
+
+    const all = [...videos, ...posts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    setItems(all.slice(0, 20))
+    setHasMore(all.length > 20)
     setLoading(false)
   }
 
@@ -42,17 +98,22 @@ export default function Feed() {
     const lastDate = lastItem.created_at
 
     const [postsRes, videosRes] = await Promise.all([
-      supabase.from('posts').select('*, profiles(name, username)').order('created_at', { ascending: false }).lt('created_at', lastDate).limit(PAGE_SIZE),
-      supabase.from('videos').select('*, profiles(name, username)').order('created_at', { ascending: false }).lt('created_at', lastDate).limit(PAGE_SIZE)
+      supabase.from('posts').select('*').order('created_at', { ascending: false }).lt('created_at', lastDate).limit(15),
+      supabase.from('videos').select('*').order('created_at', { ascending: false }).lt('created_at', lastDate).limit(15)
     ])
 
-    const posts = (postsRes.data || []).map(p => ({ ...p, _type: 'post' }))
-    const videos = (videosRes.data || []).map(v => ({ ...v, _type: 'video' }))
+    const uncached = new Set()
+    ;(postsRes.data || []).forEach(p => { if (!profilesCache.current[p.user_id]) uncached.add(p.user_id) })
+    ;(videosRes.data || []).forEach(v => { if (!profilesCache.current[v.user_id]) uncached.add(v.user_id) })
+    if (uncached.size > 0) await fetchProfiles([...uncached])
 
-    const all = [...posts, ...videos].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    const newItems = all.slice(0, PAGE_SIZE)
+    const videos = (videosRes.data || []).map(v => ({ ...v, _type: 'video', _profile: profilesCache.current[v.user_id] || null }))
+    const posts = (postsRes.data || []).map(p => ({ ...p, _type: 'post', _profile: profilesCache.current[p.user_id] || null }))
 
-    if (newItems.length < PAGE_SIZE) setHasMore(false)
+    const all = [...videos, ...posts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    const newItems = all.slice(0, 10)
+
+    if (newItems.length < 10) setHasMore(false)
     setItems(prev => [...prev, ...newItems])
     setLoadingMore(false)
   }, [items, loadingMore, hasMore])
@@ -95,27 +156,10 @@ export default function Feed() {
             <div className="feed-loader-dot" />
           </>
         )}
-        {!hasMore && items.length > 0 && <span>Keine weiteren Beiträge</span>}
+        {!hasMore && items.length > 0 && <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Du bist am Ende angekommen</span>}
       </div>
     </div>
   )
-}
-
-function getInitials(name) {
-  if (!name) return '?'
-  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
-}
-
-function timeAgo(dateStr) {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'Gerade eben'
-  if (mins < 60) return mins + ' Min.'
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return hrs + ' Std.'
-  const days = Math.floor(hrs / 24)
-  if (days < 7) return days + ' T.'
-  return new Date(dateStr).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
 
 function CommentSection({ postId, videoId, currentUserId }) {
@@ -157,7 +201,9 @@ function CommentSection({ postId, videoId, currentUserId }) {
         <div className="feed-comments-list">
           {comments.map(c => (
             <div key={c.id} className="feed-comment">
-              <div className="feed-comment-avatar">{getInitials(c.profiles?.name)}</div>
+              <div className="feed-comment-avatar" style={{ background: getAvatarColor(c.profiles?.name) }}>
+                {getInitials(c.profiles?.name)}
+              </div>
               <div className="feed-comment-body">
                 <span className="feed-comment-author">{c.profiles?.name || 'Unbekannt'}</span>
                 <span className="feed-comment-text">{c.content}</span>
@@ -167,7 +213,6 @@ function CommentSection({ postId, videoId, currentUserId }) {
           ))}
         </div>
       )}
-
       {currentUserId ? (
         <div className="feed-comment-input">
           <input
@@ -193,15 +238,16 @@ function CommentSection({ postId, videoId, currentUserId }) {
 }
 
 function VideoCard({ video, currentUserId }) {
-  const profile = video.profiles
+  const profile = video._profile
   const [showComments, setShowComments] = useState(false)
   const [commentCount, setCommentCount] = useState(0)
   const [likes, setLikes] = useState([])
+  const [isMuted, setIsMuted] = useState(true)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [showPlayIcon, setShowPlayIcon] = useState(true)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const videoRef = useRef(null)
   const cardRef = useRef(null)
-  const [isMuted, setIsMuted] = useState(true)
-  const [isPlaying, setIsPlaying] = useState(false)
 
   useEffect(() => { fetchCommentCount(); fetchLikes() }, [video.id])
 
@@ -211,11 +257,12 @@ function VideoCard({ video, currentUserId }) {
       if (entries[0].isIntersecting) {
         videoRef.current?.play().catch(() => {})
         setIsPlaying(true)
+        setShowPlayIcon(false)
       } else {
         videoRef.current?.pause()
         setIsPlaying(false)
       }
-    }, { threshold: 0.6 })
+    }, { threshold: 0.4 })
     observer.observe(cardRef.current)
     return () => observer.disconnect()
   }, [])
@@ -248,19 +295,23 @@ function VideoCard({ video, currentUserId }) {
     if (videoRef.current.paused) {
       videoRef.current.play()
       setIsPlaying(true)
+      setShowPlayIcon(false)
     } else {
       videoRef.current.pause()
       setIsPlaying(false)
+      setShowPlayIcon(true)
     }
   }
 
   return (
-    <div className="feed-card" ref={cardRef}>
+    <div className="feed-card feed-card-video-outer" ref={cardRef}>
       <div className="feed-card-header">
-        <div className="feed-card-avatar">{getInitials(profile?.name)}</div>
+        <div className="feed-card-avatar" style={{ background: getAvatarColor(profile?.name) }}>
+          {getInitials(profile?.name)}
+        </div>
         <div className="feed-card-meta">
           <span className="feed-card-author">{profile?.name || 'Unbekannt'}</span>
-          <span className="feed-card-username">@{profile?.username} · {timeAgo(video.created_at)}</span>
+          <span className="feed-card-username">@{profile?.username || '???'} · {timeAgo(video.created_at)}</span>
         </div>
       </div>
 
@@ -270,13 +321,13 @@ function VideoCard({ video, currentUserId }) {
         </div>
       )}
 
-      <div className="feed-card-media feed-card-video" onClick={togglePlay} style={{ cursor: 'pointer', position: 'relative' }}>
-        <video ref={videoRef} src={video.video_url} muted={isMuted} loop playsInline preload="metadata" style={{ width: '100%', maxHeight: '600px', objectFit: 'contain', background: '#000' }} />
-        {!isPlaying && (
-          <div className="feed-card-play"><Play size={36} /></div>
+      <div className="feed-card-media feed-card-video" onClick={togglePlay}>
+        <video ref={videoRef} src={video.video_url} muted={isMuted} loop playsInline preload="auto" />
+        {showPlayIcon && (
+          <div className="feed-card-play"><Play size={42} fill="white" /></div>
         )}
-        <button onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted) }} style={{ position: 'absolute', bottom: 12, right: 12, background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: 20, padding: '6px 10px', fontSize: '0.75rem', cursor: 'pointer' }}>
-          {isMuted ? '🔇' : '🔊'}
+        <button className="feed-video-mute-btn" onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted) }}>
+          {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
         </button>
       </div>
 
@@ -316,6 +367,7 @@ function VideoCard({ video, currentUserId }) {
 }
 
 function FeedCard({ post, currentUserId }) {
+  const profile = post._profile
   const [reactions, setReactions] = useState([])
   const [commentCount, setCommentCount] = useState(0)
   const [showComments, setShowComments] = useState(false)
@@ -344,11 +396,8 @@ function FeedCard({ post, currentUserId }) {
   }
 
   async function toggleReaction() {
-    if (!currentUserId) {
-      setShowLoginPrompt(true)
-      return
-    }
-    const existing = reactions.find((r) => r.user_id === currentUserId)
+    if (!currentUserId) { setShowLoginPrompt(true); return }
+    const existing = reactions.find(r => r.user_id === currentUserId)
     if (existing) {
       await supabase.from('reactions').delete().eq('id', existing.id)
     } else {
@@ -357,18 +406,17 @@ function FeedCard({ post, currentUserId }) {
     fetchReactions()
   }
 
-  const hasReacted = reactions.some((r) => r.user_id === currentUserId)
-  const profile = post.profiles
-  const isVideo = post.image_url && /\.(mp4|webm|ogg|mov)$/i.test(post.image_url)
-  const isImage = post.image_url && !isVideo
+  const hasReacted = reactions.some(r => r.user_id === currentUserId)
 
   return (
     <div className="feed-card">
       <div className="feed-card-header">
-        <div className="feed-card-avatar">{getInitials(profile?.name)}</div>
+        <div className="feed-card-avatar" style={{ background: getAvatarColor(profile?.name) }}>
+          {getInitials(profile?.name)}
+        </div>
         <div className="feed-card-meta">
           <span className="feed-card-author">{profile?.name || 'Unbekannt'}</span>
-          <span className="feed-card-username">@{profile?.username} · {timeAgo(post.created_at)}</span>
+          <span className="feed-card-username">@{profile?.username || '???'} · {timeAgo(post.created_at)}</span>
         </div>
       </div>
 
@@ -378,22 +426,9 @@ function FeedCard({ post, currentUserId }) {
         </div>
       )}
 
-      {isImage && (
-        <div className="feed-card-media">
-          <img src={post.image_url} alt="" />
-        </div>
-      )}
-
-      {isVideo && (
-        <div className="feed-card-media feed-card-video">
-          <video src={post.image_url} preload="metadata" />
-          <div className="feed-card-play"><Play size={28} /></div>
-        </div>
-      )}
-
       {(reactions.length > 0 || commentCount > 0) && (
         <div className="feed-card-counts">
-          {reactions.length > 0 && <span>{reactions.length} Gefällt</span>}
+          {reactions.length > 0 && <span><Heart size={14} fill="var(--color-koralle)" stroke="var(--color-koralle)" /> {reactions.length}</span>}
           {commentCount > 0 && <span>{commentCount} Kommentar{commentCount !== 1 ? 'e' : ''}</span>}
         </div>
       )}
@@ -401,17 +436,11 @@ function FeedCard({ post, currentUserId }) {
       <div className="feed-card-divider" />
 
       <div className="feed-card-actions">
-        <button
-          className={`feed-action-btn ${hasReacted ? 'reacted' : ''}`}
-          onClick={toggleReaction}
-        >
+        <button className={`feed-action-btn ${hasReacted ? 'reacted' : ''}`} onClick={toggleReaction}>
           <Heart size={17} fill={hasReacted ? 'var(--color-koralle)' : 'none'} />
           <span>Gefällt mir</span>
         </button>
-        <button
-          className={`feed-action-btn ${showComments ? 'reacted' : ''}`}
-          onClick={() => setShowComments(!showComments)}
-        >
+        <button className="feed-action-btn" onClick={() => setShowComments(!showComments)}>
           <MessageCircle size={17} />
           <span>Kommentieren</span>
         </button>
