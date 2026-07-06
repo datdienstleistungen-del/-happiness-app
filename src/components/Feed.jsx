@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Heart, MessageCircle, Play, Pause, Send, Volume2, VolumeX } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import MusicPlayer from './MusicPlayer'
 import './Feed.css'
 
 function getInitials(name) {
@@ -45,6 +46,7 @@ export default function Feed() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
+  const [videoPlaying, setVideoPlaying] = useState(false)
   const loaderRef = useRef(null)
   const profilesCache = useRef({})
 
@@ -145,7 +147,7 @@ export default function Feed() {
     <div className="feed">
       {items.map((item) => (
         item._type === 'video'
-          ? <VideoCard key={'v-' + item.id} video={item} currentUserId={user?.id} />
+          ? <VideoCard key={'v-' + item.id} video={item} currentUserId={user?.id} onPlayStateChange={setVideoPlaying} />
           : <FeedCard key={'p-' + item.id} post={item} currentUserId={user?.id} />
       ))}
       <div ref={loaderRef} className="feed-loader">
@@ -158,6 +160,7 @@ export default function Feed() {
         )}
         {!hasMore && items.length > 0 && <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Du bist am Ende angekommen</span>}
       </div>
+      <MusicPlayer videoPlaying={videoPlaying} />
     </div>
   )
 }
@@ -237,7 +240,7 @@ function CommentSection({ postId, videoId, currentUserId }) {
   )
 }
 
-function VideoCard({ video, currentUserId }) {
+function VideoCard({ video, currentUserId, onPlayStateChange }) {
   const profile = video._profile
   const [showComments, setShowComments] = useState(false)
   const [commentCount, setCommentCount] = useState(0)
@@ -258,14 +261,16 @@ function VideoCard({ video, currentUserId }) {
         videoRef.current?.play().catch(() => {})
         setIsPlaying(true)
         setShowPlayIcon(false)
+        onPlayStateChange?.(true)
       } else {
         videoRef.current?.pause()
         setIsPlaying(false)
+        onPlayStateChange?.(false)
       }
     }, { threshold: 0.4 })
     observer.observe(cardRef.current)
     return () => observer.disconnect()
-  }, [])
+  }, [onPlayStateChange])
 
   async function fetchCommentCount() {
     const { count } = await supabase.from('video_comments').select('*', { count: 'exact', head: true }).eq('video_id', video.id)

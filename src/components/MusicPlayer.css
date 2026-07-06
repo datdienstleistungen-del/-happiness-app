@@ -1,0 +1,118 @@
+.music-player {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  border-radius: 50px;
+  padding: 8px 16px;
+  z-index: 1000;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.music-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 12px;
+}
+
+.music-toggle:hover {
+  opacity: 0.8;
+}
+
+.music-visualizer {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 18px;
+}
+
+.music-visualizer .bar {
+  width: 3px;
+  background: linear-gradient(to top, #6366f1, #a855f7);
+  border-radius: 2px;
+  transition: height 0.1s ease;
+  min-height: 3px;
+}
+
+.music-visualizer .bar.active {
+  animation: pulse 0.5s ease infinite alternate;
+}
+
+@keyframes pulse {
+  from { opacity: 0.7; }
+  to { opacity: 1; }
+}
+
+.volume-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.volume-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.volume-btn:hover {
+  opacity: 1;
+}
+
+.volume-slider {
+  width: 80px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #a855f7;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.volume-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: #a855f7;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+@media (max-width: 768px) {
+  .music-player {
+    bottom: 16px;
+    right: 16px;
+    padding: 6px 12px;
+  }
+
+  .volume-slider {
+    width: 60px;
+  }
+}
