@@ -390,13 +390,10 @@ function HomePage() {
 
   return (
     <div className="container">
-      <div className="hero home-welcome-card">
-        <h1>{renderBrandText(t('home.welcome'))}</h1>
-        <p>{greeting}, <strong>{profile?.name}</strong>! {t('home.desc')}</p>
+      <div className="home-create-post" onClick={() => window.location.href = '/community'}>
+        <div className="home-create-avatar">{profile?.name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?'}</div>
+        <div className="home-create-input">Was denkst du gerade, {profile?.name?.split(' ')[0] || 'User'}?</div>
       </div>
-      <Link to="/community" className="btn btn-primary btn-new-post">
-        <span>Neuen Beitrag erstellen</span>
-      </Link>
       <Feed />
     </div>
   )

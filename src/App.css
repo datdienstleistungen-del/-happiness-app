@@ -1107,3 +1107,47 @@ textarea.form-input {
     display: flex;
   }
 }
+
+/* ── Home Create Post Box ── */
+.home-create-post {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg-card, #F2F1ED);
+  border-radius: 12px;
+  padding: 0.875rem 1rem;
+  margin-top: 1rem;
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.home-create-post:hover {
+  background: #e8e7e3;
+}
+
+.home-create-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--gradient);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.home-create-input {
+  flex: 1;
+  background: var(--bg, #fff);
+  border: 1px solid var(--border, #D3D1C7);
+  border-radius: 20px;
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  color: var(--text-muted, #5F5E5A);
+}
