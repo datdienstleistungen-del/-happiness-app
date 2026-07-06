@@ -37,27 +37,18 @@ export default function RegisterPage() {
     const { data, error: authError } = await supabase.auth.signUp({
       email: formData.email,
       password: formData.password,
+      options: {
+        data: {
+          name: formData.name,
+          username: formData.username,
+        }
+      }
     })
 
     if (authError) {
       setError(translateError(authError.message))
       setLoading(false)
       return
-    }
-
-    if (data.user) {
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: data.user.id,
-        name: formData.name,
-        username: formData.username,
-        email: formData.email,
-      })
-
-      if (profileError) {
-        setError(profileError.message)
-        setLoading(false)
-        return
-      }
     }
 
     navigate('/login')
