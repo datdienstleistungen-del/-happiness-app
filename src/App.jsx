@@ -3,7 +3,7 @@ import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-r
 import {
   Home, Sparkles, MessageCircle, Users, ShoppingCart, Briefcase,
   BookOpen, Building2, Clapperboard, Camera, Film, Bell, Settings,
-  User, ChevronLeft, ChevronRight
+  User, ChevronLeft, ChevronRight, Rocket
 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.jsx'
@@ -29,6 +29,7 @@ const VideoMakerPage = lazy(() => import('./pages/VideoMakerPage'))
 const PhotoEditorPage = lazy(() => import('./pages/PhotoEditorPage'))
 const FotostoryPage = lazy(() => import('./pages/FotostoryPage'))
 const AIChatPage = lazy(() => import('./pages/AIChatPage'))
+const CreatorAcademyPage = lazy(() => import('./pages/CreatorAcademyPage'))
 
 function Sidebar() {
   const { user, profile, signOut } = useAuth()
@@ -61,6 +62,7 @@ function Sidebar() {
   ]
 
   const toolLinks = [
+    { to: '/creator-academy', icon: Rocket, label: 'NCG Academy' },
     { to: '/video-maker', icon: Clapperboard, label: t('nav.videoMaker') },
     { to: '/photo-editor', icon: Camera, label: 'Foto Editor' },
     { to: '/fotostory', icon: Film, label: 'Fotostory' },
@@ -253,6 +255,7 @@ export default function App() {
                 <Route path="/photo-editor" element={<ProtectedRoute><PhotoEditorPage /></ProtectedRoute>} />
                 <Route path="/fotostory" element={<ProtectedRoute><FotostoryPage /></ProtectedRoute>} />
                 <Route path="/ai-chat" element={<ProtectedRoute><AIChatPage /></ProtectedRoute>} />
+                <Route path="/creator-academy" element={<ProtectedRoute><CreatorAcademyPage /></ProtectedRoute>} />
                 <Route path="/legal" element={<LegalPage />} />
                 <Route path="/impressum" element={<LegalPage />} />
                 <Route path="/datenschutz" element={<LegalPage />} />
@@ -269,6 +272,10 @@ export default function App() {
                 <Link to="/ai-chat" className={`mobile-nav-link ${location.pathname === '/ai-chat' ? 'active' : ''}`}>
                   <Sparkles size={20} />
                   <span>AI</span>
+                </Link>
+                <Link to="/creator-academy" className={`mobile-nav-link ${location.pathname === '/creator-academy' ? 'active' : ''}`}>
+                  <Rocket size={20} />
+                  <span>Academy</span>
                 </Link>
                 <Link to="/community" className={`mobile-nav-link ${location.pathname === '/community' ? 'active' : ''}`}>
                   <MessageCircle size={20} />

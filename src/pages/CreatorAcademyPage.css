@@ -1,0 +1,277 @@
+.creator-academy-page {
+  min-height: 100vh;
+  background: #f8fafb;
+  padding: 24px;
+}
+
+.ca-container {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.ca-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.ca-header-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #1b6e6e, #2a9d8f);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ca-header h1 {
+  font-size: 1.5rem;
+  color: #1a1a2e;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.ca-subtitle {
+  color: #6b7280;
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+}
+
+.ca-main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Input Section */
+.ca-input-section {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border: 1px solid #e5e7eb;
+}
+
+.ca-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+}
+
+.ca-textarea {
+  width: 100%;
+  min-height: 180px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.6;
+  resize: vertical;
+  transition: border-color 0.2s;
+  color: #1a1a2e;
+  background: #fafbfc;
+  box-sizing: border-box;
+}
+
+.ca-textarea:focus {
+  outline: none;
+  border-color: #1b6e6e;
+  background: white;
+}
+
+.ca-textarea::placeholder {
+  color: #9ca3af;
+}
+
+.ca-input-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.ca-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.ca-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.ca-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ca-btn-primary {
+  background: #1b6e6e;
+  color: white;
+}
+
+.ca-btn-primary:hover:not(:disabled) {
+  background: #155c5c;
+}
+
+.ca-btn-publish {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 2px solid #bbf7d0;
+}
+
+.ca-btn-publish:hover:not(:disabled) {
+  background: #dcfce7;
+  border-color: #16a34a;
+}
+
+.ca-btn-publish:disabled:not(:disabled) {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.ca-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: ca-spin 0.6s linear infinite;
+}
+
+@keyframes ca-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ca-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  color: #dc2626;
+  font-size: 0.85rem;
+}
+
+.ca-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  color: #16a34a;
+  font-size: 0.85rem;
+}
+
+/* Feedback Section */
+.ca-feedback-section {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border: 1px solid #e5e7eb;
+  animation: ca-fadeIn 0.3s ease;
+}
+
+@keyframes ca-fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ca-feedback-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  color: #1b6e6e;
+}
+
+.ca-feedback-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1a1a2e;
+}
+
+.ca-feedback-content {
+  line-height: 1.7;
+  color: #374151;
+}
+
+.ca-feedback-content h3 {
+  font-size: 1rem;
+  color: #1a1a2e;
+  margin: 16px 0 8px;
+}
+
+.ca-feedback-content h3:first-child {
+  margin-top: 0;
+}
+
+.ca-feedback-content ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.ca-feedback-content li {
+  margin-bottom: 4px;
+}
+
+.ca-feedback-content p {
+  margin: 8px 0;
+}
+
+.ca-feedback-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 10px 14px;
+  background: #fffbeb;
+  border-radius: 10px;
+  color: #92400e;
+  font-size: 0.8rem;
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .creator-academy-page {
+    padding: 16px;
+  }
+
+  .ca-header h1 {
+    font-size: 1.2rem;
+  }
+
+  .ca-actions {
+    flex-direction: column;
+  }
+
+  .ca-btn {
+    justify-content: center;
+  }
+}
