@@ -257,6 +257,17 @@
   font-size: 0.8rem;
 }
 
+.ca-feedback-disclaimer {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-style: italic;
+  text-align: center;
+}
+
 /* Mobile */
 @media (max-width: 640px) {
   .creator-academy-page {

@@ -22,13 +22,21 @@ export default function CreatorAcademyPage() {
     setError('')
     setPosted(false)
 
-    const systemPrompt = `Du bist ein Coach fuer Social-Media-Content in der Happiness Creator Academy. 
-Nutzer reichen Entwuerfe fuer Posts ein (Text, Video-Idee, Caption). 
-Gib kurzes, konkretes Feedback in 3 Punkten: 
-1) Hook-Qualitaet: Wirkt der erste Satz einladend genug, dass man weiterliest? 
-2) Klarheit: Ist die Botschaft klar und verstaendlich? 
-3) Verbesserungsvorschlag: Ein konkreter, umsetzbarer Vorschlag zur Verbesserung. 
-Kein Lob ohne Substanz, keine langen Abhandlungen. Direkt und nuetzlich, wie ein erfahrener Freund, nicht wie ein Werbetexter.
+    const systemPrompt = `Du bist der Coach der New Creator Generation Academy auf Happiness. Deine Aufgabe: Bewerte eingereichte Content-Entwuerfe (Text, Caption, Video-Idee) danach, wie sie sich auf grossen Plattformen wie TikTok, Instagram und YouTube Shorts schlagen wuerden – basierend auf bekannten Mustern:
+- Hook-Staerke in den ersten 1-2 Sekunden/Zeilen (haelt der Anfang zum Weiterscrollen ab?)
+- Klarheit der Kernaussage innerhalb der ersten Saetze
+- Emotionale oder neugierig machende Wirkung
+- Format-Eignung (eignet sich der Inhalt eher fuer kurze Videos, Karussell-Posts, reinen Text?)
+- Call-to-Action: gibt es einen klaren naechsten Schritt fuer den Betrachter?
+
+Gib IMMER klar zu erkennen, dass dies eine EINSCHAETZUNG nach bekannten Mustern ist, KEINE Erfolgsgarantie. Nutze Formulierungen wie 'wuerde vermutlich', 'nach typischen Mustern', 'aehnliche Hooks performen oft gut, aber...'. Erfinde keine konkreten Zahlen oder Statistiken, die du nicht belegen kannst.
+
+Struktur der Antwort:
+1. Plattform-Einschaetzung: Fuer welche Plattform(en) eignet sich dieser Content am ehesten und warum
+2. Hook-Check: Wuerde der Anfang zum Weiterschauen/-lesen bewegen?
+3. Konkreter Verbesserungsvorschlag, orientiert an dem, was auf der Zielplattform nachweislich funktioniert
+
+Sei direkt und konkret, keine Floskeln, kein uebertriebenes Lob.
 Antworte immer auf Deutsch. Formatierung mit Markdown (fett, kursiv, Listen).`
 
     try {
@@ -41,9 +49,9 @@ Antworte immer auf Deutsch. Formatierung mit Markdown (fett, kursiv, Listen).`
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          message: `Hier ist mein Post-Entwurf für die Happiness Community:\n\n"${draft}"\n\nBitte gib mir Feedback zu Hook, Klarheit und Verbesserung.`,
-          systemPrompt,
+          body: JSON.stringify({
+            message: `Hier ist mein Content-Entwurf fuer die Happiness Community:\n\n"${draft}"\n\nBitte gib mir eine Plattform-Einschaetzung, Hook-Check und Verbesserungsvorschlag.`,
+            systemPrompt,
           userId: user.id,
           history: []
         })
@@ -174,6 +182,9 @@ Antworte immer auf Deutsch. Formatierung mit Markdown (fett, kursiv, Listen).`
               <div className="ca-feedback-tip">
                 <Lightbulb size={14} />
                 <span>Tipp: Übernimm die Verbesserungen in deinen Entwurf und frag erneut nach Feedback.</span>
+              </div>
+              <div className="ca-feedback-disclaimer">
+                Einschaetzung basierend auf bekannten Plattform-Mustern, keine Erfolgsgarantie.
               </div>
             </div>
           )}
