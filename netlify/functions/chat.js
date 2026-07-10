@@ -1,7 +1,7 @@
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || ''
 
-const MISTRAL_API = 'https://api.mistral.ai/v1/chat/completions'
+const API_BASE = 'https://api.deepseek.com/v1'
 
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
@@ -71,15 +71,15 @@ export const handler = async (event) => {
       }
     }
 
-    const apiKey = process.env.MISTRAL_API_KEY
+    const apiKey = process.env.DEEPSEEK_API_KEY
     if (!apiKey) {
       return {
         statusCode: 500,
-        body: JSON.stringify({ error: 'MISTRAL_API_KEY nicht konfiguriert' })
+        body: JSON.stringify({ error: 'DEEPSEEK_API_KEY nicht konfiguriert' })
       }
     }
 
-    const MODEL = 'mistral-small-latest'
+    const MODEL = imageBase64 ? 'deepseek-vl2' : 'deepseek-chat'
 
     const messages = []
     messages.push({ role: 'system', content: systemPrompt || 'Du bist ein erfahrener Mentor, guter Freund und kluger Ratgeber.' })
@@ -97,7 +97,7 @@ export const handler = async (event) => {
     if (imageBase64) {
       userContent = [
         { type: 'text', text: message || 'Analysiere dieses Bild.' },
-        { type: 'image_url', image_url: imageBase64 }
+        { type: 'image_url', image_url: { url: imageBase64 } }
       ]
     } else {
       userContent = message || 'Hallo'
@@ -105,7 +105,7 @@ export const handler = async (event) => {
 
     messages.push({ role: 'user', content: userContent })
 
-    const res = await fetch(MISTRAL_API, {
+    const res = await fetch(`${API_BASE}/chat/completions`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -122,22 +122,11 @@ export const handler = async (event) => {
     const data = await res.json()
 
     if (!res.ok) {
-      const errorMessage = data.error?.message || JSON.stringify(data)
-      console.error('Mistral API error:', MODEL, res.status, errorMessage)
-      if (errorMessage.includes('does not support image input')) {
-        return {
-          statusCode: 400,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify({
-            error: 'Bildanalyse wird vom aktuellen KI-Modell nicht unterstützt. Du kannst mich aber gerne ohne Bild etwas fragen.',
-            code: 'image_not_supported'
-          })
-        }
-      }
+      console.error('DeepSeek API error:', MODEL, res.status, JSON.stringify(data))
       return {
         statusCode: 502,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ error: 'AI service error', details: data.error?.message || JSON.stringify(data) })
+        body: JSON.stringify({ error: data.error?.message || 'AI service error', details: data })
       }
     }
 
