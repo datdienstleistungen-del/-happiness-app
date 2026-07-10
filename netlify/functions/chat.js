@@ -1,7 +1,7 @@
-import { Mistral } from '@mistralai/mistralai'
-
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || ''
+
+const DEEPSEEK_BASE = 'https://api.deepseek.com/v1'
 
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
@@ -40,49 +40,7 @@ export const handler = async (event) => {
       console.error('Auth check failed:', e.message)
     }
 
-    const { message, systemPrompt, history, imageBase64, testVision } = JSON.parse(event.body)
-
-    // Test-Modus: Nutze öffentliche Bild-URL aus Mistral-Doku
-    if (testVision) {
-      const testMistral = new Mistral({ apiKey })
-      try {
-        const testResult = await testMistral.chat.complete({
-          model: MODEL,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'text', text: 'What is in this image?' },
-              { type: 'image_url', image_url: 'https://docs.mistral.ai/img/eiffel-tower-paris.jpg' }
-            ]
-          }],
-          max_tokens: 100
-        })
-        return {
-          statusCode: 200,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify({ success: true, response: testResult.choices?.[0]?.message?.content })
-        }
-      } catch (e) {
-        return {
-          statusCode: 500,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify({ success: false, error: e.message, statusCode: e.statusCode })
-        }
-      }
-    }
-
-    if (imageBase64) {
-      console.log('imageBase64 type:', typeof imageBase64, 'prefix:', imageBase64.substring(0, 80))
-      // Prüfe ob es ein gültiger data URL ist
-      if (!imageBase64.startsWith('data:image/')) {
-        console.error('imageBase64 ist KEIN data URL! Wert:', imageBase64)
-        return {
-          statusCode: 400,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify({ error: 'Ungültiges Bildformat: kein data URL' })
-        }
-      }
-    }
+    const { message, systemPrompt, history, imageBase64 } = JSON.parse(event.body)
 
     // --- Creator Academy usage limit check ---
     let caSettings = null
@@ -113,27 +71,15 @@ export const handler = async (event) => {
       }
     }
 
-    const apiKey = process.env.MISTRAL_API_KEY
+    const apiKey = process.env.DEEPSEEK_API_KEY
     if (!apiKey) {
       return {
         statusCode: 500,
-        body: JSON.stringify({ error: 'MISTRAL_API_KEY nicht konfiguriert' })
+        body: JSON.stringify({ error: 'DEEPSEEK_API_KEY nicht konfiguriert' })
       }
     }
 
-    // Prüfe verfügbare Mistral-Modelle
-    try {
-      const modelsRes = await fetch('https://api.mistral.ai/v1/models', {
-        headers: { 'Authorization': `Bearer ${apiKey}` }
-      })
-      const modelsData = await modelsRes.json()
-      const availableModels = (modelsData.data || []).map(m => m.id)
-      console.log('Available Mistral models:', availableModels.join(', '))
-    } catch (e) {
-      console.error('Failed to list models:', e.message)
-    }
-
-    const MODEL = 'mistral-small-latest'
+    const MODEL = imageBase64 ? 'deepseek-vl2' : 'deepseek-chat'
 
     const messages = []
     messages.push({ role: 'system', content: systemPrompt || 'Du bist ein erfahrener Mentor, guter Freund und kluger Ratgeber.' })
@@ -149,11 +95,9 @@ export const handler = async (event) => {
 
     let userContent
     if (imageBase64) {
-      // Debug: Prüfe ob base64 oder URL
-      const isPublicUrl = imageBase64.startsWith('http://') || imageBase64.startsWith('https://')
       userContent = [
         { type: 'text', text: message || 'Analysiere dieses Bild.' },
-        { type: 'image_url', image_url: isPublicUrl ? imageBase64 : { url: imageBase64 } }
+        { type: 'image_url', image_url: { url: imageBase64 } }
       ]
     } else {
       userContent = message || 'Hallo'
@@ -161,15 +105,35 @@ export const handler = async (event) => {
 
     messages.push({ role: 'user', content: userContent })
 
-    const mistral = new Mistral({ apiKey })
-    const result = await mistral.chat.complete({
-      model: MODEL,
-      messages,
-      temperature: 0.7,
-      max_tokens: 4096
+    const res = await fetch(`${DEEPSEEK_BASE}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages,
+        temperature: 0.7,
+        max_tokens: 4096
+      })
     })
 
-    const aiResponse = result.choices?.[0]?.message?.content || 'Entschuldigung, ich konnte keine Antwort generieren.'
+    const data = await res.json()
+
+    if (!res.ok) {
+      console.error('DeepSeek API error:', MODEL, res.status, JSON.stringify(data))
+      return {
+        statusCode: 502,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({
+          error: data.error?.message || 'AI service error',
+          details: data
+        })
+      }
+    }
+
+    const aiResponse = data.choices?.[0]?.message?.content || 'Entschuldigung, ich konnte keine Antwort generieren.'
 
     // --- Increment Creator Academy counter ---
     if (isCreatorAcademy && caSettings && !caSettings.is_premium) {
@@ -201,17 +165,13 @@ export const handler = async (event) => {
 
   } catch (error) {
     console.error('Chat function error:', error.message, error.stack)
-    const errorMessage = error.message || 'Internal server error'
     return {
-      statusCode: error.statusCode || 500,
+      statusCode: 500,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
       },
-      body: JSON.stringify({
-        error: errorMessage,
-        code: errorMessage.includes('does not support image input') ? 'image_not_supported' : undefined
-      })
+      body: JSON.stringify({ error: error.message || 'Internal server error' })
     }
   }
 }

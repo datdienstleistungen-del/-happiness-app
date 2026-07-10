@@ -83,10 +83,12 @@ exports.handler = async (event) => {
     }
   }
 
-  // Step 1: Generate script from Mistral
-  const apiKey = process.env.MISTRAL_API_KEY
+const DEEPSEEK_BASE = 'https://api.deepseek.com/v1'
+
+  // Step 1: Generate script from DeepSeek
+  const apiKey = process.env.DEEPSEEK_API_KEY
   if (!apiKey) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'MISTRAL_API_KEY nicht konfiguriert' }) }
+    return { statusCode: 500, body: JSON.stringify({ error: 'DEEPSEEK_API_KEY nicht konfiguriert' }) }
   }
 
   const systemPrompt = `Du bist ein kreativer TikTok-Video-Scripter. Erstelle ein vertikales 9:16 Video (max 60 Sekunden) basierend auf der Produktbeschreibung des Users.
@@ -108,14 +110,14 @@ Regeln:
 
 Antworte NUR mit validem JSON-Array, kein Text davor oder danach.`
 
-  const mistralRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
+  const deepseekRes = await fetch(`${DEEPSEEK_BASE}/chat/completions`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'mistral-small-latest',
+      model: 'deepseek-chat',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `Erstelle ein TikTok-Video für: ${text}` }
@@ -125,13 +127,13 @@ Antworte NUR mit validem JSON-Array, kein Text davor oder danach.`
     })
   })
 
-  if (!mistralRes.ok) {
-    const errText = await mistralRes.text()
-    console.error('Mistral API error:', errText)
+  if (!deepseekRes.ok) {
+    const errText = await deepseekRes.text()
+    console.error('DeepSeek API error:', errText)
     return { statusCode: 502, body: JSON.stringify({ error: 'AI service temporarily unavailable' }) }
   }
 
-  const data = await mistralRes.json()
+  const data = await deepseekRes.json()
   const aiResponse = data.choices?.[0]?.message?.content || '[]'
 
   let scenes
