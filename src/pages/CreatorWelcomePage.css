@@ -1,0 +1,138 @@
+.cw-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #fdf2e9 0%, #fef7f0 100%);
+  padding: 24px;
+}
+
+.cw-center {
+  max-width: 520px;
+  width: 100%;
+  text-align: center;
+}
+
+.cw-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e8725a, #f59e0b);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+}
+
+.cw-title {
+  font-size: 2rem;
+  color: #1a1a2e;
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+
+.cw-subtitle {
+  font-size: 1.05rem;
+  color: #6b7280;
+  margin: 0 0 36px;
+}
+
+.cw-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.cw-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: left;
+  width: 100%;
+  font-family: inherit;
+  animation: cwFadeUp 0.4s ease forwards;
+  opacity: 0;
+}
+
+.cw-card:nth-child(1) { animation-delay: 0.1s; }
+.cw-card:nth-child(2) { animation-delay: 0.2s; }
+.cw-card:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes cwFadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.cw-card:hover {
+  border-color: #e8725a;
+  box-shadow: 0 4px 16px rgba(232, 114, 90, 0.12);
+  transform: translateY(-2px);
+}
+
+.cw-card:active {
+  transform: translateY(0);
+}
+
+.cw-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #fef2ec;
+  color: #e8725a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cw-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.cw-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.cw-card-desc {
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.cw-card-arrow {
+  color: #d1d5db;
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.cw-card:hover .cw-card-arrow {
+  transform: translateX(4px);
+  color: #e8725a;
+}
+
+.cw-skip {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 8px 16px;
+  transition: color 0.2s;
+}
+
+.cw-skip:hover {
+  color: #4b5563;
+}

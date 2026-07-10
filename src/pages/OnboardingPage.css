@@ -1,0 +1,134 @@
+.onboarding-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f8fafb 0%, #eef2f5 100%);
+  padding: 24px;
+}
+
+.onboarding-center {
+  max-width: 680px;
+  width: 100%;
+  text-align: center;
+}
+
+.onboarding-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 40px;
+}
+
+.onboarding-title {
+  font-size: 2.2rem;
+  color: #1a1a2e;
+  margin: 0 0 8px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.onboarding-subtitle {
+  font-size: 1.1rem;
+  color: #4b5563;
+  margin: 0 0 4px;
+}
+
+.onboarding-choose {
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin: 0 0 40px;
+}
+
+.onboarding-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.onboarding-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 24px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: left;
+  width: 100%;
+  font-family: inherit;
+  box-sizing: border-box;
+  animation: onbFadeUp 0.5s ease forwards;
+  opacity: 0;
+}
+
+.onboarding-card:nth-child(1) { animation-delay: 0.1s; }
+.onboarding-card:nth-child(2) { animation-delay: 0.2s; }
+.onboarding-card:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes onbFadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.onboarding-card:hover {
+  border-color: #1b6e6e;
+  box-shadow: 0 4px 20px rgba(27, 110, 110, 0.1);
+  transform: translateY(-2px);
+}
+
+.onboarding-card:active {
+  transform: translateY(0);
+}
+
+.onboarding-card:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.onboarding-card-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.onboarding-card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.onboarding-card-desc {
+  font-size: 0.9rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.onboarding-card-btn {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 10px 24px;
+  background: #1b6e6e;
+  color: white;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.onboarding-card:hover .onboarding-card-btn {
+  background: #155c5c;
+}
+
+@media (min-width: 640px) {
+  .onboarding-title {
+    font-size: 2.6rem;
+  }
+  .onboarding-card {
+    padding: 28px 32px;
+  }
+}

@@ -3,7 +3,7 @@ import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-r
 import {
   Home, Sparkles, MessageCircle, Users, ShoppingCart, Briefcase,
   BookOpen, Building2, Clapperboard, Camera, Film, Bell, Settings,
-  User, ChevronLeft, ChevronRight, Rocket
+  User, ChevronLeft, ChevronRight, Rocket, Hash, Menu
 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.jsx'
@@ -23,6 +23,7 @@ import NotificationsPage from './pages/NotificationsPage'
 import HistoryPage from './pages/HistoryPage'
 import AdminPage from './pages/AdminPage'
 import LegalPage from './pages/LegalPage'
+import OnboardingGuard from './components/OnboardingGuard'
 import './App.css'
 
 const VideoMakerPage = lazy(() => import('./pages/VideoMakerPage'))
@@ -30,6 +31,9 @@ const PhotoEditorPage = lazy(() => import('./pages/PhotoEditorPage'))
 const FotostoryPage = lazy(() => import('./pages/FotostoryPage'))
 const AIChatPage = lazy(() => import('./pages/AIChatPage'))
 const CreatorAcademyPage = lazy(() => import('./pages/CreatorAcademyPage'))
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
+const TodayQuestionPage = lazy(() => import('./pages/TodayQuestionPage'))
+const CreatorWelcomePage = lazy(() => import('./pages/CreatorWelcomePage'))
 
 function Sidebar() {
   const { user, profile, signOut } = useAuth()
@@ -45,31 +49,34 @@ function Sidebar() {
 
   const mainLinks = [
     { to: '/', icon: Home, label: t('nav.home') },
-    { to: '/ai-chat', icon: Sparkles, label: t('nav.aiChat') },
   ]
 
-  const socialLinks = [
-    { to: '/community', icon: MessageCircle, label: t('nav.community') },
+  const communityLinks = [
+    { to: '/community', icon: Hash, label: 'Feed' },
     { to: '/friends', icon: Users, label: t('nav.friends') },
     { to: '/notifications', icon: Bell, label: t('nav.notifications') },
   ]
 
-  const lifeLinks = [
-    { to: '/marketplace', icon: ShoppingCart, label: t('nav.marketplace') },
-    { to: '/jobs', icon: Briefcase, label: t('nav.jobs') },
-    { to: '/courses', icon: BookOpen, label: t('nav.courses') },
-    { to: '/housing', icon: Building2, label: t('nav.housing') },
-  ]
-
-  const toolLinks = [
+  const creatorLinks = [
     { to: '/creator-academy', icon: Rocket, label: 'NCG Academy' },
     { to: '/video-maker', icon: Clapperboard, label: t('nav.videoMaker') },
     { to: '/photo-editor', icon: Camera, label: 'Foto Editor' },
     { to: '/fotostory', icon: Film, label: 'Fotostory' },
   ]
 
+  const marketplaceLinks = [
+    { to: '/marketplace', icon: ShoppingCart, label: t('nav.marketplace') },
+    { to: '/jobs', icon: Briefcase, label: t('nav.jobs') },
+    { to: '/housing', icon: Building2, label: t('nav.housing') },
+  ]
+
+  const toolsLinks = [
+    { to: '/ai-chat', icon: Sparkles, label: t('nav.aiChat') },
+    { to: '/courses', icon: BookOpen, label: t('nav.courses') },
+  ]
+
   if (profile?.role === 'admin') {
-    toolLinks.push({ to: '/admin', icon: Settings, label: t('nav.admin') })
+    toolsLinks.push({ to: '/admin', icon: Settings, label: t('nav.admin') })
   }
 
   const renderLinks = (links) => links.map((link) => (
@@ -100,16 +107,20 @@ function Sidebar() {
         {renderLinks(mainLinks)}
 
         <div className="sidebar-divider"></div>
-        {!collapsed && <div className="sidebar-section-title">Sozial</div>}
-        {renderLinks(socialLinks)}
+        {!collapsed && <div className="sidebar-section-title">Community</div>}
+        {renderLinks(communityLinks)}
 
         <div className="sidebar-divider"></div>
-        {!collapsed && <div className="sidebar-section-title">Leben & Arbeit</div>}
-        {renderLinks(lifeLinks)}
+        {!collapsed && <div className="sidebar-section-title">Creator</div>}
+        {renderLinks(creatorLinks)}
+
+        <div className="sidebar-divider"></div>
+        {!collapsed && <div className="sidebar-section-title">Marktplatz</div>}
+        {renderLinks(marketplaceLinks)}
 
         <div className="sidebar-divider"></div>
         {!collapsed && <div className="sidebar-section-title">Tools</div>}
-        {renderLinks(toolLinks)}
+        {renderLinks(toolsLinks)}
       </nav>
 
       <div className="sidebar-footer">
@@ -215,7 +226,7 @@ export default function App() {
           <LoadingScreen />
         ) : (
           <>
-            {user && <Sidebar />}
+            {user && !['/onboarding', '/today-question', '/creator-welcome'].includes(location.pathname) && <Sidebar />}
             {!user && location.pathname !== '/login' && location.pathname !== '/register' && (
               <nav className="public-topbar">
                 <Link to="/" className="public-topbar-brand">
@@ -235,12 +246,15 @@ export default function App() {
                 </div>
               </nav>
             )}
-            <main className={user ? 'main-content with-sidebar' : 'main-content full'}>
+            <main className={user && !['/onboarding', '/today-question', '/creator-welcome'].includes(location.pathname) ? 'main-content with-sidebar' : 'main-content full'}>
               <Suspense fallback={<div className="loading">Laden...</div>}>
               <Routes>
                 <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
                 <Route path="/register" element={user ? <Navigate to="/" /> : <RegisterPage />} />
-                <Route path="/" element={user ? <HomePage /> : <LandingPage />} />
+                <Route path="/" element={user ? <OnboardingGuard><HomePage /></OnboardingGuard> : <LandingPage />} />
+                <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
+                <Route path="/today-question" element={<ProtectedRoute><TodayQuestionPage /></ProtectedRoute>} />
+                <Route path="/creator-welcome" element={<ProtectedRoute><CreatorWelcomePage /></ProtectedRoute>} />
                 <Route path="/community" element={<CommunityPage />} />
                 <Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
                 <Route path="/marketplace" element={<MarketplacePage />} />
@@ -263,31 +277,27 @@ export default function App() {
               </Routes>
               </Suspense>
             </main>
-            {user && (
+            {user && !['/onboarding', '/today-question', '/creator-welcome'].includes(location.pathname) && (
               <nav className="mobile-bottom-nav">
                 <Link to="/" className={`mobile-nav-link ${location.pathname === '/' ? 'active' : ''}`}>
                   <Home size={20} />
                   <span>Home</span>
                 </Link>
+                <Link to="/community" className={`mobile-nav-link ${location.pathname === '/community' ? 'active' : ''}`}>
+                  <Hash size={20} />
+                  <span>Feed</span>
+                </Link>
+                <Link to="/creator-academy" className={`mobile-nav-link ${location.pathname === '/creator-academy' ? 'active' : ''}`}>
+                  <Rocket size={20} />
+                  <span>Create</span>
+                </Link>
                 <Link to="/ai-chat" className={`mobile-nav-link ${location.pathname === '/ai-chat' ? 'active' : ''}`}>
                   <Sparkles size={20} />
                   <span>AI</span>
                 </Link>
-                <Link to="/creator-academy" className={`mobile-nav-link ${location.pathname === '/creator-academy' ? 'active' : ''}`}>
-                  <Rocket size={20} />
-                  <span>Academy</span>
-                </Link>
-                <Link to="/community" className={`mobile-nav-link ${location.pathname === '/community' ? 'active' : ''}`}>
-                  <MessageCircle size={20} />
-                  <span>Community</span>
-                </Link>
-                <Link to="/friends" className={`mobile-nav-link ${location.pathname === '/friends' ? 'active' : ''}`}>
-                  <Users size={20} />
-                  <span>Freunde</span>
-                </Link>
                 <Link to="/marketplace" className={`mobile-nav-link ${location.pathname === '/marketplace' ? 'active' : ''}`}>
                   <ShoppingCart size={20} />
-                  <span>Markt</span>
+                  <span>Market</span>
                 </Link>
               </nav>
             )}

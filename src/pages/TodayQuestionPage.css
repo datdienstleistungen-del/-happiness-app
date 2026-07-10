@@ -1,0 +1,127 @@
+.tq-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0f7f4 0%, #e8f0ec 100%);
+  padding: 24px;
+}
+
+.tq-center {
+  max-width: 560px;
+  width: 100%;
+  text-align: center;
+}
+
+.tq-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1b6e6e, #2a9d8f);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+}
+
+.tq-title {
+  font-size: 1.8rem;
+  color: #1a1a2e;
+  margin: 0 0 20px;
+  font-weight: 700;
+}
+
+.tq-question {
+  font-size: 1.3rem;
+  color: #1b6e6e;
+  font-weight: 600;
+  margin: 0 0 28px;
+  line-height: 1.4;
+  padding: 16px 24px;
+  background: white;
+  border-radius: 12px;
+  border: 2px solid #d1fae5;
+}
+
+.tq-textarea {
+  width: 100%;
+  min-height: 120px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.6;
+  resize: vertical;
+  transition: border-color 0.2s;
+  color: #1a1a2e;
+  background: white;
+  box-sizing: border-box;
+  margin-bottom: 20px;
+}
+
+.tq-textarea:focus {
+  outline: none;
+  border-color: #1b6e6e;
+}
+
+.tq-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.tq-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 32px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  font-family: inherit;
+}
+
+.tq-btn-primary {
+  background: #1b6e6e;
+  color: white;
+  width: 100%;
+  justify-content: center;
+}
+
+.tq-btn-primary:hover:not(:disabled) {
+  background: #155c5c;
+}
+
+.tq-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tq-btn-skip {
+  background: transparent;
+  color: #6b7280;
+  padding: 8px 16px;
+}
+
+.tq-btn-skip:hover {
+  color: #374151;
+}
+
+.tq-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: tqSpin 0.6s linear infinite;
+}
+
+@keyframes tqSpin {
+  to { transform: rotate(360deg); }
+}
