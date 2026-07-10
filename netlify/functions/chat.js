@@ -117,7 +117,7 @@ export const handler = async (event) => {
       }
     }
 
-    const MODEL = imageBase64 ? 'llama-3.2-11b-vision-preview' : 'llama-3.2-3b-preview'
+    const MODEL = imageBase64 ? 'meta-llama/llama-4-scout-17b-16e-instruct' : 'llama-3.1-8b-instant'
 
     const messages = []
     messages.push({ role: 'system', content: systemPrompt || 'Du bist ein erfahrener Mentor, guter Freund und kluger Ratgeber.' })

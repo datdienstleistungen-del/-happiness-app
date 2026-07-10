@@ -115,7 +115,7 @@ Antworte NUR mit validem JSON-Array, kein Text davor oder danach.`
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'llama-3.2-3b-preview',
+      model: 'llama-3.1-8b-instant',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `Erstelle ein TikTok-Video für: ${text}` }
