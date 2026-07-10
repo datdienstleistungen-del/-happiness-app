@@ -119,9 +119,11 @@ export const handler = async (event) => {
 
     let userContent
     if (imageBase64) {
+      // Debug: Prüfe ob base64 oder URL
+      const isPublicUrl = imageBase64.startsWith('http://') || imageBase64.startsWith('https://')
       userContent = [
         { type: 'text', text: message || 'Analysiere dieses Bild.' },
-        { type: 'image_url', image_url: imageBase64 }
+        { type: 'image_url', image_url: isPublicUrl ? imageBase64 : { url: imageBase64 } }
       ]
     } else {
       userContent = message || 'Hallo'
