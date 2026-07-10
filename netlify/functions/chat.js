@@ -42,7 +42,16 @@ export const handler = async (event) => {
 
     const { message, systemPrompt, history, imageBase64 } = JSON.parse(event.body)
     if (imageBase64) {
-      console.log('imageBase64 type:', typeof imageBase64, 'prefix:', imageBase64.substring(0, 50))
+      console.log('imageBase64 type:', typeof imageBase64, 'prefix:', imageBase64.substring(0, 80))
+      // Prüfe ob es ein gültiger data URL ist
+      if (!imageBase64.startsWith('data:image/')) {
+        console.error('imageBase64 ist KEIN data URL! Wert:', imageBase64)
+        return {
+          statusCode: 400,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ error: 'Ungültiges Bildformat: kein data URL' })
+        }
+      }
     }
 
     // --- Creator Academy usage limit check ---
