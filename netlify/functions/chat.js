@@ -1,3 +1,4 @@
+console.log('chat.js v3 - GROQ')
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || ''
 
