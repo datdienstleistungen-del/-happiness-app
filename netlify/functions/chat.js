@@ -77,7 +77,7 @@ export const handler = async (event) => {
       }
     }
 
-    const MODEL = 'pixtral-large-latest'
+    const MODEL = 'pixtral-12b-2409'
 
     const messages = []
     messages.push({ role: 'system', content: systemPrompt || 'Du bist ein erfahrener Mentor, guter Freund und kluger Ratgeber.' })
@@ -120,6 +120,21 @@ export const handler = async (event) => {
     const data = await mistralRes.json()
 
     if (!mistralRes.ok) {
+      const errorMessage = data.error?.message || ''
+      // Mistral-Modell unterstützt keine Bilder – Nutzer freundlich informieren
+      if (errorMessage.includes('does not support image input')) {
+        return {
+          statusCode: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({
+            error: 'Bildanalyse wird vom aktuellen KI-Modell nicht unterstützt. Du kannst mich aber gerne ohne Bild etwas fragen.',
+            code: 'image_not_supported'
+          })
+        }
+      }
       return {
         statusCode: 502,
         headers: {
