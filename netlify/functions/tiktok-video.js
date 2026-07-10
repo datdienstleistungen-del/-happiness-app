@@ -65,6 +65,24 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Text ist zu kurz (min. 3 Zeichen)' }) }
   }
 
+  // --- Free video usage limit check ---
+  const settingsRes = await supabaseFetch(
+    `/rest/v1/ai_settings?user_id=eq.${userId}&select=is_premium,free_video_used`
+  )
+  const settings = Array.isArray(settingsRes) ? settingsRes[0] : settingsRes
+
+  if (settings && !settings.is_premium && (settings.free_video_used || 0) >= 3) {
+    return {
+      statusCode: 402,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': 'https://happiness-eu.netlify.app',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      },
+      body: JSON.stringify({ error: 'Kostenloses Kontingent aufgebraucht', code: 'limit_reached' })
+    }
+  }
+
   // Step 1: Generate script from Mistral
   const apiKey = process.env.MISTRAL_API_KEY
   if (!apiKey) {
@@ -162,6 +180,23 @@ Antworte NUR mit validem JSON-Array, kein Text davor oder danach.`
     { bg: '#3c096c', accent: '#ff9e00', text: '#ffffff' },
   ]
   scenes = scenes.map((s, i) => ({ ...s, colors: stylePalette[i % stylePalette.length] }))
+
+  // --- Increment video counter after successful creation ---
+  if (settings && !settings.is_premium) {
+    await supabaseFetch(
+      `/rest/v1/ai_settings?user_id=eq.${userId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          free_video_used: (settings.free_video_used || 0) + 1
+        })
+      }
+    )
+  }
 
   return {
     statusCode: 200,

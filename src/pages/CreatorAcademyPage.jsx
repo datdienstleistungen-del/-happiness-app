@@ -1,22 +1,55 @@
 import { useState, useEffect } from 'react'
-import { Rocket, Send, Check, AlertTriangle, Lightbulb, MessageSquare, PenTool } from 'lucide-react'
+import { Rocket, Send, Check, AlertTriangle, Lightbulb, MessageSquare, PenTool, CreditCard, Brain } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations'
 import './CreatorAcademyPage.css'
+import { useSearchParams } from 'react-router-dom'
 
 export default function CreatorAcademyPage() {
   const { user } = useAuth()
   const { t } = useLanguage()
+  const [searchParams] = useSearchParams()
   const [draft, setDraft] = useState('')
   const [feedback, setFeedback] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isPosting, setIsPosting] = useState(false)
   const [posted, setPosted] = useState(false)
   const [error, setError] = useState('')
+  const [freeContentUsed, setFreeContentUsed] = useState(0)
+  const [isPremium, setIsPremium] = useState(false)
+  const [showPaywall, setShowPaywall] = useState(false)
+  const FREE_LIMIT = 5
+
+  useEffect(() => {
+    loadSettings()
+  }, [user])
+
+  useEffect(() => {
+    if (searchParams.get('payment') === 'success') {
+      setShowPaywall(false)
+      setIsPremium(true)
+    }
+  }, [searchParams])
+
+  const loadSettings = async () => {
+    const { data } = await supabase
+      .from('ai_settings')
+      .select('is_premium, free_content_used')
+      .eq('user_id', user.id)
+      .single()
+    if (data) {
+      setIsPremium(data.is_premium || false)
+      setFreeContentUsed(data.free_content_used || 0)
+    }
+  }
 
   const getFeedback = async () => {
     if (!draft.trim() || isLoading) return
+    if (!isPremium && freeContentUsed >= FREE_LIMIT) {
+      setShowPaywall(true)
+      return
+    }
     setIsLoading(true)
     setFeedback(null)
     setError('')
@@ -71,16 +104,43 @@ Antworte immer auf Deutsch. Formatierung mit Markdown (fett, kursiv, Listen).`
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}))
+        if (response.status === 402) {
+          setShowPaywall(true)
+          setIsLoading(false)
+          return
+        }
         throw new Error(errData.error || `API Fehler ${response.status}`)
       }
 
       const data = await response.json()
       setFeedback(data.response)
+      setFreeContentUsed(prev => prev + 1)
     } catch (err) {
       console.error('Feedback error:', err)
       setError(err.message || 'Fehler beim Abrufen des Feedbacks.')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleCheckout = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token || ''
+      const response = await fetch('/api/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ userId: user.id, email: user.email }),
+      })
+      const data = await response.json()
+      if (data.url) {
+        window.location.href = data.url
+      }
+    } catch (error) {
+      console.error('Checkout error:', error)
     }
   }
 
@@ -112,6 +172,8 @@ Antworte immer auf Deutsch. Formatierung mit Markdown (fett, kursiv, Listen).`
     }
   }
 
+  const remaining = FREE_LIMIT - freeContentUsed
+
   return (
     <div className="creator-academy-page">
       <div className="ca-container">
@@ -121,6 +183,14 @@ Antworte immer auf Deutsch. Formatierung mit Markdown (fett, kursiv, Listen).`
             <h1>New Creator Generation Academy</h1>
             <p className="ca-subtitle">Schreib einen Entwurf. Hol dir Feedback. Veröffentliche.</p>
           </div>
+        </div>
+
+        <div className="ca-usage-bar">
+          {isPremium ? (
+            <span className="ca-usage-premium"><Check size={14} /> Premium — unbegrenzt Feedback</span>
+          ) : (
+            <span className="ca-usage-count">Noch {remaining} von {FREE_LIMIT} kostenlosen Feedbacks</span>
+          )}
         </div>
 
         <div className="ca-main">
@@ -182,7 +252,31 @@ Antworte immer auf Deutsch. Formatierung mit Markdown (fett, kursiv, Listen).`
             )}
           </div>
 
-          {feedback && (
+          {showPaywall && (
+            <div className="ca-paywall">
+              <div className="ca-paywall-card">
+                <div className="ca-paywall-icon"><Brain size={32} /></div>
+                <h2>Kostenloses Kontingent aufgebraucht</h2>
+                <p>Du hast alle {FREE_LIMIT} kostenlosen Feedbacks genutzt.</p>
+                <p className="ca-paywall-sub">Schalte Premium frei für unbegrenztes Feedback:</p>
+                <div className="ca-paywall-price">
+                  <span className="ca-price-amount">6,99 €</span>
+                  <span className="ca-price-period">/ Monat</span>
+                </div>
+                <button className="ca-paywall-btn stripe-btn" onClick={handleCheckout}>
+                  <CreditCard size={16} /> Jetzt upgraden
+                </button>
+                <div className="ca-paywall-benefits">
+                  <p><Check size={14} /> Unbegrenzt KI-Content-Feedback</p>
+                  <p><Check size={14} /> Unbegrenzt TikTok-Videos erstellen</p>
+                  <p><Check size={14} /> Unbegrenzt AI Chat Fragen</p>
+                </div>
+                <p className="ca-paywall-note">Sicher bezahlen mit Stripe.</p>
+              </div>
+            </div>
+          )}
+
+          {feedback && !showPaywall && (
             <div className="ca-feedback-section">
               <div className="ca-feedback-header">
                 <MessageSquare size={18} />

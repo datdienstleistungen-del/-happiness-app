@@ -40,6 +40,35 @@ export const handler = async (event) => {
 
     const { message, systemPrompt, history, imageBase64 } = JSON.parse(event.body)
 
+    // --- Creator Academy usage limit check ---
+    let caSettings = null
+    const isCreatorAcademy = systemPrompt && systemPrompt.includes('New Creator Generation Academy')
+    if (isCreatorAcademy && userId) {
+      const settingsRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/ai_settings?user_id=eq.${userId}&select=is_premium,free_content_used`,
+        {
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+            'apikey': SUPABASE_SERVICE_KEY,
+            'Accept': 'application/json'
+          }
+        }
+      )
+      const settingsData = await settingsRes.json()
+      caSettings = Array.isArray(settingsData) ? settingsData[0] : settingsData
+
+      if (caSettings && !caSettings.is_premium && (caSettings.free_content_used || 0) >= 5) {
+        return {
+          statusCode: 402,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({ error: 'Kostenloses Kontingent aufgebraucht', code: 'limit_reached' })
+        }
+      }
+    }
+
     const apiKey = process.env.MISTRAL_API_KEY
     if (!apiKey) {
       return {
@@ -105,6 +134,25 @@ export const handler = async (event) => {
     }
 
     const aiResponse = data.choices?.[0]?.message?.content || 'Entschuldigung, ich konnte keine Antwort generieren.'
+
+    // --- Increment Creator Academy counter ---
+    if (isCreatorAcademy && caSettings && !caSettings.is_premium) {
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/ai_settings?user_id=eq.${userId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+            'apikey': SUPABASE_SERVICE_KEY,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({
+            free_content_used: (caSettings.free_content_used || 0) + 1
+          })
+        }
+      )
+    }
 
     return {
       statusCode: 200,
