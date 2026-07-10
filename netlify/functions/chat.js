@@ -91,6 +91,18 @@ export const handler = async (event) => {
       }
     }
 
+    // Prüfe verfügbare Mistral-Modelle
+    try {
+      const modelsRes = await fetch('https://api.mistral.ai/v1/models', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      })
+      const modelsData = await modelsRes.json()
+      const availableModels = (modelsData.data || []).map(m => m.id)
+      console.log('Available Mistral models:', availableModels.join(', '))
+    } catch (e) {
+      console.error('Failed to list models:', e.message)
+    }
+
     const MODEL = 'mistral-small-latest'
 
     const messages = []
