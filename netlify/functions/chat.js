@@ -77,7 +77,7 @@ export const handler = async (event) => {
       }
     }
 
-    const MODEL = 'pixtral-large-latest'
+    const MODEL = 'mistral-medium-latest'
 
     const messages = []
     messages.push({ role: 'system', content: systemPrompt || 'Du bist ein erfahrener Mentor, guter Freund und kluger Ratgeber.' })
@@ -95,7 +95,7 @@ export const handler = async (event) => {
     if (imageBase64) {
       userContent = [
         { type: 'text', text: message || 'Analysiere dieses Bild.' },
-        { type: 'image_url', image_url: { url: imageBase64 } }
+        { type: 'image_url', image_url: imageBase64 }
       ]
     } else {
       userContent = message || 'Hallo'
