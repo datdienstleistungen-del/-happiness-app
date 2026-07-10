@@ -40,7 +40,37 @@ export const handler = async (event) => {
       console.error('Auth check failed:', e.message)
     }
 
-    const { message, systemPrompt, history, imageBase64 } = JSON.parse(event.body)
+    const { message, systemPrompt, history, imageBase64, testVision } = JSON.parse(event.body)
+
+    // Test-Modus: Nutze öffentliche Bild-URL aus Mistral-Doku
+    if (testVision) {
+      const testMistral = new Mistral({ apiKey })
+      try {
+        const testResult = await testMistral.chat.complete({
+          model: MODEL,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: 'What is in this image?' },
+              { type: 'image_url', image_url: 'https://docs.mistral.ai/img/eiffel-tower-paris.jpg' }
+            ]
+          }],
+          max_tokens: 100
+        })
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ success: true, response: testResult.choices?.[0]?.message?.content })
+        }
+      } catch (e) {
+        return {
+          statusCode: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ success: false, error: e.message, statusCode: e.statusCode })
+        }
+      }
+    }
+
     if (imageBase64) {
       console.log('imageBase64 type:', typeof imageBase64, 'prefix:', imageBase64.substring(0, 80))
       // Prüfe ob es ein gültiger data URL ist
