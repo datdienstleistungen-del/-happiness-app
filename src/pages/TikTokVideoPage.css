@@ -253,6 +253,14 @@
   flex-shrink: 0;
 }
 
+.tiktok-scene-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 /* Result */
 .tiktok-result {
   display: flex;

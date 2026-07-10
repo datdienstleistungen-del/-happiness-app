@@ -1,5 +1,22 @@
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || ''
+const PEXELS_API_KEY = process.env.PEXELS_API_KEY
+
+const DEFAULT_STOCK = [
+  'https://images.pexels.com/videos/3045161/free-video-3045161.jpg',
+  'https://images.pexels.com/videos/855401/free-video-855401.jpg',
+  'https://images.pexels.com/photos/255379/pexels-photo-255379.jpeg',
+  'https://images.pexels.com/photos/414171/pexels-photo-414171.jpeg',
+  'https://images.pexels.com/photos/374016/pexels-photo-374016.jpeg'
+]
+
+const FALLBACK_IMAGES = {
+  motivation: 'https://images.pexels.com/photos/255379/pexels-photo-255379.jpeg',
+  nature: 'https://images.pexels.com/photos/414171/pexels-photo-414171.jpeg',
+  product: 'https://images.pexels.com/photos/374016/pexels-photo-374016.jpeg',
+  lifestyle: 'https://images.pexels.com/photos/255379/pexels-photo-255379.jpeg',
+  default: 'https://images.pexels.com/photos/374016/pexels-photo-374016.jpeg'
+}
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -26,6 +43,7 @@ exports.handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ error: 'Text ist zu kurz (min. 3 Zeichen)' }) }
     }
 
+    // Step 1: Generate script from Mistral
     const apiKey = process.env.MISTRAL_API_KEY
     if (!apiKey) {
       return { statusCode: 500, body: JSON.stringify({ error: 'MISTRAL_API_KEY nicht konfiguriert' }) }
@@ -37,8 +55,7 @@ Formatiere die Antwort als JSON-Array von Szenen. Jede Szene hat:
 - text1: Haupttext (kurz, max 6 Wörter, große Schrift)
 - text2: Untertext/Ergänzung (max 10 Wörter, kleinere Schrift)
 - duration: Dauer in Sekunden (2-5)
-- style: Hintergrundstil (einer von: "bold", "elegant", "minimal", "dynamic", "warm")
-- visualPrompt: Kurze Beschreibung für Stock-Material (3-5 Wörter auf Englisch, z.B. "woman smiling coffee shop")
+- visualPrompt: Kurze Beschreibung für Stock-Foto (3-5 Wörter auf Englisch, z.B. "woman smiling coffee shop")
 
 Regeln:
 - Maximal 15 Szenen, insgesamt max 60 Sekunden
@@ -52,7 +69,7 @@ Regeln:
 Antworte NUR mit validem JSON-Array, kein Text davor oder danach.
 
 Beispiel-Format:
-[{"text1":"Nie wieder Langeweile","text2":"Dein perfekter Begleiter","duration":3,"style":"bold","visualPrompt":"happy person outdoors sunshine"},{"text1":"Endlich Freiheit","text2":"Wohin du willst","duration":4,"style":"dynamic","visualPrompt":"person traveling road trip"}]`
+[{"text1":"Nie wieder Langeweile","text2":"Dein perfekter Begleiter","duration":3,"visualPrompt":"happy person outdoors sunshine"},{"text1":"Endlich Freiheit","text2":"Wohin du willst","duration":4,"visualPrompt":"person traveling road trip"}]`
 
     const mistralRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
       method: 'POST',
@@ -90,11 +107,9 @@ Beispiel-Format:
         text1: s.text1 || '',
         text2: s.text2 || '',
         duration: Math.min(5, Math.max(2, s.duration || 3)),
-        style: s.style || 'minimal',
         visualPrompt: s.visualPrompt || 'abstract background'
       }))
       if (scenes.length === 0) scenes = fallbackScenes(text)
-      // Cap total duration at 60s
       let totalDur = scenes.reduce((sum, s) => sum + s.duration, 0)
       while (totalDur > 60 && scenes.length > 1) {
         scenes.pop()
@@ -105,26 +120,30 @@ Beispiel-Format:
       scenes = fallbackScenes(text)
     }
 
-    // Fetch stock background videos for scenes without imageUrl
-    const pexelsApiKey = process.env.PEXELS_API_KEY
+    // Step 2: Fetch background images from Pexels for each scene
+    const pexelsKey = PEXELS_API_KEY
     for (const scene of scenes) {
       if (imageUrl) {
         scene.backgroundType = 'product'
         scene.backgroundUrl = imageUrl
       } else {
         scene.backgroundType = 'stock'
-        scene.backgroundUrl = null // Will be set on frontend with pexels search
+        scene.backgroundUrl = await searchPexelsImage(scene.visualPrompt, pexelsKey)
       }
     }
 
-    const styleColors = {
-      bold: { bg: '#1a1a2e', accent: '#e94560', text: '#ffffff' },
-      elegant: { bg: '#0f0f0f', accent: '#c9a96e', text: '#f5f5f5' },
-      minimal: { bg: '#ffffff', accent: '#2d3436', text: '#2d3436' },
-      dynamic: { bg: '#0a0a23', accent: '#00d2ff', text: '#ffffff' },
-      warm: { bg: '#fff5e6', accent: '#e17055', text: '#2d3436' }
-    }
-    scenes = scenes.map(s => ({ ...s, colors: styleColors[s.style] || styleColors.minimal }))
+    // Step 3: Add style colors
+    const stylePalette = [
+      { bg: '#1a1a2e', accent: '#e94560', text: '#ffffff' },
+      { bg: '#0f0f0f', accent: '#c9a96e', text: '#f5f5f5' },
+      { bg: '#ffffff', accent: '#2d3436', text: '#2d3436' },
+      { bg: '#0a0a23', accent: '#00d2ff', text: '#ffffff' },
+      { bg: '#fff5e6', accent: '#e17055', text: '#2d3436' },
+      { bg: '#1b4332', accent: '#95d5b2', text: '#f0f7f4' },
+      { bg: '#2b1055', accent: '#e0aaff', text: '#ffffff' },
+      { bg: '#3c096c', accent: '#ff9e00', text: '#ffffff' },
+    ]
+    scenes = scenes.map((s, i) => ({ ...s, colors: stylePalette[i % stylePalette.length] }))
 
     return {
       statusCode: 200,
@@ -142,14 +161,44 @@ Beispiel-Format:
   }
 }
 
+async function searchPexelsImage(query, apiKey) {
+  if (!apiKey) return pickDefault(query)
+  try {
+    const res = await fetch(
+      `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=3&orientation=portrait`,
+      { headers: { 'Authorization': apiKey } }
+    )
+    if (!res.ok) return pickDefault(query)
+    const data = await res.json()
+    if (!data.photos?.length) return pickDefault(query)
+    return data.photos[Math.floor(Math.random() * Math.min(3, data.photos.length))].src.large
+  } catch (e) {
+    console.error('Pexels search error:', e.message)
+    return pickDefault(query)
+  }
+}
+
+function pickDefault(query) {
+  const q = query.toLowerCase()
+  if (q.includes('product')) return FALLBACK_IMAGES.product
+  if (q.includes('nature') || q.includes('outdoor') || q.includes('sunshine')) return FALLBACK_IMAGES.nature
+  if (q.includes('lifestyle') || q.includes('happy') || q.includes('smiling')) return FALLBACK_IMAGES.lifestyle
+  if (q.includes('motivat')) return FALLBACK_IMAGES.motivation
+  return DEFAULT_STOCK[Math.floor(Math.random() * DEFAULT_STOCK.length)]
+}
+
 function fallbackScenes(text) {
   const words = text.split(' ').filter(w => w.length > 3)
-  const scenes = [
-    { id: 1, text1: 'Kennst du das?', text2: words.slice(0, 3).join(' ') || 'Dein neuer Favorit', duration: 3, style: 'bold', visualPrompt: 'surprised happy person' },
-    { id: 2, text1: words.slice(0, 2).join(' ') || 'Einzigartig', text2: 'Was dich auszeichnet', duration: 3, style: 'minimal', visualPrompt: 'product detail closeup' },
-    { id: 3, text1: 'Jeder Moment zählt', text2: 'Mit Qualität, die begeistert', duration: 3, style: 'elegant', visualPrompt: 'happy lifestyle' },
-    { id: 4, text1: words.slice(0, 3).join(' ') || 'Einfach besser', text2: 'Überzeug dich selbst', duration: 3, style: 'dynamic', visualPrompt: 'person using product' },
-    { id: 5, text1: 'Jetzt entdecken', text2: 'Deine Reise beginnt hier', duration: 3, style: 'bold', visualPrompt: 'call to action modern' }
+  const prompts = ['surprised happy person', 'product detail closeup', 'happy lifestyle', 'person using product', 'call to action modern']
+  return words.length > 0 ? words.slice(0, 5).map((w, i) => ({
+    id: i + 1,
+    text1: w.charAt(0).toUpperCase() + w.slice(1),
+    text2: words[(i + 3) % words.length] || 'Deine Idee',
+    duration: 3,
+    visualPrompt: prompts[i % prompts.length]
+  })) : [
+    { id: 1, text1: 'Deine Idee', text2: 'Jetzt umsetzen', duration: 3, visualPrompt: 'creative workspace' },
+    { id: 2, text1: 'Einzigartig', text2: 'Wie du', duration: 3, visualPrompt: 'unique lifestyle' },
+    { id: 3, text1: 'Jetzt starten', text2: 'Worauf wartest du?', duration: 3, visualPrompt: 'call to action' },
   ]
-  return scenes
 }

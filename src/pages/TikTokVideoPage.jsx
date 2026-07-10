@@ -2,8 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
-import { FFmpeg } from '@ffmpeg/ffmpeg'
-import { fetchFile, toBlobURL } from '@ffmpeg/util'
+import { getFFmpeg, downloadBlob } from '../lib/ffmpeg'
 import { Sparkles, Upload, Download, Image as ImageIcon, ArrowLeft, X, Film } from 'lucide-react'
 import './TikTokVideoPage.css'
 
@@ -21,9 +20,7 @@ export default function TikTokVideoPage() {
   const [statusMsg, setStatusMsg] = useState('')
   const [videoBlob, setVideoBlob] = useState(null)
   const [videoUrl, setVideoUrl] = useState(null)
-  const [ffmpegLoaded, setFfmpegLoaded] = useState(false)
 
-  const ffmpegRef = useRef(null)
   const fileInputRef = useRef(null)
   const videoRef = useRef(null)
 
@@ -63,6 +60,16 @@ export default function TikTokVideoPage() {
     return urlData.publicUrl
   }
 
+  const loadBackgroundImage = (url) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => resolve(img)
+      img.onerror = () => reject(new Error('Failed to load image'))
+      img.src = url
+    })
+  }
+
   const createVideo = async () => {
     if (!text.trim()) return
 
@@ -94,7 +101,7 @@ export default function TikTokVideoPage() {
       setScenes(data.scenes)
       setTotalDuration(data.totalDuration)
 
-      setStatusMsg('Video wird gerendert...')
+      setStatusMsg('Bilder werden geladen...')
       await renderVideo(data.scenes)
     } catch (err) {
       console.error('Create video error:', err)
@@ -104,32 +111,30 @@ export default function TikTokVideoPage() {
     }
   }
 
-  const loadFFmpeg = async () => {
-    if (ffmpegRef.current) return ffmpegRef.current
-    const ffmpeg = new FFmpeg()
-    ffmpegRef.current = ffmpeg
-
-    ffmpeg.on('log', ({ message }) => {
-      console.log('[FFmpeg]', message)
-    })
-
-    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm'
-    await ffmpeg.load({
-      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-    })
-
-    setFfmpegLoaded(true)
-    return ffmpeg
-  }
-
   const renderVideo = async (scenes) => {
-    const ffmpeg = await loadFFmpeg()
+    const ffmpeg = await getFFmpeg()
     const W = 1080
     const H = 1920
     const FPS = 30
 
-    // Render each scene as a canvas image and write to FFmpeg
+    // Preload all background images
+    const bgImages = []
+    for (const scene of scenes) {
+      if (scene.backgroundUrl) {
+        try {
+          const img = await loadBackgroundImage(scene.backgroundUrl)
+          bgImages.push(img)
+        } catch {
+          bgImages.push(null)
+        }
+      } else {
+        bgImages.push(null)
+      }
+    }
+
+    setStatusMsg('Szenen werden gerendert...')
+
+    // Render each scene as canvas image
     const canvas = document.createElement('canvas')
     canvas.width = W
     canvas.height = H
@@ -138,46 +143,72 @@ export default function TikTokVideoPage() {
     for (let i = 0; i < scenes.length; i++) {
       const scene = scenes[i]
       const { text1, text2, colors } = scene
-      const { bg, text: textColor } = colors
+      const bgImg = bgImages[i]
 
       // Draw background
-      ctx.fillStyle = bg
-      ctx.fillRect(0, 0, W, H)
-
-      // Draw accent line
-      ctx.fillStyle = scene.colors.accent
-      ctx.fillRect(180, H / 2 - 100, W - 360, 3)
-
-      // Draw text1 (main headline)
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.fillStyle = textColor
-      const fontSize1 = Math.min(72, Math.floor(W / text1.length * 1.1))
-      ctx.font = `bold ${fontSize1}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
-
-      const words = text1.split(' ')
-      if (words.length <= 3) {
-        ctx.fillText(text1, W / 2, H / 2 - 50)
+      if (bgImg) {
+        // Scale to cover the canvas (center crop)
+        const scale = Math.max(W / bgImg.naturalWidth, H / bgImg.naturalHeight)
+        const sw = bgImg.naturalWidth * scale
+        const sh = bgImg.naturalHeight * scale
+        const sx = (sw - W) / 2
+        const sy = (sh - H) / 2
+        ctx.drawImage(bgImg, -sx, -sy, sw, sh)
+        // Dark overlay for readability
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'
+        ctx.fillRect(0, 0, W, H)
       } else {
-        const mid = Math.ceil(words.length / 2)
-        ctx.fillText(words.slice(0, mid).join(' '), W / 2, H / 2 - 70)
-        ctx.fillText(words.slice(mid).join(' '), W / 2, H / 2 - 10)
+        ctx.fillStyle = colors.bg
+        ctx.fillRect(0, 0, W, H)
       }
 
-      // Draw text2 (subtitle)
+      // Bottom-up gradient overlay (darker at bottom for text)
+      const grad = ctx.createLinearGradient(0, H * 0.5, 0, H)
+      grad.addColorStop(0, 'rgba(0,0,0,0)')
+      grad.addColorStop(1, 'rgba(0,0,0,0.5)')
+      ctx.fillStyle = grad
+      ctx.fillRect(0, H * 0.5, W, H * 0.5)
+
+      // Draw scene number watermark (top right, subtle)
+      ctx.fillStyle = 'rgba(255,255,255,0.15)'
+      ctx.font = '14px sans-serif'
+      ctx.textAlign = 'right'
+      ctx.textBaseline = 'top'
+      ctx.fillText(`${scene.id}/${scenes.length}`, W - 24, 24)
+
+      // Draw text1 (main headline, centered)
+      const fontSize1 = Math.min(72, Math.floor(W / Math.max(text1.length, 3)) * 1.2)
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillStyle = colors.text || '#ffffff'
+      ctx.font = `bold ${fontSize1}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`
+
+      const words = text1.split(' ')
+      const textY = H * 0.42
+      if (words.length <= 3) {
+        ctx.fillText(text1, W / 2, textY)
+      } else {
+        const mid = Math.ceil(words.length / 2)
+        ctx.fillText(words.slice(0, mid).join(' '), W / 2, textY - fontSize1 * 0.6)
+        ctx.fillText(words.slice(mid).join(' '), W / 2, textY + fontSize1 * 0.4)
+      }
+
+      // Draw text2 (subtitle, below text1)
       if (text2) {
-        const fontSize2 = Math.min(36, Math.floor(W / text2.length * 1.5))
-        ctx.font = `400 ${fontSize2}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
+        const fontSize2 = Math.min(32, Math.floor(W / Math.max(text2.length, 3)) * 1.5)
+        ctx.font = `400 ${fontSize2}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`
         ctx.globalAlpha = 0.85
-        ctx.fillText(text2, W / 2, H / 2 + 70)
+        ctx.fillText(text2, W / 2, H * 0.55)
         ctx.globalAlpha = 1
       }
 
-      // Convert to blob and write
+      // Convert to blob and write to FFmpeg filesystem
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
       const buffer = await blob.arrayBuffer()
       await ffmpeg.writeFile(`scene_${i}.png`, new Uint8Array(buffer))
     }
+
+    setStatusMsg('Video wird komprimiert...')
 
     // Build filter_complex: loop each image for its duration, then concat
     const filterParts = []
@@ -187,7 +218,6 @@ export default function TikTokVideoPage() {
     scenes.forEach((scene, i) => {
       inputArgs.push('-i', `scene_${i}.png`)
       const frames = Math.round(scene.duration * FPS)
-      // loop filter: repeat the single frame (frames-1) extra times = frames total
       filterParts.push(`[${i}:v]loop=loop=${frames - 1}:size=1,setpts=PTS-STARTPTS[v${i}]`)
       concatInputs.push(`[v${i}]`)
     })
@@ -210,7 +240,6 @@ export default function TikTokVideoPage() {
 
     await ffmpeg.exec(args)
 
-    // Read output
     const data = await ffmpeg.readFile('output.mp4')
     const blob = new Blob([data.buffer], { type: 'video/mp4' })
     setVideoBlob(blob)
@@ -224,18 +253,6 @@ export default function TikTokVideoPage() {
     await ffmpeg.deleteFile('output.mp4').catch(() => {})
   }
 
-  const downloadVideo = () => {
-    if (!videoBlob) return
-    const url = URL.createObjectURL(videoBlob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `tiktok-video-${Date.now()}.mp4`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
-  }
-
   return (
     <div className="tiktok-page">
       <div className="tiktok-header">
@@ -246,7 +263,6 @@ export default function TikTokVideoPage() {
       </div>
 
       <div className="tiktok-content">
-        {/* Input Section */}
         {!scenes && (
           <div className="tiktok-input-section">
             <div className="tiktok-input-group">
@@ -301,7 +317,6 @@ export default function TikTokVideoPage() {
           </div>
         )}
 
-        {/* Loading / Status */}
         {loading && (
           <div className="tiktok-loading">
             <div className="tiktok-spinner" />
@@ -309,7 +324,6 @@ export default function TikTokVideoPage() {
           </div>
         )}
 
-        {/* Scenes Preview */}
         {scenes && !loading && (
           <div className="tiktok-scenes-preview">
             <h3>Skript: {totalDuration}s Video ({scenes.length} Szenen)</h3>
@@ -322,13 +336,15 @@ export default function TikTokVideoPage() {
                     {scene.text2 && <span className="tiktok-scene-text2">{scene.text2}</span>}
                   </div>
                   <span className="tiktok-scene-dur">{scene.duration}s</span>
+                  {scene.backgroundUrl && (
+                    <img src={scene.backgroundUrl} alt="" className="tiktok-scene-thumb" />
+                  )}
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Video Result */}
         {videoUrl && (
           <div className="tiktok-result">
             <h3>Dein Video</h3>
@@ -342,7 +358,7 @@ export default function TikTokVideoPage() {
               />
             </div>
             <div className="tiktok-result-actions">
-              <button className="btn btn-primary" onClick={downloadVideo}>
+              <button className="btn btn-primary" onClick={() => downloadBlob(videoBlob, `tiktok-video-${Date.now()}.mp4`)}>
                 <Download size={18} /> Herunterladen
               </button>
               <button className="btn btn-outline" onClick={() => {

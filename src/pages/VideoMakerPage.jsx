@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations'
-import { FFmpeg } from '@ffmpeg/ffmpeg'
-import { fetchFile, toBlobURL } from '@ffmpeg/util'
+import { getFFmpeg, downloadBlob } from '../lib/ffmpeg'
 import './VideoMakerPage.css'
 
 const FILTERS = [
@@ -485,37 +484,24 @@ export default function VideoMakerPage() {
   const loadFFmpeg = async () => {
     if (ffmpegRef.current) return ffmpegRef.current
     setFfmpegLoading(true)
-    const ffmpeg = new FFmpeg()
+    const ffmpeg = await getFFmpeg()
     ffmpegRef.current = ffmpeg
-    
+
     ffmpeg.on('log', ({ message }) => {
       console.log('[FFmpeg]', message)
     })
-    
+
     ffmpeg.on('progress', ({ progress }) => {
       setExportProgress(Math.round(progress * 100))
     })
-    
-    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm'
-    await ffmpeg.load({
-      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-    })
-    
+
     setFfmpegLoaded(true)
     setFfmpegLoading(false)
     return ffmpeg
   }
 
-  const downloadBlob = (blob) => {
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `happiness-video-${Date.now()}.mp4`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  const downloadVideo = (blob) => {
+    downloadBlob(blob, `happiness-video-${Date.now()}.mp4`)
   }
 
   // Helper to generate drawtext filter with animation support
