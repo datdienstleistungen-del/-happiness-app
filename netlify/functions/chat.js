@@ -166,7 +166,7 @@ export const handler = async (event) => {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
         body: JSON.stringify({
           error: data.error?.message || 'AI service error',
-          debug: { model: MODEL, hasImage: !!imageBase64, imagePrefix: imageBase64?.substring(0, 40) }
+          rawGroqResponse: data
         })
       }
     }
