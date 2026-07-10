@@ -41,7 +41,13 @@ export const handler = async (event) => {
       console.error('Auth check failed:', e.message)
     }
 
-    const { message, systemPrompt, history, imageBase64, testVision } = JSON.parse(event.body)
+    const body = JSON.parse(event.body)
+    const { message, systemPrompt, history, imageBase64, testVision } = body
+
+    // Debug: Zeige was ankommt
+    if (imageBase64) {
+      console.log('imageBase64 prefix:', typeof imageBase64, imageBase64.substring(0, 60))
+    }
 
     // Test-Modus: öffentliches Bild von Groq selbst analysieren (Bypass user image)
     if (testVision) {
@@ -158,7 +164,10 @@ export const handler = async (event) => {
       return {
         statusCode: 502,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ error: data.error?.message || 'AI service error', details: data })
+        body: JSON.stringify({
+          error: data.error?.message || 'AI service error',
+          debug: { model: MODEL, hasImage: !!imageBase64, imagePrefix: imageBase64?.substring(0, 40) }
+        })
       }
     }
 
