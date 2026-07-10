@@ -59,6 +59,7 @@ function Sidebar() {
 
   const creatorLinks = [
     { to: '/creator-academy', icon: Rocket, label: 'NCG Academy' },
+    { to: '/ai-chat', icon: Sparkles, label: 'AI Chat' },
     { to: '/video-maker', icon: Clapperboard, label: t('nav.videoMaker') },
     { to: '/photo-editor', icon: Camera, label: 'Foto Editor' },
     { to: '/fotostory', icon: Film, label: 'Fotostory' },
@@ -71,7 +72,6 @@ function Sidebar() {
   ]
 
   const toolsLinks = [
-    { to: '/ai-chat', icon: Sparkles, label: t('nav.aiChat') },
     { to: '/courses', icon: BookOpen, label: t('nav.courses') },
   ]
 
