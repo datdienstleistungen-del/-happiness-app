@@ -268,6 +268,139 @@
   text-align: center;
 }
 
+/* Usage Bar */
+.ca-usage-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.ca-usage-count {
+  font-size: 0.85rem;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.ca-usage-premium {
+  font-size: 0.85rem;
+  color: #16a34a;
+  background: #f0fdf4;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Paywall */
+.ca-paywall {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.ca-paywall-card {
+  background: white;
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  border: 1px solid #e5e7eb;
+}
+
+.ca-paywall-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1b6e6e, #2a9d8f);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.ca-paywall-card h2 {
+  font-size: 1.2rem;
+  color: #1a1a2e;
+  margin: 0 0 8px;
+}
+
+.ca-paywall-card > p {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin: 0 0 4px;
+}
+
+.ca-paywall-sub {
+  margin-top: 12px !important;
+  font-weight: 500;
+}
+
+.ca-paywall-price {
+  margin: 16px 0;
+}
+
+.ca-price-amount {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.ca-price-period {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-left: 4px;
+}
+
+.ca-paywall-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #1b6e6e, #2a9d8f);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.ca-paywall-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(27, 110, 110, 0.3);
+}
+
+.ca-paywall-benefits {
+  text-align: left;
+  margin: 16px 0;
+  padding: 0;
+}
+
+.ca-paywall-benefits p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #374151;
+  font-size: 0.85rem;
+  margin: 8px 0;
+}
+
+.ca-paywall-note {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: 12px;
+}
+
 /* Mobile */
 @media (max-width: 640px) {
   .creator-academy-page {
