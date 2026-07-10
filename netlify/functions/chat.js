@@ -58,7 +58,7 @@ export const handler = async (event) => {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: 'llama-3.2-11b-vision-preview',
+            model: 'meta-llama/llama-4-scout-17b-16e-instruct',
             messages: [{
               role: 'user',
               content: [
@@ -117,7 +117,7 @@ export const handler = async (event) => {
       }
     }
 
-    const MODEL = imageBase64 ? 'meta-llama/llama-4-scout-17b-16e-instruct' : 'llama-3.1-8b-instant'
+    const MODEL = imageBase64 ? 'meta-llama/llama-4-scout-17b-16e-instruct' : 'openai/gpt-oss-20b'
 
     const messages = []
     messages.push({ role: 'system', content: systemPrompt || 'Du bist ein erfahrener Mentor, guter Freund und kluger Ratgeber.' })
