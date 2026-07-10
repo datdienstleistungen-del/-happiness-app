@@ -145,13 +145,17 @@ export const handler = async (event) => {
 
   } catch (error) {
     console.error('Chat function error:', error.message, error.stack)
+    const errorMessage = error.message || 'Internal server error'
     return {
-      statusCode: 500,
+      statusCode: error.statusCode || 500,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
       },
-      body: JSON.stringify({ error: error.message || 'Internal server error' })
+      body: JSON.stringify({
+        error: errorMessage,
+        code: errorMessage.includes('does not support image input') ? 'image_not_supported' : undefined
+      })
     }
   }
 }
