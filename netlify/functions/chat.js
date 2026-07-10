@@ -1,7 +1,7 @@
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || ''
 
-const API_BASE = 'https://api.deepseek.com/v1'
+const API_BASE = 'https://api.groq.com/openai/v1'
 
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
@@ -71,15 +71,15 @@ export const handler = async (event) => {
       }
     }
 
-    const apiKey = process.env.DEEPSEEK_API_KEY
+    const apiKey = process.env.GROQ_API_KEY
     if (!apiKey) {
       return {
         statusCode: 500,
-        body: JSON.stringify({ error: 'DEEPSEEK_API_KEY nicht konfiguriert' })
+        body: JSON.stringify({ error: 'GROQ_API_KEY nicht konfiguriert' })
       }
     }
 
-    const MODEL = imageBase64 ? 'deepseek-vl2' : 'deepseek-chat'
+    const MODEL = imageBase64 ? 'llama-3.2-11b-vision-preview' : 'llama-3.2-3b-preview'
 
     const messages = []
     messages.push({ role: 'system', content: systemPrompt || 'Du bist ein erfahrener Mentor, guter Freund und kluger Ratgeber.' })
@@ -122,7 +122,7 @@ export const handler = async (event) => {
     const data = await res.json()
 
     if (!res.ok) {
-      console.error('DeepSeek API error:', MODEL, res.status, JSON.stringify(data))
+      console.error('Groq API error:', MODEL, res.status, JSON.stringify(data))
       return {
         statusCode: 502,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },

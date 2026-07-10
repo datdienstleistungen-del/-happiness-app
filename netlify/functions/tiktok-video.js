@@ -83,10 +83,10 @@ exports.handler = async (event) => {
     }
   }
 
-  // Step 1: Generate script from DeepSeek
-  const apiKey = process.env.DEEPSEEK_API_KEY
+  // Step 1: Generate script from Groq
+  const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'DEEPSEEK_API_KEY nicht konfiguriert' }) }
+    return { statusCode: 500, body: JSON.stringify({ error: 'GROQ_API_KEY nicht konfiguriert' }) }
   }
 
   const systemPrompt = `Du bist ein kreativer TikTok-Video-Scripter. Erstelle ein vertikales 9:16 Video (max 60 Sekunden) basierend auf der Produktbeschreibung des Users.
@@ -108,14 +108,14 @@ Regeln:
 
 Antworte NUR mit validem JSON-Array, kein Text davor oder danach.`
 
-  const aiRes = await fetch('https://api.deepseek.com/v1/chat/completions', {
+  const aiRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'deepseek-chat',
+      model: 'llama-3.2-3b-preview',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `Erstelle ein TikTok-Video für: ${text}` }
@@ -127,7 +127,7 @@ Antworte NUR mit validem JSON-Array, kein Text davor oder danach.`
 
   if (!aiRes.ok) {
     const errText = await aiRes.text()
-    console.error('DeepSeek API error:', errText)
+    console.error('Groq API error:', errText)
     return { statusCode: 502, body: JSON.stringify({ error: 'AI service temporarily unavailable' }) }
   }
 
