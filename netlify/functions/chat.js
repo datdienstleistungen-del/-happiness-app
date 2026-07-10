@@ -41,6 +41,9 @@ export const handler = async (event) => {
     }
 
     const { message, systemPrompt, history, imageBase64 } = JSON.parse(event.body)
+    if (imageBase64) {
+      console.log('imageBase64 type:', typeof imageBase64, 'prefix:', imageBase64.substring(0, 50))
+    }
 
     // --- Creator Academy usage limit check ---
     let caSettings = null
