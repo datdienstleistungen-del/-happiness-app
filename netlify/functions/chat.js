@@ -77,7 +77,7 @@ export const handler = async (event) => {
       }
     }
 
-    const MODEL = 'mistral-medium-latest'
+    const MODEL = 'mistral-medium-2604'
 
     const messages = []
     messages.push({ role: 'system', content: systemPrompt || 'Du bist ein erfahrener Mentor, guter Freund und kluger Ratgeber.' })
