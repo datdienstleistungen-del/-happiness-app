@@ -41,7 +41,38 @@ export const handler = async (event) => {
       console.error('Auth check failed:', e.message)
     }
 
-    const { message, systemPrompt, history, imageBase64 } = JSON.parse(event.body)
+    const { message, systemPrompt, history, imageBase64, testVision } = JSON.parse(event.body)
+
+    // Test-Modus: öffentliches Bild von Groq selbst analysieren (Bypass user image)
+    if (testVision) {
+      const apiKey = process.env.GROQ_API_KEY
+      if (!apiKey) return { statusCode: 500, body: JSON.stringify({ error: 'GROQ_API_KEY fehlt' }) }
+      try {
+        const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'llama-3.2-11b-vision-preview',
+            messages: [{
+              role: 'user',
+              content: [
+                { type: 'text', text: 'Was siehst du in diesem Bild? Antworte auf Deutsch.' },
+                { type: 'image_url', image_url: { url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/300px-PNG_transparency_demonstration_1.png' } }
+              ]
+            }],
+            max_tokens: 200
+          })
+        })
+        const d = await r.json()
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ success: r.ok, httpStatus: r.status, response: d })
+        }
+      } catch (e) {
+        return { statusCode: 500, body: JSON.stringify({ error: e.message }) }
+      }
+    }
 
     // --- Creator Academy usage limit check ---
     let caSettings = null
