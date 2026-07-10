@@ -1,3 +1,5 @@
+import { Mistral } from '@mistralai/mistralai'
+
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || ''
 
@@ -95,7 +97,7 @@ export const handler = async (event) => {
     if (imageBase64) {
       userContent = [
         { type: 'text', text: message || 'Analysiere dieses Bild.' },
-        { type: 'image_url', image_url: { url: imageBase64 } }
+        { type: 'image_url', image_url: imageBase64 }
       ]
     } else {
       userContent = message || 'Hallo'
@@ -103,55 +105,15 @@ export const handler = async (event) => {
 
     messages.push({ role: 'user', content: userContent })
 
-    const mistralRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: messages,
-        temperature: 0.7,
-        max_tokens: 4096
-      })
+    const mistral = new Mistral({ apiKey })
+    const result = await mistral.chat.complete({
+      model: MODEL,
+      messages,
+      temperature: 0.7,
+      max_tokens: 4096
     })
 
-    const data = await mistralRes.json()
-
-    if (!mistralRes.ok) {
-      const errorMessage = data.error?.message || JSON.stringify(data)
-      console.error('Mistral API error:', MODEL, mistralRes.status, errorMessage)
-      // Mistral-Modell unterstützt keine Bilder – Nutzer freundlich informieren
-      if (errorMessage.includes('does not support image input')) {
-        return {
-          statusCode: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({
-            error: typeof imageBase64 === 'string' ? 'Bildanalyse wird vom aktuellen KI-Modell nicht unterstützt. Du kannst mich aber gerne ohne Bild etwas fragen.' : 'Text-Anfrage fehlgeschlagen.',
-            code: 'image_not_supported',
-            model: MODEL,
-            mistralError: errorMessage
-          })
-        }
-      }
-      return {
-        statusCode: 502,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({
-          error: 'AI service error',
-          details: data.error?.message || JSON.stringify(data)
-        })
-      }
-    }
-
-    const aiResponse = data.choices?.[0]?.message?.content || 'Entschuldigung, ich konnte keine Antwort generieren.'
+    const aiResponse = result.choices?.[0]?.message?.content || 'Entschuldigung, ich konnte keine Antwort generieren.'
 
     // --- Increment Creator Academy counter ---
     if (isCreatorAcademy && caSettings && !caSettings.is_premium) {
