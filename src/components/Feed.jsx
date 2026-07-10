@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Heart, MessageCircle, Play, Pause, Send, Volume2, VolumeX } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Heart, MessageCircle, Play, Pause, Send, Volume2, VolumeX, Film } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import './Feed.css'
@@ -372,6 +373,7 @@ function FeedCard({ post, currentUserId }) {
   const [commentCount, setCommentCount] = useState(0)
   const [showComments, setShowComments] = useState(false)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => { fetchReactions(); fetchComments() }, [post.id])
 
@@ -443,6 +445,10 @@ function FeedCard({ post, currentUserId }) {
         <button className="feed-action-btn" onClick={() => setShowComments(!showComments)}>
           <MessageCircle size={17} />
           <span>Kommentieren</span>
+        </button>
+        <button className="feed-action-btn" onClick={() => navigate('/tiktok-video', { state: { postText: post.content } })}>
+          <Film size={17} />
+          <span>TikTok</span>
         </button>
       </div>
 

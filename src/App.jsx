@@ -30,6 +30,7 @@ const VideoMakerPage = lazy(() => import('./pages/VideoMakerPage'))
 const PhotoEditorPage = lazy(() => import('./pages/PhotoEditorPage'))
 const FotostoryPage = lazy(() => import('./pages/FotostoryPage'))
 const AIChatPage = lazy(() => import('./pages/AIChatPage'))
+const TikTokVideoPage = lazy(() => import('./pages/TikTokVideoPage'))
 const CreatorAcademyPage = lazy(() => import('./pages/CreatorAcademyPage'))
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 const TodayQuestionPage = lazy(() => import('./pages/TodayQuestionPage'))
@@ -59,6 +60,7 @@ function Sidebar() {
 
   const creatorLinks = [
     { to: '/creator-academy', icon: Rocket, label: 'NCG Academy' },
+    { to: '/tiktok-video', icon: Film, label: 'TikTok Video' },
     { to: '/ai-chat', icon: Sparkles, label: 'AI Chat' },
     { to: '/video-maker', icon: Clapperboard, label: t('nav.videoMaker') },
     { to: '/photo-editor', icon: Camera, label: 'Foto Editor' },
@@ -270,6 +272,7 @@ export default function App() {
                 <Route path="/fotostory" element={<ProtectedRoute><FotostoryPage /></ProtectedRoute>} />
                 <Route path="/ai-chat" element={<ProtectedRoute><AIChatPage /></ProtectedRoute>} />
                 <Route path="/creator-academy" element={<ProtectedRoute><CreatorAcademyPage /></ProtectedRoute>} />
+                <Route path="/tiktok-video" element={<ProtectedRoute><TikTokVideoPage /></ProtectedRoute>} />
                 <Route path="/legal" element={<LegalPage />} />
                 <Route path="/impressum" element={<LegalPage />} />
                 <Route path="/datenschutz" element={<LegalPage />} />
