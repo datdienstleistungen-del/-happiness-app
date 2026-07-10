@@ -40,35 +40,6 @@ export const handler = async (event) => {
 
     const { message, systemPrompt, history, imageBase64 } = JSON.parse(event.body)
 
-    // --- Creator Academy usage limit check ---
-    const isCreatorAcademy = systemPrompt && systemPrompt.includes('New Creator Generation Academy')
-    if (isCreatorAcademy && userId) {
-      const { data: settings, error: fetchError } = await fetch(
-        `${SUPABASE_URL}/rest/v1/ai_settings?user_id=eq.${userId}&select=is_premium,free_content_used`,
-        {
-          headers: {
-            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-            'apikey': SUPABASE_SERVICE_KEY,
-            'Accept': 'application/json'
-          }
-        }
-      ).then(r => r.json())
-
-      if (!fetchError && settings && settings.length > 0) {
-        const s = settings[0]
-        if (!s.is_premium && (s.free_content_used || 0) >= 5) {
-          return {
-            statusCode: 402,
-            headers: {
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*'
-            },
-            body: JSON.stringify({ error: 'Kostenloses Kontingent aufgebraucht', code: 'limit_reached' })
-          }
-        }
-      }
-    }
-
     const apiKey = process.env.MISTRAL_API_KEY
     if (!apiKey) {
       return {
@@ -130,38 +101,6 @@ export const handler = async (event) => {
           error: 'AI service error',
           details: data.error?.message || JSON.stringify(data)
         })
-      }
-    }
-
-    // --- Increment counter after successful Creator Academy request ---
-    if (isCreatorAcademy && userId) {
-      const { data: current } = await fetch(
-        `${SUPABASE_URL}/rest/v1/ai_settings?user_id=eq.${userId}&select=is_premium,free_content_used`,
-        {
-          headers: {
-            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-            'apikey': SUPABASE_SERVICE_KEY,
-            'Accept': 'application/json'
-          }
-        }
-      ).then(r => r.json())
-
-      if (current && current.length > 0 && !current[0].is_premium) {
-        await fetch(
-          `${SUPABASE_URL}/rest/v1/ai_settings?user_id=eq.${userId}`,
-          {
-            method: 'PATCH',
-            headers: {
-              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-              'apikey': SUPABASE_SERVICE_KEY,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=minimal'
-            },
-            body: JSON.stringify({
-              free_content_used: (current[0].free_content_used || 0) + 1
-            })
-          }
-        )
       }
     }
 

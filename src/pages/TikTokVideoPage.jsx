@@ -1,16 +1,15 @@
 import { useState, useRef, useEffect } from 'react'
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { getFFmpeg, downloadBlob } from '../lib/ffmpeg'
-import { Sparkles, Download, Image as ImageIcon, ArrowLeft, X, Film, Check, CreditCard, Brain, AlertTriangle } from 'lucide-react'
+import { Sparkles, Download, Image as ImageIcon, ArrowLeft, X, Film, AlertTriangle } from 'lucide-react'
 import './TikTokVideoPage.css'
 
 export default function TikTokVideoPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [searchParams] = useSearchParams()
 
   const [text, setText] = useState(location.state?.postText || '')
   const [selectedImage, setSelectedImage] = useState(null)
@@ -21,43 +20,16 @@ export default function TikTokVideoPage() {
   const [statusMsg, setStatusMsg] = useState('')
   const [videoBlob, setVideoBlob] = useState(null)
   const [videoUrl, setVideoUrl] = useState(null)
-  const [freeVideoUsed, setFreeVideoUsed] = useState(0)
-  const [isPremium, setIsPremium] = useState(false)
-  const [showPaywall, setShowPaywall] = useState(false)
   const [error, setError] = useState('')
-  const FREE_LIMIT = 3
 
   const fileInputRef = useRef(null)
   const videoRef = useRef(null)
-
-  useEffect(() => {
-    loadSettings()
-  }, [user])
-
-  useEffect(() => {
-    if (searchParams.get('payment') === 'success') {
-      setShowPaywall(false)
-      setIsPremium(true)
-    }
-  }, [searchParams])
 
   useEffect(() => {
     return () => {
       if (videoUrl) URL.revokeObjectURL(videoUrl)
     }
   }, [videoUrl])
-
-  const loadSettings = async () => {
-    const { data } = await supabase
-      .from('ai_settings')
-      .select('is_premium, free_video_used')
-      .eq('user_id', user.id)
-      .single()
-    if (data) {
-      setIsPremium(data.is_premium || false)
-      setFreeVideoUsed(data.free_video_used || 0)
-    }
-  }
 
   const handleImageSelect = (e) => {
     const file = e.target.files?.[0]
@@ -70,22 +42,6 @@ export default function TikTokVideoPage() {
     setSelectedImage(null)
     if (imagePreview) URL.revokeObjectURL(imagePreview)
     setImagePreview(null)
-  }
-
-  const handleCheckout = async () => {
-    try {
-      const response = await fetch('/api/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, email: user.email }),
-      })
-      const data = await response.json()
-      if (data.url) {
-        window.location.href = data.url
-      }
-    } catch (error) {
-      console.error('Checkout error:', error)
-    }
   }
 
   const uploadImage = async () => {
@@ -117,10 +73,6 @@ export default function TikTokVideoPage() {
 
   const createVideo = async () => {
     if (!text.trim()) return
-    if (!isPremium && freeVideoUsed >= FREE_LIMIT) {
-      setShowPaywall(true)
-      return
-    }
 
     setLoading(true)
     setStatusMsg('Skript wird geschrieben...')
@@ -144,17 +96,12 @@ export default function TikTokVideoPage() {
 
       if (!res.ok) {
         const err = await res.json()
-        if (res.status === 402) {
-          setShowPaywall(true)
-          return
-        }
         throw new Error(err.error || 'Fehler bei der Video-Erstellung')
       }
 
       const data = await res.json()
       setScenes(data.scenes)
       setTotalDuration(data.totalDuration)
-      setFreeVideoUsed(prev => prev + 1)
 
       setStatusMsg('Bilder werden geladen...')
       await renderVideo(data.scenes)
@@ -296,8 +243,6 @@ export default function TikTokVideoPage() {
     await ffmpeg.deleteFile('output.mp4').catch(() => {})
   }
 
-  const remaining = FREE_LIMIT - freeVideoUsed
-
   return (
     <div className="tiktok-page">
       <div className="tiktok-header">
@@ -307,16 +252,8 @@ export default function TikTokVideoPage() {
         <h1><Film size={22} /> TikTok Video Generator</h1>
       </div>
 
-      <div className="tiktok-usage-bar">
-        {isPremium ? (
-          <span className="tiktok-usage-premium"><Check size={14} /> Premium — unbegrenzt Videos</span>
-        ) : (
-          <span className="tiktok-usage-count">Noch {remaining} von {FREE_LIMIT} kostenlosen Videos</span>
-        )}
-      </div>
-
       <div className="tiktok-content">
-        {!scenes && !showPaywall && (
+        {!scenes && (
           <div className="tiktok-input-section">
             <div className="tiktok-input-group">
               <label className="tiktok-label">Beschreib dein Produkt / deine Idee in 2-3 Sätzen</label>
@@ -376,30 +313,6 @@ export default function TikTokVideoPage() {
           </div>
         )}
 
-        {showPaywall && (
-          <div className="tiktok-paywall">
-            <div className="tiktok-paywall-card">
-              <div className="tiktok-paywall-icon"><Brain size={32} /></div>
-              <h2>Kostenloses Kontingent aufgebraucht</h2>
-              <p>Du hast alle {FREE_LIMIT} kostenlosen Videos genutzt.</p>
-              <p className="tiktok-paywall-sub">Schalte Premium frei für unbegrenzte Videos:</p>
-              <div className="tiktok-paywall-price">
-                <span className="tiktok-price-amount">4,99 €</span>
-                <span className="tiktok-price-period">/ Monat</span>
-              </div>
-              <button className="tiktok-paywall-btn stripe-btn" onClick={handleCheckout}>
-                <CreditCard size={16} /> Jetzt upgraden
-              </button>
-              <div className="tiktok-paywall-benefits">
-                <p><Check size={14} /> Unbegrenzt KI-Content-Feedback</p>
-                <p><Check size={14} /> Unbegrenzt TikTok-Videos erstellen</p>
-                <p><Check size={14} /> Unbegrenzt AI Chat Fragen</p>
-              </div>
-              <p className="tiktok-paywall-note">Sicher bezahlen mit Stripe.</p>
-            </div>
-          </div>
-        )}
-
         {loading && (
           <div className="tiktok-loading">
             <div className="tiktok-spinner" />
@@ -407,7 +320,7 @@ export default function TikTokVideoPage() {
           </div>
         )}
 
-        {scenes && !loading && !showPaywall && (
+        {scenes && !loading && (
           <div className="tiktok-scenes-preview">
             <h3>Skript: {totalDuration}s Video ({scenes.length} Szenen)</h3>
             <div className="tiktok-scenes-list">
@@ -428,7 +341,7 @@ export default function TikTokVideoPage() {
           </div>
         )}
 
-        {videoUrl && !showPaywall && (
+        {videoUrl && (
           <div className="tiktok-result">
             <h3>Dein Video</h3>
             <div className="tiktok-video-wrapper">
