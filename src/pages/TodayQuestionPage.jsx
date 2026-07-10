@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+import { useLanguage } from '../i18n/translations'
 import { MessageCircle, Send, SkipForward } from 'lucide-react'
 import './TodayQuestionPage.css'
 
@@ -18,6 +19,7 @@ const QUESTIONS = [
 
 export default function TodayQuestionPage() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const [answer, setAnswer] = useState('')
   const [posting, setPosting] = useState(false)
@@ -55,7 +57,7 @@ export default function TodayQuestionPage() {
     <div className="tq-page">
       <div className="tq-center">
         <div className="tq-icon"><MessageCircle size={28} /></div>
-        <h1 className="tq-title">Today's Question</h1>
+        <h1 className="tq-title">{t('onboarding.todayTitle')}</h1>
         <p className="tq-question">{question}</p>
 
         <textarea
@@ -63,17 +65,17 @@ export default function TodayQuestionPage() {
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
           onKeyDown={handleKey}
-          placeholder="Write your answer..."
+          placeholder={t('onboarding.todayPlaceholder')}
           rows={5}
           autoFocus
         />
 
         <div className="tq-actions">
           <button className="tq-btn tq-btn-primary" onClick={postAnswer} disabled={!answer.trim() || posting}>
-            {posting ? <span className="tq-spinner" /> : <><Send size={16} /> Post Answer</>}
+            {posting ? <span className="tq-spinner" /> : <><Send size={16} /> {t('onboarding.todayPost')}</>}
           </button>
           <button className="tq-btn tq-btn-skip" onClick={skip}>
-            <SkipForward size={16} /> Skip → Go to Feed
+            <SkipForward size={16} /> {t('onboarding.todaySkip')}
           </button>
         </div>
       </div>
