@@ -1,4 +1,4 @@
-console.log('chat.js v4 - DeepSeek + Groq')
+console.log('chat.js v5 - DeepSeek + Groq + RAG')
 console.log('DEEPSEEK_API_KEY vorhanden:', !!process.env.DEEPSEEK_API_KEY)
 console.log('GROQ_API_KEY vorhanden:', !!process.env.GROQ_API_KEY)
 console.log('OPENROUTER_API_KEY vorhanden:', !!process.env.OPENROUTER_API_KEY)
@@ -7,6 +7,138 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || ''
 
 const GROQ_API_BASE = 'https://api.groq.com/openai/v1'
 const DEEPSEEK_API_BASE = 'https://api.deepseek.com/v1'
+
+// ── Happiness Knowledge System (RAG) ──
+
+const KNOWLEDGE_CATEGORIES = {
+  company: ['happiness', 'platform', 'europe', 'gdpr', 'company', 'about', 'community platform', 'soziale plattform', 'europäisch', 'datenschutz', 'mission', 'vision'],
+  brand: ['brand', 'marke', 'voice', 'tone', 'tonalität', 'identity', 'logo', 'values', 'style', 'communication'],
+  'ncg-academy': ['ncg academy', 'academy', 'new creator generation', 'feedback', 'content review', 'content feedback', 'verbesserung', 'entwurf', 'creator academy', 'coach', 'academy feedback', 'plattform einschätzung', 'hook check', 'hook'],
+  'creator-engine': ['creator engine', 'content erstellen', 'content workflow', 'workflow', 'idee zu content', 'content strategie', 'skript', 'caption', 'publishing strategie', 'creator projekt', 'multi platform', 'content generation'],
+  community: ['community', 'feed', 'beitrag', 'post', 'freunde', 'friends', 'verbinden', 'netzwerk', 'comments', 'kommentare', 'reactions', 'interaktion'],
+  products: ['premium', 'subscription', 'abonnement', '6.99', 'kostenlos', 'free', 'pricing', 'preis', 'bezahlen', 'upgrade', 'stripe', 'pay', 'konto'],
+  ai: ['ai agent', 'ki agent', 'strategist', 'copywriter', 'builder', 'agent architecture', 'multi agent', 'intelligence'],
+  publishing: ['publishing', 'veröffentlichen', 'cross post', 'plattform optimierung', 'tiktok', 'instagram', 'youtube', 'linkedin', 'content format', 'hook'],
+  analytics: ['analytics', 'analyse', 'performance', 'tracking', 'wachstum', 'growth', 'metrics', 'kennzahlen', 'verbesserung', 'daten'],
+  'creator-workflow': ['creator prozess', 'workflow', 'erstellungsprozess', 'idee', 'publish', 'veröffentlichen', 'iteration', 'creator journey'],
+  learning: ['lernen', 'learning', 'bildung', 'education', 'creator education', 'teaching', 'scaffolding', 'lernphilosophie', 'anfänger', 'verbessern', 'tutorial'],
+  marketing: ['marketing', 'positionierung', 'target audience', 'zielgruppe', 'message', 'werbung', 'reach', 'reichweite'],
+  roadmap: ['roadmap', 'future', 'zukunft', 'geplant', 'upcoming', 'mobile app', 'neue features', 'produktentwicklung'],
+  general: ['faq', 'frage', 'help', 'hilfe', 'how to', 'wie funktioniert', 'was ist', 'erklärung', 'supported'],
+}
+
+const INTENT_PATTERNS = {
+  general: [
+    /^(hallo|hi|hey|moin|servus|grüß)/i,
+    /übersetz(?:e|ung)/i,
+    /schreib (?:einen|eine|mir)/i,
+    /erklär mir/i,
+    /was bedeutet/i,
+    /wie (?:geht|funktioniert|kann|mach)/i,
+    /rechne/i,
+  ],
+  creator: [
+    /content|post|beitrag|erstellen|schreiben/i,
+    /creator|ersteller|influencer/i,
+    /hook|caption|skript|script/i,
+    /plattform (?:einschätzung|optimierung)/i,
+    /feedback|verbesserung|review/i,
+    /publish|veröffentlichen/i,
+    /idee/i,
+  ],
+  platform: [
+    /happiness|platform|community/i,
+    /ncg|academy|creator academy/i,
+    /premium|abo|kostenlos|free/i,
+    /europe|europa|gdpr|datenschutz|privacy/i,
+    /feature|funktion|produkt/i,
+    /marketplace|marktplatz|jobs|kurse|courses/i,
+  ],
+}
+
+function classifyIntent(message) {
+  if (!message) return 'general'
+  const lower = message.toLowerCase()
+  
+  for (const [intent, patterns] of Object.entries(INTENT_PATTERNS)) {
+    for (const pattern of patterns) {
+      if (pattern.test(lower)) return intent
+    }
+  }
+  
+  // Check against knowledge categories
+  for (const [category, keywords] of Object.entries(KNOWLEDGE_CATEGORIES)) {
+    for (const keyword of keywords) {
+      if (lower.includes(keyword)) return category
+    }
+  }
+  
+  return 'general'
+}
+
+async function loadKnowledge(message, userId) {
+  const intent = classifyIntent(message)
+  console.log('RAG intent:', intent, 'message:', (message || '').substring(0, 60))
+  
+  // For general intents, skip knowledge loading
+  if (intent === 'general') {
+    // Still check if it matches a very specific keyword
+    const lower = (message || '').toLowerCase()
+    for (const [category, keywords] of Object.entries(KNOWLEDGE_CATEGORIES)) {
+      if (category === 'general') continue
+      for (const keyword of keywords) {
+        if (lower.includes(keyword)) {
+          // Found a match — load that category
+          try {
+            const res = await fetch(
+              `${SUPABASE_URL}/rest/v1/knowledge_base?category=eq.${encodeURIComponent(category)}&select=title,content,keywords&order=priority.desc`,
+              { headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } }
+            )
+            if (res.ok) {
+              const data = await res.json()
+              if (data && data.length > 0) return formatKnowledge(data)
+            }
+          } catch (e) {
+            console.error('Knowledge fetch failed:', e.message)
+          }
+          return ''
+        }
+      }
+    }
+    return ''
+  }
+  
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/knowledge_base?category=eq.${encodeURIComponent(intent)}&select=title,content,keywords&order=priority.desc`,
+      { headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } }
+    )
+    if (res.ok) {
+      const data = await res.json()
+      if (data && data.length > 0) return formatKnowledge(data)
+    }
+  } catch (e) {
+    console.error('Knowledge fetch failed:', e.message)
+  }
+  
+  return ''
+}
+
+function formatKnowledge(entries) {
+  if (!entries || entries.length === 0) return ''
+  let result = '\n\n=== HAPPINESS PLATFORM-WISSEN ===\n'
+  result += 'Du arbeitest seit Jahren bei Happiness. Du kennst die Plattform, die Community und die Produkte genau.\n'
+  result += 'Nutze dieses Wissen nur, wenn es fuer die Antwort relevant ist. Bei allgemeinen Fragen ignoriere es.\n\n'
+  for (const entry of entries) {
+    const lines = entry.content.split('\n').filter(l => l.trim() && !l.startsWith('#'))
+    const relevant = lines.slice(0, 15).join('\n').trim()
+    if (relevant) {
+      result += `--- ${entry.title} ---\n${relevant}\n\n`
+    }
+  }
+  result += '=== ENDE PLATTFORM-WISSEN ===\n'
+  return result
+}
 
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
@@ -46,7 +178,11 @@ export const handler = async (event) => {
     }
 
     const body = JSON.parse(event.body)
-    const { message, systemPrompt, history, imageBase64, testVision } = body
+    const { message, systemPrompt: originalPrompt, history, imageBase64, testVision } = body
+
+    // RAG: Load Happiness knowledge context
+    const knowledgeContext = await loadKnowledge(message, userId)
+    const systemPrompt = knowledgeContext ? originalPrompt + knowledgeContext : originalPrompt
 
     // Debug: Zeige was ankommt
     if (imageBase64) {

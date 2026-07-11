@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations.jsx'
+import { BookOpen } from 'lucide-react'
 import './AdminPage.css'
 
 export default function AdminPage() {
@@ -18,6 +19,7 @@ export default function AdminPage() {
   const [courses, setCourses] = useState([])
   const [aiProfiles, setAiProfiles] = useState([])
   const [aiConversations, setAiConversations] = useState([])
+  const [knowledge, setKnowledge] = useState([])
 
   const isAdmin = profile?.role === 'admin'
 
@@ -25,7 +27,7 @@ export default function AdminPage() {
 
   async function fetchAll() {
     setLoading(true)
-    const [u, p, m, j, c, ap, ac] = await Promise.all([
+    const [u, p, m, j, c, ap, ac, kw] = await Promise.all([
       supabase.from('profiles').select('*'),
       supabase.from('posts').select('*, profiles(name, username)').order('created_at', { ascending: false }),
       supabase.from('marketplace').select('*, profiles(name, username)').order('created_at', { ascending: false }),
@@ -33,6 +35,7 @@ export default function AdminPage() {
       supabase.from('courses').select('*, profiles(name, username)').order('created_at', { ascending: false }),
       supabase.from('ai_settings').select('*'),
       supabase.from('ai_conversations').select('*').order('created_at', { ascending: false }),
+      supabase.from('knowledge_base').select('*').order('category').order('title'),
     ])
     setUsers(u.data || [])
     setPosts(p.data || [])
@@ -41,6 +44,7 @@ export default function AdminPage() {
     setCourses(c.data || [])
     setAiProfiles(ap.data || [])
     setAiConversations(ac.data || [])
+    setKnowledge(kw.data || [])
     setLoading(false)
   }
 
@@ -96,6 +100,7 @@ export default function AdminPage() {
     { id: 'moderation', label: 'Moderation' },
     { id: 'payments', label: 'Zahlungen' },
     { id: 'ai', label: 'KI Chat' },
+    { id: 'knowledge', label: `Wissen (${knowledge.length})` },
   ]
 
   return (
@@ -125,6 +130,7 @@ export default function AdminPage() {
           {tab === 'payments' && <PaymentsTab users={users} aiProfiles={aiProfiles} aiConversations={aiConversations} />}
           {tab === 'activity' && <ActivityTab users={sortedByActivity} />}
           {tab === 'ai' && <AiTab aiProfiles={aiProfiles} aiConversations={aiConversations} onReset={resetAiUsage} />}
+          {tab === 'knowledge' && <KnowledgeTab knowledge={knowledge} onRefresh={fetchAll} />}
         </div>
       )}
     </div>
@@ -579,6 +585,142 @@ function ActivityTab({ users }) {
             </tbody>
           </table>
         )}
+      </div>
+    </div>
+  )
+}
+
+function KnowledgeTab({ knowledge, onRefresh }) {
+  const [editing, setEditing] = useState(null)
+  const [form, setForm] = useState({ category: '', title: '', content: '', keywords: '' })
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  const categories = ['company', 'brand', 'ncg-academy', 'creator-engine', 'community', 'products', 'ai', 'publishing', 'analytics', 'creator-workflow', 'learning', 'marketing', 'roadmap', 'general']
+
+  const startEdit = (entry) => {
+    setEditing(entry.id)
+    setForm({
+      category: entry.category,
+      title: entry.title,
+      content: entry.content,
+      keywords: (entry.keywords || []).join(', '),
+    })
+    setMsg('')
+  }
+
+  const startNew = () => {
+    setEditing('new')
+    setForm({ category: 'general', title: '', content: '', keywords: '' })
+    setMsg('')
+  }
+
+  const cancelEdit = () => {
+    setEditing(null)
+    setMsg('')
+  }
+
+  const saveEntry = async () => {
+    if (!form.title.trim() || !form.content.trim()) {
+      setMsg('Titel und Inhalt duerfen nicht leer sein.')
+      return
+    }
+    setSaving(true)
+    setMsg('')
+    const payload = {
+      category: form.category,
+      title: form.title.trim(),
+      content: form.content.trim(),
+      keywords: form.keywords.split(',').map(k => k.trim()).filter(Boolean),
+    }
+    let error
+    if (editing === 'new') {
+      ({ error } = await supabase.from('knowledge_base').insert(payload))
+    } else {
+      ({ error } = await supabase.from('knowledge_base').update(payload).eq('id', editing))
+    }
+    if (error) { setMsg('Fehler: ' + error.message); setSaving(false); return }
+    setMsg('Gespeichert!')
+    setEditing(null)
+    setSaving(false)
+    onRefresh()
+  }
+
+  const deleteEntry = async (id) => {
+    if (!confirm('Diesen Wissenseintrag wirklich loeschen?')) return
+    const { error } = await supabase.from('knowledge_base').delete().eq('id', id)
+    if (error) { setMsg('Fehler: ' + error.message); return }
+    setEditing(null)
+    onRefresh()
+  }
+
+  const grouped = {}
+  for (const entry of knowledge) {
+    if (!grouped[entry.category]) grouped[entry.category] = []
+    grouped[entry.category].push(entry)
+  }
+
+  return (
+    <div className="knowledge-panel">
+      <div className="knowledge-toolbar">
+        <h2>Wissensdatenbank</h2>
+        <button className="admin-btn" onClick={startNew}>+ Neuer Eintrag</button>
+      </div>
+
+      {msg && <div className="knowledge-msg">{msg}</div>}
+
+      {editing && (
+        <div className="knowledge-editor">
+          <h3>{editing === 'new' ? 'Neuer Eintrag' : 'Eintrag bearbeiten'}</h3>
+          <div className="knowledge-form">
+            <label>Kategorie</label>
+            <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+
+            <label>Titel</label>
+            <input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+
+            <label>Schluesselwoerter (kommagetrennt)</label>
+            <input type="text" value={form.keywords} onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))} placeholder="z.B. creator engine, content workflow, idee" />
+
+            <label>Inhalt (Markdown)</label>
+            <textarea
+              rows={15}
+              value={form.content}
+              onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
+              style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}
+            />
+
+            <div className="knowledge-form-actions">
+              <button className="admin-btn btn-primary" onClick={saveEntry} disabled={saving}>
+                {saving ? 'Speichert...' : 'Speichern'}
+              </button>
+              <button className="admin-btn" onClick={cancelEdit}>Abbrechen</button>
+              {editing !== 'new' && (
+                <button className="admin-btn btn-danger" onClick={() => deleteEntry(editing)}>Loeschen</button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="knowledge-list">
+        {Object.keys(grouped).sort().map(cat => (
+          <div key={cat} className="knowledge-category">
+            <h3 className="knowledge-cat-title">{cat}</h3>
+            {grouped[cat].map(entry => (
+              <div key={entry.id} className="knowledge-entry" onClick={() => startEdit(entry)}>
+                <div className="knowledge-entry-title">
+                  <BookOpen size={14} /> {entry.title}
+                </div>
+                <div className="knowledge-entry-preview">
+                  {entry.content.split('\n').filter(l => l.trim() && !l.startsWith('#')).slice(0, 3).join(' ').substring(0, 120)}
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
       </div>
     </div>
   )

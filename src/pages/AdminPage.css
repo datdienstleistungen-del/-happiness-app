@@ -505,3 +505,137 @@
 .admin-table tr:hover {
   background: #f8fafc;
 }
+
+/* Knowledge */
+.knowledge-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.knowledge-toolbar h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.knowledge-msg {
+  padding: 10px 14px;
+  background: #d1fae5;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  color: #059669;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.knowledge-editor {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.knowledge-editor h3 {
+  margin: 0 0 16px;
+  font-size: 15px;
+  color: #1a1a1a;
+}
+
+.knowledge-form label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  margin: 12px 0 4px;
+}
+
+.knowledge-form input,
+.knowledge-form select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #1a1a1a;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.knowledge-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #1a1a1a;
+  background: #f8fafc;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.knowledge-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.knowledge-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.knowledge-category {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.knowledge-cat-title {
+  margin: 0;
+  padding: 10px 14px;
+  background: #f8fafc;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.knowledge-entry {
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: background 0.1s;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.knowledge-entry:last-child {
+  border-bottom: none;
+}
+
+.knowledge-entry:hover {
+  background: #f8fafc;
+}
+
+.knowledge-entry-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.knowledge-entry-preview {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+  margin-left: 20px;
+}
