@@ -1,8 +1,12 @@
-console.log('chat.js v3 - GROQ')
+console.log('chat.js v4 - DeepSeek + Groq')
+console.log('DEEPSEEK_API_KEY vorhanden:', !!process.env.DEEPSEEK_API_KEY)
+console.log('GROQ_API_KEY vorhanden:', !!process.env.GROQ_API_KEY)
+console.log('OPENROUTER_API_KEY vorhanden:', !!process.env.OPENROUTER_API_KEY)
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || ''
 
-const API_BASE = 'https://api.groq.com/openai/v1'
+const GROQ_API_BASE = 'https://api.groq.com/openai/v1'
+const DEEPSEEK_API_BASE = 'https://api.deepseek.com/v1'
 
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
@@ -109,69 +113,290 @@ export const handler = async (event) => {
       }
     }
 
-    const apiKey = process.env.GROQ_API_KEY
-    if (!apiKey) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: 'GROQ_API_KEY nicht konfiguriert' })
+    const hasImage = imageBase64 && typeof imageBase64 === 'string' && imageBase64.startsWith('data:image/')
+    
+    const buildMessages = (historyLimit, textOnly = false) => {
+      const msgs = []
+      msgs.push({ role: 'system', content: systemPrompt || 'Du bist ein erfahrener Mentor, guter Freund und kluger Ratgeber.' })
+      if (history && Array.isArray(history)) {
+        for (const msg of history.slice(-historyLimit)) {
+          msgs.push({
+            role: msg.role === 'assistant' ? 'assistant' : 'user',
+            content: msg.content
+          })
+        }
       }
+      let userContent
+      if (hasImage && !textOnly) {
+        userContent = [
+          { type: 'text', text: message || 'Analysiere dieses Bild.' },
+          { type: 'image_url', image_url: { url: imageBase64 } }
+        ]
+      } else {
+        userContent = message || 'Hallo'
+      }
+      msgs.push({ role: 'user', content: userContent })
+      return msgs
     }
 
-    const MODEL = imageBase64 ? 'meta-llama/llama-4-scout-17b-16e-instruct' : 'openai/gpt-oss-20b'
+    let historyLimit = 3
+    
+    // Proaktive Token-Limit-Prüfung: History reduzieren falls nötig
+    let sendMessages = buildMessages(historyLimit)
+    const sysTok = (systemPrompt || '').length / 4
+    const histTok = (history || []).reduce((s, m) => s + (m.content || '').length, 0) / 4
+    const msgTok = (message || '').length / 4
+    const imgTok = (imageBase64 || '').length / 4
+    console.log(`TOKEN-AUFTEILUNG: systemPrompt=${Math.round(sysTok)} history=${Math.round(histTok)} message=${Math.round(msgTok)} image=${Math.round(imgTok)} total=${Math.round(sysTok+histTok+msgTok+imgTok)}`)
 
-    const messages = []
-    messages.push({ role: 'system', content: systemPrompt || 'Du bist ein erfahrener Mentor, guter Freund und kluger Ratgeber.' })
+    const SAFE_THRESHOLD = !hasImage ? 100000 : 7500
+    do {
+      const estimate = JSON.stringify({ messages: sendMessages }).length / 3
+      if (estimate < SAFE_THRESHOLD) break
+      if (historyLimit > 1) {
+        historyLimit--
+        sendMessages = buildMessages(historyLimit)
+        continue
+      }
+      if (hasImage) {
+        return {
+          statusCode: 413,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ error: 'Bild zu groß — bitte ein kleineres Bild verwenden', code: 'image_too_large' })
+        }
+      }
+      break
+    } while (true)
 
-    if (history && Array.isArray(history)) {
-      for (const msg of history.slice(-20)) {
-        messages.push({
-          role: msg.role === 'assistant' ? 'assistant' : 'user',
-          content: msg.content
+    let aiResponse = ''
+    let usage = null
+    let provider = ''
+    let modelName = ''
+
+    if (hasImage) {
+      const apiKey = process.env.GROQ_API_KEY
+      if (!apiKey) {
+        return {
+          statusCode: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ error: 'GROQ_API_KEY nicht konfiguriert' })
+        }
+      }
+      
+      let res = null
+      let data = null
+
+      try {
+        res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+            messages: buildMessages(historyLimit),
+            temperature: 0.7,
+            max_tokens: 4096
+          })
         })
+        data = await res.json()
+      } catch (err) {
+        console.error('Groq Vision fetch failed:', err.message)
       }
-    }
 
-    let userContent
-    if (imageBase64) {
-      userContent = [
-        { type: 'text', text: message || 'Analysiere dieses Bild.' },
-        { type: 'image_url', image_url: { url: imageBase64 } }
-      ]
+      if (res && res.ok && data && data.choices) {
+        console.log('Antwort von:', 'groq-vision')
+        aiResponse = data.choices?.[0]?.message?.content || 'Entschuldigung, ich konnte keine Antwort generieren.'
+        usage = data.usage
+        provider = 'groq'
+        modelName = 'meta-llama/llama-4-scout-17b-16e-instruct'
+      } else {
+        const errMsg = (data?.error?.message || '').toLowerCase()
+        console.log('Vision model failed, falling back to text-only with DeepSeek. Error:', errMsg)
+        
+        const textApiKey = process.env.DEEPSEEK_API_KEY
+        if (textApiKey) {
+          try {
+            const fallbackRes = await fetch('https://api.deepseek.com/chat/completions', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${textApiKey}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                model: 'deepseek-v4-flash',
+                messages: buildMessages(historyLimit, true),
+                temperature: 0.7,
+                max_tokens: 4096
+              })
+            })
+            if (fallbackRes.ok) {
+              const fallbackData = await fallbackRes.json()
+              console.log('Antwort von:', 'deepseek')
+              aiResponse = fallbackData.choices?.[0]?.message?.content || 'Entschuldigung, ich konnte keine Antwort generieren.'
+              usage = fallbackData.usage
+              provider = 'deepseek'
+              modelName = 'deepseek-v4-flash'
+              return {
+                statusCode: 200,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+                body: JSON.stringify({
+                  response: aiResponse,
+                  imageNote: 'Das Bild konnte nicht analysiert werden – der Chat funktioniert aber ganz normal weiter.',
+                  usage: usage,
+                  provider,
+                  model: modelName
+                })
+              }
+            } else {
+              const fallbackData = await fallbackRes.json().catch(() => ({}))
+              console.error('DeepSeek fallback failed:', fallbackRes.status, fallbackData)
+            }
+          } catch (e) {
+            console.error('DeepSeek fallback error:', e.message)
+          }
+        }
+        
+        console.error('Groq Vision failed and DeepSeek fallback was unsuccessful:', JSON.stringify(data))
+        return {
+          statusCode: 502,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({
+            error: data?.error?.message || 'Groq Vision failed and fallback was unsuccessful.',
+            rawResponse: data
+          })
+        }
+      }
     } else {
-      userContent = message || 'Hallo'
-    }
+      // Text-only request: Fallback Chain: DeepSeek -> Groq -> OpenRouter
+      let success = false
+      let deepseekError = null
 
-    messages.push({ role: 'user', content: userContent })
+      // Stage 1: DeepSeek
+      const deepseekKey = process.env.DEEPSEEK_API_KEY
+      console.log('DeepSeek check: key vorhanden =', !!deepseekKey)
+      if (deepseekKey) {
+        try {
+          const dsRes = await fetch('https://api.deepseek.com/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${deepseekKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: 'deepseek-v4-flash',
+              messages: buildMessages(historyLimit),
+              temperature: 0.7,
+              max_tokens: 4096
+            })
+          })
+          if (dsRes.ok) {
+            const dsData = await dsRes.json()
+            console.log('Antwort von:', 'deepseek')
+            aiResponse = dsData.choices?.[0]?.message?.content || ''
+            usage = dsData.usage
+            provider = 'deepseek'
+            modelName = 'deepseek-v4-flash'
+            success = true
+          } else {
+            const dsData = await dsRes.json().catch(() => ({}))
+            const errMsg = dsData?.error?.message || JSON.stringify(dsData)
+            deepseekError = { status: dsRes.status, error: errMsg }
+            console.warn('DeepSeek failed, status:', dsRes.status, 'message:', errMsg)
+          }
+        } catch (err) {
+          deepseekError = { status: 0, error: err.message }
+          console.warn('DeepSeek fetch failed:', err.message)
+        }
+      } else {
+        deepseekError = { status: 0, error: 'DEEPSEEK_API_KEY not configured' }
+        console.warn('DEEPSEEK_API_KEY not configured, skipping to Groq fallback')
+      }
 
-    const res = await fetch(`${API_BASE}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages,
-        temperature: 0.7,
-        max_tokens: 4096
-      })
-    })
+      // Stage 2: Groq Fallback
+      if (!success) {
+        const groqKey = process.env.GROQ_API_KEY
+        if (groqKey) {
+          try {
+            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${groqKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                model: 'openai/gpt-oss-20b',
+                messages: buildMessages(historyLimit),
+                temperature: 0.7,
+                max_tokens: 4096
+              })
+            })
+            if (groqRes.ok) {
+              const groqData = await groqRes.json()
+              console.log('Antwort von:', 'groq-fallback')
+              aiResponse = groqData.choices?.[0]?.message?.content || ''
+              usage = groqData.usage
+              provider = 'groq'
+              modelName = 'openai/gpt-oss-20b'
+              success = true
+            } else {
+              const groqData = await groqRes.json().catch(() => ({}))
+              console.warn('Groq fallback failed, status:', groqRes.status, JSON.stringify(groqData))
+            }
+          } catch (err) {
+            console.warn('Groq fallback fetch failed:', err.message)
+          }
+        } else {
+          console.warn('GROQ_API_KEY not configured, skipping to OpenRouter')
+        }
+      }
 
-    const data = await res.json()
+      // Stage 3: OpenRouter Fallback
+      if (!success) {
+        const orKey = process.env.OPENROUTER_API_KEY
+        if (orKey) {
+          try {
+            const orRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${orKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://happiness-app.netlify.app',
+                'X-Title': 'Happiness App'
+              },
+              body: JSON.stringify({
+                model: 'meta-llama/llama-3.1-8b-instruct',
+                messages: buildMessages(historyLimit),
+                temperature: 0.7,
+                max_tokens: 4096
+              })
+            })
+            if (orRes.ok) {
+              const orData = await orRes.json()
+              console.log('Antwort von:', 'openrouter')
+              aiResponse = orData.choices?.[0]?.message?.content || ''
+              usage = orData.usage
+              provider = 'openrouter'
+              modelName = 'meta-llama/llama-3.1-8b-instruct'
+              success = true
+            } else {
+              const orData = await orRes.json().catch(() => ({}))
+              console.error('OpenRouter fallback failed, status:', orRes.status, JSON.stringify(orData))
+            }
+          } catch (err) {
+            console.error('OpenRouter fallback fetch failed:', err.message)
+          }
+        } else {
+          console.error('OPENROUTER_API_KEY not configured')
+        }
+      }
 
-    if (!res.ok) {
-      console.error('Groq API error:', MODEL, res.status, JSON.stringify(data))
-      return {
-        statusCode: 502,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({
-          error: data.error?.message || 'AI service error',
-          rawGroqResponse: data
-        })
+      if (!success) {
+        return {
+          statusCode: 502,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ error: 'All text AI providers in the fallback chain failed.' })
+        }
       }
     }
-
-    const aiResponse = data.choices?.[0]?.message?.content || 'Entschuldigung, ich konnte keine Antwort generieren.'
 
     // --- Increment Creator Academy counter ---
     if (isCreatorAcademy && caSettings && !caSettings.is_premium) {
@@ -198,7 +423,7 @@ export const handler = async (event) => {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
       },
-      body: JSON.stringify({ response: aiResponse })
+      body: JSON.stringify({ response: aiResponse, usage: usage, provider, model: modelName, _debug: { deepseekError } })
     }
 
   } catch (error) {
@@ -213,3 +438,4 @@ export const handler = async (event) => {
     }
   }
 }
+
