@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import {
   Sparkles, User, Download, Trash2, X, Heart, MapPin, Briefcase,
-  Lock, ChefHat, Car, Users, Send, Brain, Wrench
+  Lock, ChefHat, Car, Users, Send, Brain, Wrench, MessageCircle, Plus, ChevronLeft
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -25,6 +25,9 @@ export default function AIChatPage() {
   const [selectedImage, setSelectedImage] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const [error, setError] = useState('')
+  const [conversationId, setConversationId] = useState(null)
+  const [conversations, setConversations] = useState([])
+  const [showSidebar, setShowSidebar] = useState(true)
   const fileInputRef = useRef(null)
 
   useEffect(() => {
@@ -34,6 +37,25 @@ export default function AIChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  const loadConversation = async (convId) => {
+    setConversationId(convId)
+    setMessages([])
+    const { data: history } = await supabase
+      .from('ai_conversations')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('conversation_id', convId)
+      .order('created_at', { ascending: true })
+    if (history) {
+      const loadedMessages = []
+      history.forEach(conv => {
+        loadedMessages.push({ role: 'user', content: conv.message.replace('USER:', '') })
+        loadedMessages.push({ role: 'assistant', content: conv.response })
+      })
+      setMessages(loadedMessages)
+    }
+  }
 
   const loadUserData = async () => {
     const { data: settings } = await supabase
@@ -57,20 +79,30 @@ export default function AIChatPage() {
 
     if (profileData) setProfile(profileData)
 
-    const { data: history } = await supabase
+    // Load conversation list (distinct conversation_ids, newest first)
+    const { data: convData } = await supabase
       .from('ai_conversations')
-      .select('*')
+      .select('conversation_id, created_at, message')
       .eq('user_id', user.id)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
 
-    if (history) {
-      const loadedMessages = []
-      history.forEach(conv => {
-        loadedMessages.push({ role: 'user', content: conv.message.replace('USER:', '') })
-        loadedMessages.push({ role: 'assistant', content: conv.response })
-      })
-      setMessages(loadedMessages)
-      setQuestionCount(prev => Math.max(prev, history.length))
+    if (convData && convData.length > 0) {
+      const seen = new Set()
+      const convList = []
+      for (const row of convData) {
+        if (!seen.has(row.conversation_id)) {
+          seen.add(row.conversation_id)
+          convList.push({
+            id: row.conversation_id,
+            title: row.message.replace('USER:', '').substring(0, 40),
+            created_at: row.created_at
+          })
+        }
+      }
+      setConversations(convList)
+      // Load messages for the most recent conversation
+      await loadConversation(convList[0].id)
+      setQuestionCount(prev => Math.max(prev, convData.length))
     }
   }
 
@@ -183,6 +215,13 @@ export default function AIChatPage() {
     }
     setSelectedImage(file)
     setImagePreview(URL.createObjectURL(file))
+  }
+
+  const startNewChat = () => {
+    const newId = crypto.randomUUID()
+    setConversationId(newId)
+    setMessages([])
+    setConversations(prev => [{ id: newId, title: 'Neuer Chat', created_at: new Date().toISOString() }, ...prev])
   }
 
   const removeImage = () => {
@@ -385,11 +424,17 @@ Falls eine persönliche Geschichte als Stilmittel sinnvoll ist: Biete NUR eine S
       gtag('event', 'content_generated', { source: 'ai_chat' })
 
       // Save conversation with error handling
+      let currentConvId = conversationId
+      if (!currentConvId) {
+        currentConvId = crypto.randomUUID()
+        setConversationId(currentConvId)
+      }
       const { error: convError } = await supabase.from('ai_conversations').insert({
         user_id: user.id,
         message: `USER:${userMessage}`,
         response: aiResponse,
-        context: { profile }
+        context: { profile },
+        conversation_id: currentConvId
       })
       if (convError) {
         console.error('Conversation save failed:', convError)
@@ -519,15 +564,39 @@ Falls eine persönliche Geschichte als Stilmittel sinnvoll ist: Biete NUR eine S
   const hasMessages = messages.length > 0
 
   return (
-    <div className="ai-chat-page">
+    <div className={`ai-chat-page ${showSidebar ? 'sidebar-open' : ''}`}>
+      {showSidebar && (
+        <div className="ai-sidebar">
+          <div className="ai-sidebar-header">
+            <strong>Chat-Verlauf</strong>
+            <button className="ai-sidebar-close" onClick={() => setShowSidebar(false)}><ChevronLeft size={16} /></button>
+          </div>
+          <div className="ai-sidebar-list">
+            {conversations.map(conv => (
+              <button
+                key={conv.id}
+                className={`ai-sidebar-item ${conv.id === conversationId ? 'active' : ''}`}
+                onClick={() => { loadConversation(conv.id); if (window.innerWidth <= 768) setShowSidebar(false); }}
+              >
+                <MessageCircle size={14} className="ai-sidebar-item-icon" />
+                <span className="ai-sidebar-item-title">{conv.title || 'Neuer Chat'}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="ai-main">
         <div className="ai-topbar">
           <span className="ai-logo"><Brain size={20} /></span>
           <strong><BrandWord /> AI</strong>
           <div className="ai-topbar-actions">
-            <button className="ai-topbar-btn" onClick={() => setMessages([])}>
-              <Sparkles size={14} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
+            <button className="ai-topbar-btn" onClick={startNewChat}>
+              <Plus size={14} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
               {t('ai.newChat') || 'Neuer Chat'}
+            </button>
+            <button className="ai-topbar-btn" onClick={() => setShowSidebar(s => !s)}>
+              <MessageCircle size={14} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
+              Chats
             </button>
             <button className="ai-topbar-btn" onClick={() => setShowProfile(!showProfile)}>
               <User size={14} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
