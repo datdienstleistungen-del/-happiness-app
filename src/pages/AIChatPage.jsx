@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations'
 import ReactMarkdown from 'react-markdown'
 import { BrandWord } from '../components/Logo'
+import CopyButton from '../components/CopyButton'
 import './AIChatPage.css'
 
 export default function AIChatPage() {
@@ -195,6 +196,50 @@ export default function AIChatPage() {
     if ((!input.trim() && !selectedImage) || isLoading) return
 
     const userMessage = input.trim()
+    setError('')
+
+    let imageBase64 = null
+    if (selectedImage) {
+      setIsLoading(true)
+      try {
+        imageBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result)
+          reader.onerror = reject
+          reader.readAsDataURL(selectedImage)
+        })
+      } catch (e) {
+        console.error('Bild-Konvertierung fehlgeschlagen:', e)
+        setError('Bild-Konvertierung fehlgeschlagen.')
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token || ''
+        const modRes = await fetch('/api/moderate-image', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ image: imageBase64 })
+        })
+        const modData = await modRes.json()
+        if (!modRes.ok || !modData.allowed) {
+          setError('Dieses Bild kann nicht verwendet werden.')
+          setIsLoading(false)
+          return
+        }
+      } catch (err) {
+        console.error('Moderation check error:', err)
+        setError('Dieses Bild kann nicht verwendet werden.')
+        setIsLoading(false)
+        return
+      }
+    }
+
     setInput('')
     setMessages(prev => [...prev, { role: 'user', content: userMessage, image: imagePreview }])
     setIsLoading(true)
@@ -251,7 +296,6 @@ BEI FOTOS:
 
 WENN DU NICHT WEISST:
 - Sag's ehrlich: "Weiß ich nicht genau, aber hier ist was ich weiß..."
-- Keithelft..."
 - Keine Halluzination. Lieber "Lass mich nachdenken..." als Falsches.
 
 METHODIK (situativ):
@@ -306,20 +350,7 @@ Falls eine persönliche Geschichte als Stilmittel sinnvoll ist: Biete NUR eine S
       content: msg.content
     }))
 
-    // Convert image to base64 client-side (bypass Supabase Storage)
-    let imageBase64 = null
-    if (selectedImage) {
-      try {
-        imageBase64 = await new Promise((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => resolve(reader.result)
-          reader.onerror = reject
-          reader.readAsDataURL(selectedImage)
-        })
-      } catch (e) {
-        console.error('Bild-Konvertierung fehlgeschlagen:', e)
-      }
-    }
+    // imageBase64 is already converted and moderated at the start of sendMessage
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -351,6 +382,7 @@ Falls eine persönliche Geschichte als Stilmittel sinnvoll ist: Biete NUR eine S
       const imageNote = data.imageNote || null
 
       setMessages(prev => [...prev, { role: 'assistant', content: imageNote ? `${imageNote}\n\n${aiResponse}` : aiResponse }])
+      gtag('event', 'content_generated', { source: 'ai_chat' })
 
       // Save conversation with error handling
       const { error: convError } = await supabase.from('ai_conversations').insert({
@@ -620,7 +652,7 @@ Falls eine persönliche Geschichte als Stilmittel sinnvoll ist: Biete NUR eine S
                   </button>
                   <textarea
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={(e) => { try { if (input.length === 0) gtag('event', 'idea_started', { source: 'ai_chat' }); } catch {} setInput(e.target.value); }}
                     onInput={(e) => {
                       e.target.style.height = 'auto'
                       e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px'
@@ -662,9 +694,12 @@ Falls eine persönliche Geschichte als Stilmittel sinnvoll ist: Biete NUR eine S
                   </>
                 )}
                 {msg.role === 'assistant' && (
-                  <div className={`message-bubble ${msg.role}`}>
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
-                  </div>
+                  <>
+                    <div className={`message-bubble ${msg.role}`}>
+                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    </div>
+                    <CopyButton text={msg.content} className="msg-copy-btn" />
+                  </>
                 )}
               </div>
             ))}
@@ -723,7 +758,7 @@ Falls eine persönliche Geschichte als Stilmittel sinnvoll ist: Biete NUR eine S
             </button>
             <textarea
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => { try { if (input.length === 0) gtag('event', 'idea_started', { source: 'ai_chat' }); } catch {} setInput(e.target.value); }}
               onInput={(e) => {
                 e.target.style.height = 'auto'
                 e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px'

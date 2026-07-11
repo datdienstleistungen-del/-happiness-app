@@ -21,6 +21,7 @@ export default function OnboardingPage() {
         onboarding_choice: choice,
         last_seen: new Date().toISOString()
       }).eq('id', user.id)
+      gtag('event', 'signup_completed')
 
       if (choice === 'community') navigate('/today-question', { replace: true })
       else if (choice === 'creator') navigate('/creator-welcome', { replace: true })

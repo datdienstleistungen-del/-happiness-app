@@ -1151,3 +1151,78 @@ textarea.form-input {
   font-size: 0.9rem;
   color: var(--text-muted, #5F5E5A);
 }
+
+/* ── Mobile Language Switcher ── */
+.mobile-lang-bar {
+  display: none;
+  position: fixed;
+  bottom: 64px;
+  left: 0;
+  right: 0;
+  padding: 4px 12px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  z-index: 999;
+  justify-content: center;
+}
+
+.mobile-lang-select {
+  width: 100%;
+  max-width: 200px;
+  padding: 4px 8px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #2d3436;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .mobile-lang-bar {
+    display: flex;
+  }
+}
+
+/* ── Copy Button ── */
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 1px solid var(--border, #D3D1C7);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  color: var(--text-muted, #6B7280);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.copy-btn:hover {
+  background: var(--hover, #f3f4f6);
+  color: var(--text, #2d3436);
+}
+
+.copy-btn.copied {
+  color: var(--success, #059669);
+  border-color: var(--success, #059669);
+}
+
+.msg-copy-btn {
+  align-self: flex-start;
+  margin-left: 48px;
+  margin-top: 4px;
+}
+
+.tiktok-scenes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.tiktok-scenes-header h3 {
+  margin: 0;
+}

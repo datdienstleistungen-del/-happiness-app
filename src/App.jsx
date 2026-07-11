@@ -159,6 +159,49 @@ function Sidebar() {
   )
 }
 
+function MobileBar() {
+  const { lang, setLang } = useLanguage()
+  const location = useLocation()
+
+  return (
+    <>
+      <nav className="mobile-bottom-nav">
+        <Link to="/" className={`mobile-nav-link ${location.pathname === '/' ? 'active' : ''}`}>
+          <Home size={20} />
+          <span>Home</span>
+        </Link>
+        <Link to="/community" className={`mobile-nav-link ${location.pathname === '/community' ? 'active' : ''}`}>
+          <Hash size={20} />
+          <span>Feed</span>
+        </Link>
+        <Link to="/creator-academy" className={`mobile-nav-link ${location.pathname === '/creator-academy' ? 'active' : ''}`}>
+          <Rocket size={20} />
+          <span>Create</span>
+        </Link>
+        <Link to="/ai-chat" className={`mobile-nav-link ${location.pathname === '/ai-chat' ? 'active' : ''}`}>
+          <Sparkles size={20} />
+          <span>AI</span>
+        </Link>
+        <Link to="/marketplace" className={`mobile-nav-link ${location.pathname === '/marketplace' ? 'active' : ''}`}>
+          <ShoppingCart size={20} />
+          <span>Market</span>
+        </Link>
+      </nav>
+      <div className="mobile-lang-bar">
+        <select
+          className="mobile-lang-select"
+          value={lang}
+          onChange={(e) => setLang(e.target.value)}
+        >
+          {LANGUAGES.map((l) => (
+            <option key={l.code} value={l.code}>{l.flag} {l.label}</option>
+          ))}
+        </select>
+      </div>
+    </>
+  )
+}
+
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
   const { t } = useLanguage()
@@ -280,30 +323,7 @@ export default function App() {
               </Routes>
               </Suspense>
             </main>
-            {user && !['/onboarding', '/today-question', '/creator-welcome'].includes(location.pathname) && (
-              <nav className="mobile-bottom-nav">
-                <Link to="/" className={`mobile-nav-link ${location.pathname === '/' ? 'active' : ''}`}>
-                  <Home size={20} />
-                  <span>Home</span>
-                </Link>
-                <Link to="/community" className={`mobile-nav-link ${location.pathname === '/community' ? 'active' : ''}`}>
-                  <Hash size={20} />
-                  <span>Feed</span>
-                </Link>
-                <Link to="/creator-academy" className={`mobile-nav-link ${location.pathname === '/creator-academy' ? 'active' : ''}`}>
-                  <Rocket size={20} />
-                  <span>Create</span>
-                </Link>
-                <Link to="/ai-chat" className={`mobile-nav-link ${location.pathname === '/ai-chat' ? 'active' : ''}`}>
-                  <Sparkles size={20} />
-                  <span>AI</span>
-                </Link>
-                <Link to="/marketplace" className={`mobile-nav-link ${location.pathname === '/marketplace' ? 'active' : ''}`}>
-                  <ShoppingCart size={20} />
-                  <span>Market</span>
-                </Link>
-              </nav>
-            )}
+            {user && !['/onboarding', '/today-question', '/creator-welcome'].includes(location.pathname) && <MobileBar />}
           </>
         )}
       </AuthContext.Provider>

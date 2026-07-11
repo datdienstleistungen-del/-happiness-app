@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations'
 import './CreatorAcademyPage.css'
 import { useSearchParams } from 'react-router-dom'
+import CopyButton from '../components/CopyButton'
 
 export default function CreatorAcademyPage() {
   const { user } = useAuth()
@@ -114,6 +115,7 @@ Antworte immer auf Deutsch. Formatierung mit Markdown (fett, kursiv, Listen).`
 
       const data = await response.json()
       setFeedback(data.response)
+      gtag('event', 'content_generated', { source: 'creator_academy' })
       setFreeContentUsed(prev => prev + 1)
     } catch (err) {
       console.error('Feedback error:', err)
@@ -157,6 +159,7 @@ Antworte immer auf Deutsch. Formatierung mit Markdown (fett, kursiv, Listen).`
 
       if (insertError) throw insertError
       setPosted(true)
+      gtag('event', 'project_saved', { source: 'creator_academy' })
     } catch (err) {
       console.error('Post error:', err)
       setError(err.message || 'Fehler beim Veröffentlichen.')
@@ -202,7 +205,7 @@ Antworte immer auf Deutsch. Formatierung mit Markdown (fett, kursiv, Listen).`
             <textarea
               className="ca-textarea"
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={(e) => { try { if (draft.length === 0) gtag('event', 'idea_started', { source: 'creator_academy' }); } catch {} setDraft(e.target.value); }}
               onKeyDown={handleKeyDown}
               placeholder="Schreib hier deinen Post...&#10;&#10;Was möchtest du mit der Community teilen? Eine Idee, eine Geschichte, ein Tipp?"
               rows={8}
@@ -285,6 +288,7 @@ Antworte immer auf Deutsch. Formatierung mit Markdown (fett, kursiv, Listen).`
               <div className="ca-feedback-content">
                 <div dangerouslySetInnerHTML={{ __html: formatFeedback(feedback) }} />
               </div>
+              <CopyButton text={feedback} className="ca-copy-btn" />
               <div className="ca-feedback-tip">
                 <Lightbulb size={14} />
                 <span>Tipp: Übernimm die Verbesserungen in deinen Entwurf und frag erneut nach Feedback.</span>

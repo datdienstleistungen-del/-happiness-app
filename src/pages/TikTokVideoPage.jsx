@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { getFFmpeg, downloadBlob } from '../lib/ffmpeg'
 import { Sparkles, Download, Image as ImageIcon, ArrowLeft, X, Film, Check, CreditCard, Brain, AlertTriangle } from 'lucide-react'
+import CopyButton from '../components/CopyButton'
 import './TikTokVideoPage.css'
 
 export default function TikTokVideoPage() {
@@ -135,6 +136,30 @@ export default function TikTokVideoPage() {
     setVideoUrl(null)
 
     try {
+      if (selectedImage) {
+        setStatusMsg('Bild wird moderiert...')
+        const imageBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result)
+          reader.onerror = reject
+          reader.readAsDataURL(selectedImage)
+        })
+        
+        const token = (await supabase.auth.getSession()).data.session?.access_token
+        const modRes = await fetch('/api/moderate-image', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ image: imageBase64 })
+        })
+        const modData = await modRes.json()
+        if (!modRes.ok || !modData.allowed) {
+          throw new Error('Dieses Bild kann nicht verwendet werden.')
+        }
+      }
+
       const imageUrl = selectedImage ? await uploadImage() : null
 
       const token = (await supabase.auth.getSession()).data.session?.access_token
@@ -292,7 +317,8 @@ export default function TikTokVideoPage() {
 
     const data = await ffmpeg.readFile('output.mp4')
     const blob = new Blob([data.buffer], { type: 'video/mp4' })
-    setVideoBlob(blob)
+      setVideoBlob(blob)
+      gtag('event', 'content_generated', { source: 'tiktok_video' })
     setVideoUrl(URL.createObjectURL(blob))
     setStatusMsg('')
 
@@ -329,7 +355,7 @@ export default function TikTokVideoPage() {
               <textarea
                 className="tiktok-textarea"
                 value={text}
-                onChange={(e) => setText(e.target.value)}
+                onChange={(e) => { try { if (text.length === 0) gtag('event', 'idea_started', { source: 'tiktok_video' }); } catch {} setText(e.target.value); }}
                 placeholder="z.B. 'Ich verkaufe handgemachte Kerzen aus Sojawachs. Sie duften nach Vanille und Lavendel und brennen 40 Stunden lang.'"
                 rows={4}
                 disabled={loading}
@@ -415,7 +441,13 @@ export default function TikTokVideoPage() {
 
         {scenes && !loading && !showPaywall && (
           <div className="tiktok-scenes-preview">
-            <h3>Skript: {totalDuration}s Video ({scenes.length} Szenen)</h3>
+            <div className="tiktok-scenes-header">
+              <h3>Skript: {totalDuration}s Video ({scenes.length} Szenen)</h3>
+              <CopyButton
+                text={scenes.map((s, i) => `${i + 1}. ${s.text1}${s.text2 ? ` — ${s.text2}` : ''} (${s.duration}s)`).join('\n')}
+                label="Kopieren"
+              />
+            </div>
             <div className="tiktok-scenes-list">
               {scenes.map((scene, i) => (
                 <div key={i} className="tiktok-scene-card" style={{ borderLeftColor: scene.colors.accent }}>
@@ -447,7 +479,7 @@ export default function TikTokVideoPage() {
               />
             </div>
             <div className="tiktok-result-actions">
-              <button className="btn btn-primary" onClick={() => downloadBlob(videoBlob, `tiktok-video-${Date.now()}.mp4`)}>
+              <button className="btn btn-primary" onClick={() => { gtag('event', 'project_saved', { source: 'tiktok_video' }); downloadBlob(videoBlob, `tiktok-video-${Date.now()}.mp4`); }}>
                 <Download size={18} /> Herunterladen
               </button>
               <button className="btn btn-outline" onClick={() => {

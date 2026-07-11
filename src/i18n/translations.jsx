@@ -341,8 +341,17 @@ const translations = {
 
 const LanguageContext = createContext()
 
+function detectBrowserLanguage() {
+  try {
+    const supported = ['de', 'en', 'es', 'fr', 'it', 'nl', 'el']
+    const navLang = navigator.language?.split('-')[0]
+    if (supported.includes(navLang)) return navLang
+  } catch {}
+  return 'de'
+}
+
 export function LanguageProvider({ children }) {
-  const [lang, setLang] = useState(() => localStorage.getItem('happiness-lang') || 'de')
+  const [lang, setLang] = useState(() => localStorage.getItem('happiness-lang') || detectBrowserLanguage())
 
   useEffect(() => {
     localStorage.setItem('happiness-lang', lang)

@@ -32,6 +32,36 @@ export default function MarketplacePage() {
   async function handleCreate() {
     if (!form.title.trim() || !form.description.trim()) return
 
+    if (selectedImage) {
+      try {
+        const imageBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result)
+          reader.onerror = reject
+          reader.readAsDataURL(selectedImage)
+        })
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token || ''
+        const modRes = await fetch('/api/moderate-image', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ image: imageBase64 })
+        })
+        const modData = await modRes.json()
+        if (!modRes.ok || !modData.allowed) {
+          alert('Dieses Bild kann nicht verwendet werden.')
+          return
+        }
+      } catch (err) {
+        console.error('Moderation failed:', err)
+        alert('Dieses Bild kann nicht verwendet werden.')
+        return
+      }
+    }
+
     let imageUrl = ''
     if (selectedImage) {
       const ext = selectedImage.name.split('.').pop() || 'jpg'
@@ -55,6 +85,7 @@ export default function MarketplacePage() {
       category: form.category,
       image_url: imageUrl,
     })
+    gtag('event', 'project_saved', { source: 'marketplace' })
     setForm({ title: '', description: '', price: '', category: 'Sonstiges' })
     setSelectedImage(null)
     setImagePreview(null)
