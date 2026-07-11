@@ -172,6 +172,7 @@ export const handler = async (event) => {
     let usage = null
     let provider = ''
     let modelName = ''
+    let deepseekError = null
 
     if (hasImage) {
       const apiKey = process.env.GROQ_API_KEY
@@ -268,7 +269,6 @@ export const handler = async (event) => {
     } else {
       // Text-only request: Fallback Chain: DeepSeek -> Groq -> OpenRouter
       let success = false
-      let deepseekError = null
 
       // Stage 1: DeepSeek
       const deepseekKey = process.env.DEEPSEEK_API_KEY
