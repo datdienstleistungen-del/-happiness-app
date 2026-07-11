@@ -308,7 +308,7 @@ export const handler = async (event) => {
     let usage = null
     let provider = ''
     let modelName = ''
-    let deepseekError = null
+    const providerErrors = []
 
     if (hasImage) {
       const apiKey = process.env.GROQ_API_KEY
@@ -435,15 +435,15 @@ export const handler = async (event) => {
           } else {
             const groqData = await groqRes.json().catch(() => ({}))
             const errMsg = groqData?.error?.message || JSON.stringify(groqData)
-            deepseekError = { status: groqRes.status, error: errMsg }
+            providerErrors.push(`Groq: ${errMsg} (HTTP ${groqRes.status})`)
             console.warn('Groq failed, status:', groqRes.status, 'message:', errMsg)
           }
         } catch (err) {
-          deepseekError = { status: 0, error: err.message }
+          providerErrors.push(`Groq: ${err.message}`)
           console.warn('Groq fetch failed:', err.message)
         }
       } else {
-        deepseekError = { status: 0, error: 'GROQ_API_KEY not configured' }
+        providerErrors.push('Groq: GROQ_API_KEY not configured')
         console.warn('GROQ_API_KEY not configured, skipping to DeepSeek fallback')
       }
 
@@ -475,12 +475,16 @@ export const handler = async (event) => {
               success = true
             } else {
               const dsData = await dsRes.json().catch(() => ({}))
-              console.warn('DeepSeek fallback failed, status:', dsRes.status, JSON.stringify(dsData))
+              const errMsg = dsData?.error?.message || JSON.stringify(dsData)
+              providerErrors.push(`DeepSeek: ${errMsg} (HTTP ${dsRes.status})`)
+              console.warn('DeepSeek fallback failed, status:', dsRes.status, errMsg)
             }
           } catch (err) {
+            providerErrors.push(`DeepSeek: ${err.message}`)
             console.warn('DeepSeek fallback fetch failed:', err.message)
           }
         } else {
+          providerErrors.push('DeepSeek: DEEPSEEK_API_KEY not configured')
           console.warn('DEEPSEEK_API_KEY not configured, skipping to OpenRouter')
         }
       }
@@ -515,13 +519,17 @@ export const handler = async (event) => {
               success = true
             } else {
               const orData = await orRes.json().catch(() => ({}))
-              console.error('OpenRouter fallback failed, status:', orRes.status, JSON.stringify(orData))
+              const errMsg = orData?.error?.message || JSON.stringify(orData)
+              providerErrors.push(`OpenRouter: ${errMsg} (HTTP ${orRes.status})`)
+              console.error('OpenRouter fallback failed, status:', orRes.status, errMsg)
             }
           } catch (err) {
+            providerErrors.push(`OpenRouter: ${err.message}`)
             console.error('OpenRouter fallback fetch failed:', err.message)
           }
         } else {
-          console.error('OPENROUTER_API_KEY not configured')
+          providerErrors.push('OpenRouter: OPENROUTER_API_KEY not configured')
+          console.warn('OPENROUTER_API_KEY not configured')
         }
       }
 
@@ -529,8 +537,9 @@ export const handler = async (event) => {
         return {
           statusCode: 502,
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify({ error: 'All text AI providers in the fallback chain failed.' })
+          body: JSON.stringify({ error: 'Alle AI-Provider fehlgeschlagen: ' + providerErrors.join(' | ') })
         }
+      }
       }
     }
 
@@ -559,7 +568,7 @@ export const handler = async (event) => {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
       },
-      body: JSON.stringify({ response: aiResponse, usage: usage, provider, model: modelName, _debug: { deepseekError } })
+      body: JSON.stringify({ response: aiResponse, usage: usage, provider, model: modelName })
     }
 
   } catch (error) {
