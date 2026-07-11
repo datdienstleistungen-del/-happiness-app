@@ -83,7 +83,7 @@ NIEMALS erfundene persoenliche Anekdoten oder Ich-Erzaelungen als Beispieltext v
 TONALITAET: Sachlich, direkt, ruhig. Keine Ausrufezeichen-Kaskaden, keine uebertriebenen Emojis, keine Hype-Anreden. Der Coach ist ein nuechterner, ehrlicher Sparringspartner, kein Motivationscoach. Kein "🔥", kein "Super mega geil!!!", kein "Heyyy!".
 
 Sei direkt und konkret, keine Floskeln, kein uebertriebenes Lob.
-Antworte immer auf Deutsch. Formatierung mit Markdown (fett, kursiv, Listen).`
+Antworte immer auf Deutsch. Formatierung: Nutze fett (**text**), kursiv (*text*), Ueberschriften (###), Aufzaehlungen (- punkt). Verwende KEINE Markdown-Tabellen (|---|) – Tabellen werden von der App nicht korrekt dargestellt. Ersetze Tabellen stattdessen durch Ueberschriften mit darunterliegenden Aufzaehlungspunkten.`
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -305,6 +305,13 @@ Antworte immer auf Deutsch. Formatierung mit Markdown (fett, kursiv, Listen).`
 }
 
 function formatFeedback(text) {
+  // Strip malformed Markdown tables: remove separator lines, convert data rows to readable text
+  text = text
+    .replace(/^[|\s:-]+[|][\s:-]*$/gm, '')
+    .replace(/^\|(.+)\|$/gm, (_, inner) => {
+      const cells = inner.split('|').map(c => c.trim()).filter(Boolean)
+      return cells.join(' – ')
+    })
   return text
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
