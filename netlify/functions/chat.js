@@ -1,4 +1,4 @@
-console.log('chat.js v5 - DeepSeek + Groq + RAG')
+console.log('chat.js v6 - Groq primär + DeepSeek fallback + RAG')
 console.log('DEEPSEEK_API_KEY vorhanden:', !!process.env.DEEPSEEK_API_KEY)
 console.log('GROQ_API_KEY vorhanden:', !!process.env.GROQ_API_KEY)
 console.log('OPENROUTER_API_KEY vorhanden:', !!process.env.OPENROUTER_API_KEY)
@@ -350,16 +350,16 @@ export const handler = async (event) => {
         modelName = 'meta-llama/llama-4-scout-17b-16e-instruct'
       } else {
         const errMsg = (data?.error?.message || '').toLowerCase()
-        console.log('Vision model failed, falling back to text-only with DeepSeek. Error:', errMsg)
+        console.log('Vision model failed, falling back to text-only with Groq. Error:', errMsg)
         
-        const textApiKey = process.env.DEEPSEEK_API_KEY
+        const textApiKey = process.env.GROQ_API_KEY
         if (textApiKey) {
           try {
-            const fallbackRes = await fetch('https://api.deepseek.com/chat/completions', {
+            const fallbackRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
               method: 'POST',
               headers: { 'Authorization': `Bearer ${textApiKey}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                model: 'deepseek-v4-flash',
+                model: 'openai/gpt-oss-20b',
                 messages: buildMessages(historyLimit, true),
                 temperature: 0.7,
                 max_tokens: 4096
@@ -367,11 +367,11 @@ export const handler = async (event) => {
             })
             if (fallbackRes.ok) {
               const fallbackData = await fallbackRes.json()
-              console.log('Antwort von:', 'deepseek')
+              console.log('Antwort von:', 'groq-vision-fallback')
               aiResponse = fallbackData.choices?.[0]?.message?.content || 'Entschuldigung, ich konnte keine Antwort generieren.'
               usage = fallbackData.usage
-              provider = 'deepseek'
-              modelName = 'deepseek-v4-flash'
+              provider = 'groq'
+              modelName = 'openai/gpt-oss-20b'
               return {
                 statusCode: 200,
                 headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
@@ -385,10 +385,10 @@ export const handler = async (event) => {
               }
             } else {
               const fallbackData = await fallbackRes.json().catch(() => ({}))
-              console.error('DeepSeek fallback failed:', fallbackRes.status, fallbackData)
+              console.error('Groq vision fallback failed:', fallbackRes.status, fallbackData)
             }
           } catch (e) {
-            console.error('DeepSeek fallback error:', e.message)
+            console.error('Groq vision fallback error:', e.message)
           }
         }
         
@@ -403,85 +403,85 @@ export const handler = async (event) => {
         }
       }
     } else {
-      // Text-only request: Fallback Chain: DeepSeek -> Groq -> OpenRouter
+      // Text-only request: Fallback Chain: Groq -> DeepSeek -> OpenRouter
       let success = false
 
-      // Stage 1: DeepSeek
-      const deepseekKey = process.env.DEEPSEEK_API_KEY
-      console.log('DeepSeek check: key vorhanden =', !!deepseekKey)
-      if (deepseekKey) {
+      // Stage 1: Groq (primär - schnellster Anbieter)
+      const groqKey = process.env.GROQ_API_KEY
+      console.log('Groq check: key vorhanden =', !!groqKey)
+      if (groqKey) {
         try {
-          const dsRes = await fetch('https://api.deepseek.com/chat/completions', {
+          const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${deepseekKey}`,
+              'Authorization': `Bearer ${groqKey}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              model: 'deepseek-v4-flash',
+              model: 'openai/gpt-oss-20b',
               messages: buildMessages(historyLimit),
               temperature: 0.7,
               max_tokens: 4096
             })
           })
-          if (dsRes.ok) {
-            const dsData = await dsRes.json()
-            console.log('Antwort von:', 'deepseek')
-            aiResponse = dsData.choices?.[0]?.message?.content || ''
-            usage = dsData.usage
-            provider = 'deepseek'
-            modelName = 'deepseek-v4-flash'
+          if (groqRes.ok) {
+            const groqData = await groqRes.json()
+            console.log('Antwort von:', 'groq')
+            aiResponse = groqData.choices?.[0]?.message?.content || ''
+            usage = groqData.usage
+            provider = 'groq'
+            modelName = 'openai/gpt-oss-20b'
             success = true
           } else {
-            const dsData = await dsRes.json().catch(() => ({}))
-            const errMsg = dsData?.error?.message || JSON.stringify(dsData)
-            deepseekError = { status: dsRes.status, error: errMsg }
-            console.warn('DeepSeek failed, status:', dsRes.status, 'message:', errMsg)
+            const groqData = await groqRes.json().catch(() => ({}))
+            const errMsg = groqData?.error?.message || JSON.stringify(groqData)
+            deepseekError = { status: groqRes.status, error: errMsg }
+            console.warn('Groq failed, status:', groqRes.status, 'message:', errMsg)
           }
         } catch (err) {
           deepseekError = { status: 0, error: err.message }
-          console.warn('DeepSeek fetch failed:', err.message)
+          console.warn('Groq fetch failed:', err.message)
         }
       } else {
-        deepseekError = { status: 0, error: 'DEEPSEEK_API_KEY not configured' }
-        console.warn('DEEPSEEK_API_KEY not configured, skipping to Groq fallback')
+        deepseekError = { status: 0, error: 'GROQ_API_KEY not configured' }
+        console.warn('GROQ_API_KEY not configured, skipping to DeepSeek fallback')
       }
 
-      // Stage 2: Groq Fallback
+      // Stage 2: DeepSeek Fallback
       if (!success) {
-        const groqKey = process.env.GROQ_API_KEY
-        if (groqKey) {
+        const deepseekKey = process.env.DEEPSEEK_API_KEY
+        if (deepseekKey) {
           try {
-            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            const dsRes = await fetch('https://api.deepseek.com/chat/completions', {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${groqKey}`,
+                'Authorization': `Bearer ${deepseekKey}`,
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({
-                model: 'openai/gpt-oss-20b',
+                model: 'deepseek-v4-flash',
                 messages: buildMessages(historyLimit),
                 temperature: 0.7,
                 max_tokens: 4096
               })
             })
-            if (groqRes.ok) {
-              const groqData = await groqRes.json()
-              console.log('Antwort von:', 'groq-fallback')
-              aiResponse = groqData.choices?.[0]?.message?.content || ''
-              usage = groqData.usage
-              provider = 'groq'
-              modelName = 'openai/gpt-oss-20b'
+            if (dsRes.ok) {
+              const dsData = await dsRes.json()
+              console.log('Antwort von:', 'deepseek-fallback')
+              aiResponse = dsData.choices?.[0]?.message?.content || ''
+              usage = dsData.usage
+              provider = 'deepseek'
+              modelName = 'deepseek-v4-flash'
               success = true
             } else {
-              const groqData = await groqRes.json().catch(() => ({}))
-              console.warn('Groq fallback failed, status:', groqRes.status, JSON.stringify(groqData))
+              const dsData = await dsRes.json().catch(() => ({}))
+              console.warn('DeepSeek fallback failed, status:', dsRes.status, JSON.stringify(dsData))
             }
           } catch (err) {
-            console.warn('Groq fallback fetch failed:', err.message)
+            console.warn('DeepSeek fallback fetch failed:', err.message)
           }
         } else {
-          console.warn('GROQ_API_KEY not configured, skipping to OpenRouter')
+          console.warn('DEEPSEEK_API_KEY not configured, skipping to OpenRouter')
         }
       }
 
