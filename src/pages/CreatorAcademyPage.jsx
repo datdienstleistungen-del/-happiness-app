@@ -140,9 +140,12 @@ Antworte immer auf Deutsch. Formatierung: Nutze fett (**text**), kursiv (*text*)
       const data = await response.json()
       if (data.url) {
         window.location.href = data.url
+      } else {
+        setError('Checkout-Fehler: ' + (data.error || 'Unbekannter Fehler'))
       }
     } catch (error) {
       console.error('Checkout error:', error)
+      setError('Verbindungsfehler beim Checkout.')
     }
   }
 
@@ -263,7 +266,7 @@ Antworte immer auf Deutsch. Formatierung: Nutze fett (**text**), kursiv (*text*)
                 <p>Du hast alle {FREE_LIMIT} kostenlosen Feedbacks genutzt.</p>
                 <p className="ca-paywall-sub">Schalte Premium frei für unbegrenztes Feedback:</p>
                 <div className="ca-paywall-price">
-                  <span className="ca-price-amount">6,99 €</span>
+                  <span className="ca-price-amount">4,99 €</span>
                   <span className="ca-price-period">/ Monat</span>
                 </div>
                 <button className="ca-paywall-btn stripe-btn" onClick={handleCheckout}>
@@ -274,7 +277,7 @@ Antworte immer auf Deutsch. Formatierung: Nutze fett (**text**), kursiv (*text*)
                   <p><Check size={14} /> Unbegrenzt TikTok-Videos erstellen</p>
                   <p><Check size={14} /> Unbegrenzt AI Chat Fragen</p>
                 </div>
-                <p className="ca-paywall-note">Sicher bezahlen mit Stripe.</p>
+                <p className="ca-paywall-note">Promotionspreis — ab 6,99 €/Monat nach einem Monat.</p>
               </div>
             </div>
           )}

@@ -88,9 +88,12 @@ export default function TikTokVideoPage() {
       const data = await response.json()
       if (data.url) {
         window.location.href = data.url
+      } else {
+        setError('Checkout-Fehler: ' + (data.error || 'Unbekannter Fehler'))
       }
     } catch (error) {
       console.error('Checkout error:', error)
+      setError('Verbindungsfehler beim Checkout.')
     }
   }
 
@@ -416,7 +419,7 @@ export default function TikTokVideoPage() {
               <p>Du hast alle {FREE_LIMIT} kostenlosen Videos genutzt.</p>
               <p className="tiktok-paywall-sub">Schalte Premium frei für unbegrenzte Videos:</p>
               <div className="tiktok-paywall-price">
-                <span className="tiktok-price-amount">6,99 €</span>
+                  <span className="tiktok-price-amount">4,99 €</span>
                 <span className="tiktok-price-period">/ Monat</span>
               </div>
               <button className="tiktok-paywall-btn stripe-btn" onClick={handleCheckout}>
@@ -427,7 +430,7 @@ export default function TikTokVideoPage() {
                 <p><Check size={14} /> Unbegrenzt TikTok-Videos erstellen</p>
                 <p><Check size={14} /> Unbegrenzt AI Chat Fragen</p>
               </div>
-              <p className="tiktok-paywall-note">Sicher bezahlen mit Stripe.</p>
+                <p className="tiktok-paywall-note">Promotionspreis — ab 6,99 €/Monat nach einem Monat.</p>
             </div>
           </div>
         )}

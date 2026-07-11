@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Heart, MessageCircle, Play, Pause, Send, Volume2, VolumeX, Film } from 'lucide-react'
+import { Heart, MessageCircle, Play, Pause, Send, Volume2, VolumeX, Film, Eye } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import './Feed.css'
@@ -371,11 +371,39 @@ function FeedCard({ post, currentUserId }) {
   const profile = post._profile
   const [reactions, setReactions] = useState([])
   const [commentCount, setCommentCount] = useState(0)
+  const [viewsCount, setViewsCount] = useState(post.views_count || 0)
   const [showComments, setShowComments] = useState(false)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const navigate = useNavigate()
+  const cardRef = useRef(null)
+  const viewCounted = useRef(false)
 
   useEffect(() => { fetchReactions(); fetchComments() }, [post.id])
+
+  useEffect(() => {
+    const card = cardRef.current
+    if (!card) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !viewCounted.current) {
+          viewCounted.current = true
+          incrementViews()
+        }
+      },
+      { threshold: 0.5 }
+    )
+    observer.observe(card)
+    return () => observer.disconnect()
+  }, [post.id])
+
+  async function incrementViews() {
+    try {
+      await supabase.rpc('increment_post_views', { post_id: post.id })
+      setViewsCount(v => v + 1)
+    } catch (e) {
+      console.error('View increment failed:', e)
+    }
+  }
 
   useEffect(() => {
     const channel = supabase
@@ -411,7 +439,7 @@ function FeedCard({ post, currentUserId }) {
   const hasReacted = reactions.some(r => r.user_id === currentUserId)
 
   return (
-    <div className="feed-card">
+    <div className="feed-card" ref={cardRef}>
       <div className="feed-card-header">
         <div className="feed-card-avatar" style={{ background: getAvatarColor(profile?.name) }}>
           {getInitials(profile?.name)}
@@ -428,8 +456,9 @@ function FeedCard({ post, currentUserId }) {
         </div>
       )}
 
-      {(reactions.length > 0 || commentCount > 0) && (
+      {(viewsCount > 0 || reactions.length > 0 || commentCount > 0) && (
         <div className="feed-card-counts">
+          {viewsCount > 0 && <span><Eye size={14} /> {viewsCount} {viewsCount === 1 ? 'Aufruf' : 'Aufrufe'}</span>}
           {reactions.length > 0 && <span><Heart size={14} fill="var(--color-koralle)" stroke="var(--color-koralle)" /> {reactions.length}</span>}
           {commentCount > 0 && <span>{commentCount} Kommentar{commentCount !== 1 ? 'e' : ''}</span>}
         </div>

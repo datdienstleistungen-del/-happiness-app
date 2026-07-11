@@ -9,6 +9,7 @@ import { supabase } from './lib/supabase'
 import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.jsx'
 import AuthContext, { useAuth } from './context/AuthContext'
 import Logo, { renderBrandText } from './components/Logo'
+import { useOneSignal } from './hooks/useOneSignal'
 import Feed from './components/Feed'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
@@ -263,6 +264,8 @@ export default function App() {
     setUser(null)
     setProfile(null)
   }
+
+  useOneSignal(user)
 
   return (
     <LanguageProvider>

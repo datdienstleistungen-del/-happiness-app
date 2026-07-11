@@ -1,7 +1,7 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || ''
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -16,11 +16,13 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { data: { user }, error: authError } = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    const authResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
     }).then(r => r.json())
 
-    if (authError || !user) {
+    const user = authResponse?.id ? authResponse : authResponse?.data?.user
+
+    if (!user) {
       return { statusCode: 401, body: JSON.stringify({ error: 'Ungueltiges Token' }) };
     }
 

@@ -101,6 +101,7 @@ export default function AdminPage() {
     { id: 'payments', label: 'Zahlungen' },
     { id: 'ai', label: 'KI Chat' },
     { id: 'knowledge', label: `Wissen (${knowledge.length})` },
+    { id: 'notifications', label: 'Push' },
   ]
 
   return (
@@ -131,6 +132,7 @@ export default function AdminPage() {
           {tab === 'activity' && <ActivityTab users={sortedByActivity} />}
           {tab === 'ai' && <AiTab aiProfiles={aiProfiles} aiConversations={aiConversations} onReset={resetAiUsage} />}
           {tab === 'knowledge' && <KnowledgeTab knowledge={knowledge} onRefresh={fetchAll} />}
+          {tab === 'notifications' && <NotificationTab />}
         </div>
       )}
     </div>
@@ -721,6 +723,92 @@ function KnowledgeTab({ knowledge, onRefresh }) {
             ))}
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+function NotificationTab() {
+  const [title, setTitle] = useState('')
+  const [message, setMessage] = useState('')
+  const [url, setUrl] = useState('https://happiness-eu.netlify.app')
+  const [segment, setSegment] = useState('')
+  const [sending, setSending] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  const sendNotification = async () => {
+    if (!title.trim() || !message.trim()) {
+      setMsg('Titel und Nachricht duerfen nicht leer sein.')
+      return
+    }
+    setSending(true)
+    setMsg('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token || ''
+      const response = await fetch('/.netlify/functions/send-notification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ title: title.trim(), message: message.trim(), url, segment: segment || undefined })
+      })
+      const data = await response.json()
+      if (data.success) {
+        setMsg(`Gesendet an ${data.recipients} Empfaenger.`)
+        setTitle('')
+        setMessage('')
+      } else {
+        setMsg('Fehler: ' + (data.error || 'Unbekannt'))
+      }
+    } catch (err) {
+      setMsg('Verbindungsfehler: ' + err.message)
+    }
+    setSending(false)
+  }
+
+  const languages = [
+    { value: '', label: 'Alle Sprachen' },
+    { value: 'de', label: 'Deutsch' },
+    { value: 'en', label: 'Englisch' },
+    { value: 'es', label: 'Spanisch' },
+    { value: 'fr', label: 'Franzoesisch' },
+    { value: 'it', label: 'Italienisch' },
+    { value: 'nl', label: 'Niederlaendisch' },
+    { value: 'el', label: 'Griechisch' },
+  ]
+
+  return (
+    <div className="knowledge-panel">
+      <div className="knowledge-toolbar">
+        <h2>Push-Benachrichtigung senden</h2>
+      </div>
+
+      {msg && <div className="knowledge-msg">{msg}</div>}
+
+      <div className="knowledge-editor" style={{ display: 'block' }}>
+        <div className="knowledge-form">
+          <label>Titel</label>
+          <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="z.B. Neues Update verfügbar" />
+
+          <label>Nachricht</label>
+          <textarea rows={4} value={message} onChange={e => setMessage(e.target.value)} placeholder="Deine Nachricht an alle Nutzer..." />
+
+          <label>Link (optional)</label>
+          <input type="text" value={url} onChange={e => setUrl(e.target.value)} />
+
+          <label>Sprache</label>
+          <select value={segment} onChange={e => setSegment(e.target.value)}>
+            {languages.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
+          </select>
+
+          <div className="knowledge-form-actions">
+            <button className="admin-btn btn-primary" onClick={sendNotification} disabled={sending}>
+              {sending ? 'Sende...' : 'Senden'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )
