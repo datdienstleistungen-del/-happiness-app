@@ -1,7 +1,14 @@
+import { createClient } from '@supabase/supabase-js'
+
 const ONESIGNAL_APP_ID = process.env.VITE_ONESIGNAL_APP_ID || process.env.ONESIGNAL_APP_ID || ''
 const ONESIGNAL_REST_KEY = process.env.ONESIGNAL_REST_API_KEY || ''
 
-exports.handler = async (event) => {
+const supabase = createClient(
+  process.env.VITE_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+)
+
+export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
   }
@@ -13,12 +20,6 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { createClient } = require('@supabase/supabase-js')
-    const supabase = createClient(
-      process.env.VITE_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    )
-
     const { data: { user } } = await supabase.auth.getUser(token)
     if (!user || user.role === 'anon') {
       return { statusCode: 403, body: JSON.stringify({ error: 'Kein Zugriff' }) }

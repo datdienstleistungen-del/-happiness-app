@@ -137,15 +137,17 @@ Antworte immer auf Deutsch. Formatierung: Nutze fett (**text**), kursiv (*text*)
         },
         body: JSON.stringify({ userId: user.id, email: user.email }),
       })
-      const data = await response.json()
-      if (data.url) {
+      const data = await response.json().catch(() => null)
+      if (data?.url) {
         window.location.href = data.url
+      } else if (response.status === 502) {
+        setError('Checkout-Fehler: Server-Fehler (502) — STRIPE_SECRET_KEY pruefen')
       } else {
-        setError('Checkout-Fehler: ' + (data.error || 'Unbekannter Fehler'))
+        setError('Checkout-Fehler: ' + (data?.error || `HTTP ${response.status}`))
       }
     } catch (error) {
       console.error('Checkout error:', error)
-      setError('Verbindungsfehler beim Checkout.')
+      setError('Verbindungsfehler beim Checkout: ' + error.message)
     }
   }
 
