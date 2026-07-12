@@ -65,6 +65,44 @@ async function startRealWork(platform, goal) {
     const { data: { session } } = await supabase.auth.getSession()
     const token = session?.access_token || ''
 
+    const WRITING_PROMPTS = {
+      facebook: `Du bist ein erfahrener Facebook-Content-Writer fuer die Marke Happiness. 
+Schreibe einen fertigen, direkt postbaren Facebook-Post basierend auf diesem Ziel des Nutzers.
+Ton: Warmherzig,社区-orientiert, wie ein Freund der anderen etwas empfiehlt. Nicht werblich, nicht KI-typisch.
+Laenge: 3-5 kurze Absaetze. Hook in der ersten Zeile. Call-to-Action am Ende.
+Format: Klarer Fliesstext. Keine Tabellen, keine Listen, keine Markdown-Formatierung.
+Antworte NUR mit dem fertigen Post-Text, kein Meta-Kommentar, keine Erklaerung.`,
+
+      instagram: `Du bist ein erfahrener Instagram-Content-Writer fuer die Marke Happiness. 
+Schreibe einen fertigen, direkt postbaren Instagram-Caption basierend auf diesem Ziel des Nutzers.
+Ton: Visuell, inspirierend, kurz. Wie ein Instagram-Post der gut performt.
+Laenge: 2-4 kurze Absaetze max. Emoji am Anfang des ersten Satzes erlaubt.
+Hashtags: 5-8 relevante Hashtags am Ende.
+Format: Klarer Fliesstext. Keine Tabellen, keine Listen, keine Markdown-Formatierung.
+Antworte NUR mit dem fertigen Post-Text, kein Meta-Kommentar, keine Erklaerung.`,
+
+      x: `Du bist ein erfahrener X/Twitter-Writer fuer die Marke Happiness. 
+Schreibe einen fertigen, direkt postbaren X-Post basierend auf diesem Ziel des Nutzers.
+Ton: Zugespitzt, direkt, kein Roman. Wie ein Tweet der viral geht.
+Laenge: MAXIMAL 250 Zeichen (inkl. Leerzeichen). Kein Fliesstext-Roman.
+Format: Klartext. Keine Markdown-Formatierung, keine Listen.
+Antworte NUR mit dem fertigen Tweet-Text, kein Meta-Kommentar, keine Erklaerung.`,
+
+      reddit: `Du bist ein erfahrener Reddit-Content-Writer fuer die Marke Happiness. 
+Schreibe einen fertigen, direkt postbaren Reddit-Post basierend auf diesem Ziel des Nutzers.
+Ton: Ehrlich,社区-typisch, wie ein echter Reddit-User der etwas teilt. Keine Werbesprache, kein Marketing.
+Laenge: 1-3 Absaetze. Direkt, ohne Umschweife.
+Format: Klarer Fliesstext. Keine Tabellen, keine Listen, keine Markdown-Formatierung.
+Antworte NUR mit dem fertigen Post-Text, kein Meta-Kommentar, keine Erklaerung.`,
+
+      content: `Du bist ein erfahrener Content-Writer fuer die Marke Happiness. 
+Schreibe einen fertigen, direkt verwendbaren Text basierend auf diesem Ziel des Nutzers.
+Ton: Professionell, klar, wie ein erfahrenes Softwareunternehmen.
+Laenge: Passend zum Zweck, 2-5 Absaetze.
+Format: Klarer Fliesstext. Keine Tabellen, keine Listen, keine Markdown-Formatierung.
+Antworte NUR mit dem fertigen Text, kein Meta-Kommentar, keine Erklaerung.`
+    }
+
     if (platform === 'tiktok') {
       const res = await fetch('/api/tiktok-video', {
         method: 'POST',
@@ -78,36 +116,24 @@ async function startRealWork(platform, goal) {
       return await res.json()
     }
 
-    if (platform === 'facebook' || platform === 'instagram' || platform === 'content') {
-      const systemPrompt = `Du bist ein erfahrener Social-Media-Coach und Content-Analyst.
-Deine Aufgabe: Analysiere den bereitgestellten Content-Entwurf und gib strukturiertes, umsetzbares Feedback.
+    const prompt = WRITING_PROMPTS[platform]
+    if (!prompt) return null
 
-AUFGABE:
-1. Hook-Check: Ist der Einstieg in den ersten 3 Sekunden stark genug?
-2. Plattform-Einschaetzung: Wie gut passt dieser Entwurf auf die gewaehlte Plattform?
-3. Verbesserungsvorschlag: Gib 2-3 konkrete, umsetzbare Tipps zur Optimierung.
-4. Rating: Gib eine ehrliche Einschaetzung von 1-10.
-
-TONALITAET: Sachlich, direkt, ruhig. Keine Ausrufezeichen-Kaskaden.
-Antworte in klarem Fliesstext, wie ein professionelles Softwareunternehmen kommuniziert. Keine Markdown-Formatierung wie **fett**, keine Aufzaehlungspunkte mit Sternchen/Bindestrichen, keine nummerierten Listen, ausser der Nutzer bittet explizit um eine Liste/Tabelle. Kurze, klare Saetze statt KI-typischer Aufzaehlungsstruktur.
-Antworte immer auf Deutsch.`
-
-      const response = await fetch(getChatEndpoint(), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          message: `Hier ist mein Content-Entwurf fuer die Happiness Community:\n\n"${goal}"\n\nBitte gib mir eine Plattform-Einschaetzung, Hook-Check und Verbesserungsvorschlag.`,
-          systemPrompt,
-          history: []
-        })
+    const response = await fetch(getChatEndpoint(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        message: `Schreibe einen fertigen Beitrag basierend auf diesem Ziel:\n\n"${goal}"`,
+        systemPrompt: prompt,
+        history: []
       })
-      if (!response.ok) return null
-      const data = await response.json()
-      return { feedback: data.response }
-    }
+    })
+    if (!response.ok) return null
+    const data = await response.json()
+    return { content: data.response }
   } catch {
     return null
   }
@@ -218,10 +244,12 @@ export default function ExecutionPipeline() {
     if (phase !== 'executing' || !finished || !apiDone || !intent) return
 
     const timer = setTimeout(() => {
+      const generatedContent = apiResult?.content || goal
+
       if (intent.platform === 'tiktok') {
-        navigate('/tiktok-video', { state: { postText: goal, pipelineResult: apiResult } })
+        navigate('/tiktok-video', { state: { postText: generatedContent, pipelineResult: apiResult } })
       } else if (intent.platform === 'facebook' || intent.platform === 'instagram' || intent.platform === 'content') {
-        navigate('/creator-academy', { state: { draft: goal, pipelineResult: apiResult } })
+        navigate('/creator-academy', { state: { draft: generatedContent, pipelineResult: apiResult } })
       } else if (intent.platform === 'marketplace') {
         navigate('/marketplace', { state: { form: { title: goal, description: goal, price: '', category: 'Sonstiges' }, startTab: 'create' } })
       }
