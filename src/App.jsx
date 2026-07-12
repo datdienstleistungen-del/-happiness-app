@@ -99,12 +99,7 @@ function Sidebar() {
       <div className="sidebar-header">
         <Link to="/" className="sidebar-brand">
           <img src="/favicon.svg" alt="H" style={{ width: '32px', height: '32px' }} />
-          {!collapsed && (
-            <span className="sidebar-hit-brand">
-              <span className="sidebar-hit-h">H</span>
-              <span className="sidebar-hit-rest">.I.T.</span>
-            </span>
-          )}
+          {!collapsed && <Logo />}
         </Link>
         <button className="sidebar-toggle" onClick={() => setCollapsed(!collapsed)}>
           {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
