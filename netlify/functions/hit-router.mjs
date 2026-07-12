@@ -94,13 +94,15 @@ async function classifyGoalWithLLM(message, groqKey) {
 
     clearTimeout(timeout)
 
+    const rawData = await res.json()
+    console.log(`[H.I.T.] LLM HTTP ${res.status}, full response: ${JSON.stringify(rawData).substring(0, 500)}`)
+
     if (!res.ok) {
       console.warn(`[H.I.T.] LLM goal call failed: HTTP ${res.status}`)
-      return { goal: 'unknown', confidence: 0, method: 'llm_error' }
+      return { goal: 'unknown', confidence: 0, method: 'llm_error', raw: `HTTP ${res.status}` }
     }
 
-    const data = await res.json()
-    const raw = (data.choices?.[0]?.message?.content || '').trim()
+    const raw = (rawData.choices?.[0]?.message?.content || '').trim()
     const rawLower = raw.toLowerCase().replace(/[`*_#\-]/g, '').trim()
 
     console.log(`[H.I.T.] LLM raw response: "${raw}" | cleaned: "${rawLower}"`)
@@ -134,7 +136,7 @@ async function classifyGoalWithLLM(message, groqKey) {
     }
 
     if (!goal) goal = 'unknown'
-    return { goal, confidence: goal === 'unknown' ? 0 : 0.8, method: 'llm', raw: raw.substring(0, 100) }
+    return { goal, confidence: goal === 'unknown' ? 0 : 0.8, method: 'llm', raw: raw ? raw.substring(0, 100) : `[empty|${JSON.stringify(rawData).substring(0, 200)}]` }
   } catch (err) {
     if (err.name === 'AbortError') {
       console.warn('[H.I.T.] LLM goal call timed out (5s)')
