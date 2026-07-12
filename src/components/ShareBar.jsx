@@ -2,21 +2,46 @@ import { useState } from 'react'
 import { Link2, Download, Check } from 'lucide-react'
 import './ShareBar.css'
 
+function stripMarkdown(text) {
+  if (!text) return ''
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/__(.+?)__/g, '$1')
+    .replace(/_(.+?)_/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^[-*]\s+/gm, '')
+    .replace(/^\d+\.\s+/gm, '')
+    .replace(/`(.+?)`/g, '$1')
+    .replace(/~~(.+?)~~/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\|[^|]+\|/g, '')
+    .replace(/^[\s\-:|]+$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+function truncateForX(text, maxLen = 250) {
+  if (text.length <= maxLen) return text
+  return text.substring(0, maxLen - 3).trim() + '...'
+}
+
 export default function ShareBar({ text, title, downloadBlob, downloadFilename }) {
   const [copied, setCopied] = useState(false)
 
-  const shareText = encodeURIComponent(text || '')
+  const cleanText = stripMarkdown(text)
+  const shareText = encodeURIComponent(cleanText)
   const shareTitle = encodeURIComponent(title || 'Content von Happiness')
   const pageUrl = encodeURIComponent(window.location.href)
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(text || window.location.href)
+      await navigator.clipboard.writeText(cleanText || window.location.href)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
       const ta = document.createElement('textarea')
-      ta.value = text || window.location.href
+      ta.value = cleanText || window.location.href
       document.body.appendChild(ta)
       ta.select()
       document.execCommand('copy')
@@ -48,7 +73,7 @@ export default function ShareBar({ text, title, downloadBlob, downloadFilename }
 
       <a
         className="share-btn"
-        href={`https://twitter.com/intent/tweet?text=${shareText}&url=${pageUrl}`}
+        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(truncateForX(cleanText))}&url=${pageUrl}`}
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -72,7 +97,7 @@ export default function ShareBar({ text, title, downloadBlob, downloadFilename }
 
       <a
         className="share-btn"
-        href={`https://www.reddit.com/submit?url=${pageUrl}&title=${shareTitle}`}
+        href={`https://www.reddit.com/submit?url=${pageUrl}&title=${shareTitle}&selftext=true&text=${shareText}`}
         target="_blank"
         rel="noopener noreferrer"
       >
