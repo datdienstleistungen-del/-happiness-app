@@ -3,6 +3,7 @@ import { Rocket, Send, Check, AlertTriangle, Lightbulb, MessageSquare, PenTool, 
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations'
+import ShareBar from '../components/ShareBar'
 import './CreatorAcademyPage.css'
 import { useSearchParams, useLocation } from 'react-router-dom'
 import CopyButton from '../components/CopyButton'
@@ -303,6 +304,7 @@ Antworte immer auf Deutsch. Formatierung: Nutze fett (**text**), kursiv (*text*)
               <div className="ca-feedback-disclaimer">
                 Einschaetzung basierend auf bekannten Plattform-Mustern, keine Erfolgsgarantie.
               </div>
+              <ShareBar text={draft} title="Mein Content-Entwurf" />
             </div>
           )}
         </div>

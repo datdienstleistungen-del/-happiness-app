@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { getFFmpeg, downloadBlob } from '../lib/ffmpeg'
 import { Sparkles, Download, Image as ImageIcon, ArrowLeft, X, Film, Check, CreditCard, Brain, AlertTriangle } from 'lucide-react'
 import CopyButton from '../components/CopyButton'
+import ShareBar from '../components/ShareBar'
 import './TikTokVideoPage.css'
 
 export default function TikTokVideoPage() {
@@ -497,6 +498,7 @@ export default function TikTokVideoPage() {
                 Neues Video erstellen
               </button>
             </div>
+            <ShareBar text={text} title="Mein TikTok-Video" downloadBlob={videoBlob} downloadFilename={`tiktok-video-${Date.now()}.mp4`} />
           </div>
         )}
       </div>

@@ -1,0 +1,98 @@
+/* ══════════════════════════════════════════════
+   SHARE BAR
+   ══════════════════════════════════════════════ */
+
+.share-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 24px;
+  padding: 1.5rem 0;
+  margin-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.share-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.2s;
+}
+
+.share-btn:hover {
+  transform: translateY(-2px);
+}
+
+.share-btn-circle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--color-petrol, #085041);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.share-btn:hover .share-btn-circle {
+  box-shadow: 0 4px 12px rgba(8, 80, 65, 0.3);
+}
+
+.share-btn-circle.x {
+  background: #000000;
+}
+
+.share-btn-circle.x:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.share-btn-circle.linkedin {
+  background: #0a66c2;
+}
+
+.share-btn-circle.linkedin:hover {
+  box-shadow: 0 4px 12px rgba(10, 102, 194, 0.3);
+}
+
+.share-btn-circle.reddit {
+  background: #ff4500;
+}
+
+.share-btn-circle.reddit:hover {
+  box-shadow: 0 4px 12px rgba(255, 69, 0, 0.3);
+}
+
+.share-btn-circle.download {
+  background: #6b7280;
+}
+
+.share-btn-circle.download:hover {
+  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+}
+
+.share-btn-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+@media (max-width: 480px) {
+  .share-bar {
+    gap: 16px;
+  }
+
+  .share-btn-circle {
+    width: 44px;
+    height: 44px;
+  }
+
+  .share-btn-label {
+    font-size: 0.65rem;
+  }
+}
