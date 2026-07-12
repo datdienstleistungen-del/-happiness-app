@@ -541,7 +541,6 @@ export const handler = async (event) => {
         }
       }
       }
-    }
 
     // --- Increment Creator Academy counter ---
     if (isCreatorAcademy && caSettings && !caSettings.is_premium) {

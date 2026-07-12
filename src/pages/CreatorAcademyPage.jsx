@@ -6,6 +6,7 @@ import { useLanguage } from '../i18n/translations'
 import './CreatorAcademyPage.css'
 import { useSearchParams } from 'react-router-dom'
 import CopyButton from '../components/CopyButton'
+import { getChatEndpoint } from '../lib/hit'
 
 export default function CreatorAcademyPage() {
   const { user } = useAuth()
@@ -89,7 +90,7 @@ Antworte immer auf Deutsch. Formatierung: Nutze fett (**text**), kursiv (*text*)
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token || ''
 
-      const response = await fetch('/api/chat', {
+      const response = await fetch(getChatEndpoint(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

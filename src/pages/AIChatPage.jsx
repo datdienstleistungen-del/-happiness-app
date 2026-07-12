@@ -3,6 +3,7 @@ import {
   Sparkles, User, Download, Trash2, X, Heart, MapPin, Briefcase,
   Lock, ChefHat, Car, Users, Send, Brain, Wrench, MessageCircle, Plus, ChevronLeft
 } from 'lucide-react'
+import { getChatEndpoint } from '../lib/hit'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations'
@@ -395,7 +396,7 @@ Falls eine persönliche Geschichte als Stilmittel sinnvoll ist: Biete NUR eine S
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token || ''
 
-      const response = await fetch('/api/chat', {
+      const response = await fetch(getChatEndpoint(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
