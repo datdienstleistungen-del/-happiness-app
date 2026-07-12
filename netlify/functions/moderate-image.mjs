@@ -99,6 +99,8 @@ export const handler = async (event) => {
     const data = await response.json()
     const annotation = data.responses?.[0]?.safeSearchAnnotation
 
+    console.log('[MODERATION] SafeSearch result:', JSON.stringify(annotation))
+
     if (!annotation) {
       throw new Error('No safeSearchAnnotation in Google Vision response')
     }

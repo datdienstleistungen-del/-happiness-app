@@ -177,8 +177,9 @@ export default function TikTokVideoPage() {
           body: JSON.stringify({ image: imageBase64 })
         })
         const modData = await modRes.json()
+        console.log('Moderation result:', modData)
         if (!modRes.ok || !modData.allowed) {
-          throw new Error('Dieses Bild kann nicht verwendet werden.')
+          throw new Error(modData.reason || 'Dieses Bild kann nicht verwendet werden.')
         }
       }
 
