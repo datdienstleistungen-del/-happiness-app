@@ -233,41 +233,14 @@ export default function AIChatPage() {
 
   function cleanAiResponse(text) {
     if (!text) return text
-    const lines = text.split('\n')
-    const result = []
-    let inTable = false
-    let tableRows = []
-
-    for (const line of lines) {
-      const trimmed = line.trim()
-      const isTableLine = trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.includes('|')
-      const isSeparator = /^\|[\s\-:|]+\|$/.test(trimmed)
-
-      if (isTableLine && !isSeparator) {
-        inTable = true
-        const cells = trimmed.split('|').filter(c => c.trim()).map(c => c.trim())
-        tableRows.push(cells)
-      } else if (isSeparator) {
-        continue
-      } else {
-        if (inTable && tableRows.length > 0) {
-          for (const row of tableRows) {
-            result.push('- ' + row.join(': '))
-          }
-          tableRows = []
-          inTable = false
-        }
-        result.push(line)
-      }
-    }
-
-    if (inTable && tableRows.length > 0) {
-      for (const row of tableRows) {
-        result.push('- ' + row.join(': '))
-      }
-    }
-
-    return result.join('\n')
+    return text
+      .replace(/\|[^|]+\|/g, '')
+      .replace(/^[\s\-:|]+$/gm, '')
+      .replace(/^#{1,6}\s+/gm, '')
+      .replace(/^\d+\.\s+/gm, '')
+      .replace(/^[-*]\s+/gm, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
   }
 
   const deleteConversation = async (convId, e) => {
@@ -416,6 +389,11 @@ VERBOTEN:
 - Medizinische Diagnosen / Medikamenten-Empfehlungen
 - Rechtsverbindliche Aussagen
 - Beleidigungen, Hass, politische Agitation
+- Markdown-Tabellen (|---|), Tabellen, Aufzählungen mit Bindestrichen
+- Aufzählungen mit Nummern (1. 2. 3.)
+- Strukturierte Formate jeglicher Art
+
+FORMAT: NUR fließender Text in Absätzen. Wie ein Mensch der einem Kollegen etwas erklärt. Keine Listen, keine Tabellen, keine Überschriften mit #. Einfach normal schreiben.
 
 SPRACHE WIE EIN TEAM:
 - NIEMALS "Der Chat", "Die KI", "Das System", "Ich als KI", "Dein Assistent", "Dein Bot"
