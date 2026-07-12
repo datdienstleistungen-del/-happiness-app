@@ -456,23 +456,6 @@
   font-size: 1.1rem;
 }
 
-.sidebar-hit-brand {
-  font-size: 1.1rem;
-  font-weight: 600;
-  display: flex;
-  align-items: baseline;
-}
-
-.sidebar-hit-h {
-  color: var(--color-petrol, #085041);
-  font-weight: 700;
-}
-
-.sidebar-hit-rest {
-  color: #6b7280;
-  font-weight: 400;
-}
-
 .sidebar-toggle {
   background: none;
   border: none;
@@ -1248,51 +1231,243 @@ textarea.form-input {
    H.I.T. Landing Experience
    ══════════════════════════════════════════════ */
 
-.hit-home {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #fafafa;
-  padding: 2rem 1.5rem;
+/* ══════════════════════════════════════════════
+   HAPPINESS HOME PAGE
+   ══════════════════════════════════════════════ */
+
+.hp {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 1.5rem 4rem;
 }
 
-.hit-hero {
-  max-width: 640px;
-  width: 100%;
+/* ── Hero ── */
+.hp-hero {
   text-align: center;
-  animation: hitFadeIn 0.6s ease-out;
+  padding: 5rem 0 4rem;
+  animation: hpFadeIn 0.6s ease-out;
 }
 
-@keyframes hitFadeIn {
-  from { opacity: 0; transform: translateY(16px); }
+@keyframes hpFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.hit-hero-title {
-  font-size: 2.4rem;
+.hp-hero-brand {
+  margin-bottom: 2rem;
+}
+
+.hp-hero-brand .brand-word {
+  font-size: 2.8rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.hp-hero-headline {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 1rem;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.hp-hero-sub {
+  font-size: 1.1rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.7;
+}
+
+/* ── Sections (shared) ── */
+.hp-section {
+  padding: 4rem 0;
+  border-top: 1px solid #f0f0f0;
+}
+
+.hp-section h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 1rem;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.hp-section p {
+  font-size: 1rem;
+  color: #6b7280;
+  line-height: 1.7;
+  margin: 0 0 0.75rem;
+}
+
+/* ── What is Happiness? ── */
+.hp-what {
+  text-align: center;
+}
+
+.hp-what-lead {
+  font-size: 1.15rem;
+  color: #1a1a2e;
+  font-weight: 500;
+}
+
+.hp-what-highlight {
+  font-size: 1.05rem;
+  color: var(--color-petrol, #085041);
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+/* ── Why ideas fail ── */
+.hp-why {
+  background: #fafafa;
+  margin: 0 -1.5rem;
+  padding: 4rem 1.5rem !important;
+  border-top: none;
+}
+
+.hp-why-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-petrol, #085041);
+  background: rgba(8, 80, 65, 0.08);
+  padding: 6px 14px;
+  border-radius: 20px;
+  margin-bottom: 2rem;
+}
+
+.hp-why-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+.hp-why-item {
+  padding: 0.75rem 0;
+  font-size: 0.95rem;
+  color: #4b5563;
+  border-bottom: 1px solid #e5e7eb;
+  line-height: 1.5;
+}
+
+.hp-why-item:last-child {
+  border-bottom: none;
+}
+
+.hp-why-solution h3 {
+  font-size: 1.2rem;
   font-weight: 700;
   color: #1a1a2e;
   margin: 0 0 0.5rem;
-  letter-spacing: -0.02em;
 }
 
-.hit-hero-brand {
+.hp-why-solution p {
+  color: var(--color-petrol, #085041);
+  font-weight: 500;
+}
+
+/* ── Differentiator ── */
+.hp-diff {
+  text-align: center;
+}
+
+.hp-diff-accent {
   color: var(--color-petrol, #085041);
 }
 
-.hit-hero-sub {
-  font-size: 1.15rem;
-  color: #6b7280;
-  margin: 0 0 2.5rem;
+.hp-diff-verbs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 24px;
+  margin: 1.5rem 0;
 }
 
-/* ── Input ── */
-.hit-input-wrap {
-  margin-bottom: 1.5rem;
+.hp-diff-verbs span {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  position: relative;
 }
 
-.hit-input {
+.hp-diff-verbs span::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-petrol, #085041);
+  opacity: 0.3;
+  border-radius: 1px;
+}
+
+.hp-diff-closing {
+  font-size: 1.05rem;
+  margin-top: 1rem;
+}
+
+/* ── Capabilities ── */
+.hp-caps {
+  text-align: center;
+}
+
+.hp-caps-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 1.5rem;
+}
+
+.hp-cap-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 1.1rem 1.25rem;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.hp-cap-card:hover {
+  border-color: var(--color-petrol, #085041);
+  box-shadow: 0 4px 12px rgba(8, 80, 65, 0.06);
+  transform: translateY(-1px);
+}
+
+.hp-cap-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.hp-cap-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #1a1a2e;
+}
+
+/* ── The Moment ── */
+.hp-moment {
+  text-align: center;
+}
+
+.hp-moment h2 {
+  font-size: 2rem;
+}
+
+.hp-moment-input-wrap {
+  max-width: 560px;
+  margin: 1.5rem auto 2rem;
+}
+
+.hp-moment-input {
   width: 100%;
   padding: 1rem 1.25rem;
   font-size: 1.05rem;
@@ -1305,54 +1480,28 @@ textarea.form-input {
   box-sizing: border-box;
 }
 
-.hit-input::placeholder {
+.hp-moment-input::placeholder {
   color: #9ca3af;
 }
 
-.hit-input:focus {
+.hp-moment-input:focus {
   border-color: var(--color-petrol, #085041);
   box-shadow: 0 0 0 3px rgba(8, 80, 65, 0.08);
 }
 
-/* ── Example Chips ── */
-.hit-examples {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-  margin-bottom: 2.5rem;
-}
-
-.hit-example-chip {
-  padding: 6px 14px;
-  font-size: 0.8rem;
-  color: #6b7280;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.hit-example-chip:hover {
-  background: #e8f4f4;
-  border-color: var(--color-petrol, #085041);
-  color: var(--color-petrol, #085041);
-}
-
-/* ── Action Buttons ── */
-.hit-actions {
+.hp-moment-actions {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 16px;
-  margin-bottom: 3rem;
+  max-width: 640px;
+  margin: 0 auto;
 }
 
-.hit-action-btn {
+.hp-moment-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   padding: 1.5rem 1rem;
   border: 1.5px solid #e5e7eb;
   border-radius: 16px;
@@ -1361,83 +1510,97 @@ textarea.form-input {
   transition: all 0.25s ease;
 }
 
-.hit-action-btn:hover {
+.hp-moment-btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
 }
 
-.hit-action-btn.think:hover {
+.hp-moment-btn.think:hover {
   border-color: #6366f1;
   background: linear-gradient(135deg, #f5f3ff, #ffffff);
 }
 
-.hit-action-btn.build:hover {
+.hp-moment-btn.build:hover {
   border-color: var(--color-petrol, #085041);
   background: linear-gradient(135deg, #e8f4f4, #ffffff);
 }
 
-.hit-action-btn.surprise:hover {
+.hp-moment-btn.surprise:hover {
   border-color: #f59e0b;
   background: linear-gradient(135deg, #fffbeb, #ffffff);
 }
 
-.hit-action-icon {
+.hp-moment-btn-icon {
   font-size: 1.8rem;
   line-height: 1;
 }
 
-.hit-action-label {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #1a1a2e;
-}
-
-/* ── Info Card ── */
-.hit-info-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 2rem;
-  text-align: center;
-}
-
-.hit-info-card h3 {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #1a1a2e;
-  margin: 0 0 0.75rem;
-}
-
-.hit-info-card p {
+.hp-moment-btn-text {
   font-size: 0.95rem;
-  color: #6b7280;
-  margin: 0 0 0.5rem;
-  line-height: 1.6;
+  font-weight: 600;
+  color: #1a1a2e;
 }
 
-.hit-info-detail {
-  font-size: 0.85rem !important;
-  color: #9ca3af !important;
-  margin-top: 0.75rem !important;
+.hp-moment-btn-desc {
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+
+/* ── Community Inspiration ── */
+.hp-community {
+  padding-top: 3rem;
+}
+
+.hp-community-header {
+  margin-bottom: 1.5rem;
+}
+
+.hp-community-header h2 {
+  margin-bottom: 0.25rem;
+}
+
+.hp-community-header p {
+  margin: 0;
 }
 
 /* ── Responsive ── */
 @media (max-width: 640px) {
-  .hit-hero-title {
-    font-size: 1.8rem;
+  .hp {
+    padding: 0 1rem 3rem;
   }
 
-  .hit-actions {
+  .hp-hero {
+    padding: 3rem 0 2.5rem;
+  }
+
+  .hp-hero-headline {
+    font-size: 1.6rem;
+  }
+
+  .hp-section h2 {
+    font-size: 1.3rem;
+  }
+
+  .hp-moment h2 {
+    font-size: 1.5rem;
+  }
+
+  .hp-moment-actions {
     grid-template-columns: 1fr;
   }
 
-  .hit-action-btn {
+  .hp-moment-btn {
     flex-direction: row;
     justify-content: center;
     padding: 1rem 1.25rem;
   }
 
-  .hit-examples {
-    display: none;
+  .hp-caps-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hp-why {
+    margin: 0 -1rem;
+    padding: 3rem 1rem !important;
   }
 }
