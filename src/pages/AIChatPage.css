@@ -23,6 +23,29 @@
   color: #1a1a2e;
 }
 
+.ai-sidebar-new {
+  background: none;
+  border: none;
+  color: var(--color-petrol, #085041);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.ai-sidebar-new:hover {
+  background: rgba(8, 80, 65, 0.08);
+}
+
+.ai-sidebar-empty {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.8rem;
+  padding: 2rem 1rem;
+}
+
 .ai-sidebar-close {
   background: none;
   border: none;

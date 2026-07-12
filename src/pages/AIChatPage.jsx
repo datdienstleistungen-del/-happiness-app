@@ -618,42 +618,35 @@ Falls eine persönliche Geschichte als Stilmittel sinnvoll ist: Biete NUR eine S
   const hasMessages = messages.length > 0
 
   return (
-    <div className={`ai-chat-page ${showSidebar ? 'sidebar-open' : ''}`}>
-      {showSidebar && (
-        <div className="ai-sidebar">
-          <div className="ai-sidebar-header">
-            <strong>Chat-Verlauf</strong>
-            <button className="ai-sidebar-close" onClick={() => setShowSidebar(false)}><ChevronLeft size={16} /></button>
-          </div>
-          <div className="ai-sidebar-list">
-            {conversations.map(conv => (
-              <button
-                key={conv.id}
-                className={`ai-sidebar-item ${conv.id === conversationId ? 'active' : ''}`}
-                onClick={() => { loadConversation(conv.id); if (window.innerWidth <= 768) setShowSidebar(false); }}
-              >
-                <MessageCircle size={14} className="ai-sidebar-item-icon" />
-                <span className="ai-sidebar-item-title">{conv.title || 'Neuer Chat'}</span>
-                <span className="ai-sidebar-item-delete" onClick={(e) => deleteConversation(conv.id, e)} title="Löschen">×</span>
-              </button>
-            ))}
-          </div>
+    <div className="ai-chat-page sidebar-open">
+      <div className="ai-sidebar">
+        <div className="ai-sidebar-header">
+          <strong>Chats</strong>
+          <button className="ai-sidebar-new" onClick={startNewChat}>+ Neu</button>
         </div>
-      )}
+        <div className="ai-sidebar-list">
+          {conversations.length === 0 && (
+            <div className="ai-sidebar-empty">Noch keine Chats</div>
+          )}
+          {conversations.map(conv => (
+            <button
+              key={conv.id}
+              className={`ai-sidebar-item ${conv.id === conversationId ? 'active' : ''}`}
+              onClick={() => { loadConversation(conv.id); if (window.innerWidth <= 768) setShowSidebar(false); }}
+            >
+              <MessageCircle size={14} className="ai-sidebar-item-icon" />
+              <span className="ai-sidebar-item-title">{conv.title || 'Neuer Chat'}</span>
+              <span className="ai-sidebar-item-delete" onClick={(e) => deleteConversation(conv.id, e)} title="Löschen">×</span>
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="ai-main">
         <div className="ai-topbar">
           <div className="hit-branding-compact">
             <span className="hit-compact-h">H</span><span className="hit-compact-rest">.I.T.</span>
           </div>
           <div className="ai-topbar-actions">
-            <button className="ai-topbar-btn" onClick={startNewChat}>
-              <Plus size={14} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
-              {t('ai.newChat') || 'Neuer Chat'}
-            </button>
-            <button className="ai-topbar-btn" onClick={() => setShowSidebar(s => !s)}>
-              <MessageCircle size={14} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
-              Chats
-            </button>
             <button className="ai-topbar-btn" onClick={() => setShowProfile(!showProfile)}>
               <User size={14} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
               {t('ai.profile')}
