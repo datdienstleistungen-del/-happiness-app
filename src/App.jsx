@@ -99,7 +99,12 @@ function Sidebar() {
       <div className="sidebar-header">
         <Link to="/" className="sidebar-brand">
           <img src="/favicon.svg" alt="H" style={{ width: '32px', height: '32px' }} />
-          {!collapsed && <Logo />}
+          {!collapsed && (
+            <span className="sidebar-hit-brand">
+              <span className="sidebar-hit-h">H</span>
+              <span className="sidebar-hit-rest">.I.T.</span>
+            </span>
+          )}
         </Link>
         <button className="sidebar-toggle" onClick={() => setCollapsed(!collapsed)}>
           {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
@@ -428,16 +433,72 @@ function LandingPage() {
 function HomePage() {
   const { profile } = useAuth()
   const { t } = useLanguage()
-  const hour = new Date().getHours()
-  const greeting = hour < 12 ? t('welcome.morning') : hour < 18 ? t('welcome.afternoon') : t('welcome.evening')
+  const navigate = useNavigate()
+  const [goal, setGoal] = useState('')
+
+  const handleGoalSubmit = (mode) => {
+    if (!goal.trim()) return
+    const params = new URLSearchParams({ goal: goal.trim(), mode })
+    navigate(`/ai-chat?${params.toString()}`)
+  }
+
+  const examples = [
+    'Create a TikTok about healthy habits',
+    'Start my own business',
+    'Write a Facebook post',
+    'Design a logo',
+    'Find more customers',
+    'Plan a vacation',
+    'Learn Spanish',
+    'Build a website',
+  ]
 
   return (
-    <div className="container">
-      <div className="home-create-post" onClick={() => window.location.href = '/community'}>
-        <div className="home-create-avatar">{profile?.name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?'}</div>
-        <div className="home-create-input">Was denkst du gerade, {profile?.name?.split(' ')[0] || 'User'}?</div>
+    <div className="hit-home">
+      <div className="hit-hero">
+        <h1 className="hit-hero-title">Welcome to <span className="hit-hero-brand">H.I.T.</span></h1>
+        <p className="hit-hero-sub">What do you want to achieve today?</p>
+
+        <div className="hit-input-wrap">
+          <input
+            className="hit-input"
+            type="text"
+            value={goal}
+            onChange={(e) => setGoal(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && goal.trim() && handleGoalSubmit('build')}
+            placeholder="Describe your goal in one sentence..."
+          />
+        </div>
+
+        <div className="hit-examples">
+          {examples.map((ex, i) => (
+            <button key={i} className="hit-example-chip" onClick={() => { setGoal(ex); }}>
+              {ex}
+            </button>
+          ))}
+        </div>
+
+        <div className="hit-actions">
+          <button className="hit-action-btn think" onClick={() => handleGoalSubmit('think')}>
+            <span className="hit-action-icon">🧠</span>
+            <span className="hit-action-label">Let's think bigger</span>
+          </button>
+          <button className="hit-action-btn build" onClick={() => handleGoalSubmit('build')}>
+            <span className="hit-action-icon">🚀</span>
+            <span className="hit-action-label">Let's build it</span>
+          </button>
+          <button className="hit-action-btn surprise" onClick={() => handleGoalSubmit('surprise')}>
+            <span className="hit-action-icon">✨</span>
+            <span className="hit-action-label">Surprise me</span>
+          </button>
+        </div>
+
+        <div className="hit-info-card">
+          <h3>Your personal AI team.</h3>
+          <p>You bring the idea.<br/>H.I.T. helps turn it into reality.</p>
+          <p className="hit-info-detail">While you focus on your goal, H.I.T. plans the work, finds information, creates content, improves quality and guides you to the finished result.</p>
+        </div>
       </div>
-      <Feed />
     </div>
   )
 }
