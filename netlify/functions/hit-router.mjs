@@ -101,13 +101,38 @@ async function classifyGoalWithLLM(message, groqKey) {
 
     const data = await res.json()
     const raw = (data.choices?.[0]?.message?.content || '').trim()
-    const rawLower = raw.toLowerCase()
+    const rawLower = raw.toLowerCase().replace(/[`*_#\-]/g, '').trim()
 
-    console.log(`[H.I.T.] LLM raw response: "${raw}" (lowered: "${rawLower}")`)
+    console.log(`[H.I.T.] LLM raw response: "${raw}" | cleaned: "${rawLower}"`)
 
     const validGoals = ['content_creation', 'feedback', 'strategy', 'monetization', 'community', 'learning', 'general']
-    const goal = validGoals.includes(rawLower) ? rawLower : 'unknown'
 
+    // Exakter Match
+    let goal = validGoals.includes(rawLower) ? rawLower : null
+
+    // Fuzzy: Enthält das Zielwort irgendwo in der Antwort?
+    if (!goal) {
+      for (const g of validGoals) {
+        if (rawLower.includes(g)) { goal = g; break }
+      }
+    }
+
+    // Fuzzy: Deutsche Begriffe als Fallback
+    if (!goal) {
+      const germanMap = {
+        content_creation: ['erstellen', 'posten', 'content', 'text', 'caption', 'skript', 'idee', 'entwurf', 'veröffentlichen'],
+        feedback: ['feedback', 'review', 'kritik', 'meinung', 'einschätzung', 'bewertung'],
+        strategy: ['strategie', 'optimieren', 'wachstum', 'reichweite', 'zielgruppe', 'plan', 'positionierung', 'aufbau'],
+        monetization: ['geld', 'verdienen', 'einnahmen', 'umsatz', 'monetarisierung', 'verkaufen', 'preis'],
+        community: ['community', 'vernetzen', 'netzwerk', 'zusammenhalt', 'gruppe', 'freunde'],
+        learning: ['lernen', 'verstehen', 'erklär', 'tutorial', 'anleitung', 'hilfe', 'wie funktioniert']
+      }
+      for (const [g, words] of Object.entries(germanMap)) {
+        if (words.some(w => rawLower.includes(w))) { goal = g; break }
+      }
+    }
+
+    if (!goal) goal = 'unknown'
     return { goal, confidence: goal === 'unknown' ? 0 : 0.8, method: 'llm' }
   } catch (err) {
     if (err.name === 'AbortError') {
