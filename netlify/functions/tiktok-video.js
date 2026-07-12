@@ -127,8 +127,8 @@ Antworte NUR mit validem JSON-Array, kein Text davor oder danach.`
 
   if (!aiRes.ok) {
     const errText = await aiRes.text()
-    console.error('Groq API error:', errText)
-    return { statusCode: 502, body: JSON.stringify({ error: 'AI service temporarily unavailable' }) }
+    console.error(`[TIKTOK VIDEO] Groq API error ${aiRes.status}:`, errText)
+    return { statusCode: 502, body: JSON.stringify({ error: `AI service error (${aiRes.status}): ${errText.substring(0, 200)}` }) }
   }
 
   const data = await aiRes.json()

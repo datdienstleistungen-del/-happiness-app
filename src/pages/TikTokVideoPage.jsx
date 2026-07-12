@@ -196,13 +196,13 @@ export default function TikTokVideoPage() {
       })
 
       if (!res.ok) {
-        const err = await res.json()
+        const err = await res.json().catch(() => ({ error: 'Unbekannter Fehler' }))
         if (res.status === 402) {
           setShowPaywall(true)
           setLoading(false)
           return
         }
-        throw new Error(err.error || 'Fehler bei der Video-Erstellung')
+        throw new Error(err.error || `Fehler bei der Video-Erstellung (${res.status})`)
       }
 
       const data = await res.json()
