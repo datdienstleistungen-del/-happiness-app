@@ -31,6 +31,7 @@ export default function ShareBar({ text, title, downloadBlob, downloadFilename }
 
   const cleanText = stripMarkdown(text)
   const shareText = encodeURIComponent(cleanText)
+  const shareWithUrl = encodeURIComponent(cleanText + '\n\nMehr dazu: ' + window.location.href)
   const shareTitle = encodeURIComponent(title || 'Content von Happiness')
   const pageUrl = encodeURIComponent(window.location.href)
 
@@ -73,7 +74,7 @@ export default function ShareBar({ text, title, downloadBlob, downloadFilename }
 
       <a
         className="share-btn"
-        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(truncateForX(cleanText))}`}
+        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(truncateForX(cleanText + ' ' + window.location.href))}`}
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -97,7 +98,7 @@ export default function ShareBar({ text, title, downloadBlob, downloadFilename }
 
       <a
         className="share-btn"
-        href={`https://www.reddit.com/submit?title=${shareTitle}&text=${shareText}`}
+        href={`https://www.reddit.com/submit?title=${shareTitle}&text=${shareWithUrl}`}
         target="_blank"
         rel="noopener noreferrer"
       >
