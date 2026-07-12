@@ -196,6 +196,25 @@
   margin: 0;
 }
 
+.ep-waiting {
+  border-top-color: rgba(8, 80, 65, 0.2);
+}
+
+.ep-waiting .ep-finished-icon {
+  color: var(--color-petrol, #085041);
+  animation: epPulseIcon 1.5s ease-in-out infinite;
+}
+
+.ep-waiting p {
+  color: var(--color-petrol, #085041);
+  font-weight: 500;
+}
+
+@keyframes epPulseIcon {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 /* ── Not Available ── */
 .ep-unavailable {
   text-align: center;

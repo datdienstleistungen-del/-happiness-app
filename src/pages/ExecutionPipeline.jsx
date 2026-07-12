@@ -255,7 +255,14 @@ export default function ExecutionPipeline() {
           })}
         </div>
 
-        {finished && (
+        {finished && !apiDone && platform !== 'marketplace' && (
+          <div className="ep-finished ep-waiting">
+            <div className="ep-finished-icon"><Clock size={20} /></div>
+            <p>H.I.T. arbeitet noch im Hintergrund...</p>
+          </div>
+        )}
+
+        {finished && apiDone && (
           <div className="ep-finished">
             <div className="ep-finished-icon">✅</div>
             <p>Weiterleitung...</p>
