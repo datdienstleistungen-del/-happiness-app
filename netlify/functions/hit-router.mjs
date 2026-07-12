@@ -68,7 +68,10 @@ const GOAL_PROMPT = `Du bist ein Intent-Klassifizierer. Analysiere die folgende 
 Antworte NUR mit dem Kategorienamen, nichts anders. Kein Text, keine Erklärung.`
 
 async function classifyGoalWithLLM(message, groqKey) {
-  if (!groqKey || !message) return { goal: 'unknown', confidence: 0, method: 'none' }
+    if (!groqKey || !message) {
+      console.log(`[H.I.T.] LLM goal skip: groqKey=${groqKey ? 'set' : 'missing'}, message=${message ? 'set' : 'missing'}`)
+      return { goal: 'unknown', confidence: 0, method: 'none' }
+    }
 
   try {
     const controller = new AbortController()
@@ -97,10 +100,13 @@ async function classifyGoalWithLLM(message, groqKey) {
     }
 
     const data = await res.json()
-    const raw = (data.choices?.[0]?.message?.content || '').trim().toLowerCase()
+    const raw = (data.choices?.[0]?.message?.content || '').trim()
+    const rawLower = raw.toLowerCase()
+
+    console.log(`[H.I.T.] LLM raw response: "${raw}" (lowered: "${rawLower}")`)
 
     const validGoals = ['content_creation', 'feedback', 'strategy', 'monetization', 'community', 'learning', 'general']
-    const goal = validGoals.includes(raw) ? raw : 'unknown'
+    const goal = validGoals.includes(rawLower) ? rawLower : 'unknown'
 
     return { goal, confidence: goal === 'unknown' ? 0 : 0.8, method: 'llm' }
   } catch (err) {
