@@ -5,7 +5,6 @@
 // Ziel: LLM-Call via Groq (parallel, non-blocking)
 // ──────────────────────────────────────────────────────────────
 
-const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
 const CHAT_URL = 'https://happiness-eu.netlify.app/.netlify/functions/chat'
 
 // ── Plattform-Erkennung (Keyword-basiert) ──
@@ -68,10 +67,7 @@ const GOAL_PROMPT = `Du bist ein Intent-Klassifizierer. Analysiere die folgende 
 Antworte NUR mit dem Kategorienamen, nichts anders. Kein Text, keine Erklärung.`
 
 async function classifyGoalWithLLM(message, groqKey) {
-    if (!groqKey || !message) {
-      console.log(`[H.I.T.] LLM goal skip: groqKey=${groqKey ? 'set' : 'missing'}, message=${message ? 'set' : 'missing'}`)
-      return { goal: 'unknown', confidence: 0, method: 'none' }
-    }
+  if (!groqKey || !message) return { goal: 'unknown', confidence: 0, method: 'none' }
 
   try {
     const controller = new AbortController()
@@ -94,19 +90,16 @@ async function classifyGoalWithLLM(message, groqKey) {
 
     clearTimeout(timeout)
 
-    const rawData = await res.json()
-    console.log(`[H.I.T.] LLM HTTP ${res.status}, model: ${rawData.model}, content: "${rawData.choices?.[0]?.message?.content}"`)
-
     if (!res.ok) {
       console.warn(`[H.I.T.] LLM goal call failed: HTTP ${res.status}`)
-      return { goal: 'unknown', confidence: 0, method: 'llm_error', raw: `HTTP ${res.status}` }
+      return { goal: 'unknown', confidence: 0, method: 'llm_error' }
     }
 
-    const raw = (rawData.choices?.[0]?.message?.content || '').trim()
+    const data = await res.json()
+    const raw = (data.choices?.[0]?.message?.content || '').trim()
     const rawLower = raw.toLowerCase().replace(/[`*_#\-]/g, '').trim()
 
-    console.log(`[H.I.T.] LLM raw response: "${raw}" | cleaned: "${rawLower}"`)
-    console.log(`[H.I.T.] LLM raw charCodes: [${[...raw].map(c => c.charCodeAt(0)).join(',')}]`)
+    console.log(`[H.I.T.] LLM goal: "${raw}" → ${rawLower}`)
 
     const validGoals = ['content_creation', 'feedback', 'strategy', 'monetization', 'community', 'learning', 'general']
 
@@ -120,23 +113,8 @@ async function classifyGoalWithLLM(message, groqKey) {
       }
     }
 
-    // Fuzzy: Deutsche Begriffe als Fallback
-    if (!goal) {
-      const germanMap = {
-        content_creation: ['erstellen', 'posten', 'content', 'text', 'caption', 'skript', 'idee', 'entwurf', 'veröffentlichen'],
-        feedback: ['feedback', 'review', 'kritik', 'meinung', 'einschätzung', 'bewertung'],
-        strategy: ['strategie', 'optimieren', 'wachstum', 'reichweite', 'zielgruppe', 'plan', 'positionierung', 'aufbau'],
-        monetization: ['geld', 'verdienen', 'einnahmen', 'umsatz', 'monetarisierung', 'verkaufen', 'preis'],
-        community: ['community', 'vernetzen', 'netzwerk', 'zusammenhalt', 'gruppe', 'freunde'],
-        learning: ['lernen', 'verstehen', 'erklär', 'tutorial', 'anleitung', 'hilfe', 'wie funktioniert']
-      }
-      for (const [g, words] of Object.entries(germanMap)) {
-        if (words.some(w => rawLower.includes(w))) { goal = g; break }
-      }
-    }
-
     if (!goal) goal = 'unknown'
-    return { goal, confidence: goal === 'unknown' ? 0 : 0.8, method: 'llm', raw: raw.substring(0, 100) }
+    return { goal, confidence: goal === 'unknown' ? 0 : 0.8, method: 'llm' }
   } catch (err) {
     if (err.name === 'AbortError') {
       console.warn('[H.I.T.] LLM goal call timed out (5s)')
@@ -226,8 +204,7 @@ export const handler = async (event) => {
           platformConfidence: Math.round(platformResult.confidence * 100),
           goal: goalResult.goal,
           goalConfidence: Math.round(goalResult.confidence * 100),
-          goalMethod: goalResult.method,
-          llmRaw: goalResult.raw || null
+          goalMethod: goalResult.method
         }
       })
     }
