@@ -1,7 +1,14 @@
 // ──────────────────────────────────────────────────────────────
 // H.I.T. — Happiness Intelligence Team
-// Layer 1: Intent & Goal Recognition (nur Logging, kein Eingriff)
+// Layer 1: Hybrid Intent & Goal Recognition (nur Logging)
+// Plattform: Keyword-Erkennung (schnell, zuverlässig)
+// Ziel: LLM-Call via Groq (parallel, non-blocking)
 // ──────────────────────────────────────────────────────────────
+
+const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
+const CHAT_URL = 'https://happiness-eu.netlify.app/.netlify/functions/chat'
+
+// ── Plattform-Erkennung (Keyword-basiert) ──
 
 const PLATFORMS = {
   tiktok: {
@@ -9,8 +16,8 @@ const PLATFORMS = {
     patterns: [/tiktok/i, /video.*erstell/i, /reel/i, /kurzvideo/i, /kurzes.*video/i]
   },
   facebook: {
-    keywords: ['facebook', 'fb', 'post', 'beitrag', 'gruppe', 'seite', 'kleinanzeige', 'markt', 'anzeigen'],
-    patterns: [/facebook/i, /\bfb\b/i, /kleinanzeige/i, /markt.*platz/i, /anzeige.*schalt/i, /post.*schreib/i]
+    keywords: ['facebook', 'fb', 'post', 'beitrag', 'gruppe', 'seite'],
+    patterns: [/facebook/i, /\bfb\b/i, /post.*schreib/i]
   },
   instagram: {
     keywords: ['instagram', 'ig', 'story', 'reel', 'post', 'grid', 'follower', 'hashtag'],
@@ -23,88 +30,90 @@ const PLATFORMS = {
   linkedin: {
     keywords: ['linkedin', 'beruf', 'netzwerk', 'karriere', 'bewerbung', 'cv', 'lebenslauf'],
     patterns: [/linkedin/i, /beruflich/i, /karriere/i, /bewerbung/i, /lebenslauf/i]
+  },
+  marketplace: {
+    keywords: ['kleinanzeige', 'anzeigen', 'markt', 'marktplatz', 'verkaufen', 'verkauf', 'gebraucht', 'biete', 'suche', 'abzugeben', 'zu verkaufen'],
+    patterns: [/kleinanzeige/i, /anzeige.*schalt/i, /markt.*platz/i, /auf.*marktplatz/i, /gebucht/i, /biete.*an/i, /zu.*verkaufen/i, /abzugeben/i]
   }
 }
 
-const GOALS = {
-  content_creation: {
-    keywords: ['erstellen', 'schreiben', 'posten', 'veröffentlichen', 'entwurf', 'idee', 'konzept', 'skript', 'caption', 'text'],
-    patterns: [/content.*erstell/i, /post.*schreib/i, /etwas.*post/i, /entwurf/i, /idee/i, /skript/i, /caption/i]
-  },
-  feedback: {
-    keywords: ['feedback', 'review', 'kritik', 'verbesserung', 'bewertung', 'einschätzung', 'meinung'],
-    patterns: [/feedback/i, /review/i, /verbesser/i, /einschätzung/i, /was.*halst/i, /wie.*findest/i]
-  },
-  strategy: {
-    keywords: ['strategie', 'plan', 'wachstum', 'reichweite', 'zielgruppe', 'marketing', 'positionierung', 'aufbau'],
-    patterns: [/strategie/i, /plan.*mach/i, /wachstum/i, /reichweite/i, /zielgruppe/i, /aufbau/i]
-  },
-  monetization: {
-    keywords: ['geld verdienen', 'monetarisierung', 'einnahmen', 'umsatz', 'preis', 'kosten', 'abo', 'premium', 'shop', 'verkaufen'],
-    patterns: [/geld.*verdien/i, /monetari/i, /einnahm/i, /umsatz/i, /verkauf/i, /shop/i]
-  },
-  community: {
-    keywords: ['community', 'freunde', 'vernetzen', 'kontakt', 'netzwerk', 'gruppe', 'zusammenhalt'],
-    patterns: [/community/i, /freunde/i, /vernetz/i, /netzwerk/i, /gruppe/i]
-  },
-  learning: {
-    keywords: ['lernen', 'verstehen', 'erklär', 'wie funktioniert', 'tutorial', 'anleitung', 'hilfe'],
-    patterns: [/lern/i, /erkl[aä]r/i, /wie.*funktionier/i, /tutorial/i, /anleitung/i, /hilfe/i]
-  }
-}
-
-function classifyIntent(message) {
-  if (!message) return { platform: 'unknown', goal: 'unknown', confidence: 0 }
-
+function classifyPlatform(message) {
+  if (!message) return { platform: 'unknown', confidence: 0 }
   const lower = message.toLowerCase()
-  let detectedPlatform = 'unknown'
-  let platformConfidence = 0
-  let detectedGoal = 'unknown'
-  let goalConfidence = 0
+  let detected = 'unknown'
+  let bestScore = 0
 
   for (const [platform, config] of Object.entries(PLATFORMS)) {
     let score = 0
-    for (const pattern of config.patterns) {
-      if (pattern.test(lower)) score += 2
-    }
-    for (const kw of config.keywords) {
-      if (lower.includes(kw)) score += 1
-    }
-    if (score > platformConfidence) {
-      platformConfidence = score
-      detectedPlatform = platform
-    }
+    for (const pattern of config.patterns) { if (pattern.test(lower)) score += 2 }
+    for (const kw of config.keywords) { if (lower.includes(kw)) score += 1 }
+    if (score > bestScore) { bestScore = score; detected = platform }
   }
 
-  for (const [goal, config] of Object.entries(GOALS)) {
-    let score = 0
-    for (const pattern of config.patterns) {
-      if (pattern.test(lower)) score += 2
-    }
-    for (const kw of config.keywords) {
-      if (lower.includes(kw)) score += 1
-    }
-    if (score > goalConfidence) {
-      goalConfidence = score
-      detectedGoal = goal
-    }
-  }
+  return { platform: detected, confidence: Math.min(bestScore / 6, 1) }
+}
 
-  const maxPlatformScore = 6
-  const maxGoalScore = 6
-  const confidence = Math.min(
-    (platformConfidence + goalConfidence) / (maxPlatformScore + maxGoalScore),
-    1
-  )
+// ── Ziel-Erkennung (LLM via Groq, parallel) ──
 
-  return {
-    platform: detectedPlatform,
-    platformConfidence: Math.min(platformConfidence / maxPlatformScore, 1),
-    goal: detectedGoal,
-    goalConfidence: Math.min(goalConfidence / maxGoalScore, 1),
-    confidence
+const GOAL_PROMPT = `Du bist ein Intent-Klassifizierer. Analysiere die folgende Nutzernachricht und klassifiziere das Hauptziel in EINER dieser Kategorien:
+
+- content_creation: Der Nutzer möchte Content erstellen (Post, Video, Text, etc.)
+- feedback: Der Nutzer möchte Feedback oder eine Einschätzung zu etwas bekommen
+- strategy: Der Nutzer möchte etwas optimieren, wachsen lassen, oder strategisch angehen
+- monetization: Der Nutzer möchte Geld verdienen, verkaufen, oder Einnahmen generieren
+- community: Der Nutzer möchte sich vernetzen, Leute kennenlernen, oder Community aufbauen
+- learning: Der Nutzer möchte etwas lernen, verstehen, oder erklärt bekommen
+- general: Kein spezifisches Ziel erkennbar (Begrüßung, Smalltalk, etc.)
+
+Antworte NUR mit dem Kategorienamen, nichts anders. Kein Text, keine Erklärung.`
+
+async function classifyGoalWithLLM(message, groqKey) {
+  if (!groqKey || !message) return { goal: 'unknown', confidence: 0, method: 'none' }
+
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 5000)
+
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-20b',
+        messages: [
+          { role: 'system', content: GOAL_PROMPT },
+          { role: 'user', content: message.substring(0, 500) }
+        ],
+        temperature: 0,
+        max_tokens: 20
+      }),
+      signal: controller.signal
+    })
+
+    clearTimeout(timeout)
+
+    if (!res.ok) {
+      console.warn(`[H.I.T.] LLM goal call failed: HTTP ${res.status}`)
+      return { goal: 'unknown', confidence: 0, method: 'llm_error' }
+    }
+
+    const data = await res.json()
+    const raw = (data.choices?.[0]?.message?.content || '').trim().toLowerCase()
+
+    const validGoals = ['content_creation', 'feedback', 'strategy', 'monetization', 'community', 'learning', 'general']
+    const goal = validGoals.includes(raw) ? raw : 'unknown'
+
+    return { goal, confidence: goal === 'unknown' ? 0 : 0.8, method: 'llm' }
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      console.warn('[H.I.T.] LLM goal call timed out (5s)')
+    } else {
+      console.warn('[H.I.T.] LLM goal call error:', err.message)
+    }
+    return { goal: 'unknown', confidence: 0, method: 'llm_error' }
   }
 }
+
+// ── Handler ──
 
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
@@ -131,22 +140,44 @@ export const handler = async (event) => {
   try {
     const body = JSON.parse(event.body)
     const { message } = body
+    const groqKey = process.env.GROQ_API_KEY
 
-    const intent = classifyIntent(message)
+    // Plattform-Erkennung (instant, Keyword-basiert)
+    const platformResult = classifyPlatform(message)
 
     console.log(`[H.I.T.] message: "${(message || '').substring(0, 80)}"`)
-    console.log(`[H.I.T.] platform: ${intent.platform} (${Math.round(intent.platformConfidence * 100)}%)`)
-    console.log(`[H.I.T.] goal: ${intent.goal} (${Math.round(intent.goalConfidence * 100)}%)`)
-    console.log(`[H.I.T.] confidence: ${Math.round(intent.confidence * 100)}%`)
+    console.log(`[H.I.T.] platform (keyword): ${platformResult.platform} (${Math.round(platformResult.confidence * 100)}%)`)
 
-    const chatResponse = await fetch(`${event.headers.origin || 'https://happiness-eu.netlify.app'}/.netlify/functions/chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': event.headers.authorization || ''
-      },
-      body: JSON.stringify(body)
-    })
+    // Parallele Ausführung: LLM Goal-Erkennung + Chat-Forward
+    const [goalResult, chatResponse] = await Promise.all([
+      classifyGoalWithLLM(message, groqKey).catch(err => {
+        console.error('[H.I.T.] Goal classification failed:', err.message)
+        return { goal: 'unknown', confidence: 0, method: 'llm_error' }
+      }),
+      fetch(CHAT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': event.headers.authorization || ''
+        },
+        body: JSON.stringify(body)
+      }).catch(err => {
+        console.error('[H.I.T.] Chat forward failed:', err.message)
+        return null
+      })
+    ])
+
+    // Ziel-Erkennung loggen
+    console.log(`[H.I.T.] goal (llm): ${goalResult.goal} (${Math.round(goalResult.confidence * 100)}%) [${goalResult.method}]`)
+
+    // Chat-Antwort verarbeiten
+    if (!chatResponse) {
+      return {
+        statusCode: 502,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Chat-Service nicht erreichbar' })
+      }
+    }
 
     const chatData = await chatResponse.json()
 
@@ -157,15 +188,17 @@ export const handler = async (event) => {
         ...chatData,
         _hit: {
           enabled: true,
-          platform: intent.platform,
-          goal: intent.goal,
-          confidence: Math.round(intent.confidence * 100)
+          platform: platformResult.platform,
+          platformConfidence: Math.round(platformResult.confidence * 100),
+          goal: goalResult.goal,
+          goalConfidence: Math.round(goalResult.confidence * 100),
+          goalMethod: goalResult.method
         }
       })
     }
   } catch (error) {
     console.error('[H.I.T.] Error:', error.message)
-    const chatResponse = await fetch(`${event.headers.origin || 'https://happiness-eu.netlify.app'}/.netlify/functions/chat`, {
+    const chatResponse = await fetch(CHAT_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
