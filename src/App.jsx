@@ -446,8 +446,8 @@ function HomePage() {
         {/* ── Left: Value Prop Card ── */}
         <div className="hp-left">
           <div className="hp-left-card">
-            <h2 className="hp-left-title">Your ideas deserve more than answers.</h2>
-            <p className="hp-left-sub">They deserve to become reality.</p>
+            <h2 className="hp-left-title">{t('hp.leftTitle')}</h2>
+            <p className="hp-left-sub">{t('hp.leftSub')}</p>
 
             <div className="hp-left-steps">
               <div className="hp-left-step">
@@ -455,8 +455,8 @@ function HomePage() {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                 </div>
                 <div>
-                  <strong>From idea to reality</strong>
-                  <p>Whether it's content, a business, a project or a personal goal — Happiness helps you make it happen.</p>
+                  <strong>{t('hp.step1Title')}</strong>
+                  <p>{t('hp.step1Desc')}</p>
                 </div>
               </div>
 
@@ -465,8 +465,8 @@ function HomePage() {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </div>
                 <div>
-                  <strong>Describe your goal</strong>
-                  <p>Tell us what you want to achieve. We'll create a plan and guide you step by step.</p>
+                  <strong>{t('hp.step2Title')}</strong>
+                  <p>{t('hp.step2Desc')}</p>
                 </div>
               </div>
 
@@ -475,8 +475,8 @@ function HomePage() {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
                 </div>
                 <div>
-                  <strong>We handle the work</strong>
-                  <p>Planning, research, content creation, improvements and next steps — we take care of it.</p>
+                  <strong>{t('hp.step3Title')}</strong>
+                  <p>{t('hp.step3Desc')}</p>
                 </div>
               </div>
 
@@ -485,8 +485,8 @@ function HomePage() {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                 </div>
                 <div>
-                  <strong>You stay in control</strong>
-                  <p>You make the decisions. We provide the best options and keep you moving forward.</p>
+                  <strong>{t('hp.step4Title')}</strong>
+                  <p>{t('hp.step4Desc')}</p>
                 </div>
               </div>
             </div>
@@ -494,8 +494,8 @@ function HomePage() {
             <div className="hp-left-footer">
               <span className="hp-left-footer-icon">💚</span>
               <div>
-                <strong>One goal. One team. Real results.</strong>
-                <p>That's Happiness.</p>
+                <strong>{t('hp.footerTitle')}</strong>
+                <p>{t('hp.footerSub')}</p>
               </div>
             </div>
           </div>
@@ -503,8 +503,8 @@ function HomePage() {
 
         {/* ── Center: Main Content ── */}
         <div className="hp-center">
-          <h1 className="hp-center-title">Welcome to <span className="hp-hit">H.I.T.</span></h1>
-          <p className="hp-center-sub">What do you want to achieve today?</p>
+          <h1 className="hp-center-title">{t('hp.centerTitle')} <span className="hp-hit">H.I.T.</span></h1>
+          <p className="hp-center-sub">{t('hp.centerSub')}</p>
 
           <div className="hp-input-wrap">
             <input
@@ -513,49 +513,49 @@ function HomePage() {
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && goal.trim() && handleGoalSubmit('build')}
-              placeholder="Describe your goal in one sentence..."
+              placeholder={t('hp.placeholder')}
             />
           </div>
 
           <div className="hp-chips">
-            <button className="hp-chip" onClick={() => setGoal('Create a TikTok about healthy habits')}>Create a TikTok about healthy habits</button>
-            <button className="hp-chip" onClick={() => setGoal('Start my own business')}>Start my own business</button>
-            <button className="hp-chip" onClick={() => setGoal('Write a Facebook post')}>Write a Facebook post</button>
-            <button className="hp-chip" onClick={() => setGoal('Design a logo')}>Design a logo</button>
-            <button className="hp-chip" onClick={() => setGoal('Find more customers')}>Find more customers</button>
-            <button className="hp-chip" onClick={() => setGoal('Plan a vacation')}>Plan a vacation</button>
-            <button className="hp-chip" onClick={() => setGoal('Learn Spanish')}>Learn Spanish</button>
-            <button className="hp-chip" onClick={() => setGoal('Build a website')}>Build a website</button>
+            <button className="hp-chip" onClick={() => setGoal(t('hp.chip1'))}>{t('hp.chip1')}</button>
+            <button className="hp-chip" onClick={() => setGoal(t('hp.chip2'))}>{t('hp.chip2')}</button>
+            <button className="hp-chip" onClick={() => setGoal(t('hp.chip3'))}>{t('hp.chip3')}</button>
+            <button className="hp-chip" onClick={() => setGoal(t('hp.chip4'))}>{t('hp.chip4')}</button>
+            <button className="hp-chip" onClick={() => setGoal(t('hp.chip5'))}>{t('hp.chip5')}</button>
+            <button className="hp-chip" onClick={() => setGoal(t('hp.chip6'))}>{t('hp.chip6')}</button>
+            <button className="hp-chip" onClick={() => setGoal(t('hp.chip7'))}>{t('hp.chip7')}</button>
+            <button className="hp-chip" onClick={() => setGoal(t('hp.chip8'))}>{t('hp.chip8')}</button>
           </div>
 
           <div className="hp-actions">
             <button className="hp-action think" onClick={() => handleGoalSubmit('think')}>
               <span className="hp-action-icon">🧠</span>
               <div>
-                <strong>Let's think bigger</strong>
-                <span>Brainstorm and improve my idea.</span>
+                <strong>{t('hp.actionThink')}</strong>
+                <span>{t('hp.actionThinkDesc')}</span>
               </div>
             </button>
             <button className="hp-action build" onClick={() => handleGoalSubmit('build')}>
               <span className="hp-action-icon">🚀</span>
               <div>
-                <strong>Let's build it</strong>
-                <span>Start creating and get things done.</span>
+                <strong>{t('hp.actionBuild')}</strong>
+                <span>{t('hp.actionBuildDesc')}</span>
               </div>
             </button>
             <button className="hp-action surprise" onClick={() => handleGoalSubmit('surprise')}>
               <span className="hp-action-icon">✨</span>
               <div>
-                <strong>Surprise me</strong>
-                <span>Show me ideas and opportunities.</span>
+                <strong>{t('hp.actionSurprise')}</strong>
+                <span>{t('hp.actionSurpriseDesc')}</span>
               </div>
             </button>
           </div>
 
           <div className="hp-info-card">
-            <strong>Your personal AI team.</strong>
-            <p>You bring the idea. H.I.T. helps turn it into reality.</p>
-            <span>While you focus on your goal, H.I.T. plans the work, finds information, creates content, improves quality and guides you to the finished result.</span>
+            <strong>{t('hp.infoTitle')}</strong>
+            <p>{t('hp.infoSub')}</p>
+            <span>{t('hp.infoDesc')}</span>
           </div>
         </div>
 
@@ -582,8 +582,8 @@ function HomePage() {
       {/* ── Community Inspiration ── */}
       <div className="hp-community">
         <div className="hp-community-header">
-          <h2>Community Inspiration</h2>
-          <p>See what other people are creating.</p>
+          <h2>{t('hp.communityTitle')}</h2>
+          <p>{t('hp.communitySub')}</p>
         </div>
         <Feed />
       </div>
