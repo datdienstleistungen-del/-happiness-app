@@ -19,6 +19,17 @@
       gtag('js', new Date());
       gtag('config', 'G-47T32Z43L2');
     </script>
+    <script>
+      (function(){
+        var ua = navigator.userAgent.toLowerCase();
+        var botPatterns = /bot|spider|crawl|headless|phantom|selenium|puppeteer|webdriver|curl|wget|python|go-http|java|ruby|scalability|load.?test|monitoring|uptime|pingdom|uptimerobot|statuscake|netlify.*health|google.*analytics.*bot/i;
+        if (navigator.webdriver || botPatterns.test(ua)) {
+          window.gtag = function(){};
+          window._isBot = true;
+          console.log('Bot detected – GA4 tracking disabled');
+        }
+      })();
+    </script>
     <style>
       body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#fff}
       .splash{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px}
