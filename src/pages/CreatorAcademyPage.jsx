@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations'
 import ShareBar from '../components/ShareBar'
 import './CreatorAcademyPage.css'
-import { useSearchParams, useLocation } from 'react-router-dom'
+import { useSearchParams, useLocation, useNavigate } from 'react-router-dom'
 import CopyButton from '../components/CopyButton'
 import { getChatEndpoint } from '../lib/hit'
 
@@ -14,6 +14,7 @@ export default function CreatorAcademyPage() {
   const { t } = useLanguage()
   const [searchParams] = useSearchParams()
   const location = useLocation()
+  const navigate = useNavigate()
   const [draft, setDraft] = useState(location.state?.draft || '')
   const [feedback, setFeedback] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -310,6 +311,14 @@ Antworte immer auf Deutsch. Antworte in klarem Fliesstext, wie ein professionell
               </div>
               <div className="ca-feedback-disclaimer">
                 Einschaetzung basierend auf bekannten Plattform-Mustern, keine Erfolgsgarantie.
+              </div>
+              <div className="ca-feedback-actions">
+                <button
+                  className="ca-btn ca-btn-primary"
+                  onClick={() => navigate('/post-preparation', { state: { draft, feedback } })}
+                >
+                  <Rocket size={16} /> Zum Posten vorbereiten
+                </button>
               </div>
               <ShareBar text={draft} title="Mein Content-Entwurf" />
             </div>

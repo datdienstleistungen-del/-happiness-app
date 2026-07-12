@@ -34,6 +34,7 @@ const AIChatPage = lazy(() => import('./pages/AIChatPage'))
 const ExecutionPipeline = lazy(() => import('./pages/ExecutionPipeline'))
 const TikTokVideoPage = lazy(() => import('./pages/TikTokVideoPage'))
 const CreatorAcademyPage = lazy(() => import('./pages/CreatorAcademyPage'))
+const PostPreparationPage = lazy(() => import('./pages/PostPreparationPage'))
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 const TodayQuestionPage = lazy(() => import('./pages/TodayQuestionPage'))
 const CreatorWelcomePage = lazy(() => import('./pages/CreatorWelcomePage'))
@@ -320,6 +321,7 @@ export default function App() {
                 <Route path="/ai-chat" element={<ProtectedRoute><AIChatPage /></ProtectedRoute>} />
                 <Route path="/execute" element={<ProtectedRoute><ExecutionPipeline /></ProtectedRoute>} />
                 <Route path="/creator-academy" element={<ProtectedRoute><CreatorAcademyPage /></ProtectedRoute>} />
+                <Route path="/post-preparation" element={<ProtectedRoute><PostPreparationPage /></ProtectedRoute>} />
                 <Route path="/tiktok-video" element={<ProtectedRoute><TikTokVideoPage /></ProtectedRoute>} />
                 <Route path="/legal" element={<LegalPage />} />
                 <Route path="/impressum" element={<LegalPage />} />
