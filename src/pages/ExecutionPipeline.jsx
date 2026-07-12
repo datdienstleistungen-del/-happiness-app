@@ -89,6 +89,7 @@ AUFGABE:
 4. Rating: Gib eine ehrliche Einschaetzung von 1-10.
 
 TONALITAET: Sachlich, direkt, ruhig. Keine Ausrufezeichen-Kaskaden.
+Antworte in klarem Fliesstext, wie ein professionelles Softwareunternehmen kommuniziert. Keine Markdown-Formatierung wie **fett**, keine Aufzaehlungspunkte mit Sternchen/Bindestrichen, keine nummerierten Listen, ausser der Nutzer bittet explizit um eine Liste/Tabelle. Kurze, klare Saetze statt KI-typischer Aufzaehlungsstruktur.
 Antworte immer auf Deutsch.`
 
       const response = await fetch(getChatEndpoint(), {
