@@ -104,6 +104,7 @@ async function classifyGoalWithLLM(message, groqKey) {
     const rawLower = raw.toLowerCase().replace(/[`*_#\-]/g, '').trim()
 
     console.log(`[H.I.T.] LLM raw response: "${raw}" | cleaned: "${rawLower}"`)
+    console.log(`[H.I.T.] LLM raw charCodes: [${[...raw].map(c => c.charCodeAt(0)).join(',')}]`)
 
     const validGoals = ['content_creation', 'feedback', 'strategy', 'monetization', 'community', 'learning', 'general']
 
@@ -133,7 +134,7 @@ async function classifyGoalWithLLM(message, groqKey) {
     }
 
     if (!goal) goal = 'unknown'
-    return { goal, confidence: goal === 'unknown' ? 0 : 0.8, method: 'llm' }
+    return { goal, confidence: goal === 'unknown' ? 0 : 0.8, method: 'llm', raw: raw.substring(0, 100) }
   } catch (err) {
     if (err.name === 'AbortError') {
       console.warn('[H.I.T.] LLM goal call timed out (5s)')
@@ -223,7 +224,8 @@ export const handler = async (event) => {
           platformConfidence: Math.round(platformResult.confidence * 100),
           goal: goalResult.goal,
           goalConfidence: Math.round(goalResult.confidence * 100),
-          goalMethod: goalResult.method
+          goalMethod: goalResult.method,
+          llmRaw: goalResult.raw || null
         }
       })
     }
