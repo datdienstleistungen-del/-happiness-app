@@ -503,7 +503,7 @@ export const handler = async (event) => {
                 'X-Title': 'Happiness App'
               },
               body: JSON.stringify({
-                model: 'meta-llama/llama-3.1-8b-instruct',
+                model: 'google/gemma-4-26b-a4b-it:free',
                 messages: buildMessages(historyLimit),
                 temperature: 0.7,
                 max_tokens: 4096
@@ -515,7 +515,7 @@ export const handler = async (event) => {
               aiResponse = orData.choices?.[0]?.message?.content || ''
               usage = orData.usage
               provider = 'openrouter'
-              modelName = 'meta-llama/llama-3.1-8b-instruct'
+              modelName = 'google/gemma-4-26b-a4b-it:free'
               success = true
             } else {
               const orData = await orRes.json().catch(() => ({}))
