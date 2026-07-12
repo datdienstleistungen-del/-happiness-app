@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { ShoppingCart, Image as ImageIcon, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -11,12 +11,13 @@ const CATEGORIES = ['Dienstleistung', 'Produkt', 'Geschenk', 'Tausch', 'Sonstige
 export default function MarketplacePage() {
   const { user, profile } = useAuth()
   const { t } = useLanguage()
-  const [tab, setTab] = useState('browse')
+  const location = useLocation()
+  const [tab, setTab] = useState(location.state?.startTab || 'browse')
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('')
   const [search, setSearch] = useState('')
-  const [form, setForm] = useState({ title: '', description: '', price: '', category: 'Sonstiges' })
+  const [form, setForm] = useState(location.state?.form || { title: '', description: '', price: '', category: 'Sonstiges' })
   const [selectedImage, setSelectedImage] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const fileInputRef = useRef(null)

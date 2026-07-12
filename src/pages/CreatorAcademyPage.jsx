@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations'
 import './CreatorAcademyPage.css'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useLocation } from 'react-router-dom'
 import CopyButton from '../components/CopyButton'
 import { getChatEndpoint } from '../lib/hit'
 
@@ -12,7 +12,8 @@ export default function CreatorAcademyPage() {
   const { user } = useAuth()
   const { t } = useLanguage()
   const [searchParams] = useSearchParams()
-  const [draft, setDraft] = useState('')
+  const location = useLocation()
+  const [draft, setDraft] = useState(location.state?.draft || '')
   const [feedback, setFeedback] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isPosting, setIsPosting] = useState(false)

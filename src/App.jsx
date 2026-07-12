@@ -31,6 +31,7 @@ const VideoMakerPage = lazy(() => import('./pages/VideoMakerPage'))
 const PhotoEditorPage = lazy(() => import('./pages/PhotoEditorPage'))
 const FotostoryPage = lazy(() => import('./pages/FotostoryPage'))
 const AIChatPage = lazy(() => import('./pages/AIChatPage'))
+const ExecutionPipeline = lazy(() => import('./pages/ExecutionPipeline'))
 const TikTokVideoPage = lazy(() => import('./pages/TikTokVideoPage'))
 const CreatorAcademyPage = lazy(() => import('./pages/CreatorAcademyPage'))
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
@@ -317,6 +318,7 @@ export default function App() {
                 <Route path="/photo-editor" element={<ProtectedRoute><PhotoEditorPage /></ProtectedRoute>} />
                 <Route path="/fotostory" element={<ProtectedRoute><FotostoryPage /></ProtectedRoute>} />
                 <Route path="/ai-chat" element={<ProtectedRoute><AIChatPage /></ProtectedRoute>} />
+                <Route path="/execute" element={<ProtectedRoute><ExecutionPipeline /></ProtectedRoute>} />
                 <Route path="/creator-academy" element={<ProtectedRoute><CreatorAcademyPage /></ProtectedRoute>} />
                 <Route path="/tiktok-video" element={<ProtectedRoute><TikTokVideoPage /></ProtectedRoute>} />
                 <Route path="/legal" element={<LegalPage />} />
@@ -434,7 +436,7 @@ function HomePage() {
   const handleGoalSubmit = (mode) => {
     if (!goal.trim()) return
     const params = new URLSearchParams({ goal: goal.trim(), mode })
-    navigate(`/ai-chat?${params.toString()}`)
+    navigate(`/execute?${params.toString()}`)
   }
 
   return (
@@ -519,13 +521,9 @@ function HomePage() {
 
           <div className="hp-chips">
             <button className="hp-chip" onClick={() => setGoal(t('hp.chip1'))}>{t('hp.chip1')}</button>
-            <button className="hp-chip" onClick={() => setGoal(t('hp.chip2'))}>{t('hp.chip2')}</button>
             <button className="hp-chip" onClick={() => setGoal(t('hp.chip3'))}>{t('hp.chip3')}</button>
-            <button className="hp-chip" onClick={() => setGoal(t('hp.chip4'))}>{t('hp.chip4')}</button>
-            <button className="hp-chip" onClick={() => setGoal(t('hp.chip5'))}>{t('hp.chip5')}</button>
-            <button className="hp-chip" onClick={() => setGoal(t('hp.chip6'))}>{t('hp.chip6')}</button>
-            <button className="hp-chip" onClick={() => setGoal(t('hp.chip7'))}>{t('hp.chip7')}</button>
-            <button className="hp-chip" onClick={() => setGoal(t('hp.chip8'))}>{t('hp.chip8')}</button>
+            <button className="hp-chip" onClick={() => setGoal(t('hp.chip9'))}>{t('hp.chip9')}</button>
+            <button className="hp-chip" onClick={() => setGoal(t('hp.chip10'))}>{t('hp.chip10')}</button>
           </div>
 
           <div className="hp-actions">
