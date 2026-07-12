@@ -231,6 +231,45 @@ export default function AIChatPage() {
     })
   }
 
+  function cleanAiResponse(text) {
+    if (!text) return text
+    const lines = text.split('\n')
+    const result = []
+    let inTable = false
+    let tableRows = []
+
+    for (const line of lines) {
+      const trimmed = line.trim()
+      const isTableLine = trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.includes('|')
+      const isSeparator = /^\|[\s\-:|]+\|$/.test(trimmed)
+
+      if (isTableLine && !isSeparator) {
+        inTable = true
+        const cells = trimmed.split('|').filter(c => c.trim()).map(c => c.trim())
+        tableRows.push(cells)
+      } else if (isSeparator) {
+        continue
+      } else {
+        if (inTable && tableRows.length > 0) {
+          for (const row of tableRows) {
+            result.push('- ' + row.join(': '))
+          }
+          tableRows = []
+          inTable = false
+        }
+        result.push(line)
+      }
+    }
+
+    if (inTable && tableRows.length > 0) {
+      for (const row of tableRows) {
+        result.push('- ' + row.join(': '))
+      }
+    }
+
+    return result.join('\n')
+  }
+
   const deleteConversation = async (convId, e) => {
     e.stopPropagation()
     if (!confirm('Diesen Chat löschen?')) return
@@ -448,7 +487,7 @@ Falls eine persönliche Geschichte als Stilmittel sinnvoll ist: Biete NUR eine S
       }
 
       const data = await response.json()
-      const aiResponse = data.response
+      const aiResponse = cleanAiResponse(data.response)
       const imageNote = data.imageNote || null
 
       setMessages(prev => [...prev, { role: 'assistant', content: imageNote ? `${imageNote}\n\n${aiResponse}` : aiResponse }])
