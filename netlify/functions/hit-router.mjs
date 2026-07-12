@@ -81,7 +81,7 @@ async function classifyGoalWithLLM(message, groqKey) {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'openai/gpt-oss-20b',
+        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
         messages: [
           { role: 'system', content: GOAL_PROMPT },
           { role: 'user', content: message.substring(0, 500) }
@@ -95,7 +95,7 @@ async function classifyGoalWithLLM(message, groqKey) {
     clearTimeout(timeout)
 
     const rawData = await res.json()
-    console.log(`[H.I.T.] LLM HTTP ${res.status}, full response: ${JSON.stringify(rawData).substring(0, 500)}`)
+    console.log(`[H.I.T.] LLM HTTP ${res.status}, model: ${rawData.model}, content: "${rawData.choices?.[0]?.message?.content}"`)
 
     if (!res.ok) {
       console.warn(`[H.I.T.] LLM goal call failed: HTTP ${res.status}`)
@@ -136,7 +136,7 @@ async function classifyGoalWithLLM(message, groqKey) {
     }
 
     if (!goal) goal = 'unknown'
-    return { goal, confidence: goal === 'unknown' ? 0 : 0.8, method: 'llm', raw: raw ? raw.substring(0, 100) : `[empty|${JSON.stringify(rawData).substring(0, 200)}]` }
+    return { goal, confidence: goal === 'unknown' ? 0 : 0.8, method: 'llm', raw: raw.substring(0, 100) }
   } catch (err) {
     if (err.name === 'AbortError') {
       console.warn('[H.I.T.] LLM goal call timed out (5s)')
