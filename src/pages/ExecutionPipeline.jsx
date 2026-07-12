@@ -1,22 +1,119 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Check, ArrowRight, Clock, Sparkles, AlertTriangle } from 'lucide-react'
+import { Check, ArrowRight, Clock, Sparkles, AlertTriangle, MessageCircle } from 'lucide-react'
 import { useLanguage } from '../i18n/translations'
 import { supabase } from '../lib/supabase'
 import { getChatEndpoint } from '../lib/hit'
 import './ExecutionPipeline.css'
 
-function detectPlatform(goal) {
-  const lower = goal.toLowerCase()
-  if (/tiktok|tik\s*tok|kurzvideo|short\s*video|reel/.test(lower)) return 'tiktok'
-  if (/facebook|fb|meta\s*post/.test(lower)) return 'facebook'
-  if (/instagram|insta| reel|stories/.test(lower)) return 'instagram'
-  if (/kleinanzeige|anzeige|verkaufe|biete|marktplatz|sell|offer/.test(lower)) return 'marketplace'
-  if (/post|beitrag|content|text|caption|carousel|karussell/.test(lower)) return 'content'
-  return 'unknown'
+const INTENT_PROMPT = `Du bist ein Intent-Analyst. Der Nutzer hat etwas eingegeben. Analysiere:
+
+1. WAS ist das Ziel? (Was will der Nutzer konkret tun?)
+2. IST das Ziel GENUG DETAILLIERT um es direkt auszuführen?
+
+Beispiele:
+- "Ich will ein TikTok über gesunde Gewohnheiten" → Ziel: tiktok, Detail: hoch, AUSFÜHREN
+- "Ich möchte ein TikTok Video erstellen" → Ziel: tiktok, Detail: niedrig, KLÄREN
+- "Erstelle einen Facebook-Post über mein neues Produkt" → Ziel: facebook, Detail: hoch, AUSFÜHREN
+- "Ich überlege einen Post zu machen" → Ziel: facebook, Detail: niedrig, KLÄREN
+- "Soll ich eine Kleinanzeige für mein Auto schalten?" → Ziel: marketplace, Detail: mittel, KLÄREN
+- "Verkaufe mein Fahrrad für 200€" → Ziel: marketplace, Detail: hoch, AUSFÜHREN
+- "Mir langweilt es sich" → Ziel: keins, AUSFÜHREN (zum Chat)
+
+Antworte NUR mit JSON:
+{"platform":"tiktok|facebook|instagram|marketplace|content|chat","intent":"konkret|vage","action":"execute|clarify","clarifyQuestion":"Falls clarify: kurze Frage auf Deutsch (max 15 Wörter), sonst null"}
+
+Regeln:
+- "execute" nur wenn konkreter Inhalt im Text steht (Produktname, Thema, Beschreibung)
+- "clarify" wenn der Nutzer nur die Plattform nennt aber keinen Inhalt nennt
+- "chat" wenn kein erkennbares Plattform-Ziel
+- platform "chat" → IMMER action "execute" (zum AI Chat weiterleiten)
+- Kein Text außer dem JSON`
+
+async function analyzeIntent(goal) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token || ''
+
+    const response = await fetch(getChatEndpoint(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        message: `Analysiere diese Nutzereingabe:\n\n"${goal}"`,
+        systemPrompt: INTENT_PROMPT,
+        history: []
+      })
+    })
+
+    if (!response.ok) return null
+    const data = await response.json()
+    const raw = (data.response || '').trim()
+
+    const jsonMatch = raw.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) return null
+    return JSON.parse(jsonMatch[0])
+  } catch {
+    return null
+  }
 }
 
-const STEPS_BY_PLATFORM = {
+async function startRealWork(platform, goal) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token || ''
+
+    if (platform === 'tiktok') {
+      const res = await fetch('/api/tiktok-video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ text: goal.trim() })
+      })
+      if (!res.ok) return null
+      return await res.json()
+    }
+
+    if (platform === 'facebook' || platform === 'instagram' || platform === 'content') {
+      const systemPrompt = `Du bist ein erfahrener Social-Media-Coach und Content-Analyst.
+Deine Aufgabe: Analysiere den bereitgestellten Content-Entwurf und gib strukturiertes, umsetzbares Feedback.
+
+AUFGABE:
+1. Hook-Check: Ist der Einstieg in den ersten 3 Sekunden stark genug?
+2. Plattform-Einschaetzung: Wie gut passt dieser Entwurf auf die gewaehlte Plattform?
+3. Verbesserungsvorschlag: Gib 2-3 konkrete, umsetzbare Tipps zur Optimierung.
+4. Rating: Gib eine ehrliche Einschaetzung von 1-10.
+
+TONALITAET: Sachlich, direkt, ruhig. Keine Ausrufezeichen-Kaskaden.
+Antworte immer auf Deutsch.`
+
+      const response = await fetch(getChatEndpoint(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          message: `Hier ist mein Content-Entwurf fuer die Happiness Community:\n\n"${goal}"\n\nBitte gib mir eine Plattform-Einschaetzung, Hook-Check und Verbesserungsvorschlag.`,
+          systemPrompt,
+          history: []
+        })
+      })
+      if (!response.ok) return null
+      const data = await response.json()
+      return { feedback: data.response }
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
+const STEP_LABELS_BY_PLATFORM = {
   tiktok: [
     { key: 'understand', duration: 1200 },
     { key: 'script', duration: 1800 },
@@ -44,84 +141,20 @@ const STEPS_BY_PLATFORM = {
   ],
 }
 
-async function startRealWork(platform, goal) {
-  try {
-    const { data: { session } } = await supabase.auth.getSession()
-    const token = session?.access_token || ''
-
-    if (platform === 'tiktok') {
-      const res = await fetch('/api/tiktok-video', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ text: goal.trim() })
-      })
-      if (!res.ok) return null
-      return await res.json()
-    }
-
-    if (platform === 'facebook' || platform === 'instagram' || platform === 'content') {
-      const systemPrompt = `Du bist ein erfahrener Social-Media-Coach und Content-Analyst.
-Deine Aufgabe: Analysiere den bereitgestellten Content-Entwurf und gib strukturiertes, umsetzbares Feedback.
-
-AUFGABE:
-1. Hook-Check: Ist der Einstieg in den ersten 3 Sekunden stark genug? Warum / warum nicht?
-2. Plattform-Einschaetzung: Wie gut passt dieser Entwurf auf die gewaehlte Plattform? Was muss angepasst werden?
-3. Verbesserungsvorschlag: Gib 2-3 konkrete, umsetzbare Tipps zur Optimierung.
-4. Rating: Gib eine ehrliche Einschaetzung von 1-10.
-
-REGELN:
-Gib IMMER klar zu erkennen, dass dies eine EINSCHAETZUNG nach bekannten Mustern ist, KEINE Erfolgsgarantie. Nutze Formulierungen wie 'wuerde vermutlich', 'nach typischen Mustern', 'aehnliche Hooks performen oft gut, aber...'. Erfinde keine konkreten Zahlen oder Statistiken, die du nicht belegen kannst.
-
-NIEMALS erfundene Prozentzahlen oder Statistiken verwenden ("90% der Accounts...") – das ist ein Hard-Stopp, keine Ausnahme.
-
-NIEMALS erfundene persoenliche Anekdoten oder Ich-Erzaelungen als Beispieltext vorschlagen, die der Nutzer als eigene, reale Geschichte posten koennte. Das ist Irrefuehrung der Zielgruppe des Nutzers und nicht erlaubt. Falls eine persoenliche Geschichte als Stilmittel empfohlen wird: nur als STRUKTUR-VORSCHLAG kennzeichnen (z.B. "eine Geschichte in diesem Aufbau: Ausgangslage -> Zweifel -> Schritt -> Ergebnis"), NIEMALS als ausformulierter, fertiger Ich-Text mit erfundenen Details (Zahlen, Zeitangaben, Ereignisse). Weise den Nutzer aktiv darauf hin, dass er seine EIGENE echte Erfahrung in diese Struktur einsetzen soll.
-
-TONALITAET: Sachlich, direkt, ruhig. Keine Ausrufezeichen-Kaskaden, keine uebertriebenen Emojis, keine Hype-Anreden. Der Coach ist ein nuechterner, ehrlicher Sparringspartner, kein Motivationscoach. Kein "🔥", kein "Super mega geil!!!", kein "Heyyy!".
-
-Sei direkt und konkret, keine Floskeln, kein uebertriebenes Lob.
-Antworte immer auf Deutsch. Formatierung: Nutze fett (**text**), kursiv (*text*), Ueberschriften (###), Aufzaehlungen (- punkt). Verwende KEINE Markdown-Tabellen (|---|) – Tabellen werden von der App nicht korrekt dargestellt. Ersetze Tabellen stattdessen durch Ueberschriften mit darunterliegenden Aufzaehlungspunkten.`
-
-      const response = await fetch(getChatEndpoint(), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          message: `Hier ist mein Content-Entwurf fuer die Happiness Community:\n\n"${goal}"\n\nBitte gib mir eine Plattform-Einschaetzung, Hook-Check und Verbesserungsvorschlag.`,
-          systemPrompt,
-          history: []
-        })
-      })
-      if (!response.ok) return null
-      const data = await response.json()
-      return { feedback: data.response }
-    }
-  } catch {
-    return null
-  }
-  return null
-}
-
 export default function ExecutionPipeline() {
   const { t } = useLanguage()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const goal = searchParams.get('goal') || ''
-  const mode = searchParams.get('mode') || 'build'
 
+  const [phase, setPhase] = useState('analyzing')
+  const [intent, setIntent] = useState(null)
   const [currentStep, setCurrentStep] = useState(0)
   const [completedSteps, setCompletedSteps] = useState([])
   const [finished, setFinished] = useState(false)
-  const [notAvailable, setNotAvailable] = useState(false)
   const [apiResult, setApiResult] = useState(null)
   const [apiDone, setApiDone] = useState(false)
-
-  const platform = detectPlatform(goal)
-  const steps = STEPS_BY_PLATFORM[platform] || []
+  const [clarifyText, setClarifyText] = useState('')
 
   useEffect(() => {
     if (!goal.trim()) {
@@ -129,68 +162,110 @@ export default function ExecutionPipeline() {
       return
     }
 
-    if (platform === 'unknown') {
-      const timer = setTimeout(() => setNotAvailable(true), 800)
-      return () => clearTimeout(timer)
-    }
+    let cancelled = false
 
-    let stepIndex = 0
+    analyzeIntent(goal).then(result => {
+      if (cancelled) return
 
-    const runStep = () => {
-      if (stepIndex >= steps.length) {
-        setFinished(true)
+      if (!result || result.platform === 'chat') {
+        navigate('/ai-chat', { state: { message: goal } })
         return
       }
-      setCurrentStep(stepIndex)
-      const dur = steps[stepIndex].duration
-      setTimeout(() => {
-        setCompletedSteps(prev => [...prev, stepIndex])
-        stepIndex++
-        runStep()
-      }, dur)
-    }
 
-    runStep()
+      if (result.action === 'clarify') {
+        setClarifyText(result.clarifyQuestion || 'Was genau soll ich dafür tun?')
+        setPhase('clarify')
+        return
+      }
 
-    if (platform !== 'marketplace') {
-      startRealWork(platform, goal).then(result => {
-        setApiResult(result)
+      setIntent(result)
+      setPhase('executing')
+
+      const steps = STEP_LABELS_BY_PLATFORM[result.platform] || []
+      let stepIndex = 0
+
+      const runStep = () => {
+        if (stepIndex >= steps.length) {
+          setFinished(true)
+          return
+        }
+        setCurrentStep(stepIndex)
+        const dur = steps[stepIndex].duration
+        setTimeout(() => {
+          setCompletedSteps(prev => [...prev, stepIndex])
+          stepIndex++
+          runStep()
+        }, dur)
+      }
+
+      runStep()
+
+      if (result.platform !== 'marketplace') {
+        startRealWork(result.platform, goal).then(r => {
+          setApiResult(r)
+          setApiDone(true)
+        })
+      } else {
         setApiDone(true)
-      })
-    } else {
-      setApiDone(true)
-    }
+      }
+    })
+
+    return () => { cancelled = true }
   }, [goal])
 
   useEffect(() => {
-    if (!finished || !apiDone) return
+    if (phase !== 'executing' || !finished || !apiDone || !intent) return
 
     const timer = setTimeout(() => {
-      if (platform === 'tiktok') {
+      if (intent.platform === 'tiktok') {
         navigate('/tiktok-video', { state: { postText: goal, pipelineResult: apiResult } })
-      } else if (platform === 'facebook' || platform === 'instagram' || platform === 'content') {
+      } else if (intent.platform === 'facebook' || intent.platform === 'instagram' || intent.platform === 'content') {
         navigate('/creator-academy', { state: { draft: goal, pipelineResult: apiResult } })
-      } else if (platform === 'marketplace') {
+      } else if (intent.platform === 'marketplace') {
         navigate('/marketplace', { state: { form: { title: goal, description: goal, price: '', category: 'Sonstiges' }, startTab: 'create' } })
       }
     }, 600)
 
     return () => clearTimeout(timer)
-  }, [finished, apiDone, platform, goal, navigate, apiResult])
+  }, [finished, apiDone, intent, goal, navigate, apiResult, phase])
 
-  if (notAvailable) {
+  if (phase === 'clarify') {
     return (
       <div className="ep-page">
-        <div className="ep-card ep-unavailable">
-          <div className="ep-unavailable-icon"><AlertTriangle size={32} /></div>
-          <h2>Diese Funktion kommt bald.</h2>
-          <p>H.I.T. kann dieses Ziel aktuell noch nicht direkt umsetzen.</p>
-          <p className="ep-unavailable-hint">Du kannst es aber im <strong>AI Chat</strong> besprechen — H.I.T. hilft dir dort bei der Planung.</p>
-          <div className="ep-unavailable-actions">
-            <button className="ep-btn primary" onClick={() => navigate('/ai-chat', { state: { message: goal } })}>
-              <Sparkles size={16} /> Im Chat besprechen
-            </button>
-            <button className="ep-btn secondary" onClick={() => navigate('/')}>Zurück zur Startseite</button>
+        <div className="ep-card">
+          <div className="ep-header">
+            <div className="ep-header-brand">
+              <span className="ep-hit-h">H</span><span className="ep-hit-rest">.I.T.</span>
+            </div>
+          </div>
+          <div className="ep-clarify">
+            <div className="ep-clarify-icon"><MessageCircle size={28} /></div>
+            <p className="ep-clarify-text">{clarifyText}</p>
+            <div className="ep-clarify-actions">
+              <button className="ep-btn primary" onClick={() => navigate('/ai-chat', { state: { message: goal } })}>
+                <Sparkles size={16} /> Im Chat besprechen
+              </button>
+              <button className="ep-btn secondary" onClick={() => navigate('/')}>Zurück</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (phase === 'analyzing') {
+    return (
+      <div className="ep-page">
+        <div className="ep-card">
+          <div className="ep-header">
+            <div className="ep-header-brand">
+              <span className="ep-hit-h">H</span><span className="ep-hit-rest">.I.T.</span>
+            </div>
+            <p className="ep-goal">"{goal}"</p>
+          </div>
+          <div className="ep-analyzing">
+            <div className="ep-analyzing-spinner"></div>
+            <p>H.I.T. analysiert dein Ziel...</p>
           </div>
         </div>
       </div>
@@ -216,6 +291,8 @@ export default function ExecutionPipeline() {
     analyze: '🔍',
     prepare: '📦',
   }
+
+  const steps = STEP_LABELS_BY_PLATFORM[intent?.platform] || []
 
   return (
     <div className="ep-page">
@@ -255,7 +332,7 @@ export default function ExecutionPipeline() {
           })}
         </div>
 
-        {finished && !apiDone && platform !== 'marketplace' && (
+        {finished && !apiDone && intent?.platform !== 'marketplace' && (
           <div className="ep-finished ep-waiting">
             <div className="ep-finished-icon"><Clock size={20} /></div>
             <p>H.I.T. arbeitet noch im Hintergrund...</p>
