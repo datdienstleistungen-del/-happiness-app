@@ -23,6 +23,13 @@ export default function CreatorAcademyPage() {
   const [freeContentUsed, setFreeContentUsed] = useState(0)
   const [isPremium, setIsPremium] = useState(false)
   const [showPaywall, setShowPaywall] = useState(false)
+
+  useEffect(() => {
+    const pipelineResult = location.state?.pipelineResult
+    if (pipelineResult?.feedback) {
+      setFeedback(pipelineResult.feedback)
+    }
+  }, [])
   const FREE_LIMIT = 5
 
   useEffect(() => {

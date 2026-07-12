@@ -43,6 +43,22 @@ export default function TikTokVideoPage() {
     }
   }, [searchParams])
 
+  const pipelineUsed = useRef(false)
+  useEffect(() => {
+    const pipelineResult = location.state?.pipelineResult
+    if (pipelineResult?.scenes && !pipelineUsed.current) {
+      pipelineUsed.current = true
+      setScenes(pipelineResult.scenes)
+      setTotalDuration(pipelineResult.totalDuration || 0)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (scenes && !loading && !videoBlob && !selectedImage) {
+      renderVideo(scenes)
+    }
+  }, [scenes])
+
   useEffect(() => {
     return () => {
       if (videoUrl) URL.revokeObjectURL(videoUrl)
