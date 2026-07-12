@@ -217,11 +217,18 @@ export default function AIChatPage() {
     setImagePreview(URL.createObjectURL(file))
   }
 
-  const startNewChat = () => {
+  const startNewChat = async () => {
     const newId = crypto.randomUUID()
     setConversationId(newId)
     setMessages([])
     setConversations(prev => [{ id: newId, title: 'Neuer Chat', created_at: new Date().toISOString() }, ...prev])
+    await supabase.from('ai_conversations').insert({
+      user_id: user.id,
+      message: 'USER:Neuer Chat',
+      response: '',
+      context: {},
+      conversation_id: newId
+    })
   }
 
   const deleteConversation = async (convId, e) => {
