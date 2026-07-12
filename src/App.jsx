@@ -437,121 +437,156 @@ function HomePage() {
     navigate(`/ai-chat?${params.toString()}`)
   }
 
-  const capabilities = [
-    { icon: '💡', label: 'Turn an idea into a plan' },
-    { icon: '✍️', label: 'Create professional content' },
-    { icon: '🎬', label: 'Produce videos and images' },
-    { icon: '📈', label: 'Build your business' },
-    { icon: '🎓', label: 'Learn faster' },
-    { icon: '🚀', label: 'Finish real projects' },
-  ]
-
   return (
     <div className="hp">
 
-      {/* ── Hero ── */}
-      <section className="hp-hero">
-        <div className="hp-hero-brand">
-          <Logo />
-        </div>
-        <h1 className="hp-hero-headline">Every great achievement starts with one idea.</h1>
-        <p className="hp-hero-sub">Most ideas disappear. Not because they are bad.<br/>Because nobody helps you turn them into reality.</p>
-      </section>
+      {/* ── 3-Column Dashboard ── */}
+      <div className="hp-dashboard">
 
-      {/* ── What is Happiness? ── */}
-      <section className="hp-section hp-what">
-        <h2>What is Happiness?</h2>
-        <p className="hp-what-lead">Happiness is your personal AI team.</p>
-        <p>Whether you want to create content, grow a business, learn something new, plan a project, or simply develop an idea — Happiness stays with you from the first thought to the finished result.</p>
-        <p className="hp-what-highlight">Not just answers. Real progress.</p>
-      </section>
+        {/* ── Left: Value Prop Card ── */}
+        <div className="hp-left">
+          <div className="hp-left-card">
+            <h2 className="hp-left-title">Your ideas deserve more than answers.</h2>
+            <p className="hp-left-sub">They deserve to become reality.</p>
 
-      {/* ── Why ideas fail ── */}
-      <section className="hp-section hp-why">
-        <div className="hp-why-badge">Why thousands of ideas never become reality</div>
-        <div className="hp-why-grid">
-          <div className="hp-why-problems">
-            <div className="hp-why-item">They don't know where to begin.</div>
-            <div className="hp-why-item">They don't know which tools to use.</div>
-            <div className="hp-why-item">They lose motivation halfway.</div>
-            <div className="hp-why-item">They don't know whether their work is good.</div>
-            <div className="hp-why-item">They spend hours switching between different apps.</div>
-          </div>
-          <div className="hp-why-solution">
-            <h3>Happiness solves exactly this.</h3>
-            <p>Describe your goal. Everything else happens here.</p>
-          </div>
-        </div>
-      </section>
+            <div className="hp-left-steps">
+              <div className="hp-left-step">
+                <div className="hp-left-step-icon" style={{ background: 'rgba(8,80,65,0.1)', color: '#085041' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                </div>
+                <div>
+                  <strong>From idea to reality</strong>
+                  <p>Whether it's content, a business, a project or a personal goal — Happiness helps you make it happen.</p>
+                </div>
+              </div>
 
-      {/* ── Differentiator ── */}
-      <section className="hp-section hp-diff">
-        <h2>Not another AI.<br/><span className="hp-diff-accent">Your AI team.</span></h2>
-        <p>Other AI tools answer your questions. Happiness works with you.</p>
-        <div className="hp-diff-verbs">
-          <span>Think.</span>
-          <span>Research.</span>
-          <span>Create.</span>
-          <span>Improve.</span>
-          <span>Organize.</span>
-          <span>Finish.</span>
-        </div>
-        <p className="hp-diff-closing">You only need one thing: <strong>Your idea.</strong></p>
-      </section>
+              <div className="hp-left-step">
+                <div className="hp-left-step-icon" style={{ background: 'rgba(216,90,48,0.1)', color: '#D85A30' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </div>
+                <div>
+                  <strong>Describe your goal</strong>
+                  <p>Tell us what you want to achieve. We'll create a plan and guide you step by step.</p>
+                </div>
+              </div>
 
-      {/* ── Capabilities ── */}
-      <section className="hp-section hp-caps">
-        <h2>What can I do here?</h2>
-        <div className="hp-caps-grid">
-          {capabilities.map((c, i) => (
-            <div key={i} className="hp-cap-card">
-              <span className="hp-cap-icon">{c.icon}</span>
-              <span className="hp-cap-label">{c.label}</span>
+              <div className="hp-left-step">
+                <div className="hp-left-step-icon" style={{ background: 'rgba(29,158,117,0.1)', color: '#1D9E75' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                </div>
+                <div>
+                  <strong>We handle the work</strong>
+                  <p>Planning, research, content creation, improvements and next steps — we take care of it.</p>
+                </div>
+              </div>
+
+              <div className="hp-left-step">
+                <div className="hp-left-step-icon" style={{ background: 'rgba(186,117,23,0.1)', color: '#BA7517' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+                <div>
+                  <strong>You stay in control</strong>
+                  <p>You make the decisions. We provide the best options and keep you moving forward.</p>
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
-      </section>
 
-      {/* ── The Moment ── */}
-      <section className="hp-section hp-moment">
-        <h2>What do you want to achieve today?</h2>
-        <div className="hp-moment-input-wrap">
-          <input
-            className="hp-moment-input"
-            type="text"
-            value={goal}
-            onChange={(e) => setGoal(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && goal.trim() && handleGoalSubmit('build')}
-            placeholder="Describe your idea, your goal or your challenge..."
-          />
+            <div className="hp-left-footer">
+              <span className="hp-left-footer-icon">💚</span>
+              <div>
+                <strong>One goal. One team. Real results.</strong>
+                <p>That's Happiness.</p>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="hp-moment-actions">
-          <button className="hp-moment-btn think" onClick={() => handleGoalSubmit('think')}>
-            <span className="hp-moment-btn-icon">🧠</span>
-            <span className="hp-moment-btn-text">Think bigger</span>
-            <span className="hp-moment-btn-desc">Help me improve my idea.</span>
-          </button>
-          <button className="hp-moment-btn build" onClick={() => handleGoalSubmit('build')}>
-            <span className="hp-moment-btn-icon">🚀</span>
-            <span className="hp-moment-btn-text">Build it</span>
-            <span className="hp-moment-btn-desc">Let's start creating.</span>
-          </button>
-          <button className="hp-moment-btn surprise" onClick={() => handleGoalSubmit('surprise')}>
-            <span className="hp-moment-btn-icon">✨</span>
-            <span className="hp-moment-btn-text">Inspire me</span>
-            <span className="hp-moment-btn-desc">Show me possibilities I haven't considered.</span>
-          </button>
+
+        {/* ── Center: Main Content ── */}
+        <div className="hp-center">
+          <h1 className="hp-center-title">Welcome to <span className="hp-hit">H.I.T.</span></h1>
+          <p className="hp-center-sub">What do you want to achieve today?</p>
+
+          <div className="hp-input-wrap">
+            <input
+              className="hp-input"
+              type="text"
+              value={goal}
+              onChange={(e) => setGoal(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && goal.trim() && handleGoalSubmit('build')}
+              placeholder="Describe your goal in one sentence..."
+            />
+          </div>
+
+          <div className="hp-chips">
+            <button className="hp-chip" onClick={() => setGoal('Create a TikTok about healthy habits')}>Create a TikTok about healthy habits</button>
+            <button className="hp-chip" onClick={() => setGoal('Start my own business')}>Start my own business</button>
+            <button className="hp-chip" onClick={() => setGoal('Write a Facebook post')}>Write a Facebook post</button>
+            <button className="hp-chip" onClick={() => setGoal('Design a logo')}>Design a logo</button>
+            <button className="hp-chip" onClick={() => setGoal('Find more customers')}>Find more customers</button>
+            <button className="hp-chip" onClick={() => setGoal('Plan a vacation')}>Plan a vacation</button>
+            <button className="hp-chip" onClick={() => setGoal('Learn Spanish')}>Learn Spanish</button>
+            <button className="hp-chip" onClick={() => setGoal('Build a website')}>Build a website</button>
+          </div>
+
+          <div className="hp-actions">
+            <button className="hp-action think" onClick={() => handleGoalSubmit('think')}>
+              <span className="hp-action-icon">🧠</span>
+              <div>
+                <strong>Let's think bigger</strong>
+                <span>Brainstorm and improve my idea.</span>
+              </div>
+            </button>
+            <button className="hp-action build" onClick={() => handleGoalSubmit('build')}>
+              <span className="hp-action-icon">🚀</span>
+              <div>
+                <strong>Let's build it</strong>
+                <span>Start creating and get things done.</span>
+              </div>
+            </button>
+            <button className="hp-action surprise" onClick={() => handleGoalSubmit('surprise')}>
+              <span className="hp-action-icon">✨</span>
+              <div>
+                <strong>Surprise me</strong>
+                <span>Show me ideas and opportunities.</span>
+              </div>
+            </button>
+          </div>
+
+          <div className="hp-info-card">
+            <strong>Your personal AI team.</strong>
+            <p>You bring the idea. H.I.T. helps turn it into reality.</p>
+            <span>While you focus on your goal, H.I.T. plans the work, finds information, creates content, improves quality and guides you to the finished result.</span>
+          </div>
         </div>
-      </section>
+
+        {/* ── Right: H.I.T. Branding ── */}
+        <div className="hp-right">
+          <div className="hp-hit-full">
+            <div className="hp-hit-line">
+              <span className="hp-hit-big">H</span>
+              <span className="hp-hit-rest">appiness</span>
+            </div>
+            <div className="hp-hit-line">
+              <span className="hp-hit-big">I</span>
+              <span className="hp-hit-rest">ntelligence</span>
+            </div>
+            <div className="hp-hit-line">
+              <span className="hp-hit-big">T</span>
+              <span className="hp-hit-rest">eam</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
 
       {/* ── Community Inspiration ── */}
-      <section className="hp-section hp-community">
+      <div className="hp-community">
         <div className="hp-community-header">
           <h2>Community Inspiration</h2>
           <p>See what other people are creating.</p>
         </div>
         <Feed />
-      </section>
+      </div>
 
     </div>
   )
