@@ -100,8 +100,7 @@ export default function AIChatPage() {
           })
         }
       }
-      setConversations(convList)
-      // Load messages for the most recent conversation
+      setConversations(convList.slice(0, 20))
       await loadConversation(convList[0].id)
       setQuestionCount(prev => Math.max(prev, convData.length))
     }
@@ -223,6 +222,21 @@ export default function AIChatPage() {
     setConversationId(newId)
     setMessages([])
     setConversations(prev => [{ id: newId, title: 'Neuer Chat', created_at: new Date().toISOString() }, ...prev])
+  }
+
+  const deleteConversation = async (convId, e) => {
+    e.stopPropagation()
+    if (!confirm('Diesen Chat löschen?')) return
+    await supabase.from('ai_conversations').delete().eq('conversation_id', convId)
+    setConversations(prev => prev.filter(c => c.id !== convId))
+    if (convId === conversationId) {
+      const remaining = conversations.filter(c => c.id !== convId)
+      if (remaining.length > 0) {
+        await loadConversation(remaining[0].id)
+      } else {
+        startNewChat()
+      }
+    }
   }
 
   const removeImage = () => {
@@ -590,6 +604,7 @@ Falls eine persönliche Geschichte als Stilmittel sinnvoll ist: Biete NUR eine S
               >
                 <MessageCircle size={14} className="ai-sidebar-item-icon" />
                 <span className="ai-sidebar-item-title">{conv.title || 'Neuer Chat'}</span>
+                <span className="ai-sidebar-item-delete" onClick={(e) => deleteConversation(conv.id, e)} title="Löschen">×</span>
               </button>
             ))}
           </div>

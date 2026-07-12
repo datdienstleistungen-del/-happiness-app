@@ -88,6 +88,27 @@
   flex: 1;
 }
 
+.ai-sidebar-item-delete {
+  opacity: 0;
+  color: #9ca3af;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.15s;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ai-sidebar-item:hover .ai-sidebar-item-delete {
+  opacity: 1;
+}
+
+.ai-sidebar-item-delete:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
 @media (max-width: 768px) {
   .ai-sidebar {
     position: fixed;
