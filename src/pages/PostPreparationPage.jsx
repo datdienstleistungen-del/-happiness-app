@@ -14,7 +14,8 @@ const PLATFORMS = [
     icon: '💼',
     color: '#0A66C2',
     prompt: `Du bist ein erfahrener LinkedIn-Content-Writer.
-Schreibe einen fertigen, direkt postbaren LinkedIn-Post basierend auf dem untenstehenden Entwurf und Feedback.
+Du erhältst einen Entwurf UND das Feedback eines Coaches. Deine Aufgabe ist es, das Feedback UMZUSETZEN und einen komplett neuen, postfertigen LinkedIn-Post zu schreiben.
+Nimm die Verbesserungsvorschlaege des Coaches ernst und setze sie in die Tat um.
 Ton: Professionell, wertvoll, wie ein erfahrener Profi der sein Wissen teilt. Nicht werblich, nicht KI-typisch.
 Laenge: 3-5 kurze Absaetze. Hook in der ersten Zeile. Call-to-Action am Ende.
 Format: Klarer Fliesstext. Keine Tabellen, keine Listen, keine Markdown-Formatierung.
@@ -26,7 +27,8 @@ Antworte NUR mit dem fertigen Post-Text, kein Meta-Kommentar, keine Erklaerung.`
     icon: '🔴',
     color: '#FF4500',
     prompt: `Du bist ein erfahrener Reddit-Content-Writer.
-Schreibe einen fertigen, direkt postbaren Reddit-Post basierend auf dem untenstehenden Entwurf und Feedback.
+Du erhältst einen Entwurf UND das Feedback eines Coaches. Deine Aufgabe ist es, das Feedback UMZUSETZEN und einen komplett neuen, postfertigen Reddit-Post zu schreiben.
+Nimm die Verbesserungsvorschlaege des Coaches ernst und setze sie in die Tat um.
 Ton: Ehrlich,社区-typisch, wie ein echter Reddit-User der etwas teilt. Keine Werbesprache, kein Marketing.
 Laenge: 1-3 Absaetze. Direkt, ohne Umschweife.
 Format: Klarer Fliesstext. Keine Tabellen, keine Listen, keine Markdown-Formatierung.
@@ -38,7 +40,8 @@ Antworte NUR mit dem fertigen Post-Text, kein Meta-Kommentar, keine Erklaerung.`
     icon: '✖',
     color: '#000000',
     prompt: `Du bist ein erfahrener X/Twitter-Writer.
-Schreibe einen fertigen, direkt postbaren X-Post basierend auf dem untenstehenden Entwurf und Feedback.
+Du erhältst einen Entwurf UND das Feedback eines Coaches. Deine Aufgabe ist es, das Feedback UMZUSETZEN und einen komplett neuen, postfertigen X-Post zu schreiben.
+Nimm die Verbesserungsvorschlaege des Coaches ernst und setze sie in die Tat um.
 Ton: Zugespitzt, direkt, kein Roman. Wie ein Tweet der viral geht.
 Laenge: MAXIMAL 250 Zeichen (inkl. Leerzeichen). Kein Fliesstext-Roman.
 Format: Klartext. Keine Markdown-Formatierung, keine Listen.
@@ -50,7 +53,8 @@ Antworte NUR mit dem fertigen Tweet-Text, kein Meta-Kommentar, keine Erklaerung.
     icon: '📷',
     color: '#E4405F',
     prompt: `Du bist ein erfahrener Instagram-Content-Writer.
-Schreibe einen fertigen, direkt postbaren Instagram-Caption basierend auf dem untenstehenden Entwurf und Feedback.
+Du erhältst einen Entwurf UND das Feedback eines Coaches. Deine Aufgabe ist es, das Feedback UMZUSETZEN und eine komplett neue, postfertige Instagram-Caption zu schreiben.
+Nimm die Verbesserungsvorschlaege des Coaches ernst und setze sie in die Tat um.
 Ton: Visuell, inspirierend, kurz. Wie ein Instagram-Post der gut performt.
 Laenge: 2-4 kurze Absaetze max. Emoji am Anfang des ersten Satzes erlaubt.
 Hashtags: 5-8 relevante Hashtags am Ende.
@@ -63,7 +67,8 @@ Antworte NUR mit dem fertigen Post-Text, kein Meta-Kommentar, keine Erklaerung.`
     icon: '👤',
     color: '#1877F2',
     prompt: `Du bist ein erfahrener Facebook-Content-Writer.
-Schreibe einen fertigen, direkt postbaren Facebook-Post basierend auf dem untenstehenden Entwurf und Feedback.
+Du erhältst einen Entwurf UND das Feedback eines Coaches. Deine Aufgabe ist es, das Feedback UMZUSETZEN und einen komplett neuen, postfertigen Facebook-Post zu schreiben.
+Nimm die Verbesserungsvorschlaege des Coaches ernst und setze sie in die Tat um.
 Ton: Warmherzig,社区-orientiert, wie ein Freund der anderen etwas empfiehlt. Nicht werblich, nicht KI-typisch.
 Laenge: 3-5 kurze Absaetze. Hook in der ersten Zeile. Call-to-Action am Ende.
 Format: Klarer Fliesstext. Keine Tabellen, keine Listen, keine Markdown-Formatierung.
@@ -75,7 +80,8 @@ Antworte NUR mit dem fertigen Post-Text, kein Meta-Kommentar, keine Erklaerung.`
     icon: '🎵',
     color: '#000000',
     prompt: `Du bist ein erfahrener TikTok-Content-Writer.
-Schreibe ein fertiges, direkt verwendbares TikTok-Skript basierend auf dem untenstehenden Entwurf und Feedback.
+Du erhältst einen Entwurf UND das Feedback eines Coaches. Deine Aufgabe ist es, das Feedback UMZUSETZEN und ein komplett neues, postfertiges TikTok-Skript zu schreiben.
+Nimm die Verbesserungsvorschlaege des Coaches ernst und setze sie in die Tat um.
 Ton: Locker, authentisch, wie ein TikTok der viral geht.
 Laenge: 3-6 kurze Saetze. Hook in den ersten 2 Sekunden.
 Format: Klartext als Skript. Keine Markdown-Formatierung.
@@ -103,7 +109,7 @@ export default function PostPreparationPage() {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token || ''
 
-      const message = `Entwurf des Nutzers:\n\n"${draft}"\n\nFeedback des Coaches:\n\n"${feedback}"\n\nUmsetzung: Schreibe den fertigen Post fuer ${platform.label}.`
+      const message = `Hier ist mein urspruenglicher Entwurf:\n\n"${draft}"\n\nHier ist das Feedback meines Coaches:\n\n"${feedback}"\n\nWICHTIG: Setze das Feedback UM. Schreibe den Entwurf basierend auf den Verbesserungsvorschlaegen des Coaches komplett neu fuer ${platform.label}. Gib NUR den fertigen, postbaren Text zurueck.`
 
       const response = await fetch(getChatEndpoint(), {
         method: 'POST',
