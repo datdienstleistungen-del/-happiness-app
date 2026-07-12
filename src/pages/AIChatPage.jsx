@@ -462,6 +462,12 @@ Falls eine persönliche Geschichte als Stilmittel sinnvoll ist: Biete NUR eine S
       })
       if (convError) {
         console.error('Conversation save failed:', convError)
+      } else {
+        setConversations(prev => {
+          const exists = prev.some(c => c.id === currentConvId)
+          if (exists) return prev.map(c => c.id === currentConvId ? { ...c, title: userMessage.substring(0, 40) } : c)
+          return [{ id: currentConvId, title: userMessage.substring(0, 40), created_at: new Date().toISOString() }, ...prev]
+        })
       }
 
       analyzeAndExtractProfile(userMessage, aiResponse)
