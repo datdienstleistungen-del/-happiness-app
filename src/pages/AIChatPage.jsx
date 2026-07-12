@@ -588,8 +588,9 @@ Falls eine persönliche Geschichte als Stilmittel sinnvoll ist: Biete NUR eine S
       )}
       <div className="ai-main">
         <div className="ai-topbar">
-          <span className="ai-logo"><Brain size={20} /></span>
-          <strong><BrandWord /> AI</strong>
+          <div className="hit-branding-compact">
+            <span className="hit-compact-h">H</span><span className="hit-compact-rest">.I.T.</span>
+          </div>
           <div className="ai-topbar-actions">
             <button className="ai-topbar-btn" onClick={startNewChat}>
               <Plus size={14} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
@@ -659,6 +660,20 @@ Falls eine persönliche Geschichte als Stilmittel sinnvoll ist: Biete NUR eine S
         {!hasMessages ? (
           <div className="ai-center">
             <div className="ai-welcome">
+              <div className="hit-branding-full">
+                <div className="hit-branding-line">
+                  <span className="hit-big">H</span>
+                  <span className="hit-small">appiness</span>
+                </div>
+                <div className="hit-branding-line">
+                  <span className="hit-big">I</span>
+                  <span className="hit-small">ntelligence</span>
+                </div>
+                <div className="hit-branding-line">
+                  <span className="hit-big">T</span>
+                  <span className="hit-small">eam</span>
+                </div>
+              </div>
               <div className="ai-welcome-icon"><Brain size={32} /></div>
               <h1><BrandWord /> AI</h1>
               <p>{t('ai.welcomeDesc') || 'Was kann ich heute für dich tun?'}</p>

@@ -118,6 +118,48 @@
   color: #1b6e6e;
 }
 
+/* ── H.I.T. Branding – Volle Version (Willkommensbildschirm) ── */
+.hit-branding-full {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.hit-branding-line {
+  line-height: 1.15;
+}
+
+.hit-big {
+  font-size: 32px;
+  font-weight: 500;
+  color: var(--color-petrol, #085041);
+}
+
+.hit-small {
+  font-size: 16px;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+/* ── H.I.T. Branding – Kompakt (Topbar, immer sichtbar) ── */
+.hit-branding-compact {
+  display: flex;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.hit-compact-h {
+  color: var(--color-petrol, #085041);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.hit-compact-rest {
+  color: #6b7280;
+  font-size: 15px;
+  font-weight: 400;
+}
+
 .ai-topbar strong {
   color: #1a1a2e;
   font-size: 0.95rem;
