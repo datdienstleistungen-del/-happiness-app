@@ -8,8 +8,7 @@
 .ai-sidebar {
   width: 260px;
   min-width: 260px;
-  background: #ffffff;
-  border-right: 1px solid #e5e7eb;
+  background: #fafafa;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -20,7 +19,6 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  border-bottom: 1px solid #e5e7eb;
   font-size: 0.85rem;
   color: #1a1a2e;
 }
@@ -59,7 +57,7 @@
   cursor: pointer;
   text-align: left;
   transition: background 0.15s;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 
 .ai-sidebar-item:hover {
