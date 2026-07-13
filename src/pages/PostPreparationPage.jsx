@@ -110,6 +110,7 @@ export default function PostPreparationPage() {
     if (loading[platform.id]) return
     setLoading(prev => ({ ...prev, [platform.id]: true }))
     setError('')
+    console.log(`Generating ${platform.label}...`)
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -131,12 +132,18 @@ export default function PostPreparationPage() {
         })
       })
 
+      console.log(`${platform.label} response:`, response.status)
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}))
+        console.error(`API Error ${response.status}:`, errData)
         throw new Error(errData.error || `API Fehler ${response.status}`)
       }
 
       const data = await response.json()
+      if (!data.response) {
+        console.error('Empty response:', data)
+        throw new Error('Leere Antwort von der KI')
+      }
       setGeneratedPosts(prev => ({ ...prev, [platform.id]: data.response }))
     } catch (err) {
       console.error(`Generate ${platform.id} error:`, err)
