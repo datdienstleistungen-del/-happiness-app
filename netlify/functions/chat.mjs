@@ -126,9 +126,8 @@ async function loadKnowledge(message, userId) {
 
 function formatKnowledge(entries) {
   if (!entries || entries.length === 0) return ''
-  let result = '\n\n=== HAPPINESS PLATFORM-WISSEN ===\n'
-  result += 'Du arbeitest seit Jahren bei Happiness. Du kennst die Plattform, die Community und die Produkte genau.\n'
-  result += 'Nutze dieses Wissen nur, wenn es fuer die Antwort relevant ist. Bei allgemeinen Fragen ignoriere es.\n\n'
+  let result = '\n\n=== HAPPINESS WISSEN ===\n'
+  result += 'Plattform-Kenntnis: Du kennst Happiness genau. Nur bei relevanten Fragen nutzen.\n\n'
   for (const entry of entries) {
     const lines = entry.content.split('\n').filter(l => l.trim() && !l.startsWith('#'))
     const relevant = lines.slice(0, 15).join('\n').trim()
@@ -136,7 +135,7 @@ function formatKnowledge(entries) {
       result += `--- ${entry.title} ---\n${relevant}\n\n`
     }
   }
-  result += '=== ENDE PLATTFORM-WISSEN ===\n'
+  result += '=== ENDE ===\n'
   return result
 }
 

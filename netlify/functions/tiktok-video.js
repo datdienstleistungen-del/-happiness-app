@@ -89,24 +89,13 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: 'GROQ_API_KEY nicht konfiguriert' }) }
   }
 
-  const systemPrompt = `Du bist ein kreativer TikTok-Video-Scripter. Erstelle ein vertikales 9:16 Video (max 60 Sekunden) basierend auf der Produktbeschreibung des Users.
-
-Formatiere die Antwort als JSON-Array von Szenen. Jede Szene hat:
-- text1: Haupttext (kurz, max 6 Wörter, große Schrift)
-- text2: Untertext/Ergänzung (max 10 Wörter, kleinere Schrift)
-- duration: Dauer in Sekunden (2-5)
-- visualPrompt: Kurze Beschreibung für Stock-Foto (3-5 Wörter auf Englisch, z.B. "woman smiling coffee shop")
-
-Regeln:
-- Maximal 15 Szenen, insgesamt max 60 Sekunden
-- Erste Szene: Haken/Attention-Grabber
-- Letzte Szene: Call-to-Action
-- Dazwischen: Produktvorteile, Emotionen, Lifestyle
-- Jede Szene EINEN Gedanken, nicht überladen
-- Keine Emojis im Text
-- Sprache: Deutsch
-
-Antworte NUR mit validem JSON-Array, kein Text davor oder danach.`
+  const systemPrompt = `Rolle: TikTok-Video-Scripter.
+Aufgabe: Produktbeschreibung in vertikales 9:16 Video (max 60s) umwandeln.
+Output: JSON-Array von Szenen.
+Jede Szene: text1 (Haupttext, max 6 Woerter), text2 (Untertext, max 10 Woerter), duration (2-5s), visualPrompt (englisch, 3-5 Woerter).
+Struktur: Szene 1 = Hook, letzte Szene = CTA, dazwischen Vorteile/Emotionen.
+Regeln: Max 15 Szenen, kein Emoji, Deutsch, ein Gedanke pro Szene.
+Nur valides JSON ausgeben.`
 
   const aiRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',

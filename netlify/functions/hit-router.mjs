@@ -54,17 +54,16 @@ function classifyPlatform(message) {
 
 // ── Ziel-Erkennung (LLM via Groq, parallel) ──
 
-const GOAL_PROMPT = `Du bist ein Intent-Klassifizierer. Analysiere die folgende Nutzernachricht und klassifiziere das Hauptziel in EINER dieser Kategorien:
+const GOAL_PROMPT = `Intent-Klassifizierer. Kategorien:
+- content_creation: Post, Video, Text erstellen
+- feedback: Einschaetzung, Review, Verbesserung
+- strategy: Optimieren, wachsen, strategisch angehen
+- monetization: Geld verdienen, verkaufen, Einnahmen
+- community: Vernetzen, Leute kennenlernen
+- learning: Lernen, verstehen, erklaert bekommen
+- general: Begruessung, Smalltalk, kein Ziel
 
-- content_creation: Der Nutzer möchte Content erstellen (Post, Video, Text, etc.)
-- feedback: Der Nutzer möchte Feedback oder eine Einschätzung zu etwas bekommen
-- strategy: Der Nutzer möchte etwas optimieren, wachsen lassen, oder strategisch angehen
-- monetization: Der Nutzer möchte Geld verdienen, verkaufen, oder Einnahmen generieren
-- community: Der Nutzer möchte sich vernetzen, Leute kennenlernen, oder Community aufbauen
-- learning: Der Nutzer möchte etwas lernen, verstehen, oder erklärt bekommen
-- general: Kein spezifisches Ziel erkennbar (Begrüßung, Smalltalk, etc.)
-
-Antworte NUR mit dem Kategorienamen, nichts anders. Kein Text, keine Erklärung.`
+Antworte NUR mit dem Kategorienamen.`
 
 async function classifyGoalWithLLM(message, groqKey) {
   if (!groqKey || !message) return { goal: 'unknown', confidence: 0, method: 'none' }

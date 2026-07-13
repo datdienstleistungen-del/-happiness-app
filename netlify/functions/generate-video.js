@@ -57,34 +57,33 @@ exports.handler = async (event) => {
     let systemPrompt = ''
 
     if (template === 'motivation') {
-      systemPrompt = `Du bist ein kreativer Video-Scripter. Erstelle ein 60-sekunden Motivations-Video als JSON-Array von Szenen.
-Jede Szene hat: text1 (Haupttext, gross, faengt Aufmerksamkeit), text2 (Untertext, kleiner), duration (Sekunden, 2-4).
-Antworte NUR mit validem JSON, kein Text davor oder danach.
+      systemPrompt = `Rolle: Video-Scripter.
+Aufgabe: 60s Motivations-Video als JSON-Array.
+Szene: text1 (Haupttext), text2 (Untertext), duration (2-4s).
+Stil: Kuerz, praegnant, motivierend. Ein Satz pro Szene. Kein Emoji.
 Sprache: ${langName}
-Stil: Kurz,praegnant, motivierend. Jede Szene ein Satz. Keine Emojis.
-Beispiel-Output: [{"text1":"Du bist staerker","text2":"als du denkst","duration":3}]`
+Output: Nur valides JSON.`
     } else if (template === 'dankbarkeit') {
-      systemPrompt = `Du bist ein kreativer Video-Scripter. Erstelle ein 45-sekunden Dankbarkeits-Video als JSON-Array von Szenen.
-Jede Szene hat: text1 (Haupttext), text2 (Untertext), duration (2-4 Sekunden).
-Antworte NUR mit validem JSON.
+      systemPrompt = `Rolle: Video-Scripter.
+Aufgabe: 45s Dankbarkeits-Video als JSON-Array.
+Szene: text1 (Haupttext), text2 (Untertext), duration (2-4s).
+Stil: Warm, ehrfuerchtig. 5-6 Szenen.
 Sprache: ${langName}
-Stil: Warm, ehrfuerchtig, kurz. 5-6 Szenen.
-Beispiel: [{"text1":"Heute bin ich dankbar","text2":"fuer die kleinen Dinge","duration":3}]`
+Output: Nur valides JSON.`
     } else if (template === 'affirmation') {
-      systemPrompt = `Du bist ein kreativer Video-Scripter. Erstelle ein 30-sekunden Affirmations-Video als JSON-Array von Szenen.
-Jede Szene hat: text1 (Affirmation), text2 (Ergaenzung), duration (2-3 Sekunden).
-Antworte NUR mit validem JSON.
+      systemPrompt = `Rolle: Video-Scripter.
+Aufgabe: 30s Affirmations-Video als JSON-Array.
+Szene: text1 (Affirmation), text2 (Ergaenzung), duration (2-3s).
+Stil: Kraftvoll, positiv. 4-5 Affirmationen.
 Sprache: ${langName}
-Stil: Kraftvoll, positiv, kurz. 4-5 starke Affirmationen.
-Beispiel: [{"text1":"Ich bin genug","text2":"so wie ich bin","duration":3}]`
+Output: Nur valides JSON.`
     } else {
-      systemPrompt = `Du bist ein kreativer Video-Scripter. Erstelle ein kurzes Video basierend auf dem Prompt als JSON-Array von Szenen.
-Jede Szene hat: text1 (Haupttext, gross), text2 (Untertext), duration (2-4 Sekunden).
-Erstelle 5-7 Szenen fuer ein 30-45 Sekunden Video.
-Antworte NUR mit validem JSON, kein Text davor oder danach.
+      systemPrompt = `Rolle: Video-Scripter.
+Aufgabe: 30-45s Video basierend auf Prompt als JSON-Array.
+Szene: text1 (Haupttext), text2 (Untertext), duration (2-4s).
+Stil: Kuerz, praegnant, visuell. 5-7 Szenen, ein Gedanke pro Szene.
 Sprache: ${langName}
-Stil: Kurz, praegnant, visuell. Jede Szene ein Gedanke.
-Beispiel-Output: [{"text1":"Dein Text hier","text2":"Ergaenzung","duration":3}]`
+Output: Nur valides JSON.`
     }
 
     const userMessage = template
