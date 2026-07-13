@@ -95,13 +95,18 @@ export default function PostPreparationPage() {
   const [loading, setLoading] = useState({})
   const [error, setError] = useState('')
 
-  const generatePost = async (platform) => {
+  const generatePost = (platform) => {
     if (loading[platform.id]) return
+
+    window.open(platform.url, '_blank')
+
+    doGeneratePost(platform)
+  }
+
+  const doGeneratePost = async (platform) => {
     setLoading(prev => ({ ...prev, [platform.id]: true }))
     setError('')
     console.log(`Generating ${platform.label}...`)
-
-    window.open(platform.url, '_blank')
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
