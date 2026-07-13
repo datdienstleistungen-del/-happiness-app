@@ -104,14 +104,7 @@ exports.handler = async (event) => {
     }
   }
 
-  // Step 1: Generate script from Groq
-  const apiKey = process.env.GROQ_API_KEY
-  if (!apiKey) {
-    console.log('[TIKTOK] No GROQ_API_KEY')
-    return { statusCode: 500, body: JSON.stringify({ error: 'KI-Service nicht verfuegbar. Bitte spaeter erneut versuchen.' }) }
-  }
-  console.log('[TIKTOK] Calling Groq API...')
-
+  // Step 1: Generate script — Groq → OpenRouter → DeepSeek → Mistral fallback chain
   const systemPrompt = `Rolle: TikTok-Video-Scripter.
 Aufgabe: Produktbeschreibung in vertikales 9:16 Video (max 60s) umwandeln.
 Output: JSON-Array von Szenen.
@@ -120,34 +113,103 @@ Struktur: Szene 1 = Hook, letzte Szene = CTA, dazwischen Vorteile/Emotionen.
 Regeln: Max 15 Szenen, kein Emoji, Deutsch, ein Gedanke pro Szene.
 Nur valides JSON ausgeben.`
 
-  const aiRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Erstelle ein TikTok-Video für: ${text}` }
-      ],
-      temperature: 0.8,
-      max_tokens: 4096
-    })
-  })
+  const userMessage = `Erstelle ein TikTok-Video fuer: ${text}`
 
-  if (!aiRes.ok) {
-    const errText = await aiRes.text()
-    console.error(`[TIKTOK VIDEO] Groq API error ${aiRes.status}:`, errText)
-    if (aiRes.status === 429) {
-      return { statusCode: 429, body: JSON.stringify({ error: 'Zu viele Anfragen. Bitte warte kurz und versuch es nochmal.' }) }
-    }
-    return { statusCode: 502, body: JSON.stringify({ error: 'KI-Service hat gerade Probleme. Bitte versuch es in kurzem nochmal.' }) }
+  const providers = []
+
+  // Provider 1: Groq
+  const groqKey = process.env.GROQ_API_KEY
+  if (groqKey) {
+    providers.push({
+      name: 'groq',
+      url: 'https://api.groq.com/openai/v1/chat/completions',
+      key: groqKey,
+      model: 'llama-3.3-70b-versatile'
+    })
   }
 
-  const data = await aiRes.json()
-  const aiResponse = data.choices?.[0]?.message?.content || '[]'
+  // Provider 2: OpenRouter
+  const orKey = process.env.OPENROUTER_API_KEY
+  if (orKey) {
+    providers.push({
+      name: 'openrouter',
+      url: 'https://openrouter.ai/api/v1/chat/completions',
+      key: orKey,
+      model: 'mistralai/mistral-small-3.1-24b-instruct:free'
+    })
+  }
+
+  // Provider 3: DeepSeek
+  const dsKey = process.env.DEEPSEEK_API_KEY
+  if (dsKey) {
+    providers.push({
+      name: 'deepseek',
+      url: 'https://api.deepseek.com/v1/chat/completions',
+      key: dsKey,
+      model: 'deepseek-chat'
+    })
+  }
+
+  // Provider 4: Mistral
+  const mistralKey = process.env.MISTRAL_API_KEY
+  if (mistralKey) {
+    providers.push({
+      name: 'mistral',
+      url: 'https://api.mistral.ai/v1/chat/completions',
+      key: mistralKey,
+      model: 'mistral-small-latest'
+    })
+  }
+
+  if (providers.length === 0) {
+    console.log('[TIKTOK] No AI providers configured')
+    return { statusCode: 500, body: JSON.stringify({ error: 'KI-Service nicht verfuegbar. Bitte spaeter erneut versuchen.' }) }
+  }
+
+  let aiResponse = null
+  let lastError = ''
+  for (const provider of providers) {
+    console.log(`[TIKTOK] Trying ${provider.name}...`)
+    try {
+      const aiRes = await fetch(provider.url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${provider.key}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: provider.model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userMessage }
+          ],
+          temperature: 0.8,
+          max_tokens: 4096
+        })
+      })
+
+      if (aiRes.ok) {
+        const data = await aiRes.json()
+        aiResponse = data.choices?.[0]?.message?.content || null
+        if (aiResponse) {
+          console.log(`[TIKTOK] Success with ${provider.name}`)
+          break
+        }
+      } else {
+        const errBody = await aiRes.text().catch(() => '')
+        lastError = `${provider.name}: HTTP ${aiRes.status} - ${errBody.substring(0, 100)}`
+        console.warn(`[TIKTOK] ${lastError}`)
+      }
+    } catch (e) {
+      lastError = `${provider.name}: ${e.message}`
+      console.warn(`[TIKTOK] ${lastError}`)
+    }
+  }
+
+  if (!aiResponse) {
+    console.error('[TIKTOK] All providers failed:', lastError)
+    return { statusCode: 429, body: JSON.stringify({ error: 'Alle KI-Dienste sind gerade ausgelastet. Bitte versuch es in ein paar Minuten nochmal.' }) }
+  }
 
   let scenes
   try {
