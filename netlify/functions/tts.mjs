@@ -33,7 +33,13 @@ async function edgeTTS(text, voice = 'de-DE-KatjaNeural', rate = '+0%', pitch = 
       const separator = 'Path:audio\r\n'
       const idx = rawData.indexOf(separator)
       if (idx >= 0) {
-        audioChunks.push(rawData.subarray(idx + separator.length))
+        const afterPath = rawData.subarray(idx + separator.length)
+        const nullIdx = afterPath.indexOf(0x00)
+        if (nullIdx >= 0) {
+          audioChunks.push(afterPath.subarray(nullIdx + 1))
+        } else {
+          audioChunks.push(afterPath)
+        }
       }
     })
 

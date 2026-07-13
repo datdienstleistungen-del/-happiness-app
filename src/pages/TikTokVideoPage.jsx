@@ -401,12 +401,23 @@ export default function TikTokVideoPage() {
       filterParts.push(`[${musicIdx}:a]volume=0.15,afade=t=in:st=0:d=2,afade=t=out:st=${totalDuration - 2}:d=2[music]`)
     }
 
+    const isValidMp3 = (buf) => {
+      if (buf.length < 2) return false
+      const view = new Uint8Array(buf)
+      return view[0] === 0xFF && (view[1] & 0xE0) === 0xE0
+    }
+
     if (hasAudio) {
       for (let i = 0; i < scenes.length; i++) {
         if (audioBuffers[i]) {
           const ab = await audioBuffers[i].arrayBuffer()
-          await ffmpeg.writeFile(`audio_${i}.mp3`, new Uint8Array(ab))
-          inputArgs.push('-i', `audio_${i}.mp3`)
+          if (isValidMp3(ab)) {
+            await ffmpeg.writeFile(`audio_${i}.mp3`, new Uint8Array(ab))
+            inputArgs.push('-i', `audio_${i}.mp3`)
+          } else {
+            console.warn(`[renderVideo] Invalid MP3 for scene ${i}, skipping voice`)
+            inputArgs.push('-f', 'lavfi', '-i', `anullsrc=r=24000:cl=mono:d=${scenes[i].duration}`)
+          }
         } else {
           inputArgs.push('-f', 'lavfi', '-i', `anullsrc=r=24000:cl=mono:d=${scenes[i].duration}`)
         }
