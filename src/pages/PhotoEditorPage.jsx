@@ -185,7 +185,7 @@ export default function PhotoEditorPage() {
   return (
     <div className="editor-page">
       <div className="editor-header">
-        <h1>Foto Editor</h1>
+        <h1>Design Studio</h1>
         {imageLoaded && (
           <div className="header-actions">
             <button className="btn btn-secondary" onClick={resetAll}>Zuruecksetzen</button>

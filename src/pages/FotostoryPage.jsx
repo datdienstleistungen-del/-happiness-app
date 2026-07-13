@@ -367,7 +367,7 @@ export default function FotostoryPage() {
       <canvas ref={canvasRef} style={{ display: 'none' }} />
 
       <div className="editor-header">
-        <h1>Fotostory</h1>
+        <h1>Story Engine</h1>
         {slides.length > 0 && (
           <div className="header-actions">
             <span className="duration-label">{slides.length} Fotos / {getTotalDuration().toFixed(1)}s</span>

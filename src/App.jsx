@@ -93,11 +93,11 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
 
   const creatorLinks = [
     { to: '/creator-academy', icon: Rocket, label: 'NCG Academy' },
-    { to: '/tiktok-video', icon: Film, label: 'TikTok Video' },
+    { to: '/tiktok-video', icon: Film, label: 'Social Publisher' },
     { to: '/ai-chat', icon: Sparkles, label: 'AI Chat' },
-    { to: '/video-maker', icon: Clapperboard, label: t('nav.videoMaker') },
-    { to: '/photo-editor', icon: Camera, label: 'Foto Editor' },
-    { to: '/fotostory', icon: Film, label: 'Fotostory' },
+    { to: '/video-maker', icon: Clapperboard, label: 'CapCut Studio' },
+    { to: '/photo-editor', icon: Camera, label: 'Design Studio' },
+    { to: '/fotostory', icon: Film, label: 'Story Engine' },
   ]
 
   const marketplaceLinks = [

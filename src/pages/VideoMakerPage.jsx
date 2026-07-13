@@ -678,7 +678,7 @@ export default function VideoMakerPage() {
   return (
     <div className="editor-page">
       <div className="editor-header">
-        <h1>Video Editor</h1>
+        <h1>CapCut Studio</h1>
         {videoLoaded && (
           <button className="btn btn-export" onClick={exportVideo} disabled={isExporting || ffmpegLoading}>
             {ffmpegLoading ? 'Video-Engine wird geladen...' : isExporting ? `Exportiere... ${Math.round(exportProgress)}%` : 'Video exportieren'}
