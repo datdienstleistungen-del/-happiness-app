@@ -403,51 +403,95 @@ export const handler = async (event) => {
         }
       }
     } else {
-      // Text-only request: Fallback Chain: Groq -> DeepSeek -> OpenRouter
+      // Text-only request: Fallback Chain: OpenRouter (free) -> Groq -> DeepSeek
       let success = false
 
-      // Stage 1: Groq (primär - schnellster Anbieter)
-      const groqKey = process.env.GROQ_API_KEY
-      console.log('Groq check: key vorhanden =', !!groqKey)
-      if (groqKey) {
+      // Stage 1: OpenRouter (kostenlos - primär)
+      const orKey = process.env.OPENROUTER_API_KEY
+      if (orKey) {
         try {
-          const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          const orRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${groqKey}`,
-              'Content-Type': 'application/json'
+              'Authorization': `Bearer ${orKey}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': 'https://happiness-eu.netlify.app',
+              'X-Title': 'Happiness'
             },
             body: JSON.stringify({
-              model: 'openai/gpt-oss-20b',
+              model: 'google/gemma-4-26b-a4b-it:free',
               messages: buildMessages(historyLimit),
               temperature: 0.7,
               max_tokens: 4096
             })
           })
-          if (groqRes.ok) {
-            const groqData = await groqRes.json()
-            console.log('Antwort von:', 'groq')
-            aiResponse = groqData.choices?.[0]?.message?.content || ''
-            usage = groqData.usage
-            provider = 'groq'
-            modelName = 'openai/gpt-oss-20b'
+          if (orRes.ok) {
+            const orData = await orRes.json()
+            console.log('Antwort von:', 'openrouter-free')
+            aiResponse = orData.choices?.[0]?.message?.content || ''
+            usage = orData.usage
+            provider = 'openrouter'
+            modelName = 'google/gemma-4-26b-a4b-it:free'
             success = true
           } else {
-            const groqData = await groqRes.json().catch(() => ({}))
-            const errMsg = groqData?.error?.message || JSON.stringify(groqData)
-            providerErrors.push(`Groq: ${errMsg} (HTTP ${groqRes.status})`)
-            console.warn('Groq failed, status:', groqRes.status, 'message:', errMsg)
+            const orData = await orRes.json().catch(() => ({}))
+            const errMsg = orData?.error?.message || JSON.stringify(orData)
+            providerErrors.push(`OpenRouter: ${errMsg} (HTTP ${orRes.status})`)
+            console.warn('OpenRouter free failed, status:', orRes.status, 'message:', errMsg)
           }
         } catch (err) {
-          providerErrors.push(`Groq: ${err.message}`)
-          console.warn('Groq fetch failed:', err.message)
+          providerErrors.push(`OpenRouter: ${err.message}`)
+          console.warn('OpenRouter fetch failed:', err.message)
         }
       } else {
-        providerErrors.push('Groq: GROQ_API_KEY not configured')
-        console.warn('GROQ_API_KEY not configured, skipping to DeepSeek fallback')
+        providerErrors.push('OpenRouter: OPENROUTER_API_KEY not configured')
+        console.warn('OPENROUTER_API_KEY not configured, skipping to Groq')
       }
 
-      // Stage 2: DeepSeek Fallback
+      // Stage 2: Groq (schnellster Anbieter)
+      if (!success) {
+        const groqKey = process.env.GROQ_API_KEY
+        console.log('Groq check: key vorhanden =', !!groqKey)
+        if (groqKey) {
+          try {
+            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${groqKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                model: 'openai/gpt-oss-20b',
+                messages: buildMessages(historyLimit),
+                temperature: 0.7,
+                max_tokens: 4096
+              })
+            })
+            if (groqRes.ok) {
+              const groqData = await groqRes.json()
+              console.log('Antwort von:', 'groq')
+              aiResponse = groqData.choices?.[0]?.message?.content || ''
+              usage = groqData.usage
+              provider = 'groq'
+              modelName = 'openai/gpt-oss-20b'
+              success = true
+            } else {
+              const groqData = await groqRes.json().catch(() => ({}))
+              const errMsg = groqData?.error?.message || JSON.stringify(groqData)
+              providerErrors.push(`Groq: ${errMsg} (HTTP ${groqRes.status})`)
+              console.warn('Groq failed, status:', groqRes.status, 'message:', errMsg)
+            }
+          } catch (err) {
+            providerErrors.push(`Groq: ${err.message}`)
+            console.warn('Groq fetch failed:', err.message)
+          }
+        } else {
+          providerErrors.push('Groq: GROQ_API_KEY not configured')
+          console.warn('GROQ_API_KEY not configured, skipping to DeepSeek fallback')
+        }
+      }
+
+      // Stage 3: DeepSeek Fallback
       if (!success) {
         const deepseekKey = process.env.DEEPSEEK_API_KEY
         if (deepseekKey) {
@@ -485,51 +529,7 @@ export const handler = async (event) => {
           }
         } else {
           providerErrors.push('DeepSeek: DEEPSEEK_API_KEY not configured')
-          console.warn('DEEPSEEK_API_KEY not configured, skipping to OpenRouter')
-        }
-      }
-
-      // Stage 3: OpenRouter Fallback
-      if (!success) {
-        const orKey = process.env.OPENROUTER_API_KEY
-        if (orKey) {
-          try {
-            const orRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${orKey}`,
-                'Content-Type': 'application/json',
-                'HTTP-Referer': 'https://happiness-app.netlify.app',
-                'X-Title': 'Happiness App'
-              },
-              body: JSON.stringify({
-                model: 'google/gemma-4-26b-a4b-it:free',
-                messages: buildMessages(historyLimit),
-                temperature: 0.7,
-                max_tokens: 4096
-              })
-            })
-            if (orRes.ok) {
-              const orData = await orRes.json()
-              console.log('Antwort von:', 'openrouter')
-              aiResponse = orData.choices?.[0]?.message?.content || ''
-              usage = orData.usage
-              provider = 'openrouter'
-              modelName = 'google/gemma-4-26b-a4b-it:free'
-              success = true
-            } else {
-              const orData = await orRes.json().catch(() => ({}))
-              const errMsg = orData?.error?.message || JSON.stringify(orData)
-              providerErrors.push(`OpenRouter: ${errMsg} (HTTP ${orRes.status})`)
-              console.error('OpenRouter fallback failed, status:', orRes.status, errMsg)
-            }
-          } catch (err) {
-            providerErrors.push(`OpenRouter: ${err.message}`)
-            console.error('OpenRouter fallback fetch failed:', err.message)
-          }
-        } else {
-          providerErrors.push('OpenRouter: OPENROUTER_API_KEY not configured')
-          console.warn('OPENROUTER_API_KEY not configured')
+          console.warn('DEEPSEEK_API_KEY not configured, no more providers')
         }
       }
 
