@@ -376,6 +376,10 @@ export default function TikTokVideoPage() {
               <ExternalLink size={16} />
             </a>
 
+            <div className="ccp-free-guard">
+              H.I.T. Free-Tipp: CapCut bietet im Editor manchmal ein Upgrade an. Du kannst die Videoerstellung mit dem kostenlosen Modell "Seedance Mini" einfach ohne Abo fortsetzen!
+            </div>
+
             <div className="ccp-channels">
               <span className="ccp-channels-label">Kanäle:</span>
               {CHANNELS.map(ch => (

@@ -54,9 +54,11 @@ JSON-Struktur:
 }
 
 Regeln:
+- WICHTIG: Das voiceover_script MUSS extrem kompakt und auf maximale Verweildauer optimiert sein. Verwende maximal 60-70 Wörter (ca. 30 Sekunden Videozeit). Vermeide unnötige Füllwörter, damit die CapCut-KI das Video komplett im kostenlosen Kontingent (Free Tier) ohne Abo-Aufforderung generieren kann.
 - Passe die Anzahl der Szenen an die gewünschte Dauer an (ca. 3-5 Sekunden pro Szene)
 - Voiceover-Text: Natürlich, emotional, flüssig lesbar, kein Deutsch-Englisch-Mischmasch
-- Visual Prompts: Englisch, detailliert, immer mit "cinematic, photorealistic, 4k, --ar 9:16" am Ende
+- Visual Prompts: Englisch, detailliert, aber KNAPP (max 25 Wörter pro Prompt), immer mit "cinematic, photorealistic, 4k, --ar 9:16" am Ende
+- Verwende einfache, klare Visual Prompts die CapCut's Free-Tier Seedance-Modell nicht überlasten
 - Erste Szene = Hook (sofortige Aufmerksamkeit), letzte Szene = CTA (Handlungsaufforderung)
 - Dazwischen: Nutzen, Emotionen, Vorteile
 - Timestamps müssen korrekt berechnet sein und zur tatsächlichen Dauer passen
