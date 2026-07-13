@@ -686,6 +686,29 @@
   transform: translateY(0);
 }
 
+.tiktok-download-main {
+  width: 100%;
+  padding: 16px 20px;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.tiktok-deploy-open {
+  margin-left: auto;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #085041;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tiktok-deploy-open:hover {
+  text-decoration: underline;
+}
+
 .tiktok-scenes-collapsible {
   margin-top: 8px;
 }

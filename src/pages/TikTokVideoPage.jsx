@@ -5,7 +5,6 @@ import { supabase } from '../lib/supabase'
 import { getFFmpeg, downloadBlob } from '../lib/ffmpeg'
 import { Sparkles, Download, Image as ImageIcon, ArrowLeft, X, Film, Check, CreditCard, Brain, AlertTriangle, Share2, ExternalLink, Copy, QrCode } from 'lucide-react'
 import CopyButton from '../components/CopyButton'
-import ShareBar from '../components/ShareBar'
 import './TikTokVideoPage.css'
 
 export default function TikTokVideoPage() {
@@ -63,7 +62,15 @@ export default function TikTokVideoPage() {
   useEffect(() => {
     if (scenes && !loading && !videoBlob && !selectedImage && !renderingStarted.current) {
       renderingStarted.current = true
+      setLoading(true)
+      setError('')
       renderVideo(scenes)
+        .catch(err => {
+          console.error('Pipeline render error:', err)
+          setError('Video konnte nicht gerendert werden. Bitte versuch es nochmal.')
+          renderingStarted.current = false
+        })
+        .finally(() => setLoading(false))
     }
   }, [scenes])
 
@@ -285,8 +292,10 @@ export default function TikTokVideoPage() {
   }
 
   const renderVideo = async (scenes, audioBuffers = null, musicBuffer = null) => {
+    console.log('[renderVideo] START', { scenes: scenes.length, hasAudio: !!audioBuffers, hasMusic: !!musicBuffer })
     setStatusMsg('Video-Engine wird geladen...')
     const ffmpeg = await getFFmpeg()
+    console.log('[renderVideo] FFmpeg loaded OK')
     const W = 1080
     const H = 1920
     const FPS = 30
@@ -303,6 +312,7 @@ export default function TikTokVideoPage() {
       return null
     }))
 
+    console.log('[renderVideo] Images loaded', { loaded: bgImages.filter(Boolean).length, total: bgImages.length })
     setStatusMsg('Szenen werden gerendert...')
 
     const canvas = document.createElement('canvas')
@@ -437,7 +447,9 @@ export default function TikTokVideoPage() {
         '-shortest',
         'output.mp4'
       ]
+      console.log('[renderVideo] FFmpeg exec (with audio)', { argCount: args.length })
       await ffmpeg.exec(args)
+      console.log('[renderVideo] FFmpeg exec DONE (with audio)')
     } else {
       const noAudioFilter = concatInputs.join('') + `concat=n=${scenes.length}:v=1:a=0[out]`
       const noAudioComplex = filterParts.join(';') + ';' + noAudioFilter
@@ -451,11 +463,14 @@ export default function TikTokVideoPage() {
         '-movflags', '+faststart',
         'output.mp4'
       ]
+      console.log('[renderVideo] FFmpeg exec (no audio)', { argCount: args.length })
       await ffmpeg.exec(args)
+      console.log('[renderVideo] FFmpeg exec DONE (no audio)')
     }
 
     const data = await ffmpeg.readFile('output.mp4')
     const blob = new Blob([data.buffer], { type: 'video/mp4' })
+    console.log('[renderVideo] Video ready', { sizeKB: Math.round(blob.size / 1024) })
     setVideoBlob(blob)
     gtag('event', 'content_generated', { source: 'tiktok_video' })
     setVideoUrl(URL.createObjectURL(blob))
@@ -693,9 +708,13 @@ export default function TikTokVideoPage() {
               />
             </div>
 
+            <button className="btn btn-primary tiktok-download-main" onClick={() => { gtag('event', 'project_saved', { source: 'tiktok_video' }); downloadBlob(videoBlob, `tiktok-video-${Date.now()}.mp4`); }}>
+              <Download size={18} /> Video herunterladen
+            </button>
+
             <div className="tiktok-deploy-section">
-              <h3 className="tiktok-deploy-title"><Share2 size={18} /> Jetzt posten</h3>
-              <p className="tiktok-deploy-subtitle">Wähle eine Plattform. Wir laden das Video runter und öffnen den Upload für dich.</p>
+              <h3 className="tiktok-deploy-title"><Share2 size={18} /> Caption für deine Plattform</h3>
+              <p className="tiktok-deploy-subtitle">Kopier die Caption, geh zur Plattform und lad das Video hoch.</p>
               {generatingCaptions && (
                 <div className="tiktok-deploy-loading">Captions werden generiert...</div>
               )}
@@ -704,6 +723,15 @@ export default function TikTokVideoPage() {
                   <div className="tiktok-deploy-header">
                     <span className="tiktok-deploy-icon">{platform.icon}</span>
                     <span className="tiktok-deploy-label">{platform.label}</span>
+                    <a
+                      href={platform.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="tiktok-deploy-open"
+                      onClick={() => gtag('event', 'deploy_click', { platform: platform.id, source: 'tiktok_video' })}
+                    >
+                      Öffnen →
+                    </a>
                   </div>
                   {platformCaptions[platform.id] && (
                     <div className="tiktok-deploy-caption">
@@ -722,27 +750,11 @@ export default function TikTokVideoPage() {
                       </button>
                     </div>
                   )}
-                  <a
-                    href={platform.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="tiktok-deploy-btn"
-                    style={{ background: platform.color }}
-                    onClick={() => {
-                      gtag('event', 'deploy_click', { platform: platform.id, source: 'tiktok_video' })
-                      downloadBlob(videoBlob, `tiktok-video-${Date.now()}.mp4`)
-                    }}
-                  >
-                    <ExternalLink size={14} /> Bei {platform.label} hochladen
-                  </a>
                 </div>
               ))}
             </div>
 
             <div className="tiktok-result-actions">
-              <button className="btn btn-outline" onClick={() => { downloadBlob(videoBlob, `tiktok-video-${Date.now()}.mp4`) }}>
-                <Download size={16} /> Video herunterladen
-              </button>
               <button className="btn btn-outline" onClick={() => {
                 setScenes(null)
                 setVideoBlob(null)
@@ -750,6 +762,8 @@ export default function TikTokVideoPage() {
                 if (videoUrl) URL.revokeObjectURL(videoUrl)
                 setVideoUrl(null)
                 setError('')
+                pipelineUsed.current = false
+                renderingStarted.current = false
               }}>
                 Neues Video erstellen
               </button>
@@ -775,8 +789,6 @@ export default function TikTokVideoPage() {
                 </div>
               </details>
             )}
-
-            <ShareBar text={text} title="Mein TikTok-Video" downloadBlob={videoBlob} downloadFilename={`tiktok-video-${Date.now()}.mp4`} />
           </div>
         )}
 
@@ -785,7 +797,18 @@ export default function TikTokVideoPage() {
             {error && (
               <div className="tiktok-error">
                 <AlertTriangle size={16} /> {error}
-                <button className="btn btn-primary" style={{ marginTop: '12px' }} onClick={() => { setError(''); renderVideo(scenes) }}>
+                <button className="btn btn-primary" style={{ marginTop: '12px' }} onClick={async () => {
+                  setError('')
+                  setLoading(true)
+                  try {
+                    await renderVideo(scenes)
+                  } catch (err) {
+                    console.error('Retry render error:', err)
+                    setError('Video konnte nicht gerendert werden. Bitte versuch es nochmal.')
+                  } finally {
+                    setLoading(false)
+                  }
+                }}>
                   Nochmal versuchen
                 </button>
               </div>
