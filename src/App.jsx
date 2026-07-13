@@ -10,6 +10,7 @@ import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.js
 import AuthContext, { useAuth } from './context/AuthContext'
 import Logo, { renderBrandText } from './components/Logo'
 import { useOneSignal } from './hooks/useOneSignal'
+import InstallButton from './components/InstallButton'
 import Feed from './components/Feed'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
@@ -183,6 +184,8 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
             <option key={l.code} value={l.code}>{l.flag} {l.label}</option>
           ))}
         </select>
+
+        <InstallButton variant="sidebar" />
 
         <div className="sidebar-user">
           <div className="sidebar-avatar">
@@ -397,6 +400,9 @@ function LandingPage() {
         <div className="landing-actions">
           <Link to="/register" className="btn btn-primary">Kostenlos registrieren</Link>
           <Link to="/login" className="btn btn-outline">Anmelden</Link>
+        </div>
+        <div className="landing-install">
+          <InstallButton variant="hero" />
         </div>
       </div>
 

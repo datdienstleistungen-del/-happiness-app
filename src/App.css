@@ -82,6 +82,12 @@
   justify-content: center;
 }
 
+.landing-install {
+  margin-top: 1.25rem;
+  display: flex;
+  justify-content: center;
+}
+
 .landing-sections {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
