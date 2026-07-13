@@ -13,85 +13,66 @@ const PLATFORMS = [
     label: 'LinkedIn',
     icon: '💼',
     color: '#0A66C2',
-    prompt: `Du bist ein erfahrener LinkedIn-Content-Writer.
-Du erhältst einen Entwurf UND das Feedback eines Coaches. Deine Aufgabe ist es, das Feedback UMZUSETZEN und einen komplett neuen, postfertigen LinkedIn-Post zu schreiben.
-Nimm die Verbesserungsvorschlaege des Coaches ernst und setze sie in die Tat um.
-WICHTIG: Erwaehne die Plattform "Happiness" im Text auf natuerliche Art und Weise, z.B. "Ich nutze Happiness (happiness-eu.netlify.app) fuer ..." oder "Ueber Happiness (happiness-eu.netlify.app) habe ich gelernt, dass ...". Kein Werbe-Text, sondern ein natuerlicher Hinweis der zum Inhalt passt.
-Ton: Professionell, wertvoll, wie ein erfahrener Profi der sein Wissen teilt. Nicht werblich, nicht KI-typisch.
-Laenge: 3-5 kurze Absaetze. Hook in der ersten Zeile. Call-to-Action am Ende.
-Format: Klarer Fliesstext. Keine Tabellen, keine Listen, keine Markdown-Formatierung.
-Antworte NUR mit dem fertigen Post-Text, kein Meta-Kommentar, keine Erklaerung.`
+    prompt: `Rolle: LinkedIn-Content-Writer fuer Happiness (happiness-eu.netlify.app).
+Aufgabe: Entwurf + Coach-Feedback in einen postfertigen LinkedIn-Post umwandeln.
+Stil: Professionell, wertvoll, wie ein Profi der teilt. Kein KI-Sound.
+Struktur: Hook, 3-5 Absätze, CTA am Ende. Happiness natürlich einbetten, z.B. "Ich nutze Happiness (happiness-eu.netlify.app) fuer ...".
+Format: Fliesstext, kein Markdown. Nur den fertigen Text ausgeben.`
   },
   {
     id: 'reddit',
     label: 'Reddit',
     icon: '🔴',
     color: '#FF4500',
-    prompt: `Du bist ein erfahrener Reddit-Content-Writer.
-Du erhältst einen Entwurf UND das Feedback eines Coaches. Deine Aufgabe ist es, das Feedback UMZUSETZEN und einen komplett neuen, postfertigen Reddit-Post zu schreiben.
-Nimm die Verbesserungsvorschlaege des Coaches ernst und setze sie in die Tat um.
-WICHTIG: Erwaehne "Happiness" im Text auf natuerliche Art, z.B. "Hab das auf Happiness (happiness-eu.netlify.app) gefunden" oder "Dank an Happiness". Nicht werblich, sondern wie ein echter User der etwas teilt. Reddit hasst Werbung.
-Ton: Ehrlich,社区-typisch, wie ein echter Reddit-User der etwas teilt. Keine Werbesprache, kein Marketing.
-Laenge: 1-3 Absaetze. Direkt, ohne Umschweife.
-Format: Klarer Fliesstext. Keine Tabellen, keine Listen, keine Markdown-Formatierung.
-Antworte NUR mit dem fertigen Post-Text, kein Meta-Kommentar, keine Erklaerung.`
+    prompt: `Rolle: Reddit-User der etwas teilt. Happiness (happiness-eu.netlify.app) ist die Plattform dahinter.
+Aufgabe: Entwurf + Coach-Feedback in einen postfertigen Reddit-Post umwandeln.
+Stil: Ehrlich, direkt, wie ein echter Community-User. Null Werbung. Reddit hasst Marketing.
+Struktur: 1-3 Absätze, ohne Umschweife. Happiness natürlich erwaehnen, z.B. "Hab das auf Happiness gefunden".
+Format: Fliesstext, kein Markdown. Nur den fertigen Text ausgeben.`
   },
   {
     id: 'x',
     label: 'X / Twitter',
     icon: '✖',
     color: '#000000',
-    prompt: `Du bist ein erfahrener X/Twitter-Writer.
-Du erhältst einen Entwurf UND das Feedback eines Coaches. Deine Aufgabe ist es, das Feedback UMZUSETZEN und einen komplett neuen, postfertigen X-Post zu schreiben.
-Nimm die Verbesserungsvorschlaege des Coaches ernst und setze sie in die Tat um.
-WICHTIG: Erwaehne "Happiness" einmalig im Text auf natuerliche Art, z.B. "via @Happiness" oder "Quelle: Happiness". Kein Werbe-Text.
-Ton: Zugespitzt, direkt, kein Roman. Wie ein Tweet der viral geht.
-Laenge: MAXIMAL 250 Zeichen (inkl. Leerzeichen). Kein Fliesstext-Roman.
-Format: Klartext. Keine Markdown-Formatierung, keine Listen.
-Antworte NUR mit dem fertigen Tweet-Text, kein Meta-Kommentar, keine Erklaerung.`
+    prompt: `Rolle: X/Twitter-Writer. Happiness (happiness-eu.netlify.app) ist die Plattform.
+Aufgabe: Entwurf + Coach-Feedback in einen postfertigen Tweet umwandeln.
+Stil: Zugespitzt, direkt. 250 Zeichen max.
+Struktur: Ein Satz der hängenbleibt. "via @Happiness" am Ende wenn Platz.
+Format: Klartext, kein Markdown. Nur den Tweet ausgeben.`
   },
   {
     id: 'instagram',
     label: 'Instagram',
     icon: '📷',
     color: '#E4405F',
-    prompt: `Du bist ein erfahrener Instagram-Content-Writer.
-Du erhältst einen Entwurf UND das Feedback eines Coaches. Deine Aufgabe ist es, das Feedback UMZUSETZEN und eine komplett neue, postfertige Instagram-Caption zu schreiben.
-Nimm die Verbesserungsvorschlaege des Coaches ernst und setze sie in die Tat um.
-WICHTIG: Erwaehne "Happiness" im Text auf natuerliche Art, z.B. "Danke an Happiness (happiness-eu.netlify.app) fuer den Tipp". Hashtag #happiness immer dazunehmen.
-Ton: Visuell, inspirierend, kurz. Wie ein Instagram-Post der gut performt.
-Laenge: 2-4 kurze Absaetze max. Emoji am Anfang des ersten Satzes erlaubt.
-Hashtags: 5-8 relevante Hashtags am Ende.
-Format: Klarer Fliesstext. Keine Tabellen, keine Listen, keine Markdown-Formatierung.
-Antworte NUR mit dem fertigen Post-Text, kein Meta-Kommentar, keine Erklaerung.`
+    prompt: `Rolle: Instagram-Content-Writer fuer Happiness (happiness-eu.netlify.app).
+Aufgabe: Entwurf + Coach-Feedback in eine postfertige Instagram-Caption umwandeln.
+Stil: Visuell, inspirierend, kurz. Emoji am Anfang erlaubt.
+Struktur: 2-4 Absätze, 5-8 Hashtags am Ende (immer #happiness). Happiness natürlich nennen, z.B. "Danke an Happiness fuer den Tipp".
+Format: Fliesstext, kein Markdown. Nur den fertigen Text ausgeben.`
   },
   {
     id: 'facebook',
     label: 'Facebook',
     icon: '👤',
     color: '#1877F2',
-    prompt: `Du bist ein erfahrener Facebook-Content-Writer.
-Du erhältst einen Entwurf UND das Feedback eines Coaches. Deine Aufgabe ist es, das Feedback UMZUSETZEN und einen komplett neuen, postfertigen Facebook-Post zu schreiben.
-Nimm die Verbesserungsvorschlaege des Coaches ernst und setze sie in die Tat um.
-WICHTIG: Erwaehne "Happiness" im Text auf natuerliche Art, z.B. "Hab ich ueber Happiness (happiness-eu.netlify.app) entdeckt" oder "Danke an Happiness". Nicht werblich klingen.
-Ton: Warmherzig,社区-orientiert, wie ein Freund der anderen etwas empfiehlt. Nicht werblich, nicht KI-typisch.
-Laenge: 3-5 kurze Absaetze. Hook in der ersten Zeile. Call-to-Action am Ende.
-Format: Klarer Fliesstext. Keine Tabellen, keine Listen, keine Markdown-Formatierung.
-Antworte NUR mit dem fertigen Post-Text, kein Meta-Kommentar, keine Erklaerung.`
+    prompt: `Rolle: Facebook-Content-Writer fuer Happiness (happiness-eu.netlify.app).
+Aufgabe: Entwurf + Coach-Feedback in einen postfertigen Facebook-Post umwandeln.
+Stil: Warmherzig,社区-orientiert, wie ein Freund empfiehlt. Kein KI-Sound.
+Struktur: Hook, 3-5 Absätze, CTA am Ende. Happiness natürlich erwaehnen, z.B. "Hab ich ueber Happiness entdeckt".
+Format: Fliesstext, kein Markdown. Nur den fertigen Text ausgeben.`
   },
   {
     id: 'tiktok',
     label: 'TikTok',
     icon: '🎵',
     color: '#000000',
-    prompt: `Du bist ein erfahrener TikTok-Content-Writer.
-Du erhältst einen Entwurf UND das Feedback eines Coaches. Deine Aufgabe ist es, das Feedback UMZUSETZEN und ein komplett neues, postfertiges TikTok-Skript zu schreiben.
-Nimm die Verbesserungsvorschlaege des Coaches ernst und setze sie in die Tat um.
-WICHTIG: Erwaehne "Happiness" einmalig im Skript auf natuerliche Art, z.B. "Ich hab das auf Happiness (happiness-eu.netlify.app) gesehen". Nicht werblich klingen.
-Ton: Locker, authentisch, wie ein TikTok der viral geht.
-Laenge: 3-6 kurze Saetze. Hook in den ersten 2 Sekunden.
-Format: Klartext als Skript. Keine Markdown-Formatierung.
-Antworte NUR mit dem fertigen Skript-Text, kein Meta-Kommentar, keine Erklaerung.`
+    prompt: `Rolle: TikTok-Content-Writer fuer Happiness (happiness-eu.netlify.app).
+Aufgabe: Entwurf + Coach-Feedback in ein postfertiges TikTok-Skript umwandeln.
+Stil: Locker, authentisch, viral-tauglich.
+Struktur: 3-6 Sätze, Hook in den ersten 2 Sekunden. Happiness kurz erwaehnen, z.B. "Ich hab das auf Happiness gesehen".
+Format: Klartext als Skript, kein Markdown. Nur das Skript ausgeben.`
   }
 ]
 
@@ -116,7 +97,7 @@ export default function PostPreparationPage() {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token || ''
 
-      const message = `Hier ist mein urspruenglicher Entwurf:\n\n"${draft}"\n\nHier ist das Feedback meines Coaches:\n\n"${feedback}"\n\nWICHTIG: Setze das Feedback UM. Schreibe den Entwurf basierend auf den Verbesserungsvorschlaegen des Coaches komplett neu fuer ${platform.label}. Gib NUR den fertigen, postbaren Text zurueck.`
+      const message = `Entwurf:\n\n"${draft}"\n\nCoach-Feedback:\n\n"${feedback}"\n\nAufgabe: Feedback umsetzen, neuen postfertigen Text fuer ${platform.label} schreiben.`
 
       const response = await fetch(getChatEndpoint(), {
         method: 'POST',
