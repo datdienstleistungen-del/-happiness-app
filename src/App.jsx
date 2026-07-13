@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom'
 import {
   Home, Sparkles, MessageCircle, Users, ShoppingCart, Briefcase,
@@ -39,12 +39,41 @@ const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 const TodayQuestionPage = lazy(() => import('./pages/TodayQuestionPage'))
 const CreatorWelcomePage = lazy(() => import('./pages/CreatorWelcomePage'))
 
-function Sidebar() {
+function Sidebar({ mobileOpen, setMobileOpen }) {
   const { user, profile, signOut } = useAuth()
   const { lang, setLang, t } = useLanguage()
   const navigate = useNavigate()
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
+  const sidebarRef = useRef(null)
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768) setMobileOpen(false)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  useEffect(() => {
+    if (!mobileOpen) return
+    const handleClickOutside = (e) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
+        setMobileOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [mobileOpen])
+
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [mobileOpen])
 
   const handleSignOut = async () => {
     await signOut()
@@ -90,6 +119,7 @@ function Sidebar() {
       to={link.to}
       className={`sidebar-link ${location.pathname === link.to ? 'active' : ''}`}
       title={collapsed ? link.label : undefined}
+      onClick={() => setMobileOpen(false)}
     >
       <span className="sidebar-icon"><link.icon size={19} /></span>
       {!collapsed && <span>{link.label}</span>}
@@ -97,15 +127,23 @@ function Sidebar() {
   ))
 
   return (
-    <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
-      <div className="sidebar-header">
-        <Link to="/" className="sidebar-brand">
-          <img src="/favicon.svg" alt="H" style={{ width: '32px', height: '32px' }} />
-          {!collapsed && <Logo />}
-        </Link>
-        <button className="sidebar-toggle" onClick={() => setCollapsed(!collapsed)}>
-          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-        </button>
+    <>
+      {mobileOpen && <div className="sidebar-overlay" onClick={() => setMobileOpen(false)} />}
+      <aside ref={sidebarRef} className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
+        <div className="sidebar-header">
+          <Link to="/" className="sidebar-brand" onClick={() => setMobileOpen(false)}>
+            <img src="/favicon.svg" alt="H" style={{ width: '32px', height: '32px' }} />
+            {!collapsed && <Logo />}
+          </Link>
+          <button className="sidebar-toggle" onClick={() => {
+            if (window.innerWidth <= 768) {
+              setMobileOpen(!mobileOpen)
+            } else {
+              setCollapsed(!collapsed)
+            }
+          }}>
+            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
       </div>
 
       <nav className="sidebar-nav">
@@ -159,6 +197,7 @@ function Sidebar() {
         </div>
       </div>
     </aside>
+    </>
   )
 }
 
@@ -218,6 +257,7 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -276,7 +316,7 @@ export default function App() {
           <LoadingScreen />
         ) : (
           <>
-            {user && !['/onboarding', '/today-question', '/creator-welcome'].includes(location.pathname) && <Sidebar />}
+            {user && !['/onboarding', '/today-question', '/creator-welcome'].includes(location.pathname) && <Sidebar mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />}
             {!user && location.pathname !== '/login' && location.pathname !== '/register' && (
               <nav className="public-topbar">
                 <Link to="/" className="public-topbar-brand">
@@ -297,6 +337,11 @@ export default function App() {
               </nav>
             )}
             <main className={user && !['/onboarding', '/today-question', '/creator-welcome'].includes(location.pathname) ? 'main-content with-sidebar' : 'main-content full'}>
+              {user && (
+                <button className="mobile-menu-btn" onClick={() => setMobileSidebarOpen(true)}>
+                  <Menu size={22} />
+                </button>
+              )}
               <Suspense fallback={<div className="loading">Laden...</div>}>
               <Routes>
                 <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
