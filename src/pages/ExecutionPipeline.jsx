@@ -241,7 +241,7 @@ export default function ExecutionPipeline() {
 
       if (intent.platform === 'tiktok') {
         navigate('/tiktok-video', { state: { postText: generatedContent, pipelineResult: apiResult } })
-      } else if (intent.platform === 'facebook' || intent.platform === 'instagram' || intent.platform === 'content' || intent.platform === 'linkedin' || intent.platform === 'reddit' || intent.platform === 'x') {
+      } else if (intent.platform === 'facebook' || intent.platform === 'instagram' || intent.platform === 'content') {
         navigate('/post-preparation', { state: { draft: generatedContent, feedback: apiResult?.content || '' } })
       } else if (intent.platform === 'marketplace') {
         navigate('/marketplace', { state: { form: { title: goal, description: goal, price: '', category: 'Sonstiges' }, startTab: 'create' } })
