@@ -401,21 +401,28 @@ export default function TikTokVideoPage() {
       filterParts.push(`[${musicIdx}:a]volume=0.15,afade=t=in:st=0:d=2,afade=t=out:st=${totalDuration - 2}:d=2[music]`)
     }
 
-    const isValidMp3 = (buf) => {
-      if (buf.length < 2) return false
-      const view = new Uint8Array(buf)
-      return view[0] === 0xFF && (view[1] & 0xE0) === 0xE0
+    const detectAudioFormat = (buf) => {
+      if (buf.length < 4) return null
+      const v = new Uint8Array(buf)
+      if (v[0] === 0xFF && (v[1] & 0xE0) === 0xE0) return { ext: 'mp3', fmt: 'mp3' }
+      if (v[0] === 0x49 && v[1] === 0x44 && v[2] === 0x33) return { ext: 'mp3', fmt: 'mp3' }
+      if (v[0] === 0x4F && v[1] === 0x67 && v[2] === 0x67 && v[3] === 0x53) return { ext: 'ogg', fmt: 'ogg' }
+      if (v[0] === 0x52 && v[1] === 0x49 && v[2] === 0x46 && v[3] === 0x46) return { ext: 'wav', fmt: 'wav' }
+      if (v[0] === 0x1A && v[1] === 0x45 && v[2] === 0xDF && v[3] === 0xA3) return { ext: 'webm', fmt: 'matroska' }
+      return null
     }
 
     if (hasAudio) {
       for (let i = 0; i < scenes.length; i++) {
         if (audioBuffers[i]) {
           const ab = await audioBuffers[i].arrayBuffer()
-          if (isValidMp3(ab)) {
-            await ffmpeg.writeFile(`audio_${i}.mp3`, new Uint8Array(ab))
-            inputArgs.push('-i', `audio_${i}.mp3`)
+          const detected = detectAudioFormat(ab)
+          if (detected) {
+            console.log(`[renderVideo] Audio scene ${i}: ${detected.ext} (${ab.byteLength} bytes)`)
+            await ffmpeg.writeFile(`audio_${i}.${detected.ext}`, new Uint8Array(ab))
+            inputArgs.push('-f', detected.fmt, '-i', `audio_${i}.${detected.ext}`)
           } else {
-            console.warn(`[renderVideo] Invalid MP3 for scene ${i}, skipping voice`)
+            console.warn(`[renderVideo] Unknown audio format for scene ${i}, first bytes:`, Array.from(new Uint8Array(ab).slice(0, 8)))
             inputArgs.push('-f', 'lavfi', '-i', `anullsrc=r=24000:cl=mono:d=${scenes[i].duration}`)
           }
         } else {
@@ -486,6 +493,9 @@ export default function TikTokVideoPage() {
     for (let i = 0; i < scenes.length; i++) {
       await ffmpeg.deleteFile(`scene_${i}.png`).catch(() => {})
       await ffmpeg.deleteFile(`audio_${i}.mp3`).catch(() => {})
+      await ffmpeg.deleteFile(`audio_${i}.ogg`).catch(() => {})
+      await ffmpeg.deleteFile(`audio_${i}.wav`).catch(() => {})
+      await ffmpeg.deleteFile(`audio_${i}.webm`).catch(() => {})
     }
     await ffmpeg.deleteFile('music.mp3').catch(() => {})
     await ffmpeg.deleteFile('output.mp4').catch(() => {})
