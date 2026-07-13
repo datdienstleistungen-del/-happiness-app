@@ -59,6 +59,14 @@ export default function TikTokVideoPage() {
     }
   }, [])
 
+  const renderingStarted = useRef(false)
+  useEffect(() => {
+    if (scenes && !loading && !videoBlob && !selectedImage && !renderingStarted.current) {
+      renderingStarted.current = true
+      renderVideo(scenes)
+    }
+  }, [scenes])
+
   useEffect(() => {
     return () => {
       if (videoUrl) URL.revokeObjectURL(videoUrl)
