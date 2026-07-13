@@ -15,8 +15,8 @@ const supabaseFetch = async (path, options = {}) => {
   return res.json()
 }
 
-const SYSTEM_PROMPT = `Rolle: Du bist ein erfahrener Video-Produzent für Social Media Content.
-Aufgabe: Erstelle ein strukturiertes Video-Rezept für CapCut.
+const SYSTEM_PROMPT = `Rolle: Du bist ein erfahrener Video-Produzent und Social Media Stratege.
+Aufgabe: Erstelle ein strukturiertes Video-Rezept für CapCut mit plattformspezifischen Publishing-Payloads.
 
 Input: Ein Thema/Beschreibung vom User und eine gewünschte Dauer.
 
@@ -32,7 +32,25 @@ JSON-Struktur:
       "spoken_text": "Text der in dieser Szene gesprochen wird",
       "visual_prompt": "Detaillierter Englischer Prompt für KI-Bildgenerierung, cinematic shot, photorealistic, 4k, --ar 9:16"
     }
-  ]
+  ],
+  "publishing_payload": {
+    "tiktok_instagram": {
+      "hook": "Text-Overlay für die ersten 3 Sekunden (Aufmerksamkeits-Hook)",
+      "description": "Kurze, prägnante Caption mit viralen Hashtags (#happiness #creator #fyp #viral #motivation)"
+    },
+    "linkedin_facebook": {
+      "headline": "Professionelle Hook-Zeile",
+      "body_text": "Wertgetriebener, strukturierter Beitragstext für Business-Netzwerke. Mit Zeilenumbrüchen und Emojis."
+    },
+    "youtube_shorts": {
+      "title": "Catchy YouTube-Titel (max 60 Zeichen)",
+      "description": "Kurze Beschreibung mit relevanten Keywords und #Shorts"
+    },
+    "reddit": {
+      "title": "Subreddit-freundlicher Titel (engagiert/Frage-Stil)",
+      "body_text": "Kontext für Querposting in relevante Communities. Ehrlich, nicht werblich."
+    }
+  }
 }
 
 Regeln:
@@ -43,6 +61,7 @@ Regeln:
 - Dazwischen: Nutzen, Emotionen, Vorteile
 - Timestamps müssen korrekt berechnet sein und zur tatsächlichen Dauer passen
 - Jede Szene braucht einen einzigartigen visuellen Prompt
+- publishing_payload: Jede Plattform hat eigene Mechaniken. TikTok/Instagram = kurz + Hook, LinkedIn = professionell, YouTube = SEO-optimiert, Reddit = community-first
 - NUR valides JSON ausgeben, kein anderer Text`
 
 exports.handler = async (event) => {
@@ -213,6 +232,27 @@ exports.handler = async (event) => {
       spoken_text: s.spoken_text || '',
       visual_prompt: s.visual_prompt || 'cinematic shot, abstract background, photorealistic, 4k, --ar 9:16'
     }))
+
+    if (!recipe.publishing_payload) {
+      recipe.publishing_payload = {
+        tiktok_instagram: {
+          hook: recipe.scenes[0]?.spoken_text || recipe.video_title,
+          description: `${recipe.video_title}\n\n${recipe.scenes.map(s => s.spoken_text).join(' ').substring(0, 150)}...\n\n#happiness #creator #fyp #viral #motivation`
+        },
+        linkedin_facebook: {
+          headline: recipe.video_title,
+          body_text: recipe.voiceover_script.substring(0, 500)
+        },
+        youtube_shorts: {
+          title: recipe.video_title.substring(0, 60),
+          description: `${recipe.video_title} — ${recipe.voiceover_script.substring(0, 100)}...\n\n#Shorts #${recipe.video_title.replace(/\s+/g, '')}`
+        },
+        reddit: {
+          title: recipe.video_title,
+          body_text: recipe.voiceover_script.substring(0, 500)
+        }
+      }
+    }
 
   } catch (parseError) {
     console.error('[CAPCUT-RECIPE] JSON parse error:', parseError.message, 'Raw:', aiResponse.substring(0, 200))
