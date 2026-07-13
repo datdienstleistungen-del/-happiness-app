@@ -29,7 +29,7 @@ Thumbs.db
 *.sql
 
 # One-time upload scripts
-*.cjs
+upload-*.cjs
 
 # Installers
 *.exe
