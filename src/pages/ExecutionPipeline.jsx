@@ -11,13 +11,14 @@ const INTENT_PROMPT = `Du bist ein Intent-Analyst. Der Nutzer hat etwas eingegeb
 1. WAS ist das Ziel? (Was will der Nutzer konkret tun?)
 2. IST das Ziel GENUG DETAILLIERT um es direkt auszuführen?
 
+WICHTIG: Wenn "video", "tiktok", "reel" oder "kurzvideo" im Text vorkommt, ist die Plattform IMMER "tiktok" — egal ob LinkedIn, Instagram oder sonstwas erwähnt wird. Ein Video bleibt ein Video.
+
 Beispiele:
 - "Ich will ein TikTok über gesunde Gewohnheiten" → Ziel: tiktok, Detail: hoch, AUSFÜHREN
-- "Ich möchte ein TikTok Video erstellen" → Ziel: tiktok, Detail: niedrig, KLÄREN
+- "Erstelle ein Video für LinkedIn" → Ziel: tiktok, Detail: hoch, AUSFÜHREN
+- "Video für Instagram Reels" → Ziel: tiktok, Detail: hoch, AUSFÜHREN
 - "Erstelle einen Facebook-Post über mein neues Produkt" → Ziel: facebook, Detail: hoch, AUSFÜHREN
-- "Ich überlege einen Post zu machen" → Ziel: facebook, Detail: niedrig, KLÄREN
 - "Soll ich eine Kleinanzeige für mein Auto schalten?" → Ziel: marketplace, Detail: mittel, KLÄREN
-- "Verkaufe mein Fahrrad für 200€" → Ziel: marketplace, Detail: hoch, AUSFÜHREN
 - "Mir langweilt es sich" → Ziel: keins, AUSFÜHREN (zum Chat)
 
 Antworte NUR mit JSON:
@@ -31,6 +32,7 @@ Regeln:
 - Kein Text außer dem JSON`
 
 async function analyzeIntent(goal) {
+  let result = null
   try {
     const { data: { session } } = await supabase.auth.getSession()
     const token = session?.access_token || ''
@@ -48,16 +50,24 @@ async function analyzeIntent(goal) {
       })
     })
 
-    if (!response.ok) return fallbackIntent(goal)
-    const data = await response.json()
-    const raw = (data.response || '').trim()
+    if (response.ok) {
+      const data = await response.json()
+      const raw = (data.response || '').trim()
+      const jsonMatch = raw.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        try { result = JSON.parse(jsonMatch[0]) } catch {}
+      }
+    }
+  } catch {}
 
-    const jsonMatch = raw.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) return fallbackIntent(goal)
-    return JSON.parse(jsonMatch[0])
-  } catch {
-    return fallbackIntent(goal)
+  if (!result) result = fallbackIntent(goal)
+
+  if (/video|tiktok|reel|kurzvideo/i.test(goal)) {
+    result.platform = 'tiktok'
+    result.action = 'execute'
   }
+
+  return result
 }
 
 function fallbackIntent(goal) {
@@ -77,6 +87,10 @@ async function startRealWork(platform, goal) {
   try {
     const { data: { session } } = await supabase.auth.getSession()
     const token = session?.access_token || ''
+
+    if (/video|tiktok|reel|kurzvideo/i.test(goal)) {
+      platform = 'tiktok'
+    }
 
     const WRITING_PROMPTS = {
       facebook: `Rolle: Facebook-Writer fuer Happiness (happiness-eu.netlify.app).
@@ -258,8 +272,9 @@ export default function ExecutionPipeline() {
 
     const timer = setTimeout(() => {
       const generatedContent = apiResult?.content || goal
+      const goalLower = goal.toLowerCase()
 
-      if (intent.platform === 'tiktok') {
+      if (intent.platform === 'tiktok' || /video|tiktok|reel|kurzvideo/.test(goalLower)) {
         navigate('/tiktok-video', { state: { postText: generatedContent, pipelineResult: apiResult } })
       } else if (intent.platform === 'facebook' || intent.platform === 'instagram' || intent.platform === 'linkedin' || intent.platform === 'reddit' || intent.platform === 'x' || intent.platform === 'content') {
         navigate('/post-preparation', { state: { draft: generatedContent, feedback: '' } })

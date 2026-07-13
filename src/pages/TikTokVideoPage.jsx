@@ -60,12 +60,6 @@ export default function TikTokVideoPage() {
   }, [])
 
   useEffect(() => {
-    if (scenes && !loading && !videoBlob && !selectedImage) {
-      renderVideo(scenes)
-    }
-  }, [scenes])
-
-  useEffect(() => {
     return () => {
       if (videoUrl) URL.revokeObjectURL(videoUrl)
     }
@@ -693,7 +687,7 @@ export default function TikTokVideoPage() {
 
             <div className="tiktok-deploy-section">
               <h3 className="tiktok-deploy-title"><Share2 size={18} /> Jetzt posten</h3>
-              <p className="tiktok-deploy-subtitle">Wähle eine Plattform. Caption wird automatisch erstellt.</p>
+              <p className="tiktok-deploy-subtitle">Wähle eine Plattform. Wir laden das Video runter und öffnen den Upload für dich.</p>
               {generatingCaptions && (
                 <div className="tiktok-deploy-loading">Captions werden generiert...</div>
               )}
@@ -780,6 +774,14 @@ export default function TikTokVideoPage() {
 
         {scenes && !loading && !showPaywall && !videoUrl && (
           <div className="tiktok-scenes-preview">
+            {error && (
+              <div className="tiktok-error">
+                <AlertTriangle size={16} /> {error}
+                <button className="btn btn-primary" style={{ marginTop: '12px' }} onClick={() => { setError(''); renderVideo(scenes) }}>
+                  Nochmal versuchen
+                </button>
+              </div>
+            )}
             <div className="tiktok-scenes-header">
               <h3>Skript: {totalDuration}s Video ({scenes.length} Szenen) {voiceover && <span className="tiktok-voiceover-badge">🎙️ Voiceover</span>} {music && <span className="tiktok-voiceover-badge" style={{ background: '#6d28d9' }}>🎵 Musik</span>}</h3>
               <CopyButton
