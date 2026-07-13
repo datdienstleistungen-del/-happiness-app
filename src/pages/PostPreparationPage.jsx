@@ -13,6 +13,7 @@ const PLATFORMS = [
     label: 'LinkedIn',
     icon: '💼',
     color: '#0A66C2',
+    url: 'https://www.linkedin.com/feed/',
     prompt: `Rolle: LinkedIn-Content-Writer fuer Happiness (happiness-eu.netlify.app).
 Aufgabe: Entwurf + Coach-Feedback in einen postfertigen LinkedIn-Post umwandeln.
 Stil: Professionell, wertvoll, wie ein Profi der teilt. Kein KI-Sound.
@@ -24,6 +25,7 @@ Format: Fliesstext, kein Markdown. Nur den fertigen Text ausgeben.`
     label: 'Reddit',
     icon: '🔴',
     color: '#FF4500',
+    url: 'https://www.reddit.com/submit',
     prompt: `Rolle: Reddit-User der etwas teilt. Happiness (happiness-eu.netlify.app) ist die Plattform dahinter.
 Aufgabe: Entwurf + Coach-Feedback in einen postfertigen Reddit-Post umwandeln.
 Stil: Ehrlich, direkt, wie ein echter Community-User. Null Werbung. Reddit hasst Marketing.
@@ -35,6 +37,7 @@ Format: Fliesstext, kein Markdown. Nur den fertigen Text ausgeben.`
     label: 'X / Twitter',
     icon: '✖',
     color: '#000000',
+    url: 'https://twitter.com/intent/post',
     prompt: `Rolle: X/Twitter-Writer. Happiness (happiness-eu.netlify.app) ist die Plattform.
 Aufgabe: Entwurf + Coach-Feedback in einen postfertigen Tweet umwandeln.
 Stil: Zugespitzt, direkt. 250 Zeichen max.
@@ -46,6 +49,7 @@ Format: Klartext, kein Markdown. Nur den Tweet ausgeben.`
     label: 'Instagram',
     icon: '📷',
     color: '#E4405F',
+    url: 'https://www.instagram.com/',
     prompt: `Rolle: Instagram-Content-Writer fuer Happiness (happiness-eu.netlify.app).
 Aufgabe: Entwurf + Coach-Feedback in eine postfertige Instagram-Caption umwandeln.
 Stil: Visuell, inspirierend, kurz. Emoji am Anfang erlaubt.
@@ -57,6 +61,7 @@ Format: Fliesstext, kein Markdown. Nur den fertigen Text ausgeben.`
     label: 'Facebook',
     icon: '👤',
     color: '#1877F2',
+    url: 'https://www.facebook.com/',
     prompt: `Rolle: Facebook-Content-Writer fuer Happiness (happiness-eu.netlify.app).
 Aufgabe: Entwurf + Coach-Feedback in einen postfertigen Facebook-Post umwandeln.
 Stil: Warmherzig,社区-orientiert, wie ein Freund empfiehlt. Kein KI-Sound.
@@ -68,6 +73,7 @@ Format: Fliesstext, kein Markdown. Nur den fertigen Text ausgeben.`
     label: 'TikTok',
     icon: '🎵',
     color: '#000000',
+    url: 'https://www.tiktok.com/',
     prompt: `Rolle: TikTok-Content-Writer fuer Happiness (happiness-eu.netlify.app).
 Aufgabe: Entwurf + Coach-Feedback in ein postfertiges TikTok-Skript umwandeln.
 Stil: Locker, authentisch, viral-tauglich.
@@ -94,6 +100,8 @@ export default function PostPreparationPage() {
     setLoading(prev => ({ ...prev, [platform.id]: true }))
     setError('')
     console.log(`Generating ${platform.label}...`)
+
+    window.open(platform.url, '_blank')
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -128,6 +136,17 @@ export default function PostPreparationPage() {
         throw new Error('Leere Antwort von der KI')
       }
       setGeneratedPosts(prev => ({ ...prev, [platform.id]: data.response }))
+
+      try {
+        await navigator.clipboard.writeText(data.response)
+      } catch {
+        const ta = document.createElement('textarea')
+        ta.value = data.response
+        document.body.appendChild(ta)
+        ta.select()
+        document.execCommand('copy')
+        document.body.removeChild(ta)
+      }
     } catch (err) {
       console.error(`Generate ${platform.id} error:`, err)
       setError(`Fehler bei ${platform.label}: ${err.message}`)
