@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { getFFmpeg, downloadBlob } from '../lib/ffmpeg'
-import { Sparkles, Download, Image as ImageIcon, ArrowLeft, X, Film, Check, CreditCard, Brain, AlertTriangle } from 'lucide-react'
+import { Sparkles, Download, Image as ImageIcon, ArrowLeft, X, Film, Check, CreditCard, Brain, AlertTriangle, Share2, ExternalLink, Copy, QrCode } from 'lucide-react'
 import CopyButton from '../components/CopyButton'
 import ShareBar from '../components/ShareBar'
 import './TikTokVideoPage.css'
@@ -27,6 +27,12 @@ export default function TikTokVideoPage() {
   const [isPremium, setIsPremium] = useState(false)
   const [showPaywall, setShowPaywall] = useState(false)
   const [error, setError] = useState('')
+  const [voiceover, setVoiceover] = useState(false)
+  const [voice, setVoice] = useState('de-DE-KatjaNeural')
+  const [music, setMusic] = useState(false)
+  const [musicMood, setMusicMood] = useState('motivation')
+  const [platformCaptions, setPlatformCaptions] = useState({})
+  const [generatingCaptions, setGeneratingCaptions] = useState(false)
   const FREE_LIMIT = 3
 
   const fileInputRef = useRef(null)
@@ -106,13 +112,13 @@ export default function TikTokVideoPage() {
       if (data?.url) {
         window.location.href = data.url
       } else if (response.status === 502) {
-        setError('Checkout-Fehler: Server-Fehler (502) — STRIPE_SECRET_KEY pruefen')
+        setError('Das Zahlungssystem hat gerade Probleme. Bitte versuch es in ein paar Minuten nochmal.')
       } else {
-        setError('Checkout-Fehler: ' + (data?.error || `HTTP ${response.status}`))
+        setError('Beim Checkout ist ein Fehler aufgetreten. Bitte versuch es nochmal.')
       }
     } catch (error) {
       console.error('Checkout error:', error)
-      setError('Verbindungsfehler beim Checkout: ' + error.message)
+      setError('Keine Verbindung zum Server. Prüf dein Internet und versuch es nochmal.')
     }
   }
 
@@ -133,12 +139,13 @@ export default function TikTokVideoPage() {
     return urlData.publicUrl
   }
 
-  const loadBackgroundImage = (url) => {
+  const loadBackgroundImage = (url, timeoutMs = 8000) => {
     return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('Image load timeout')), timeoutMs)
       const img = new Image()
       img.crossOrigin = 'anonymous'
-      img.onload = () => resolve(img)
-      img.onerror = () => reject(new Error('Failed to load image'))
+      img.onload = () => { clearTimeout(timer); resolve(img) }
+      img.onerror = () => { clearTimeout(timer); reject(new Error('Failed to load image')) }
       img.src = url
     })
   }
@@ -210,35 +217,89 @@ export default function TikTokVideoPage() {
       setTotalDuration(data.totalDuration)
       setFreeVideoUsed(prev => prev + 1)
 
+      let audioBuffers = null
+      if (voiceover) {
+        setStatusMsg('Voiceover wird generiert...')
+        audioBuffers = []
+        for (let i = 0; i < data.scenes.length; i++) {
+          const scene = data.scenes[i]
+          const spokenText = `${scene.text1}. ${scene.text2 || ''}`
+          setStatusMsg(`Voiceover Szene ${i + 1}/${data.scenes.length}...`)
+          try {
+            const audioRes = await fetch('/api/tts', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: spokenText.trim(), voice, rate: '+10%' })
+            })
+            if (audioRes.ok) {
+              const audioBlob = await audioRes.blob()
+              audioBuffers.push(audioBlob)
+            } else {
+              audioBuffers.push(null)
+            }
+          } catch {
+            audioBuffers.push(null)
+          }
+        }
+      }
+
+      let musicBuffer = null
+      if (music) {
+        setStatusMsg('Hintergrundmusik wird geladen...')
+        try {
+          const musicRes = await fetch('/api/music', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text.trim(), mood: musicMood })
+          })
+          if (musicRes.ok) {
+            const musicData = await musicRes.json()
+            setStatusMsg(`Musik: "${musicData.name}" wird geladen...`)
+            const trackRes = await fetch(musicData.url)
+            if (trackRes.ok) {
+              musicBuffer = await trackRes.blob()
+            }
+          }
+        } catch (e) {
+          console.error('Music fetch error:', e)
+        }
+      }
+
       setStatusMsg('Bilder werden geladen...')
-      await renderVideo(data.scenes)
+      await renderVideo(data.scenes, audioBuffers, musicBuffer)
     } catch (err) {
       console.error('Create video error:', err)
-      setError(err.message || 'Fehler bei der Video-Erstellung')
+      const msg = err.message || ''
+      if (msg.includes('limit') || msg.includes('429')) {
+        setError('Zu viele Anfragen gerade. Bitte warte kurz und versuch es nochmal.')
+      } else if (msg.includes('fetch') || msg.includes('network')) {
+        setError('Keine Verbindung zum Server. Prüf dein Internet und versuch es nochmal.')
+      } else {
+        setError('Bei der Video-Erstellung ist ein Fehler aufgetreten. Bitte versuch es nochmal.')
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  const renderVideo = async (scenes) => {
+  const renderVideo = async (scenes, audioBuffers = null, musicBuffer = null) => {
+    setStatusMsg('Video-Engine wird geladen...')
     const ffmpeg = await getFFmpeg()
     const W = 1080
     const H = 1920
     const FPS = 30
 
-    const bgImages = []
-    for (const scene of scenes) {
+    setStatusMsg(`${scenes.length} Bilder werden parallel geladen...`)
+    const bgImages = await Promise.all(scenes.map(async (scene) => {
       if (scene.backgroundUrl) {
         try {
-          const img = await loadBackgroundImage(scene.backgroundUrl)
-          bgImages.push(img)
+          return await loadBackgroundImage(scene.backgroundUrl)
         } catch {
-          bgImages.push(null)
+          return null
         }
-      } else {
-        bgImages.push(null)
       }
-    }
+      return null
+    }))
 
     setStatusMsg('Szenen werden gerendert...')
 
@@ -248,6 +309,7 @@ export default function TikTokVideoPage() {
     const ctx = canvas.getContext('2d')
 
     for (let i = 0; i < scenes.length; i++) {
+      setStatusMsg(`Szene ${i + 1}/${scenes.length} wird gerendert...`)
       const scene = scenes[i]
       const { text1, text2, colors } = scene
       const bgImg = bgImages[i]
@@ -309,46 +371,149 @@ export default function TikTokVideoPage() {
 
     setStatusMsg('Video wird komprimiert...')
 
+    const hasAudio = audioBuffers && audioBuffers.some(b => b !== null)
+    const hasMusic = musicBuffer !== null
     const filterParts = []
     const concatInputs = []
     const inputArgs = []
+    let inputIdx = 0
 
     scenes.forEach((scene, i) => {
       inputArgs.push('-i', `scene_${i}.png`)
       const frames = Math.round(scene.duration * FPS)
       filterParts.push(`[${i}:v]loop=loop=${frames - 1}:size=1,setpts=PTS-STARTPTS[v${i}]`)
       concatInputs.push(`[v${i}]`)
+      inputIdx++
     })
 
-    const filterComplex = filterParts.join(';') + ';' +
-      concatInputs.join('') + `concat=n=${scenes.length}:v=1:a=0[out]`
+    if (hasMusic) {
+      const mb = await musicBuffer.arrayBuffer()
+      await ffmpeg.writeFile('music.mp3', new Uint8Array(mb))
+      inputArgs.push('-i', 'music.mp3')
+      const musicIdx = inputIdx++
+      filterParts.push(`[${musicIdx}:a]volume=0.15,afade=t=in:st=0:d=2,afade=t=out:st=${totalDuration - 2}:d=2[music]`)
+    }
 
-    const args = [
-      ...inputArgs,
-      '-filter_complex', filterComplex,
-      '-map', '[out]',
-      '-r', String(FPS),
-      '-c:v', 'libx264',
-      '-preset', 'fast',
-      '-crf', '23',
-      '-pix_fmt', 'yuv420p',
-      '-movflags', '+faststart',
-      'output.mp4'
-    ]
+    if (hasAudio) {
+      for (let i = 0; i < scenes.length; i++) {
+        if (audioBuffers[i]) {
+          const ab = await audioBuffers[i].arrayBuffer()
+          await ffmpeg.writeFile(`audio_${i}.mp3`, new Uint8Array(ab))
+          inputArgs.push('-i', `audio_${i}.mp3`)
+        } else {
+          inputArgs.push('-f', 'lavfi', '-i', `anullsrc=r=24000:cl=mono:d=${scenes[i].duration}`)
+        }
+        inputIdx++
+      }
 
-    await ffmpeg.exec(args)
+      const audioInputs = scenes.map((_, i) => `[${inputIdx - scenes.length + i}:a]`)
+      filterParts.push(`${audioInputs.join('')}concat=n=${scenes.length}:v=0:a=1[voice]`)
+
+      if (hasMusic) {
+        filterParts.push('[voice][music]amix=inputs=2:duration=longest:dropout_transition=0[aout]')
+      } else {
+        filterParts.push('[voice]acopy[aout]')
+      }
+    } else if (hasMusic) {
+      filterParts.push('[music]acopy[aout]')
+    }
+
+    const videoFilter = concatInputs.join('') + `concat=n=${scenes.length}:v=1:a=0[vout]`
+
+    let finalFilter = filterParts.join(';') + ';' + videoFilter
+
+    if (hasAudio || hasMusic) {
+      const args = [
+        ...inputArgs,
+        '-filter_complex', finalFilter,
+        '-map', '[vout]', '-map', '[aout]',
+        '-r', String(FPS),
+        '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+        '-c:a', 'aac', '-b:a', '128k',
+        '-pix_fmt', 'yuv420p',
+        '-movflags', '+faststart',
+        '-shortest',
+        'output.mp4'
+      ]
+      await ffmpeg.exec(args)
+    } else {
+      const noAudioFilter = concatInputs.join('') + `concat=n=${scenes.length}:v=1:a=0[out]`
+      const noAudioComplex = filterParts.join(';') + ';' + noAudioFilter
+      const args = [
+        ...inputArgs,
+        '-filter_complex', noAudioComplex,
+        '-map', '[out]',
+        '-r', String(FPS),
+        '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+        '-pix_fmt', 'yuv420p',
+        '-movflags', '+faststart',
+        'output.mp4'
+      ]
+      await ffmpeg.exec(args)
+    }
 
     const data = await ffmpeg.readFile('output.mp4')
     const blob = new Blob([data.buffer], { type: 'video/mp4' })
-      setVideoBlob(blob)
-      gtag('event', 'content_generated', { source: 'tiktok_video' })
+    setVideoBlob(blob)
+    gtag('event', 'content_generated', { source: 'tiktok_video' })
     setVideoUrl(URL.createObjectURL(blob))
     setStatusMsg('')
+    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 200)
 
     for (let i = 0; i < scenes.length; i++) {
       await ffmpeg.deleteFile(`scene_${i}.png`).catch(() => {})
+      await ffmpeg.deleteFile(`audio_${i}.mp3`).catch(() => {})
     }
+    await ffmpeg.deleteFile('music.mp3').catch(() => {})
     await ffmpeg.deleteFile('output.mp4').catch(() => {})
+
+    generatePlatformCaptions(text)
+  }
+
+  const DEPLOY_PLATFORMS = [
+    { id: 'tiktok', label: 'TikTok', icon: '🎵', color: '#000000', url: 'https://www.tiktok.com/upload', hashtags: '#fyp #viral #trending #happiness #wellbeing' },
+    { id: 'instagram', label: 'Instagram Reels', icon: '📷', color: '#E4405F', url: 'https://www.instagram.com/', hashtags: '#reels #fyp #happiness #wellness #selfcare #motivation' },
+    { id: 'youtube', label: 'YouTube Shorts', icon: '▶️', color: '#FF0000', url: 'https://studio.youtube.com/channel/videos', hashtags: '#shorts #youtubeshorts #fyp #happiness' },
+    { id: 'facebook', label: 'Facebook Reel', icon: '👤', color: '#1877F2', url: 'https://www.facebook.com/reels/', hashtags: '#reels #fyp #happiness #wellbeing' },
+    { id: 'x', label: 'X / Twitter', icon: '✖', color: '#000000', url: 'https://twitter.com/compose/tweet', hashtags: '#fyp #happiness' }
+  ]
+
+  const generatePlatformCaptions = async (videoText) => {
+    setGeneratingCaptions(true)
+    const captions = {}
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token || ''
+
+      for (const platform of DEPLOY_PLATFORMS) {
+        try {
+          const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+              message: `Erstelle eine kurze, knackige Caption fuer einen ${platform.label}-Post basierend auf diesem Video-Text:\n\n"${videoText}"\n\nRegeln: Max 150 Zeichen, emoticon am Anfang, ${platform.hashtags} am Ende. Deutsch. Kein Markdown.`,
+              systemPrompt: 'Du bist ein Social-Media-Experte. Schreibe kurze, mitreissende Captions.',
+              userId: user?.id || '',
+              history: []
+            })
+          })
+          if (response.ok) {
+            const data = await response.json()
+            captions[platform.id] = data.response || ''
+          } else {
+            captions[platform.id] = `Neues Video von Happiness 🎬✨\n\n${videoText.substring(0, 100)}...\n\n${platform.hashtags}`
+          }
+        } catch {
+          captions[platform.id] = `Neues Video von Happiness 🎬✨\n\n${videoText.substring(0, 100)}...\n\n${platform.hashtags}`
+        }
+      }
+    } catch {
+      for (const platform of DEPLOY_PLATFORMS) {
+        captions[platform.id] = `Neues Video von Happiness 🎬✨\n\n${videoText.substring(0, 100)}...\n\n${platform.hashtags}`
+      }
+    }
+    setPlatformCaptions(captions)
+    setGeneratingCaptions(false)
   }
 
   const remaining = FREE_LIMIT - freeVideoUsed
@@ -411,6 +576,54 @@ export default function TikTokVideoPage() {
               </div>
             </div>
 
+            <div className="tiktok-voiceover-group">
+              <div className="tiktok-voiceover-header">
+                <label className="tiktok-label" style={{ margin: 0 }}>🎙️ Voiceover (Text-to-Speech)</label>
+                <button
+                  className={`tiktok-toggle ${voiceover ? 'active' : ''}`}
+                  onClick={() => setVoiceover(!voiceover)}
+                  type="button"
+                >
+                  <span className="tiktok-toggle-thumb" />
+                </button>
+              </div>
+              {voiceover && (
+                <div className="tiktok-voiceover-options">
+                  <label className="tiktok-sublabel">Stimme wählen:</label>
+                  <select className="tiktok-voice-select" value={voice} onChange={e => setVoice(e.target.value)}>
+                    <option value="de-DE-KatjaNeural">Katja — Weiblich, klar</option>
+                    <option value="de-DE-ConradNeural">Conrad — Männlich, ruhig</option>
+                    <option value="de-DE-AmalaNeural">Amala — Weiblich, jung</option>
+                    <option value="de-DE-KillianNeural">Killian — Männlich, jung</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="tiktok-voiceover-group">
+              <div className="tiktok-voiceover-header">
+                <label className="tiktok-label" style={{ margin: 0 }}>🎵 Hintergrundmusik</label>
+                <button
+                  className={`tiktok-toggle ${music ? 'active' : ''}`}
+                  onClick={() => setMusic(!music)}
+                  type="button"
+                >
+                  <span className="tiktok-toggle-thumb" />
+                </button>
+              </div>
+              {music && (
+                <div className="tiktok-voiceover-options">
+                  <label className="tiktok-sublabel">Stimmung wählen:</label>
+                  <select className="tiktok-voice-select" value={musicMood} onChange={e => setMusicMood(e.target.value)}>
+                    <option value="motivation">Motivierend</option>
+                    <option value="calm">Ruhig & Entspannt</option>
+                    <option value="upbeat">Fröhlich & Energiereich</option>
+                    <option value="dramatic">Dramatisch & Episch</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
             <button
               className="btn btn-primary tiktok-create-btn"
               onClick={createVideo}
@@ -462,10 +675,113 @@ export default function TikTokVideoPage() {
           </div>
         )}
 
-        {scenes && !loading && !showPaywall && (
+        {videoUrl && !showPaywall && (
+          <div className="tiktok-result">
+            <div className="tiktok-result-ready">
+              <Check size={20} /> Video ist fertig!
+            </div>
+
+            <div className="tiktok-video-wrapper">
+              <video
+                ref={videoRef}
+                src={videoUrl}
+                controls
+                playsInline
+                className="tiktok-video-player"
+              />
+            </div>
+
+            <div className="tiktok-deploy-section">
+              <h3 className="tiktok-deploy-title"><Share2 size={18} /> Jetzt posten</h3>
+              <p className="tiktok-deploy-subtitle">Wähle eine Plattform. Caption wird automatisch erstellt.</p>
+              {generatingCaptions && (
+                <div className="tiktok-deploy-loading">Captions werden generiert...</div>
+              )}
+              {DEPLOY_PLATFORMS.map(platform => (
+                <div key={platform.id} className="tiktok-deploy-card" style={{ borderLeftColor: platform.color }}>
+                  <div className="tiktok-deploy-header">
+                    <span className="tiktok-deploy-icon">{platform.icon}</span>
+                    <span className="tiktok-deploy-label">{platform.label}</span>
+                  </div>
+                  {platformCaptions[platform.id] && (
+                    <div className="tiktok-deploy-caption">
+                      <div className="tiktok-deploy-caption-text">{platformCaptions[platform.id]}</div>
+                      <button
+                        className="tiktok-deploy-copy"
+                        onClick={async () => {
+                          try { await navigator.clipboard.writeText(platformCaptions[platform.id]) } catch {
+                            const ta = document.createElement('textarea')
+                            ta.value = platformCaptions[platform.id]
+                            document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta)
+                          }
+                        }}
+                      >
+                        <Copy size={14} /> Kopieren
+                      </button>
+                    </div>
+                  )}
+                  <a
+                    href={platform.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="tiktok-deploy-btn"
+                    style={{ background: platform.color }}
+                    onClick={() => {
+                      gtag('event', 'deploy_click', { platform: platform.id, source: 'tiktok_video' })
+                      downloadBlob(videoBlob, `tiktok-video-${Date.now()}.mp4`)
+                    }}
+                  >
+                    <ExternalLink size={14} /> Bei {platform.label} hochladen
+                  </a>
+                </div>
+              ))}
+            </div>
+
+            <div className="tiktok-result-actions">
+              <button className="btn btn-outline" onClick={() => { downloadBlob(videoBlob, `tiktok-video-${Date.now()}.mp4`) }}>
+                <Download size={16} /> Video herunterladen
+              </button>
+              <button className="btn btn-outline" onClick={() => {
+                setScenes(null)
+                setVideoBlob(null)
+                setPlatformCaptions({})
+                if (videoUrl) URL.revokeObjectURL(videoUrl)
+                setVideoUrl(null)
+                setError('')
+              }}>
+                Neues Video erstellen
+              </button>
+            </div>
+
+            {scenes && (
+              <details className="tiktok-scenes-collapsible">
+                <summary>Skript ansehen ({scenes.length} Szenen, {totalDuration}s)</summary>
+                <div className="tiktok-scenes-list">
+                  {scenes.map((scene, i) => (
+                    <div key={i} className="tiktok-scene-card" style={{ borderLeftColor: scene.colors.accent }}>
+                      <span className="tiktok-scene-num">{i + 1}</span>
+                      <div className="tiktok-scene-text">
+                        <span className="tiktok-scene-text1">{scene.text1}</span>
+                        {scene.text2 && <span className="tiktok-scene-text2">{scene.text2}</span>}
+                      </div>
+                      <span className="tiktok-scene-dur">{scene.duration}s</span>
+                      {scene.backgroundUrl && (
+                        <img src={scene.backgroundUrl} alt="" className="tiktok-scene-thumb" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+
+            <ShareBar text={text} title="Mein TikTok-Video" downloadBlob={videoBlob} downloadFilename={`tiktok-video-${Date.now()}.mp4`} />
+          </div>
+        )}
+
+        {scenes && !loading && !showPaywall && !videoUrl && (
           <div className="tiktok-scenes-preview">
             <div className="tiktok-scenes-header">
-              <h3>Skript: {totalDuration}s Video ({scenes.length} Szenen)</h3>
+              <h3>Skript: {totalDuration}s Video ({scenes.length} Szenen) {voiceover && <span className="tiktok-voiceover-badge">🎙️ Voiceover</span>} {music && <span className="tiktok-voiceover-badge" style={{ background: '#6d28d9' }}>🎵 Musik</span>}</h3>
               <CopyButton
                 text={scenes.map((s, i) => `${i + 1}. ${s.text1}${s.text2 ? ` — ${s.text2}` : ''} (${s.duration}s)`).join('\n')}
                 label="Kopieren"
@@ -489,35 +805,7 @@ export default function TikTokVideoPage() {
           </div>
         )}
 
-        {videoUrl && !showPaywall && (
-          <div className="tiktok-result">
-            <h3>Dein Video</h3>
-            <div className="tiktok-video-wrapper">
-              <video
-                ref={videoRef}
-                src={videoUrl}
-                controls
-                playsInline
-                className="tiktok-video-player"
-              />
-            </div>
-            <div className="tiktok-result-actions">
-              <button className="btn btn-primary" onClick={() => { gtag('event', 'project_saved', { source: 'tiktok_video' }); downloadBlob(videoBlob, `tiktok-video-${Date.now()}.mp4`); }}>
-                <Download size={18} /> Herunterladen
-              </button>
-              <button className="btn btn-outline" onClick={() => {
-                setScenes(null)
-                setVideoBlob(null)
-                if (videoUrl) URL.revokeObjectURL(videoUrl)
-                setVideoUrl(null)
-                setError('')
-              }}>
-                Neues Video erstellen
-              </button>
-            </div>
-            <ShareBar text={text} title="Mein TikTok-Video" downloadBlob={videoBlob} downloadFilename={`tiktok-video-${Date.now()}.mp4`} />
-          </div>
-        )}
+
       </div>
     </div>
   )

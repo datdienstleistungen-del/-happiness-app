@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Copy, Check, ExternalLink, PenTool, MessageSquare } from 'lucide-react'
+import { ArrowLeft, Copy, Check, PenTool, MessageSquare } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { getChatEndpoint } from '../lib/hit'
@@ -64,7 +64,7 @@ Format: Fliesstext, kein Markdown. Nur den fertigen Text ausgeben.`
     url: 'https://www.facebook.com/',
     prompt: `Rolle: Facebook-Content-Writer fuer Happiness (happiness-eu.netlify.app).
 Aufgabe: Entwurf + Coach-Feedback in einen postfertigen Facebook-Post umwandeln.
-Stil: Warmherzig,社区-orientiert, wie ein Freund empfiehlt. Kein KI-Sound.
+Stil: Warmherzig, community-orientiert, wie ein Freund empfiehlt. Kein KI-Sound.
 Struktur: Hook, 3-5 Absätze, CTA am Ende. Happiness natürlich erwaehnen, z.B. "Hab ich ueber Happiness entdeckt".
 Format: Fliesstext, kein Markdown. Nur den fertigen Text ausgeben.`
   },
@@ -86,6 +86,7 @@ export default function PostPreparationPage() {
   const { user } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
+
   const draft = location.state?.draft || localStorage.getItem('happiness-draft') || ''
   const feedback = location.state?.feedback || (() => {
     try { return JSON.parse(localStorage.getItem('happiness-feedback') || '""') } catch { return '' }
@@ -97,16 +98,13 @@ export default function PostPreparationPage() {
 
   const generatePost = (platform) => {
     if (loading[platform.id]) return
-
     window.open(platform.url, '_blank')
-
     doGeneratePost(platform)
   }
 
   const doGeneratePost = async (platform) => {
     setLoading(prev => ({ ...prev, [platform.id]: true }))
     setError('')
-    console.log(`Generating ${platform.label}...`)
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -128,16 +126,13 @@ export default function PostPreparationPage() {
         })
       })
 
-      console.log(`${platform.label} response:`, response.status)
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}))
-        console.error(`API Error ${response.status}:`, errData)
         throw new Error(errData.error || `API Fehler ${response.status}`)
       }
 
       const data = await response.json()
       if (!data.response) {
-        console.error('Empty response:', data)
         throw new Error('Leere Antwort von der KI')
       }
       setGeneratedPosts(prev => ({ ...prev, [platform.id]: data.response }))
@@ -154,7 +149,14 @@ export default function PostPreparationPage() {
       }
     } catch (err) {
       console.error(`Generate ${platform.id} error:`, err)
-      setError(`Fehler bei ${platform.label}: ${err.message}`)
+      const msg = err.message || ''
+      if (msg.includes('limit') || msg.includes('429')) {
+        setError('Zu viele Anfragen gerade. Bitte warte kurz und versuch es nochmal.')
+      } else if (msg.includes('fetch') || msg.includes('network')) {
+        setError('Keine Verbindung zum Server. Prüf dein Internet und versuch es nochmal.')
+      } else {
+        setError(`Beim Generieren fuer ${platform.label} ist ein Fehler aufgetreten. Bitte versuch es nochmal.`)
+      }
     } finally {
       setLoading(prev => ({ ...prev, [platform.id]: false }))
     }
@@ -181,7 +183,7 @@ export default function PostPreparationPage() {
       <div className="post-prep-container">
         <div className="post-prep-header">
           <button className="post-prep-back" onClick={() => navigate('/creator-academy')}>
-            <ArrowLeft size={18} /> Zurück zum Feedback
+            <ArrowLeft size={18} /> Zurueck zum Feedback
           </button>
           <h1>Post vorbereiten</h1>
           <p className="post-prep-subtitle">Klick eine Plattform. Bekommst den fertigen Post. Direkt teilen.</p>
@@ -195,12 +197,14 @@ export default function PostPreparationPage() {
               </div>
               <div className="post-prep-source-text">{draft}</div>
             </div>
-            <div className="post-prep-source-section">
-              <div className="post-prep-source-label">
-                <MessageSquare size={14} /> Feedback
+            {feedback && (
+              <div className="post-prep-source-section">
+                <div className="post-prep-source-label">
+                  <MessageSquare size={14} /> Feedback
+                </div>
+                <div className="post-prep-source-text">{feedback}</div>
               </div>
-              <div className="post-prep-source-text">{feedback}</div>
-            </div>
+            )}
           </div>
 
           <div className="post-prep-platforms">
@@ -223,7 +227,7 @@ export default function PostPreparationPage() {
                       {generatedPosts[platform.id]}
                     </div>
                     <div className="post-prep-result-actions">
-                      <CopyButton text={generatedPosts[platform.id]} />
+                      <CopyBtn text={generatedPosts[platform.id]} />
                       <ShareBar text={generatedPosts[platform.id]} title={`${platform.label} Post`} />
                     </div>
                   </div>
@@ -241,7 +245,7 @@ export default function PostPreparationPage() {
   )
 }
 
-function CopyButton({ text }) {
+function CopyBtn({ text }) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {

@@ -145,7 +145,14 @@ Antworte immer auf Deutsch. Antworte in klarem Fliesstext, wie ein professionell
       setFreeContentUsed(prev => prev + 1)
     } catch (err) {
       console.error('Feedback error:', err)
-      setError(err.message || 'Fehler beim Abrufen des Feedbacks.')
+      const msg = err.message || ''
+      if (msg.includes('limit') || msg.includes('429')) {
+        setError('Zu viele Anfragen gerade. Bitte warte kurz und versuch es nochmal.')
+      } else if (msg.includes('fetch') || msg.includes('network')) {
+        setError('Keine Verbindung zum Server. Prüf dein Internet und versuch es nochmal.')
+      } else {
+        setError('Beim Abrufen des Feedbacks ist ein Fehler aufgetreten. Bitte versuch es nochmal.')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -167,13 +174,13 @@ Antworte immer auf Deutsch. Antworte in klarem Fliesstext, wie ein professionell
       if (data?.url) {
         window.location.href = data.url
       } else if (response.status === 502) {
-        setError('Checkout-Fehler: Server-Fehler (502) — STRIPE_SECRET_KEY pruefen')
+        setError('Das Zahlungssystem hat gerade Probleme. Bitte versuch es in ein paar Minuten nochmal.')
       } else {
-        setError('Checkout-Fehler: ' + (data?.error || `HTTP ${response.status}`))
+        setError('Beim Checkout ist ein Fehler aufgetreten. Bitte versuch es nochmal.')
       }
     } catch (error) {
       console.error('Checkout error:', error)
-      setError('Verbindungsfehler beim Checkout: ' + error.message)
+      setError('Keine Verbindung zum Server. Prüf dein Internet und versuch es nochmal.')
     }
   }
 

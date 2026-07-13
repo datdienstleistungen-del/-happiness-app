@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import {
   Sparkles, User, Download, Trash2, X, Heart, MapPin, Briefcase,
-  Lock, ChefHat, Car, Users, Send, Brain, Wrench, MessageCircle, Plus, ChevronLeft
+  Lock, ChefHat, Car, Users, Send, Brain, Wrench, MessageCircle, Plus, ChevronLeft, Menu
 } from 'lucide-react'
 import { getChatEndpoint } from '../lib/hit'
 import { useAuth } from '../context/AuthContext'
@@ -38,6 +38,28 @@ export default function AIChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && showSidebar && window.innerWidth <= 768) {
+        setShowSidebar(false)
+      }
+    }
+    const handleResize = () => {
+      if (window.innerWidth > 768) {
+        setShowSidebar(true)
+      } else {
+        setShowSidebar(false)
+      }
+    }
+    document.addEventListener('keydown', handleEscape)
+    window.addEventListener('resize', handleResize)
+    handleResize()
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [showSidebar])
 
   const loadConversation = async (convId) => {
     setConversationId(convId)
@@ -510,8 +532,20 @@ STIL: Antworte in klarem Fliesstext, wie ein professionelles Softwareunternehmen
     } catch (error) {
       console.error('AI Error:', error)
       
-      const errorMsg = error.message || 'Unbekannter Fehler'
-      setMessages(prev => [...prev, { role: 'assistant', content: `⚠️ Fehler: ${errorMsg}\n\nFalls das Problem weiterhin auftritt, melde dich beim Support.` }])
+      const errorMsg = error.message || ''
+      let friendlyMsg = 'Etwas ist schiefgelaufen. Versuch es bitte nochmal.'
+
+      if (errorMsg.includes('limit') || errorMsg.includes('429') || errorMsg.includes('rate')) {
+        friendlyMsg = 'Zu viele Anfragen gerade. Bitte warte kurz und versuch es dann nochmal.'
+      } else if (errorMsg.includes('fetch') || errorMsg.includes('network') || errorMsg.includes('Failed')) {
+        friendlyMsg = 'Keine Verbindung zum Server. Prüf dein Internet und versuch es nochmal.'
+      } else if (errorMsg.includes('502') || errorMsg.includes('503') || errorMsg.includes('500')) {
+        friendlyMsg = 'Der Server hat gerade Probleme. Bitte versuch es in ein paar Minuten nochmal.'
+      } else if (errorMsg.includes('API')) {
+        friendlyMsg = 'Das KI-System ist gerade ausgelastet. Bitte versuch es in kurzem nochmal.'
+      }
+
+      setMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${friendlyMsg}\n\nFalls das Problem weiterhin auftritt, melde dich beim Support.` }])
     } finally {
       setIsLoading(false)
     }
@@ -621,10 +655,18 @@ STIL: Antworte in klarem Fliesstext, wie ein professionelles Softwareunternehmen
 
   return (
     <div className="ai-chat-page sidebar-open">
-      <div className="ai-sidebar">
+      {showSidebar && window.innerWidth <= 768 && (
+        <div className="ai-sidebar-overlay" onClick={() => setShowSidebar(false)} />
+      )}
+      <div className={`ai-sidebar ${showSidebar ? 'open' : ''}`}>
         <div className="ai-sidebar-header">
           <strong>Chats</strong>
-          <button className="ai-sidebar-new" onClick={startNewChat}>+ Neu</button>
+          <div className="ai-sidebar-header-actions">
+            <button className="ai-sidebar-new" onClick={startNewChat}>+ Neu</button>
+            <button className="ai-sidebar-close" onClick={() => setShowSidebar(false)}>
+              <X size={16} />
+            </button>
+          </div>
         </div>
         <div className="ai-sidebar-list">
           {conversations.length === 0 && (
@@ -645,6 +687,9 @@ STIL: Antworte in klarem Fliesstext, wie ein professionelles Softwareunternehmen
       </div>
       <div className="ai-main">
         <div className="ai-topbar">
+          <button className="ai-sidebar-toggle" onClick={() => setShowSidebar(!showSidebar)}>
+            <Menu size={18} />
+          </button>
           <div className="hit-branding-compact">
             <span className="hit-compact-h">H</span><span className="hit-compact-rest">.I.T.</span>
           </div>

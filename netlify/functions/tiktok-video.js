@@ -1,6 +1,6 @@
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || ''
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || ''
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_tArx0o4FeYQ3HthZ7h7hCQ_fTJslkMa'
 const PEXELS_API_KEY = process.env.PEXELS_API_KEY
 
 const DEFAULT_STOCK = [
@@ -33,6 +33,8 @@ const supabaseFetch = async (path, options = {}) => {
 }
 
 exports.handler = async (event) => {
+  console.log('[TIKTOK] Function called, method:', event.httpMethod)
+
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
   }
@@ -40,6 +42,7 @@ exports.handler = async (event) => {
   const authHeader = event.headers.authorization || ''
   const token = authHeader.replace('Bearer ', '')
   if (!token) {
+    console.log('[TIKTOK] No token provided')
     return { statusCode: 401, body: JSON.stringify({ error: 'Nicht authentifiziert' }) }
   }
 
@@ -48,20 +51,36 @@ exports.handler = async (event) => {
     const authRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
     })
+    console.log('[TIKTOK] Auth response status:', authRes.status)
     if (authRes.ok) {
       const userData = await authRes.json()
       userId = userData.id
+      console.log('[TIKTOK] userId:', userId)
+    } else {
+      const errBody = await authRes.text().catch(() => '')
+      console.log('[TIKTOK] Auth failed:', authRes.status, errBody.substring(0, 200))
     }
   } catch (e) {
-    console.error('Auth check failed:', e.message)
+    console.error('[TIKTOK] Auth check failed:', e.message)
   }
 
   if (!userId) {
+    console.log('[TIKTOK] No userId, returning 401')
     return { statusCode: 401, body: JSON.stringify({ error: 'Ungueltiges Token' }) }
   }
 
-  const { text, imageUrl } = JSON.parse(event.body)
+  let body
+  try {
+    body = JSON.parse(event.body)
+  } catch (e) {
+    console.log('[TIKTOK] Body parse error:', e.message)
+    return { statusCode: 400, body: JSON.stringify({ error: 'Ungueltige Daten' }) }
+  }
+  const { text, imageUrl } = body
+  console.log('[TIKTOK] Text length:', text?.length, 'imageUrl:', imageUrl ? 'yes' : 'no')
+
   if (!text || text.trim().length < 3) {
+    console.log('[TIKTOK] Text too short')
     return { statusCode: 400, body: JSON.stringify({ error: 'Text ist zu kurz (min. 3 Zeichen)' }) }
   }
 
@@ -70,8 +89,10 @@ exports.handler = async (event) => {
     `/rest/v1/ai_settings?user_id=eq.${userId}&select=is_premium,free_video_used`
   )
   const settings = Array.isArray(settingsRes) ? settingsRes[0] : settingsRes
+  console.log('[TIKTOK] Settings:', JSON.stringify(settings))
 
   if (settings && !settings.is_premium && (settings.free_video_used || 0) >= 3) {
+    console.log('[TIKTOK] Free limit reached')
     return {
       statusCode: 402,
       headers: {
@@ -86,8 +107,10 @@ exports.handler = async (event) => {
   // Step 1: Generate script from Groq
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'GROQ_API_KEY nicht konfiguriert' }) }
+    console.log('[TIKTOK] No GROQ_API_KEY')
+    return { statusCode: 500, body: JSON.stringify({ error: 'KI-Service nicht verfuegbar. Bitte spaeter erneut versuchen.' }) }
   }
+  console.log('[TIKTOK] Calling Groq API...')
 
   const systemPrompt = `Rolle: TikTok-Video-Scripter.
 Aufgabe: Produktbeschreibung in vertikales 9:16 Video (max 60s) umwandeln.
@@ -104,7 +127,7 @@ Nur valides JSON ausgeben.`
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'openai/gpt-oss-20b',
+      model: 'llama-3.3-70b-versatile',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `Erstelle ein TikTok-Video für: ${text}` }
@@ -117,7 +140,10 @@ Nur valides JSON ausgeben.`
   if (!aiRes.ok) {
     const errText = await aiRes.text()
     console.error(`[TIKTOK VIDEO] Groq API error ${aiRes.status}:`, errText)
-    return { statusCode: 502, body: JSON.stringify({ error: `AI service error (${aiRes.status}): ${errText.substring(0, 200)}` }) }
+    if (aiRes.status === 429) {
+      return { statusCode: 429, body: JSON.stringify({ error: 'Zu viele Anfragen. Bitte warte kurz und versuch es nochmal.' }) }
+    }
+    return { statusCode: 502, body: JSON.stringify({ error: 'KI-Service hat gerade Probleme. Bitte versuch es in kurzem nochmal.' }) }
   }
 
   const data = await aiRes.json()

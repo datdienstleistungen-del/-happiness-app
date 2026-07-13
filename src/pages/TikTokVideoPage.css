@@ -268,6 +268,38 @@
   gap: 16px;
 }
 
+.tiktok-result-ready {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 20px;
+  background: #085041;
+  color: white;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.tiktok-settings-summary {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tiktok-setting-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  background: #10b981;
+  color: white;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
 .tiktok-result h3 {
   font-size: 1rem;
   font-weight: 600;
@@ -451,4 +483,221 @@
   border-radius: 10px;
   color: #dc2626;
   font-size: 0.85rem;
+}
+
+/* Voiceover */
+.tiktok-voiceover-group {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.tiktok-voiceover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tiktok-voiceover-options {
+  margin-top: 10px;
+}
+
+.tiktok-sublabel {
+  display: block;
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.tiktok-toggle {
+  position: relative;
+  width: 52px;
+  height: 28px;
+  border-radius: 14px;
+  border: none;
+  background: #d1d5db;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.tiktok-toggle.active {
+  background: var(--color-petrol, #085041);
+}
+
+.tiktok-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform 0.2s;
+  pointer-events: none;
+}
+
+.tiktok-toggle.active .tiktok-toggle-thumb {
+  transform: translateX(24px);
+}
+
+.tiktok-toggle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+}
+
+.tiktok-voice-select {
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: #1a1a2e;
+  background: white;
+  cursor: pointer;
+}
+
+.tiktok-voiceover-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: #085041;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* Deploy Section */
+.tiktok-deploy-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tiktok-deploy-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 8px 0 0;
+}
+
+.tiktok-deploy-subtitle {
+  font-size: 0.82rem;
+  color: #6b7280;
+  margin: -4px 0 0;
+}
+
+.tiktok-deploy-loading {
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.85rem;
+  padding: 16px;
+}
+
+.tiktok-deploy-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-left: 4px solid;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tiktok-deploy-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tiktok-deploy-icon {
+  font-size: 1.3rem;
+}
+
+.tiktok-deploy-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1a1a2e;
+  flex: 1;
+}
+
+.tiktok-deploy-caption {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.tiktok-deploy-caption-text {
+  font-size: 0.82rem;
+  color: #374151;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  margin-bottom: 8px;
+}
+
+.tiktok-deploy-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.tiktok-deploy-copy:hover {
+  background: #f3f4f6;
+}
+
+.tiktok-deploy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+  text-decoration: none;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.tiktok-deploy-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.tiktok-deploy-btn:active {
+  transform: translateY(0);
+}
+
+.tiktok-scenes-collapsible {
+  margin-top: 8px;
+}
+
+.tiktok-scenes-collapsible summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #6b7280;
+  padding: 8px 0;
+  user-select: none;
+}
+
+.tiktok-scenes-collapsible summary:hover {
+  color: #374151;
 }

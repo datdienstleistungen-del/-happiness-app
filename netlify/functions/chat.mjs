@@ -359,7 +359,7 @@ export const handler = async (event) => {
               method: 'POST',
               headers: { 'Authorization': `Bearer ${textApiKey}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                model: 'openai/gpt-oss-20b',
+                model: 'llama-3.3-70b-versatile',
                 messages: buildMessages(historyLimit, true),
                 temperature: 0.7,
                 max_tokens: 4096
@@ -461,7 +461,7 @@ export const handler = async (event) => {
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({
-                model: 'openai/gpt-oss-20b',
+                model: 'llama-3.3-70b-versatile',
                 messages: buildMessages(historyLimit),
                 temperature: 0.7,
                 max_tokens: 4096

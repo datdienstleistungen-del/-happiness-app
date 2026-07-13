@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || ''
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_tArx0o4FeYQ3HthZ7h7hCQ_fTJslkMa'
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
