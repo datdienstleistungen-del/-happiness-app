@@ -30,6 +30,7 @@ export default function TikTokVideoPage() {
   const [voice, setVoice] = useState('de-DE-KatjaNeural')
   const [music, setMusic] = useState(false)
   const [musicMood, setMusicMood] = useState('motivation')
+  const [pipelineScenes, setPipelineScenes] = useState(null)
   const [platformCaptions, setPlatformCaptions] = useState({})
   const [generatingCaptions, setGeneratingCaptions] = useState(false)
   const FREE_LIMIT = 3
@@ -53,26 +54,11 @@ export default function TikTokVideoPage() {
     const pipelineResult = location.state?.pipelineResult
     if (pipelineResult?.scenes && !pipelineUsed.current) {
       pipelineUsed.current = true
-      setScenes(pipelineResult.scenes)
+      setText(location.state?.postText || '')
+      setPipelineScenes(pipelineResult.scenes)
       setTotalDuration(pipelineResult.totalDuration || 0)
     }
   }, [])
-
-  const renderingStarted = useRef(false)
-  useEffect(() => {
-    if (scenes && !loading && !videoBlob && !selectedImage && !renderingStarted.current) {
-      renderingStarted.current = true
-      setLoading(true)
-      setError('')
-      renderVideo(scenes)
-        .catch(err => {
-          console.error('Pipeline render error:', err)
-          setError('Video konnte nicht gerendert werden. Bitte versuch es nochmal.')
-          renderingStarted.current = false
-        })
-        .finally(() => setLoading(false))
-    }
-  }, [scenes])
 
   useEffect(() => {
     return () => {
@@ -174,66 +160,75 @@ export default function TikTokVideoPage() {
     setVideoUrl(null)
 
     try {
-      if (selectedImage) {
-        setStatusMsg('Bild wird moderiert...')
-        const imageBase64 = await new Promise((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => resolve(reader.result)
-          reader.onerror = reject
-          reader.readAsDataURL(selectedImage)
-        })
-        
+      let scenesToUse = pipelineScenes
+
+      if (scenesToUse) {
+        console.log('[createVideo] Using pipeline scenes, skipping API call', { count: scenesToUse.length })
+        setScenes(scenesToUse)
+        setFreeVideoUsed(prev => prev + 1)
+      } else {
+        if (selectedImage) {
+          setStatusMsg('Bild wird moderiert...')
+          const imageBase64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => resolve(reader.result)
+            reader.onerror = reject
+            reader.readAsDataURL(selectedImage)
+          })
+          
+          const token = (await supabase.auth.getSession()).data.session?.access_token
+          const modRes = await fetch('/api/moderate-image', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ image: imageBase64 })
+          })
+          const modData = await modRes.json()
+          console.log('Moderation result:', modData)
+          if (!modRes.ok || !modData.allowed) {
+            throw new Error(modData.reason || 'Dieses Bild kann nicht verwendet werden.')
+          }
+        }
+
+        const imageUrl = selectedImage ? await uploadImage() : null
+
         const token = (await supabase.auth.getSession()).data.session?.access_token
-        const modRes = await fetch('/api/moderate-image', {
+        const res = await fetch('/api/tiktok-video', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ image: imageBase64 })
+          body: JSON.stringify({ text: text.trim(), imageUrl })
         })
-        const modData = await modRes.json()
-        console.log('Moderation result:', modData)
-        if (!modRes.ok || !modData.allowed) {
-          throw new Error(modData.reason || 'Dieses Bild kann nicht verwendet werden.')
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: 'Unbekannter Fehler' }))
+          if (res.status === 402) {
+            setShowPaywall(true)
+            setLoading(false)
+            return
+          }
+          throw new Error(err.error || `Fehler bei der Video-Erstellung (${res.status})`)
         }
+
+        const data = await res.json()
+        scenesToUse = data.scenes
+        setScenes(data.scenes)
+        setTotalDuration(data.totalDuration)
+        setFreeVideoUsed(prev => prev + 1)
       }
-
-      const imageUrl = selectedImage ? await uploadImage() : null
-
-      const token = (await supabase.auth.getSession()).data.session?.access_token
-      const res = await fetch('/api/tiktok-video', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ text: text.trim(), imageUrl })
-      })
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Unbekannter Fehler' }))
-        if (res.status === 402) {
-          setShowPaywall(true)
-          setLoading(false)
-          return
-        }
-        throw new Error(err.error || `Fehler bei der Video-Erstellung (${res.status})`)
-      }
-
-      const data = await res.json()
-      setScenes(data.scenes)
-      setTotalDuration(data.totalDuration)
-      setFreeVideoUsed(prev => prev + 1)
 
       let audioBuffers = null
       if (voiceover) {
         setStatusMsg('Voiceover wird generiert...')
         audioBuffers = []
-        for (let i = 0; i < data.scenes.length; i++) {
-          const scene = data.scenes[i]
+        for (let i = 0; i < scenesToUse.length; i++) {
+          const scene = scenesToUse[i]
           const spokenText = `${scene.text1}. ${scene.text2 || ''}`
-          setStatusMsg(`Voiceover Szene ${i + 1}/${data.scenes.length}...`)
+          setStatusMsg(`Voiceover Szene ${i + 1}/${scenesToUse.length}...`)
           try {
             const audioRes = await fetch('/api/tts', {
               method: 'POST',
@@ -275,7 +270,8 @@ export default function TikTokVideoPage() {
       }
 
       setStatusMsg('Bilder werden geladen...')
-      await renderVideo(data.scenes, audioBuffers, musicBuffer)
+      await renderVideo(scenesToUse, audioBuffers, musicBuffer)
+      setPipelineScenes(null)
     } catch (err) {
       console.error('Create video error:', err)
       const msg = err.message || ''
@@ -391,9 +387,8 @@ export default function TikTokVideoPage() {
     let inputIdx = 0
 
     scenes.forEach((scene, i) => {
-      inputArgs.push('-i', `scene_${i}.png`)
-      const frames = Math.round(scene.duration * FPS)
-      filterParts.push(`[${i}:v]loop=loop=${frames - 1}:size=1,setpts=PTS-STARTPTS[v${i}]`)
+      inputArgs.push('-loop', '1', '-t', String(scene.duration), '-i', `scene_${i}.png`)
+      filterParts.push(`[${i}:v]setpts=PTS-STARTPTS[v${i}]`)
       concatInputs.push(`[v${i}]`)
       inputIdx++
     })
@@ -762,8 +757,8 @@ export default function TikTokVideoPage() {
                 if (videoUrl) URL.revokeObjectURL(videoUrl)
                 setVideoUrl(null)
                 setError('')
+                setPipelineScenes(null)
                 pipelineUsed.current = false
-                renderingStarted.current = false
               }}>
                 Neues Video erstellen
               </button>
