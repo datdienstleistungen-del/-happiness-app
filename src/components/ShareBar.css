@@ -68,6 +68,22 @@
   box-shadow: 0 4px 12px rgba(255, 69, 0, 0.3);
 }
 
+.share-btn-circle.instagram {
+  background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+}
+
+.share-btn-circle.instagram:hover {
+  box-shadow: 0 4px 12px rgba(225, 48, 108, 0.3);
+}
+
+.share-btn-circle.facebook {
+  background: #1877f2;
+}
+
+.share-btn-circle.facebook:hover {
+  box-shadow: 0 4px 12px rgba(24, 119, 242, 0.3);
+}
+
 .share-btn-circle.download {
   background: #6b7280;
 }

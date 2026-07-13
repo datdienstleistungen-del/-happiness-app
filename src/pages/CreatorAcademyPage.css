@@ -95,9 +95,25 @@
 .ca-input-footer {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   margin-top: 8px;
   font-size: 0.8rem;
   color: #9ca3af;
+}
+
+.ca-clear-btn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.ca-clear-btn:hover {
+  background: #fef2f2;
 }
 
 .ca-actions {

@@ -15,8 +15,13 @@ export default function CreatorAcademyPage() {
   const [searchParams] = useSearchParams()
   const location = useLocation()
   const navigate = useNavigate()
-  const [draft, setDraft] = useState(location.state?.draft || '')
-  const [feedback, setFeedback] = useState(null)
+  const [draft, setDraft] = useState(() => {
+    return location.state?.draft || localStorage.getItem('happiness-draft') || ''
+  })
+  const [feedback, setFeedback] = useState(() => {
+    const saved = localStorage.getItem('happiness-feedback')
+    return saved ? JSON.parse(saved) : null
+  })
   const [isLoading, setIsLoading] = useState(false)
   const [isPosting, setIsPosting] = useState(false)
   const [posted, setPosted] = useState(false)
@@ -31,6 +36,16 @@ export default function CreatorAcademyPage() {
       setFeedback(pipelineResult.feedback)
     }
   }, [])
+
+  useEffect(() => {
+    localStorage.setItem('happiness-draft', draft)
+  }, [draft])
+
+  useEffect(() => {
+    if (feedback) {
+      localStorage.setItem('happiness-feedback', JSON.stringify(feedback))
+    }
+  }, [feedback])
   const FREE_LIMIT = 5
 
   useEffect(() => {
@@ -228,6 +243,15 @@ Antworte immer auf Deutsch. Antworte in klarem Fliesstext, wie ein professionell
             />
             <div className="ca-input-footer">
               <span className="ca-char-count">{draft.length} Zeichen</span>
+              {draft && (
+                <button
+                  className="ca-clear-btn"
+                  onClick={() => { setDraft(''); setFeedback(null); localStorage.removeItem('happiness-draft'); localStorage.removeItem('happiness-feedback'); }}
+                  title="Entwurf löschen"
+                >
+                  ✕ Entwurf löschen
+                </button>
+              )}
               <span className="ca-hint">Strg+Enter für Feedback</span>
             </div>
 

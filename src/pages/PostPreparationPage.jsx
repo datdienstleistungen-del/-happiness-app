@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Copy, Check, ExternalLink, PenTool, MessageSquare } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -80,8 +80,10 @@ export default function PostPreparationPage() {
   const { user } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
-  const draft = location.state?.draft || ''
-  const feedback = location.state?.feedback || ''
+  const draft = location.state?.draft || localStorage.getItem('happiness-draft') || ''
+  const feedback = location.state?.feedback || (() => {
+    try { return JSON.parse(localStorage.getItem('happiness-feedback') || '""') } catch { return '' }
+  })()
 
   const [generatedPosts, setGeneratedPosts] = useState({})
   const [loading, setLoading] = useState({})
