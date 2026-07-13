@@ -65,6 +65,27 @@ const GOAL_PROMPT = `Intent-Klassifizierer. Kategorien:
 
 Antworte NUR mit dem Kategorienamen.`
 
+function classifyGoalWithKeywords(message) {
+  if (!message) return { goal: 'general', confidence: 0.5, method: 'keyword' }
+  const lower = message.toLowerCase()
+
+  const GOALS = {
+    content_creation: [/post.*erstell/i, /text.*schreib/i, /video.*mach/i, /content.*erstell/i, /caption/i, /skript/i, /hook/i, /tiktok/i, /instagram/i, /reel/i, /tweet/i, /linkedin.*post/i, /facebook.*post/i, /reddit.*post/i, /post.*schreib/i, /post.*vor/i, /teilen/i, /veröffentlichen/i, /posten/i],
+    feedback: [/feedback/i, /review/i, /verbesser/i, /einschätzung/i, /verbesserung/i, /check/i, /bewert/i, /meinung/i],
+    strategy: [/strateg/i, /wachstum/i, /optimier/i, /plan/i, /ziele/i, /ziel.*setz/i, /grow/i, /skalier/i],
+    monetization: [/geld.*verdien/i, /verkauf/i, /einnahm/i, /monetar/i, /preis/i, /kosten/i, /abo/i, /premium/i, /geld/i, /verdien/i],
+    community: [/community/i, /netzwerk/i, /freunde/i, /verbind/i, /kenneniern/i, /leute/i, /vernetz/i],
+    learning: [/erklär/i, /lern/i, /versteh/i, /wie.*funktioniert/i, /wie.*geht/i, /tutorial/i, /hilf/i, /help/i, /frage/i],
+  }
+
+  for (const [goal, patterns] of Object.entries(GOALS)) {
+    for (const p of patterns) {
+      if (p.test(lower)) return { goal, confidence: 0.6, method: 'keyword' }
+    }
+  }
+  return { goal: 'general', confidence: 0.3, method: 'keyword' }
+}
+
 async function classifyGoalWithLLM(message, groqKey) {
   if (!message) return { goal: 'unknown', confidence: 0, method: 'none' }
 
@@ -220,6 +241,15 @@ export const handler = async (event) => {
     // Ziel-Erkennung loggen
     console.log(`[H.I.T.] goal (llm): ${goalResult.goal} (${Math.round(goalResult.confidence * 100)}%) [${goalResult.method}]`)
 
+    // Fallback: Wenn LLM kein Ziel erkennt, Keyword-basiert
+    const finalGoal = goalResult.goal === 'unknown' || goalResult.confidence === 0
+      ? classifyGoalWithKeywords(message)
+      : goalResult
+
+    if (finalGoal.method === 'keyword') {
+      console.log(`[H.I.T.] goal (keyword fallback): ${finalGoal.goal} (${Math.round(finalGoal.confidence * 100)}%)`)
+    }
+
     // Chat-Antwort verarbeiten
     if (!chatResponse) {
       return {
@@ -240,9 +270,9 @@ export const handler = async (event) => {
           enabled: true,
           platform: platformResult.platform,
           platformConfidence: Math.round(platformResult.confidence * 100),
-          goal: goalResult.goal,
-          goalConfidence: Math.round(goalResult.confidence * 100),
-          goalMethod: goalResult.method
+          goal: finalGoal.goal,
+          goalConfidence: Math.round(finalGoal.confidence * 100),
+          goalMethod: finalGoal.method
         }
       })
     }

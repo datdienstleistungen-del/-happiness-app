@@ -48,16 +48,29 @@ async function analyzeIntent(goal) {
       })
     })
 
-    if (!response.ok) return null
+    if (!response.ok) return fallbackIntent(goal)
     const data = await response.json()
     const raw = (data.response || '').trim()
 
     const jsonMatch = raw.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) return null
+    if (!jsonMatch) return fallbackIntent(goal)
     return JSON.parse(jsonMatch[0])
   } catch {
-    return null
+    return fallbackIntent(goal)
   }
+}
+
+function fallbackIntent(goal) {
+  const lower = goal.toLowerCase()
+  if (/video|tiktok|reel|kurzvideo/.test(lower)) return { platform: 'tiktok', action: 'execute' }
+  if (/instagram|ig|story/.test(lower)) return { platform: 'instagram', action: 'execute' }
+  if (/facebook|fb/.test(lower)) return { platform: 'facebook', action: 'execute' }
+  if (/linkedin/.test(lower)) return { platform: 'linkedin', action: 'execute' }
+  if (/reddit/.test(lower)) return { platform: 'reddit', action: 'execute' }
+  if (/tweet|twitter|x /.test(lower)) return { platform: 'x', action: 'execute' }
+  if (/post|text|schreib|content|caption/.test(lower)) return { platform: 'content', action: 'execute' }
+  if (/feedback|review|verbesser|check/.test(lower)) return { platform: 'creator-academy', action: 'execute' }
+  return { platform: 'chat', action: 'execute' }
 }
 
 async function startRealWork(platform, goal) {
