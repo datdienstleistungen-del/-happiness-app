@@ -1,7 +1,8 @@
-console.log('chat.js v6 - Groq primär + DeepSeek fallback + RAG')
+console.log('chat.js v7 - OpenRouter + Groq + DeepSeek + Mistral + RAG')
 console.log('DEEPSEEK_API_KEY vorhanden:', !!process.env.DEEPSEEK_API_KEY)
 console.log('GROQ_API_KEY vorhanden:', !!process.env.GROQ_API_KEY)
 console.log('OPENROUTER_API_KEY vorhanden:', !!process.env.OPENROUTER_API_KEY)
+console.log('MISTRAL_API_KEY vorhanden:', !!process.env.MISTRAL_API_KEY)
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || ''
 
@@ -528,7 +529,49 @@ export const handler = async (event) => {
           }
         } else {
           providerErrors.push('DeepSeek: DEEPSEEK_API_KEY not configured')
-          console.warn('DEEPSEEK_API_KEY not configured, no more providers')
+          console.warn('DEEPSEEK_API_KEY not configured, trying Mistral')
+        }
+      }
+
+      // Stage 4: Mistral (kostenlos - fallback)
+      if (!success) {
+        const mistralKey = process.env.MISTRAL_API_KEY
+        if (mistralKey) {
+          try {
+            const mistralRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${mistralKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                model: 'mistral-small-latest',
+                messages: buildMessages(historyLimit),
+                temperature: 0.7,
+                max_tokens: 4096
+              })
+            })
+            if (mistralRes.ok) {
+              const mistralData = await mistralRes.json()
+              console.log('Antwort von:', 'mistral-fallback')
+              aiResponse = mistralData.choices?.[0]?.message?.content || ''
+              usage = mistralData.usage
+              provider = 'mistral'
+              modelName = 'mistral-small-latest'
+              success = true
+            } else {
+              const mistralData = await mistralRes.json().catch(() => ({}))
+              const errMsg = mistralData?.error?.message || JSON.stringify(mistralData)
+              providerErrors.push(`Mistral: ${errMsg} (HTTP ${mistralRes.status})`)
+              console.warn('Mistral fallback failed, status:', mistralRes.status, errMsg)
+            }
+          } catch (err) {
+            providerErrors.push(`Mistral: ${err.message}`)
+            console.warn('Mistral fetch failed:', err.message)
+          }
+        } else {
+          providerErrors.push('Mistral: MISTRAL_API_KEY not configured')
+          console.warn('MISTRAL_API_KEY not configured, no more providers')
         }
       }
 

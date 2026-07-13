@@ -66,62 +66,101 @@ const GOAL_PROMPT = `Intent-Klassifizierer. Kategorien:
 Antworte NUR mit dem Kategorienamen.`
 
 async function classifyGoalWithLLM(message, groqKey) {
-  if (!groqKey || !message) return { goal: 'unknown', confidence: 0, method: 'none' }
+  if (!message) return { goal: 'unknown', confidence: 0, method: 'none' }
 
-  try {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 5000)
+  // Try Groq first
+  if (groqKey) {
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 5000)
 
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-        messages: [
-          { role: 'system', content: GOAL_PROMPT },
-          { role: 'user', content: message.substring(0, 500) }
-        ],
-        temperature: 0,
-        max_tokens: 20
-      }),
-      signal: controller.signal
-    })
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          messages: [
+            { role: 'system', content: GOAL_PROMPT },
+            { role: 'user', content: message.substring(0, 500) }
+          ],
+          temperature: 0,
+          max_tokens: 20
+        }),
+        signal: controller.signal
+      })
 
-    clearTimeout(timeout)
+      clearTimeout(timeout)
 
-    if (!res.ok) {
-      console.warn(`[H.I.T.] LLM goal call failed: HTTP ${res.status}`)
-      return { goal: 'unknown', confidence: 0, method: 'llm_error' }
-    }
-
-    const data = await res.json()
-    const raw = (data.choices?.[0]?.message?.content || '').trim()
-    const rawLower = raw.toLowerCase().replace(/[`*_#\-]/g, '').trim()
-
-    console.log(`[H.I.T.] LLM goal: "${raw}" → ${rawLower}`)
-
-    const validGoals = ['content_creation', 'feedback', 'strategy', 'monetization', 'community', 'learning', 'general']
-
-    // Exakter Match
-    let goal = validGoals.includes(rawLower) ? rawLower : null
-
-    // Fuzzy: Enthält das Zielwort irgendwo in der Antwort?
-    if (!goal) {
-      for (const g of validGoals) {
-        if (rawLower.includes(g)) { goal = g; break }
+      if (res.ok) {
+        const data = await res.json()
+        const raw = (data.choices?.[0]?.message?.content || '').trim()
+        return parseGoalResponse(raw)
+      }
+      console.warn(`[H.I.T.] Groq goal call failed: HTTP ${res.status}`)
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        console.warn('[H.I.T.] Groq goal call timed out (5s)')
+      } else {
+        console.warn('[H.I.T.] Groq goal call error:', err.message)
       }
     }
-
-    if (!goal) goal = 'unknown'
-    return { goal, confidence: goal === 'unknown' ? 0 : 0.8, method: 'llm' }
-  } catch (err) {
-    if (err.name === 'AbortError') {
-      console.warn('[H.I.T.] LLM goal call timed out (5s)')
-    } else {
-      console.warn('[H.I.T.] LLM goal call error:', err.message)
-    }
-    return { goal: 'unknown', confidence: 0, method: 'llm_error' }
   }
+
+  // Fallback: Mistral
+  const mistralKey = process.env.MISTRAL_API_KEY
+  if (mistralKey) {
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 8000)
+
+      const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${mistralKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'mistral-small-latest',
+          messages: [
+            { role: 'system', content: GOAL_PROMPT },
+            { role: 'user', content: message.substring(0, 500) }
+          ],
+          temperature: 0,
+          max_tokens: 20
+        }),
+        signal: controller.signal
+      })
+
+      clearTimeout(timeout)
+
+      if (res.ok) {
+        const data = await res.json()
+        const raw = (data.choices?.[0]?.message?.content || '').trim()
+        console.log('[H.I.T.] Goal classified via Mistral fallback')
+        return parseGoalResponse(raw)
+      }
+      console.warn(`[H.I.T.] Mistral goal call failed: HTTP ${res.status}`)
+    } catch (err) {
+      console.warn('[H.I.T.] Mistral goal call error:', err.message)
+    }
+  }
+
+  return { goal: 'unknown', confidence: 0, method: 'none' }
+}
+
+function parseGoalResponse(raw) {
+  const rawLower = raw.toLowerCase().replace(/[`*_#\-]/g, '').trim()
+  console.log(`[H.I.T.] LLM goal: "${raw}" → ${rawLower}`)
+
+  const validGoals = ['content_creation', 'feedback', 'strategy', 'monetization', 'community', 'learning', 'general']
+
+  let goal = validGoals.includes(rawLower) ? rawLower : null
+
+  if (!goal) {
+    for (const g of validGoals) {
+      if (rawLower.includes(g)) { goal = g; break }
+    }
+  }
+
+  if (!goal) goal = 'unknown'
+  return { goal, confidence: goal === 'unknown' ? 0 : 0.8, method: 'llm' }
 }
 
 // ── Handler ──
