@@ -8,6 +8,7 @@ import {
   Lightbulb, Zap, Share2, Globe, Video, MessageSquare, Hash
 } from 'lucide-react'
 import CopyButton from '../components/CopyButton'
+import { trackRecipeGenerated, trackPlatformViewed, trackCapCutTriggered } from '../intelligence/analytics'
 import './TikTokVideoPage.css'
 
 const PLATFORMS = [
@@ -83,6 +84,7 @@ export default function TikTokVideoPage() {
 
       const data = await res.json()
       setRecipe(data)
+      trackRecipeGenerated(data.video_title, duration)
     } catch (err) {
       console.error('[CapCut] Recipe error:', err)
       const msg = err.message || ''
@@ -325,7 +327,7 @@ export default function TikTokVideoPage() {
                     <button
                       key={p.id}
                       className={`ccp-platform-tab ${activePlatform === p.id ? 'active' : ''}`}
-                      onClick={() => setActivePlatform(p.id)}
+                      onClick={() => { setActivePlatform(p.id); trackPlatformViewed(p.id) }}
                       style={activePlatform === p.id ? { borderColor: p.color, color: p.color } : {}}
                     >
                       <Icon size={14} />
@@ -364,6 +366,7 @@ export default function TikTokVideoPage() {
               target="_blank"
               rel="noopener noreferrer"
               className="ccp-action-primary"
+              onClick={() => trackCapCutTriggered()}
             >
               <Video size={20} />
               <div>

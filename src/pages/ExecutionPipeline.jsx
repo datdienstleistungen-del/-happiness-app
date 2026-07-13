@@ -4,6 +4,7 @@ import { Check, ArrowRight, Clock, Sparkles, AlertTriangle, MessageCircle } from
 import { useLanguage } from '../i18n/translations'
 import { supabase } from '../lib/supabase'
 import { getChatEndpoint } from '../lib/hit'
+import { trackIdeaSubmitted } from '../intelligence/analytics'
 import './ExecutionPipeline.css'
 
 const INTENT_PROMPT = `Du bist ein Intent-Analyst. Der Nutzer hat etwas eingegeben. Analysiere:
@@ -210,6 +211,8 @@ export default function ExecutionPipeline() {
       navigate('/')
       return
     }
+
+    trackIdeaSubmitted(goal)
 
     let cancelled = false
 
