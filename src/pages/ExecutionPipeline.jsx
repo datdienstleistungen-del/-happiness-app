@@ -124,16 +124,17 @@ Format: Fliesstext, kein Markdown. Nur den fertigen Text.`
     }
 
     if (platform === 'tiktok') {
-      const res = await fetch('/api/tiktok-video', {
+      const res = await fetch('/api/capcut-recipe', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ text: goal.trim() })
+        body: JSON.stringify({ topic: goal.trim(), duration: 30 })
       })
       if (!res.ok) return null
-      return await res.json()
+      const recipe = await res.json()
+      return { recipe }
     }
 
     const prompt = WRITING_PROMPTS[platform]
@@ -275,7 +276,7 @@ export default function ExecutionPipeline() {
       const goalLower = goal.toLowerCase()
 
       if (intent.platform === 'tiktok' || /video|tiktok|reel|kurzvideo/.test(goalLower)) {
-        navigate('/tiktok-video', { state: { postText: generatedContent, pipelineResult: apiResult } })
+        navigate('/tiktok-video', { state: { postText: goal, pipelineResult: apiResult } })
       } else if (intent.platform === 'facebook' || intent.platform === 'instagram' || intent.platform === 'linkedin' || intent.platform === 'reddit' || intent.platform === 'x' || intent.platform === 'content') {
         navigate('/post-preparation', { state: { draft: generatedContent, feedback: '' } })
       } else if (intent.platform === 'marketplace') {
