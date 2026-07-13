@@ -134,6 +134,22 @@ export default function PostPreparationPage() {
     }
   }
 
+  if (!draft) {
+    return (
+      <div className="post-prep-page">
+        <div className="post-prep-container">
+          <div className="post-prep-header">
+            <button className="post-prep-back" onClick={() => navigate(-1)}>
+              <ArrowLeft size={18} /> Zurueck
+            </button>
+            <h1>Post vorbereiten</h1>
+            <p className="post-prep-subtitle">Kein Entwurf vorhanden. Geh zurueck und starte von vorne.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="post-prep-page">
       <div className="post-prep-container">
