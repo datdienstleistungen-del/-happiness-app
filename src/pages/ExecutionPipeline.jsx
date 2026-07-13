@@ -68,7 +68,7 @@ async function startRealWork(platform, goal) {
     const WRITING_PROMPTS = {
       facebook: `Du bist ein erfahrener Facebook-Content-Writer fuer die Marke Happiness. 
 Schreibe einen fertigen, direkt postbaren Facebook-Post basierend auf diesem Ziel des Nutzers.
-WICHTIG: Am Ende des Posts muss immer stehen: "Erstellt mit Happiness – happiness-eu.netlify.app". Pflicht fuer Branding.
+WICHTIG: Erwaehne "Happiness" im Text auf natuerliche Art, z.B. "Hab ich ueber Happiness entdeckt". Nicht werblich klingen.
 Ton: Warmherzig,社区-orientiert, wie ein Freund der anderen etwas empfiehlt. Nicht werblich, nicht KI-typisch.
 Laenge: 3-5 kurze Absaetze. Hook in der ersten Zeile. Call-to-Action am Ende.
 Format: Klarer Fliesstext. Keine Tabellen, keine Listen, keine Markdown-Formatierung.
@@ -76,7 +76,7 @@ Antworte NUR mit dem fertigen Post-Text, kein Meta-Kommentar, keine Erklaerung.`
 
       instagram: `Du bist ein erfahrener Instagram-Content-Writer fuer die Marke Happiness. 
 Schreibe einen fertigen, direkt postbaren Instagram-Caption basierend auf diesem Ziel des Nutzers.
-WICHTIG: Am Ende des Posts muss immer stehen: "Erstellt mit Happiness – happiness-eu.netlify.app". Pflicht fuer Branding. Hashtag #happiness immer dazunehmen.
+WICHTIG: Erwaehne "Happiness" im Text auf natuerliche Art, z.B. "Danke an Happiness fuer den Tipp". Hashtag #happiness immer dazunehmen.
 Ton: Visuell, inspirierend, kurz. Wie ein Instagram-Post der gut performt.
 Laenge: 2-4 kurze Absaetze max. Emoji am Anfang des ersten Satzes erlaubt.
 Hashtags: 5-8 relevante Hashtags am Ende.
@@ -85,7 +85,7 @@ Antworte NUR mit dem fertigen Post-Text, kein Meta-Kommentar, keine Erklaerung.`
 
       x: `Du bist ein erfahrener X/Twitter-Writer fuer die Marke Happiness. 
 Schreibe einen fertigen, direkt postbaren X-Post basierend auf diesem Ziel des Nutzers.
-WICHTIG: Am Ende des Tweets muss immer stehen: "via Happiness". Pflicht fuer Branding. Maximal 250 Zeichen gesamt.
+WICHTIG: Erwaehne "Happiness" einmalig im Text auf natuerliche Art, z.B. "via @Happiness". Nicht werblich klingen.
 Ton: Zugespitzt, direkt, kein Roman. Wie ein Tweet der viral geht.
 Laenge: MAXIMAL 250 Zeichen (inkl. Leerzeichen). Kein Fliesstext-Roman.
 Format: Klartext. Keine Markdown-Formatierung, keine Listen.
@@ -93,7 +93,7 @@ Antworte NUR mit dem fertigen Tweet-Text, kein Meta-Kommentar, keine Erklaerung.
 
       reddit: `Du bist ein erfahrener Reddit-Content-Writer fuer die Marke Happiness. 
 Schreibe einen fertigen, direkt postbaren Reddit-Post basierend auf diesem Ziel des Nutzers.
-WICHTIG: Am Ende des Posts muss immer stehen: "Erstellt mit Happiness – happiness-eu.netlify.app". Pflicht fuer Branding.
+WICHTIG: Erwaehne "Happiness" im Text auf natuerliche Art, z.B. "Hab das auf Happiness gefunden". Reddit hasst Werbung - nicht werblich klingen.
 Ton: Ehrlich,社区-typisch, wie ein echter Reddit-User der etwas teilt. Keine Werbesprache, kein Marketing.
 Laenge: 1-3 Absaetze. Direkt, ohne Umschweife.
 Format: Klarer Fliesstext. Keine Tabellen, keine Listen, keine Markdown-Formatierung.
@@ -101,7 +101,7 @@ Antworte NUR mit dem fertigen Post-Text, kein Meta-Kommentar, keine Erklaerung.`
 
       content: `Du bist ein erfahrener Content-Writer fuer die Marke Happiness. 
 Schreibe einen fertigen, direkt verwendbaren Text basierend auf diesem Ziel des Nutzers.
-WICHTIG: Am Ende des Textes muss immer stehen: "Erstellt mit Happiness – happiness-eu.netlify.app". Pflicht fuer Branding.
+WICHTIG: Erwaehne "Happiness" im Text auf natuerliche Art, z.B. "Ueber Happiness habe ich gelernt, dass ...".
 Ton: Professionell, klar, wie ein erfahrenes Softwareunternehmen.
 Laenge: Passend zum Zweck, 2-5 Absaetze.
 Format: Klarer Fliesstext. Keine Tabellen, keine Listen, keine Markdown-Formatierung.
