@@ -233,7 +233,7 @@ export default function TikTokVideoPage() {
                 </div>
               </a>
               <a
-                href="https://www.capcut.com"
+                href="https://capcut.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ccp-capcut-btn desktop"
@@ -243,11 +243,12 @@ export default function TikTokVideoPage() {
               >
                 <Monitor size={20} />
                 <div>
-                  <span className="ccp-capcut-label">Im Web-Browser öffnen</span>
+                  <span className="ccp-capcut-label">Im Web-Browser öffnen (Free)</span>
                   <span className="ccp-capcut-sub">capcut.com im neuen Tab</span>
                 </div>
               </a>
             </div>
+            <p className="ccp-capcut-hint">Tipp: In CapCut einfach auf "Neues Video" klicken, um den kostenlosen Editor zu nutzen.</p>
           </div>
 
           <div className="ccp-section">
