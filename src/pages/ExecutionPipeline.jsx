@@ -175,6 +175,7 @@ export default function ExecutionPipeline() {
   const [apiResult, setApiResult] = useState(null)
   const [apiDone, setApiDone] = useState(false)
   const [clarifyText, setClarifyText] = useState('')
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (!goal.trim()) {
@@ -187,7 +188,13 @@ export default function ExecutionPipeline() {
     analyzeIntent(goal).then(result => {
       if (cancelled) return
 
-      if (!result || result.platform === 'chat') {
+      if (!result) {
+        setError('H.I.T. konnte das Ziel nicht analysieren. API-Limit erreicht. Versuch es spaeter nochmal.')
+        setPhase('error')
+        return
+      }
+
+      if (result.platform === 'chat') {
         navigate('/ai-chat', { state: { message: goal } })
         return
       }
@@ -288,6 +295,24 @@ export default function ExecutionPipeline() {
           <div className="ep-analyzing">
             <div className="ep-analyzing-spinner"></div>
             <p>H.I.T. analysiert dein Ziel...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (phase === 'error') {
+    return (
+      <div className="ep-page">
+        <div className="ep-card">
+          <div className="ep-header">
+            <div className="ep-header-brand">
+              <span className="ep-hit-h">H</span><span className="ep-hit-rest">.I.T.</span>
+            </div>
+          </div>
+          <div className="ep-error" style={{ padding: '24px', textAlign: 'center' }}>
+            <p style={{ color: '#991b1b', marginBottom: '16px' }}>{error}</p>
+            <button className="ep-btn primary" onClick={() => navigate('/')}>Zurueck zur Startseite</button>
           </div>
         </div>
       </div>
