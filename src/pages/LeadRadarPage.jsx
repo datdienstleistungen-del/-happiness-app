@@ -209,14 +209,44 @@ const KW_REALESTATE_DE = [
   'luxus immobilie', 'besichtigung', 'virtuelle tour', 'immobilien social media',
 ]
 
+const KW_FRUSTRATION_PT = [
+  'não consigo', 'desisti', 'estou frustrado', 'não funciona', 'cansado de', 'saturado',
+  'perdi tudo', 'não aguento', 'frustração', 'odesio', 'odeio', 'não suporto',
+]
+const KW_MILESTONE_PT = [
+  'consegui', 'cheguei', 'alcancei', 'meu primeiro', 'meta batida', 'atingi',
+  'primeiros 100', 'primeiros 1000', 'parceiro', 'monetizou', 'ano de stream',
+  'recorde', 'nunca achei', 'sonho realizado', 'obrigado a todos', 'fizemos',
+]
+const KW_ADVICE_PT = [
+  'como fazer', 'alguém me ajuda', 'dica', 'conselho', 'preciso de ajuda',
+  'como posso', 'qual a melhor', 'estou começando', 'dicas para', 'tutorial',
+]
+const KW_PRIVACY_PT = [
+  'privacidade', 'dados pessoais', 'rgpd', 'lgpd', 'proteção de dados',
+  'anonimato', 'conta fake', 'sem mostrar rosto', 'sem revelar identidade',
+]
+const KW_BUILDER_PT = [
+  'construindo', 'montei', 'fiz sozinho', 'homem', 'trabalho braçal',
+  'obra', 'reforma', 'construção', 'marceneiro', 'eletricista', 'pedreiro',
+]
+const KW_TRADER_PT = [
+  'criptomoeda', 'bitcoin', 'investimento', 'bolsa', 'ações', 'day trade',
+  'forex', 'renda passiva', 'carteira', 'bull', 'bear', 'altcoin', 'staking',
+]
+const KW_REALESTATE_PT = [
+  'imóvel', 'imóveis', 'aluguel', 'comprar apartamento', 'financiamento',
+  'corretor', 'venda de imóvel', 'casa própria', 'obra', 'reforma',
+]
+
 const ALL_KEYWORDS = [
-  ...KW_FRUSTRATION_EN, ...KW_FRUSTRATION_DE,
-  ...KW_MILESTONE_EN, ...KW_MILESTONE_DE,
-  ...KW_ADVICE_EN, ...KW_ADVICE_DE,
-  ...KW_PRIVACY_EN, ...KW_PRIVACY_DE,
-  ...KW_BUILDER_EN, ...KW_BUILDER_DE,
-  ...KW_TRADER_EN, ...KW_TRADER_DE,
-  ...KW_REALESTATE_EN, ...KW_REALESTATE_DE,
+  ...KW_FRUSTRATION_EN, ...KW_FRUSTRATION_DE, ...KW_FRUSTRATION_PT,
+  ...KW_MILESTONE_EN, ...KW_MILESTONE_DE, ...KW_MILESTONE_PT,
+  ...KW_ADVICE_EN, ...KW_ADVICE_DE, ...KW_ADVICE_PT,
+  ...KW_PRIVACY_EN, ...KW_PRIVACY_DE, ...KW_PRIVACY_PT,
+  ...KW_BUILDER_EN, ...KW_BUILDER_DE, ...KW_BUILDER_PT,
+  ...KW_TRADER_EN, ...KW_TRADER_DE, ...KW_TRADER_PT,
+  ...KW_REALESTATE_EN, ...KW_REALESTATE_DE, ...KW_REALESTATE_PT,
 ]
 
 function matchesAny(text, ...arrays) {
@@ -379,7 +409,7 @@ export default function LeadRadarPage() {
           const fullText = `${entry.title} ${entry.content}`.trim()
           const plainText = fullText.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 2000)
           if (plainText.length < 20) continue
-          if (!matchesAny(plainText, KW_FRUSTRATION_EN, KW_FRUSTRATION_DE, KW_MILESTONE_EN, KW_MILESTONE_DE, KW_ADVICE_EN, KW_ADVICE_DE, KW_PRIVACY_EN, KW_PRIVACY_DE, KW_BUILDER_EN, KW_BUILDER_DE, KW_TRADER_EN, KW_TRADER_DE, KW_REALESTATE_EN, KW_REALESTATE_DE)) continue
+          if (!matchesAny(plainText, KW_FRUSTRATION_EN, KW_FRUSTRATION_DE, KW_FRUSTRATION_PT, KW_MILESTONE_EN, KW_MILESTONE_DE, KW_MILESTONE_PT, KW_ADVICE_EN, KW_ADVICE_DE, KW_ADVICE_PT, KW_PRIVACY_EN, KW_PRIVACY_DE, KW_PRIVACY_PT, KW_BUILDER_EN, KW_BUILDER_DE, KW_BUILDER_PT, KW_TRADER_EN, KW_TRADER_DE, KW_TRADER_PT, KW_REALESTATE_EN, KW_REALESTATE_DE, KW_REALESTATE_PT)) continue
 
           totalMatched++
           const sourceUrl = entry.link || feed.url
