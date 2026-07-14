@@ -46,6 +46,12 @@ const PLATFORM_BADGES = {
   forum: { color: '#6B7280', label: 'Forum' },
 }
 
+const CONTEXT_BADGES = {
+  Gamer: { color: '#8B5CF6', label: '🎮 Gamer' },
+  Creator: { color: '#F59E0B', label: '🎬 Creator' },
+  Business: { color: '#10B981', label: '💼 Business' },
+}
+
 const LANG_BADGES = {
   en: { color: '#3B82F6', label: 'EN' },
   de: { color: '#F59E0B', label: 'DE' },
@@ -58,9 +64,16 @@ const EMPTY_FORM = {
   platform: 'reddit',
   continent: 'na',
   lang: 'en',
+  badge: 'Creator',
   source_url: '',
   text: '',
 }
+
+const BADGE_OPTIONS = [
+  { value: 'Gamer', label: '🎮 Gamer' },
+  { value: 'Creator', label: '🎬 Creator' },
+  { value: 'Business', label: '💼 Business' },
+]
 
 export default function LeadRadarPage() {
   const { user } = useAuth()
@@ -110,6 +123,7 @@ export default function LeadRadarPage() {
         platform: form.platform,
         continent: form.continent,
         lang: form.lang,
+        badge: form.badge,
         source_url: form.source_url.trim() || null,
         text: form.text.trim(),
         status: 'new',
@@ -225,6 +239,14 @@ Maximal 3-4 Sätze.`
                 >
                   {(LANG_BADGES[lead.lang] || LANG_BADGES.en).label}
                 </span>
+                {lead.badge && CONTEXT_BADGES[lead.badge] && (
+                  <span
+                    className="lr-context-badge"
+                    style={{ background: CONTEXT_BADGES[lead.badge].color }}
+                  >
+                    {CONTEXT_BADGES[lead.badge].label}
+                  </span>
+                )}
               </div>
               <p className="lr-card-text">{lead.text}</p>
               {lead.source_url && (
@@ -281,6 +303,12 @@ Maximal 3-4 Sätze.`
                   <span>Language</span>
                   <select value={form.lang} onChange={e => setForm(p => ({ ...p, lang: e.target.value }))}>
                     {LANG_OPTIONS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
+                  </select>
+                </label>
+                <label>
+                  <span>Context</span>
+                  <select value={form.badge} onChange={e => setForm(p => ({ ...p, badge: e.target.value }))}>
+                    {BADGE_OPTIONS.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
                   </select>
                 </label>
               </div>

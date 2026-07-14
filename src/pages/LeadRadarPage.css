@@ -174,7 +174,8 @@
 }
 
 .lr-platform-badge,
-.lr-lang-badge {
+.lr-lang-badge,
+.lr-context-badge {
   padding: 3px 10px;
   border-radius: 20px;
   font-size: 0.65rem;
@@ -309,7 +310,7 @@
 
 .lr-form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
   gap: 12px;
 }
 
