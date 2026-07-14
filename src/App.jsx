@@ -3,7 +3,7 @@ import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-r
 import {
   Home, Sparkles, MessageCircle, Users, ShoppingCart, Briefcase,
   BookOpen, Building2, Clapperboard, Camera, Film, Bell, Settings,
-  User, ChevronLeft, ChevronRight, Rocket, Hash, Menu
+  User, ChevronLeft, ChevronRight, Rocket, Hash, Menu, BarChart3
 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.jsx'
@@ -39,6 +39,7 @@ const PostPreparationPage = lazy(() => import('./pages/PostPreparationPage'))
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 const TodayQuestionPage = lazy(() => import('./pages/TodayQuestionPage'))
 const CreatorWelcomePage = lazy(() => import('./pages/CreatorWelcomePage'))
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'))
 
 function Sidebar({ mobileOpen, setMobileOpen }) {
   const { user, profile, signOut } = useAuth()
@@ -108,6 +109,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
 
   const toolsLinks = [
     { to: '/courses', icon: BookOpen, label: t('nav.courses') },
+    { to: '/analytics', icon: BarChart3, label: 'H.I.T. Analytics' },
   ]
 
   if (profile?.role === 'admin') {
@@ -371,6 +373,7 @@ export default function App() {
                 <Route path="/creator-academy" element={<ProtectedRoute><CreatorAcademyPage /></ProtectedRoute>} />
                 <Route path="/post-preparation" element={<ProtectedRoute><PostPreparationPage /></ProtectedRoute>} />
                 <Route path="/tiktok-video" element={<ProtectedRoute><TikTokVideoPage /></ProtectedRoute>} />
+                <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
                 <Route path="/legal" element={<LegalPage />} />
                 <Route path="/impressum" element={<LegalPage />} />
                 <Route path="/datenschutz" element={<LegalPage />} />
