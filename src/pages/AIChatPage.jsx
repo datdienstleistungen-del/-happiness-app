@@ -14,7 +14,7 @@ import './AIChatPage.css'
 
 export default function AIChatPage() {
   const { user } = useAuth()
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -383,6 +383,7 @@ export default function AIChatPage() {
         body: JSON.stringify({
           message: userMessage,
           systemPrompt,
+          language: lang || 'de',
           userId: user.id,
           history: historyMessages,
           imageBase64: imageBase64

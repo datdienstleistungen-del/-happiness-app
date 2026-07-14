@@ -1,4 +1,4 @@
-console.log('chat.js v10 - OpenRouter + Groq + DeepSeek + Mistral + RAG (persona removed, priority fixed)')
+console.log('chat.js v11 - OpenRouter + Groq + DeepSeek + Mistral + RAG (word-boundary + language + hit-router fix)')
 console.log('DEEPSEEK_API_KEY vorhanden:', !!process.env.DEEPSEEK_API_KEY)
 console.log('GROQ_API_KEY vorhanden:', !!process.env.GROQ_API_KEY)
 console.log('OPENROUTER_API_KEY vorhanden:', !!process.env.OPENROUTER_API_KEY)
@@ -90,6 +90,13 @@ function classifyIntent(message) {
   return 'general'
 }
 
+// Word-boundary keyword matching — prevents false positives on generic words
+// like 'post', 'clip', 'stream' in non-gaming contexts
+function hasKeyword(text, keyword) {
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`\\b${escaped}\\b`, 'i').test(text)
+}
+
 async function loadKnowledge(message, userId) {
   const lower = (message || '').toLowerCase()
   const categoriesToLoad = new Set()
@@ -104,16 +111,16 @@ async function loadKnowledge(message, userId) {
   for (const [category, keywords] of Object.entries(KNOWLEDGE_CATEGORIES)) {
     if (category === 'general') continue
     for (const keyword of keywords) {
-      if (lower.includes(keyword)) {
+      if (hasKeyword(lower, keyword)) {
         categoriesToLoad.add(category)
         break
       }
     }
   }
 
-  // 3. Gaming auto-append: if gaming keywords detected, also load marketing + ai
-  const GAMING_TRIGGERS = ['stream', 'viewer', 'viewers', 'clip', 'clips', 'post', 'posts', 'tiktok', 'facebook', 'gaming', 'game', 'gamer', 'twitch', 'fortnite', 'minecraft', 'streamer']
-  const hasGamingContext = GAMING_TRIGGERS.some(kw => lower.includes(kw))
+  // 3. Gaming auto-append: only specific gaming terms (no generic words)
+  const GAMING_TRIGGERS = ['gaming', 'gamer', 'twitch', 'fortnite', 'minecraft', 'apex', 'esports', 'streamer', 'league of legends']
+  const hasGamingContext = GAMING_TRIGGERS.some(kw => hasKeyword(lower, kw))
   if (hasGamingContext) {
     categoriesToLoad.add('marketing')
     categoriesToLoad.add('ai')
@@ -219,24 +226,28 @@ export const handler = async (event) => {
     }
 
     const body = JSON.parse(event.body)
-    const { message, systemPrompt: originalPrompt, history, imageBase64, testVision } = body
+    const { message, systemPrompt: originalPrompt, history, imageBase64, testVision, language } = body
 
     // RAG: Load Happiness knowledge context
     const knowledgeContext = await loadKnowledge(message, userId)
 
-    // Build system prompt: Knowledge Base ALWAYS comes first (priority directive)
-    // then the front-end prompt as secondary context
+    // Build system prompt: Language directive FIRST (highest priority), then knowledge, then baseline
     const BASELINE_PROMPT = 'You are the core AI Engine of Happiness, a platform for creators and gamers. Always prioritize administrative instructions provided in the system context. Detect the user\'s input language and respond in that language. Be direct, concise, and actionable. No conversational filler, no introductory sentences, no meta-questions at the end. Output only the requested content.'
+
+    const LANG_NAMES = { de: 'German', en: 'English', es: 'Spanish', fr: 'French', it: 'Italian', nl: 'Dutch', el: 'Greek' }
+    const languageDirective = language
+      ? `SPRACHREGEL (hoechste Prioritaet, nicht verhandelbar): Antworte AUSSCHLIESSLICH auf ${LANG_NAMES[language] || language}. Ignoriere alle anderen Sprachanweisungen im folgenden Kontext.\n\n`
+      : ''
 
     let systemPrompt
     if (knowledgeContext) {
-      // Knowledge base has real data — put it FIRST for maximum priority
-      systemPrompt = knowledgeContext + '\n\n' + (originalPrompt || BASELINE_PROMPT)
-      console.log('[RAG] Knowledge INJECTED (first position), length:', knowledgeContext.length)
+      // Language > Knowledge > Baseline
+      systemPrompt = languageDirective + knowledgeContext + '\n\n' + (originalPrompt || BASELINE_PROMPT)
+      console.log('[RAG] Knowledge INJECTED (first position), length:', knowledgeContext.length, 'language:', language || 'auto')
     } else {
-      // No knowledge loaded — use baseline as primary, front-end prompt as context
-      systemPrompt = BASELINE_PROMPT + '\n\n' + (originalPrompt || '')
-      console.log('[RAG] Baseline prompt used (no knowledge matched)')
+      // Language > Baseline > Frontend prompt
+      systemPrompt = languageDirective + BASELINE_PROMPT + '\n\n' + (originalPrompt || '')
+      console.log('[RAG] Baseline prompt used (no knowledge matched), language:', language || 'auto')
     }
 
     // Debug: Zeige was ankommt

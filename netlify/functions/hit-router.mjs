@@ -203,9 +203,26 @@ export const handler = async (event) => {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
   }
 
-  const hitEnabled = process.env.HIT_ENABLED === 'true'
+  const hitEnabled = process.env.HIT_ENABLED === 'true' || process.env.VITE_HIT_ENABLED === 'true'
   if (!hitEnabled) {
-    return { statusCode: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ hit: false }) }
+    // Not enabled — forward directly to chat.mjs instead of returning empty
+    console.log('[H.I.T.] Not enabled, forwarding to chat.mjs')
+    const body = JSON.parse(event.body)
+    try {
+      const chatRes = await fetch(CHAT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': event.headers.authorization || '' },
+        body: JSON.stringify(body)
+      })
+      const chatData = await chatRes.json()
+      return {
+        statusCode: chatRes.status,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' },
+        body: JSON.stringify(chatData)
+      }
+    } catch (e) {
+      return { statusCode: 500, body: JSON.stringify({ error: 'Chat forward failed: ' + e.message }) }
+    }
   }
 
   try {
