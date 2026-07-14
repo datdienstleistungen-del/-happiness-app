@@ -355,7 +355,7 @@ export default function LeadRadarPage() {
           if (existingUrlsRef.current.has(sourceUrl)) continue
 
           const detectedBadge = detectBadge(plainText, feed.badge)
-          const { error } = await supabase.from('leads').insert({
+          let { error } = await supabase.from('leads').insert({
             platform: feed.platform,
             continent: feed.continent,
             lang: feed.lang,
@@ -364,7 +364,19 @@ export default function LeadRadarPage() {
             text: plainText,
             status: 'new',
           })
-          if (error) { console.warn('[LeadRadar] Insert skip:', error.message); continue }
+          if (error && error.message.includes('badge')) {
+            const retry = await supabase.from('leads').insert({
+              platform: feed.platform,
+              continent: feed.continent,
+              lang: feed.lang,
+              source_url: sourceUrl,
+              text: plainText,
+              status: 'new',
+            })
+            if (retry.error) { console.warn('[LeadRadar] Insert skip:', retry.error.message); continue }
+          } else if (error) {
+            console.warn('[LeadRadar] Insert skip:', error.message); continue
+          }
 
           existingUrlsRef.current.add(sourceUrl)
           totalInserted++
