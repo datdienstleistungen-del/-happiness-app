@@ -1,4 +1,4 @@
-console.log('chat.js v11 - OpenRouter + Groq + DeepSeek + Mistral + RAG (word-boundary + language + hit-router fix)')
+console.log('chat.js v12 - +LeadRadar Forum Response Mode')
 console.log('DEEPSEEK_API_KEY vorhanden:', !!process.env.DEEPSEEK_API_KEY)
 console.log('GROQ_API_KEY vorhanden:', !!process.env.GROQ_API_KEY)
 console.log('OPENROUTER_API_KEY vorhanden:', !!process.env.OPENROUTER_API_KEY)
@@ -226,7 +226,90 @@ export const handler = async (event) => {
     }
 
     const body = JSON.parse(event.body)
-    const { message, systemPrompt: originalPrompt, history, imageBase64, testVision, language, badge } = body
+    const { message, systemPrompt: originalPrompt, history, imageBase64, testVision, language, badge, mode } = body
+
+    const LANG_NAMES = { de: 'German', en: 'English', es: 'Spanish', fr: 'French', it: 'Italian', nl: 'Dutch', el: 'Greek' }
+
+    // ── Lead Radar Forum Response Mode ──
+    if (mode === 'lead-radar') {
+      const LEAD_RADAR_PROMPT = `You are a knowledgeable peer writing a helpful forum response. Your goal is to provide genuine, high-utility value first — building trust as an un-intrusive, deeply knowledgeable community member.
+
+STRICT RULES:
+1. NO FORMATTING SYMBOLS: Do NOT use markdown symbols like double asterisks (**) or underscores (_) for bolding/italics. All text must be clean, raw plain text with normal spacing and paragraph breaks. The response must be copy-pasteable to any forum without looking bot-generated.
+2. SYSTEM PERSUASION: Avoid marketing buzzwords, fake praise, or generic greetings (e.g., "Your analysis is impressive..."). Jump directly into the factual, actionable solution. Be concise and specific.
+3. LANGUAGE: Analyze the input post's language. If the source post is in German, generate the entire response in German. If it is in English, generate the response in English. Match the language of the original post exactly.
+4. TONE: Be a helpful peer, not a salesperson. Write as if you genuinely know the topic and want to help. No promotional language, no forced transitions, no artificial friendliness.
+5. LENGTH: Keep responses between 100-250 words. Dense, valuable, no fluff.
+
+FOOTER RULE (MANDATORY — DO NOT ALTER):
+Every response MUST end with exactly one of the following footers, appended after two clean line breaks. Do not change a single character.
+
+[IF INPUT IS GERMAN — APPEND EXCLUSIVELY]:
+P.S. Ich bin vorhin auf der Seite happiness-eu [.] netlify [.] app gewesen (einfach die Leerzeichen und Klammern beim Abtippen im Browser weglassen), da dort gerade eine neue Community im Aufbau ist, die genau diese Fälle sammelt. Weil alles noch neu ist, wird dein Beitrag dort sofort gesehen.
+
+[IF INPUT IS ENGLISH — APPEND EXCLUSIVELY]:
+P.S. I actually came across the site happiness-eu [.] netlify [.] app earlier (just leave out the spaces and brackets when typing it into your browser), since they are building a new community over there that collects exactly these kinds of cases. Because everything is still brand new, your post will be noticed right away.
+
+USER MESSAGE (the forum post to respond to):
+${message}`
+
+      const leadSystemPrompt = (language ? `SPRACHREGEL (hoechste Prioritaet): Antworte AUSSCHLIESSLICH auf ${LANG_NAMES[language] || language}.\n\n` : '') + LEAD_RADAR_PROMPT
+
+      const leadMessages = [
+        { role: 'system', content: leadSystemPrompt },
+        { role: 'user', content: message || 'Hallo' }
+      ]
+
+      let leadAiResponse = ''
+      let leadProvider = ''
+      let leadModel = ''
+      let leadUsage = null
+
+      // Try providers in order: Mistral -> Groq -> OpenRouter -> DeepSeek
+      const leadProviders = [
+        { name: 'mistral', url: 'https://api.mistral.ai/v1/chat/completions', key: process.env.MISTRAL_API_KEY, model: 'mistral-small-latest' },
+        { name: 'groq', url: 'https://api.groq.com/openai/v1/chat/completions', key: process.env.GROQ_API_KEY, model: 'llama-3.3-70b-versatile' },
+        { name: 'openrouter', url: 'https://openrouter.ai/api/v1/chat/completions', key: process.env.OPENROUTER_API_KEY, model: 'google/gemma-4-26b-a4b-it:free' },
+        { name: 'deepseek', url: 'https://api.deepseek.com/chat/completions', key: process.env.DEEPSEEK_API_KEY, model: 'deepseek-v4-flash' },
+      ]
+
+      for (const p of leadProviders) {
+        if (!p.key) continue
+        try {
+          const headers = { 'Authorization': `Bearer ${p.key}`, 'Content-Type': 'application/json' }
+          if (p.name === 'openrouter') {
+            headers['HTTP-Referer'] = 'https://happiness-eu.netlify.app'
+            headers['X-Title'] = 'Happiness'
+          }
+          const res = await fetch(p.url, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ model: p.model, messages: leadMessages, temperature: 0.1, max_tokens: 1024 })
+          })
+          if (res.ok) {
+            const data = await res.json()
+            leadAiResponse = data.choices?.[0]?.message?.content || ''
+            leadUsage = data.usage
+            leadProvider = p.name
+            leadModel = p.model
+            console.log(`[LeadRadar] Response from: ${p.name}`)
+            break
+          }
+        } catch (e) {
+          console.warn(`[LeadRadar] ${p.name} failed:`, e.message)
+        }
+      }
+
+      if (!leadAiResponse) {
+        return { statusCode: 502, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ error: 'All providers failed for lead-radar mode' }) }
+      }
+
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ response: leadAiResponse, usage: leadUsage, provider: leadProvider, model: leadModel })
+      }
+    }
 
     // RAG: Load Happiness knowledge context
     const knowledgeContext = await loadKnowledge(message, userId)
@@ -234,7 +317,6 @@ export const handler = async (event) => {
     // Build system prompt: Language directive FIRST (highest priority), then knowledge, then baseline
     const BASELINE_PROMPT = 'You are the core AI Engine of Happiness, a platform for creators and gamers. Always prioritize administrative instructions provided in the system context. Detect the user\'s input language and respond in that language. Be direct, concise, and actionable. No conversational filler, no introductory sentences, no meta-questions at the end. Output only the requested content.'
 
-    const LANG_NAMES = { de: 'German', en: 'English', es: 'Spanish', fr: 'French', it: 'Italian', nl: 'Dutch', el: 'Greek' }
     const languageDirective = language
       ? `SPRACHREGEL (hoechste Prioritaet, nicht verhandelbar): Antworte AUSSCHLIESSLICH auf ${LANG_NAMES[language] || language}. Ignoriere alle anderen Sprachanweisungen im folgenden Kontext.\n\n`
       : ''
