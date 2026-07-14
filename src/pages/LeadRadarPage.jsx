@@ -413,10 +413,12 @@ export default function LeadRadarPage() {
 
           totalMatched++
           const sourceUrl = entry.link || feed.url
-          if (existingUrlsRef.current.has(sourceUrl)) continue
+          if (existingUrlsRef.current.has(sourceUrl)) { console.log('[LeadRadar] Dedup skip:', sourceUrl.slice(0, 80)); continue }
 
           const detectedBadge = detectBadge(plainText, feed.badge)
-          let { error } = await supabase.from('leads').insert({
+          let insertError = null
+
+          const { error: e1 } = await supabase.from('leads').insert({
             platform: feed.platform,
             continent: feed.continent,
             lang: feed.lang,
@@ -425,8 +427,9 @@ export default function LeadRadarPage() {
             text: plainText,
             status: 'new',
           })
-          if (error && error.message.includes('badge')) {
-            const retry = await supabase.from('leads').insert({
+          if (e1) {
+            console.log('[LeadRadar] First insert failed (badge?):', e1.message)
+            const { error: e2 } = await supabase.from('leads').insert({
               platform: feed.platform,
               continent: feed.continent,
               lang: feed.lang,
@@ -434,10 +437,10 @@ export default function LeadRadarPage() {
               text: plainText,
               status: 'new',
             })
-            if (retry.error) { console.warn('[LeadRadar] Insert skip:', retry.error.message); continue }
-          } else if (error) {
-            console.warn('[LeadRadar] Insert skip:', error.message); continue
+            if (e2) insertError = e2
           }
+          if (insertError) { console.warn('[LeadRadar] Insert skip:', insertError.message); continue }
+          console.log('[LeadRadar] Inserted:', sourceUrl.slice(0, 80))
 
           existingUrlsRef.current.add(sourceUrl)
           totalInserted++
