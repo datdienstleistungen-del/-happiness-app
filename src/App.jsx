@@ -3,7 +3,7 @@ import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-r
 import {
   Home, Sparkles, MessageCircle, Users, ShoppingCart, Briefcase,
   BookOpen, Building2, Clapperboard, Camera, Film, Bell, Settings,
-  User, ChevronLeft, ChevronRight, Rocket, Hash, Menu, BarChart3, Trophy
+  User, ChevronLeft, ChevronRight, Rocket, Hash, Menu, BarChart3, Trophy, Radar
 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.jsx'
@@ -40,6 +40,7 @@ const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 const TodayQuestionPage = lazy(() => import('./pages/TodayQuestionPage'))
 const CreatorWelcomePage = lazy(() => import('./pages/CreatorWelcomePage'))
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'))
+const LeadRadarPage = lazy(() => import('./pages/LeadRadarPage'))
 
 function Sidebar({ mobileOpen, setMobileOpen }) {
   const { user, profile, signOut } = useAuth()
@@ -114,6 +115,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
 
   if (profile?.role === 'admin') {
     toolsLinks.push({ to: '/admin', icon: Settings, label: t('nav.admin') })
+    toolsLinks.push({ to: '/admin/lead-radar', icon: Radar, label: 'Global Lead Radar' })
   }
 
   const renderLinks = (links) => links.map((link) => (
@@ -374,6 +376,7 @@ export default function App() {
                 <Route path="/post-preparation" element={<ProtectedRoute><PostPreparationPage /></ProtectedRoute>} />
                 <Route path="/tiktok-video" element={<ProtectedRoute><TikTokVideoPage /></ProtectedRoute>} />
                 <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
+                <Route path="/admin/lead-radar" element={<ProtectedRoute><LeadRadarPage /></ProtectedRoute>} />
                 <Route path="/legal" element={<LegalPage />} />
                 <Route path="/impressum" element={<LegalPage />} />
                 <Route path="/datenschutz" element={<LegalPage />} />
