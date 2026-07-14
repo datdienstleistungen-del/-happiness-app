@@ -324,11 +324,16 @@ export default function LeadRadarPage() {
 
     for (const feed of feedsForTab) {
       try {
+        console.log('[LeadRadar] Fetching:', feed.url)
         const controller = new AbortController()
-        const timeout = setTimeout(() => controller.abort(), 15000)
-        const res = await fetch(feed.url, { signal: controller.signal })
+        const timeout = setTimeout(() => controller.abort(), 20000)
+        const res = await fetch(feed.url, {
+          signal: controller.signal,
+          headers: { 'Accept': 'application/rss+xml, application/xml, text/xml' }
+        })
         clearTimeout(timeout)
-        if (!res.ok) continue
+        console.log('[LeadRadar] Response:', feed.url, res.status)
+        if (!res.ok) { console.warn('[LeadRadar] Skip:', feed.url, res.status); continue }
 
         const xml = await res.text()
         const entries = extractEntries(xml)

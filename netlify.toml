@@ -5,10 +5,8 @@
 
 [[redirects]]
   from = "/api/reddit-proxy/*"
-  to = "https://www.reddit.com/:splat"
+  to = "/.netlify/functions/reddit-proxy/:splat"
   status = 200
-  force = true
-  headers = { Host = "www.reddit.com", User-Agent = "HappinessGlobalScout/1.0.0 (by Admin)" }
 
 [[redirects]]
   from = "/api/*"
