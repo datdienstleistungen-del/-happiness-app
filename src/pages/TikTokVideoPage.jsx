@@ -42,6 +42,66 @@ export default function TikTokVideoPage() {
   const [error, setError] = useState('')
   const [activePlatform, setActivePlatform] = useState('tiktok_instagram')
 
+  const [videoUsed, setVideoUsed] = useState(0)
+  const [contentUsed, setContentUsed] = useState(0)
+  const [isPremium, setIsPremium] = useState(false)
+  const [quotaLoaded, setQuotaLoaded] = useState(false)
+
+  const VIDEO_LIMIT = 3
+  const CONTENT_LIMIT = 5
+  const videosLeft = Math.max(0, VIDEO_LIMIT - videoUsed)
+  const postsLeft = Math.max(0, CONTENT_LIMIT - contentUsed)
+  const hasQuota = isPremium || videosLeft > 0
+
+  useEffect(() => {
+    loadQuota()
+  }, [user])
+
+  useEffect(() => {
+    const pipelineResult = location.state?.pipelineResult
+    if (pipelineResult?.recipe && !pipelineUsed.current) {
+      pipelineUsed.current = true
+      setTopic(location.state?.postText || '')
+      setRecipe(pipelineResult.recipe)
+    }
+  }, [])
+
+  const loadQuota = async () => {
+    if (!user) return
+    try {
+      const { data } = await supabase
+        .from('ai_settings')
+        .select('free_video_used, free_content_used, is_premium')
+        .eq('user_id', user.id)
+        .single()
+      if (data) {
+        setVideoUsed(data.free_video_used || 0)
+        setContentUsed(data.free_content_used || 0)
+        setIsPremium(data.is_premium || false)
+      }
+    } catch (e) {
+      console.warn('[Quota] Fallback: using defaults', e.message)
+      setVideoUsed(0)
+      setContentUsed(0)
+      setIsPremium(false)
+    } finally {
+      setQuotaLoaded(true)
+    }
+  }
+
+  const incrementQuota = async () => {
+    if (!user || isPremium) return
+    try {
+      await supabase
+        .from('ai_settings')
+        .update({ free_video_used: videoUsed + 1 })
+        .eq('user_id', user.id)
+      setVideoUsed(prev => prev + 1)
+    } catch (e) {
+      console.warn('[Quota] Increment failed', e.message)
+    }
+  }
+
   const pipelineUsed = useRef(false)
   useEffect(() => {
     const pipelineResult = location.state?.pipelineResult
@@ -58,6 +118,7 @@ export default function TikTokVideoPage() {
 
   const generateRecipe = async () => {
     if (!topic.trim() || topic.trim().length < 3) return
+    if (!hasQuota) return
 
     setLoading(true)
     setError('')
@@ -87,6 +148,7 @@ export default function TikTokVideoPage() {
       const data = await res.json()
       setRecipe(data)
       trackRecipeGenerated(data.video_title, duration)
+      incrementQuota()
     } catch (err) {
       console.error('[CapCut] Recipe error:', err)
       const msg = err.message || ''
@@ -258,13 +320,38 @@ export default function TikTokVideoPage() {
             </div>
           </div>
 
-          <button
-            className="ccp-generate-btn"
-            onClick={generateRecipe}
-            disabled={!topic.trim() || topic.trim().length < 3 || loading}
-          >
-            <Sparkles size={18} /> Rezept generieren
-          </button>
+          {quotaLoaded && !isPremium && (
+            <div className="ccp-quota-bar">
+              <span className="ccp-quota-text">
+                📊 Dein H.I.T. Kontingent: <strong>{videosLeft}/3 Videos</strong> | <strong>{postsLeft}/5 Posts</strong> verfügbar
+              </span>
+            </div>
+          )}
+
+          {quotaLoaded && !hasQuota ? (
+            <div className="ccp-paywall">
+              <div className="ccp-paywall-card">
+                <h3>H.I.T. Unlimited freischalten</h3>
+                <div className="ccp-paywall-price">Nur 4,99 € <span>/ Monat</span></div>
+                <ul className="ccp-paywall-features">
+                  <li>Unlimitierte Videos & Posts</li>
+                  <li>Alle 6 Plattformen freigeschaltet</li>
+                  <li>H.I.T. Prioritäts-Server</li>
+                </ul>
+                <a href="https://buy.stripe.com/test_placeholder" target="_blank" rel="noopener noreferrer" className="ccp-paywall-btn">
+                  Jetzt upgraden
+                </a>
+              </div>
+            </div>
+          ) : (
+            <button
+              className="ccp-generate-btn"
+              onClick={generateRecipe}
+              disabled={!topic.trim() || topic.trim().length < 3 || loading || !hasQuota}
+            >
+              <Sparkles size={18} /> Rezept generieren
+            </button>
+          )}
 
           {error && (
             <div className="ccp-error">

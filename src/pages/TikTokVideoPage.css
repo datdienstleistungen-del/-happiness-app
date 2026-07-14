@@ -213,6 +213,97 @@
   cursor: not-allowed;
 }
 
+/* Quota Bar */
+.ccp-quota-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #fef9c3, #fef3c7);
+  border: 1px solid #fde047;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.ccp-quota-text {
+  font-size: 0.9rem;
+  color: #92400e;
+}
+
+/* Paywall */
+.ccp-paywall {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.ccp-paywall-card {
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  border: 1px solid #a855f7;
+  border-radius: 16px;
+  padding: 32px 40px;
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+  color: white;
+}
+
+.ccp-paywall-card h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.3rem;
+  color: white;
+}
+
+.ccp-paywall-price {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #a855f7;
+  margin-bottom: 20px;
+}
+
+.ccp-paywall-price span {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #c4b5fd;
+}
+
+.ccp-paywall-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px 0;
+  text-align: left;
+}
+
+.ccp-paywall-features li {
+  padding: 6px 0;
+  color: #e0e7ff;
+  font-size: 0.95rem;
+}
+
+.ccp-paywall-features li::before {
+  content: "✓ ";
+  color: #22c55e;
+  font-weight: 700;
+}
+
+.ccp-paywall-btn {
+  display: inline-block;
+  padding: 12px 32px;
+  background: linear-gradient(135deg, #a855f7, #7c3aed);
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.ccp-paywall-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4);
+}
+
 /* Error */
 .ccp-error {
   display: flex;
