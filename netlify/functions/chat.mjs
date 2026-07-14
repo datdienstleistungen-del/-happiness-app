@@ -1,4 +1,4 @@
-console.log('chat.js v8 - OpenRouter + Groq + DeepSeek + Mistral + RAG (fixed)')
+console.log('chat.js v9 - OpenRouter + Groq + DeepSeek + Mistral + RAG (multilingual + fallback)')
 console.log('DEEPSEEK_API_KEY vorhanden:', !!process.env.DEEPSEEK_API_KEY)
 console.log('GROQ_API_KEY vorhanden:', !!process.env.GROQ_API_KEY)
 console.log('OPENROUTER_API_KEY vorhanden:', !!process.env.OPENROUTER_API_KEY)
@@ -13,40 +13,51 @@ const DEEPSEEK_API_BASE = 'https://api.deepseek.com/v1'
 // ── Happiness Knowledge System (RAG) ──
 
 const KNOWLEDGE_CATEGORIES = {
-  company: ['happiness', 'platform', 'europe', 'gdpr', 'company', 'about', 'community platform', 'soziale plattform', 'europäisch', 'datenschutz', 'mission', 'vision'],
-  brand: ['brand', 'marke', 'voice', 'tone', 'tonalität', 'identity', 'logo', 'values', 'style', 'communication'],
-  'ncg-academy': ['ncg academy', 'academy', 'new creator generation', 'feedback', 'content review', 'content feedback', 'verbesserung', 'entwurf', 'creator academy', 'coach', 'academy feedback', 'plattform einschätzung', 'hook check', 'hook'],
-  'creator-engine': ['creator engine', 'content erstellen', 'content workflow', 'workflow', 'idee zu content', 'content strategie', 'skript', 'caption', 'publishing strategie', 'creator projekt', 'multi platform', 'content generation'],
-  community: ['community', 'feed', 'beitrag', 'post', 'freunde', 'friends', 'verbinden', 'netzwerk', 'comments', 'kommentare', 'reactions', 'interaktion'],
-  products: ['premium', 'subscription', 'abonnement', '6.99', 'kostenlos', 'free', 'pricing', 'preis', 'bezahlen', 'upgrade', 'stripe', 'pay', 'konto'],
-  ai: ['ai agent', 'ki agent', 'strategist', 'copywriter', 'builder', 'agent architecture', 'multi agent', 'intelligence'],
-  publishing: ['publishing', 'veröffentlichen', 'cross post', 'plattform optimierung', 'tiktok', 'instagram', 'youtube', 'linkedin', 'content format', 'hook'],
-  analytics: ['analytics', 'analyse', 'performance', 'tracking', 'wachstum', 'growth', 'metrics', 'kennzahlen', 'verbesserung', 'daten'],
-  'creator-workflow': ['creator prozess', 'workflow', 'erstellungsprozess', 'idee', 'publish', 'veröffentlichen', 'iteration', 'creator journey'],
-  learning: ['lernen', 'learning', 'bildung', 'education', 'creator education', 'teaching', 'scaffolding', 'lernphilosophie', 'anfänger', 'verbessern', 'tutorial'],
-  marketing: ['marketing', 'positionierung', 'target audience', 'zielgruppe', 'message', 'werbung', 'reach', 'reichweite'],
-  roadmap: ['roadmap', 'future', 'zukunft', 'geplant', 'upcoming', 'mobile app', 'neue features', 'produktentwicklung'],
+  company: ['happiness', 'platform', 'europe', 'gdpr', 'company', 'about', 'community platform', 'soziale plattform', 'europäisch', 'datenschutz', 'mission', 'vision', 'about happiness', 'what is happiness', 'what does happiness do'],
+  brand: ['brand', 'marke', 'voice', 'tone', 'tonalität', 'identity', 'logo', 'values', 'style', 'communication', 'brand voice', 'brand guidelines', 'tone of voice'],
+  'ncg-academy': ['ncg academy', 'academy', 'new creator generation', 'feedback', 'content review', 'content feedback', 'verbesserung', 'entwurf', 'creator academy', 'coach', 'academy feedback', 'plattform einschätzung', 'hook check', 'hook', 'review my', 'improve my', 'content feedback'],
+  'creator-engine': ['creator engine', 'content erstellen', 'content workflow', 'workflow', 'idee zu content', 'content strategie', 'skript', 'caption', 'publishing strategie', 'creator projekt', 'multi platform', 'content generation', 'content creation', 'create content', 'write a post', 'write a caption', 'video script'],
+  community: ['community', 'feed', 'beitrag', 'post', 'freunde', 'friends', 'verbinden', 'netzwerk', 'comments', 'kommentare', 'reactions', 'interaktion', 'feed post', 'community post'],
+  products: ['premium', 'subscription', 'abonnement', '6.99', 'kostenlos', 'free', 'pricing', 'preis', 'bezahlen', 'upgrade', 'stripe', 'pay', 'konto', 'subscription plan', 'pricing plan', 'how much'],
+  ai: ['ai agent', 'ki agent', 'strategist', 'copywriter', 'builder', 'agent architecture', 'multi agent', 'intelligence', 'ai agents', 'ai architecture', 'agent system', 'h.i.t.', 'hit system', 'happiness intelligence team'],
+  publishing: ['publishing', 'veröffentlichen', 'cross post', 'plattform optimierung', 'tiktok', 'instagram', 'youtube', 'linkedin', 'content format', 'hook', 'cross-post', 'multi platform', 'post on', 'share on', 'publish to'],
+  analytics: ['analytics', 'analyse', 'performance', 'tracking', 'wachstum', 'growth', 'metrics', 'kennzahlen', 'verbesserung', 'daten', 'insights', 'engagement', 'reach', 'impressions'],
+  'creator-workflow': ['creator prozess', 'workflow', 'erstellungsprozess', 'idee', 'publish', 'veröffentlichen', 'iteration', 'creator journey', 'creator workflow', 'content pipeline', 'from idea to post'],
+  learning: ['lernen', 'learning', 'bildung', 'education', 'creator education', 'teaching', 'scaffolding', 'lernphilosophie', 'anfänger', 'verbessern', 'tutorial', 'how to create', 'learn to', 'beginner'],
+  marketing: ['marketing', 'positionierung', 'target audience', 'zielgruppe', 'message', 'werbung', 'reach', 'reichweite', 'marketing strategy', 'audience', 'targeting', 'advertising', 'promotion', 'brand awareness', 'growth strategy'],
+  roadmap: ['roadmap', 'future', 'zukunft', 'geplant', 'upcoming', 'mobile app', 'neue features', 'produktentwicklung', 'what is planned', 'coming soon', 'new features'],
+  gaming: ['gaming', 'stream', 'streaming', 'gamer', 'twitch', 'fortnite', 'minecraft', 'apex', 'league of legends', 'esports', 'clip', 'clips', 'viewer', 'viewers', 'streamer', 'let\'s play', 'game'],
   general: ['faq', 'frage', 'help', 'hilfe', 'how to', 'wie funktioniert', 'was ist', 'erklärung', 'supported'],
 }
 
 const INTENT_PATTERNS = {
   general: [
     /^(hallo|hi|hey|moin|servus|grüß)/i,
+    /^(hello|hi|hey|greetings)/i,
     /übersetz(?:e|ung)/i,
+    /translat(?:e|ion)/i,
     /schreib (?:einen|eine|mir)/i,
+    /write (?:a|me|the)/i,
     /erklär mir/i,
+    /explain (?:to|me|this)/i,
     /was bedeutet/i,
+    /what (?:does|is|mean)/i,
     /wie (?:geht|funktioniert|kann|mach)/i,
+    /how (?:to|does|can|do)/i,
     /rechne/i,
+    /calculate|compute/i,
   ],
   creator: [
     /content|post|beitrag|erstellen|schreiben/i,
+    /create|write|draft|compose/i,
     /creator|ersteller|influencer/i,
     /hook|caption|skript|script/i,
     /plattform (?:einschätzung|optimierung)/i,
+    /platform (?:review|optimization)/i,
     /feedback|verbesserung|review/i,
     /publish|veröffentlichen/i,
     /idee/i,
+    /idea/i,
   ],
   platform: [
     /happiness|platform|community/i,
@@ -54,6 +65,7 @@ const INTENT_PATTERNS = {
     /premium|abo|kostenlos|free/i,
     /europe|europa|gdpr|datenschutz|privacy/i,
     /feature|funktion|produkt/i,
+    /feature|function|product/i,
     /marketplace|marktplatz|jobs|kurse|courses/i,
   ],
 }
@@ -99,15 +111,24 @@ async function loadKnowledge(message, userId) {
     }
   }
 
-  // 3. If nothing matched, return empty
+  // 3. Gaming auto-append: if gaming keywords detected, also load marketing + ai
+  const GAMING_TRIGGERS = ['stream', 'viewer', 'viewers', 'clip', 'clips', 'post', 'posts', 'tiktok', 'facebook', 'gaming', 'game', 'gamer', 'twitch', 'fortnite', 'minecraft', 'streamer']
+  const hasGamingContext = GAMING_TRIGGERS.some(kw => lower.includes(kw))
+  if (hasGamingContext) {
+    categoriesToLoad.add('marketing')
+    categoriesToLoad.add('ai')
+    console.log('[RAG] Gaming context detected — auto-appending marketing + ai')
+  }
+
+  // 4. If nothing matched, still return the baseline system prompt (never empty)
   if (categoriesToLoad.size === 0) {
-    console.log('[RAG] No categories matched for:', lower.substring(0, 80))
-    return ''
+    console.log('[RAG] No categories matched, using baseline prompt for:', lower.substring(0, 80))
+    return '\n\n=== HAPPINESS EXECUTION ENGINE ===\nYou are the execution engine of Happiness. Absolutely NO conversational filler, NO introductory sentences (like "Moin", "Erstmal durchatmen"), and NO meta-questions at the end. Detect the user\'s input language and output ONLY the requested final, copy-pasteable content immediately. If the user asks about Happiness, refer to the platform knowledge. If no specific knowledge applies, respond directly and concisely in the user\'s language.\n=== END ===\n'
   }
 
   console.log('[RAG] Loading categories:', [...categoriesToLoad], 'for:', lower.substring(0, 80))
 
-  // 4. Fetch ALL matching categories from Supabase
+  // 5. Fetch ALL matching categories from Supabase
   const allEntries = []
   for (const category of categoriesToLoad) {
     try {
@@ -136,8 +157,8 @@ async function loadKnowledge(message, userId) {
   }
 
   if (allEntries.length === 0) {
-    console.log('[RAG] No knowledge entries found for categories:', [...categoriesToLoad])
-    return ''
+    console.log('[RAG] No entries in DB for categories:', [...categoriesToLoad], '— using baseline prompt')
+    return '\n\n=== HAPPINESS EXECUTION ENGINE ===\nYou are the execution engine of Happiness. Absolutely NO conversational filler, NO introductory sentences (like "Moin", "Erstmal durchatmen"), and NO meta-questions at the end. Detect the user\'s input language and output ONLY the requested final, copy-pasteable content immediately. If the user asks about Happiness, refer to the platform knowledge. If no specific knowledge applies, respond directly and concisely in the user\'s language.\n=== END ===\n'
   }
 
   console.log(`[RAG] Total loaded: ${allEntries.length} entries`)
@@ -360,7 +381,7 @@ export const handler = async (event) => {
           body: JSON.stringify({
             model: 'meta-llama/llama-4-scout-17b-16e-instruct',
             messages: buildMessages(historyLimit),
-            temperature: 0.7,
+            temperature: 0.1,
             max_tokens: 4096
           })
         })
@@ -388,7 +409,7 @@ export const handler = async (event) => {
               body: JSON.stringify({
                 model: 'llama-3.3-70b-versatile',
                 messages: buildMessages(historyLimit, true),
-                temperature: 0.7,
+                temperature: 0.1,
                 max_tokens: 4096
               })
             })
@@ -448,7 +469,7 @@ export const handler = async (event) => {
             body: JSON.stringify({
               model: 'google/gemma-4-26b-a4b-it:free',
               messages: buildMessages(historyLimit),
-              temperature: 0.7,
+              temperature: 0.1,
               max_tokens: 4096
             })
           })
@@ -490,7 +511,7 @@ export const handler = async (event) => {
               body: JSON.stringify({
                 model: 'llama-3.3-70b-versatile',
                 messages: buildMessages(historyLimit),
-                temperature: 0.7,
+                temperature: 0.1,
                 max_tokens: 4096
               })
             })
@@ -532,7 +553,7 @@ export const handler = async (event) => {
               body: JSON.stringify({
                 model: 'deepseek-v4-flash',
                 messages: buildMessages(historyLimit),
-                temperature: 0.7,
+                temperature: 0.1,
                 max_tokens: 4096
               })
             })
@@ -574,7 +595,7 @@ export const handler = async (event) => {
               body: JSON.stringify({
                 model: 'mistral-small-latest',
                 messages: buildMessages(historyLimit),
-                temperature: 0.7,
+                temperature: 0.1,
                 max_tokens: 4096
               })
             })
