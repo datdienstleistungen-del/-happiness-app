@@ -336,22 +336,41 @@ export default function LeadRadarPage() {
     for (let i = 0; i < feedsForTab.length; i++) {
       const feed = feedsForTab[i]
       try {
-        // Pause between requests to avoid Reddit rate-limiting
         if (i > 0) await new Promise(r => setTimeout(r, 1500))
 
-        console.log('[LeadRadar] Fetching:', feed.url)
-        const controller = new AbortController()
-        const timeout = setTimeout(() => controller.abort(), 10000)
-        const res = await fetch(feed.url, {
-          signal: controller.signal,
-          headers: { 'Accept': 'application/rss+xml, application/xml, text/xml, */*' }
-        })
-        clearTimeout(timeout)
-        console.log('[LeadRadar] Response:', feed.url, res.status)
-        if (!res.ok) { console.warn('[LeadRadar] Skip:', feed.url, res.status); continue }
+        const subreddit = feed.url.match(/\/r\/([^/]+)\//)?.[1] || 'unknown'
+        const directUrl = `https://www.reddit.com/r/${subreddit}/new/.rss`
+        const proxyUrl = feed.url
 
-        const xml = await res.text()
-        console.log('[LeadRadar] XML length:', xml.length, 'for', feed.url)
+        let xml = null
+
+        // Try direct client-side fetch first (Reddit RSS sometimes allows CORS)
+        try {
+          const c1 = new AbortController()
+          const t1 = setTimeout(() => c1.abort(), 6000)
+          const r1 = await fetch(directUrl, { signal: c1.signal, headers: { 'Accept': '*/*' } })
+          clearTimeout(t1)
+          if (r1.ok) {
+            xml = await r1.text()
+            console.log('[LeadRadar] Direct OK:', subreddit, xml.length, 'bytes')
+          }
+        } catch (_) { /* direct failed, try proxy */ }
+
+        // Fallback to Netlify proxy
+        if (!xml) {
+          try {
+            const c2 = new AbortController()
+            const t2 = setTimeout(() => c2.abort(), 8000)
+            const r2 = await fetch(proxyUrl, { signal: c2.signal, headers: { 'Accept': '*/*' } })
+            clearTimeout(t2)
+            if (r2.ok) {
+              xml = await r2.text()
+              console.log('[LeadRadar] Proxy OK:', subreddit, xml.length, 'bytes')
+            }
+          } catch (_) { /* both failed */ }
+        }
+
+          if (!xml) { console.warn('[LeadRadar] Skip:', subreddit, 'both methods failed'); continue }
         const entries = extractEntries(xml)
         totalFetched += entries.length
 
