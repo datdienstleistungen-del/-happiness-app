@@ -672,6 +672,19 @@
   color: #166534;
 }
 
+/* Social Tabs Section - Prominent placement above Action Hub */
+.ccp-social-tabs-section {
+  border: 2px solid var(--color-petrol, #2D8C6F) !important;
+  background: linear-gradient(135deg, #f0fdf4, #ecfdf5) !important;
+  padding: 20px !important;
+}
+
+.ccp-social-tabs-section .ccp-platform-tabs {
+  margin-bottom: 20px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
 /* Platform Tabs */
 .ccp-platform-tabs {
   display: flex;

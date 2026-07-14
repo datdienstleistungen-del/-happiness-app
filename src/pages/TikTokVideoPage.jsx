@@ -403,12 +403,7 @@ export default function TikTokVideoPage() {
           </div>
 
           {recipe.publishing_payload && (
-            <div className="ccp-section">
-              <div className="ccp-section-header">
-                <Share2 size={18} />
-                <h3>Publishing Package</h3>
-              </div>
-
+            <div className="ccp-section ccp-social-tabs-section">
               <div className="ccp-platform-tabs">
                 {PLATFORMS.map(p => {
                   const Icon = p.icon
@@ -431,18 +426,6 @@ export default function TikTokVideoPage() {
               </div>
             </div>
           )}
-
-          <div className="ccp-section">
-            <div className="ccp-section-header">
-              <Image size={18} />
-              <h3>Szenen & Visual Prompts</h3>
-            </div>
-            <div className="ccp-scenes-list">
-              {recipe.scenes.map((scene, i) => (
-                <SceneCard key={i} scene={scene} index={i} />
-              ))}
-            </div>
-          </div>
 
           <div className="ccp-section ccp-action-hub">
             <div className="ccp-section-header">
@@ -488,6 +471,18 @@ export default function TikTokVideoPage() {
               </a>
             </div>
             <p className="ccp-capcut-hint">Tipp: In CapCut einfach auf "Neues Video" klicken, um den kostenlosen Editor zu nutzen.</p>
+          </div>
+
+          <div className="ccp-section">
+            <div className="ccp-section-header">
+              <Image size={18} />
+              <h3>Szenen & Visual Prompts</h3>
+            </div>
+            <div className="ccp-scenes-list">
+              {recipe.scenes.map((scene, i) => (
+                <SceneCard key={i} scene={scene} index={i} />
+              ))}
+            </div>
           </div>
 
           <div className="ccp-section">
