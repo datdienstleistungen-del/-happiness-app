@@ -9,11 +9,37 @@ import './LeadRadarPage.css'
 const CORS_PROXY = 'https://api.allorigins.win/raw?url='
 
 const LIVE_FEEDS = [
+  // 🇺🇸 North America
   { url: 'https://www.reddit.com/r/Twitch/new/.rss?limit=10', continent: 'na', platform: 'twitch', lang: 'en', badge: 'Gamer' },
   { url: 'https://www.reddit.com/r/NewTubers/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Creator' },
-  { url: 'https://www.reddit.com/r/streamingadvice/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Advice-Seeker' },
   { url: 'https://www.reddit.com/r/SideHustle/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Business' },
-  { url: 'https://www.reddit.com/r/Minecraftbuilds/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Builder' },
+  { url: 'https://www.reddit.com/r/daytrading/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Trader' },
+  { url: 'https://www.reddit.com/r/RealEstate/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Real Estate' },
+  { url: 'https://www.reddit.com/r/Entrepreneur/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Business' },
+  { url: 'https://www.reddit.com/r/CryptoCurrency/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Trader' },
+  { url: 'https://www.reddit.com/r/streamingadvice/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Advice-Seeker' },
+
+  // 🇪🇺 Europe
+  { url: 'https://www.reddit.com/r/eupersonalfinance/new/.rss?limit=10', continent: 'eu', platform: 'reddit', lang: 'en', badge: 'Business' },
+  { url: 'https://www.reddit.com/r/Freelance/new/.rss?limit=10', continent: 'eu', platform: 'reddit', lang: 'en', badge: 'Business' },
+  { url: 'https://www.reddit.com/r/StockMarket/new/.rss?limit=10', continent: 'eu', platform: 'reddit', lang: 'en', badge: 'Trader' },
+  { url: 'https://www.reddit.com/r/RealEstate/new/.rss?limit=10', continent: 'eu', platform: 'reddit', lang: 'en', badge: 'Real Estate' },
+  { url: 'https://www.reddit.com/r/privacy/new/.rss?limit=10', continent: 'eu', platform: 'reddit', lang: 'de', badge: 'Privacy-First' },
+  { url: 'https://www.reddit.com/r/SmallYTChannel/new/.rss?limit=10', continent: 'eu', platform: 'reddit', lang: 'en', badge: 'Creator' },
+  { url: 'https://www.reddit.com/r/Forex/new/.rss?limit=10', continent: 'eu', platform: 'reddit', lang: 'en', badge: 'Trader' },
+
+  // 🇧🇷 Latin America
+  { url: 'https://www.reddit.com/r/cryptomarkets/new/.rss?limit=10', continent: 'latam', platform: 'reddit', lang: 'es', badge: 'Trader' },
+  { url: 'https://www.reddit.com/r/immobilien/new/.rss?limit=10', continent: 'latam', platform: 'reddit', lang: 'pt', badge: 'Real Estate' },
+  { url: 'https://www.reddit.com/r/DeFi/new/.rss?limit=10', continent: 'latam', platform: 'reddit', lang: 'es', badge: 'Trader' },
+  { url: 'https://www.reddit.com/r/YouTube_Startups/new/.rss?limit=10', continent: 'latam', platform: 'reddit', lang: 'es', badge: 'Creator' },
+
+  // 🇦🇺 Asia-Pacific
+  { url: 'https://www.reddit.com/r/ASX/new/.rss?limit=10', continent: 'apac', platform: 'reddit', lang: 'en', badge: 'Trader' },
+  { url: 'https://www.reddit.com/r/AusProperty/new/.rss?limit=10', continent: 'apac', platform: 'reddit', lang: 'en', badge: 'Real Estate' },
+  { url: 'https://www.reddit.com/r/Minecraftbuilds/new/.rss?limit=10', continent: 'apac', platform: 'reddit', lang: 'en', badge: 'Builder' },
+  { url: 'https://www.reddit.com/r/YouTubeGrowth/new/.rss?limit=10', continent: 'apac', platform: 'reddit', lang: 'en', badge: 'Creator' },
+  { url: 'https://www.reddit.com/r/SatoshiStreetBets/new/.rss?limit=10', continent: 'apac', platform: 'reddit', lang: 'en', badge: 'Trader' },
 ]
 
 const CONTINENTS = [
@@ -304,11 +330,13 @@ export default function LeadRadarPage() {
     if (radarActive) return
     setRadarActive(true)
     setRadarStats({ fetched: 0, matched: 0, inserted: 0 })
-    console.log('[LeadRadar] Live scan started —', LIVE_FEEDS.length, 'feeds')
+
+    const feedsForTab = LIVE_FEEDS.filter(f => f.continent === activeContinent)
+    console.log('[LeadRadar] Live scan started —', feedsForTab.length, 'feeds for', activeContinent)
 
     let totalFetched = 0, totalMatched = 0, totalInserted = 0
 
-    for (const feed of LIVE_FEEDS) {
+    for (const feed of feedsForTab) {
       try {
         const proxyUrl = CORS_PROXY + encodeURIComponent(feed.url)
         const controller = new AbortController()
@@ -325,7 +353,7 @@ export default function LeadRadarPage() {
           const fullText = `${entry.title} ${entry.content}`.trim()
           const plainText = fullText.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 2000)
           if (plainText.length < 20) continue
-          if (!matchesAny(plainText, KW_FRUSTRATION_EN, KW_FRUSTRATION_DE, KW_MILESTONE_EN, KW_MILESTONE_DE, KW_ADVICE_EN, KW_ADVICE_DE, KW_PRIVACY_EN, KW_PRIVACY_DE, KW_BUILDER_EN, KW_BUILDER_DE)) continue
+          if (!matchesAny(plainText, KW_FRUSTRATION_EN, KW_FRUSTRATION_DE, KW_MILESTONE_EN, KW_MILESTONE_DE, KW_ADVICE_EN, KW_ADVICE_DE, KW_PRIVACY_EN, KW_PRIVACY_DE, KW_BUILDER_EN, KW_BUILDER_DE, KW_TRADER_EN, KW_TRADER_DE, KW_REALESTATE_EN, KW_REALESTATE_DE)) continue
 
           totalMatched++
           const sourceUrl = entry.link || feed.url
@@ -371,7 +399,7 @@ export default function LeadRadarPage() {
     setRadarActive(false)
     setRadarStats({ fetched: totalFetched, matched: totalMatched, inserted: totalInserted })
     console.log(`[LeadRadar] Scan done: ${totalFetched} fetched, ${totalMatched} matched, ${totalInserted} new`)
-  }, [radarActive])
+  }, [radarActive, activeContinent])
 
   async function handleSaveLead(e) {
     e.preventDefault()
@@ -469,8 +497,8 @@ EMOTION: ${emotionMap[badge] || emotionMap.Creator}`
         <div className="lr-empty">
           <div className="lr-empty-radar"><Radar size={48} className="lr-radar-pulse" /></div>
           <h2>🛰️ Global Radar scanning...</h2>
-          <p>Click "Live Radar" to scan Reddit feeds in real-time from your browser.</p>
-          <p className="lr-empty-sub">No server needed — all scraping runs client-side.</p>
+          <p>Click "📡 Live Radar" to scan {CONTINENTS.find(c => c.id === activeContinent)?.label || ''} feeds in real-time.</p>
+          <p className="lr-empty-sub">{LIVE_FEEDS.filter(f => f.continent === activeContinent).length} active feeds for this region — all client-side.</p>
         </div>
       ) : (
         <div className="lr-grid">
