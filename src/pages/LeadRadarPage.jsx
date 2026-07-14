@@ -322,8 +322,12 @@ export default function LeadRadarPage() {
 
     let totalFetched = 0, totalMatched = 0, totalInserted = 0
 
-    for (const feed of feedsForTab) {
+    for (let i = 0; i < feedsForTab.length; i++) {
+      const feed = feedsForTab[i]
       try {
+        // Pause between requests to avoid Reddit rate-limiting
+        if (i > 0) await new Promise(r => setTimeout(r, 1500))
+
         console.log('[LeadRadar] Fetching:', feed.url)
         const controller = new AbortController()
         const timeout = setTimeout(() => controller.abort(), 10000)
