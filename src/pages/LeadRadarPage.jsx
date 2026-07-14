@@ -6,40 +6,35 @@ import { supabase } from '../lib/supabase'
 import { getChatEndpoint } from '../lib/hit'
 import './LeadRadarPage.css'
 
-const CORS_PROXY = 'https://api.allorigins.win/raw?url='
-
 const LIVE_FEEDS = [
   // 🇺🇸 North America
-  { url: 'https://www.reddit.com/r/Twitch/new/.rss?limit=10', continent: 'na', platform: 'twitch', lang: 'en', badge: 'Gamer' },
-  { url: 'https://www.reddit.com/r/NewTubers/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Creator' },
-  { url: 'https://www.reddit.com/r/SideHustle/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Business' },
-  { url: 'https://www.reddit.com/r/daytrading/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Trader' },
-  { url: 'https://www.reddit.com/r/RealEstate/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Real Estate' },
-  { url: 'https://www.reddit.com/r/Entrepreneur/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Business' },
-  { url: 'https://www.reddit.com/r/CryptoCurrency/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Trader' },
-  { url: 'https://www.reddit.com/r/streamingadvice/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Advice-Seeker' },
+  { url: '/api/reddit-proxy/r/Twitch/new/.rss?limit=10', continent: 'na', platform: 'twitch', lang: 'en', badge: 'Gamer' },
+  { url: '/api/reddit-proxy/r/NewTubers/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Creator' },
+  { url: '/api/reddit-proxy/r/SideHustle/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Business' },
+  { url: '/api/reddit-proxy/r/CryptoCurrency/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Trader' },
+  { url: '/api/reddit-proxy/r/realestateinvesting/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Real Estate' },
+  { url: '/api/reddit-proxy/r/Entrepreneur/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Business' },
+  { url: '/api/reddit-proxy/r/streamingadvice/new/.rss?limit=10', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Advice-Seeker' },
 
   // 🇪🇺 Europe
-  { url: 'https://www.reddit.com/r/eupersonalfinance/new/.rss?limit=10', continent: 'eu', platform: 'reddit', lang: 'en', badge: 'Business' },
-  { url: 'https://www.reddit.com/r/Freelance/new/.rss?limit=10', continent: 'eu', platform: 'reddit', lang: 'en', badge: 'Business' },
-  { url: 'https://www.reddit.com/r/StockMarket/new/.rss?limit=10', continent: 'eu', platform: 'reddit', lang: 'en', badge: 'Trader' },
-  { url: 'https://www.reddit.com/r/RealEstate/new/.rss?limit=10', continent: 'eu', platform: 'reddit', lang: 'en', badge: 'Real Estate' },
-  { url: 'https://www.reddit.com/r/privacy/new/.rss?limit=10', continent: 'eu', platform: 'reddit', lang: 'de', badge: 'Privacy-First' },
-  { url: 'https://www.reddit.com/r/SmallYTChannel/new/.rss?limit=10', continent: 'eu', platform: 'reddit', lang: 'en', badge: 'Creator' },
-  { url: 'https://www.reddit.com/r/Forex/new/.rss?limit=10', continent: 'eu', platform: 'reddit', lang: 'en', badge: 'Trader' },
+  { url: '/api/reddit-proxy/r/de_EDV/new/.rss?limit=10', continent: 'eu', platform: 'reddit', lang: 'de', badge: 'Tech-EU' },
+  { url: '/api/reddit-proxy/r/Finanzen/new/.rss?limit=10', continent: 'eu', platform: 'reddit', lang: 'de', badge: 'Trader-EU' },
+  { url: '/api/reddit-proxy/r/ImmobilienInvestments/new/.rss?limit=10', continent: 'eu', platform: 'reddit', lang: 'de', badge: 'Real Estate-EU' },
+  { url: '/api/reddit-proxy/r/Freelance/new/.rss?limit=10', continent: 'eu', platform: 'reddit', lang: 'en', badge: 'Business' },
+  { url: '/api/reddit-proxy/r/privacy/new/.rss?limit=10', continent: 'eu', platform: 'reddit', lang: 'de', badge: 'Privacy-First' },
+  { url: '/api/reddit-proxy/r/SmallYTChannel/new/.rss?limit=10', continent: 'eu', platform: 'reddit', lang: 'en', badge: 'Creator' },
 
   // 🇧🇷 Latin America
-  { url: 'https://www.reddit.com/r/cryptomarkets/new/.rss?limit=10', continent: 'latam', platform: 'reddit', lang: 'es', badge: 'Trader' },
-  { url: 'https://www.reddit.com/r/immobilien/new/.rss?limit=10', continent: 'latam', platform: 'reddit', lang: 'pt', badge: 'Real Estate' },
-  { url: 'https://www.reddit.com/r/DeFi/new/.rss?limit=10', continent: 'latam', platform: 'reddit', lang: 'es', badge: 'Trader' },
-  { url: 'https://www.reddit.com/r/YouTube_Startups/new/.rss?limit=10', continent: 'latam', platform: 'reddit', lang: 'es', badge: 'Creator' },
+  { url: '/api/reddit-proxy/r/investimentos/new/.rss?limit=10', continent: 'latam', platform: 'reddit', lang: 'pt', badge: 'Trader-BR' },
+  { url: '/api/reddit-proxy/r/computadores/new/.rss?limit=10', continent: 'latam', platform: 'reddit', lang: 'pt', badge: 'Tech-BR' },
+  { url: '/api/reddit-proxy/r/DeFi/new/.rss?limit=10', continent: 'latam', platform: 'reddit', lang: 'es', badge: 'Trader' },
+  { url: '/api/reddit-proxy/r/YouTube_Startups/new/.rss?limit=10', continent: 'latam', platform: 'reddit', lang: 'es', badge: 'Creator' },
 
   // 🇦🇺 Asia-Pacific
-  { url: 'https://www.reddit.com/r/ASX/new/.rss?limit=10', continent: 'apac', platform: 'reddit', lang: 'en', badge: 'Trader' },
-  { url: 'https://www.reddit.com/r/AusProperty/new/.rss?limit=10', continent: 'apac', platform: 'reddit', lang: 'en', badge: 'Real Estate' },
-  { url: 'https://www.reddit.com/r/Minecraftbuilds/new/.rss?limit=10', continent: 'apac', platform: 'reddit', lang: 'en', badge: 'Builder' },
-  { url: 'https://www.reddit.com/r/YouTubeGrowth/new/.rss?limit=10', continent: 'apac', platform: 'reddit', lang: 'en', badge: 'Creator' },
-  { url: 'https://www.reddit.com/r/SatoshiStreetBets/new/.rss?limit=10', continent: 'apac', platform: 'reddit', lang: 'en', badge: 'Trader' },
+  { url: '/api/reddit-proxy/r/AusFinance/new/.rss?limit=10', continent: 'apac', platform: 'reddit', lang: 'en', badge: 'Trader-AU' },
+  { url: '/api/reddit-proxy/r/AusRenovation/new/.rss?limit=10', continent: 'apac', platform: 'reddit', lang: 'en', badge: 'Real Estate-AU' },
+  { url: '/api/reddit-proxy/r/gamedev/new/.rss?limit=10', continent: 'apac', platform: 'reddit', lang: 'en', badge: 'Builder-Global' },
+  { url: '/api/reddit-proxy/r/YouTubeGrowth/new/.rss?limit=10', continent: 'apac', platform: 'reddit', lang: 'en', badge: 'Creator' },
 ]
 
 const CONTINENTS = [
@@ -338,10 +333,9 @@ export default function LeadRadarPage() {
 
     for (const feed of feedsForTab) {
       try {
-        const proxyUrl = CORS_PROXY + encodeURIComponent(feed.url)
         const controller = new AbortController()
         const timeout = setTimeout(() => controller.abort(), 15000)
-        const res = await fetch(proxyUrl, { signal: controller.signal })
+        const res = await fetch(feed.url, { signal: controller.signal })
         clearTimeout(timeout)
         if (!res.ok) continue
 

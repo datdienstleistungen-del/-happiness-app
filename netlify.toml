@@ -4,6 +4,12 @@
   functions = "netlify/functions"
 
 [[redirects]]
+  from = "/api/reddit-proxy/*"
+  to = "https://reddit.com/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
