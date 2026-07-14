@@ -1,4 +1,4 @@
-console.log('chat.js v9 - OpenRouter + Groq + DeepSeek + Mistral + RAG (multilingual + fallback)')
+console.log('chat.js v10 - OpenRouter + Groq + DeepSeek + Mistral + RAG (persona removed, priority fixed)')
 console.log('DEEPSEEK_API_KEY vorhanden:', !!process.env.DEEPSEEK_API_KEY)
 console.log('GROQ_API_KEY vorhanden:', !!process.env.GROQ_API_KEY)
 console.log('OPENROUTER_API_KEY vorhanden:', !!process.env.OPENROUTER_API_KEY)
@@ -223,13 +223,20 @@ export const handler = async (event) => {
 
     // RAG: Load Happiness knowledge context
     const knowledgeContext = await loadKnowledge(message, userId)
-    const systemPrompt = knowledgeContext ? originalPrompt + knowledgeContext : originalPrompt
 
-    // Debug: Log knowledge injection
+    // Build system prompt: Knowledge Base ALWAYS comes first (priority directive)
+    // then the front-end prompt as secondary context
+    const BASELINE_PROMPT = 'You are the core AI Engine of Happiness, a platform for creators and gamers. Always prioritize administrative instructions provided in the system context. Detect the user\'s input language and respond in that language. Be direct, concise, and actionable. No conversational filler, no introductory sentences, no meta-questions at the end. Output only the requested content.'
+
+    let systemPrompt
     if (knowledgeContext) {
-      console.log('[RAG] Knowledge injected into system prompt, length:', knowledgeContext.length)
+      // Knowledge base has real data — put it FIRST for maximum priority
+      systemPrompt = knowledgeContext + '\n\n' + (originalPrompt || BASELINE_PROMPT)
+      console.log('[RAG] Knowledge INJECTED (first position), length:', knowledgeContext.length)
     } else {
-      console.log('[RAG] No knowledge loaded for this message')
+      // No knowledge loaded — use baseline as primary, front-end prompt as context
+      systemPrompt = BASELINE_PROMPT + '\n\n' + (originalPrompt || '')
+      console.log('[RAG] Baseline prompt used (no knowledge matched)')
     }
 
     // Debug: Zeige was ankommt
