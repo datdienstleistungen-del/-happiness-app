@@ -12,8 +12,8 @@ import { trackRecipeGenerated, trackPlatformViewed, trackCapCutTriggered } from 
 import './TikTokVideoPage.css'
 
 const PLATFORMS = [
-  { id: 'tiktok_instagram', label: 'TikTok & Instagram', icon: Hash, color: '#E4405F' },
-  { id: 'linkedin_facebook', label: 'LinkedIn & Facebook', icon: Globe, color: '#0A66C2' },
+  { id: 'tiktok_instagram', label: 'TikTok / Instagram', icon: Hash, color: '#E4405F' },
+  { id: 'linkedin_facebook', label: 'LinkedIn / Facebook', icon: Globe, color: '#0A66C2' },
   { id: 'youtube_shorts', label: 'YouTube Shorts', icon: Video, color: '#FF0000' },
   { id: 'reddit', label: 'Reddit', icon: MessageSquare, color: '#FF4500' }
 ]

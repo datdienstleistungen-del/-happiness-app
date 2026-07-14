@@ -588,6 +588,21 @@
   margin-bottom: 16px;
   overflow-x: auto;
   padding-bottom: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border, #e2e8f0) transparent;
+}
+
+.ccp-platform-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.ccp-platform-tabs::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ccp-platform-tabs::-webkit-scrollbar-thumb {
+  background: var(--border, #e2e8f0);
+  border-radius: 4px;
 }
 
 .ccp-platform-tab {
@@ -608,10 +623,12 @@
 
 .ccp-platform-tab:hover {
   border-color: var(--text-muted, #94a3b8);
+  background: #f8fafc;
 }
 
 .ccp-platform-tab.active {
   background: var(--bg-card, #ffffff);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* Platform Content */

@@ -54,7 +54,7 @@ JSON-Struktur:
 }
 
 Regeln:
-- WICHTIG zur Skriptlänge: Das 'voiceover_script' muss eine vollständige Geschichte erzählen, darf aber nicht ausufernd sein. Zielgröße sind ca. 100-130 Wörter (entspricht ca. 30 bis 45 Sekunden Videozeit).
+- LÄNGE: Das voiceover_script muss eine vollständige, packende Geschichte erzählen. Zielgröße: ca. 120-150 Wörter (entspricht ca. 30-45 Sekunden Videozeit).
 - Das Skript MUSS eine klare psychologische Struktur haben:
   1. Aggressiver Hook (Sekunde 1-5),
   2. Problem-Präsentation (Keine Zeit für Videoschnitt),
@@ -62,6 +62,8 @@ Regeln:
   4. Das faire Angebot (3 Gratis-Videos, danach 4,99 €),
   5. Ein glasklarer Call to Action mit der URL 'happiness-eu.netlify.app' am Schluss.
 - Schreibe das Skript auf DEUTSCH (es sei denn, der User-Input verlangt explizit Englisch), damit es perfekt zur Zielgruppe passt.
+- INTELLIGENZ-ANPASSUNG: Wenn die Benutzereingabe Gaming-Kontext enthält (z.B. Twitch, Stream, Gaming, Let's Play, Fortnite, Minecraft, Apex, League of Legends), muss das Skript und die Social Captions im authentischen Gamer-Slang verfasst werden (Begriffe wie Stream, Clutch, Fail, Highlight, Chat, Live nutzen).
+- REDDIT GAMING FOCUS: Optimiere den Reddit-Payload speziell für Gaming-Communities. Erzeuge einen Titel und Kontext, der zu einer echten Diskussion einlädt (z.B. für r/gaming oder r/streamers), anstatt wie reine Werbung zu wirken.
 - Passe die Anzahl der Szenen an die gewünschte Dauer an (ca. 3-5 Sekunden pro Szene)
 - Voiceover-Text: Natürlich, emotional, flüssig lesbar, kein Deutsch-Englisch-Mischmasch
 - Visual Prompts: Englisch, detailliert, aber KNAPP (max 25 Wörter pro Prompt), immer mit "cinematic, photorealistic, 4k, --ar 9:16" am Ende
@@ -70,7 +72,7 @@ Regeln:
 - Dazwischen: Nutzen, Emotionen, Vorteile
 - Timestamps müssen korrekt berechnet sein und zur tatsächlichen Dauer passen
 - Jede Szene braucht einen einzigartigen visuellen Prompt
-- publishing_payload: Jede Plattform hat eigene Mechaniken. TikTok/Instagram = kurz + Hook, LinkedIn = professionell, YouTube = SEO-optimiert, Reddit = community-first
+- publishing_payload: Jede Plattform hat eigene Mechaniken. TikTok/Instagram = kurz + Hook, LinkedIn = professionell, YouTube = SEO-optimiert, Reddit = community-first (Gaming-Communities wenn thematisch passend)
 - NUR valides JSON ausgeben, kein anderer Text`
 
 exports.handler = async (event) => {
