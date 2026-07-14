@@ -245,6 +245,8 @@ export const handler = async (event) => {
       'Advice-Seeker': 'The user is a BEGINNER seeking advice or tips. You MUST provide a clear, simplified 3-step action plan BEFORE mentioning Happiness. Number the steps. Be encouraging, patient, and avoid jargon.',
       'Privacy-First': 'The user cares deeply about PRIVACY and DATA PROTECTION. You MUST acknowledge their privacy concern first, then explain how Happiness is GDPR-compliant, EU-hosted, and privacy-first. Use terms like no tracking, encrypted, EU servers.',
       Builder: 'The user is a CREATIVE BUILDER (modder, map-maker, game developer). You MUST acknowledge their technical work first, then explain how Happiness helps builders share and monetize their creations.',
+      Trader: 'The user is a TRADER or CRYPTO ENTHUSIAST. Use high-energy, fast-paced language. Focus on FOMO, trends, market momentum, and signal accuracy. Be sharp, decisive, and action-oriented. Mention how Happiness amplifies their trading brand and community reach.',
+      'Real Estate': 'The user is a REAL ESTATE AGENT or PROPERTY INVESTOR. Use trust-building, emotional storytelling. Focus on property value, dream homes, investment confidence, and high-ticket client acquisition. Explain how Happiness helps them create compelling property content and connect with buyers.',
       Gamer: 'The user is a GAMER or STREAMER. Be casual and empathetic about the grind. Use gaming language naturally.',
       Creator: 'The user is a CONTENT CREATOR. Be professional but warm, focused on growth and practical value.',
       Business: 'The user is a BUSINESS PROFESSIONAL or FREELANCER. Be professional, ROI-focused, and practical.',

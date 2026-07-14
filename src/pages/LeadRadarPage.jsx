@@ -64,6 +64,8 @@ const CONTEXT_BADGES = {
   'Advice-Seeker': { color: '#22C55E', label: '❓ Advice-Seeker' },
   'Privacy-First': { color: '#A855F7', label: '🔒 Privacy-First' },
   Builder: { color: '#F97316', label: '🛠️ Builder' },
+  Trader: { color: '#00FF88', label: '📈 Trader' },
+  'Real Estate': { color: '#1E40AF', label: '🏠 Real Estate' },
 }
 
 const LANG_BADGES = {
@@ -79,7 +81,8 @@ const BADGE_OPTIONS = [
   { value: 'Gamer', label: '🎮 Gamer' }, { value: 'Creator', label: '🎬 Creator' },
   { value: 'Business', label: '💼 Business' }, { value: 'Milestone', label: '⭐ Milestone' },
   { value: 'Advice-Seeker', label: '❓ Advice-Seeker' }, { value: 'Privacy-First', label: '🔒 Privacy-First' },
-  { value: 'Builder', label: '🛠️ Builder' },
+  { value: 'Builder', label: '🛠️ Builder' }, { value: 'Trader', label: '📈 Trader' },
+  { value: 'Real Estate', label: '🏠 Real Estate' },
 ]
 
 // ── 100+ Keywords (EN + DE) ──
@@ -164,12 +167,44 @@ const KW_BUILDER_DE = [
   'mein asset', 'kostenloser download', 'in arbeit', 'fortschritt',
 ]
 
+const KW_TRADER_EN = [
+  'daytrading', 'crypto signal', 'chart analysis', 'bitcoin trend',
+  'get telegram members', 'tradingview', 'trading signals', 'forex signal',
+  'crypto trading', 'altcoin', 'bull run', 'bear market', 'hodl',
+  'portfolio growth', 'passive income trading', 'crypto portfolio',
+  'technical analysis', 'price target', 'entry point', 'stop loss',
+  'leveraged trading', 'futures trading', 'options trading', 'day trade',
+]
+const KW_TRADER_DE = [
+  'daytrading', 'krypto signal', 'chart analyse', 'bitcoin trend',
+  'telegram mitglieder', 'tradingview', 'handelssignale', 'forex signale',
+  'kryptohandel', 'altcoin', 'bullenlauf', 'bärenmarkt', 'hodl',
+  'portfolio wachstum', 'krypto portfolio', 'technische analyse',
+  'preisziel', 'einstiegspunkt', 'stop loss', 'gehebelter handel',
+]
+
+const KW_REALESTATE_EN = [
+  'real estate marketing', 'property listing', 'fix and flip',
+  'house tour reel', 'exposé text', 'real estate agent', 'property showcase',
+  'home buyer', 'first time buyer', 'mortgage rate', 'property investment',
+  'luxury listing', 'open house', 'virtual tour', 'staging tips',
+  'real estate social media', 'property content', 'listing description',
+]
+const KW_REALESTATE_DE = [
+  'immobilien makler', 'immobilien vermarktung', 'objekt beschreibung',
+  'haus tour', 'exposé text', 'immobilien makler', 'grundstück verkaufen',
+  'hausbau', 'erstes haus', 'baufinanzierung', 'immobilien investition',
+  'luxus immobilie', 'besichtigung', 'virtuelle tour', 'immobilien social media',
+]
+
 const ALL_KEYWORDS = [
   ...KW_FRUSTRATION_EN, ...KW_FRUSTRATION_DE,
   ...KW_MILESTONE_EN, ...KW_MILESTONE_DE,
   ...KW_ADVICE_EN, ...KW_ADVICE_DE,
   ...KW_PRIVACY_EN, ...KW_PRIVACY_DE,
   ...KW_BUILDER_EN, ...KW_BUILDER_DE,
+  ...KW_TRADER_EN, ...KW_TRADER_DE,
+  ...KW_REALESTATE_EN, ...KW_REALESTATE_DE,
 ]
 
 function matchesAny(text, ...arrays) {
@@ -184,6 +219,8 @@ function matchesAny(text, ...arrays) {
 
 function detectBadge(text, feedBadge) {
   const lower = text.toLowerCase()
+  if (matchesAny(lower, KW_TRADER_EN, KW_TRADER_DE)) return 'Trader'
+  if (matchesAny(lower, KW_REALESTATE_EN, KW_REALESTATE_DE)) return 'Real Estate'
   if (matchesAny(lower, KW_MILESTONE_EN, KW_MILESTONE_DE)) return 'Milestone'
   if (matchesAny(lower, KW_ADVICE_EN, KW_ADVICE_DE)) return 'Advice-Seeker'
   if (matchesAny(lower, KW_PRIVACY_EN, KW_PRIVACY_DE)) return 'Privacy-First'
@@ -365,6 +402,8 @@ export default function LeadRadarPage() {
         'Advice-Seeker': 'This user is a BEGINNER seeking advice. Provide a numbered 3-step guide first.',
         'Privacy-First': 'This user cares about PRIVACY. Acknowledge their concern, then mention GDPR compliance.',
         Builder: 'This user is a CREATIVE BUILDER. Acknowledge their technical work first.',
+        Trader: 'This user is a TRADER or CRYPTO ENTHUSIAST. Use high-energy, fast-paced language. Focus on FOMO, trends, and market momentum. Be sharp and decisive.',
+        'Real Estate': 'This user is in REAL ESTATE. Use trust-building, emotional storytelling. Focus on property value, dream homes, and high-ticket investment confidence.',
         Gamer: 'This user is a GAMER or STREAMER. Be casual, empathetic, use gaming language.',
         Creator: 'This user is a CONTENT CREATOR. Be professional but warm, growth-focused.',
         Business: 'This user is a BUSINESS PROFESSIONAL. Be ROI-focused and practical.',
