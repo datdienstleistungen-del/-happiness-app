@@ -1,8 +1,9 @@
-console.log('chat.js v7 - OpenRouter + Groq + DeepSeek + Mistral + RAG')
+console.log('chat.js v8 - OpenRouter + Groq + DeepSeek + Mistral + RAG (fixed)')
 console.log('DEEPSEEK_API_KEY vorhanden:', !!process.env.DEEPSEEK_API_KEY)
 console.log('GROQ_API_KEY vorhanden:', !!process.env.GROQ_API_KEY)
 console.log('OPENROUTER_API_KEY vorhanden:', !!process.env.OPENROUTER_API_KEY)
 console.log('MISTRAL_API_KEY vorhanden:', !!process.env.MISTRAL_API_KEY)
+console.log('SUPABASE_SERVICE_KEY vorhanden:', !!process.env.SUPABASE_SERVICE_KEY)
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || ''
 
@@ -78,65 +79,84 @@ function classifyIntent(message) {
 }
 
 async function loadKnowledge(message, userId) {
+  const lower = (message || '').toLowerCase()
+  const categoriesToLoad = new Set()
+
+  // 1. Check intent patterns for specific intents (creator, platform, etc.)
   const intent = classifyIntent(message)
-  console.log('RAG intent:', intent, 'message:', (message || '').substring(0, 60))
-  
-  // For general intents, skip knowledge loading
-  if (intent === 'general') {
-    // Still check if it matches a very specific keyword
-    const lower = (message || '').toLowerCase()
-    for (const [category, keywords] of Object.entries(KNOWLEDGE_CATEGORIES)) {
-      if (category === 'general') continue
-      for (const keyword of keywords) {
-        if (lower.includes(keyword)) {
-          // Found a match — load that category
-          try {
-            const res = await fetch(
-              `${SUPABASE_URL}/rest/v1/knowledge_base?category=eq.${encodeURIComponent(category)}&select=title,content,keywords&order=priority.desc`,
-              { headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } }
-            )
-            if (res.ok) {
-              const data = await res.json()
-              if (data && data.length > 0) return formatKnowledge(data)
-            }
-          } catch (e) {
-            console.error('Knowledge fetch failed:', e.message)
-          }
-          return ''
-        }
+  if (intent !== 'general') {
+    categoriesToLoad.add(intent)
+  }
+
+  // 2. ALWAYS check knowledge categories for keyword matches — this is the core RAG
+  for (const [category, keywords] of Object.entries(KNOWLEDGE_CATEGORIES)) {
+    if (category === 'general') continue
+    for (const keyword of keywords) {
+      if (lower.includes(keyword)) {
+        categoriesToLoad.add(category)
+        break
       }
     }
+  }
+
+  // 3. If nothing matched, return empty
+  if (categoriesToLoad.size === 0) {
+    console.log('[RAG] No categories matched for:', lower.substring(0, 80))
     return ''
   }
-  
-  try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/knowledge_base?category=eq.${encodeURIComponent(intent)}&select=title,content,keywords&order=priority.desc`,
-      { headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } }
-    )
-    if (res.ok) {
-      const data = await res.json()
-      if (data && data.length > 0) return formatKnowledge(data)
+
+  console.log('[RAG] Loading categories:', [...categoriesToLoad], 'for:', lower.substring(0, 80))
+
+  // 4. Fetch ALL matching categories from Supabase
+  const allEntries = []
+  for (const category of categoriesToLoad) {
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/knowledge_base?category=eq.${encodeURIComponent(category)}&select=title,content,keywords&order=priority.desc`,
+        {
+          headers: {
+            'apikey': SUPABASE_SERVICE_KEY,
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+            'Accept': 'application/json'
+          }
+        }
+      )
+      if (res.ok) {
+        const data = await res.json()
+        if (data && data.length > 0) {
+          allEntries.push(...data)
+          console.log(`[RAG] Loaded ${data.length} entries for category: ${category}`)
+        }
+      } else {
+        console.warn(`[RAG] Fetch failed for ${category}: HTTP ${res.status}`)
+      }
+    } catch (e) {
+      console.error(`[RAG] Fetch error for ${category}:`, e.message)
     }
-  } catch (e) {
-    console.error('Knowledge fetch failed:', e.message)
   }
-  
-  return ''
+
+  if (allEntries.length === 0) {
+    console.log('[RAG] No knowledge entries found for categories:', [...categoriesToLoad])
+    return ''
+  }
+
+  console.log(`[RAG] Total loaded: ${allEntries.length} entries`)
+  return formatKnowledge(allEntries)
 }
 
 function formatKnowledge(entries) {
   if (!entries || entries.length === 0) return ''
-  let result = '\n\n=== HAPPINESS WISSEN ===\n'
-  result += 'Plattform-Kenntnis: Du kennst Happiness genau. Nur bei relevanten Fragen nutzen.\n\n'
+  let result = '\n\n=== HAPPINESS WISSEN (Admin-Richtlinien) ===\n'
+  result += 'Du bist die KI von Happiness. Diese Richtlinien aus unserer Wissensdatenbank sind VERBINDLICH.\n'
+  result += 'Befolge diese Regeln STRENGSTENS. Antworte basierend auf diesem Wissen.\n\n'
   for (const entry of entries) {
-    const lines = entry.content.split('\n').filter(l => l.trim() && !l.startsWith('#'))
-    const relevant = lines.slice(0, 15).join('\n').trim()
-    if (relevant) {
-      result += `--- ${entry.title} ---\n${relevant}\n\n`
+    // Include full content, not just 15 lines — admin entries are curated and concise
+    const content = (entry.content || '').trim()
+    if (content) {
+      result += `--- ${entry.title} (${entry.category}) ---\n${content}\n\n`
     }
   }
-  result += '=== ENDE ===\n'
+  result += '=== ENDE DES WISSENS ===\n'
   return result
 }
 
@@ -183,6 +203,13 @@ export const handler = async (event) => {
     // RAG: Load Happiness knowledge context
     const knowledgeContext = await loadKnowledge(message, userId)
     const systemPrompt = knowledgeContext ? originalPrompt + knowledgeContext : originalPrompt
+
+    // Debug: Log knowledge injection
+    if (knowledgeContext) {
+      console.log('[RAG] Knowledge injected into system prompt, length:', knowledgeContext.length)
+    } else {
+      console.log('[RAG] No knowledge loaded for this message')
+    }
 
     // Debug: Zeige was ankommt
     if (imageBase64) {
