@@ -3,7 +3,7 @@ import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-r
 import {
   Home, Sparkles, MessageCircle, Users, ShoppingCart, Briefcase,
   BookOpen, Building2, Clapperboard, Camera, Film, Bell, Settings,
-  User, ChevronLeft, ChevronRight, Rocket, Hash, Menu, BarChart3
+  User, ChevronLeft, ChevronRight, Rocket, Hash, Menu, BarChart3, Trophy
 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.jsx'
@@ -87,8 +87,8 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
   ]
 
   const communityLinks = [
-    { to: '/community', icon: Hash, label: 'Feed' },
-    { to: '/friends', icon: Users, label: t('nav.friends') },
+    { to: '/community', icon: Trophy, label: 'Creator Feed' },
+    { to: '/friends', icon: Users, label: 'Streamer Squads' },
     { to: '/notifications', icon: Bell, label: t('nav.notifications') },
   ]
 

@@ -98,7 +98,7 @@ export default function FriendsPage() {
   return (
     <div className="container">
       <div className="page-header">
-        <h1>{t('friends.title')}</h1>
+        <h1>👥 Deine Streamer Squads</h1>
       </div>
 
       <div className="tabs">

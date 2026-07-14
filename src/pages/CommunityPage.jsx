@@ -61,8 +61,7 @@ export default function CommunityPage() {
   return (
     <div className="container">
       <div className="page-header">
-        <h1>{t('community.title')}</h1>
-        <p>{t('community.share')}</p>
+        <h1>🏆 Creator Showcase — Push dein Content</h1>
       </div>
 
       <div className="tabs">
