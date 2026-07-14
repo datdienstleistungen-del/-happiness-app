@@ -27,6 +27,8 @@ const CHANNELS = [
   { name: 'Reddit', connected: false }
 ]
 
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
 export default function TikTokVideoPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -362,9 +364,9 @@ export default function TikTokVideoPage() {
             </div>
 
             <a
-              href="https://capcut.com"
-              target="_blank"
-              rel="noopener noreferrer"
+              href={isMobile ? 'capcut://com.lemon.lvoverseas' : 'https://pippit.ai'}
+              target={isMobile ? undefined : '_blank'}
+              rel={isMobile ? undefined : 'noopener noreferrer'}
               className="ccp-action-primary"
               onClick={() => trackCapCutTriggered()}
             >

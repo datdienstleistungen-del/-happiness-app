@@ -2,6 +2,8 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Film, ExternalLink, Zap, Play, Sparkles, Video } from 'lucide-react'
 import './VideoMakerPage.css'
 
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
 export default function VideoMakerPage() {
   const navigate = useNavigate()
 
@@ -21,12 +23,12 @@ export default function VideoMakerPage() {
           Erstelle hochprofessionelle Videos mit KI — komplett kostenlos und ohne Server-Wartezeiten.
         </p>
         <a
-          href="https://capcut.com"
-          target="_blank"
-          rel="noopener noreferrer"
+          href={isMobile ? 'capcut://com.lemon.lvoverseas' : 'https://pippit.ai'}
+          target={isMobile ? undefined : '_blank'}
+          rel={isMobile ? undefined : 'noopener noreferrer'}
           className="cs-launcher-btn"
         >
-          <Play size={18} /> CapCut Web-Editor öffnen (Free) <ExternalLink size={14} />
+          <Play size={18} /> {isMobile ? 'CapCut App öffnen' : 'CapCut Web-Editor öffnen (Free)'} <ExternalLink size={14} />
         </a>
       </div>
 
