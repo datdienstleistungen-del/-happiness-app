@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Radar, Zap, Copy, Check, Globe, ArrowLeft, Loader } from 'lucide-react'
+import { Radar, Zap, Copy, Check, Globe, ArrowLeft, Loader, Plus, X, ExternalLink } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -13,6 +13,30 @@ const CONTINENTS = [
   { id: 'apac', label: 'Asia-Pacific', flag: '🇦🇺', platforms: 'Gaming Boards', lang: 'en' },
 ]
 
+const PLATFORMS = [
+  { value: 'reddit', label: 'Reddit' },
+  { value: 'facebook', label: 'Facebook' },
+  { value: 'discord', label: 'Discord' },
+  { value: 'twitch', label: 'Twitch' },
+  { value: 'twitter', label: 'X / Twitter' },
+  { value: 'forum', label: 'Forum' },
+]
+
+const CONTINENT_OPTIONS = [
+  { value: 'na', label: '🇺🇸 US — North America' },
+  { value: 'eu', label: '🇪🇺 EU — Europe' },
+  { value: 'latam', label: '🇧🇷 BR — Latin America' },
+  { value: 'apac', label: '🇦🇺 AU — Asia-Pacific' },
+]
+
+const LANG_OPTIONS = [
+  { value: 'en', label: 'EN — English' },
+  { value: 'de', label: 'DE — Deutsch' },
+  { value: 'es', label: 'ES — Español' },
+  { value: 'fr', label: 'FR — Français' },
+  { value: 'pt', label: 'PT — Português' },
+]
+
 const PLATFORM_BADGES = {
   reddit: { color: '#FF4500', label: 'Reddit' },
   discord: { color: '#5865F2', label: 'Discord' },
@@ -20,7 +44,6 @@ const PLATFORM_BADGES = {
   twitch: { color: '#9146FF', label: 'Twitch' },
   facebook: { color: '#1877F2', label: 'Facebook' },
   forum: { color: '#6B7280', label: 'Forum' },
-  other: { color: '#9CA3AF', label: 'Other' },
 }
 
 const LANG_BADGES = {
@@ -31,6 +54,14 @@ const LANG_BADGES = {
   pt: { color: '#EF4444', label: 'PT' },
 }
 
+const EMPTY_FORM = {
+  platform: 'reddit',
+  continent: 'na',
+  lang: 'en',
+  source_url: '',
+  text: '',
+}
+
 export default function LeadRadarPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -39,6 +70,10 @@ export default function LeadRadarPage() {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState({})
   const [responses, setResponses] = useState({})
+  const [modalOpen, setModalOpen] = useState(false)
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   useEffect(() => { fetchLeads() }, [activeContinent])
 
@@ -52,35 +87,58 @@ export default function LeadRadarPage() {
         .order('created_at', { ascending: false })
         .limit(50)
 
-      if (error) {
-        console.warn('[LeadRadar] Query failed, using demo data:', error.message)
-        setLeads(getDemoLeads(activeContinent))
-      } else {
-        setLeads(data && data.length > 0 ? data : getDemoLeads(activeContinent))
-      }
+      if (error) throw error
+      setLeads(data || [])
     } catch (e) {
-      console.warn('[LeadRadar] Connection failed, using demo data')
-      setLeads(getDemoLeads(activeContinent))
+      console.error('[LeadRadar] Fetch error:', e)
+      setLeads([])
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleSaveLead(e) {
+    e.preventDefault()
+    if (!form.text.trim()) {
+      setSaveError('Post text is required.')
+      return
+    }
+    setSaving(true)
+    setSaveError('')
+    try {
+      const { error } = await supabase.from('leads').insert({
+        platform: form.platform,
+        continent: form.continent,
+        lang: form.lang,
+        source_url: form.source_url.trim() || null,
+        text: form.text.trim(),
+        status: 'new',
+        created_by: user?.id || null,
+      })
+      if (error) throw error
+      setModalOpen(false)
+      setForm(EMPTY_FORM)
+      fetchLeads()
+    } catch (err) {
+      console.error('[LeadRadar] Insert error:', err)
+      setSaveError(err.message || 'Failed to save lead.')
+    } finally {
+      setSaving(false)
     }
   }
 
   async function generateResponse(lead) {
     if (generating[lead.id]) return
     setGenerating(prev => ({ ...prev, [lead.id]: true }))
-
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token || ''
-
       const systemPrompt = `Du bist ein Community-Outreach-Spezialist von Happiness. 
 Antworte KURZ und DIREKT im Ton der Plattform des Users. 
 Keine Floskeln, keine langen Einleitungen. 
 Hilfreich, empathisch, lösungsorientiert.
 Sprache: ${lead.lang || 'en'}.
 Maximal 3-4 Sätze.`
-
       const response = await fetch(getChatEndpoint(), {
         method: 'POST',
         headers: {
@@ -95,10 +153,8 @@ Maximal 3-4 Sätze.`
           history: []
         })
       })
-
       if (!response.ok) throw new Error(`API ${response.status}`)
       const data = await response.json()
-
       setResponses(prev => ({ ...prev, [lead.id]: data.response || 'No response generated.' }))
     } catch (err) {
       console.error('[LeadRadar] Generate error:', err)
@@ -119,6 +175,9 @@ Maximal 3-4 Sätze.`
           <h1>Global Lead Radar</h1>
         </div>
         <span className="lr-badge">{leads.length} leads</span>
+        <button className="lr-add-btn" onClick={() => { setForm({ ...EMPTY_FORM, continent: activeContinent }); setSaveError(''); setModalOpen(true) }}>
+          <Plus size={16} /> Add Live Lead
+        </button>
       </div>
 
       <div className="lr-tabs">
@@ -138,13 +197,16 @@ Maximal 3-4 Sätze.`
       {loading ? (
         <div className="lr-loading">
           <Loader size={24} className="lr-spinner" />
-          <span>Loading leads...</span>
+          <span>Scanning live feeds...</span>
         </div>
       ) : leads.length === 0 ? (
         <div className="lr-empty">
-          <Globe size={40} />
-          <p>No leads found for this region.</p>
-          <p className="lr-empty-sub">Leads will appear here when scraped from the configured platforms.</p>
+          <div className="lr-empty-radar">
+            <Radar size={48} className="lr-radar-pulse" />
+          </div>
+          <h2>🛰️ Global Radar scanning...</h2>
+          <p>Waiting for the next live creator request from Reddit/Discord.</p>
+          <p className="lr-empty-sub">Leads appear here in real-time as they are detected across platforms.</p>
         </div>
       ) : (
         <div className="lr-grid">
@@ -164,15 +226,12 @@ Maximal 3-4 Sätze.`
                   {(LANG_BADGES[lead.lang] || LANG_BADGES.en).label}
                 </span>
               </div>
-
               <p className="lr-card-text">{lead.text}</p>
-
-              {lead.url && (
-                <a href={lead.url} target="_blank" rel="noopener noreferrer" className="lr-card-link">
-                  View original post →
+              {lead.source_url && (
+                <a href={lead.source_url} target="_blank" rel="noopener noreferrer" className="lr-card-link">
+                  <ExternalLink size={12} /> View original post
                 </a>
               )}
-
               <button
                 className="lr-generate-btn"
                 onClick={() => generateResponse(lead)}
@@ -184,7 +243,6 @@ Maximal 3-4 Sätze.`
                   <><Zap size={14} /> Generate Global Helper Response</>
                 )}
               </button>
-
               {responses[lead.id] && (
                 <div className="lr-response">
                   <div className="lr-response-text">{responses[lead.id]}</div>
@@ -195,18 +253,73 @@ Maximal 3-4 Sätze.`
           ))}
         </div>
       )}
+
+      {modalOpen && (
+        <div className="lr-modal-overlay" onClick={() => setModalOpen(false)}>
+          <div className="lr-modal" onClick={e => e.stopPropagation()}>
+            <div className="lr-modal-header">
+              <h2>Add Live Lead</h2>
+              <button className="lr-modal-close" onClick={() => setModalOpen(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <form className="lr-modal-form" onSubmit={handleSaveLead}>
+              <div className="lr-form-row">
+                <label>
+                  <span>Platform</span>
+                  <select value={form.platform} onChange={e => setForm(p => ({ ...p, platform: e.target.value }))}>
+                    {PLATFORMS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                  </select>
+                </label>
+                <label>
+                  <span>Continent</span>
+                  <select value={form.continent} onChange={e => setForm(p => ({ ...p, continent: e.target.value }))}>
+                    {CONTINENT_OPTIONS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                  </select>
+                </label>
+                <label>
+                  <span>Language</span>
+                  <select value={form.lang} onChange={e => setForm(p => ({ ...p, lang: e.target.value }))}>
+                    {LANG_OPTIONS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
+                  </select>
+                </label>
+              </div>
+              <label className="lr-form-full">
+                <span>Source URL</span>
+                <input
+                  type="url"
+                  placeholder="https://reddit.com/r/..."
+                  value={form.source_url}
+                  onChange={e => setForm(p => ({ ...p, source_url: e.target.value }))}
+                />
+              </label>
+              <label className="lr-form-full">
+                <span>Post Text</span>
+                <textarea
+                  rows={5}
+                  placeholder="Paste the creator's exact complaint here..."
+                  value={form.text}
+                  onChange={e => setForm(p => ({ ...p, text: e.target.value }))}
+                  required
+                />
+              </label>
+              {saveError && <div className="lr-form-error">{saveError}</div>}
+              <button className="lr-form-submit" type="submit" disabled={saving}>
+                {saving ? <><Loader size={14} className="lr-spinner" /> Saving...</> : <><Radar size={14} /> Save to Database</>}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 function CopyButton({ text }) {
   const [copied, setCopied] = useState(false)
-
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(text)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
     } catch {
       const ta = document.createElement('textarea')
       ta.value = text
@@ -214,36 +327,13 @@ function CopyButton({ text }) {
       ta.select()
       document.execCommand('copy')
       document.body.removeChild(ta)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
     }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
-
   return (
     <button className="lr-copy-btn" onClick={handleCopy}>
       {copied ? <><Check size={12} /> Copied!</> : <><Copy size={12} /> Copy Reply</>}
     </button>
   )
-}
-
-function getDemoLeads(continent) {
-  const demo = {
-    na: [
-      { id: 'd1', platform: 'reddit', lang: 'en', text: "Streaming to 0 viewers for 6 months. I post every day, use tags, raid others... nothing works. Is it even worth continuing?", url: '#', continent: 'na' },
-      { id: 'd2', platform: 'twitter', lang: 'en', text: "Just started my creator journey and I'm completely lost. How do you even get your first 100 followers without begging?", url: '#', continent: 'na' },
-      { id: 'd3', platform: 'twitch', lang: 'en', text: "My YouTube shorts get 5 views max. I see people with worse content blowing up. What am I doing wrong?", url: '#', continent: 'na' },
-    ],
-    eu: [
-      { id: 'd4', platform: 'reddit', lang: 'de', text: "Ich poste seit 3 Monaten auf TikTok und habe immer noch keine 100 Follower. Die Algorithmus-Hinweise bringen nichts. Jemand Tipps?", url: '#', continent: 'eu' },
-      { id: 'd5', platform: 'facebook', lang: 'de', text: "Wie bekomme ich mehr Engagement auf LinkedIn? Meine Beiträge erreichen niemanden obwohl ich qualitativen Content mache.", url: '#', continent: 'eu' },
-    ],
-    latam: [
-      { id: 'd6', platform: 'discord', lang: 'es', text: "Llevo meses creando contenido y nada crece. Siento que todo el mundo tiene un secreto que yo no sé. ¿Alguien más se siente así?", url: '#', continent: 'latam' },
-      { id: 'd7', platform: 'discord', lang: 'pt', text: "Comecei a criar conteúdo mas não sei como crescer. Alguém pode me ajudar com dicas reais?", url: '#', continent: 'latam' },
-    ],
-    apac: [
-      { id: 'd8', platform: 'forum', lang: 'en', text: "Gaming content in SEA is so saturated. Every game has 1000 creators already. How do you stand out in 2026?", url: '#', continent: 'apac' },
-    ],
-  }
-  return demo[continent] || []
 }
