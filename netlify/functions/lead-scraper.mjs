@@ -254,91 +254,17 @@ async function insertLead(lead) {
 }
 
 // ── Main Handler ──
+// DISABLED: Scraping moved to client-side LeadRadarPage.jsx
+// to bypass Reddit IP blocks on Netlify server IPs.
+// This function now returns a 410 Gone status.
 
 export default async function handler(request) {
-  if (request && request.method === 'GET') {
-    const auth = request.headers?.authorization || ''
-    if (!auth.includes(SUPABASE_SERVICE_KEY)) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
-    }
-  }
-
-  console.log(`[LeadScraper] Starting scrape run v3 at ${new Date().toISOString()}`)
-
-  const existingUrls = await fetchExistingUrls()
-  let totalFetched = 0
-  let totalInserted = 0
-  let totalSkipped = 0
-
-  for (const feed of RSS_FEEDS) {
-    try {
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 10000)
-
-      const res = await fetch(feed.url, {
-        signal: controller.signal,
-        headers: { 'User-Agent': 'HappinessLeadRadar/2.0' },
-      })
-      clearTimeout(timeout)
-
-      if (!res.ok) {
-        console.warn(`[LeadScraper] RSS ${res.status}: ${feed.url}`)
-        continue
-      }
-
-      const xml = await res.text()
-      const entries = extractEntries(xml)
-      totalFetched += entries.length
-
-      for (const entry of entries) {
-        const fullText = `${entry.title} ${entry.content}`.trim()
-        if (!matchesFrustration(fullText)) continue
-
-        const sourceUrl = entry.link || feed.url
-        if (existingUrls.has(sourceUrl)) {
-          totalSkipped++
-          continue
-        }
-
-        const plainText = fullText
-          .replace(/<[^>]*>/g, '')
-          .replace(/\s+/g, ' ')
-          .trim()
-          .slice(0, 2000)
-
-        const detectedBadge = detectBadge(plainText, feed.badge)
-
-        const inserted = await insertLead({
-          platform: feed.platform,
-          continent: feed.continent,
-          lang: feed.lang,
-          source_url: sourceUrl,
-          text: plainText,
-          status: 'new',
-          badge: detectedBadge,
-        })
-
-        if (inserted) {
-          existingUrls.add(sourceUrl)
-          totalInserted++
-        }
-      }
-    } catch (err) {
-      console.warn(`[LeadScraper] Feed error (${feed.url}):`, err.message)
-    }
-  }
-
-  const summary = `Scraped ${totalFetched} entries, inserted ${totalInserted} new leads, skipped ${totalSkipped} duplicates`
-  console.log(`[LeadScraper] ${summary}`)
-
   return new Response(JSON.stringify({
-    success: true,
-    fetched: totalFetched,
-    inserted: totalInserted,
-    skipped: totalSkipped,
+    disabled: true,
+    reason: 'Scraping moved to client-side. Use LeadRadarPage.jsx.',
     timestamp: new Date().toISOString(),
   }), {
-    status: 200,
+    status: 410,
     headers: { 'Content-Type': 'application/json' },
   })
 }
