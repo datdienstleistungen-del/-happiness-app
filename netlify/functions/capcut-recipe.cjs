@@ -54,7 +54,14 @@ JSON-Struktur:
 }
 
 Regeln:
-- WICHTIG: Das voiceover_script MUSS extrem kompakt und auf maximale Verweildauer optimiert sein. Verwende maximal 60-70 Wörter (ca. 30 Sekunden Videozeit). Vermeide unnötige Füllwörter, damit die CapCut-KI das Video komplett im kostenlosen Kontingent (Free Tier) ohne Abo-Aufforderung generieren kann.
+- WICHTIG zur Skriptlänge: Das 'voiceover_script' muss eine vollständige Geschichte erzählen, darf aber nicht ausufernd sein. Zielgröße sind ca. 100-130 Wörter (entspricht ca. 30 bis 45 Sekunden Videozeit).
+- Das Skript MUSS eine klare psychologische Struktur haben:
+  1. Aggressiver Hook (Sekunde 1-5),
+  2. Problem-Präsentation (Keine Zeit für Videoschnitt),
+  3. H.I.T. als Lösung vorstellen,
+  4. Das faire Angebot (3 Gratis-Videos, danach 4,99 €),
+  5. Ein glasklarer Call to Action mit der URL 'happiness-eu.netlify.app' am Schluss.
+- Schreibe das Skript auf DEUTSCH (es sei denn, der User-Input verlangt explizit Englisch), damit es perfekt zur Zielgruppe passt.
 - Passe die Anzahl der Szenen an die gewünschte Dauer an (ca. 3-5 Sekunden pro Szene)
 - Voiceover-Text: Natürlich, emotional, flüssig lesbar, kein Deutsch-Englisch-Mischmasch
 - Visual Prompts: Englisch, detailliert, aber KNAPP (max 25 Wörter pro Prompt), immer mit "cinematic, photorealistic, 4k, --ar 9:16" am Ende
