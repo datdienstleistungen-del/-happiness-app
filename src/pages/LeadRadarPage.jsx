@@ -272,14 +272,14 @@ function detectBadge(text, feedBadge) {
 
 function extractEntries(xml) {
   const entries = []
-  const regex = /<entry>([\s\S]*?)<\/entry>/gi
+  const tagRegex = /<(?:entry|item)>([\s\S]*?)<\/(?:entry|item)>/gi
   let m
-  while ((m = regex.exec(xml)) !== null) {
+  while ((m = tagRegex.exec(xml)) !== null) {
     const b = m[1]
     const t = (s) => { const r = new RegExp(`<${s}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${s}>`, 'i'); const x = b.match(r); return x ? x[1].trim() : '' }
     const title = t('title')
-    const content = t('content') || t('summary')
-    const link = t('link')
+    const content = t('content') || t('summary') || t('description')
+    const link = t('link') || (b.match(/<link[^>]*href="([^"]+)"/i) || [])[1] || ''
     if (title || content) entries.push({ title, content, link })
   }
   return entries
