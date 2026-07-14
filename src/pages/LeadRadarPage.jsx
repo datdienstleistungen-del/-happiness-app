@@ -284,12 +284,17 @@ export default function LeadRadarPage() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [radarActive, setRadarActive] = useState(false)
+  const radarLoopRef = useRef(null)
   const [radarStats, setRadarStats] = useState({ fetched: 0, matched: 0, inserted: 0 })
   const existingUrlsRef = useRef(new Set())
   const newLeadIdsRef = useRef(new Set())
   const audioRef = useRef(null)
 
   useEffect(() => { fetchLeads() }, [activeContinent])
+
+  useEffect(() => {
+    return () => { if (radarLoopRef.current) clearTimeout(radarLoopRef.current) }
+  }, [])
 
   async function fetchLeads() {
     setLoading(true)
@@ -312,6 +317,12 @@ export default function LeadRadarPage() {
   }
 
   // ── Client-Side Live Radar ──
+  const stopRadar = useCallback(() => {
+    if (radarLoopRef.current) { clearInterval(radarLoopRef.current); radarLoopRef.current = null }
+    setRadarActive(false)
+    console.log('[LeadRadar] Radar stopped by user')
+  }, [])
+
   const runLiveRadar = useCallback(async () => {
     if (radarActive) return
     setRadarActive(true)
@@ -403,10 +414,15 @@ export default function LeadRadarPage() {
       }
     }
 
-    setRadarActive(false)
     setRadarStats({ fetched: totalFetched, matched: totalMatched, inserted: totalInserted })
-    console.log(`[LeadRadar] Scan done: ${totalFetched} fetched, ${totalMatched} matched, ${totalInserted} new`)
-  }, [radarActive, activeContinent])
+    console.log(`[LeadRadar] Scan done: ${totalFetched} fetched, ${totalMatched} matched, ${totalInserted} new — next scan in 60s`)
+
+    radarLoopRef.current = setTimeout(() => {
+      radarLoopRef.current = null
+      setRadarActive(false)
+      setTimeout(() => runLiveRadar(), 500)
+    }, 60000)
+  }, [radarActive, activeContinent, runLiveRadar])
 
   async function handleSaveLead(e) {
     e.preventDefault()
@@ -472,10 +488,9 @@ EMOTION: ${emotionMap[badge] || emotionMap.Creator}`
         <span className="lr-badge">{leads.length} leads</span>
         <button
           className={`lr-radar-btn ${radarActive ? 'active' : ''}`}
-          onClick={runLiveRadar}
-          disabled={radarActive}
+          onClick={radarActive ? stopRadar : runLiveRadar}
         >
-          {radarActive ? <><Loader size={14} className="lr-spinner" /> Scanning...</> : <><Radio size={14} /> Live Radar</>}
+          {radarActive ? <><Loader size={14} className="lr-spinner" /> Scanning... (Stop)</> : <><Radio size={14} /> Live Radar</>}
         </button>
         <button className="lr-add-btn" onClick={() => { setForm({ ...EMPTY_FORM, continent: activeContinent }); setSaveError(''); setModalOpen(true) }}>
           <Plus size={16} /> Add Live Lead
@@ -502,14 +517,14 @@ EMOTION: ${emotionMap[badge] || emotionMap.Creator}`
         <div className="lr-loading"><Loader size={24} className="lr-spinner" /><span>Loading leads...</span></div>
       ) : leads.length === 0 ? (
         <div className="lr-empty">
-          <div className={`lr-empty-radar ${radarActive ? 'lr-empty-radar-active' : ''}`} onClick={runLiveRadar}>
+          <div className={`lr-empty-radar ${radarActive ? 'lr-empty-radar-active' : ''}`} onClick={radarActive ? stopRadar : runLiveRadar}>
             <Radar size={48} className={`lr-radar-pulse ${radarActive ? 'lr-spinner' : ''}`} />
           </div>
           <h2>🛰️ Global Radar scanning...</h2>
-          <p>{radarActive ? 'Scanning feeds now...' : 'Click the radar icon or button below to scan live feeds.'}</p>
+          <p>{radarActive ? 'Scanning feeds now — auto-repeats every 60s. Click to stop.' : 'Click the radar icon or button below to scan live feeds.'}</p>
           <p className="lr-empty-sub">{LIVE_FEEDS.filter(f => f.continent === activeContinent).length} active feeds for this region — all client-side.</p>
-          <button className="lr-empty-scan-btn" onClick={runLiveRadar} disabled={radarActive}>
-            {radarActive ? <><Loader size={14} className="lr-spinner" /> Scanning...</> : <><Radio size={14} /> ⚡ Start Live Radar</>}
+          <button className="lr-empty-scan-btn" onClick={radarActive ? stopRadar : runLiveRadar}>
+            {radarActive ? <><Loader size={14} className="lr-spinner" /> ⏹ Stop Radar</> : <><Radio size={14} /> ⚡ Start Live Radar</>}
           </button>
         </div>
       ) : (
