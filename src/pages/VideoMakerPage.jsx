@@ -21,7 +21,7 @@ export default function VideoMakerPage() {
           Erstelle hochprofessionelle Videos mit KI — komplett kostenlos und ohne Server-Wartezeiten.
         </p>
         <a
-          href="https://capcut.com"
+          href="https://pippit.ai"
           target="_blank"
           rel="noopener noreferrer"
           className="cs-launcher-btn"

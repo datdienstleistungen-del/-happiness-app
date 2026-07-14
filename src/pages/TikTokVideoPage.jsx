@@ -362,7 +362,7 @@ export default function TikTokVideoPage() {
             </div>
 
             <a
-              href="https://capcut.com"
+              href="https://pippit.ai"
               target="_blank"
               rel="noopener noreferrer"
               className="ccp-action-primary"
@@ -394,7 +394,7 @@ export default function TikTokVideoPage() {
               <a href="capcut://" className="ccp-capcut-btn-sm mobile">
                 <Smartphone size={16} /> Smartphone
               </a>
-              <a href="https://capcut.com" target="_blank" rel="noopener noreferrer" className="ccp-capcut-btn-sm desktop">
+              <a href="https://pippit.ai" target="_blank" rel="noopener noreferrer" className="ccp-capcut-btn-sm desktop">
                 <Monitor size={16} /> Web-Browser
               </a>
             </div>
