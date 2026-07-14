@@ -285,6 +285,7 @@ export default function LeadRadarPage() {
   const [saveError, setSaveError] = useState('')
   const [radarActive, setRadarActive] = useState(false)
   const radarLoopRef = useRef(null)
+  const radarFnRef = useRef(null)
   const [radarStats, setRadarStats] = useState({ fetched: 0, matched: 0, inserted: 0 })
   const existingUrlsRef = useRef(new Set())
   const newLeadIdsRef = useRef(new Set())
@@ -370,7 +371,7 @@ export default function LeadRadarPage() {
           } catch (_) { /* both failed */ }
         }
 
-          if (!xml) { console.warn('[LeadRadar] Skip:', subreddit, 'both methods failed'); continue }
+        if (!xml) { console.warn('[LeadRadar] Skip:', subreddit, 'both methods failed'); continue }
         const entries = extractEntries(xml)
         totalFetched += entries.length
 
@@ -439,9 +440,11 @@ export default function LeadRadarPage() {
     radarLoopRef.current = setTimeout(() => {
       radarLoopRef.current = null
       setRadarActive(false)
-      setTimeout(() => runLiveRadar(), 500)
+      setTimeout(() => radarFnRef.current(), 500)
     }, 60000)
-  }, [radarActive, activeContinent, runLiveRadar])
+  }, [radarActive, activeContinent])
+
+  radarFnRef.current = runLiveRadar
 
   async function handleSaveLead(e) {
     e.preventDefault()
