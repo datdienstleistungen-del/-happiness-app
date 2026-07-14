@@ -84,6 +84,84 @@
 
 /* Platform buttons */
 
+.post-prep-tone-section {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.post-prep-tone-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+
+.post-prep-tone-buttons {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb transparent;
+}
+
+.post-prep-tone-buttons::-webkit-scrollbar {
+  height: 4px;
+}
+
+.post-prep-tone-buttons::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.post-prep-tone-buttons::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 4px;
+}
+
+.post-prep-tone-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.post-prep-tone-btn:hover {
+  background: #f0f1f3;
+  border-color: #9ca3af;
+}
+
+.post-prep-tone-btn.active {
+  background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+  border-color: var(--color-petrol, #2D8C6F);
+  color: var(--color-petrol, #2D8C6F);
+}
+
+.post-prep-tone-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.post-prep-tone-icon {
+  font-size: 1.1rem;
+}
+
+.post-prep-tone-text {
+  flex: 1;
+  text-align: left;
+}
+
 .post-prep-platforms {
   display: flex;
   flex-direction: column;
@@ -132,6 +210,19 @@
   text-align: left;
 }
 
+.post-prep-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
 .post-prep-spinner {
   width: 16px;
   height: 16px;
@@ -148,9 +239,22 @@
 /* Generated result */
 
 .post-prep-result {
-  margin-top: 12px;
-  border-top: 1px solid #e5e7eb;
-  padding-top: 12px;
+  background: white;
+  border: 2px solid var(--color-petrol, #2D8C6F);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.post-prep-result-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-petrol, #2D8C6F);
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .post-prep-result-text {

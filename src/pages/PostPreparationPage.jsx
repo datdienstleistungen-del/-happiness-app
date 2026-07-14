@@ -1,84 +1,42 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Copy, Check, PenTool, MessageSquare } from 'lucide-react'
+import { ArrowLeft, Copy, Check, Sparkles } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { getChatEndpoint } from '../lib/hit'
-import ShareBar from '../components/ShareBar'
 import './PostPreparationPage.css'
 
-const PLATFORMS = [
+const TONES = [
   {
-    id: 'linkedin',
-    label: 'LinkedIn',
+    id: 'business',
+    label: 'Business & Kleinanzeigen',
     icon: '💼',
-    color: '#0A66C2',
-    url: 'https://www.linkedin.com/feed/',
-    prompt: `Rolle: LinkedIn-Content-Writer fuer Happiness (happiness-eu.netlify.app).
-Aufgabe: Entwurf + Coach-Feedback in einen postfertigen LinkedIn-Post umwandeln.
-Stil: Professionell, wertvoll, wie ein Profi der teilt. Kein KI-Sound.
-Struktur: Hook, 3-5 Absätze, CTA am Ende. Happiness natürlich einbetten, z.B. "Ich nutze Happiness (happiness-eu.netlify.app) fuer ...".
-Format: Fliesstext, kein Markdown. Nur den fertigen Text ausgeben.`
+    prompt: `Rolle: Du bist ein erfahrener Texter für professionelle Plattformen wie eBay Kleinanzeigen, LinkedIn undgeschäftliche Netzwerke.
+Aufgabe: Schreibe einen fertigen, postfertigen Text basierend auf dem Entwurf. Absolut KEIN Gaming-Slang, KEINE umgangssprachlichen Ausdrücke.
+Stil: Professionell, klar, überzeugend, gut strukturiert. Optimiert für direkte Kaufanfragen oder geschäftliche Kontaktaufnahme.
+Struktur: Kurzer Hook, 2-3 Absätze mit klarem Nutzenversprechen, Call-to-Action am Ende.
+Sprache: Hochwertiges Deutsch, keine Emojis, keine Ausrufezeichen-Overkill.
+Format: Nur den fertigen Text ausgeben. Kein Meta-Kommentar, keine Analyse, keine Aufzählung von Verbesserungen.`
   },
   {
-    id: 'reddit',
-    label: 'Reddit',
-    icon: '🔴',
-    color: '#FF4500',
-    url: 'https://www.reddit.com/submit',
-    prompt: `Rolle: Reddit-User der etwas teilt. Happiness (happiness-eu.netlify.app) ist die Plattform dahinter.
-Aufgabe: Entwurf + Coach-Feedback in einen postfertigen Reddit-Post umwandeln.
-Stil: Ehrlich, direkt, wie ein echter Community-User. Null Werbung. Reddit hasst Marketing.
-Struktur: 1-3 Absätze, ohne Umschweife. Happiness natürlich erwaehnen, z.B. "Hab das auf Happiness gefunden".
-Format: Fliesstext, kein Markdown. Nur den fertigen Text ausgeben.`
+    id: 'gamer',
+    label: 'Gamer & Streamer',
+    icon: '🎮',
+    prompt: `Rolle: Du bist ein authentischer Gamer und Streamer, der in der Community bekannt ist.
+Aufgabe: Schreibe einen kurzen, prägnanten Post im echten Gamer-Slang. NUTZE DIESE KEYWORDS NATÜRLICH: Clutch, bodenlos, Rage-Quit, Highlight, Macher, Noob, Sweaten, Chat ist eskaliert.
+Stil: Short, punchy, max. 4 Bullet Points. Wie ein echter Gamertweet, kein Marketing-Text.
+Struktur: 1-2 Sätze Hook, 2-3 Bullet Points mit den Highlights, abschließender CTA oder Frage an die Community.
+Format: Nur den fertigen Text ausgeben. Kein Meta-Kommentar, keine Analyse.`
   },
   {
-    id: 'x',
-    label: 'X / Twitter',
-    icon: '✖',
-    color: '#000000',
-    url: 'https://twitter.com/intent/post',
-    prompt: `Rolle: X/Twitter-Writer. Happiness (happiness-eu.netlify.app) ist die Plattform.
-Aufgabe: Entwurf + Coach-Feedback in einen postfertigen Tweet umwandeln.
-Stil: Zugespitzt, direkt. 250 Zeichen max.
-Struktur: Ein Satz der hängenbleibt. "via @Happiness" am Ende wenn Platz.
-Format: Klartext, kein Markdown. Nur den Tweet ausgeben.`
-  },
-  {
-    id: 'instagram',
-    label: 'Instagram',
-    icon: '📷',
-    color: '#E4405F',
-    url: 'https://www.instagram.com/',
-    prompt: `Rolle: Instagram-Content-Writer fuer Happiness (happiness-eu.netlify.app).
-Aufgabe: Entwurf + Coach-Feedback in eine postfertige Instagram-Caption umwandeln.
-Stil: Visuell, inspirierend, kurz. Emoji am Anfang erlaubt.
-Struktur: 2-4 Absätze, 5-8 Hashtags am Ende (immer #happiness). Happiness natürlich nennen, z.B. "Danke an Happiness fuer den Tipp".
-Format: Fliesstext, kein Markdown. Nur den fertigen Text ausgeben.`
-  },
-  {
-    id: 'facebook',
-    label: 'Facebook',
-    icon: '👤',
-    color: '#1877F2',
-    url: 'https://www.facebook.com/',
-    prompt: `Rolle: Facebook-Content-Writer fuer Happiness (happiness-eu.netlify.app).
-Aufgabe: Entwurf + Coach-Feedback in einen postfertigen Facebook-Post umwandeln.
-Stil: Warmherzig, community-orientiert, wie ein Freund empfiehlt. Kein KI-Sound.
-Struktur: Hook, 3-5 Absätze, CTA am Ende. Happiness natürlich erwaehnen, z.B. "Hab ich ueber Happiness entdeckt".
-Format: Fliesstext, kein Markdown. Nur den fertigen Text ausgeben.`
-  },
-  {
-    id: 'tiktok',
-    label: 'TikTok',
-    icon: '🎵',
-    color: '#000000',
-    url: 'https://www.tiktok.com/',
-    prompt: `Rolle: TikTok-Content-Writer fuer Happiness (happiness-eu.netlify.app).
-Aufgabe: Entwurf + Coach-Feedback in ein postfertiges TikTok-Skript umwandeln.
-Stil: Locker, authentisch, viral-tauglich.
-Struktur: 3-6 Sätze, Hook in den ersten 2 Sekunden. Happiness kurz erwaehnen, z.B. "Ich hab das auf Happiness gesehen".
-Format: Klartext als Skript, kein Markdown. Nur das Skript ausgeben.`
+    id: 'creative',
+    label: 'Kreativ & Viral',
+    icon: '✨',
+    prompt: `Rolle: Du bist ein kreativer Content Creator für Instagram, TikTok und Lifestyle-Blogs.
+Aufgabe: Schreibe einen emotionalen, viral-tauglichen Post mit starken Hooks und passenden Emojis.
+Stil: Storytelling, emotional, eingängig. Optimiert für Likes, Shares und Kommentare.
+Struktur: Aufmerksamkeitsstarke Hook-Zeile, 2-3 Absätze mit Story/Emotion, relevante Emojis, 5-8 Hashtags am Ende (immer #happiness).
+Format: Nur den fertigen Text ausgeben. Kein Meta-Kommentar, keine Analyse.`
   }
 ]
 
@@ -88,29 +46,26 @@ export default function PostPreparationPage() {
   const navigate = useNavigate()
 
   const draft = location.state?.draft || localStorage.getItem('happiness-draft') || ''
-  const feedback = location.state?.feedback || (() => {
-    try { return JSON.parse(localStorage.getItem('happiness-feedback') || '""') } catch { return '' }
-  })()
 
-  const [generatedPosts, setGeneratedPosts] = useState({})
-  const [loading, setLoading] = useState({})
+  const [activeTone, setActiveTone] = useState('business')
+  const [rewrittenPost, setRewrittenPost] = useState('')
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const generatePost = (platform) => {
-    if (loading[platform.id]) return
-    window.open(platform.url, '_blank')
-    doGeneratePost(platform)
-  }
-
-  const doGeneratePost = async (platform) => {
-    setLoading(prev => ({ ...prev, [platform.id]: true }))
+  const generateRewrite = async (toneId) => {
+    if (loading) return
+    setActiveTone(toneId)
+    setLoading(true)
     setError('')
+    setRewrittenPost('')
+
+    const tone = TONES.find(t => t.id === toneId)
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token || ''
 
-      const message = `Entwurf:\n\n"${draft}"\n\nCoach-Feedback:\n\n"${feedback}"\n\nAufgabe: Feedback umsetzen, neuen postfertigen Text fuer ${platform.label} schreiben.`
+      const message = `Entwurf:\n\n"${draft}"\n\nSchreibe den fertigen Post im gewählten Stil.`
 
       const response = await fetch(getChatEndpoint(), {
         method: 'POST',
@@ -120,7 +75,7 @@ export default function PostPreparationPage() {
         },
         body: JSON.stringify({
           message,
-          systemPrompt: platform.prompt,
+          systemPrompt: tone.prompt,
           userId: user?.id || '',
           history: []
         })
@@ -135,30 +90,19 @@ export default function PostPreparationPage() {
       if (!data.response) {
         throw new Error('Leere Antwort von der KI')
       }
-      setGeneratedPosts(prev => ({ ...prev, [platform.id]: data.response }))
-
-      try {
-        await navigator.clipboard.writeText(data.response)
-      } catch {
-        const ta = document.createElement('textarea')
-        ta.value = data.response
-        document.body.appendChild(ta)
-        ta.select()
-        document.execCommand('copy')
-        document.body.removeChild(ta)
-      }
+      setRewrittenPost(data.response)
     } catch (err) {
-      console.error(`Generate ${platform.id} error:`, err)
+      console.error(`Generate ${toneId} error:`, err)
       const msg = err.message || ''
       if (msg.includes('limit') || msg.includes('429')) {
         setError('Zu viele Anfragen gerade. Bitte warte kurz und versuch es nochmal.')
       } else if (msg.includes('fetch') || msg.includes('network')) {
         setError('Keine Verbindung zum Server. Prüf dein Internet und versuch es nochmal.')
       } else {
-        setError(`Beim Generieren fuer ${platform.label} ist ein Fehler aufgetreten. Bitte versuch es nochmal.`)
+        setError('Beim Generieren ist ein Fehler aufgetreten. Bitte versuch es nochmal.')
       }
     } finally {
-      setLoading(prev => ({ ...prev, [platform.id]: false }))
+      setLoading(false)
     }
   }
 
@@ -186,55 +130,55 @@ export default function PostPreparationPage() {
             <ArrowLeft size={18} /> Zurueck zum Feedback
           </button>
           <h1>Post vorbereiten</h1>
-          <p className="post-prep-subtitle">Klick eine Plattform. Bekommst den fertigen Post. Direkt teilen.</p>
+          <p className="post-prep-subtitle">Waehle deinen Stil. Bekommst den fertigen Post. Direkt teilen.</p>
         </div>
 
         <div className="post-prep-content">
           <div className="post-prep-source">
             <div className="post-prep-source-section">
               <div className="post-prep-source-label">
-                <PenTool size={14} /> Dein Entwurf
+                ✏️ Dein Entwurf
               </div>
               <div className="post-prep-source-text">{draft}</div>
             </div>
-            {feedback && (
-              <div className="post-prep-source-section">
-                <div className="post-prep-source-label">
-                  <MessageSquare size={14} /> Feedback
-                </div>
-                <div className="post-prep-source-text">{feedback}</div>
-              </div>
-            )}
           </div>
 
-          <div className="post-prep-platforms">
-            {PLATFORMS.map(platform => (
-              <div key={platform.id} className="post-prep-platform">
+          <div className="post-prep-tone-section">
+            <div className="post-prep-tone-label">Stil waehlen:</div>
+            <div className="post-prep-tone-buttons">
+              {TONES.map(tone => (
                 <button
-                  className="post-prep-platform-btn"
-                  onClick={() => generatePost(platform)}
-                  disabled={loading[platform.id]}
-                  style={{ borderColor: platform.color }}
+                  key={tone.id}
+                  className={`post-prep-tone-btn ${activeTone === tone.id ? 'active' : ''}`}
+                  onClick={() => generateRewrite(tone.id)}
+                  disabled={loading}
                 >
-                  <span className="post-prep-platform-icon">{platform.icon}</span>
-                  <span className="post-prep-platform-label">{platform.label}</span>
-                  {loading[platform.id] && <span className="post-prep-spinner" />}
+                  <span className="post-prep-tone-icon">{tone.icon}</span>
+                  <span className="post-prep-tone-text">{tone.label}</span>
                 </button>
-
-                {generatedPosts[platform.id] && (
-                  <div className="post-prep-result">
-                    <div className="post-prep-result-text">
-                      {generatedPosts[platform.id]}
-                    </div>
-                    <div className="post-prep-result-actions">
-                      <CopyBtn text={generatedPosts[platform.id]} />
-                      <ShareBar text={generatedPosts[platform.id]} title={`${platform.label} Post`} />
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
+
+          {loading && (
+            <div className="post-prep-loading">
+              <div className="post-prep-spinner" />
+              <span>Post wird generiert...</span>
+            </div>
+          )}
+
+          {rewrittenPost && !loading && (
+            <div className="post-prep-result">
+              <div className="post-prep-result-header">
+                <Sparkles size={16} />
+                <span>Dein fertiger Post (Schluesselfertig)</span>
+              </div>
+              <div className="post-prep-result-text">{rewrittenPost}</div>
+              <div className="post-prep-result-actions">
+                <CopyBtn text={rewrittenPost} />
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="post-prep-error">{error}</div>
