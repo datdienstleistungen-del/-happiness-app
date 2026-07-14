@@ -480,10 +480,15 @@ EMOTION: ${emotionMap[badge] || emotionMap.Creator}`
         <div className="lr-loading"><Loader size={24} className="lr-spinner" /><span>Loading leads...</span></div>
       ) : leads.length === 0 ? (
         <div className="lr-empty">
-          <div className="lr-empty-radar"><Radar size={48} className="lr-radar-pulse" /></div>
+          <div className={`lr-empty-radar ${radarActive ? 'lr-empty-radar-active' : ''}`} onClick={runLiveRadar}>
+            <Radar size={48} className={`lr-radar-pulse ${radarActive ? 'lr-spinner' : ''}`} />
+          </div>
           <h2>🛰️ Global Radar scanning...</h2>
-          <p>Click "📡 Live Radar" to scan {CONTINENTS.find(c => c.id === activeContinent)?.label || ''} feeds in real-time.</p>
+          <p>{radarActive ? 'Scanning feeds now...' : 'Click the radar icon or button below to scan live feeds.'}</p>
           <p className="lr-empty-sub">{LIVE_FEEDS.filter(f => f.continent === activeContinent).length} active feeds for this region — all client-side.</p>
+          <button className="lr-empty-scan-btn" onClick={runLiveRadar} disabled={radarActive}>
+            {radarActive ? <><Loader size={14} className="lr-spinner" /> Scanning...</> : <><Radio size={14} /> ⚡ Start Live Radar</>}
+          </button>
         </div>
       ) : (
         <div className="lr-grid">
