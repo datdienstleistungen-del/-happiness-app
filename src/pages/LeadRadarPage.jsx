@@ -50,6 +50,10 @@ const CONTEXT_BADGES = {
   Gamer: { color: '#8B5CF6', label: '🎮 Gamer' },
   Creator: { color: '#F59E0B', label: '🎬 Creator' },
   Business: { color: '#10B981', label: '💼 Business' },
+  Milestone: { color: '#EAB308', label: '⭐ Milestone' },
+  'Advice-Seeker': { color: '#22C55E', label: '❓ Advice-Seeker' },
+  'Privacy-First': { color: '#A855F7', label: '🔒 Privacy-First' },
+  Builder: { color: '#F97316', label: '🛠️ Builder' },
 }
 
 const LANG_BADGES = {
@@ -73,6 +77,10 @@ const BADGE_OPTIONS = [
   { value: 'Gamer', label: '🎮 Gamer' },
   { value: 'Creator', label: '🎬 Creator' },
   { value: 'Business', label: '💼 Business' },
+  { value: 'Milestone', label: '⭐ Milestone' },
+  { value: 'Advice-Seeker', label: '❓ Advice-Seeker' },
+  { value: 'Privacy-First', label: '🔒 Privacy-First' },
+  { value: 'Builder', label: '🛠️ Builder' },
 ]
 
 export default function LeadRadarPage() {
@@ -147,12 +155,37 @@ export default function LeadRadarPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token || ''
-      const systemPrompt = `Du bist ein Community-Outreach-Spezialist von Happiness. 
-Antworte KURZ und DIREKT im Ton der Plattform des Users. 
-Keine Floskeln, keine langen Einleitungen. 
-Hilfreich, empathisch, lösungsorientiert.
-Sprache: ${lead.lang || 'en'}.
-Maximal 3-4 Sätze.`
+      const badge = lead.badge || 'Creator'
+
+      let emotionDirective = ''
+      if (badge === 'Milestone') {
+        emotionDirective = `This user is CELEBRATING a personal milestone. You MUST start your response with enthusiastic congratulations. Be genuinely excited for them. Then naturally connect their win to how Happiness supports growing creators.`
+      } else if (badge === 'Advice-Seeker') {
+        emotionDirective = `This user is a BEGINNER seeking advice. You MUST provide a clear, simplified 3-step action plan BEFORE mentioning Happiness. Number the steps. Be encouraging and patient. Keep technical jargon minimal.`
+      } else if (badge === 'Privacy-First') {
+        emotionDirective = `This user cares deeply about PRIVACY and DATA PROTECTION. You MUST acknowledge their privacy concerns first, then explain how Happiness is GDPR-compliant, EU-hosted, and privacy-first. Use specific terms like 'no tracking', 'encrypted', 'EU servers'.`
+      } else if (badge === 'Builder') {
+        emotionDirective = `This user is a CREATIVE BUILDER (modder, map-maker, game developer). You MUST acknowledge their technical work first, then explain how Happiness helps builders share and monetize their creations.`
+      } else if (badge === 'Gamer') {
+        emotionDirective = `This user is a GAMER or STREAMER. Be casual, empathetic about the grind. Use gaming language naturally.`
+      } else {
+        emotionDirective = `This user is a CONTENT CREATOR or BUSINESS PROFESSIONAL. Be professional but warm, focused on growth and practical value.`
+      }
+
+      const systemPrompt = `Du bist ein Community-Outreach-Spezialist von Happiness Plattform.
+SPRACHE: Antworte AUSSCHLIESSLICH auf ${lead.lang === 'de' ? 'Deutsch' : lead.lang === 'es' ? 'Spanisch' : lead.lang === 'fr' ? 'Französisch' : 'Englisch'}.
+
+KONTEXT-BADGE: ${badge}
+
+STILREGELN:
+- Keine Floskeln, keine langen Einleitungen.
+- Hilfreich, empathisch, lösungsorientiert.
+- Maximal 3-4 Sätze.
+- Erwähne Happiness NUR dezent und organisch wenn passend.
+
+EMOTIONALE ANPASSUNG:
+${emotionDirective}`
+
       const response = await fetch(getChatEndpoint(), {
         method: 'POST',
         headers: {
@@ -160,9 +193,10 @@ Maximal 3-4 Sätze.`
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          message: `Ein User auf ${lead.platform || 'Reddit'} schreibt:\n\n"${lead.text}"\n\nAntworte direkt und hilfreich. Erwähne Happiness nur dezent wenn passend.`,
+          message: `User on ${lead.platform || 'Reddit'} (${badge}) writes:\n\n"${lead.text}"\n\nRespond directly and helpfully.`,
           systemPrompt,
           language: lead.lang || 'en',
+          badge,
           userId: user?.id || '',
           history: []
         })

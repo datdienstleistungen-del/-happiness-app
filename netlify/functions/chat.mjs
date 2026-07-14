@@ -226,7 +226,7 @@ export const handler = async (event) => {
     }
 
     const body = JSON.parse(event.body)
-    const { message, systemPrompt: originalPrompt, history, imageBase64, testVision, language } = body
+    const { message, systemPrompt: originalPrompt, history, imageBase64, testVision, language, badge } = body
 
     // RAG: Load Happiness knowledge context
     const knowledgeContext = await loadKnowledge(message, userId)
@@ -239,15 +239,29 @@ export const handler = async (event) => {
       ? `SPRACHREGEL (hoechste Prioritaet, nicht verhandelbar): Antworte AUSSCHLIESSLICH auf ${LANG_NAMES[language] || language}. Ignoriere alle anderen Sprachanweisungen im folgenden Kontext.\n\n`
       : ''
 
+    // Badge-based emotional adaptation
+    const BADGE_DIRECTIVES = {
+      Milestone: 'The user is CELEBATING a personal milestone or win. You MUST start your response with enthusiastic, genuine congratulations. Be excited for them. Then naturally connect their achievement to how Happiness supports growing creators.',
+      'Advice-Seeker': 'The user is a BEGINNER seeking advice or tips. You MUST provide a clear, simplified 3-step action plan BEFORE mentioning Happiness. Number the steps. Be encouraging, patient, and avoid jargon.',
+      'Privacy-First': 'The user cares deeply about PRIVACY and DATA PROTECTION. You MUST acknowledge their privacy concern first, then explain how Happiness is GDPR-compliant, EU-hosted, and privacy-first. Use terms like no tracking, encrypted, EU servers.',
+      Builder: 'The user is a CREATIVE BUILDER (modder, map-maker, game developer). You MUST acknowledge their technical work first, then explain how Happiness helps builders share and monetize their creations.',
+      Gamer: 'The user is a GAMER or STREAMER. Be casual and empathetic about the grind. Use gaming language naturally.',
+      Creator: 'The user is a CONTENT CREATOR. Be professional but warm, focused on growth and practical value.',
+      Business: 'The user is a BUSINESS PROFESSIONAL or FREELANCER. Be professional, ROI-focused, and practical.',
+    }
+    const badgeDirective = badge && BADGE_DIRECTIVES[badge]
+      ? `KONTEXT-BADGE: ${badge}\nEMOTIONALE ANPASSUNG: ${BADGE_DIRECTIVES[badge]}\n\n`
+      : ''
+
     let systemPrompt
     if (knowledgeContext) {
-      // Language > Knowledge > Baseline
-      systemPrompt = languageDirective + knowledgeContext + '\n\n' + (originalPrompt || BASELINE_PROMPT)
-      console.log('[RAG] Knowledge INJECTED (first position), length:', knowledgeContext.length, 'language:', language || 'auto')
+      // Language > Badge > Knowledge > Baseline
+      systemPrompt = languageDirective + badgeDirective + knowledgeContext + '\n\n' + (originalPrompt || BASELINE_PROMPT)
+      console.log('[RAG] Knowledge INJECTED, length:', knowledgeContext.length, 'badge:', badge || 'none', 'language:', language || 'auto')
     } else {
-      // Language > Baseline > Frontend prompt
-      systemPrompt = languageDirective + BASELINE_PROMPT + '\n\n' + (originalPrompt || '')
-      console.log('[RAG] Baseline prompt used (no knowledge matched), language:', language || 'auto')
+      // Language > Badge > Baseline > Frontend prompt
+      systemPrompt = languageDirective + badgeDirective + BASELINE_PROMPT + '\n\n' + (originalPrompt || '')
+      console.log('[RAG] Baseline prompt used, badge:', badge || 'none', 'language:', language || 'auto')
     }
 
     // Debug: Zeige was ankommt
