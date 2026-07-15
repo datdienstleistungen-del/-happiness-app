@@ -302,6 +302,16 @@
 .lr-generate-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(249,115,22,0.3); }
 .lr-generate-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
 
+.lr-pacing-warning {
+  background: rgba(234, 179, 8, 0.1);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.8rem;
+  color: #eab308;
+  line-height: 1.5;
+}
+
 .lr-response {
   background: #0f172a;
   border: 1px solid #1e293b;

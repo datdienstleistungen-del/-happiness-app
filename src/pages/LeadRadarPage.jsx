@@ -301,6 +301,29 @@ function playAlert() {
   } catch {}
 }
 
+function interleaveByPlatform(entries) {
+  const byPlatform = {}
+  for (const e of entries) {
+    const p = e.platform || 'unknown'
+    if (!byPlatform[p]) byPlatform[p] = []
+    byPlatform[p].push(e)
+  }
+  const platforms = Object.keys(byPlatform)
+  if (platforms.length <= 1) return entries
+  const result = []
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const p of platforms) {
+      if (byPlatform[p].length > 0) {
+        result.push(byPlatform[p].shift())
+        changed = true
+      }
+    }
+  }
+  return result
+}
+
 export default function LeadRadarPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -309,6 +332,7 @@ export default function LeadRadarPage() {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState({})
   const [responses, setResponses] = useState({})
+  const [cooldowns, setCooldowns] = useState({})
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
@@ -363,6 +387,7 @@ export default function LeadRadarPage() {
     console.log('[LeadRadar] Live scan started —', feedsForTab.length, 'feeds for', activeContinent)
 
     let totalFetched = 0, totalMatched = 0, totalInserted = 0
+    const matchedEntries = []
 
     for (let i = 0; i < feedsForTab.length; i++) {
       const feed = feedsForTab[i]
@@ -415,55 +440,45 @@ export default function LeadRadarPage() {
           const sourceUrl = entry.link || feed.url
           if (existingUrlsRef.current.has(sourceUrl)) { console.log('[LeadRadar] Dedup skip:', sourceUrl.slice(0, 80)); continue }
 
-          const detectedBadge = detectBadge(plainText, feed.badge)
-          let insertError = null
-
-          const { error: e1 } = await supabase.from('leads').insert({
+          matchedEntries.push({
             platform: feed.platform,
             continent: feed.continent,
             lang: feed.lang,
-            badge: detectedBadge,
+            badge: detectBadge(plainText, feed.badge),
             source_url: sourceUrl,
             text: plainText,
             status: 'new',
           })
-          if (e1) {
-            console.log('[LeadRadar] First insert failed (badge?):', e1.message)
-            const { error: e2 } = await supabase.from('leads').insert({
-              platform: feed.platform,
-              continent: feed.continent,
-              lang: feed.lang,
-              source_url: sourceUrl,
-              text: plainText,
-              status: 'new',
-            })
-            if (e2) insertError = e2
-          }
-          if (insertError) { console.warn('[LeadRadar] Insert skip:', insertError.message); continue }
-          console.log('[LeadRadar] Inserted:', sourceUrl.slice(0, 80))
-
-          existingUrlsRef.current.add(sourceUrl)
-          totalInserted++
-
-          const newLead = {
-            id: 'live-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-            platform: feed.platform,
-            continent: feed.continent,
-            lang: feed.lang,
-            badge: detectedBadge,
-            source_url: sourceUrl,
-            text: plainText,
-            status: 'new',
-            created_at: new Date().toISOString(),
-            _isNew: true,
-          }
-          newLeadIdsRef.current.add(newLead.id)
-          setLeads(prev => [newLead, ...prev])
-          playAlert()
-          setRadarStats({ fetched: totalFetched, matched: totalMatched, inserted: totalInserted })
         }
       } catch (err) {
         console.warn('[LeadRadar] Feed error:', feed.url, err.message)
+      }
+    }
+
+    const interleaved = interleaveByPlatform(matchedEntries)
+    console.log('[LeadRadar] Interleaved', interleaved.length, 'entries by platform')
+
+    for (const entry of interleaved) {
+      try {
+        let insertError = null
+        const { error: e1 } = await supabase.from('leads').insert(entry)
+        if (e1) {
+          const { error: e2 } = await supabase.from('leads').insert({
+            platform: entry.platform, continent: entry.continent, lang: entry.lang,
+            source_url: entry.source_url, text: entry.text, status: 'new',
+          })
+          if (e2) insertError = e2
+        }
+        if (insertError) { console.warn('[LeadRadar] Insert skip:', insertError.message); continue }
+
+        existingUrlsRef.current.add(entry.source_url)
+        totalInserted++
+        const newLead = { ...entry, id: 'live-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), created_at: new Date().toISOString(), _isNew: true }
+        newLeadIdsRef.current.add(newLead.id)
+        setLeads(prev => [newLead, ...prev])
+        playAlert()
+      } catch (err) {
+        console.warn('[LeadRadar] Batch insert error:', err.message)
       }
     }
 
@@ -498,6 +513,13 @@ export default function LeadRadarPage() {
 
   async function generateResponse(lead) {
     if (generating[lead.id]) return
+    if (cooldowns[lead.platform]) {
+      const remaining = Math.ceil((cooldowns[lead.platform] - Date.now()) / 1000)
+      if (remaining > 0) {
+        setResponses(prev => ({ ...prev, [lead.id]: `Pacing Warning: To prevent platform blockages, please wait ${remaining} seconds before pasting the next response to this specific network.` }))
+        return
+      }
+    }
     setGenerating(prev => ({ ...prev, [lead.id]: true }))
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -530,6 +552,8 @@ EMOTION: ${emotionMap[badge] || emotionMap.Creator}`
       if (!response.ok) throw new Error(`API ${response.status}`)
       const data = await response.json()
       setResponses(prev => ({ ...prev, [lead.id]: data.response || 'No response generated.' }))
+      setCooldowns(prev => ({ ...prev, [lead.platform]: Date.now() + 90000 }))
+      setTimeout(() => setCooldowns(prev => { const n = { ...prev }; delete n[lead.platform]; return n }), 91000)
     } catch (err) {
       setResponses(prev => ({ ...prev, [lead.id]: 'Error: ' + err.message }))
     } finally { setGenerating(prev => ({ ...prev, [lead.id]: false })) }
@@ -608,6 +632,11 @@ EMOTION: ${emotionMap[badge] || emotionMap.Creator}`
               <button className="lr-generate-btn" onClick={() => generateResponse(lead)} disabled={generating[lead.id]}>
                 {generating[lead.id] ? <><Loader size={14} className="lr-spinner" /> Generating...</> : <><Zap size={14} /> Generate Global Helper Response</>}
               </button>
+              {cooldowns[lead.platform] && (
+                <div className="lr-pacing-warning">
+                  Pacing Warning: To prevent platform blockages, please wait {Math.ceil((cooldowns[lead.platform] - Date.now()) / 1000)} seconds before pasting the next response to {lead.platform}.
+                </div>
+              )}
               {responses[lead.id] && (
                 <div className="lr-response">
                   <div className="lr-response-text">{responses[lead.id]}</div>
