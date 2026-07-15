@@ -225,6 +225,10 @@ export const handler = async (event) => {
       console.error('Auth check failed:', e.message)
     }
 
+    if (!userId) {
+      return { statusCode: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ error: 'Ungueltiges oder abgelaufenes Token' }) }
+    }
+
     const body = JSON.parse(event.body)
     const { message, systemPrompt: originalPrompt, history, imageBase64, testVision, language, badge, mode } = body
 

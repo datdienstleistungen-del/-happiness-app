@@ -6,6 +6,8 @@
 // ──────────────────────────────────────────────────────────────
 
 const CHAT_URL = 'https://happiness-eu.netlify.app/.netlify/functions/chat'
+const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || ''
 
 // ── Plattform-Erkennung (Keyword-basiert) ──
 
@@ -201,6 +203,23 @@ export const handler = async (event) => {
 
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
+  }
+
+  // ── Auth Check ──
+  const authHeader = event.headers.authorization || ''
+  const token = authHeader.replace('Bearer ', '')
+  if (!token) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'Nicht authentifiziert' }) }
+  }
+  try {
+    const authRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_SERVICE_KEY }
+    })
+    if (!authRes.ok) {
+      return { statusCode: 401, body: JSON.stringify({ error: 'Ungueltiges Token' }) }
+    }
+  } catch (e) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'Auth-Check fehlgeschlagen' }) }
   }
 
   const hitEnabled = process.env.HIT_ENABLED === 'true' || process.env.VITE_HIT_ENABLED === 'true'

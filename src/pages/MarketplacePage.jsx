@@ -24,6 +24,11 @@ export default function MarketplacePage() {
 
   useEffect(() => { fetchItems() }, [])
 
+  useEffect(() => {
+    if (location.state?.form) setForm(location.state.form)
+    if (location.state?.startTab) setTab(location.state.startTab)
+  }, [location.state])
+
   async function fetchItems() {
     const { data } = await supabase.from('marketplace').select('*, profiles(name, username)').eq('active', true).order('created_at', { ascending: false })
     setItems(data || [])
@@ -70,12 +75,14 @@ export default function MarketplacePage() {
       const { error: uploadError } = await supabase.storage
         .from('community-images')
         .upload(filePath, selectedImage, { contentType: selectedImage.type })
-      if (!uploadError) {
-        const { data: urlData } = supabase.storage
-          .from('community-images')
-          .getPublicUrl(filePath)
-        imageUrl = urlData.publicUrl
+      if (uploadError) {
+        alert('Bild-Upload fehlgeschlagen: ' + uploadError.message)
+        return
       }
+      const { data: urlData } = supabase.storage
+        .from('community-images')
+        .getPublicUrl(filePath)
+      imageUrl = urlData.publicUrl
     }
 
     await supabase.from('marketplace').insert({
@@ -86,10 +93,11 @@ export default function MarketplacePage() {
       category: form.category,
       image_url: imageUrl,
     })
-    gtag('event', 'project_saved', { source: 'marketplace' })
+    try { gtag('event', 'project_saved', { source: 'marketplace' }) } catch {}
     setForm({ title: '', description: '', price: '', category: 'Sonstiges' })
     setSelectedImage(null)
     setImagePreview(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
     setTab('browse')
     fetchItems()
   }
@@ -137,7 +145,7 @@ export default function MarketplacePage() {
             {imagePreview && (
               <div style={{ position: 'relative', display: 'inline-block', marginLeft: '0.5rem' }}>
                 <img src={imagePreview} alt="" style={{ maxWidth: '120px', maxHeight: '80px', borderRadius: '6px', objectFit: 'cover' }} />
-                <button onClick={() => { setSelectedImage(null); setImagePreview(null) }} style={{ position: 'absolute', top: -6, right: -6, background: 'var(--danger, #e53e3e)', color: 'white', border: 'none', borderRadius: '50%', width: 18, height: 18, cursor: 'pointer', fontSize: 10, lineHeight: '18px', textAlign: 'center' }}><X size={10} /></button>
+                <button onClick={() => { setSelectedImage(null); setImagePreview(null); if (fileInputRef.current) fileInputRef.current.value = '' }} style={{ position: 'absolute', top: -6, right: -6, background: 'var(--danger, #e53e3e)', color: 'white', border: 'none', borderRadius: '50%', width: 18, height: 18, cursor: 'pointer', fontSize: 10, lineHeight: '18px', textAlign: 'center' }}><X size={10} /></button>
               </div>
             )}
           </div>
