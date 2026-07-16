@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { useLocation, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Copy, Check, Sparkles, Share2, MessageCircle, Rocket } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { ArrowLeft, Copy, Check, Sparkles, Share2, MessageCircle, Rocket, PenTool } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { getChatEndpoint } from '../lib/hit'
@@ -45,12 +45,34 @@ export default function PostPreparationPage() {
   const location = useLocation()
   const navigate = useNavigate()
 
-  const draft = location.state?.draft || localStorage.getItem('happiness-draft') || ''
+  const draft = location.state?.draft || ''
+  const fromPage = location.state?.from || 'dashboard'
 
   const [activeTone, setActiveTone] = useState('business')
   const [rewrittenPost, setRewrittenPost] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [posted, setPosted] = useState(false)
+
+  const goBack = () => {
+    if (fromPage === 'pipeline') navigate('/')
+    else if (fromPage === 'chat') navigate('/ai-chat')
+    else if (fromPage === 'academy') navigate('/creator-academy')
+    else navigate(-1)
+  }
+
+  const postToFeed = async () => {
+    if (!rewrittenPost || !user) return
+    try {
+      await supabase.from('posts').insert({
+        user_id: user.id,
+        content: rewrittenPost
+      })
+      setPosted(true)
+    } catch (err) {
+      console.error('Post failed:', err)
+    }
+  }
 
   const generateRewrite = async (toneId) => {
     if (loading) return
@@ -111,11 +133,11 @@ export default function PostPreparationPage() {
       <div className="post-prep-page">
         <div className="post-prep-container">
           <div className="post-prep-header">
-            <button className="post-prep-back" onClick={() => navigate(-1)}>
+            <button className="post-prep-back" onClick={goBack}>
               <ArrowLeft size={18} /> Zurueck
             </button>
             <h1>Post vorbereiten</h1>
-            <p className="post-prep-subtitle">Kein Entwurf vorhanden. Geh zurueck und starte von vorne.</p>
+            <p className="post-prep-subtitle">Kein Entwurf vorhanden. Starte mit einem neuen Ziel.</p>
           </div>
         </div>
       </div>
@@ -126,11 +148,11 @@ export default function PostPreparationPage() {
     <div className="post-prep-page">
       <div className="post-prep-container">
         <div className="post-prep-header">
-          <button className="post-prep-back" onClick={() => navigate('/creator-academy')}>
-            <ArrowLeft size={18} /> Zurueck zum Feedback
+          <button className="post-prep-back" onClick={goBack}>
+            <ArrowLeft size={18} /> Zurueck
           </button>
           <h1>Post vorbereiten</h1>
-          <p className="post-prep-subtitle">Waehle deinen Stil. Bekommst den fertigen Post. Direkt teilen.</p>
+          <p className="post-prep-subtitle">Waehle deinen Stil. Bekommst den fertigen Post. Direkt posten oder teilen.</p>
         </div>
 
         <div className="post-prep-content">
@@ -144,7 +166,7 @@ export default function PostPreparationPage() {
           </div>
 
           <div className="post-prep-tone-section">
-            <div className="post-prep-tone-label">Stil waehlen:</div>
+            <div className="post-prep-tone-label">Schritt 1: Stil waehlen</div>
             <div className="post-prep-tone-buttons">
               {TONES.map(tone => (
                 <button
@@ -171,30 +193,53 @@ export default function PostPreparationPage() {
             <div className="post-prep-result">
               <div className="post-prep-result-header">
                 <Sparkles size={16} />
-                <span>Dein fertiger Post (Schluesselfertig)</span>
+                <span>Schritt 2: Dein fertiger Post</span>
               </div>
               <div className="post-prep-result-text">{rewrittenPost}</div>
               <div className="post-prep-result-actions">
                 <CopyBtn text={rewrittenPost} />
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
-                <Link to="/community" className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  <MessageCircle size={14} /> Im Feed posten
-                </Link>
-                <Link to="/tiktok-video" state={{ postText: rewrittenPost }} className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  <Rocket size={14} /> Als Video
-                </Link>
+                {!posted ? (
+                  <button
+                    className="btn btn-primary"
+                    onClick={postToFeed}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <MessageCircle size={14} /> Jetzt posten
+                  </button>
+                ) : (
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => navigate('/community')}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <MessageCircle size={14} /> Im Feed ansehen
+                  </button>
+                )}
                 <button
                   className="btn btn-outline"
-                  onClick={() => {
-                    if (navigator.share) {
-                      navigator.share({ text: rewrittenPost }).catch(() => {})
-                    }
-                  }}
+                  onClick={() => navigate('/tiktok-video', { state: { postText: rewrittenPost } })}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                 >
-                  <Share2 size={14} /> Teilen
+                  <Rocket size={14} /> Als Video
                 </button>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => navigate('/creator-academy', { state: { draft: rewrittenPost } })}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <PenTool size={14} /> Weiter verbessern
+                </button>
+                {navigator.share && (
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => navigator.share({ text: rewrittenPost }).catch(() => {})}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Share2 size={14} /> Teilen
+                  </button>
+                )}
               </div>
             </div>
           )}

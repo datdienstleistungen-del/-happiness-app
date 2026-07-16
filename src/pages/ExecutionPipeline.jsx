@@ -209,6 +209,7 @@ export default function ExecutionPipeline() {
   const [clarifyText, setClarifyText] = useState('')
   const [error, setError] = useState('')
   const [debugData, setDebugData] = useState(null)
+  const [showResult, setShowResult] = useState(false)
   const workflowRef = useRef(null)
   const startTime = useRef(Date.now())
 
@@ -342,29 +343,26 @@ export default function ExecutionPipeline() {
   useEffect(() => {
     if (phase !== 'executing' || !finished || !apiDone || !intent) return
 
-    const timer = setTimeout(() => {
-      const generatedContent = apiResult?.content || goal
-      const goalLower = goal.toLowerCase()
+    updateWorkflowStatus('reviewing')
+    trackWorkflowCompleted(intent?.platform || 'content', Math.round((Date.now() - startTime) / 1000))
+    setShowResult(true)
+  }, [finished, apiDone, intent, goal, phase])
 
-      updateWorkflowStatus('published')
-      updateStepStatus('publish', 'completed')
-      trackWorkflowCompleted(intent?.platform || 'content', Math.round((Date.now() - startTime) / 1000))
+  const navigateToResult = () => {
+    const generatedContent = apiResult?.content || apiResult?.contents?.[0]?.content || goal
+    const goalLower = goal.toLowerCase()
 
-      if (intent.platform === 'tiktok' || /video|tiktok|reel|kurzvideo/.test(goalLower)) {
-        navigate('/tiktok-video', { state: { postText: goal, pipelineResult: apiResult } })
-      } else if (intent.platform === 'marketplace') {
-        navigate('/marketplace', { state: { form: { title: goal, description: goal, price: '', category: 'Sonstiges' }, startTab: 'create' } })
-      } else if (intent.platform === 'email') {
-        navigate('/post-preparation', { state: { draft: generatedContent, feedback: '', platform: 'email' } })
-      } else if (intent.platform === 'podcast') {
-        navigate('/post-preparation', { state: { draft: generatedContent, feedback: '', platform: 'podcast' } })
-      } else {
-        navigate('/post-preparation', { state: { draft: generatedContent, feedback: '' } })
-      }
-    }, 600)
+    updateWorkflowStatus('published')
+    updateStepStatus('publish', 'completed')
 
-    return () => clearTimeout(timer)
-  }, [finished, apiDone, intent, goal, navigate, apiResult, phase])
+    if (intent.platform === 'tiktok' || /video|tiktok|reel|kurzvideo/.test(goalLower)) {
+      navigate('/tiktok-video', { state: { postText: generatedContent, pipelineResult: apiResult } })
+    } else if (intent.platform === 'marketplace') {
+      navigate('/marketplace', { state: { form: { title: goal, description: goal, price: '', category: 'Sonstiges' }, startTab: 'create' } })
+    } else {
+      navigate('/post-preparation', { state: { draft: generatedContent, feedback: '', platform: intent.platform } })
+    }
+  }
 
   if (phase === 'clarify') {
     return (
@@ -494,10 +492,35 @@ export default function ExecutionPipeline() {
           </div>
         )}
 
-        {finished && apiDone && (
-          <div className="ep-finished">
-            <div className="ep-finished-icon">✅</div>
-            <p>Weiterleitung...</p>
+        {finished && apiDone && showResult && (
+          <div className="ep-result">
+            <div className="ep-result-header">
+              <div className="ep-result-icon">✅</div>
+              <div>
+                <p className="ep-result-title">Ergebnis bereit</p>
+                <p className="ep-result-subtitle">
+                  {apiResult?.contents
+                    ? `${apiResult.contents.length} Plattformen generiert`
+                    : `Fertig für ${(intent?.platform || 'diese Plattform').replace('content', 'Content')}`
+                  }
+                </p>
+              </div>
+            </div>
+
+            {(apiResult?.content || apiResult?.contents?.[0]?.content) && (
+              <div className="ep-result-preview">
+                {(apiResult.contents || [{ content: apiResult.content, platform: intent?.platform }]).map((item, i) => (
+                  <div key={i} className="ep-result-item">
+                    <span className="ep-result-platform">{item.platform || intent?.platform}</span>
+                    <p className="ep-result-text">{(item.content || '').slice(0, 200)}{(item.content || '').length > 200 ? '...' : ''}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button className="ep-btn primary" onClick={navigateToResult}>
+              Weiter →
+            </button>
           </div>
         )}
 

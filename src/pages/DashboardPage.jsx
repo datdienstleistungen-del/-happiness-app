@@ -9,7 +9,28 @@ import Feed from '../components/Feed'
 import WorkflowWidget from '../components/WorkflowWidget'
 import './DashboardPage.css'
 
-const QUICK_GOALS = [
+const QUICK_GOALS_BY_CHOICE = {
+  community: [
+    'Einen interessanten Beitrag fuer die Community schreiben',
+    'Neue Leute in der Community kennenlernen',
+    'Diskussion zu einem Thema starten',
+    'Erfahrungen mit anderen teilen',
+  ],
+  creator: [
+    'TikTok über gesunde Gewohnheiten erstellen',
+    'Facebook-Post für mein Business schreiben',
+    'Instagram-Post mit KI optimieren',
+    'Content-Idee für YouTube generieren',
+  ],
+  ai: [
+    'Mir hilfe bei einem Alltagsproblem',
+    'Ideen fuer mein naechstes Projekt generieren',
+    'Einen Text fuer mich schreiben',
+    'Lerne etwas Neues heute',
+  ],
+}
+
+const QUICK_GOALS_DEFAULT = [
   'TikTok über gesunde Gewohnheiten erstellen',
   'Facebook-Post für mein Business schreiben',
   'Instagram-Post mit KI optimieren',
@@ -27,6 +48,9 @@ export default function DashboardPage() {
   const [workflows, setWorkflows] = useState([])
   const [loadingWorkflows, setLoadingWorkflows] = useState(true)
   const [selectedWf, setSelectedWf] = useState(null)
+
+  const onboardingChoice = localStorage.getItem('happiness-onboarding-choice') || 'creator'
+  const quickGoals = QUICK_GOALS_BY_CHOICE[onboardingChoice] || QUICK_GOALS_DEFAULT
 
   useEffect(() => { loadWorkflows() }, [user])
 
@@ -114,7 +138,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="hit-chips">
-          {QUICK_GOALS.map((g, i) => (
+          {quickGoals.map((g, i) => (
             <button key={i} className="hit-chip" onClick={() => setGoal(g)}>{g}</button>
           ))}
         </div>

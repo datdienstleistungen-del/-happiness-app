@@ -215,6 +215,67 @@
   50% { opacity: 0.4; }
 }
 
+/* ── Result Panel ── */
+.ep-result {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  animation: epFadeIn 0.3s ease-out;
+}
+
+.ep-result-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 1rem;
+}
+
+.ep-result-icon {
+  font-size: 1.5rem;
+}
+
+.ep-result-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.ep-result-subtitle {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 2px 0 0;
+}
+
+.ep-result-preview {
+  margin-bottom: 1rem;
+}
+
+.ep-result-item {
+  padding: 0.5rem 0.75rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.ep-result-platform {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-petrol, #085041);
+  margin-bottom: 4px;
+}
+
+.ep-result-text {
+  font-size: 0.8rem;
+  color: #374151;
+  line-height: 1.4;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
 /* ── Not Available ── */
 .ep-unavailable {
   text-align: center;

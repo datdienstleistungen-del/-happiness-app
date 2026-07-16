@@ -16,19 +16,19 @@ export default function OnboardingPage() {
     setSaving(true)
     try {
       localStorage.setItem('happiness-onboarding-done', 'true')
+      localStorage.setItem('happiness-onboarding-choice', choice)
       await supabase.from('profiles').update({
         onboarding_completed: true,
         onboarding_choice: choice,
         last_seen: new Date().toISOString()
       }).eq('id', user.id)
-      gtag('event', 'signup_completed')
 
-      if (choice === 'community') navigate('/', { replace: true })
-      else if (choice === 'creator') navigate('/', { replace: true })
-      else navigate('/', { replace: true })
+      if (choice === 'community') navigate('/')
+      else if (choice === 'creator') navigate('/')
+      else navigate('/')
     } catch (err) {
       console.error('Onboarding save failed:', err)
-      navigate('/', { replace: true })
+      navigate('/')
     }
   }
 
