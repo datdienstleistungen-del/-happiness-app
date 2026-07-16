@@ -46,3 +46,19 @@ export const trackDemoCompleted = (goal) => {
 export const trackWidgetOpened = (workflowId) => {
   trackHitEvent('hit_widget_opened', { workflow_id: workflowId })
 }
+
+export const trackPlatformsDetected = (platforms) => {
+  trackHitEvent('hit_platforms_detected', { platforms: platforms.join(','), count: platforms.length })
+}
+
+export const trackMasterBriefGenerated = (goal) => {
+  trackHitEvent('hit_master_brief_generated', { goal })
+}
+
+export const trackPlatformAgentResult = (platform, success) => {
+  trackHitEvent('hit_platform_agent_result', { platform, success: success ? 'yes' : 'no' })
+}
+
+export const trackMultiPlatformCount = (count) => {
+  trackHitEvent('hit_multi_platform_count', { count })
+}

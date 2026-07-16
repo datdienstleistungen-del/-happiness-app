@@ -26,6 +26,23 @@ const STEP_ICONS = {
   feedback: MessageCircle,
 }
 
+const PLATFORM_META = {
+  tiktok: { icon: '🎵', label: 'TikTok', color: '#000000' },
+  facebook: { icon: '👥', label: 'Facebook', color: '#1877F2' },
+  instagram: { icon: '📸', label: 'Instagram', color: '#E4405F' },
+  linkedin: { icon: '💼', label: 'LinkedIn', color: '#0A66C2' },
+  youtube: { icon: '▶️', label: 'YouTube', color: '#FF0000' },
+  kleinanzeigen: { icon: '🏷️', label: 'Kleinanzeigen', color: '#FF6600' },
+  marketplace: { icon: '🏷️', label: 'Marktplatz', color: '#FF6600' },
+  reddit: { icon: '🔴', label: 'Reddit', color: '#FF4500' },
+  pinterest: { icon: '📌', label: 'Pinterest', color: '#E60023' },
+  email: { icon: '✉️', label: 'E-Mail', color: '#007BFF' },
+  podcast: { icon: '🎙️', label: 'Podcast', color: '#8B5CF6' },
+  video: { icon: '🎬', label: 'Video-Skript', color: '#085041' },
+  post: { icon: '📝', label: 'Post-Text', color: '#085041' },
+  content: { icon: '📝', label: 'Content', color: '#085041' },
+}
+
 export default function WorkflowWidget({ workflow, onClose }) {
   const navigate = useNavigate()
   const [wf, setWf] = useState(workflow)
@@ -215,33 +232,49 @@ export default function WorkflowWidget({ workflow, onClose }) {
         {/* Artifacts */}
         {artifacts.length > 0 && (
           <div className="wf-artifacts">
-            <h4 className="wf-steps-title">Ergebnisse</h4>
-            {artifacts.map(art => (
-              <div key={art.id} className="wf-artifact-card">
-                <div className="wf-artifact-icon">
-                  {art.artifact_type === 'video' ? '🎬' : '📝'}
-                </div>
-                <div className="wf-artifact-info">
-                  <span className="wf-artifact-title">
-                    {art.artifact_type === 'video' ? 'Video-Skript' : 'Post-Text'}
-                  </span>
-                  <span className="wf-artifact-desc">
-                    {(art.content?.content || art.content?.recipe?.voiceover_script || '').slice(0, 80)}...
-                  </span>
-                </div>
+            <div className="wf-artifacts-header">
+              <h4 className="wf-steps-title">Ergebnisse</h4>
+              {artifacts.length > 1 && (
                 <button
-                  className="wf-step-action"
+                  className="wf-copy-all-btn"
                   onClick={() => {
-                    const text = art.content?.content || art.content?.recipe?.voiceover_script || ''
-                    if (text) {
-                      navigator.clipboard.writeText(text)
-                    }
+                    const allText = artifacts.map(art => {
+                      const meta = PLATFORM_META[art.artifact_type] || { label: art.artifact_type }
+                      const text = art.content?.content || art.content?.recipe?.voiceover_script || ''
+                      return `--- ${meta.label} ---\n${text}`
+                    }).join('\n\n')
+                    navigator.clipboard.writeText(allText)
                   }}
                 >
-                  Kopieren
+                  Alles kopieren
                 </button>
-              </div>
-            ))}
+              )}
+            </div>
+            {artifacts.map(art => {
+              const meta = PLATFORM_META[art.artifact_type] || { icon: '📝', label: art.artifact_type, color: '#085041' }
+              return (
+                <div key={art.id} className="wf-artifact-card" style={{ borderColor: `${meta.color}20` }}>
+                  <div className="wf-artifact-icon">{meta.icon}</div>
+                  <div className="wf-artifact-info">
+                    <span className="wf-artifact-title" style={{ color: meta.color }}>
+                      {meta.label}
+                    </span>
+                    <span className="wf-artifact-desc">
+                      {(art.content?.content || art.content?.recipe?.voiceover_script || '').slice(0, 80)}...
+                    </span>
+                  </div>
+                  <button
+                    className="wf-step-action"
+                    onClick={() => {
+                      const text = art.content?.content || art.content?.recipe?.voiceover_script || ''
+                      if (text) navigator.clipboard.writeText(text)
+                    }}
+                  >
+                    Kopieren
+                  </button>
+                </div>
+              )
+            })}
           </div>
         )}
 

@@ -4,6 +4,10 @@ import instagramPrompt from '../platforms/instagram.js'
 import linkedinPrompt from '../platforms/linkedin.js'
 import youtubePrompt from '../platforms/youtube.js'
 import kleinanzeigenPrompt from '../platforms/kleinanzeigen.js'
+import redditPrompt from '../platforms/reddit.js'
+import pinterestPrompt from '../platforms/pinterest.js'
+import emailPrompt from '../platforms/email.js'
+import podcastPrompt from '../platforms/podcast.js'
 
 const PLATFORM_AGENTS = {
   tiktok: {
@@ -42,9 +46,33 @@ const PLATFORM_AGENTS = {
     platforms: ['kleinanzeigen', 'marketplace'],
     keywords: ['kleinanzeige', 'verkauf', 'vermietung', 'preis'],
   },
+  reddit: {
+    name: 'Reddit Agent',
+    prompt: redditPrompt,
+    platforms: ['reddit'],
+    keywords: ['reddit', 'thread', 'diskussion', 'ama'],
+  },
+  pinterest: {
+    name: 'Pinterest Agent',
+    prompt: pinterestPrompt,
+    platforms: ['pinterest'],
+    keywords: ['pinterest', 'pin', 'board', 'diy'],
+  },
+  email: {
+    name: 'E-Mail Agent',
+    prompt: emailPrompt,
+    platforms: ['email'],
+    keywords: ['e-mail', 'email', 'newsletter', 'mailing'],
+  },
+  podcast: {
+    name: 'Podcast Agent',
+    prompt: podcastPrompt,
+    platforms: ['podcast'],
+    keywords: ['podcast', 'episode', 'folge', 'audio'],
+  },
 }
 
-const PLATFORM_ORDER = ['tiktok', 'instagram', 'facebook', 'linkedin', 'youtube', 'kleinanzeigen']
+const PLATFORM_ORDER = ['tiktok', 'instagram', 'facebook', 'linkedin', 'youtube', 'kleinanzeigen', 'reddit', 'pinterest', 'email', 'podcast']
 
 export function detectPlatforms(goal) {
   const lower = goal.toLowerCase()

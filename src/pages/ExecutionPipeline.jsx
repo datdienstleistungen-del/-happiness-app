@@ -5,7 +5,7 @@ import { useLanguage } from '../i18n/translations'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { getChatEndpoint } from '../lib/hit'
-import { trackIdeaSubmitted, trackWorkflowCompleted, trackArtifactSaved } from '../intelligence/analytics'
+import { trackIdeaSubmitted, trackWorkflowCompleted, trackArtifactSaved, trackPlatformsDetected, trackMasterBriefGenerated, trackPlatformAgentResult, trackMultiPlatformCount } from '../intelligence/analytics'
 import { detectPlatforms, buildMasterBrief, runPlatformAgent } from '../intelligence/content-engine'
 import './ExecutionPipeline.css'
 
@@ -108,19 +108,35 @@ async function startRealWork(platform, goal) {
 
     const masterBrief = masterBriefRaw?.response || goal
 
-    const platforms = detectPlatforms(goal)
+    const detectedPlatforms = detectPlatforms(goal)
+    trackPlatformsDetected(detectedPlatforms)
+    trackMasterBriefGenerated(goal)
+
     const results = await Promise.all(
-      platforms.map(p => runPlatformAgent(p, goal, masterBrief, chatEndpoint, token))
+      detectedPlatforms.map(p => runPlatformAgent(p, goal, masterBrief, chatEndpoint, token))
     )
 
     const validResults = results.filter(Boolean)
+    validResults.forEach(r => trackPlatformAgentResult(r.platform, true))
+    results.filter(r => !r).forEach((_, i) => trackPlatformAgentResult(detectedPlatforms[i], false))
+
     if (validResults.length === 0) return null
 
-    if (validResults.length === 1) {
-      return { content: validResults[0].content, platform: validResults[0].platform, masterBrief }
+    if (validResults.length > 1) {
+      trackMultiPlatformCount(validResults.length)
     }
 
-    return { contents: validResults, masterBrief }
+    if (validResults.length === 1) {
+      return {
+        content: validResults[0].content,
+        platform: validResults[0].platform,
+        masterBrief,
+        detectedPlatforms,
+        agentResults: validResults
+      }
+    }
+
+    return { contents: validResults, masterBrief, detectedPlatforms, agentResults: validResults }
   } catch {
     return null
   }
@@ -153,6 +169,26 @@ const STEP_LABELS_BY_PLATFORM = {
     { key: 'analyze', duration: 1200 },
     { key: 'prepare', duration: 1000 },
   ],
+  reddit: [
+    { key: 'understand', duration: 1200 },
+    { key: 'research', duration: 1500 },
+    { key: 'draft', duration: 1800 },
+  ],
+  pinterest: [
+    { key: 'understand', duration: 1200 },
+    { key: 'research', duration: 1500 },
+    { key: 'draft', duration: 1800 },
+  ],
+  email: [
+    { key: 'understand', duration: 1200 },
+    { key: 'research', duration: 1500 },
+    { key: 'draft', duration: 1800 },
+  ],
+  podcast: [
+    { key: 'understand', duration: 1200 },
+    { key: 'research', duration: 1500 },
+    { key: 'draft', duration: 1800 },
+  ],
 }
 
 export default function ExecutionPipeline() {
@@ -161,6 +197,7 @@ export default function ExecutionPipeline() {
   const { user } = useAuth()
   const [searchParams] = useSearchParams()
   const goal = searchParams.get('goal') || ''
+  const debugMode = searchParams.get('debug') === '1'
 
   const [phase, setPhase] = useState('analyzing')
   const [intent, setIntent] = useState(null)
@@ -171,6 +208,7 @@ export default function ExecutionPipeline() {
   const [apiDone, setApiDone] = useState(false)
   const [clarifyText, setClarifyText] = useState('')
   const [error, setError] = useState('')
+  const [debugData, setDebugData] = useState(null)
   const workflowRef = useRef(null)
   const startTime = useRef(Date.now())
 
@@ -263,6 +301,15 @@ export default function ExecutionPipeline() {
         startRealWork(result.platform, goal).then(async (r) => {
           setApiResult(r)
           setApiDone(true)
+          if (debugMode && r) {
+            setDebugData({
+              goal,
+              detectedPlatforms: r.detectedPlatforms || [],
+              masterBrief: r.masterBrief || '',
+              agentResults: r.agentResults || [],
+              intent
+            })
+          }
           if (r && workflowRef.current) {
             if (r.contents) {
               for (const item of r.contents) {
@@ -305,10 +352,12 @@ export default function ExecutionPipeline() {
 
       if (intent.platform === 'tiktok' || /video|tiktok|reel|kurzvideo/.test(goalLower)) {
         navigate('/tiktok-video', { state: { postText: goal, pipelineResult: apiResult } })
-      } else if (intent.platform === 'facebook' || intent.platform === 'instagram' || intent.platform === 'linkedin' || intent.platform === 'reddit' || intent.platform === 'x' || intent.platform === 'content') {
-        navigate('/post-preparation', { state: { draft: generatedContent, feedback: '' } })
       } else if (intent.platform === 'marketplace') {
         navigate('/marketplace', { state: { form: { title: goal, description: goal, price: '', category: 'Sonstiges' }, startTab: 'create' } })
+      } else if (intent.platform === 'email') {
+        navigate('/post-preparation', { state: { draft: generatedContent, feedback: '', platform: 'email' } })
+      } else if (intent.platform === 'podcast') {
+        navigate('/post-preparation', { state: { draft: generatedContent, feedback: '', platform: 'podcast' } })
       } else {
         navigate('/post-preparation', { state: { draft: generatedContent, feedback: '' } })
       }
@@ -449,6 +498,39 @@ export default function ExecutionPipeline() {
           <div className="ep-finished">
             <div className="ep-finished-icon">✅</div>
             <p>Weiterleitung...</p>
+          </div>
+        )}
+
+        {finished && apiDone && debugMode && debugData && (
+          <div className="ep-debug-panel">
+            <div className="ep-debug-header">
+              <span className="ep-debug-badge">DEBUG</span>
+              <span className="ep-debug-goal">"{debugData.goal}"</span>
+            </div>
+
+            <div className="ep-debug-section">
+              <h4 className="ep-debug-title">Detected Platforms</h4>
+              <div className="ep-debug-tags">
+                {debugData.detectedPlatforms.map(p => (
+                  <span key={p} className="ep-debug-tag">{p}</span>
+                ))}
+              </div>
+            </div>
+
+            <div className="ep-debug-section">
+              <h4 className="ep-debug-title">Master Brief</h4>
+              <pre className="ep-debug-code">{debugData.masterBrief}</pre>
+            </div>
+
+            {debugData.agentResults.map((agent, i) => (
+              <div key={i} className="ep-debug-section">
+                <h4 className="ep-debug-title">
+                  <span className="ep-debug-agent">{agent.agent}</span>
+                  <span className="ep-debug-platform">{agent.platform}</span>
+                </h4>
+                <pre className="ep-debug-code">{(agent.content || '').slice(0, 500)}{(agent.content || '').length > 500 ? '...' : ''}</pre>
+              </div>
+            ))}
           </div>
         )}
       </div>

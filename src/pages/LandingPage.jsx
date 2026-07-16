@@ -234,7 +234,11 @@ export default function LandingPage() {
             { name: 'LinkedIn', icon: '💼' },
             { name: 'Facebook', icon: '👥' },
             { name: 'Reddit', icon: '🔴' },
-            { name: 'X / Twitter', icon: '𝕏' },
+            { name: 'Pinterest', icon: '📌' },
+            { name: 'YouTube', icon: '▶️' },
+            { name: 'E-Mail', icon: '✉️' },
+            { name: 'Podcast', icon: '🎙️' },
+            { name: 'Kleinanzeigen', icon: '🏷️' },
           ].map(p => (
             <div key={p.name} className="platform-card">
               <span className="platform-icon">{p.icon}</span>
