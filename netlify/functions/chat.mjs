@@ -571,7 +571,7 @@ ${message}`
         }
       }
     } else {
-      // Text-only request: Fallback Chain: OpenRouter (free) -> Groq -> DeepSeek
+      // Text-only request: Fallback Chain: OpenRouter (free) -> Mistral -> Groq -> DeepSeek
       let success = false
 
       // Stage 1: OpenRouter (kostenlos - primär)
@@ -613,13 +613,54 @@ ${message}`
         }
       } else {
         providerErrors.push('OpenRouter: OPENROUTER_API_KEY not configured')
-        console.warn('OPENROUTER_API_KEY not configured, skipping to Groq')
+        console.warn('OPENROUTER_API_KEY not configured, skipping to Mistral')
       }
 
-      // Stage 2: Groq (schnellster Anbieter)
+      // Stage 2: Mistral (zuverlässigster Anbieter)
+      if (!success) {
+        const mistralKey = process.env.MISTRAL_API_KEY
+        if (mistralKey) {
+          try {
+            const mistralRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${mistralKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                model: 'mistral-small-latest',
+                messages: buildMessages(historyLimit),
+                temperature: 0.1,
+                max_tokens: 4096
+              })
+            })
+            if (mistralRes.ok) {
+              const mistralData = await mistralRes.json()
+              console.log('Antwort von:', 'mistral')
+              aiResponse = mistralData.choices?.[0]?.message?.content || ''
+              usage = mistralData.usage
+              provider = 'mistral'
+              modelName = 'mistral-small-latest'
+              success = true
+            } else {
+              const mistralData = await mistralRes.json().catch(() => ({}))
+              const errMsg = mistralData?.error?.message || JSON.stringify(mistralData)
+              providerErrors.push(`Mistral: ${errMsg} (HTTP ${mistralRes.status})`)
+              console.warn('Mistral failed, status:', mistralRes.status, 'message:', errMsg)
+            }
+          } catch (err) {
+            providerErrors.push(`Mistral: ${err.message}`)
+            console.warn('Mistral fetch failed:', err.message)
+          }
+        } else {
+          providerErrors.push('Mistral: MISTRAL_API_KEY not configured')
+          console.warn('MISTRAL_API_KEY not configured, skipping to Groq')
+        }
+      }
+
+      // Stage 3: Groq (schnell, aber oft rate-limited)
       if (!success) {
         const groqKey = process.env.GROQ_API_KEY
-        console.log('Groq check: key vorhanden =', !!groqKey)
         if (groqKey) {
           try {
             const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -641,7 +682,7 @@ ${message}`
               aiResponse = groqData.choices?.[0]?.message?.content || ''
               usage = groqData.usage
               provider = 'groq'
-              modelName = 'openai/gpt-oss-20b'
+              modelName = 'llama-3.3-70b-versatile'
               success = true
             } else {
               const groqData = await groqRes.json().catch(() => ({}))
@@ -659,7 +700,7 @@ ${message}`
         }
       }
 
-      // Stage 3: DeepSeek Fallback
+      // Stage 4: DeepSeek (letzter Fallback)
       if (!success) {
         const deepseekKey = process.env.DEEPSEEK_API_KEY
         if (deepseekKey) {
@@ -697,49 +738,7 @@ ${message}`
           }
         } else {
           providerErrors.push('DeepSeek: DEEPSEEK_API_KEY not configured')
-          console.warn('DEEPSEEK_API_KEY not configured, trying Mistral')
-        }
-      }
-
-      // Stage 4: Mistral (kostenlos - fallback)
-      if (!success) {
-        const mistralKey = process.env.MISTRAL_API_KEY
-        if (mistralKey) {
-          try {
-            const mistralRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${mistralKey}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                model: 'mistral-small-latest',
-                messages: buildMessages(historyLimit),
-                temperature: 0.1,
-                max_tokens: 4096
-              })
-            })
-            if (mistralRes.ok) {
-              const mistralData = await mistralRes.json()
-              console.log('Antwort von:', 'mistral-fallback')
-              aiResponse = mistralData.choices?.[0]?.message?.content || ''
-              usage = mistralData.usage
-              provider = 'mistral'
-              modelName = 'mistral-small-latest'
-              success = true
-            } else {
-              const mistralData = await mistralRes.json().catch(() => ({}))
-              const errMsg = mistralData?.error?.message || JSON.stringify(mistralData)
-              providerErrors.push(`Mistral: ${errMsg} (HTTP ${mistralRes.status})`)
-              console.warn('Mistral fallback failed, status:', mistralRes.status, errMsg)
-            }
-          } catch (err) {
-            providerErrors.push(`Mistral: ${err.message}`)
-            console.warn('Mistral fetch failed:', err.message)
-          }
-        } else {
-          providerErrors.push('Mistral: MISTRAL_API_KEY not configured')
-          console.warn('MISTRAL_API_KEY not configured, no more providers')
+          console.warn('DEEPSEEK_API_KEY not configured, no more providers')
         }
       }
 

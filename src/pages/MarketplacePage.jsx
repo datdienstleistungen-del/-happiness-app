@@ -1,10 +1,23 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { ShoppingCart, Image as ImageIcon, X } from 'lucide-react'
+import heic2any from 'heic2any'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { renderBrandText } from '../components/Logo'
 import { useLanguage } from '../i18n/translations.jsx'
+
+async function convertHeicToJpeg(file) {
+  const name = file.name.toLowerCase()
+  if (!name.endsWith('.heic') && !name.endsWith('.heif')) return file
+  try {
+    const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 })
+    return new File([blob], file.name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg'), { type: 'image/jpeg' })
+  } catch (err) {
+    console.error('HEIC conversion failed:', err)
+    return file
+  }
+}
 
 const CATEGORIES = ['Dienstleistung', 'Produkt', 'Geschenk', 'Tausch', 'Sonstiges']
 
@@ -38,13 +51,18 @@ export default function MarketplacePage() {
   async function handleCreate() {
     if (!form.title.trim() || !form.description.trim()) return
 
-    if (selectedImage) {
+    let uploadFile = selectedImage
+    if (uploadFile) {
+      uploadFile = await convertHeicToJpeg(uploadFile)
+    }
+
+    if (uploadFile) {
       try {
         const imageBase64 = await new Promise((resolve, reject) => {
           const reader = new FileReader()
           reader.onload = () => resolve(reader.result)
           reader.onerror = reject
-          reader.readAsDataURL(selectedImage)
+          reader.readAsDataURL(uploadFile)
         })
         const { data: { session } } = await supabase.auth.getSession()
         const token = session?.access_token || ''
@@ -69,12 +87,12 @@ export default function MarketplacePage() {
     }
 
     let imageUrl = ''
-    if (selectedImage) {
-      const ext = selectedImage.name.split('.').pop() || 'jpg'
+    if (uploadFile) {
+      const ext = uploadFile.name.split('.').pop() || 'jpg'
       const filePath = `marketplace/${user.id}/${Date.now()}.${ext}`
       const { error: uploadError } = await supabase.storage
         .from('community-images')
-        .upload(filePath, selectedImage, { contentType: selectedImage.type })
+        .upload(filePath, uploadFile, { contentType: uploadFile.type })
       if (uploadError) {
         alert('Bild-Upload fehlgeschlagen: ' + uploadError.message)
         return
@@ -137,7 +155,7 @@ export default function MarketplacePage() {
             <div className="form-group" style={{ flex: 1 }}><label>{t('marketplace.category')}</label><select className="form-input" value={form.category} onChange={e => setForm({...form, category: e.target.value})}>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></div>
           </div>
           <div style={{ marginTop: '0.75rem' }}>
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => { const f = e.target.files[0]; if (f) { setSelectedImage(f); setImagePreview(URL.createObjectURL(f)) } }} style={{ display: 'none' }} />
+            <input ref={fileInputRef} type="file" accept="image/*,.heic,.heif" onChange={(e) => { const f = e.target.files[0]; if (f) { setSelectedImage(f); setImagePreview(URL.createObjectURL(f)) } }} style={{ display: 'none' }} />
             <button className="btn btn-sm btn-outline" onClick={() => fileInputRef.current?.click()}>
               <ImageIcon size={14} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
               Bild hinzufuegen

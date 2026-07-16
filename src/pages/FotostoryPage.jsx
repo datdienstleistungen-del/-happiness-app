@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations'
+import heic2any from 'heic2any'
 import './FotostoryPage.css'
 
 const TRANSITIONS = [
@@ -37,10 +38,23 @@ export default function FotostoryPage() {
   const [textOverlays, setTextOverlays] = useState({})
   const [activeTextSlide, setActiveTextSlide] = useState(null)
 
-  const handleFiles = (e) => {
+  const handleFiles = async (e) => {
     const files = Array.from(e.target.files || [])
-    const imageFiles = files.filter(f => f.type.startsWith('image/'))
-    const newSlides = imageFiles.map((file, i) => ({
+    const imageFiles = files.filter(f => f.type.startsWith('image/') || f.name.toLowerCase().endsWith('.heic') || f.name.toLowerCase().endsWith('.heif'))
+    const converted = await Promise.all(imageFiles.map(async (file) => {
+      const name = file.name.toLowerCase()
+      if (name.endsWith('.heic') || name.endsWith('.heif')) {
+        try {
+          const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 })
+          return new File([blob], file.name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg'), { type: 'image/jpeg' })
+        } catch (err) {
+          console.error('HEIC conversion failed:', err)
+          return file
+        }
+      }
+      return file
+    }))
+    const newSlides = converted.map((file, i) => ({
       id: Date.now() + i,
       file,
       url: URL.createObjectURL(file),

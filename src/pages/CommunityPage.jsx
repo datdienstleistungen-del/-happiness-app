@@ -1,11 +1,24 @@
 import { useState, useEffect, useRef } from 'react'
 import { MessageCircle, FileText, Clapperboard, Heart, Image as ImageIcon, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import heic2any from 'heic2any'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations.jsx'
 import VideoUpload from '../components/VideoUpload.jsx'
 import VideoFeed from '../components/VideoFeed.jsx'
+
+async function convertHeicToJpeg(file) {
+  const name = file.name.toLowerCase()
+  if (!name.endsWith('.heic') && !name.endsWith('.heif')) return file
+  try {
+    const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 })
+    return new File([blob], file.name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg'), { type: 'image/jpeg' })
+  } catch (err) {
+    console.error('HEIC conversion failed:', err)
+    return file
+  }
+}
 
 export default function CommunityPage() {
   const { user, profile } = useAuth()
@@ -32,13 +45,18 @@ export default function CommunityPage() {
   async function handlePost() {
     if (!newPost.trim() && !selectedImage) return
 
+    let uploadFile = selectedImage
+    if (uploadFile) {
+      uploadFile = await convertHeicToJpeg(uploadFile)
+    }
+
     let imageUrl = ''
-    if (selectedImage) {
-      const ext = selectedImage.name.split('.').pop() || 'jpg'
+    if (uploadFile) {
+      const ext = uploadFile.name.split('.').pop() || 'jpg'
       const filePath = `posts/${user.id}/${Date.now()}.${ext}`
       const { error: uploadError } = await supabase.storage
         .from('community-images')
-        .upload(filePath, selectedImage, { contentType: selectedImage.type })
+        .upload(filePath, uploadFile, { contentType: uploadFile.type })
       if (!uploadError) {
         const { data: urlData } = supabase.storage
           .from('community-images')

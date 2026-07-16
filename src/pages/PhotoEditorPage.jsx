@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations'
+import heic2any from 'heic2any'
 import './PhotoEditorPage.css'
 
 const FILTERS = [
@@ -44,9 +45,19 @@ export default function PhotoEditorPage() {
 
   const [isExporting, setIsExporting] = useState(false)
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const handleImageUpload = async (e) => {
+    const rawFile = e.target.files?.[0]
+    if (!rawFile) return
+    let file = rawFile
+    const name = rawFile.name.toLowerCase()
+    if (name.endsWith('.heic') || name.endsWith('.heif')) {
+      try {
+        const blob = await heic2any({ blob: rawFile, toType: 'image/jpeg', quality: 0.85 })
+        file = new File([blob], rawFile.name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg'), { type: 'image/jpeg' })
+      } catch (err) {
+        console.error('HEIC conversion failed:', err)
+      }
+    }
     setImageFile(file)
     const url = URL.createObjectURL(file)
     setImageUrl(url)
