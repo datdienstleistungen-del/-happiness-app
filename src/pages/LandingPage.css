@@ -1,0 +1,239 @@
+/* ═══════════════════════════════════════════
+   LandingPage — Interactive Demo
+   ═══════════════════════════════════════════ */
+
+/* Demo Panel */
+.demo-panel {
+  max-width: 680px;
+  margin: 1.5rem auto 2rem;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 16px;
+  background: var(--surface, #fff);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  animation: demoFadeIn 0.3s ease;
+}
+
+@keyframes demoFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.demo-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  background: var(--bg, #f8f9fa);
+}
+
+.demo-brand {
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.demo-brand .hit-letter {
+  color: var(--primary, #085041);
+}
+
+.demo-brand .hit-rest {
+  color: var(--text, #111);
+}
+
+.demo-status {
+  font-size: 0.8rem;
+  color: var(--text-muted, #6b7280);
+  flex: 1;
+}
+
+.demo-reset {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border, #e5e7eb);
+  background: var(--surface, #fff);
+  color: var(--text-muted, #6b7280);
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.demo-reset:hover {
+  border-color: var(--primary, #085041);
+  color: var(--primary, #085041);
+}
+
+/* Steps */
+.demo-steps {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.demo-step {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.demo-step.active {
+  background: rgba(8, 80, 65, 0.04);
+}
+
+.demo-step.done {
+  opacity: 0.6;
+}
+
+.demo-step-dot {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--border, #e5e7eb);
+  color: var(--text-muted, #6b7280);
+}
+
+.demo-step.done .demo-step-dot {
+  background: var(--primary, #085041);
+  color: #fff;
+}
+
+.demo-step.active .demo-step-dot {
+  background: var(--color-koralle, #ff6b6b);
+  color: #fff;
+}
+
+.demo-step-label {
+  font-size: 0.85rem;
+  color: var(--text, #111);
+}
+
+.demo-step.active .demo-step-label {
+  font-weight: 600;
+  color: var(--primary, #085041);
+}
+
+.demo-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Typewriter Output */
+.demo-output {
+  padding: 0 1.25rem 1.25rem;
+}
+
+.demo-output-text {
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  background: var(--bg, #f8f9fa);
+  border: 1px solid var(--border, #e5e7eb);
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text, #111);
+  white-space: pre-wrap;
+  font-family: inherit;
+  min-height: 120px;
+}
+
+.demo-cursor {
+  display: inline-block;
+  animation: blink 0.6s step-end infinite;
+  color: var(--primary, #085041);
+  font-weight: 700;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* CTA */
+.demo-cta {
+  padding: 1.25rem;
+  text-align: center;
+  border-top: 1px solid var(--border, #e5e7eb);
+  background: var(--bg, #f8f9fa);
+}
+
+.demo-cta p {
+  font-size: 0.85rem;
+  color: var(--text-muted, #6b7280);
+  margin: 0 0 1rem;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Platforms */
+.landing-platforms {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.landing-platforms h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--text, #111);
+}
+
+.platform-grid {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.platform-card {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text, #111);
+}
+
+.platform-icon {
+  font-size: 1.1rem;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .demo-steps {
+    padding: 1rem;
+  }
+  .demo-output-text {
+    font-size: 0.82rem;
+    padding: 0.75rem 1rem;
+  }
+  .platform-grid {
+    gap: 0.5rem;
+  }
+  .platform-card {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.75rem;
+  }
+}

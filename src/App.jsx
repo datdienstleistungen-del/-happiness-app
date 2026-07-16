@@ -16,6 +16,7 @@ import Feed from './components/Feed'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
+import LandingPage from './pages/LandingPage'
 import CommunityPage from './pages/CommunityPage'
 import FriendsPage from './pages/FriendsPage'
 import MarketplacePage from './pages/MarketplacePage'
@@ -398,79 +399,6 @@ export default function App() {
 function LoadingScreen() {
   const { t } = useLanguage()
   return <div className="loading-screen">Wird geladen…</div>
-}
-
-function LandingPage() {
-  const navigate = useNavigate()
-  const [demoGoal, setDemoGoal] = useState('')
-
-  const handleDemo = () => {
-    if (!demoGoal.trim()) return
-    navigate(`/register`)
-  }
-
-  return (
-    <div className="container">
-      <div className="hero landing-hero">
-        <h1><Logo /></h1>
-        <p className="landing-tagline">Dein AI Creator Operating System. Du nennst das Ziel. H.I.T. baut den Workflow.</p>
-        <div className="landing-input-wrap">
-          <input
-            className="landing-input"
-            type="text"
-            value={demoGoal}
-            onChange={(e) => setDemoGoal(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleDemo()}
-            placeholder="Was möchtest du heute erreichen?"
-          />
-          <button className="btn btn-primary" onClick={handleDemo} disabled={!demoGoal.trim()}>
-            <Rocket size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
-            Jetzt ausprobieren
-          </button>
-        </div>
-        <div className="landing-actions" style={{ marginTop: '1rem' }}>
-          <Link to="/register" className="btn btn-outline">Kostenlos registrieren</Link>
-          <Link to="/login" className="btn btn-outline">Anmelden</Link>
-        </div>
-        <div className="landing-install">
-          <InstallButton variant="hero" />
-        </div>
-      </div>
-
-      <div className="what-we-are">
-        <h2>So funktioniert es</h2>
-        <div className="what-we-are-content">
-          <div className="what-we-are-workflow">
-            <div className="what-we-are-steps">
-              <div className="landing-step">
-                <span className="landing-step-icon">🎯</span>
-                <strong>Du beschreibst dein Ziel</strong>
-                <p>"TikTok über gesunde Gewohnheiten erstellen"</p>
-              </div>
-              <span className="step-arrow">&rarr;</span>
-              <div className="landing-step">
-                <span className="landing-step-icon">🧠</span>
-                <strong>H.I.T. erstellt einen Plan</strong>
-                <p>Skript, Visuals, Musik — alles automatisch</p>
-              </div>
-              <span className="step-arrow">&rarr;</span>
-              <div className="landing-step">
-                <span className="landing-step-icon">🚀</span>
-                <strong>Du postest</strong>
-                <p>Ergebnis kopieren oder direkt veröffentlichen</p>
-              </div>
-            </div>
-            <p className="what-we-are-tagline">Kein Tool-Wechsel. Keine Sackgassen.</p>
-          </div>
-
-          <div className="what-we-are-cta">
-            <p>Deine Daten bleiben in Europa. DSGVO-konform. Kostenloser Start.</p>
-            <Link to="/register" className="btn btn-primary">Kostenlos ausprobieren</Link>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 function HomePage() {
