@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations.jsx'
 import { supabase } from '../lib/supabase'
 import Feed from '../components/Feed'
+import WorkflowWidget from '../components/WorkflowWidget'
 import './DashboardPage.css'
 
 const QUICK_GOALS = [
@@ -24,6 +25,7 @@ export default function DashboardPage() {
   const [goal, setGoal] = useState('')
   const [workflows, setWorkflows] = useState([])
   const [loadingWorkflows, setLoadingWorkflows] = useState(true)
+  const [selectedWf, setSelectedWf] = useState(null)
 
   useEffect(() => { loadWorkflows() }, [user])
 
@@ -122,10 +124,7 @@ export default function DashboardPage() {
                   <span className="workflow-progress-text">{getProgress(wf)}% fertig</span>
                   <button
                     className="workflow-continue-btn"
-                    onClick={() => {
-                      const url = '/execute?goal=' + encodeURIComponent(wf.goal)
-                      navigate(url)
-                    }}
+                    onClick={() => setSelectedWf(wf)}
                   >
                     Weiter <ArrowRight size={14} />
                   </button>
@@ -142,6 +141,10 @@ export default function DashboardPage() {
         <p className="dashboard-section-sub">Sieh, was andere erstellen.</p>
         <Feed />
       </div>
+
+      {selectedWf && (
+        <WorkflowWidget workflow={selectedWf} onClose={() => setSelectedWf(null)} />
+      )}
     </div>
   )
 }

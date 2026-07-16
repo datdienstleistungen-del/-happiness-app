@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Sparkles, User, Download, Trash2, X, Heart, MapPin, Briefcase,
-  Lock, ChefHat, Car, Users, Send, Brain, Wrench, MessageCircle, Plus, ChevronLeft, Menu
+  Lock, ChefHat, Car, Users, Send, Brain, Wrench, MessageCircle, Plus, ChevronLeft, Menu, PenTool, Film
 } from 'lucide-react'
 import { getChatEndpoint } from '../lib/hit'
 import { useAuth } from '../context/AuthContext'
@@ -15,6 +16,7 @@ import './AIChatPage.css'
 export default function AIChatPage() {
   const { user } = useAuth()
   const { t, lang } = useLanguage()
+  const navigate = useNavigate()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -790,6 +792,23 @@ export default function AIChatPage() {
                 )}
               </div>
             ))}
+
+            {!isLoading && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && (
+              <div className="msg-followup">
+                <button className="followup-btn" onClick={() => {
+                  const lastContent = messages[messages.length - 1].content
+                  navigate('/creator-academy', { state: { draft: lastContent } })
+                }}>
+                  <PenTool size={14} /> Als Post verwenden
+                </button>
+                <button className="followup-btn" onClick={() => {
+                  const lastContent = messages[messages.length - 1].content
+                  navigate('/tiktok-video', { state: { postText: lastContent } })
+                }}>
+                  <Film size={14} /> Als Video
+                </button>
+              </div>
+            )}
 
             {isLoading && (
               <div className="message-row assistant">
