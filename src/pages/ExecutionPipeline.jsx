@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { getChatEndpoint } from '../lib/hit'
 import { trackIdeaSubmitted, trackWorkflowCompleted, trackArtifactSaved } from '../intelligence/analytics'
+import { detectPlatforms, buildMasterBrief, runPlatformAgent } from '../intelligence/content-engine'
 import './ExecutionPipeline.css'
 
 const INTENT_PROMPT = `Du bist ein Intent-Analyst. Der Nutzer hat etwas eingegeben. Analysiere:
@@ -89,74 +90,37 @@ async function startRealWork(platform, goal) {
   try {
     const { data: { session } } = await supabase.auth.getSession()
     const token = session?.access_token || ''
+    const chatEndpoint = getChatEndpoint()
 
     if (/video|tiktok|reel|kurzvideo/i.test(goal)) {
       platform = 'tiktok'
     }
 
-    const WRITING_PROMPTS = {
-      facebook: `Rolle: Facebook-Writer fuer Happiness (happiness-eu.netlify.app).
-Aufgabe: Ziel des Nutzers in einen postfertigen Facebook-Post umwandeln.
-Stil: Warmherzig, wie ein Freund empfiehlt. Kein KI-Sound.
-Struktur: Hook, 3-5 Absätze, CTA. Happiness natürlich nennen.
-Format: Fliesstext, kein Markdown. Nur den fertigen Text.`,
-
-      instagram: `Rolle: Instagram-Writer fuer Happiness (happiness-eu.netlify.app).
-Aufgabe: Ziel des Nutzers in eine postfertige Instagram-Caption umwandeln.
-Stil: Visuell, inspirierend, kurz. Emoji am Anfang erlaubt.
-Struktur: 2-4 Absätze, 5-8 Hashtags (immer #happiness). Happiness natürlich nennen.
-Format: Fliesstext, kein Markdown. Nur den fertigen Text.`,
-
-      x: `Rolle: X/Twitter-Writer fuer Happiness (happiness-eu.netlify.app).
-Aufgabe: Ziel des Nutzers in einen Tweet umwandeln.
-Stil: Zugespitzt, direkt. 250 Zeichen max. "via @Happiness" wenn Platz.
-Format: Klartext, kein Markdown. Nur den Tweet.`,
-
-      reddit: `Rolle: Reddit-User der etwas teilt. Happiness (happiness-eu.netlify.app) dahinter.
-Aufgabe: Ziel des Nutzers in einen Reddit-Post umwandeln.
-Stil: Ehrlich, direkt. Null Werbung. Reddit hasst Marketing.
-Struktur: 1-3 Absätze. Happiness natürlich erwaehnen.
-Format: Fliesstext, kein Markdown. Nur den fertigen Text.`,
-
-      content: `Rolle: Content-Writer fuer Happiness (happiness-eu.netlify.app).
-Aufgabe: Ziel des Nutzers in einen verwendbaren Text umwandeln.
-Stil: Professionell, klar.
-Struktur: 2-5 Absätze, passend zum Zweck. Happiness natürlich erwaehnen.
-Format: Fliesstext, kein Markdown. Nur den fertigen Text.`
-    }
-
-    if (platform === 'tiktok') {
-      const res = await fetch('/api/capcut-recipe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ topic: goal.trim(), duration: 30 })
-      })
-      if (!res.ok) return null
-      const recipe = await res.json()
-      return { recipe }
-    }
-
-    const prompt = WRITING_PROMPTS[platform]
-    if (!prompt) return null
-
-    const response = await fetch(getChatEndpoint(), {
+    const { data: masterBriefRaw } = await fetch(chatEndpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({
-        message: `Schreibe einen fertigen Beitrag basierend auf diesem Ziel:\n\n"${goal}"`,
-        systemPrompt: prompt,
+        message: `Erstelle einen Master-Brief für dieses Ziel:\n\n"${goal}"`,
+        systemPrompt: `Du bist die Master Content Engine. Erstelle einen strukturierten Master-Brief mit: KERNbotschaft, ZIELGRUPPE, EMOTION, HAUPTTHEMA, CALL-TO-ACTION. NUR den Brief, kein Markdown.`,
         history: []
       })
-    })
-    if (!response.ok) return null
-    const data = await response.json()
-    return { content: data.response }
+    }).then(r => r.ok ? r.json() : { response: null })
+
+    const masterBrief = masterBriefRaw?.response || goal
+
+    const platforms = detectPlatforms(goal)
+    const results = await Promise.all(
+      platforms.map(p => runPlatformAgent(p, goal, masterBrief, chatEndpoint, token))
+    )
+
+    const validResults = results.filter(Boolean)
+    if (validResults.length === 0) return null
+
+    if (validResults.length === 1) {
+      return { content: validResults[0].content, platform: validResults[0].platform, masterBrief }
+    }
+
+    return { contents: validResults, masterBrief }
   } catch {
     return null
   }
@@ -300,13 +264,24 @@ export default function ExecutionPipeline() {
           setApiResult(r)
           setApiDone(true)
           if (r && workflowRef.current) {
-            const artifactType = result.platform === 'tiktok' ? 'video' : 'post'
-            trackArtifactSaved(artifactType)
-            await supabase.from('workflow_artifacts').insert({
-              workflow_id: workflowRef.current.id,
-              artifact_type: artifactType,
-              content: r
-            })
+            if (r.contents) {
+              for (const item of r.contents) {
+                trackArtifactSaved(item.platform)
+                await supabase.from('workflow_artifacts').insert({
+                  workflow_id: workflowRef.current.id,
+                  artifact_type: item.platform,
+                  content: { content: item.content, agent: item.agent, masterBrief: r.masterBrief }
+                })
+              }
+            } else {
+              const artifactType = result.platform === 'tiktok' ? 'video' : 'post'
+              trackArtifactSaved(artifactType)
+              await supabase.from('workflow_artifacts').insert({
+                workflow_id: workflowRef.current.id,
+                artifact_type: artifactType,
+                content: r
+              })
+            }
           }
         })
       } else {
