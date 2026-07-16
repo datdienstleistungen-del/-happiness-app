@@ -5,6 +5,7 @@ import {
   MessageCircle, PenTool, Film, BarChart3, Share2
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { trackWidgetOpened } from '../intelligence/analytics'
 import './WorkflowWidget.css'
 
 const PHASES = [
@@ -36,6 +37,7 @@ export default function WorkflowWidget({ workflow, onClose }) {
     setWf(workflow)
     setSteps(workflow.workflow_steps || [])
     loadArtifacts(workflow.id)
+    trackWidgetOpened(workflow.id)
   }, [workflow])
 
   async function loadArtifacts(wfId) {

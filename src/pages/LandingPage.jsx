@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Rocket, Target, Sparkles, Share2, ChevronRight, Check } from 'lucide-react'
+import { trackDemoStarted, trackDemoCompleted } from '../intelligence/analytics'
+import { useLanguage } from '../i18n/translations.jsx'
 import InstallButton from '../components/InstallButton'
 import Logo from '../components/Logo'
 import './LandingPage.css'
@@ -38,6 +40,7 @@ const SIMULATED_STEPS = [
 
 export default function LandingPage() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [demoGoal, setDemoGoal] = useState(DEMO_GOAL)
   const [phase, setPhase] = useState('input') // input | running | typing | done
   const [currentStep, setCurrentStep] = useState(0)
@@ -52,6 +55,7 @@ export default function LandingPage() {
 
   const startDemo = () => {
     if (!demoGoal.trim()) return
+    trackDemoStarted(demoGoal.trim())
     setPhase('running')
     setCurrentStep(0)
     setStepComplete([])
@@ -80,6 +84,7 @@ export default function LandingPage() {
     const typeNext = () => {
       if (i >= chars.length) {
         setPhase('done')
+        trackDemoCompleted(demoGoal.trim())
         return
       }
       const chunk = chars.slice(i, i + 2).join('')
@@ -103,7 +108,7 @@ export default function LandingPage() {
       {/* Hero */}
       <div className="hero landing-hero">
         <h1><Logo /></h1>
-        <p className="landing-tagline">Dein AI Creator Operating System. Du nennst das Ziel. H.I.T. baut den Workflow.</p>
+        <p className="landing-tagline">{t('landing.tagline')}</p>
         <div className="landing-input-wrap">
           <input
             className="landing-input"
@@ -111,17 +116,17 @@ export default function LandingPage() {
             value={demoGoal}
             onChange={(e) => setDemoGoal(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && startDemo()}
-            placeholder="Was möchtest du heute erreichen?"
+            placeholder={t('dashboard.hitPlaceholder')}
             disabled={phase !== 'input'}
           />
           <button className="btn btn-primary" onClick={startDemo} disabled={phase !== 'input' || !demoGoal.trim()}>
             <Rocket size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
-            {phase === 'input' ? 'Ausprobieren' : 'H.I.T. arbeitet...'}
+            {phase === 'input' ? t('landing.tryNow') : t('landing.demoWorking')}
           </button>
         </div>
         <div className="landing-actions" style={{ marginTop: '1rem' }}>
-          <Link to="/register" className="btn btn-outline">Kostenlos registrieren</Link>
-          <Link to="/login" className="btn btn-outline">Anmelden</Link>
+          <Link to="/register" className="btn btn-outline">{t('landing.register')}</Link>
+          <Link to="/login" className="btn btn-outline">{t('landing.login')}</Link>
         </div>
         <div className="landing-install">
           <InstallButton variant="hero" />
@@ -137,12 +142,12 @@ export default function LandingPage() {
               <span className="hit-rest">.I.T.</span>
             </div>
             <span className="demo-status">
-              {phase === 'running' ? 'H.I.T. arbeitet...' :
-               phase === 'typing' ? 'Skript wird geschrieben...' :
-               'Fertig!'}
+              {phase === 'running' ? t('landing.demoWorking') :
+               phase === 'typing' ? t('landing.demoScripting') :
+               t('landing.demoDone')}
             </span>
             {phase === 'done' && (
-              <button className="demo-reset" onClick={resetDemo}>Neu starten</button>
+              <button className="demo-reset" onClick={resetDemo}>{t('landing.demoReset')}</button>
             )}
           </div>
 
@@ -175,10 +180,10 @@ export default function LandingPage() {
           {/* CTA */}
           {phase === 'done' && (
             <div className="demo-cta">
-              <p>Dies ist nur eine Vorschau. Registriere dich kostenlos für das volle Erlebnis mit echtem KI-Feedback, Video-Erstellung und Veröffentlichung.</p>
+              <p>{t('landing.demoCta')}</p>
               <Link to="/register" className="btn btn-primary">
                 <Sparkles size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
-                Kostenlos starten
+                {t('landing.startFree')}
               </Link>
             </div>
           )}
@@ -187,41 +192,41 @@ export default function LandingPage() {
 
       {/* How it works */}
       <div className="what-we-are">
-        <h2>So funktioniert H.I.T.</h2>
+        <h2>{t('landing.howItWorks')}</h2>
         <div className="what-we-are-content">
           <div className="what-we-are-workflow">
             <div className="what-we-are-steps">
               <div className="landing-step">
                 <span className="landing-step-icon">🎯</span>
-                <strong>Du beschreibst dein Ziel</strong>
-                <p>"TikTok über gesunde Gewohnheiten erstellen"</p>
+                <strong>{t('landing.step1Title')}</strong>
+                <p>{t('landing.step1Desc')}</p>
               </div>
               <span className="step-arrow">&rarr;</span>
               <div className="landing-step">
                 <span className="landing-step-icon">🧠</span>
-                <strong>H.I.T. erstellt einen Plan</strong>
-                <p>Skript, Visuals, Musik — alles automatisch</p>
+                <strong>{t('landing.step2Title')}</strong>
+                <p>{t('landing.step2Desc')}</p>
               </div>
               <span className="step-arrow">&rarr;</span>
               <div className="landing-step">
                 <span className="landing-step-icon">🚀</span>
-                <strong>Du postest</strong>
-                <p>Ergebnis kopieren oder direkt veröffentlichen</p>
+                <strong>{t('landing.step3Title')}</strong>
+                <p>{t('landing.step3Desc')}</p>
               </div>
             </div>
-            <p className="what-we-are-tagline">Kein Tool-Wechsel. Keine Sackgassen.</p>
+            <p className="what-we-are-tagline">{t('landing.tagline2')}</p>
           </div>
 
           <div className="what-we-are-cta">
-            <p>Deine Daten bleiben in Europa. DSGVO-konform. Kostenloser Start.</p>
-            <Link to="/register" className="btn btn-primary">Kostenlos ausprobieren</Link>
+            <p>{t('landing.dsgvo')}</p>
+            <Link to="/register" className="btn btn-primary">{t('landing.tryFree')}</Link>
           </div>
         </div>
       </div>
 
       {/* Platforms */}
       <div className="landing-platforms">
-        <h2>Unterstützte Plattformen</h2>
+        <h2>{t('landing.platforms')}</h2>
         <div className="platform-grid">
           {[
             { name: 'TikTok', icon: '🎵' },

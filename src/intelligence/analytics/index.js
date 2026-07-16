@@ -22,3 +22,27 @@ export const trackPlatformViewed = (platformName) => {
 export const trackCapCutTriggered = () => {
   trackHitEvent('hit_capcut_export_click', { action: 'start_autopilot' })
 }
+
+export const trackWorkflowCreated = (platform) => {
+  trackHitEvent('hit_workflow_created', { platform })
+}
+
+export const trackWorkflowCompleted = (platform, duration) => {
+  trackHitEvent('hit_workflow_completed', { platform, duration_seconds: duration })
+}
+
+export const trackArtifactSaved = (type) => {
+  trackHitEvent('hit_artifact_saved', { artifact_type: type })
+}
+
+export const trackDemoStarted = (goal) => {
+  trackHitEvent('hit_demo_started', { goal })
+}
+
+export const trackDemoCompleted = (goal) => {
+  trackHitEvent('hit_demo_completed', { goal })
+}
+
+export const trackWidgetOpened = (workflowId) => {
+  trackHitEvent('hit_widget_opened', { workflow_id: workflowId })
+}

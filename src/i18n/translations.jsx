@@ -19,7 +19,7 @@ const translations = {
     videoMaker: { title: '🎬 Video Creator', preview: 'Vorschau', bgColor: 'Hintergrundfarbe', textColor: 'Textfarbe', accentColor: 'Akzentfarbe', addScene: '+ Szene hinzufügen', record: '🎥 Video aufnehmen', recording: '⏳ Wird aufgenommen...', scene: 'Szene', sceneOf: 'von', saved: 'Video gespeichert! ✅', ready: 'Bereit', tips: '💡 Tipps', tip1: 'Halte Texte kurz und knackig', tip2: 'Verwende kontrastreiche Farben', tip3: '3-4 Szenen sind ideal für TikTok', tip4: 'Das Video wird als WebM heruntergeladen', duration: 'Sekunden', scene1Text1: 'Deine Daten bleiben', scene1Text2: 'in Europa', scene2Text1: 'Kein Milliardär', scene2Text2: 'manipuliert dich', scene3Text1: 'Happiness', scene3Text2: 'Datenschutz · Demokratie', scene4Text1: 'Kostenlos', scene4Text2: 'Jetzt ausprobieren!' },
     ai: { profile: 'Profil', export: 'Exportieren', delete: 'Löschen', newChat: 'Neuer Chat', consentMessage: 'Um dir personalisierte Hilfe zu geben, speichern wir deine Gesprächsverlauf und ein Profil über dich. Alle Daten bleiben in Europa und unterliegen dem europäischen Datenschutz (DSGVO).', acceptConsent: 'Akzeptieren', yourProfile: 'Dein Profil', profileInfo: 'Dieses Profil wird automatisch basierend auf deinen Gesprächen erstellt.', family: 'Familie', preferences: 'Vorlieben', location: 'Standort', occupation: 'Beruf', dataConsent: 'Ich stimme der Speicherung meiner Daten zu', welcome: 'Hallo! Ich bin dein Happiness AI', welcomeDesc: 'Ich kann dir helfen bei Alltagsproblemen, Kochideen, Auto-Fragen, Familienproblemen und mehr.', placeholder: 'Stell mir eine Frage...', footer: 'Deine Daten bleiben in Europa. DSGVO-konform.', systemLanguage: 'Deutsch', chip1: 'Was kochen?', chip1Q: 'Was soll ich heute kochen?', chip2: 'Handwerk', chip2Q: 'Mein Wasserhahn tropft, wie repariere ich das?', chip3: 'Auto', chip3Q: 'Soll ich ein Elektroauto kaufen?', chip4: 'Job', chip4Q: 'Tipps fuer einen Jobwechsel?' },
     time: { justNow: 'Gerade eben', minutes: 'Min.', hours: 'Std.', days: 'Tg.' },
-    dashboard: { posts: 'Beiträge', users: 'Nutzer', friends: 'Freunde', notifications: 'Benachrichtigungen', lastPosts: 'Letzte Beiträge' },
+    dashboard: { posts: 'Beiträge', users: 'Nutzer', friends: 'Freunde', notifications: 'Benachrichtigungen', lastPosts: 'Letzte Beiträge', workflows: 'Aktive Workflows', noWorkflows: 'Noch keine Workflows. Starte mit einem Ziel oben!', hitCommand: 'Was möchtest du heute erreichen?', hitPlaceholder: 'Beschreibe dein Ziel in einem Satz...', hitStart: 'H.I.T. starten', communityInspiration: 'Community-Inspiration', communitySub: 'Sieh, was andere erstellen.', percentDone: 'fertig', continue: 'Weiter' },
     welcome: { morning: 'Guten Morgen', afternoon: 'Guten Tag', evening: 'Guten Abend' },
     onboarding: {
       welcome: 'Willkommen bei Happiness',
@@ -85,6 +85,29 @@ const translations = {
       infoDesc: 'Während du dich auf dein Ziel konzentrierst, plant H.I.T. die Arbeit, findet Informationen, erstellt Content, verbessert Qualität und begleitet dich zum fertigen Ergebnis.',
       communityTitle: 'Community-Inspiration',
       communitySub: 'Sieh, was andere erstellen.'
+    },
+    landing: {
+      tagline: 'Dein AI Creator Operating System. Du nennst das Ziel. H.I.T. baut den Workflow.',
+      tryNow: 'Ausprobieren',
+      register: 'Kostenlos registrieren',
+      login: 'Anmelden',
+      howItWorks: 'So funktioniert H.I.T.',
+      step1Title: 'Du beschreibst dein Ziel',
+      step1Desc: '"TikTok über gesunde Gewohnheiten erstellen"',
+      step2Title: 'H.I.T. erstellt einen Plan',
+      step2Desc: 'Skript, Visuals, Musik — alles automatisch',
+      step3Title: 'Du postest',
+      step3Desc: 'Ergebnis kopieren oder direkt veröffentlichen',
+      tagline2: 'Kein Tool-Wechsel. Keine Sackgassen.',
+      dsgvo: 'Deine Daten bleiben in Europa. DSGVO-konform. Kostenloser Start.',
+      tryFree: 'Kostenlos ausprobieren',
+      platforms: 'Unterstützte Plattformen',
+      demoWorking: 'H.I.T. arbeitet...',
+      demoScripting: 'Skript wird geschrieben...',
+      demoDone: 'Fertig!',
+      demoReset: 'Neu starten',
+      demoCta: 'Dies ist nur eine Vorschau. Registriere dich kostenlos für das volle Erlebnis mit echtem KI-Feedback, Video-Erstellung und Veröffentlichung.',
+      startFree: 'Kostenlos starten'
     }
   },
   en: {
@@ -105,7 +128,7 @@ const translations = {
     videoMaker: { title: '🎬 Video Creator', preview: 'Preview', bgColor: 'Background Color', textColor: 'Text Color', accentColor: 'Accent Color', addScene: '+ Add Scene', record: '🎥 Record Video', recording: '⏳ Recording...', scene: 'Scene', sceneOf: 'of', saved: 'Video saved! ✅', ready: 'Ready', tips: '💡 Tips', tip1: 'Keep text short and punchy', tip2: 'Use contrasting colors', tip3: '3-4 scenes are ideal for TikTok', tip4: 'Video downloads as WebM', duration: 'Seconds', scene1Text1: 'Your data stays', scene1Text2: 'in Europe', scene2Text1: 'No billionaire', scene2Text2: 'manipulates you', scene3Text1: 'Happiness', scene3Text2: 'Privacy · Democracy', scene4Text1: 'Free', scene4Text2: 'Try it now!' },
     ai: { profile: 'Profile', export: 'Export', delete: 'Delete', newChat: 'New Chat', consentMessage: 'To give you personalized help, we store your conversation history and a profile about you. All data stays in Europe and is subject to European data protection (GDPR).', acceptConsent: 'Accept', yourProfile: 'Your Profile', profileInfo: 'This profile is automatically created based on your conversations.', family: 'Family', preferences: 'Preferences', location: 'Location', occupation: 'Occupation', dataConsent: 'I consent to storing my data', welcome: "Hello! I'm your Happiness AI", welcomeDesc: 'I can help you with everyday problems, cooking ideas, car questions, family issues and more.', placeholder: 'Ask me a question...', footer: 'Your data stays in Europe. GDPR compliant.', systemLanguage: 'English', chip1: 'What to cook?', chip1Q: 'What should I cook today?', chip2: 'Handwerk', chip2Q: 'My faucet is dripping, how do I fix it?', chip3: 'Auto', chip3Q: 'Should I buy an electric car?', chip4: 'Job', chip4Q: 'Tips for a job change?' },
     time: { justNow: 'Just now', minutes: 'min.', hours: 'hrs.', days: 'days' },
-    dashboard: { posts: 'Posts', users: 'Users', friends: 'Friends', notifications: 'Notifications', lastPosts: 'Recent Posts' },
+    dashboard: { posts: 'Posts', users: 'Users', friends: 'Friends', notifications: 'Notifications', lastPosts: 'Recent Posts', workflows: 'Active Workflows', noWorkflows: 'No workflows yet. Start with a goal above!', hitCommand: 'What do you want to achieve today?', hitPlaceholder: 'Describe your goal in one sentence...', hitStart: 'Start H.I.T.', communityInspiration: 'Community Inspiration', communitySub: 'See what others are creating.', percentDone: 'done', continue: 'Continue' },
     welcome: { morning: 'Good Morning', afternoon: 'Good Afternoon', evening: 'Good Evening' },
     onboarding: {
       welcome: 'Welcome to Happiness',
@@ -171,6 +194,29 @@ const translations = {
       infoDesc: 'While you focus on your goal, H.I.T. plans the work, finds information, creates content, improves quality and guides you to the finished result.',
       communityTitle: 'Community Inspiration',
       communitySub: 'See what other people are creating.'
+    },
+    landing: {
+      tagline: 'Your AI Creator Operating System. You name the goal. H.I.T. builds the workflow.',
+      tryNow: 'Try it',
+      register: 'Sign up free',
+      login: 'Login',
+      howItWorks: 'How H.I.T. works',
+      step1Title: 'You describe your goal',
+      step1Desc: '"Create a TikTok about healthy habits"',
+      step2Title: 'H.I.T. creates a plan',
+      step2Desc: 'Script, visuals, music — all automated',
+      step3Title: 'You post',
+      step3Desc: 'Copy result or publish directly',
+      tagline2: 'No tool switching. No dead ends.',
+      dsgvo: 'Your data stays in Europe. GDPR compliant. Free to start.',
+      tryFree: 'Try for free',
+      platforms: 'Supported Platforms',
+      demoWorking: 'H.I.T. is working...',
+      demoScripting: 'Writing script...',
+      demoDone: 'Done!',
+      demoReset: 'Start over',
+      demoCta: 'This is just a preview. Sign up free for the full experience with AI feedback, video creation and publishing.',
+      startFree: 'Start for free'
     }
   },
   es: {

@@ -5,7 +5,7 @@ import { useLanguage } from '../i18n/translations'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { getChatEndpoint } from '../lib/hit'
-import { trackIdeaSubmitted } from '../intelligence/analytics'
+import { trackIdeaSubmitted, trackWorkflowCompleted, trackArtifactSaved } from '../intelligence/analytics'
 import './ExecutionPipeline.css'
 
 const INTENT_PROMPT = `Du bist ein Intent-Analyst. Der Nutzer hat etwas eingegeben. Analysiere:
@@ -208,6 +208,7 @@ export default function ExecutionPipeline() {
   const [clarifyText, setClarifyText] = useState('')
   const [error, setError] = useState('')
   const workflowRef = useRef(null)
+  const startTime = useRef(Date.now())
 
   useEffect(() => {
     if (!user || !goal.trim()) return
@@ -300,6 +301,7 @@ export default function ExecutionPipeline() {
           setApiDone(true)
           if (r && workflowRef.current) {
             const artifactType = result.platform === 'tiktok' ? 'video' : 'post'
+            trackArtifactSaved(artifactType)
             await supabase.from('workflow_artifacts').insert({
               workflow_id: workflowRef.current.id,
               artifact_type: artifactType,
@@ -324,6 +326,7 @@ export default function ExecutionPipeline() {
 
       updateWorkflowStatus('published')
       updateStepStatus('publish', 'completed')
+      trackWorkflowCompleted(intent?.platform || 'content', Math.round((Date.now() - startTime) / 1000))
 
       if (intent.platform === 'tiktok' || /video|tiktok|reel|kurzvideo/.test(goalLower)) {
         navigate('/tiktok-video', { state: { postText: goal, pipelineResult: apiResult } })

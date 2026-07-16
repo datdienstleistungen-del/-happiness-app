@@ -4,6 +4,7 @@ import { Rocket, ArrowRight, Clock, Check, Sparkles, Loader } from 'lucide-react
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations.jsx'
 import { supabase } from '../lib/supabase'
+import { trackWorkflowCreated } from '../intelligence/analytics'
 import Feed from '../components/Feed'
 import WorkflowWidget from '../components/WorkflowWidget'
 import './DashboardPage.css'
@@ -55,6 +56,7 @@ export default function DashboardPage() {
       .single()
 
     if (wf) {
+      trackWorkflowCreated(wf.platform || 'content')
       await supabase.from('workflow_steps').insert([
         { workflow_id: wf.id, step_key: 'analyze', label: 'Ziel analysieren', phase: 'clarifying', status: 'pending', order_index: 0 },
         { workflow_id: wf.id, step_key: 'script', label: 'Skript schreiben', phase: 'planning', status: 'pending', order_index: 1 },
@@ -93,7 +95,7 @@ export default function DashboardPage() {
             <span className="hit-letter">H</span>
             <span className="hit-rest">.I.T.</span>
           </div>
-          <p className="hit-command-sub">Was möchtest du heute erreichen?</p>
+          <p className="hit-command-sub">{t('dashboard.hitCommand')}</p>
         </div>
 
         <div className="hit-input-wrap">
@@ -103,11 +105,11 @@ export default function DashboardPage() {
             value={goal}
             onChange={(e) => setGoal(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGoalSubmit()}
-            placeholder="Beschreibe dein Ziel in einem Satz..."
+            placeholder={t('dashboard.hitPlaceholder')}
           />
           <button className="hit-submit-btn" onClick={handleGoalSubmit} disabled={!goal.trim()}>
             <Rocket size={18} />
-            <span>H.I.T. starten</span>
+            <span>{t('dashboard.hitStart')}</span>
           </button>
         </div>
 
@@ -120,12 +122,12 @@ export default function DashboardPage() {
 
       {/* ── Active Workflows ── */}
       <div className="dashboard-section">
-        <h2>Aktive Workflows</h2>
+        <h2>{t('dashboard.workflows')}</h2>
         {loadingWorkflows ? (
           <div className="dashboard-loading"><Loader size={20} className="spin" /> Lade Workflows...</div>
         ) : workflows.length === 0 ? (
           <div className="dashboard-empty">
-            <p>Noch keine Workflows. Starte mit einem Ziel oben!</p>
+            <p>{t('dashboard.noWorkflows')}</p>
           </div>
         ) : (
           <div className="workflow-list">
@@ -140,12 +142,12 @@ export default function DashboardPage() {
                   <div className="workflow-progress-fill" style={{ width: `${getProgress(wf)}%` }} />
                 </div>
                 <div className="workflow-card-footer">
-                  <span className="workflow-progress-text">{getProgress(wf)}% fertig</span>
+                  <span className="workflow-progress-text">{getProgress(wf)}% {t('dashboard.percentDone')}</span>
                   <button
                     className="workflow-continue-btn"
                     onClick={() => setSelectedWf(wf)}
                   >
-                    Weiter <ArrowRight size={14} />
+                    {t('dashboard.continue')} <ArrowRight size={14} />
                   </button>
                 </div>
               </div>
@@ -156,8 +158,8 @@ export default function DashboardPage() {
 
       {/* ── Community Inspiration ── */}
       <div className="dashboard-section">
-        <h2>Community-Inspiration</h2>
-        <p className="dashboard-section-sub">Sieh, was andere erstellen.</p>
+        <h2>{t('dashboard.communityInspiration')}</h2>
+        <p className="dashboard-section-sub">{t('dashboard.communitySub')}</p>
         <Feed />
       </div>
 
