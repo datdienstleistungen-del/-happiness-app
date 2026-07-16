@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Check, ArrowRight, Clock, Sparkles, AlertTriangle, MessageCircle } from 'lucide-react'
 import { useLanguage } from '../i18n/translations'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 import { getChatEndpoint } from '../lib/hit'
 import { trackIdeaSubmitted } from '../intelligence/analytics'
 import './ExecutionPipeline.css'
@@ -193,6 +194,7 @@ const STEP_LABELS_BY_PLATFORM = {
 export default function ExecutionPipeline() {
   const { t } = useLanguage()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [searchParams] = useSearchParams()
   const goal = searchParams.get('goal') || ''
 
@@ -205,6 +207,34 @@ export default function ExecutionPipeline() {
   const [apiDone, setApiDone] = useState(false)
   const [clarifyText, setClarifyText] = useState('')
   const [error, setError] = useState('')
+  const workflowRef = useRef(null)
+
+  useEffect(() => {
+    if (!user || !goal.trim()) return
+    supabase
+      .from('workflows')
+      .select('id, workflow_steps(id, step_key, order_index, status)')
+      .eq('user_id', user.id)
+      .eq('goal', goal.trim())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => { if (data) workflowRef.current = data })
+  }, [user, goal])
+
+  const updateStepStatus = async (stepKey, status) => {
+    const wf = workflowRef.current
+    if (!wf) return
+    const step = wf.workflow_steps?.find(s => s.step_key === stepKey)
+    if (!step) return
+    await supabase.from('workflow_steps').update({ status }).eq('id', step.id)
+  }
+
+  const updateWorkflowStatus = async (status) => {
+    const wf = workflowRef.current
+    if (!wf) return
+    await supabase.from('workflows').update({ status, active_phase: status }).eq('id', wf.id)
+  }
 
   useEffect(() => {
     if (!goal.trim()) {
@@ -221,6 +251,7 @@ export default function ExecutionPipeline() {
 
       if (!result) {
         setError('H.I.T. konnte das Ziel nicht analysieren. API-Limit erreicht. Versuch es spaeter nochmal.')
+        updateWorkflowStatus('archived')
         setPhase('error')
         return
       }
@@ -232,12 +263,14 @@ export default function ExecutionPipeline() {
 
       if (result.action === 'clarify') {
         setClarifyText(result.clarifyQuestion || 'Was genau soll ich dafür tun?')
+        updateWorkflowStatus('clarifying')
         setPhase('clarify')
         return
       }
 
       setIntent(result)
       setPhase('executing')
+      updateWorkflowStatus('executing')
 
       const steps = STEP_LABELS_BY_PLATFORM[result.platform] || []
       let stepIndex = 0
@@ -245,11 +278,14 @@ export default function ExecutionPipeline() {
       const runStep = () => {
         if (stepIndex >= steps.length) {
           setFinished(true)
+          updateWorkflowStatus('reviewing')
           return
         }
         setCurrentStep(stepIndex)
+        updateStepStatus(steps[stepIndex].key, 'active')
         const dur = steps[stepIndex].duration
         setTimeout(() => {
+          updateStepStatus(steps[stepIndex].key, 'completed')
           setCompletedSteps(prev => [...prev, stepIndex])
           stepIndex++
           runStep()
@@ -277,6 +313,9 @@ export default function ExecutionPipeline() {
     const timer = setTimeout(() => {
       const generatedContent = apiResult?.content || goal
       const goalLower = goal.toLowerCase()
+
+      updateWorkflowStatus('published')
+      updateStepStatus('publish', 'completed')
 
       if (intent.platform === 'tiktok' || /video|tiktok|reel|kurzvideo/.test(goalLower)) {
         navigate('/tiktok-video', { state: { postText: goal, pipelineResult: apiResult } })
