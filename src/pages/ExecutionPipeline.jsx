@@ -284,6 +284,8 @@ export default function ExecutionPipeline() {
         navigate('/post-preparation', { state: { draft: generatedContent, feedback: '' } })
       } else if (intent.platform === 'marketplace') {
         navigate('/marketplace', { state: { form: { title: goal, description: goal, price: '', category: 'Sonstiges' }, startTab: 'create' } })
+      } else {
+        navigate('/post-preparation', { state: { draft: generatedContent, feedback: '' } })
       }
     }, 600)
 

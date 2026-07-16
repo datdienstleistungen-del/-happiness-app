@@ -3,7 +3,8 @@ import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-r
 import {
   Home, Sparkles, MessageCircle, Users, ShoppingCart, Briefcase,
   BookOpen, Building2, Clapperboard, Camera, Film, Bell, Settings,
-  User, ChevronLeft, ChevronRight, Rocket, Hash, Menu, BarChart3, Trophy, Radar
+  User, ChevronLeft, ChevronRight, Rocket, Hash, Menu, BarChart3, Trophy, Radar,
+  Target, FolderOpen, Globe, LayoutDashboard
 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.jsx'
@@ -14,6 +15,7 @@ import InstallButton from './components/InstallButton'
 import Feed from './components/Feed'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import DashboardPage from './pages/DashboardPage'
 import CommunityPage from './pages/CommunityPage'
 import FriendsPage from './pages/FriendsPage'
 import MarketplacePage from './pages/MarketplacePage'
@@ -84,38 +86,32 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
   }
 
   const mainLinks = [
-    { to: '/', icon: Home, label: t('nav.home') },
+    { to: '/', icon: Target, label: 'H.I.T.' },
   ]
 
-  const communityLinks = [
-    { to: '/community', icon: Trophy, label: 'Creator Feed' },
-    { to: '/friends', icon: Users, label: 'Streamer Squads' },
-    { to: '/notifications', icon: Bell, label: t('nav.notifications') },
-  ]
-
-  const creatorLinks = [
-    { to: '/creator-academy', icon: Rocket, label: 'NCG Academy' },
-    { to: '/tiktok-video', icon: Film, label: 'Social Publisher' },
+  const studioLinks = [
+    { to: '/creator-academy', icon: Rocket, label: 'Content Studio' },
+    { to: '/tiktok-video', icon: Film, label: 'Video Studio' },
     { to: '/ai-chat', icon: Sparkles, label: 'AI Chat' },
-    { to: '/video-maker', icon: Clapperboard, label: 'CapCut Studio' },
-    { to: '/photo-editor', icon: Camera, label: 'Design Studio' },
-    { to: '/fotostory', icon: Film, label: 'Story Engine' },
+    { to: '/analytics', icon: BarChart3, label: 'Analytics' },
   ]
 
-  const marketplaceLinks = [
+  const discoverLinks = [
+    { to: '/community', icon: Globe, label: 'Community Feed' },
+    { to: '/friends', icon: Users, label: 'Streamer Squads' },
     { to: '/marketplace', icon: ShoppingCart, label: t('nav.marketplace') },
     { to: '/jobs', icon: Briefcase, label: t('nav.jobs') },
+    { to: '/courses', icon: BookOpen, label: t('nav.courses') },
     { to: '/housing', icon: Building2, label: t('nav.housing') },
   ]
 
-  const toolsLinks = [
-    { to: '/courses', icon: BookOpen, label: t('nav.courses') },
-    { to: '/analytics', icon: BarChart3, label: 'H.I.T. Analytics' },
+  const accountLinks = [
+    { to: '/notifications', icon: Bell, label: t('nav.notifications') },
   ]
 
   if (profile?.role === 'admin') {
-    toolsLinks.push({ to: '/admin', icon: Settings, label: t('nav.admin') })
-    toolsLinks.push({ to: '/admin/lead-radar', icon: Radar, label: 'Global Lead Radar' })
+    accountLinks.push({ to: '/admin', icon: Settings, label: t('nav.admin') })
+    accountLinks.push({ to: '/admin/lead-radar', icon: Radar, label: 'Global Lead Radar' })
   }
 
   const renderLinks = (links) => links.map((link) => (
@@ -155,20 +151,16 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
         {renderLinks(mainLinks)}
 
         <div className="sidebar-divider"></div>
-        {!collapsed && <div className="sidebar-section-title">Community</div>}
-        {renderLinks(communityLinks)}
+        {!collapsed && <div className="sidebar-section-title">My Studio</div>}
+        {renderLinks(studioLinks)}
 
         <div className="sidebar-divider"></div>
-        {!collapsed && <div className="sidebar-section-title">Creator</div>}
-        {renderLinks(creatorLinks)}
+        {!collapsed && <div className="sidebar-section-title">Entdecken</div>}
+        {renderLinks(discoverLinks)}
 
         <div className="sidebar-divider"></div>
-        {!collapsed && <div className="sidebar-section-title">Marktplatz</div>}
-        {renderLinks(marketplaceLinks)}
-
-        <div className="sidebar-divider"></div>
-        {!collapsed && <div className="sidebar-section-title">Tools</div>}
-        {renderLinks(toolsLinks)}
+        {!collapsed && <div className="sidebar-section-title">Konto</div>}
+        {renderLinks(accountLinks)}
       </nav>
 
       <div className="sidebar-footer">
@@ -216,24 +208,20 @@ function MobileBar() {
     <>
       <nav className="mobile-bottom-nav">
         <Link to="/" className={`mobile-nav-link ${location.pathname === '/' ? 'active' : ''}`}>
-          <Home size={20} />
-          <span>Home</span>
-        </Link>
-        <Link to="/community" className={`mobile-nav-link ${location.pathname === '/community' ? 'active' : ''}`}>
-          <Hash size={20} />
-          <span>Feed</span>
+          <Target size={20} />
+          <span>H.I.T.</span>
         </Link>
         <Link to="/creator-academy" className={`mobile-nav-link ${location.pathname === '/creator-academy' ? 'active' : ''}`}>
-          <Rocket size={20} />
-          <span>Create</span>
+          <FolderOpen size={20} />
+          <span>Studio</span>
         </Link>
-        <Link to="/ai-chat" className={`mobile-nav-link ${location.pathname === '/ai-chat' ? 'active' : ''}`}>
-          <Sparkles size={20} />
-          <span>AI</span>
+        <Link to="/community" className={`mobile-nav-link ${location.pathname === '/community' ? 'active' : ''}`}>
+          <Globe size={20} />
+          <span>Entdecken</span>
         </Link>
-        <Link to="/marketplace" className={`mobile-nav-link ${location.pathname === '/marketplace' ? 'active' : ''}`}>
-          <ShoppingCart size={20} />
-          <span>Market</span>
+        <Link to="/profile" className={`mobile-nav-link ${location.pathname === '/profile' ? 'active' : ''}`}>
+          <User size={20} />
+          <span>Profil</span>
         </Link>
       </nav>
       <div className="mobile-lang-bar">
@@ -368,7 +356,7 @@ export default function App() {
               <Routes>
                 <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
                 <Route path="/register" element={user ? <Navigate to="/" /> : <RegisterPage />} />
-                <Route path="/" element={user ? <OnboardingGuard><HomePage /></OnboardingGuard> : <LandingPage />} />
+                <Route path="/" element={user ? <OnboardingGuard><DashboardPage /></OnboardingGuard> : <LandingPage />} />
                 <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
                 <Route path="/today-question" element={<ProtectedRoute><TodayQuestionPage /></ProtectedRoute>} />
                 <Route path="/creator-welcome" element={<ProtectedRoute><CreatorWelcomePage /></ProtectedRoute>} />
@@ -413,13 +401,35 @@ function LoadingScreen() {
 }
 
 function LandingPage() {
+  const navigate = useNavigate()
+  const [demoGoal, setDemoGoal] = useState('')
+
+  const handleDemo = () => {
+    if (!demoGoal.trim()) return
+    navigate(`/register`)
+  }
+
   return (
     <div className="container">
       <div className="hero landing-hero">
         <h1><Logo /></h1>
-        <p>Europas Community fuer Glueck, Vernetzung und persoenliche Entwicklung.</p>
-        <div className="landing-actions">
-          <Link to="/register" className="btn btn-primary">Kostenlos registrieren</Link>
+        <p className="landing-tagline">Dein AI Creator Operating System. Du nennst das Ziel. H.I.T. baut den Workflow.</p>
+        <div className="landing-input-wrap">
+          <input
+            className="landing-input"
+            type="text"
+            value={demoGoal}
+            onChange={(e) => setDemoGoal(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleDemo()}
+            placeholder="Was möchtest du heute erreichen?"
+          />
+          <button className="btn btn-primary" onClick={handleDemo} disabled={!demoGoal.trim()}>
+            <Rocket size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
+            Jetzt ausprobieren
+          </button>
+        </div>
+        <div className="landing-actions" style={{ marginTop: '1rem' }}>
+          <Link to="/register" className="btn btn-outline">Kostenlos registrieren</Link>
           <Link to="/login" className="btn btn-outline">Anmelden</Link>
         </div>
         <div className="landing-install">
@@ -428,74 +438,36 @@ function LandingPage() {
       </div>
 
       <div className="what-we-are">
-        <h2>Was wir sind</h2>
+        <h2>So funktioniert es</h2>
         <div className="what-we-are-content">
-          <p>Europa braucht eine eigene Social-Media-Plattform.</p>
-          <p>Nicht als Kopie bestehender Netzwerke.<br/>Sondern als echte Alternative.</p>
-          <p>Aus dieser Idee ist eine funktionierende Plattform entstanden.</p>
-          <div className="what-we-are-features">
-            <div className="what-we-are-feature">
-              <span>Direkt im Browser nutzbar.</span>
-            </div>
-            <div className="what-we-are-feature">
-              <span>Ohne Installation.</span>
-            </div>
-            <div className="what-we-are-feature">
-              <span>Auf Smartphone und Desktop.</span>
-            </div>
-          </div>
           <div className="what-we-are-workflow">
-            <h3>Alles in einem Workflow.</h3>
-            <p>Inhalte erstellen. Inhalte veroeffentlichen. Inhalte mit integrierter KI verbessern.</p>
             <div className="what-we-are-steps">
-              <span className="step">Posten</span>
+              <div className="landing-step">
+                <span className="landing-step-icon">🎯</span>
+                <strong>Du beschreibst dein Ziel</strong>
+                <p>"TikTok über gesunde Gewohnheiten erstellen"</p>
+              </div>
               <span className="step-arrow">&rarr;</span>
-              <span className="step">Analysieren</span>
+              <div className="landing-step">
+                <span className="landing-step-icon">🧠</span>
+                <strong>H.I.T. erstellt einen Plan</strong>
+                <p>Skript, Visuals, Musik — alles automatisch</p>
+              </div>
               <span className="step-arrow">&rarr;</span>
-              <span className="step">Optimieren</span>
-              <span className="step-arrow">&rarr;</span>
-              <span className="step">Veroeffentlichen</span>
+              <div className="landing-step">
+                <span className="landing-step-icon">🚀</span>
+                <strong>Du postest</strong>
+                <p>Ergebnis kopieren oder direkt veröffentlichen</p>
+              </div>
             </div>
-            <p className="what-we-are-tagline">Ohne Umwege. Ohne Tool-Wechsel.</p>
+            <p className="what-we-are-tagline">Kein Tool-Wechsel. Keine Sackgassen.</p>
           </div>
+
           <div className="what-we-are-cta">
-            <p>Einfach oeffnen und selbst ausprobieren, wie sich der Ansatz in der Praxis anfuehlt.</p>
-            <Link to="/register" className="btn btn-primary">Jetzt ausprobieren</Link>
+            <p>Deine Daten bleiben in Europa. DSGVO-konform. Kostenloser Start.</p>
+            <Link to="/register" className="btn btn-primary">Kostenlos ausprobieren</Link>
           </div>
         </div>
-      </div>
-
-      <div className="landing-sections">
-        <Link to="/marketplace" className="dash-card">
-          <span className="dash-accent" style={{ background: 'var(--color-petrol)' }}></span>
-          <span className="dash-icon"><ShoppingCart size={20} /></span>
-          <div><h3>Marktplatz</h3><p>Dienstleistungen, Produkte und mehr</p></div>
-        </Link>
-        <Link to="/jobs" className="dash-card">
-          <span className="dash-accent" style={{ background: 'var(--color-koralle)' }}></span>
-          <span className="dash-icon"><Briefcase size={20} /></span>
-          <div><h3>Stellenangebote</h3><p>Jobs, Freelance, Praktika</p></div>
-        </Link>
-        <Link to="/courses" className="dash-card">
-          <span className="dash-accent" style={{ background: 'var(--color-mint)' }}></span>
-          <span className="dash-icon"><BookOpen size={20} /></span>
-          <div><h3>Kurse</h3><p>Lernen und weiterbilden</p></div>
-        </Link>
-        <Link to="/housing" className="dash-card">
-          <span className="dash-accent" style={{ background: 'var(--color-amber)' }}></span>
-          <span className="dash-icon"><Building2 size={20} /></span>
-          <div><h3>Wohnungen</h3><p>WG, Wohnung, Haus</p></div>
-        </Link>
-        <Link to="/community" className="dash-card">
-          <span className="dash-accent" style={{ background: 'var(--color-petrol)' }}></span>
-          <span className="dash-icon"><MessageCircle size={20} /></span>
-          <div><h3>Community</h3><p>Vernetzen und austauschen</p></div>
-        </Link>
-        <Link to="/ai-chat" className="dash-card">
-          <span className="dash-accent" style={{ background: 'var(--color-koralle)' }}></span>
-          <span className="dash-icon"><Sparkles size={20} /></span>
-          <div><h3>KI-Assistent</h3><p>Fragen stellen, Bilder analysieren</p></div>
-        </Link>
       </div>
     </div>
   )

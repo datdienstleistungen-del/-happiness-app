@@ -1,0 +1,302 @@
+.dashboard {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.dashboard-greeting h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  color: var(--text);
+}
+
+/* ── H.I.T. Command Center ── */
+.hit-command-center {
+  background: linear-gradient(135deg, rgba(8,80,65,0.08) 0%, rgba(29,158,117,0.06) 100%);
+  border: 1px solid rgba(8,80,65,0.15);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2.5rem;
+}
+
+.hit-command-header {
+  margin-bottom: 1.5rem;
+}
+
+.hit-brand-compact {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  margin-bottom: 0.5rem;
+}
+
+.hit-letter {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #085041;
+}
+
+.hit-rest {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #085041;
+  opacity: 0.7;
+}
+
+.hit-command-sub {
+  font-size: 1rem;
+  color: var(--text-muted, #666);
+  margin-top: 0.25rem;
+}
+
+.hit-input-wrap {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.hit-input {
+  flex: 1;
+  padding: 0.875rem 1rem;
+  border: 2px solid rgba(8,80,65,0.2);
+  border-radius: 12px;
+  font-size: 1rem;
+  background: var(--bg, #fff);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.hit-input:focus {
+  border-color: #085041;
+}
+
+.hit-input::placeholder {
+  color: var(--text-muted, #999);
+}
+
+.hit-submit-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1.5rem;
+  background: #085041;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.hit-submit-btn:hover:not(:disabled) {
+  background: #0a6b52;
+  transform: translateY(-1px);
+}
+
+.hit-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hit-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.hit-chip {
+  padding: 0.4rem 0.85rem;
+  background: var(--bg, #fff);
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 20px;
+  font-size: 0.82rem;
+  color: var(--text-muted, #666);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hit-chip:hover {
+  border-color: #085041;
+  color: #085041;
+  background: rgba(8,80,65,0.05);
+}
+
+/* ── Sections ── */
+.dashboard-section {
+  margin-bottom: 2.5rem;
+}
+
+.dashboard-section h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  color: var(--text);
+}
+
+.dashboard-section-sub {
+  font-size: 0.85rem;
+  color: var(--text-muted, #666);
+  margin-bottom: 1rem;
+}
+
+.dashboard-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  color: var(--text-muted, #666);
+  font-size: 0.9rem;
+}
+
+.dashboard-empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-muted, #999);
+  background: var(--bg-secondary, #f9f9f9);
+  border-radius: 12px;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ── Workflow Cards ── */
+.workflow-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.workflow-card {
+  background: var(--bg, #fff);
+  border: 1px solid var(--border, #e8e8e8);
+  border-radius: 12px;
+  padding: 1.25rem;
+  transition: border-color 0.2s;
+}
+
+.workflow-card:hover {
+  border-color: #085041;
+}
+
+.workflow-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.workflow-platform {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #085041;
+  background: rgba(8,80,65,0.1);
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+}
+
+.workflow-status {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+}
+
+.status-clarifying { background: #FEF3C7; color: #92400E; }
+.status-planning { background: #DBEAFE; color: #1E40AF; }
+.status-executing { background: #D1FAE5; color: #065F46; }
+.status-reviewing { background: #EDE9FE; color: #5B21B6; }
+.status-published { background: #ECFDF5; color: #047857; }
+
+.workflow-goal {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--text);
+}
+
+.workflow-progress-bar {
+  height: 4px;
+  background: var(--border, #e8e8e8);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.workflow-progress-fill {
+  height: 100%;
+  background: #085041;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.workflow-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.workflow-progress-text {
+  font-size: 0.8rem;
+  color: var(--text-muted, #666);
+}
+
+.workflow-continue-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.8rem;
+  background: none;
+  border: 1px solid #085041;
+  color: #085041;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.workflow-continue-btn:hover {
+  background: #085041;
+  color: white;
+}
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .dashboard {
+    padding: 1.25rem 1rem;
+  }
+
+  .hit-command-center {
+    padding: 1.25rem;
+  }
+
+  .hit-input-wrap {
+    flex-direction: column;
+  }
+
+  .hit-submit-btn {
+    justify-content: center;
+    padding: 0.875rem;
+  }
+
+  .hit-chips {
+    gap: 0.4rem;
+  }
+
+  .hit-chip {
+    font-size: 0.78rem;
+    padding: 0.35rem 0.7rem;
+  }
+}

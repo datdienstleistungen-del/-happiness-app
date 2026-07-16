@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Copy, Check, Sparkles } from 'lucide-react'
+import { useLocation, useNavigate, Link } from 'react-router-dom'
+import { ArrowLeft, Copy, Check, Sparkles, Share2, MessageCircle, Rocket } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { getChatEndpoint } from '../lib/hit'
@@ -176,6 +176,25 @@ export default function PostPreparationPage() {
               <div className="post-prep-result-text">{rewrittenPost}</div>
               <div className="post-prep-result-actions">
                 <CopyBtn text={rewrittenPost} />
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                <Link to="/community" className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <MessageCircle size={14} /> Im Feed posten
+                </Link>
+                <Link to="/tiktok-video" state={{ postText: rewrittenPost }} className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <Rocket size={14} /> Als Video
+                </Link>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({ text: rewrittenPost }).catch(() => {})
+                    }
+                  }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Share2 size={14} /> Teilen
+                </button>
               </div>
             </div>
           )}

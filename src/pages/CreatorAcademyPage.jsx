@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Rocket, Send, Check, AlertTriangle, Lightbulb, MessageSquare, PenTool, CreditCard, Brain } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Rocket, Send, Check, AlertTriangle, Lightbulb, MessageSquare, PenTool, CreditCard, Brain, MessageCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations'
@@ -297,7 +298,10 @@ Antworte immer auf Deutsch. Antworte in klarem Fliesstext, wie ein professionell
 
             {posted && (
               <div className="ca-success">
-                <Check size={16} /> Dein Post ist live! Schau im Feed vorbei.
+                <Check size={16} /> Dein Post ist live!
+                <Link to="/community" className="btn btn-outline" style={{ marginLeft: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <MessageCircle size={14} /> Zum Feed
+                </Link>
               </div>
             )}
           </div>
@@ -315,6 +319,9 @@ Antworte immer auf Deutsch. Antworte in klarem Fliesstext, wie ein professionell
                 </div>
                 <button className="ca-paywall-btn stripe-btn" onClick={handleCheckout}>
                   <CreditCard size={16} /> Jetzt upgraden
+                </button>
+                <button className="btn btn-outline" style={{ width: '100%', marginTop: '0.5rem' }} onClick={() => setShowPaywall(false)}>
+                  Später
                 </button>
                 <div className="ca-paywall-benefits">
                   <p><Check size={14} /> Unbegrenzt KI-Content-Feedback</p>
