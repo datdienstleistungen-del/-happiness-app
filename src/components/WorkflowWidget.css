@@ -335,8 +335,14 @@
 }
 
 .wf-artifact-icon {
-  color: var(--primary, #085041);
-  min-width: 16px;
+  font-size: 1.2rem;
+  min-width: 24px;
+  text-align: center;
+}
+
+.wf-artifact-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .wf-artifact-title {
@@ -350,6 +356,9 @@
   display: block;
   font-size: 0.72rem;
   color: var(--text-muted, #6b7280);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Footer */

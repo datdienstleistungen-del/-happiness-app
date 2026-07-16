@@ -29,12 +29,23 @@ export default function WorkflowWidget({ workflow, onClose }) {
   const navigate = useNavigate()
   const [wf, setWf] = useState(workflow)
   const [steps, setSteps] = useState(workflow.workflow_steps || [])
+  const [artifacts, setArtifacts] = useState([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     setWf(workflow)
     setSteps(workflow.workflow_steps || [])
+    loadArtifacts(workflow.id)
   }, [workflow])
+
+  async function loadArtifacts(wfId) {
+    const { data } = await supabase
+      .from('workflow_artifacts')
+      .select('*')
+      .eq('workflow_id', wfId)
+      .order('created_at', { ascending: false })
+    setArtifacts(data || [])
+  }
 
   useEffect(() => {
     if (!wf?.id) return
@@ -53,6 +64,9 @@ export default function WorkflowWidget({ workflow, onClose }) {
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'workflows', filter: `id=eq.${wf.id}` }, (payload) => {
         setWf(prev => ({ ...prev, ...payload.new }))
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'workflow_artifacts', filter: `workflow_id=eq.${wf.id}` }, (payload) => {
+        setArtifacts(prev => [payload.new, ...prev])
       })
       .subscribe()
     return () => supabase.removeChannel(channel)
@@ -196,16 +210,36 @@ export default function WorkflowWidget({ workflow, onClose }) {
           </div>
         )}
 
-        {/* Artifacts preview */}
-        {wf?.status === 'published' && (
+        {/* Artifacts */}
+        {artifacts.length > 0 && (
           <div className="wf-artifacts">
-            <div className="wf-artifact-card">
-              <Check size={16} className="wf-artifact-icon" />
-              <div>
-                <span className="wf-artifact-title">Ergebnis bereit</span>
-                <span className="wf-artifact-desc">Dein Content wurde veröffentlicht</span>
+            <h4 className="wf-steps-title">Ergebnisse</h4>
+            {artifacts.map(art => (
+              <div key={art.id} className="wf-artifact-card">
+                <div className="wf-artifact-icon">
+                  {art.artifact_type === 'video' ? '🎬' : '📝'}
+                </div>
+                <div className="wf-artifact-info">
+                  <span className="wf-artifact-title">
+                    {art.artifact_type === 'video' ? 'Video-Skript' : 'Post-Text'}
+                  </span>
+                  <span className="wf-artifact-desc">
+                    {(art.content?.content || art.content?.recipe?.voiceover_script || '').slice(0, 80)}...
+                  </span>
+                </div>
+                <button
+                  className="wf-step-action"
+                  onClick={() => {
+                    const text = art.content?.content || art.content?.recipe?.voiceover_script || ''
+                    if (text) {
+                      navigator.clipboard.writeText(text)
+                    }
+                  }}
+                >
+                  Kopieren
+                </button>
               </div>
-            </div>
+            ))}
           </div>
         )}
 

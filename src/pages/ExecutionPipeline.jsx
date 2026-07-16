@@ -295,9 +295,17 @@ export default function ExecutionPipeline() {
       runStep()
 
       if (result.platform !== 'marketplace') {
-        startRealWork(result.platform, goal).then(r => {
+        startRealWork(result.platform, goal).then(async (r) => {
           setApiResult(r)
           setApiDone(true)
+          if (r && workflowRef.current) {
+            const artifactType = result.platform === 'tiktok' ? 'video' : 'post'
+            await supabase.from('workflow_artifacts').insert({
+              workflow_id: workflowRef.current.id,
+              artifact_type: artifactType,
+              content: r
+            })
+          }
         })
       } else {
         setApiDone(true)
