@@ -23,14 +23,12 @@ export default function OnboardingPage() {
       }).eq('id', user.id)
       gtag('event', 'signup_completed')
 
-      if (choice === 'community') navigate('/today-question', { replace: true })
-      else if (choice === 'creator') navigate('/creator-welcome', { replace: true })
-      else navigate('/ai-chat', { replace: true })
+      if (choice === 'community') navigate('/', { replace: true })
+      else if (choice === 'creator') navigate('/', { replace: true })
+      else navigate('/', { replace: true })
     } catch (err) {
       console.error('Onboarding save failed:', err)
-      if (choice === 'community') navigate('/today-question', { replace: true })
-      else if (choice === 'creator') navigate('/creator-welcome', { replace: true })
-      else navigate('/ai-chat', { replace: true })
+      navigate('/', { replace: true })
     }
   }
 

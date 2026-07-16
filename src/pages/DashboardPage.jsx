@@ -43,9 +43,28 @@ export default function DashboardPage() {
     setLoadingWorkflows(false)
   }
 
-  const handleGoalSubmit = () => {
+  const handleGoalSubmit = async () => {
     if (!goal.trim()) return
-    navigate(`/execute?goal=${encodeURIComponent(goal.trim())}`)
+    const g = goal.trim()
+    setGoal('')
+
+    const { data: wf } = await supabase
+      .from('workflows')
+      .insert({ user_id: user.id, goal: g, status: 'clarifying', platform: 'content' })
+      .select()
+      .single()
+
+    if (wf) {
+      await supabase.from('workflow_steps').insert([
+        { workflow_id: wf.id, step_key: 'analyze', label: 'Ziel analysieren', phase: 'clarifying', status: 'pending', order_index: 0 },
+        { workflow_id: wf.id, step_key: 'script', label: 'Skript schreiben', phase: 'planning', status: 'pending', order_index: 1 },
+        { workflow_id: wf.id, step_key: 'design', label: 'Visuals erstellen', phase: 'executing', status: 'pending', order_index: 2 },
+        { workflow_id: wf.id, step_key: 'review', label: 'Ergebnis prüfen', phase: 'reviewing', status: 'pending', order_index: 3 },
+        { workflow_id: wf.id, step_key: 'publish', label: 'Veröffentlichen', phase: 'published', status: 'pending', order_index: 4 },
+      ])
+    }
+
+    navigate('/execute?goal=' + encodeURIComponent(g))
   }
 
   const getGreeting = () => {

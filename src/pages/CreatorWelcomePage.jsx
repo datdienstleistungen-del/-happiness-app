@@ -19,7 +19,7 @@ export default function CreatorWelcomePage() {
         <p className="cw-subtitle">{t('onboarding.creatorSub')}</p>
 
         <div className="cw-cards">
-          <button className="cw-card" onClick={() => go('/creator-academy')}>
+          <button className="cw-card" onClick={() => go('/')}>
             <span className="cw-card-icon"><PenTool size={24} /></span>
             <span className="cw-card-content">
               <span className="cw-card-title">{t('onboarding.createContent')}</span>
@@ -28,7 +28,7 @@ export default function CreatorWelcomePage() {
             <ArrowRight size={20} className="cw-card-arrow" />
           </button>
 
-          <button className="cw-card" onClick={() => go('/creator-academy')}>
+          <button className="cw-card" onClick={() => go('/')}>
             <span className="cw-card-icon"><TrendingUp size={24} /></span>
             <span className="cw-card-content">
               <span className="cw-card-title">{t('onboarding.improveContent')}</span>
@@ -37,7 +37,7 @@ export default function CreatorWelcomePage() {
             <ArrowRight size={20} className="cw-card-arrow" />
           </button>
 
-          <button className="cw-card" onClick={() => go('/creator-academy')}>
+          <button className="cw-card" onClick={() => go('/')}>
             <span className="cw-card-icon"><BookOpen size={24} /></span>
             <span className="cw-card-content">
               <span className="cw-card-title">{t('onboarding.learnSkills')}</span>
