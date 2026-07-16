@@ -13,24 +13,24 @@ import Logo, { renderBrandText } from './components/Logo'
 import { useOneSignal } from './hooks/useOneSignal'
 import InstallButton from './components/InstallButton'
 import Feed from './components/Feed'
-import LoginPage from './pages/LoginPage'
-import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
 import LandingPage from './pages/LandingPage'
-import CommunityPage from './pages/CommunityPage'
-import FriendsPage from './pages/FriendsPage'
-import MarketplacePage from './pages/MarketplacePage'
-import JobsPage from './pages/JobsPage'
-import CoursesPage from './pages/CoursesPage'
-import HousingPage from './pages/HousingPage'
-import ProfilePage from './pages/ProfilePage'
-import NotificationsPage from './pages/NotificationsPage'
-import HistoryPage from './pages/HistoryPage'
-import AdminPage from './pages/AdminPage'
-import LegalPage from './pages/LegalPage'
 import OnboardingGuard from './components/OnboardingGuard'
 import './App.css'
 
+const LoginPage = lazy(() => import('./pages/LoginPage'))
+const RegisterPage = lazy(() => import('./pages/RegisterPage'))
+const CommunityPage = lazy(() => import('./pages/CommunityPage'))
+const FriendsPage = lazy(() => import('./pages/FriendsPage'))
+const MarketplacePage = lazy(() => import('./pages/MarketplacePage'))
+const JobsPage = lazy(() => import('./pages/JobsPage'))
+const CoursesPage = lazy(() => import('./pages/CoursesPage'))
+const HousingPage = lazy(() => import('./pages/HousingPage'))
+const ProfilePage = lazy(() => import('./pages/ProfilePage'))
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
+const HistoryPage = lazy(() => import('./pages/HistoryPage'))
+const AdminPage = lazy(() => import('./pages/AdminPage'))
+const LegalPage = lazy(() => import('./pages/LegalPage'))
 const VideoMakerPage = lazy(() => import('./pages/VideoMakerPage'))
 const PhotoEditorPage = lazy(() => import('./pages/PhotoEditorPage'))
 const FotostoryPage = lazy(() => import('./pages/FotostoryPage'))
