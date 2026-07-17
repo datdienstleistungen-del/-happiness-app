@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Rocket, Check, Copy, Share2, Sparkles, ChevronDown, ChevronUp, Film, BarChart3, RotateCcw, ArrowRight, Target } from 'lucide-react'
+import { Rocket, Check, Copy, Share2, Sparkles, ChevronDown, ChevronUp, Film, BarChart3, RotateCcw, ArrowRight, Target, ArrowLeft } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations'
 import { getChatEndpoint } from '../lib/hit'
@@ -46,6 +46,33 @@ export default function PlatformEngine() {
   const [showMore, setShowMore] = useState(false)
   const [copiedAll, setCopiedAll] = useState(false)
   const [generatedMore, setGeneratedMore] = useState(false)
+
+  // Restore state from localStorage on mount (after navigating back from CapCut/Analytics)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('hit_engine_state')
+      if (saved) {
+        const s = JSON.parse(saved)
+        if (s.phase && s.phase !== 'input') {
+          setPhase(s.phase)
+          setGoal(s.goal || '')
+          setAnalysis(s.analysis || null)
+          setRecommendations(s.recommendations || [])
+          setResults(s.results || {})
+          setTopResults(s.topResults || {})
+          setGeneratedMore(s.generatedMore || false)
+        }
+        localStorage.removeItem('hit_engine_state')
+      }
+    } catch {}
+  }, [])
+
+  // Save state to localStorage before navigating away
+  const saveStateAndNavigate = useCallback((path) => {
+    const state = { phase, goal, analysis, recommendations, results, topResults, generatedMore }
+    localStorage.setItem('hit_engine_state', JSON.stringify(state))
+    navigate(path)
+  }, [phase, goal, analysis, recommendations, results, topResults, generatedMore, navigate])
 
   const chips = GOAL_CHIPS[lang] || GOAL_CHIPS.de
 
@@ -406,12 +433,12 @@ export default function PlatformEngine() {
             </div>
 
             <div className="pe-next-grid">
-              <button className="pe-next-card" onClick={() => navigate('/content-studio')}>
+              <button className="pe-next-card" onClick={() => saveStateAndNavigate('/content-studio')}>
                 <div className="pe-next-card-icon"><Film size={24} /></div>
                 <div className="pe-next-card-label">{t('platformEngine.nextCapCut')}</div>
                 <div className="pe-next-card-desc">{t('platformEngine.nextCapCutDesc')}</div>
               </button>
-              <button className="pe-next-card" onClick={() => navigate('/analytics')}>
+              <button className="pe-next-card" onClick={() => saveStateAndNavigate('/analytics')}>
                 <div className="pe-next-card-icon"><BarChart3 size={24} /></div>
                 <div className="pe-next-card-label">{t('platformEngine.nextAnalytics')}</div>
                 <div className="pe-next-card-desc">{t('platformEngine.nextAnalyticsDesc')}</div>
