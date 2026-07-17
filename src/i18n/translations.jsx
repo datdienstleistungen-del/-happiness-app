@@ -140,6 +140,17 @@ const translations = {
       nextNewGoal: 'Neues Content-Ziel',
       nextNewGoalDesc: 'Den H.I.T. erneut starten',
       resetButton: 'Neues Content-Ziel eingeben'
+    },
+    videoShowcase: {
+      title: '3 Wörter rein. Fertiges Video raus.',
+      subtitle: 'Schau dir an, was H.I.T. in Sekunden erstellt.',
+      promptLabel: 'Eingegebener Prompt:',
+      promptText: 'Hook Tipps für Content Creator',
+      resultLabel: 'Ergebnis:',
+      badge1: 'TikTok',
+      badge2: 'Instagram',
+      badge3: 'YouTube Shorts',
+      cta: '🚀 Jetzt selbst ausprobieren'
     }
   },
   en: {
@@ -281,6 +292,17 @@ const translations = {
       nextNewGoal: 'New Content Goal',
       nextNewGoalDesc: 'Start H.I.T. again',
       resetButton: 'Enter new content goal'
+    },
+    videoShowcase: {
+      title: '3 words in. Finished video out.',
+      subtitle: 'See what H.I.T. creates in seconds.',
+      promptLabel: 'Entered Prompt:',
+      promptText: 'Hook tips for content creators',
+      resultLabel: 'Result:',
+      badge1: 'TikTok',
+      badge2: 'Instagram',
+      badge3: 'YouTube Shorts',
+      cta: '🚀 Try it yourself now'
     }
   },
   es: {

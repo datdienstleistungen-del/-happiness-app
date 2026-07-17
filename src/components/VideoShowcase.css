@@ -1,0 +1,211 @@
+/* ═══════════════════════════════════════════
+   VideoShowcase — Social Proof Karte
+   ═══════════════════════════════════════════ */
+
+.video-showcase-section {
+  padding: 80px 20px;
+  background: var(--bg-background, #fafafa);
+  display: flex;
+  justify-content: center;
+}
+
+.video-showcase-container {
+  max-width: 1000px;
+  width: 100%;
+}
+
+.showcase-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.showcase-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--text-color, #111);
+  margin-bottom: 12px;
+  line-height: 1.2;
+}
+
+.showcase-subtitle {
+  font-size: 1.2rem;
+  color: var(--text-muted, #666);
+  margin: 0;
+}
+
+/* Card Layout */
+.showcase-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  background: var(--card-bg, #ffffff);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  align-items: center;
+}
+
+/* Video */
+.showcase-video-column {
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  max-height: 500px;
+  display: flex;
+  justify-content: center;
+}
+
+.showcase-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Info Column */
+.showcase-info-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Prompt Box */
+.prompt-box {
+  background: #1e1e1e;
+  border-radius: 12px;
+  padding: 20px;
+  color: #fff;
+}
+
+.prompt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.copy-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  padding: 4px;
+}
+
+.copy-icon-btn:hover {
+  opacity: 1;
+}
+
+.prompt-content code {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.1rem;
+  color: #4fc1ff;
+  word-break: break-word;
+}
+
+/* Results Box */
+.results-label {
+  font-weight: 700;
+  display: block;
+  margin-bottom: 12px;
+  color: var(--text-color, #111);
+}
+
+.platform-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.badge {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.badge-tiktok {
+  background: #f5f5f5;
+  color: #000;
+}
+
+.badge-instagram {
+  background: #fff5f5;
+  color: #e1306c;
+}
+
+.badge-shorts {
+  background: #fff0f0;
+  color: #ff0000;
+}
+
+/* Branding */
+.showcase-branding {
+  font-size: 0.85rem;
+  color: var(--text-muted, #999);
+  text-align: right;
+}
+
+/* CTA */
+.showcase-cta-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+.showcase-cta-btn {
+  background: var(--primary-color, #059669);
+  color: #fff;
+  padding: 16px 40px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.showcase-cta-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(5, 150, 105, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .showcase-card {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 20px;
+  }
+
+  .showcase-video-column {
+    max-height: 400px;
+  }
+
+  .showcase-title {
+    font-size: 2rem;
+  }
+
+  .showcase-cta-btn {
+    font-size: 1rem;
+    padding: 14px 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .video-showcase-section {
+    padding: 40px 16px;
+  }
+
+  .showcase-title {
+    font-size: 1.6rem;
+  }
+
+  .showcase-subtitle {
+    font-size: 1rem;
+  }
+}

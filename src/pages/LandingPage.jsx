@@ -4,6 +4,7 @@ import { Rocket, Sparkles, Check, ArrowRight, Zap, Clock, Target } from 'lucide-
 import { trackDemoStarted, trackDemoCompleted } from '../intelligence/analytics'
 import { useLanguage } from '../i18n/translations.jsx'
 import InstallButton from '../components/InstallButton'
+import VideoShowcase from '../components/VideoShowcase'
 import Logo from '../components/Logo'
 import './LandingPage.css'
 
@@ -253,6 +254,9 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+
+      {/* Video Showcase */}
+      <VideoShowcase />
 
       {/* Platforms */}
       <div className="landing-platforms">
