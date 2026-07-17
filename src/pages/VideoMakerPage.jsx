@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Film, ExternalLink, Zap, Play, Sparkles, Video } from 'lucide-react'
+import { trackExportToTool } from '../intelligence/analytics/custom'
 import './VideoMakerPage.css'
 
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
@@ -27,6 +28,7 @@ export default function VideoMakerPage() {
           target={isMobile ? undefined : '_blank'}
           rel={isMobile ? undefined : 'noopener noreferrer'}
           className="cs-launcher-btn"
+          onClick={() => trackExportToTool('capcut', 'video-maker')}
         >
           <Play size={18} /> {isMobile ? 'CapCut App öffnen' : 'CapCut Web-Editor öffnen (Free)'} <ExternalLink size={14} />
         </a>

@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations.jsx'
 import { supabase } from '../lib/supabase'
 import { trackWorkflowCreated } from '../intelligence/analytics'
-import { trackGoalSubmitted, trackQuickResult } from '../intelligence/analytics/custom'
+import { trackGoalSubmitted, trackQuickResult, markFirstSession } from '../intelligence/analytics/custom'
 import { getChatEndpoint } from '../lib/hit'
 import Feed from '../components/Feed'
 import WorkflowWidget from '../components/WorkflowWidget'
@@ -111,6 +111,7 @@ export default function DashboardPage() {
     }
 
     trackGoalSubmitted(g, 'content')
+    markFirstSession()
     const { data: wf } = await supabase
       .from('workflows')
       .insert({ user_id: user.id, goal: g, status: 'clarifying', platform: 'content' })

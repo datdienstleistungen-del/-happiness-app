@@ -5,6 +5,67 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY
 )
 
+async function queryFunnel(startDate, headers) {
+  const start = startDate.toISOString()
+
+  const [
+    { count: ideas },
+    { count: generated },
+    { count: copied },
+    { count: exported },
+    { count: published },
+    { data: dailyData },
+  ] = await Promise.all([
+    supabase.from('events').select('*', { count: 'exact', head: true })
+      .in('event_name', ['goal_submitted', 'quick_result'])
+      .gte('created_at', start),
+    supabase.from('events').select('*', { count: 'exact', head: true })
+      .eq('event_name', 'content_generated')
+      .gte('created_at', start),
+    supabase.from('events').select('*', { count: 'exact', head: true })
+      .eq('event_name', 'copy_action')
+      .gte('created_at', start),
+    supabase.from('events').select('*', { count: 'exact', head: true })
+      .eq('event_name', 'export_to_tool')
+      .gte('created_at', start),
+    supabase.from('workflows').select('*', { count: 'exact', head: true })
+      .eq('status', 'published')
+      .gte('created_at', start),
+    supabase.from('events').select('created_at, event_name')
+      .in('event_name', ['goal_submitted', 'quick_result', 'content_generated', 'copy_action', 'export_to_tool'])
+      .gte('created_at', start),
+  ])
+
+  const daily = {}
+  dailyData?.forEach(d => {
+    const date = d.created_at.split('T')[0]
+    if (!daily[date]) daily[date] = { date, ideas: 0, generated: 0, copied: 0, exported: 0 }
+    if (d.event_name === 'goal_submitted' || d.event_name === 'quick_result') daily[date].ideas++
+    if (d.event_name === 'content_generated') daily[date].generated++
+    if (d.event_name === 'copy_action') daily[date].copied++
+    if (d.event_name === 'export_to_tool') daily[date].exported++
+  })
+
+  const ideasCount = ideas || 0
+  const publishedCount = published || 0
+
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({
+      funnel: {
+        ideas: ideasCount,
+        generated: generated || 0,
+        copied: copied || 0,
+        exported: exported || 0,
+        published: publishedCount,
+        conversionRate: ideasCount > 0 ? Math.round((publishedCount / ideasCount) * 1000) / 10 : 0,
+      },
+      daily: Object.values(daily).sort((a, b) => a.date.localeCompare(b.date)),
+    }),
+  }
+}
+
 exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -41,6 +102,7 @@ exports.handler = async (event) => {
 
   const params = new URLSearchParams(event.queryStringParameters || {})
   const range = params.get('range') || '7d'
+  const view = params.get('view') || 'overview'
 
   try {
     const now = new Date()
@@ -49,6 +111,10 @@ exports.handler = async (event) => {
     else if (range === '7d') startDate = new Date(now - 7 * 24 * 60 * 60 * 1000)
     else if (range === '30d') startDate = new Date(now - 30 * 24 * 60 * 60 * 1000)
     else startDate = new Date(now - 7 * 24 * 60 * 60 * 1000)
+
+    if (view === 'funnel') {
+      return await queryFunnel(startDate, headers)
+    }
 
     // Total events
     const { count: totalEvents } = await supabase

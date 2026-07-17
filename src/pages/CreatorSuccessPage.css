@@ -1,0 +1,294 @@
+.csp-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.csp-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.csp-back {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.csp-back:hover { background: var(--bg-hover); }
+
+.csp-header-text { flex: 1; }
+.csp-header-text h1 { font-size: 1.4rem; margin: 0; }
+.csp-header-text p { margin: 0.25rem 0 0; color: var(--text-muted); font-size: 0.85rem; }
+
+.csp-refresh {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.csp-refresh:hover { background: var(--bg-hover); }
+
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.spinning { animation: spin 1s linear infinite; }
+
+.csp-range-selector {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.csp-range-btn {
+  padding: 0.4rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.csp-range-btn.active {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+}
+
+.csp-error {
+  background: #fef2f2;
+  color: #991b1b;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+}
+
+.csp-loading {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-muted);
+}
+
+.csp-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--text);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+/* Hero */
+.csp-hero {
+  text-align: center;
+  padding: 2rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.csp-hero-value {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.csp-hero-label {
+  font-size: 1rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}
+
+.csp-hero-sub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* Funnel */
+.csp-funnel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.csp-funnel h2 {
+  font-size: 1.1rem;
+  margin: 0 0 1.25rem;
+}
+
+.csp-funnel-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.csp-funnel-step {}
+
+.csp-funnel-step-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.csp-funnel-step-icon { display: flex; }
+
+.csp-funnel-step-label {
+  flex: 1;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.csp-funnel-step-count {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.csp-funnel-bar-bg {
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.csp-funnel-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.csp-funnel-dropoff {
+  font-size: 0.7rem;
+  color: #ef4444;
+  margin-top: 0.2rem;
+}
+
+/* Stats Grid */
+.csp-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.csp-stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.csp-stat-card svg {
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.csp-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.csp-stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+/* Trend Chart */
+.csp-trend {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.csp-trend h2 {
+  font-size: 1.1rem;
+  margin: 0 0 1rem;
+}
+
+.csp-trend-chart {
+  display: flex;
+  gap: 4px;
+  height: 120px;
+  align-items: flex-end;
+}
+
+.csp-trend-day {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.csp-trend-bars {
+  display: flex;
+  gap: 2px;
+  align-items: flex-end;
+  height: 100px;
+  width: 100%;
+  justify-content: center;
+}
+
+.csp-trend-bar {
+  width: 6px;
+  border-radius: 2px;
+  min-height: 2px;
+  transition: height 0.3s ease;
+}
+
+.csp-trend-bar.ideas { background: #f59e0b; }
+.csp-trend-bar.generated { background: #3b82f6; }
+.csp-trend-bar.copied { background: #8b5cf6; }
+
+.csp-trend-date {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.csp-trend-legend {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.csp-legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  margin-right: 4px;
+}
+
+.csp-legend-dot.ideas { background: #f59e0b; }
+.csp-legend-dot.generated { background: #3b82f6; }
+.csp-legend-dot.copied { background: #8b5cf6; }
+
+@media (max-width: 600px) {
+  .csp-hero-value { font-size: 2rem; }
+  .csp-stats-grid { grid-template-columns: repeat(2, 1fr); }
+}

@@ -16,11 +16,11 @@ export default function RegisterPage() {
   }
 
   function translateError(msg) {
-    if (msg.includes('security purposes')) return 'Aus Sicherheitsgründen kannst du dies erst nach einigen Sekunden erneut anfordern. Bitte warte kurz.'
-    if (msg.includes('already registered')) return 'Diese E-Mail-Adresse ist bereits registriert.'
-    if (msg.includes('valid email')) return 'Bitte gib eine gültige E-Mail-Adresse ein.'
-    if (msg.includes('Password')) return 'Passwort muss mindestens 6 Zeichen lang sein.'
-    if (msg.includes('rate limit')) return 'Zu viele Versuche. Bitte warte einen Moment.'
+    if (msg.includes('security purposes')) return t('auth.errorSecurity')
+    if (msg.includes('already registered')) return t('auth.errorAlreadyRegistered')
+    if (msg.includes('valid email')) return t('auth.errorValidEmail')
+    if (msg.includes('Password')) return t('auth.errorPasswordLength')
+    if (msg.includes('rate limit')) return t('auth.errorRateLimit')
     return msg
   }
 
@@ -29,7 +29,7 @@ export default function RegisterPage() {
     setError('')
 
     if (formData.password.length < 6) {
-      setError('Passwort muss mindestens 6 Zeichen lang sein.')
+      setError(t('auth.errorPasswordLength'))
       return
     }
 
@@ -63,15 +63,15 @@ export default function RegisterPage() {
         {success ? (
           <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
-            <h1 style={{ fontSize: '1.3rem', marginBottom: '0.75rem' }}>Registrierung erfolgreich!</h1>
+            <h1 style={{ fontSize: '1.3rem', marginBottom: '0.75rem' }}>{t('auth.registerSuccess')}</h1>
             <p style={{ color: 'var(--text-muted, #6b7280)', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
-              Bitte bestätige deine E-Mail-Adresse. Schau in dein Postfach und klicke auf den Bestätigungslink.
+              {t('auth.registerConfirm')}
             </p>
             <p style={{ color: 'var(--text-muted, #6b7280)', fontSize: '0.8rem', marginBottom: '1.5rem' }}>
-              Danach kannst du dich einloggen.
+              {t('auth.registerAfterConfirm')}
             </p>
             <Link to="/login" className="btn btn-primary" style={{ width: '100%' }}>
-              {t('auth.loginHere') || 'Zum Login'}
+              {t('auth.goToLogin')}
             </Link>
           </div>
         ) : (

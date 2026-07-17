@@ -12,10 +12,10 @@ export default function LoginPage() {
   const { t } = useLanguage()
 
   function translateError(msg) {
-    if (msg.includes('security purposes')) return 'Aus Sicherheitsgründen kannst du dies erst nach einigen Sekunden erneut anfordern.'
-    if (msg.includes('Invalid login')) return 'Ungültige Anmeldedaten. Bitte überprüfe E-Mail und Passwort.'
-    if (msg.includes('Email not confirmed')) return 'E-Mail noch nicht bestätigt. Bitte überprüfe dein Postfach.'
-    if (msg.includes('rate limit')) return 'Zu viele Versuche. Bitte warte einen Moment.'
+    if (msg.includes('security purposes')) return t('auth.errorSecurity')
+    if (msg.includes('Invalid login')) return t('auth.errorInvalidLogin')
+    if (msg.includes('Email not confirmed')) return t('auth.errorEmailNotConfirmed')
+    if (msg.includes('rate limit')) return t('auth.errorRateLimit')
     return msg
   }
 

@@ -11,7 +11,7 @@ import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.js
 import AuthContext, { useAuth } from './context/AuthContext'
 import Logo, { renderBrandText } from './components/Logo'
 import { useOneSignal } from './hooks/useOneSignal'
-import { trackPageView } from './intelligence/analytics/custom'
+import { trackPageView, checkAndTrackReturnVisit, getVisitorId } from './intelligence/analytics/custom'
 import InstallButton from './components/InstallButton'
 import Feed from './components/Feed'
 import DashboardPage from './pages/DashboardPage'
@@ -43,6 +43,7 @@ const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 const TodayQuestionPage = lazy(() => import('./pages/TodayQuestionPage'))
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'))
 const LeadRadarPage = lazy(() => import('./pages/LeadRadarPage'))
+const CreatorSuccessPage = lazy(() => import('./pages/CreatorSuccessPage'))
 
 function Sidebar({ mobileOpen, setMobileOpen }) {
   const { user, profile, signOut } = useAuth()
@@ -270,6 +271,8 @@ export default function App() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   useEffect(() => {
+    checkAndTrackReturnVisit()
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session?.user) {
@@ -316,6 +319,14 @@ export default function App() {
     try {
       const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
       setProfile(data)
+
+      const visitorId = getVisitorId()
+      supabase.rpc('claim_anonymous_events', {
+        p_user_id: userId,
+        p_visitor_id: visitorId
+      }).then(({ error }) => {
+        if (error) console.warn('[Analytics] Claim error:', error.message)
+      })
     } catch (e) {
       console.warn('[Profile] Fetch error:', e.message)
     } finally {
@@ -382,6 +393,7 @@ export default function App() {
                 <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
                 <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+                <Route path="/admin/creator-success" element={<ProtectedRoute><CreatorSuccessPage /></ProtectedRoute>} />
                 <Route path="/photo-editor" element={<ProtectedRoute><PhotoEditorPage /></ProtectedRoute>} />
                 <Route path="/fotostory" element={<ErrorBoundary><ProtectedRoute><FotostoryPage /></ProtectedRoute></ErrorBoundary>} />
                 <Route path="/ai-chat" element={<ProtectedRoute><AIChatPage /></ProtectedRoute>} />

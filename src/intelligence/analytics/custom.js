@@ -93,3 +93,38 @@ export function trackCopyAction(platform) {
 export function trackChatMessage() {
   trackEvent('chat_message')
 }
+
+export function trackExportToTool(toolName, goal) {
+  trackEvent('export_to_tool', { tool: toolName, goal })
+}
+
+export function trackPublishConfirmed(goal, platform) {
+  trackEvent('publish_confirmed', { goal, platform })
+}
+
+export function trackReturnVisit() {
+  trackEvent('return_visit')
+}
+
+export function checkAndTrackReturnVisit() {
+  const firstSession = localStorage.getItem('happiness-first-session')
+  if (!firstSession) return
+
+  const firstTime = parseInt(firstSession, 10)
+  const now = Date.now()
+  const hoursSinceFirst = (now - firstTime) / (1000 * 60 * 60)
+
+  if (hoursSinceFirst > 24) {
+    const alreadyTracked = localStorage.getItem('happiness-return-tracked')
+    if (!alreadyTracked) {
+      trackReturnVisit()
+      localStorage.setItem('happiness-return-tracked', 'true')
+    }
+  }
+}
+
+export function markFirstSession() {
+  if (!localStorage.getItem('happiness-first-session')) {
+    localStorage.setItem('happiness-first-session', Date.now().toString())
+  }
+}

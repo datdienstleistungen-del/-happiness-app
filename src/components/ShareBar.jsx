@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link2, Download, Check } from 'lucide-react'
+import { trackCopyAction } from '../intelligence/analytics/custom'
 import './ShareBar.css'
 
 function stripMarkdown(text) {
@@ -26,7 +27,7 @@ function truncateForX(text, maxLen = 250) {
   return text.substring(0, maxLen - 3).trim() + '...'
 }
 
-export default function ShareBar({ text, title, downloadBlob, downloadFilename }) {
+export default function ShareBar({ text, title, downloadBlob, downloadFilename, platform }) {
   const [copied, setCopied] = useState(false)
   const [instaMsg, setInstaMsg] = useState(false)
   const [linkedinMsg, setLinkedinMsg] = useState(false)
@@ -42,6 +43,7 @@ export default function ShareBar({ text, title, downloadBlob, downloadFilename }
     try {
       await navigator.clipboard.writeText(cleanText || window.location.href)
       setCopied(true)
+      trackCopyAction(platform || 'content')
       setTimeout(() => setCopied(false), 2000)
     } catch {
       const ta = document.createElement('textarea')
@@ -51,6 +53,7 @@ export default function ShareBar({ text, title, downloadBlob, downloadFilename }
       document.execCommand('copy')
       document.body.removeChild(ta)
       setCopied(true)
+      trackCopyAction(platform || 'content')
       setTimeout(() => setCopied(false), 2000)
     }
   }

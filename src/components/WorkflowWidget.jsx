@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { trackWidgetOpened } from '../intelligence/analytics'
+import { trackCopyAction } from '../intelligence/analytics/custom'
 import './WorkflowWidget.css'
 
 const PHASES = [
@@ -244,6 +245,7 @@ export default function WorkflowWidget({ workflow, onClose }) {
                       return `--- ${meta.label} ---\n${text}`
                     }).join('\n\n')
                     navigator.clipboard.writeText(allText)
+                    trackCopyAction('multiplatform')
                   }}
                 >
                   Alles kopieren
@@ -267,7 +269,10 @@ export default function WorkflowWidget({ workflow, onClose }) {
                     className="wf-step-action"
                     onClick={() => {
                       const text = art.content?.content || art.content?.recipe?.voiceover_script || ''
-                      if (text) navigator.clipboard.writeText(text)
+                      if (text) {
+                        navigator.clipboard.writeText(text)
+                        trackCopyAction(art.artifact_type || 'unknown')
+                      }
                     }}
                   >
                     Kopieren

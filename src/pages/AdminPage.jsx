@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations.jsx'
@@ -8,6 +9,7 @@ import './AdminPage.css'
 export default function AdminPage() {
   const { profile } = useAuth()
   const { t } = useLanguage()
+  const navigate = useNavigate()
   const [tab, setTab] = useState('dashboard')
   const [loading, setLoading] = useState(true)
 
@@ -97,12 +99,19 @@ export default function AdminPage() {
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'users', label: `Nutzer (${users.length})` },
     { id: 'activity', label: 'Aktivität' },
+    { id: 'creator-success', label: 'Creator Success' },
     { id: 'moderation', label: 'Moderation' },
     { id: 'payments', label: 'Zahlungen' },
     { id: 'ai', label: 'KI Chat' },
     { id: 'knowledge', label: `Wissen (${knowledge.length})` },
     { id: 'notifications', label: 'Push' },
   ]
+
+  useEffect(() => {
+    if (tab === 'creator-success') {
+      navigate('/admin/creator-success')
+    }
+  }, [tab])
 
   return (
     <div className="admin-page">

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import CopyButton from '../components/CopyButton'
 import { trackRecipeGenerated, trackPlatformViewed, trackCapCutTriggered } from '../intelligence/analytics'
+import { trackExportToTool, trackPublishConfirmed } from '../intelligence/analytics/custom'
 import './CapCutStudio.css'
 
 const isDE = navigator.language.startsWith('de')
@@ -209,6 +210,7 @@ export default function TikTokVideoPage() {
   const [activePlatform, setActivePlatform] = useState('tiktok_instagram')
   const [showSuccess, setShowSuccess] = useState(false)
   const [showExample, setShowExample] = useState(false)
+  const [published, setPublished] = useState(false)
 
   const [videoUsed, setVideoUsed] = useState(0)
   const [contentUsed, setContentUsed] = useState(0)
@@ -219,7 +221,7 @@ export default function TikTokVideoPage() {
   const CONTENT_LIMIT = 5
   const videosLeft = Math.max(0, VIDEO_LIMIT - videoUsed)
   const postsLeft = Math.max(0, CONTENT_LIMIT - contentUsed)
-  const hasQuota = isPremium || videosLeft > 0
+  const hasQuota = true // Early Traction: limits removed
 
   useEffect(() => {
     loadQuota()
@@ -310,7 +312,6 @@ export default function TikTokVideoPage() {
       setRecipe(data)
       setShowSuccess(true)
       trackRecipeGenerated(data.video_title, duration)
-      incrementQuota()
     } catch (err) {
       console.error('[CapCut] Recipe error:', err)
       const msg = err.message || ''
@@ -480,38 +481,13 @@ export default function TikTokVideoPage() {
             </div>
           </div>
 
-          {quotaLoaded && !isPremium && (
-            <div className="ccp-quota-bar">
-              <span className="ccp-quota-text">
-                {t.quotaText({ videosLeft, postsLeft })}
-              </span>
-            </div>
-          )}
-
-          {quotaLoaded && !hasQuota ? (
-            <div className="ccp-paywall">
-              <div className="ccp-paywall-card">
-                <h3>{t.paywallTitle}</h3>
-                <div className="ccp-paywall-price">{t.paywallPrice}</div>
-                <ul className="ccp-paywall-features">
-                  <li>{t.paywallFeature1}</li>
-                  <li>{t.paywallFeature2}</li>
-                  <li>{t.paywallFeature3}</li>
-                </ul>
-                <a href="https://buy.stripe.com/test_placeholder" target="_blank" rel="noopener noreferrer" className="ccp-paywall-btn">
-                  {t.paywallBtn}
-                </a>
-              </div>
-            </div>
-          ) : (
-            <button
-              className="ccp-generate-btn"
-              onClick={generateRecipe}
-              disabled={!topic.trim() || topic.trim().length < 3 || loading || !hasQuota}
-            >
-              <Sparkles size={18} /> {t.generateBtn}
-            </button>
-          )}
+          <button
+            className="ccp-generate-btn"
+            onClick={generateRecipe}
+            disabled={!topic.trim() || topic.trim().length < 3 || loading}
+          >
+            <Sparkles size={18} /> {t.generateBtn}
+          </button>
 
           {!showExample && !recipe && (
             <div className="ccp-example-teaser">
@@ -710,7 +686,10 @@ export default function TikTokVideoPage() {
               target={isMobile ? undefined : '_blank'}
               rel={isMobile ? undefined : 'noopener noreferrer'}
               className="ccp-action-primary"
-              onClick={() => trackCapCutTriggered()}
+              onClick={() => {
+                trackCapCutTriggered()
+                trackExportToTool('capcut', topic)
+              }}
             >
               <Video size={20} />
               <div>
@@ -723,14 +702,33 @@ export default function TikTokVideoPage() {
             <div className="ccp-free-guard">{t.freeTip}</div>
 
             <div className="ccp-capcut-links-secondary">
-              <a href="capcut://" className="ccp-capcut-btn-sm mobile">
+              <a href="capcut://" className="ccp-capcut-btn-sm mobile" onClick={() => trackExportToTool('capcut', topic)}>
                 <Smartphone size={16} /> {t.capcutMobile}
               </a>
-              <a href="https://capcut.com" target="_blank" rel="noopener noreferrer" className="ccp-capcut-btn-sm desktop">
+              <a href="https://capcut.com" target="_blank" rel="noopener noreferrer" className="ccp-capcut-btn-sm desktop" onClick={() => trackExportToTool('capcut', topic)}>
                 <Monitor size={16} /> {t.capcutDesktop}
               </a>
             </div>
             <p className="ccp-capcut-hint">{t.capcutHint}</p>
+
+            <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+              {!published ? (
+                <button
+                  className="btn btn-outline"
+                  onClick={() => {
+                    trackPublishConfirmed(topic, 'tiktok')
+                    setPublished(true)
+                  }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#16a34a', borderColor: '#16a34a' }}
+                >
+                  <Check size={14} /> {isDE ? 'Veröffentlicht markieren' : 'Mark as published'}
+                </button>
+              ) : (
+                <span style={{ color: '#16a34a', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <Check size={14} /> {isDE ? 'Als veröffentlicht markiert' : 'Marked as published'}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="ccp-section">

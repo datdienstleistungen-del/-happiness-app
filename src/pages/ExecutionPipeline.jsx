@@ -207,6 +207,7 @@ export default function ExecutionPipeline() {
   const [apiResult, setApiResult] = useState(null)
   const [apiDone, setApiDone] = useState(false)
   const [clarifyText, setClarifyText] = useState('')
+  const [clarifyAnswer, setClarifyAnswer] = useState('')
   const [error, setError] = useState('')
   const [debugData, setDebugData] = useState(null)
   const [showResult, setShowResult] = useState(false)
@@ -365,6 +366,12 @@ export default function ExecutionPipeline() {
   }
 
   if (phase === 'clarify') {
+    const handleClarifySubmit = () => {
+      if (!clarifyAnswer.trim()) return
+      const newGoal = `${goal} — ${clarifyAnswer.trim()}`
+      navigate('/execute', { state: { goal: newGoal } })
+    }
+
     return (
       <div className="ep-page">
         <div className="ep-card">
@@ -376,10 +383,27 @@ export default function ExecutionPipeline() {
           <div className="ep-clarify">
             <div className="ep-clarify-icon"><MessageCircle size={28} /></div>
             <p className="ep-clarify-text">{clarifyText}</p>
-            <div className="ep-clarify-actions">
-              <button className="ep-btn primary" onClick={() => navigate('/ai-chat', { state: { message: goal } })}>
-                <Sparkles size={16} /> Im Chat besprechen
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px', width: '100%', maxWidth: '400px' }}>
+              <input
+                type="text"
+                className="ep-clarify-input"
+                value={clarifyAnswer}
+                onChange={(e) => setClarifyAnswer(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleClarifySubmit()}
+                placeholder="Deine Antwort..."
+                autoFocus
+                style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '14px' }}
+              />
+              <button
+                className="ep-btn primary"
+                onClick={handleClarifySubmit}
+                disabled={!clarifyAnswer.trim()}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                <ArrowRight size={16} />
               </button>
+            </div>
+            <div className="ep-clarify-actions" style={{ marginTop: '12px' }}>
               <button className="ep-btn secondary" onClick={() => navigate('/')}>Zurück</button>
             </div>
           </div>
@@ -418,7 +442,12 @@ export default function ExecutionPipeline() {
           </div>
           <div className="ep-error" style={{ padding: '24px', textAlign: 'center' }}>
             <p style={{ color: '#991b1b', marginBottom: '16px' }}>{error}</p>
-            <button className="ep-btn primary" onClick={() => navigate('/')}>Zurueck zur Startseite</button>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+              <button className="ep-btn primary" onClick={() => { setError(''); setPhase('analyzing'); window.location.reload(); }}>
+                <Sparkles size={16} /> Erneut versuchen
+              </button>
+              <button className="ep-btn secondary" onClick={() => navigate('/')}>Zurueck zur Startseite</button>
+            </div>
           </div>
         </div>
       </div>

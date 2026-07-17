@@ -74,10 +74,7 @@ export default function CreatorAcademyPage() {
 
   const getFeedback = async () => {
     if (!draft.trim() || isLoading) return
-    if (!isPremium && freeContentUsed >= FREE_LIMIT) {
-      setShowPaywall(true)
-      return
-    }
+    // Early Traction: limits removed
     setIsLoading(true)
     setFeedback(null)
     setError('')
@@ -133,7 +130,6 @@ Antworte immer auf Deutsch. Antworte in klarem Fliesstext, wie ein professionell
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}))
         if (response.status === 402) {
-          setShowPaywall(true)
           setIsLoading(false)
           return
         }
@@ -228,11 +224,7 @@ Antworte immer auf Deutsch. Antworte in klarem Fliesstext, wie ein professionell
         </div>
 
         <div className="ca-usage-bar">
-          {isPremium ? (
-            <span className="ca-usage-premium"><Check size={14} /> Premium — unbegrenzt Feedback</span>
-          ) : (
-            <span className="ca-usage-count">Noch {remaining} von {FREE_LIMIT} kostenlosen Feedbacks</span>
-          )}
+          <span className="ca-usage-premium"><Check size={14} /> Kostenlos — unbegrenzt Feedback</span>
         </div>
 
         <div className="ca-main">
@@ -306,32 +298,7 @@ Antworte immer auf Deutsch. Antworte in klarem Fliesstext, wie ein professionell
             )}
           </div>
 
-          {showPaywall && (
-            <div className="ca-paywall">
-              <div className="ca-paywall-card">
-                <div className="ca-paywall-icon"><Brain size={32} /></div>
-                <h2>Kostenloses Kontingent aufgebraucht</h2>
-                <p>Du hast alle {FREE_LIMIT} kostenlosen Feedbacks genutzt.</p>
-                <p className="ca-paywall-sub">Schalte Premium frei für unbegrenztes Feedback:</p>
-                <div className="ca-paywall-price">
-                  <span className="ca-price-amount">4,99 €</span>
-                  <span className="ca-price-period">/ Monat</span>
-                </div>
-                <button className="ca-paywall-btn stripe-btn" onClick={handleCheckout}>
-                  <CreditCard size={16} /> Jetzt upgraden
-                </button>
-                <button className="btn btn-outline" style={{ width: '100%', marginTop: '0.5rem' }} onClick={() => setShowPaywall(false)}>
-                  Später
-                </button>
-                <div className="ca-paywall-benefits">
-                  <p><Check size={14} /> Unbegrenzt KI-Content-Feedback</p>
-                  <p><Check size={14} /> Unbegrenzt TikTok-Videos erstellen</p>
-                  <p><Check size={14} /> Unbegrenzt AI Chat Fragen</p>
-                </div>
-                <p className="ca-paywall-note">Promotionspreis — ab 6,99 €/Monat nach einem Monat.</p>
-              </div>
-            </div>
-          )}
+          {/* Paywall hidden for Early Traction */}
 
           {feedback && !showPaywall && (
             <div className="ca-feedback-section">

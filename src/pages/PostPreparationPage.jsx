@@ -4,6 +4,7 @@ import { ArrowLeft, Copy, Check, Sparkles, Share2, MessageCircle, Rocket, PenToo
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { getChatEndpoint } from '../lib/hit'
+import { trackCopyAction, trackPublishConfirmed } from '../intelligence/analytics/custom'
 import './PostPreparationPage.css'
 
 const TONES = [
@@ -47,12 +48,14 @@ export default function PostPreparationPage() {
 
   const draft = location.state?.draft || ''
   const fromPage = location.state?.from || 'dashboard'
+  const platform = location.state?.platform || 'content'
 
   const [activeTone, setActiveTone] = useState('business')
   const [rewrittenPost, setRewrittenPost] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [posted, setPosted] = useState(false)
+  const [published, setPublished] = useState(false)
 
   const goBack = () => {
     if (fromPage === 'pipeline') navigate('/')
@@ -72,6 +75,11 @@ export default function PostPreparationPage() {
     } catch (err) {
       console.error('Post failed:', err)
     }
+  }
+
+  const handlePublishConfirm = () => {
+    trackPublishConfirmed(draft || rewrittenPost, platform)
+    setPublished(true)
   }
 
   const generateRewrite = async (toneId) => {
@@ -185,6 +193,14 @@ export default function PostPreparationPage() {
                 </button>
               ))}
             </div>
+            <button
+              className="btn btn-outline"
+              onClick={() => setRewrittenPost(draft)}
+              disabled={loading}
+              style={{ marginTop: '8px', width: '100%' }}
+            >
+              Direkt verwenden — ohne Stiländerung
+            </button>
           </div>
 
           {loading && (
@@ -202,7 +218,7 @@ export default function PostPreparationPage() {
               </div>
               <div className="post-prep-result-text">{rewrittenPost}</div>
               <div className="post-prep-result-actions">
-                <CopyBtn text={rewrittenPost} />
+                <CopyBtn text={rewrittenPost} platform={platform} />
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
                 {!posted ? (
@@ -245,6 +261,19 @@ export default function PostPreparationPage() {
                     <Share2 size={14} /> Teilen
                   </button>
                 )}
+                {!published ? (
+                  <button
+                    className="btn btn-outline"
+                    onClick={handlePublishConfirm}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#16a34a', borderColor: '#16a34a' }}
+                  >
+                    <Check size={14} /> Veröffentlicht markieren
+                  </button>
+                ) : (
+                  <span style={{ color: '#16a34a', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <Check size={14} /> Als veröffentlicht markiert
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -258,13 +287,14 @@ export default function PostPreparationPage() {
   )
 }
 
-function CopyBtn({ text }) {
+function CopyBtn({ text, platform }) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
+      trackCopyAction(platform || 'content')
       setTimeout(() => setCopied(false), 2000)
     } catch {
       const textarea = document.createElement('textarea')
@@ -274,6 +304,7 @@ function CopyBtn({ text }) {
       document.execCommand('copy')
       document.body.removeChild(textarea)
       setCopied(true)
+      trackCopyAction(platform || 'content')
       setTimeout(() => setCopied(false), 2000)
     }
   }
