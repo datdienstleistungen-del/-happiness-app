@@ -47,37 +47,43 @@ JSON-Schema:
  * @returns {Promise<object>} Analyse-Ergebnis
  */
 export async function analyzeGoal(goal, chatEndpoint, token = '') {
-  const headers = { 'Content-Type': 'application/json' }
-  if (token) headers['Authorization'] = `Bearer ${token}`
-
-  const response = await fetch(chatEndpoint, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      message: `Ziel des Nutzers: "${goal}"\n\nErstelle eine vollständige Content-Strategie.`,
-      systemPrompt: ANALYSIS_PROMPT,
-      history: []
-    })
-  })
-
-  if (!response.ok) {
-    throw new Error(`Analyse fehlgeschlagen: ${response.status}`)
-  }
-
-  const data = await response.json()
-  const raw = data.response || ''
-
   try {
-    const jsonMatch = raw.match(/\{[\s\S]*\}/)
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0])
-      return normalizeAnalysis(parsed, goal)
-    }
-  } catch (e) {
-    console.warn('[GoalAnalyzer] JSON parse failed, using fallback')
-  }
+    const headers = { 'Content-Type': 'application/json' }
+    if (token) headers['Authorization'] = `Bearer ${token}`
 
-  return fallbackAnalysis(goal)
+    const response = await fetch(chatEndpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        message: `Ziel des Nutzers: "${goal}"\n\nErstelle eine vollständige Content-Strategie.`,
+        systemPrompt: ANALYSIS_PROMPT,
+        history: []
+      })
+    })
+
+    if (!response.ok) {
+      console.warn(`[GoalAnalyzer] API returned ${response.status}, using fallback`)
+      return fallbackAnalysis(goal)
+    }
+
+    const data = await response.json()
+    const raw = data.response || ''
+
+    try {
+      const jsonMatch = raw.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0])
+        return normalizeAnalysis(parsed, goal)
+      }
+    } catch (e) {
+      console.warn('[GoalAnalyzer] JSON parse failed, using fallback')
+    }
+
+    return fallbackAnalysis(goal)
+  } catch (err) {
+    console.warn('[GoalAnalyzer] API call failed, using fallback:', err.message)
+    return fallbackAnalysis(goal)
+  }
 }
 
 /**
