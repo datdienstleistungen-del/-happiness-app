@@ -433,7 +433,7 @@ export default function PlatformEngine() {
             </div>
 
             <div className="pe-next-grid">
-              <button className="pe-next-card" onClick={() => saveStateAndNavigate('/content-studio')}>
+              <button className="pe-next-card" onClick={() => saveStateAndNavigate('/capcut-studio')}>
                 <div className="pe-next-card-icon"><Film size={24} /></div>
                 <div className="pe-next-card-label">{t('platformEngine.nextCapCut')}</div>
                 <div className="pe-next-card-desc">{t('platformEngine.nextCapCutDesc')}</div>
