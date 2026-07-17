@@ -20,17 +20,21 @@ export default function OnboardingGuard({ children }) {
         return
       }
 
-      const { data } = await supabase
-        .from('profiles')
-        .select('onboarding_completed')
-        .eq('id', user.id)
-        .single()
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('onboarding_completed')
+          .eq('id', user.id)
+          .single()
 
-      if (data?.onboarding_completed) {
-        localStorage.setItem('happiness-onboarding-done', 'true')
+        if (data?.onboarding_completed) {
+          localStorage.setItem('happiness-onboarding-done', 'true')
+          setStatus('done')
+        } else {
+          setStatus('redirect')
+        }
+      } catch {
         setStatus('done')
-      } else {
-        setStatus('redirect')
       }
     }
 

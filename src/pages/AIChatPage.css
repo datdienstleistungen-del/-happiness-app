@@ -337,7 +337,30 @@
 .ai-welcome p {
   color: #6b7280;
   font-size: 1.1rem;
-  margin: 0 0 32px;
+  margin: 0 0 16px;
+}
+
+/* ── How it works banner ── */
+.ai-how-it-works {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  background: rgba(8,80,65,0.04);
+  border: 1px solid rgba(8,80,65,0.1);
+  border-radius: 10px;
+  margin: 0 auto 24px;
+  max-width: 420px;
+  font-size: 0.78rem;
+  color: #6b7280;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.ai-how-it-works svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #1d9e75;
 }
 
 .suggestion-chips {

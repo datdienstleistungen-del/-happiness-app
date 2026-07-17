@@ -7,7 +7,20 @@ import './index.css'
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {})
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      const hadController = !!navigator.serviceWorker.controller
+      let refreshed = false
+
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing
+        newWorker?.addEventListener('statechange', () => {
+          if (newWorker.state === 'activated' && hadController && !refreshed) {
+            refreshed = true
+            window.location.reload()
+          }
+        })
+      })
+    }).catch(() => {})
   })
 }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense, Component } from 'react'
 import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom'
 import {
-  Home, Sparkles, MessageCircle, Users, ShoppingCart, Briefcase,
+  Sparkles, MessageCircle, Users, ShoppingCart, Briefcase,
   BookOpen, Building2, Clapperboard, Camera, Film, Bell, Settings,
   User, ChevronLeft, ChevronRight, Rocket, Hash, Menu, BarChart3, Trophy, Radar,
   Target, FolderOpen, Globe, LayoutDashboard
@@ -11,6 +11,7 @@ import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.js
 import AuthContext, { useAuth } from './context/AuthContext'
 import Logo, { renderBrandText } from './components/Logo'
 import { useOneSignal } from './hooks/useOneSignal'
+import { trackPageView } from './intelligence/analytics/custom'
 import InstallButton from './components/InstallButton'
 import Feed from './components/Feed'
 import DashboardPage from './pages/DashboardPage'
@@ -31,7 +32,6 @@ const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
 const HistoryPage = lazy(() => import('./pages/HistoryPage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 const LegalPage = lazy(() => import('./pages/LegalPage'))
-const VideoMakerPage = lazy(() => import('./pages/VideoMakerPage'))
 const PhotoEditorPage = lazy(() => import('./pages/PhotoEditorPage'))
 const FotostoryPage = lazy(() => import('./pages/FotostoryPage'))
 const AIChatPage = lazy(() => import('./pages/AIChatPage'))
@@ -41,7 +41,6 @@ const CreatorAcademyPage = lazy(() => import('./pages/CreatorAcademyPage'))
 const PostPreparationPage = lazy(() => import('./pages/PostPreparationPage'))
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 const TodayQuestionPage = lazy(() => import('./pages/TodayQuestionPage'))
-const CreatorWelcomePage = lazy(() => import('./pages/CreatorWelcomePage'))
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'))
 const LeadRadarPage = lazy(() => import('./pages/LeadRadarPage'))
 
@@ -92,7 +91,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
 
   const studioLinks = [
     { to: '/creator-academy', icon: Rocket, label: 'Content Studio' },
-    { to: '/tiktok-video', icon: Film, label: 'Video Studio' },
+    { to: '/capcut-studio', icon: Film, label: 'CapCut Studio' },
     { to: '/ai-chat', icon: Sparkles, label: 'AI Chat' },
     { to: '/analytics', icon: BarChart3, label: 'Analytics' },
   ]
@@ -267,7 +266,7 @@ export default function App() {
   const location = useLocation()
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   useEffect(() => {
@@ -275,7 +274,11 @@ export default function App() {
       setUser(session?.user ?? null)
       if (session?.user) {
         fetchProfile(session.user.id)
+      } else {
+        setLoading(false)
       }
+    }).catch(() => {
+      setLoading(false)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -284,6 +287,7 @@ export default function App() {
         fetchProfile(session.user.id)
       } else {
         setProfile(null)
+        setLoading(false)
       }
     })
 
@@ -295,6 +299,8 @@ export default function App() {
     if (user) {
       supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', user.id).then()
     }
+    // Custom analytics tracking
+    trackPageView(location.pathname)
     // Log page view (skip admin)
     if (user && profile && profile.role !== 'admin') {
       supabase.from('page_views').insert({
@@ -307,9 +313,14 @@ export default function App() {
   }, [location.pathname])
 
   async function fetchProfile(userId) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
-    setProfile(data)
-    setLoading(false)
+    try {
+      const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
+      setProfile(data)
+    } catch (e) {
+      console.warn('[Profile] Fetch error:', e.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function signOut() {
@@ -327,7 +338,7 @@ export default function App() {
           <LoadingScreen />
         ) : (
           <>
-            {user && !['/onboarding', '/today-question', '/creator-welcome'].includes(location.pathname) && <Sidebar mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />}
+            {user && !['/onboarding', '/today-question'].includes(location.pathname) && <Sidebar mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />}
             {!user && location.pathname !== '/login' && location.pathname !== '/register' && (
               <nav className="public-topbar">
                 <Link to="/" className="public-topbar-brand">
@@ -347,12 +358,13 @@ export default function App() {
                 </div>
               </nav>
             )}
-            <main className={user && !['/onboarding', '/today-question', '/creator-welcome'].includes(location.pathname) ? 'main-content with-sidebar' : 'main-content full'}>
+              <main className={user && !['/onboarding', '/today-question'].includes(location.pathname) ? 'main-content with-sidebar' : 'main-content full'}>
               {user && (
                 <button className="mobile-menu-btn" onClick={() => setMobileSidebarOpen(true)}>
                   <Menu size={22} />
                 </button>
               )}
+              <ErrorBoundary>
               <Suspense fallback={<div className="loading">Laden...</div>}>
               <Routes>
                 <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
@@ -360,7 +372,6 @@ export default function App() {
                 <Route path="/" element={user ? <OnboardingGuard><DashboardPage /></OnboardingGuard> : <LandingPage />} />
                 <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
                 <Route path="/today-question" element={<ProtectedRoute><TodayQuestionPage /></ProtectedRoute>} />
-                <Route path="/creator-welcome" element={<ProtectedRoute><CreatorWelcomePage /></ProtectedRoute>} />
                 <Route path="/community" element={<CommunityPage />} />
                 <Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
                 <Route path="/marketplace" element={<MarketplacePage />} />
@@ -371,14 +382,13 @@ export default function App() {
                 <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
                 <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
-                <Route path="/video-maker" element={<ProtectedRoute><VideoMakerPage /></ProtectedRoute>} />
                 <Route path="/photo-editor" element={<ProtectedRoute><PhotoEditorPage /></ProtectedRoute>} />
                 <Route path="/fotostory" element={<ErrorBoundary><ProtectedRoute><FotostoryPage /></ProtectedRoute></ErrorBoundary>} />
                 <Route path="/ai-chat" element={<ProtectedRoute><AIChatPage /></ProtectedRoute>} />
                 <Route path="/execute" element={<ProtectedRoute><ExecutionPipeline /></ProtectedRoute>} />
                 <Route path="/creator-academy" element={<ProtectedRoute><CreatorAcademyPage /></ProtectedRoute>} />
                 <Route path="/post-preparation" element={<ProtectedRoute><PostPreparationPage /></ProtectedRoute>} />
-                <Route path="/tiktok-video" element={<ProtectedRoute><TikTokVideoPage /></ProtectedRoute>} />
+                <Route path="/capcut-studio" element={<ProtectedRoute><TikTokVideoPage /></ProtectedRoute>} />
                 <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
                 <Route path="/admin/lead-radar" element={<ProtectedRoute><LeadRadarPage /></ProtectedRoute>} />
                 <Route path="/legal" element={<LegalPage />} />
@@ -387,8 +397,9 @@ export default function App() {
                 <Route path="/agb" element={<LegalPage />} />
               </Routes>
               </Suspense>
+              </ErrorBoundary>
             </main>
-            {user && !['/onboarding', '/today-question', '/creator-welcome'].includes(location.pathname) && <MobileBar />}
+            {user && !['/onboarding', '/today-question'].includes(location.pathname) && <MobileBar />}
           </>
         )}
       </AuthContext.Provider>
@@ -400,166 +411,4 @@ function LoadingScreen() {
   const { t } = useLanguage()
   return <div className="loading-screen">Wird geladen…</div>
 }
-
-function HomePage() {
-  const { profile } = useAuth()
-  const { t } = useLanguage()
-  const navigate = useNavigate()
-  const [goal, setGoal] = useState('')
-
-  const handleGoalSubmit = (mode) => {
-    if (!goal.trim()) return
-    const params = new URLSearchParams({ goal: goal.trim(), mode })
-    navigate(`/execute?${params.toString()}`)
-  }
-
-  return (
-    <div className="hp">
-
-      {/* ── 3-Column Dashboard ── */}
-      <div className="hp-dashboard">
-
-        {/* ── Left: Value Prop Card ── */}
-        <div className="hp-left">
-          <div className="hp-left-card">
-            <h2 className="hp-left-title">{t('hp.leftTitle')}</h2>
-            <p className="hp-left-sub">{t('hp.leftSub')}</p>
-
-            <div className="hp-left-steps">
-              <div className="hp-left-step">
-                <div className="hp-left-step-icon" style={{ background: 'rgba(8,80,65,0.1)', color: '#085041' }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                </div>
-                <div>
-                  <strong>{t('hp.step1Title')}</strong>
-                  <p>{t('hp.step1Desc')}</p>
-                </div>
-              </div>
-
-              <div className="hp-left-step">
-                <div className="hp-left-step-icon" style={{ background: 'rgba(216,90,48,0.1)', color: '#D85A30' }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </div>
-                <div>
-                  <strong>{t('hp.step2Title')}</strong>
-                  <p>{t('hp.step2Desc')}</p>
-                </div>
-              </div>
-
-              <div className="hp-left-step">
-                <div className="hp-left-step-icon" style={{ background: 'rgba(29,158,117,0.1)', color: '#1D9E75' }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                </div>
-                <div>
-                  <strong>{t('hp.step3Title')}</strong>
-                  <p>{t('hp.step3Desc')}</p>
-                </div>
-              </div>
-
-              <div className="hp-left-step">
-                <div className="hp-left-step-icon" style={{ background: 'rgba(186,117,23,0.1)', color: '#BA7517' }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                </div>
-                <div>
-                  <strong>{t('hp.step4Title')}</strong>
-                  <p>{t('hp.step4Desc')}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="hp-left-footer">
-              <span className="hp-left-footer-icon">💚</span>
-              <div>
-                <strong>{t('hp.footerTitle')}</strong>
-                <p>{t('hp.footerSub')}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Center: Main Content ── */}
-        <div className="hp-center">
-          <h1 className="hp-center-title">{t('hp.centerTitle')} <span className="hp-hit">H.I.T.</span></h1>
-          <p className="hp-center-sub">{t('hp.centerSub')}</p>
-
-          <div className="hp-input-wrap">
-            <input
-              className="hp-input"
-              type="text"
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && goal.trim() && handleGoalSubmit('build')}
-              placeholder={t('hp.placeholder')}
-            />
-          </div>
-
-          <div className="hp-chips">
-            <button className="hp-chip" onClick={() => setGoal(t('hp.chip1'))}>{t('hp.chip1')}</button>
-            <button className="hp-chip" onClick={() => setGoal(t('hp.chip3'))}>{t('hp.chip3')}</button>
-            <button className="hp-chip" onClick={() => setGoal(t('hp.chip9'))}>{t('hp.chip9')}</button>
-            <button className="hp-chip" onClick={() => setGoal(t('hp.chip10'))}>{t('hp.chip10')}</button>
-          </div>
-
-          <div className="hp-actions">
-            <button className="hp-action think" onClick={() => handleGoalSubmit('think')}>
-              <span className="hp-action-icon">🧠</span>
-              <div>
-                <strong>{t('hp.actionThink')}</strong>
-                <span>{t('hp.actionThinkDesc')}</span>
-              </div>
-            </button>
-            <button className="hp-action build" onClick={() => handleGoalSubmit('build')}>
-              <span className="hp-action-icon">🚀</span>
-              <div>
-                <strong>{t('hp.actionBuild')}</strong>
-                <span>{t('hp.actionBuildDesc')}</span>
-              </div>
-            </button>
-            <button className="hp-action surprise" onClick={() => handleGoalSubmit('surprise')}>
-              <span className="hp-action-icon">✨</span>
-              <div>
-                <strong>{t('hp.actionSurprise')}</strong>
-                <span>{t('hp.actionSurpriseDesc')}</span>
-              </div>
-            </button>
-          </div>
-
-          <div className="hp-info-card">
-            <strong>{t('hp.infoTitle')}</strong>
-            <p>{t('hp.infoSub')}</p>
-            <span>{t('hp.infoDesc')}</span>
-          </div>
-        </div>
-
-        {/* ── Right: H.I.T. Branding ── */}
-        <div className="hp-right">
-          <div className="hp-hit-full">
-            <div className="hp-hit-line">
-              <span className="hp-hit-big">H</span>
-              <span className="hp-hit-rest">appiness</span>
-            </div>
-            <div className="hp-hit-line">
-              <span className="hp-hit-big">I</span>
-              <span className="hp-hit-rest">ntelligence</span>
-            </div>
-            <div className="hp-hit-line">
-              <span className="hp-hit-big">T</span>
-              <span className="hp-hit-rest">eam</span>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      {/* ── Community Inspiration ── */}
-      <div className="hp-community">
-        <div className="hp-community-header">
-          <h2>{t('hp.communityTitle')}</h2>
-          <p>{t('hp.communitySub')}</p>
-        </div>
-        <Feed />
-      </div>
-
-    </div>
-  )
-}
+

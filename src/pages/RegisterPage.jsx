@@ -7,6 +7,7 @@ export default function RegisterPage() {
   const [formData, setFormData] = useState({ email: '', password: '', name: '', username: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
   const navigate = useNavigate()
   const { t } = useLanguage()
 
@@ -41,7 +42,8 @@ export default function RegisterPage() {
         data: {
           name: formData.name,
           username: formData.username,
-        }
+        },
+        emailRedirectTo: window.location.origin + '/login',
       }
     })
 
@@ -51,74 +53,93 @@ export default function RegisterPage() {
       return
     }
 
-    navigate('/login')
+    setSuccess(true)
+    setLoading(false)
   }
 
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
-          <img src="/favicon.svg" alt="Happiness" style={{ width: '40px', height: '40px' }} />
-        </div>
-        <h1 style={{ textAlign: 'center', fontSize: '1.5rem' }}>{t('auth.register')}</h1>
-        <p className="subtitle">{t('auth.createAccount')}</p>
-
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>{t('auth.name')}</label>
-            <input
-              type="text"
-              name="name"
-              className="form-input"
-              value={formData.name}
-              onChange={handleChange}
-              required
-            />
+        {success ? (
+          <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
+            <h1 style={{ fontSize: '1.3rem', marginBottom: '0.75rem' }}>Registrierung erfolgreich!</h1>
+            <p style={{ color: 'var(--text-muted, #6b7280)', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+              Bitte bestätige deine E-Mail-Adresse. Schau in dein Postfach und klicke auf den Bestätigungslink.
+            </p>
+            <p style={{ color: 'var(--text-muted, #6b7280)', fontSize: '0.8rem', marginBottom: '1.5rem' }}>
+              Danach kannst du dich einloggen.
+            </p>
+            <Link to="/login" className="btn btn-primary" style={{ width: '100%' }}>
+              {t('auth.loginHere') || 'Zum Login'}
+            </Link>
           </div>
-          <div className="form-group">
-            <label>{t('auth.username')}</label>
-            <input
-              type="text"
-              name="username"
-              className="form-input"
-              value={formData.username}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>{t('auth.email')}</label>
-            <input
-              type="email"
-              name="email"
-              className="form-input"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>{t('auth.password')}</label>
-            <input
-              type="password"
-              name="password"
-              className="form-input"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
-          </div>
+        ) : (
+          <>
+            <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
+              <img src="/favicon.svg" alt="Happiness" style={{ width: '40px', height: '40px' }} />
+            </div>
+            <h1 style={{ textAlign: 'center', fontSize: '1.5rem' }}>{t('auth.register')}</h1>
+            <p className="subtitle">{t('auth.createAccount')}</p>
 
-          {error && <p style={{ color: 'var(--danger)', marginBottom: '1rem', fontSize: '0.9rem' }}>{error}</p>}
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label>{t('auth.name')}</label>
+                <input
+                  type="text"
+                  name="name"
+                  className="form-input"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>{t('auth.username')}</label>
+                <input
+                  type="text"
+                  name="username"
+                  className="form-input"
+                  value={formData.username}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>{t('auth.email')}</label>
+                <input
+                  type="email"
+                  name="email"
+                  className="form-input"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>{t('auth.password')}</label>
+                <input
+                  type="password"
+                  name="password"
+                  className="form-input"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
-            {loading ? t('auth.registering') : t('auth.register')}
-          </button>
-        </form>
+              {error && <p style={{ color: 'var(--danger)', marginBottom: '1rem', fontSize: '0.9rem' }}>{error}</p>}
 
-        <p className="link">
-          {t('auth.hasAccount')} <Link to="/login">{t('auth.loginHere')}</Link>
-        </p>
+              <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
+                {loading ? t('auth.registering') : t('auth.register')}
+              </button>
+            </form>
+
+            <p className="link">
+              {t('auth.hasAccount')} <Link to="/login">{t('auth.loginHere')}</Link>
+            </p>
+          </>
+        )}
       </div>
     </div>
   )

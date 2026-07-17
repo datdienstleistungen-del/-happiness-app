@@ -137,7 +137,7 @@ export async function runPlatformAgent(platformKey, goal, masterBrief, chatEndpo
     try {
       const { data: { session } } = await import('../lib/supabase').then(m => m.supabase.auth.getSession())
       const token = session?.access_token || ''
-      const res = await fetch('/api/capcut-recipe', {
+      const res = await fetch('/api/content-recipe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ topic: goal.trim(), duration: 30 })

@@ -475,7 +475,7 @@ function FeedCard({ post, currentUserId }) {
           <MessageCircle size={17} />
           <span>Kommentieren</span>
         </button>
-        <button className="feed-action-btn" onClick={() => navigate('/tiktok-video', { state: { postText: post.content } })}>
+        <button className="feed-action-btn" onClick={() => navigate('/capcut-studio', { state: { postText: post.content } })}>
           <Film size={17} />
           <span>TikTok</span>
         </button>

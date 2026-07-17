@@ -5,11 +5,111 @@ import { supabase } from '../lib/supabase'
 import {
   Sparkles, ArrowLeft, Film, Check, AlertTriangle, ExternalLink,
   Smartphone, Monitor, RotateCcw, Clock, Mic, Image, ChevronDown, ChevronUp,
-  Lightbulb, Zap, Share2, Globe, Video, MessageSquare, Hash
+  Lightbulb, Zap, Share2, Globe, Video, MessageSquare, Hash, HelpCircle,
+  PartyPopper, ArrowRight, Copy
 } from 'lucide-react'
 import CopyButton from '../components/CopyButton'
 import { trackRecipeGenerated, trackPlatformViewed, trackCapCutTriggered } from '../intelligence/analytics'
-import './TikTokVideoPage.css'
+import './CapCutStudio.css'
+
+const isDE = navigator.language.startsWith('de')
+
+const t = {
+  header: isDE ? 'CapCut Content Studio' : 'CapCut Content Studio',
+  heroTitle: isDE ? 'Content-Generator' : 'Content Generator',
+  heroSub: isDE
+    ? 'Beschreib dein Thema — H.I.T. erstellt ein CapCut-Rezept mit Skript, Visual Prompts und Publishing-Texten für alle Plattformen.'
+    : 'Describe your topic — H.I.T. creates a CapCut recipe with script, visual prompts, and publishing texts for all platforms.',
+  howItWorks: isDE
+    ? "So geht's:"
+    : "How it works:",
+  howItWorksText: isDE
+    ? 'Beschreib dein Thema, drücke "Generieren" — und kopiere die fertigen Texte in CapCut oder direkt in deine sozialen Kanäle.'
+    : 'Describe your topic, click "Generate" — and copy the finished texts into CapCut or directly to your social channels.',
+  step1: isDE ? 'Thema beschreiben' : 'Describe your topic',
+  step2: isDE ? 'KI generiert Skript + Texte' : 'AI generates script + texts',
+  step3: isDE ? 'Kopieren & posten' : 'Copy & post',
+  textareaLabel: isDE ? 'Worum geht es in deinem Video?' : 'What is your video about?',
+  textareaPlaceholder: isDE
+    ? "z.B. '5 Tipps für ein glücklicheres Leben' oder 'Mein Produkt: Handgemachte Kerzen aus Sojawachs'"
+    : "e.g. '5 tips for a happier life' or 'My product: Handmade soy candles'",
+  durationLabel: isDE ? 'Videolänge' : 'Video length',
+  quotaText: isDE
+    ? (n) => `Dein H.I.T. Kontingent: ${n.videosLeft}/3 Videos | ${n.postsLeft}/5 Posts verfügbar`
+    : (n) => `Your H.I.T. quota: ${n.videosLeft}/3 videos | ${n.postsLeft}/5 posts available`,
+  paywallTitle: isDE ? 'H.I.T. Unlimited freischalten' : 'Unlock H.I.T. Unlimited',
+  paywallPrice: '4,99 € / ' + (isDE ? 'Monat' : 'month'),
+  paywallFeature1: isDE ? 'Unlimitierte Videos & Posts' : 'Unlimited videos & posts',
+  paywallFeature2: isDE ? 'Alle 6 Plattformen freigeschaltet' : 'All 6 platforms unlocked',
+  paywallFeature3: isDE ? 'H.I.T. Prioritäts-Server' : 'H.I.T. priority server',
+  paywallBtn: isDE ? 'Jetzt upgraden' : 'Upgrade now',
+  generateBtn: isDE ? 'Rezept generieren' : 'Generate recipe',
+  loadingText: isDE ? 'Rezept wird generiert...' : 'Generating recipe...',
+  loadingSub: isDE
+    ? 'H.I.T. schreibt dein Skript, Prompts & Publishing-Payloads'
+    : 'H.I.T. is writing your script, prompts & publishing payloads',
+  errorGeneric: isDE ? 'Rezept konnte nicht generiert werden. Bitte versuch es nochmal.' : 'Recipe could not be generated. Please try again.',
+  errorRateLimit: isDE ? 'Zu viele Anfragen. Bitte warte kurz und versuch es nochmal.' : 'Too many requests. Please wait a moment and try again.',
+  errorNetwork: isDE ? 'Keine Verbindung zum Server. Prüf dein Internet.' : 'No connection to server. Check your internet.',
+  // Success
+  successTitle: isDE ? 'Rezept fertig!' : 'Recipe ready!',
+  successSub: isDE
+    ? 'H.I.T. hat alles vorbereitet. Als Nächstes: In CapCut einfügen, Video exportieren und auf deinen Kanälen posten.'
+    : 'H.I.T. has prepared everything. Next step: Paste into CapCut, export video, and post on your channels.',
+  nextStep1: isDE ? 'Skript in CapCut einfügen' : 'Paste script into CapCut',
+  nextStep2: isDE ? 'Video exportieren' : 'Export video',
+  nextStep3: isDE ? 'Auf Kanälen posten' : 'Post on channels',
+  // Example
+  exampleBtn: isDE ? 'Beispiel ansehen' : 'View example',
+  exampleTitle: isDE ? 'So könnte ein CapCut-Rezept aussehen' : 'This is what a CapCut recipe looks like',
+  exampleUse: isDE ? 'Als Vorlage verwenden' : 'Use as template',
+  // Honest banner
+  honestBanner: isDE
+    ? 'H.I.T. bereitet alles vor — Skript, Prompts und Texte für alle Plattformen. Danach musst du nur noch in CapCut einfügen, exportieren und posten.'
+    : 'H.I.T. prepares everything — script, prompts, and texts for all platforms. Then just paste into CapCut, export, and post.',
+  // Result
+  scenesLabel: isDE ? 'Szenen' : 'Scenes',
+  videoLabel: isDE ? 'Video' : 'Video',
+  platformsLabel: isDE ? 'Plattformen' : 'Platforms',
+  masterScript: isDE ? 'Master Video Script' : 'Master Video Script',
+  copyFullScript: isDE ? 'Ganzes Skript kopieren' : 'Copy full script',
+  scenesPrompts: isDE ? 'Szenen & Visual Prompts' : 'Scenes & Visual Prompts',
+  scene: isDE ? 'Szene' : 'Scene',
+  spokenText: isDE ? 'Gesprochener Text' : 'Spoken text',
+  visualPrompt: isDE ? 'Visueller Prompt' : 'Visual prompt',
+  promptCopy: isDE ? 'Prompt kopieren' : 'Copy prompt',
+  actionHub: isDE ? 'H.I.T. Action Hub' : 'H.I.T. Action Hub',
+  capcutPrimary: isDE ? 'In CapCut öffnen & Video erstellen' : 'Open in CapCut & create video',
+  capcutSub: isDE
+    ? 'Skript + Prompts in CapCut einfügen → Video exportieren → Auf Kanälen posten'
+    : 'Paste script + prompts into CapCut → export video → post on channels',
+  freeTip: isDE
+    ? 'H.I.T. Free-Tipp: CapCut bietet im Editor manchmal ein Upgrade an. Du kannst die Videoerstellung mit dem kostenlosen Modell "Seedance Mini" einfach ohne Abo fortsetzen!'
+    : 'H.I.T. Free Tip: CapCut sometimes offers an upgrade in the editor. You can continue creating videos with the free "Seedance Mini" model without a subscription!',
+  capcutMobile: isDE ? 'In CapCut öffnen' : 'Open in CapCut',
+  capcutDesktop: isDE ? 'Im Browser öffnen' : 'Open in Browser',
+  capcutHint: isDE ? 'Tipp: Kopiere das Skript und füge es in CapCut ein.' : 'Tip: Copy the script and paste it into CapCut.',
+  guide: isDE ? "So geht's" : "How it works",
+  guideStep1: isDE ? 'Klick auf "Kopieren" und füge den Text in CapCut\'s Text-to-Speech ein.' : 'Click "Copy" and paste the text into CapCut\'s Text-to-Speech.',
+  guideStep2: isDE ? 'Kopiere jeden Prompt und generiere damit Bilder in Midjourney, DALL-E oder CapCut\'s KI-Generator.' : 'Copy each prompt and generate images in Midjourney, DALL-E, or CapCut\'s AI generator.',
+  guideStep3: isDE ? 'Füge Bilder, Voiceover und Musik zusammen und exportiere dein Video.' : 'Combine images, voiceover, and music and export your video.',
+  guideStep4: isDE ? 'Kopiere die plattformspezifischen Captions und poste dein Video auf allen Kanälen.' : 'Copy the platform-specific captions and post your video on all channels.',
+  newRecipe: isDE ? 'Neues Rezept generieren' : 'Generate new recipe',
+  hook: 'Hook (Text-Overlay)',
+  copyHook: isDE ? 'Hook kopieren' : 'Copy hook',
+  caption: 'Description / Caption',
+  copyCaption: isDE ? 'Caption kopieren' : 'Copy caption',
+  headline: 'Headline',
+  copyHeadline: isDE ? 'Headline kopieren' : 'Copy headline',
+  bodyText: isDE ? 'Beitragstext' : 'Post text',
+  copyText: isDE ? 'Text kopieren' : 'Copy text',
+  titleMax60: isDE ? 'Titel (max 60 Zeichen)' : 'Title (max 60 characters)',
+  copyTitle: isDE ? 'Titel kopieren' : 'Copy title',
+  description: isDE ? 'Beschreibung' : 'Description',
+  copyDescription: isDE ? 'Beschreibung kopieren' : 'Copy description',
+  postTitle: isDE ? 'Post-Titel' : 'Post title',
+  platformTexts: isDE ? 'Plattform-Texte' : 'Platform texts',
+}
 
 const PLATFORMS = [
   { id: 'tiktok_instagram', label: 'TikTok / Instagram', icon: Hash, color: '#E4405F' },
@@ -18,14 +118,80 @@ const PLATFORMS = [
   { id: 'reddit', label: 'Reddit', icon: MessageSquare, color: '#FF4500' }
 ]
 
-const CHANNELS = [
-  { name: 'TikTok', connected: false },
-  { name: 'Instagram', connected: false },
-  { name: 'YouTube', connected: false },
-  { name: 'LinkedIn', connected: false },
-  { name: 'Facebook', connected: false },
-  { name: 'Reddit', connected: false }
-]
+const EXAMPLE_RECIPE = {
+  video_title: isDE ? 'Creator-Strategie: So wirst du erfolgreich' : 'Creator Strategy: How to Succeed',
+  voiceover_script: isDE
+    ? 'Willst du ein erfolgreicher Creator werden? Es ist Zeit, deine Strategie zu ändern. Heute müssen Creators schnell, kreativ und authentisch sein. Ein guter Creator kennt sein Publikum und bietet ihnen Mehrwert. Wir bieten dir 3 Gratis-Videos, um deine Fähigkeiten zu verbessern. Danach nur 4,99 €. Besuche happiness-eu.netlify.app, um loszulegen!'
+    : 'Want to become a successful creator? It\'s time to change your strategy. Today, creators need to be fast, creative, and authentic. A good creator knows their audience and provides value. We offer 3 free videos to improve your skills. After that, only €4.99. Visit happiness-eu.netlify.app to get started!',
+  duration: 20,
+  ratio: '9:16',
+  style: 'Future Tech',
+  bgm: 'Motivation Inspiring Upbeat Corporate',
+  scenes: [
+    {
+      timestamp: '0-5s',
+      spoken_text: isDE
+        ? 'Willst du ein erfolgreicher Creator werden? Es ist Zeit, deine Strategie zu ändern.'
+        : 'Want to become a successful creator? It\'s time to change your strategy.',
+      visual_prompt: isDE
+        ? 'Modernes Home-Setup mit Ringlicht, Creator sitzt vor Kamera, confident'
+        : 'Modern home setup with ring light, creator sitting in front of camera, confident'
+    },
+    {
+      timestamp: '5-10s',
+      spoken_text: isDE
+        ? 'Heute müssen Creators schnell, kreativ und authentisch sein.'
+        : 'Today, creators need to be fast, creative, and authentic.',
+      visual_prompt: isDE
+        ? 'Schnelle Montage: Tipsen auf Handy, Editing-Screen, Lächeln vor Kamera'
+        : 'Quick montage: typing on phone, editing screen, smiling at camera'
+    },
+    {
+      timestamp: '10-15s',
+      spoken_text: isDE
+        ? 'Ein guter Creator kennt sein Publikum und bietet ihnen Mehrwert.'
+        : 'A good creator knows their audience and provides value.',
+      visual_prompt: isDE
+        ? 'Analytics-Dashboard zeigt Wachstum, Creator nickt zufrieden'
+        : 'Analytics dashboard showing growth, creator nods satisfied'
+    },
+    {
+      timestamp: '15-20s',
+      spoken_text: isDE
+        ? 'Wir bieten dir 3 Gratis-Videos. Danach nur 4,99 €. Besuche happiness-eu.netlify.app!'
+        : 'We offer 3 free videos. After that, only €4.99. Visit happiness-eu.netlify.app!',
+      visual_prompt: isDE
+        ? 'CTA-Screen mit Website-URL, Creator zeigt auf Link, energetisch'
+        : 'CTA screen with website URL, creator points to link, energetic'
+    }
+  ],
+  publishing_payload: {
+    tiktok_instagram: {
+      hook: isDE ? 'Creator? Ändere deine Strategie NOW 🚀' : 'Creators? Change your strategy NOW 🚀',
+      description: isDE
+        ? 'Die meisten Creators machen den gleichen Fehler: Sie haben keine Strategie.\n\nIch zeige dir, wie es anders geht. Link in Bio 👆\n\n#creator #contentcreator #socialmedia #strategie #growth'
+        : 'Most creators make the same mistake: no strategy.\n\nI\'ll show you how to do it differently. Link in bio 👆\n\n#creator #contentcreator #socialmedia #strategy #growth'
+    },
+    linkedin_facebook: {
+      headline: isDE ? 'Creator-Strategie: Was 90% falsch machen' : 'Creator Strategy: What 90% get wrong',
+      body_text: isDE
+        ? 'Die meisten Content Creator haben keine klare Strategie.\n\nDas Ergebnis: viel Aufwand, wenig Wachstum.\n\n3 Dinge, die erfolgreiche Creators anders machen:\n1. Sie kennen ihr Publikum\n2. Sie bieten echten Mehrwert\n3. Sie sind konsistent\n\nMöchtest du lernen, wie es geht? Schau dir unsere 3 kostenlosen Videos an.\n\n#ContentCreator #Strategie #SocialMedia'
+        : 'Most content creators don\'t have a clear strategy.\n\nResult: lots of effort, little growth.\n\n3 things successful creators do differently:\n1. They know their audience\n2. They provide real value\n3. They are consistent\n\nWant to learn how? Check out our 3 free videos.\n\n#ContentCreator #Strategy #SocialMedia'
+    },
+    youtube_shorts: {
+      title: isDE ? 'Creator-Strategie: So wirst du erfolgreich' : 'Creator Strategy: How to Succeed',
+      description: isDE
+        ? 'Die meisten Creators machen den gleichen Fehler. In diesem Video zeige ich dir, wie du es richtig machst.\n\n🎁 3 Gratis-Videos: happiness-eu.netlify.app\n\n#creator #youtube #strategie'
+        : 'Most creators make the same mistake. In this video, I\'ll show you how to do it right.\n\n🎁 3 free videos: happiness-eu.netlify.app\n\n#creator #youtube #strategy'
+    },
+    reddit: {
+      title: isDE ? 'Ich habe 3 Monate als Creator experimentiert. Hier sind die Ergebnisse.' : 'I experimented as a creator for 3 months. Here are the results.',
+      body_text: isDE
+        ? 'Hintergrund: Ich wollte herausfinden, was erfolgreiche Creators anders machen.\n\nWas ich gelernt habe:\n- Strategie ist wichtiger als Content-Menge\n- Authentizität schlägt Perfektion\n- Konsistenz schlägt Intensität\n\nIch habe 3 kostenlose Videos erstellt, die meine Erkenntnisse zusammenfassen.\n\nFragt mich gerne.'
+        : 'Background: I wanted to find out what successful creators do differently.\n\nWhat I learned:\n- Strategy matters more than content volume\n- Authenticity beats perfection\n- Consistency beats intensity\n\nI created 3 free videos summarizing my findings.\n\nFeel free to ask.'
+    }
+  }
+}
 
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
 
@@ -41,6 +207,8 @@ export default function TikTokVideoPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [activePlatform, setActivePlatform] = useState('tiktok_instagram')
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [showExample, setShowExample] = useState(false)
 
   const [videoUsed, setVideoUsed] = useState(0)
   const [contentUsed, setContentUsed] = useState(0)
@@ -57,12 +225,14 @@ export default function TikTokVideoPage() {
     loadQuota()
   }, [user])
 
+  const pipelineUsed = useRef(false)
   useEffect(() => {
     const pipelineResult = location.state?.pipelineResult
     if (pipelineResult?.recipe && !pipelineUsed.current) {
       pipelineUsed.current = true
       setTopic(location.state?.postText || '')
       setRecipe(pipelineResult.recipe)
+      setShowSuccess(true)
     }
   }, [])
 
@@ -102,16 +272,6 @@ export default function TikTokVideoPage() {
     }
   }
 
-  const pipelineUsed = useRef(false)
-  useEffect(() => {
-    const pipelineResult = location.state?.pipelineResult
-    if (pipelineResult?.recipe && !pipelineUsed.current) {
-      pipelineUsed.current = true
-      setTopic(location.state?.postText || '')
-      setRecipe(pipelineResult.recipe)
-    }
-  }, [])
-
   const sanitize = (input) => {
     return input.replace(/<[^>]*>/g, '').trim().substring(0, 2000)
   }
@@ -123,12 +283,13 @@ export default function TikTokVideoPage() {
     setLoading(true)
     setError('')
     setRecipe(null)
+    setShowSuccess(false)
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token || ''
 
-      const res = await fetch('/api/capcut-recipe', {
+      const res = await fetch('/api/content-recipe', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -141,23 +302,24 @@ export default function TikTokVideoPage() {
       })
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Unbekannter Fehler' }))
-        throw new Error(err.error || `Fehler (${res.status})`)
+        const err = await res.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(err.error || `Error (${res.status})`)
       }
 
       const data = await res.json()
       setRecipe(data)
+      setShowSuccess(true)
       trackRecipeGenerated(data.video_title, duration)
       incrementQuota()
     } catch (err) {
       console.error('[CapCut] Recipe error:', err)
       const msg = err.message || ''
       if (msg.includes('429') || msg.includes('ausgelastet')) {
-        setError('Zu viele Anfragen. Bitte warte kurz und versuch es nochmal.')
+        setError(t.errorRateLimit)
       } else if (msg.includes('fetch') || msg.includes('network')) {
-        setError('Keine Verbindung zum Server. Prüf dein Internet.')
+        setError(t.errorNetwork)
       } else {
-        setError(err.error || 'Rezept konnte nicht generiert werden. Bitte versuch es nochmal.')
+        setError(err.error || t.errorGeneric)
       }
     } finally {
       setLoading(false)
@@ -171,6 +333,12 @@ export default function TikTokVideoPage() {
     }
   }
 
+  const useExampleAsTemplate = () => {
+    setTopic(EXAMPLE_RECIPE.video_title)
+    setShowExample(false)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   const getPlatformContent = (platform, payload) => {
     if (!payload) return null
     const data = payload[platform]
@@ -181,14 +349,14 @@ export default function TikTokVideoPage() {
         return (
           <>
             <div className="ccp-platform-field">
-              <label>Hook (Text-Overlay)</label>
+              <label>{t.hook}</label>
               <div className="ccp-platform-value">{data.hook}</div>
-              <CopyButton text={data.hook} label="Hook kopieren" />
+              <CopyButton text={data.hook} label={t.copyHook} />
             </div>
             <div className="ccp-platform-field">
-              <label>Description / Caption</label>
+              <label>{t.caption}</label>
               <div className="ccp-platform-value ccp-platform-value--pre">{data.description}</div>
-              <CopyButton text={data.description} label="Caption kopieren" />
+              <CopyButton text={data.description} label={t.copyCaption} />
             </div>
           </>
         )
@@ -196,14 +364,14 @@ export default function TikTokVideoPage() {
         return (
           <>
             <div className="ccp-platform-field">
-              <label>Headline</label>
+              <label>{t.headline}</label>
               <div className="ccp-platform-value">{data.headline}</div>
-              <CopyButton text={data.headline} label="Headline kopieren" />
+              <CopyButton text={data.headline} label={t.copyHeadline} />
             </div>
             <div className="ccp-platform-field">
-              <label>Beitragstext</label>
+              <label>{t.bodyText}</label>
               <div className="ccp-platform-value ccp-platform-value--pre">{data.body_text}</div>
-              <CopyButton text={data.body_text} label="Text kopieren" />
+              <CopyButton text={data.body_text} label={t.copyText} />
             </div>
           </>
         )
@@ -211,14 +379,14 @@ export default function TikTokVideoPage() {
         return (
           <>
             <div className="ccp-platform-field">
-              <label>Titel (max 60 Zeichen)</label>
+              <label>{t.titleMax60}</label>
               <div className="ccp-platform-value">{data.title}</div>
-              <CopyButton text={data.title} label="Titel kopieren" />
+              <CopyButton text={data.title} label={t.copyTitle} />
             </div>
             <div className="ccp-platform-field">
-              <label>Beschreibung</label>
+              <label>{t.description}</label>
               <div className="ccp-platform-value ccp-platform-value--pre">{data.description}</div>
-              <CopyButton text={data.description} label="Beschreibung kopieren" />
+              <CopyButton text={data.description} label={t.copyDescription} />
             </div>
           </>
         )
@@ -226,14 +394,14 @@ export default function TikTokVideoPage() {
         return (
           <>
             <div className="ccp-platform-field">
-              <label>Post-Titel</label>
+              <label>{t.postTitle}</label>
               <div className="ccp-platform-value">{data.title}</div>
-              <CopyButton text={data.title} label="Titel kopieren" />
+              <CopyButton text={data.title} label={t.copyTitle} />
             </div>
             <div className="ccp-platform-field">
-              <label>Beitragstext</label>
+              <label>{t.bodyText}</label>
               <div className="ccp-platform-value ccp-platform-value--pre">{data.body_text}</div>
-              <CopyButton text={data.body_text} label="Text kopieren" />
+              <CopyButton text={data.body_text} label={t.copyText} />
             </div>
           </>
         )
@@ -248,42 +416,34 @@ export default function TikTokVideoPage() {
         <button className="ccp-back" onClick={() => navigate(-1)}>
           <ArrowLeft size={20} />
         </button>
-        <h1><Film size={22} /> H.I.T. Social Publisher</h1>
+        <h1><Film size={22} /> {t.header}</h1>
       </div>
-
-      {!recipe && !loading && (
-        <div className="ccp-banner">
-          <Zap size={18} />
-          <div>
-            <strong>H.I.T. Direkt-Posting aktiv:</strong> Dein Skript wird automatisch an CapCut übergeben.
-            Nach dem automatischen Videoschnitt kannst du es mit einem Klick sofort auf deinen Kanälen veröffentlichen.
-          </div>
-        </div>
-      )}
 
       <div className="ccp-hero">
         <div className="ccp-hero-icon"><Zap size={28} /></div>
-        <h2>Content Engine & Social Publisher</h2>
-        <p className="ccp-hero-sub">
-          Beschreib dein Thema — die KI erstellt dir ein CapCut-Rezept mit Voiceover-Skript,
-          visuellen Prompts und plattformspezifischen Publishing-Payloads für alle deine Kanäle.
-        </p>
+        <h2>{t.heroTitle}</h2>
+        <p className="ccp-hero-sub">{t.heroSub}</p>
+      </div>
+
+      <div className="ccp-how-it-works">
+        <HelpCircle size={14} />
+        <span><strong>{t.howItWorks}</strong> {t.howItWorksText}</span>
       </div>
 
       <div className="ccp-steps">
         <div className="ccp-step">
           <div className="ccp-step-num">1</div>
-          <span className="ccp-step-text">Thema eingeben</span>
+          <span className="ccp-step-text">{t.step1}</span>
         </div>
         <div className="ccp-step-arrow">→</div>
         <div className="ccp-step">
           <div className="ccp-step-num">2</div>
-          <span className="ccp-step-text">Rezept generieren</span>
+          <span className="ccp-step-text">{t.step2}</span>
         </div>
         <div className="ccp-step-arrow">→</div>
         <div className="ccp-step">
           <div className="ccp-step-num">3</div>
-          <span className="ccp-step-text">Posten auf allen Kanälen</span>
+          <span className="ccp-step-text">{t.step3}</span>
         </div>
       </div>
 
@@ -291,21 +451,21 @@ export default function TikTokVideoPage() {
         <div className="ccp-input-section">
           <div className="ccp-input-group">
             <label className="ccp-label">
-              <Lightbulb size={16} /> Worum geht es in deinem Video?
+              <Lightbulb size={16} /> {t.textareaLabel}
             </label>
             <textarea
               className="ccp-textarea"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="z.B. '5 Tipps für ein glücklicheres Leben' oder 'Mein Produkt: Handgemachte Kerzen aus Sojawachs'"
+              placeholder={t.textareaPlaceholder}
               rows={3}
             />
           </div>
 
           <div className="ccp-input-group">
             <label className="ccp-label">
-              <Clock size={16} /> Videolänge
+              <Clock size={16} /> {t.durationLabel}
             </label>
             <div className="ccp-duration-options">
               {[15, 30, 45, 60].map(d => (
@@ -323,7 +483,7 @@ export default function TikTokVideoPage() {
           {quotaLoaded && !isPremium && (
             <div className="ccp-quota-bar">
               <span className="ccp-quota-text">
-                📊 Dein H.I.T. Kontingent: <strong>{videosLeft}/3 Videos</strong> | <strong>{postsLeft}/5 Posts</strong> verfügbar
+                {t.quotaText({ videosLeft, postsLeft })}
               </span>
             </div>
           )}
@@ -331,15 +491,15 @@ export default function TikTokVideoPage() {
           {quotaLoaded && !hasQuota ? (
             <div className="ccp-paywall">
               <div className="ccp-paywall-card">
-                <h3>H.I.T. Unlimited freischalten</h3>
-                <div className="ccp-paywall-price">Nur 4,99 € <span>/ Monat</span></div>
+                <h3>{t.paywallTitle}</h3>
+                <div className="ccp-paywall-price">{t.paywallPrice}</div>
                 <ul className="ccp-paywall-features">
-                  <li>Unlimitierte Videos & Posts</li>
-                  <li>Alle 6 Plattformen freigeschaltet</li>
-                  <li>H.I.T. Prioritäts-Server</li>
+                  <li>{t.paywallFeature1}</li>
+                  <li>{t.paywallFeature2}</li>
+                  <li>{t.paywallFeature3}</li>
                 </ul>
                 <a href="https://buy.stripe.com/test_placeholder" target="_blank" rel="noopener noreferrer" className="ccp-paywall-btn">
-                  Jetzt upgraden
+                  {t.paywallBtn}
                 </a>
               </div>
             </div>
@@ -349,8 +509,16 @@ export default function TikTokVideoPage() {
               onClick={generateRecipe}
               disabled={!topic.trim() || topic.trim().length < 3 || loading || !hasQuota}
             >
-              <Sparkles size={18} /> Rezept generieren
+              <Sparkles size={18} /> {t.generateBtn}
             </button>
+          )}
+
+          {!showExample && !recipe && (
+            <div className="ccp-example-teaser">
+              <button className="ccp-example-btn" onClick={() => setShowExample(true)}>
+                <Film size={16} /> {t.exampleBtn}
+              </button>
+            </div>
           )}
 
           {error && (
@@ -361,11 +529,119 @@ export default function TikTokVideoPage() {
         </div>
       )}
 
+      {showExample && !recipe && (
+        <div className="ccp-example-card">
+          <div className="ccp-example-header">
+            <h3>{t.exampleTitle}</h3>
+            <button className="ccp-example-use-btn" onClick={useExampleAsTemplate}>
+              <ArrowRight size={14} /> {t.exampleUse}
+            </button>
+          </div>
+
+          <div className="ccp-example-meta">
+            <span>🎬 {EXAMPLE_RECIPE.duration}s</span>
+            <span>📐 {EXAMPLE_RECIPE.ratio}</span>
+            <span>🎨 {EXAMPLE_RECIPE.style}</span>
+            <span>🎵 {EXAMPLE_RECIPE.bgm}</span>
+          </div>
+
+          <div className="ccp-section">
+            <div className="ccp-section-header">
+              <Mic size={18} />
+              <h3>{t.masterScript}</h3>
+            </div>
+            <div className="ccp-script-box">
+              <p className="ccp-script-text">{EXAMPLE_RECIPE.voiceover_script}</p>
+            </div>
+          </div>
+
+          <div className="ccp-section">
+            <div className="ccp-section-header">
+              <Image size={18} />
+              <h3>{t.scenesPrompts}</h3>
+            </div>
+            <div className="ccp-scenes-list">
+              {EXAMPLE_RECIPE.scenes.map((scene, i) => (
+                <div key={i} className="ccp-scene-card">
+                  <div className="ccp-scene-header">
+                    <div className="ccp-scene-left">
+                      <span className="ccp-scene-num">{i + 1}</span>
+                      <div className="ccp-scene-info">
+                        <span className="ccp-scene-timestamp">{scene.timestamp}</span>
+                        <span className="ccp-scene-spoken">{scene.spoken_text}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="ccp-scene-body">
+                    <div className="ccp-scene-section">
+                      <h4>{t.visualPrompt}</h4>
+                      <div className="ccp-scene-prompt">
+                        <code>{scene.visual_prompt}</code>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {EXAMPLE_RECIPE.publishing_payload && (
+            <div className="ccp-section ccp-social-tabs-section">
+              <div className="ccp-section-header">
+                <Share2 size={18} />
+                <h3>{t.platformTexts}</h3>
+              </div>
+              <div className="ccp-platform-tabs">
+                {PLATFORMS.map(p => {
+                  const Icon = p.icon
+                  return (
+                    <button
+                      key={p.id}
+                      className={`ccp-platform-tab ${activePlatform === p.id ? 'active' : ''}`}
+                      onClick={() => setActivePlatform(p.id)}
+                      style={activePlatform === p.id ? { borderColor: p.color, color: p.color } : {}}
+                    >
+                      <Icon size={14} />
+                      <span>{p.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+              <div className="ccp-platform-content">
+                {getPlatformContent(activePlatform, EXAMPLE_RECIPE.publishing_payload)}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {loading && (
         <div className="ccp-loading">
           <div className="ccp-spinner" />
-          <p className="ccp-loading-text">Rezept wird generiert...</p>
-          <p className="ccp-loading-sub">Die KI schreibt dein Skript, Prompts & Publishing-Payloads</p>
+          <p className="ccp-loading-text">{t.loadingText}</p>
+          <p className="ccp-loading-sub">{t.loadingSub}</p>
+        </div>
+      )}
+
+      {recipe && showSuccess && (
+        <div className="ccp-success-banner">
+          <div className="ccp-success-icon"><PartyPopper size={28} /></div>
+          <h3>{t.successTitle}</h3>
+          <p>{t.successSub}</p>
+          <div className="ccp-success-steps">
+            <div className="ccp-success-step">
+              <span className="ccp-success-step-num">1</span>
+              <span>{t.nextStep1}</span>
+            </div>
+            <div className="ccp-success-step">
+              <span className="ccp-success-step-num">2</span>
+              <span>{t.nextStep2}</span>
+            </div>
+            <div className="ccp-success-step">
+              <span className="ccp-success-step-num">3</span>
+              <span>{t.nextStep3}</span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -374,28 +650,24 @@ export default function TikTokVideoPage() {
           <div className="ccp-result-header">
             <h2 className="ccp-result-title">{recipe.video_title}</h2>
             <div className="ccp-result-meta">
-              <span>{recipe.scenes.length} Szenen</span>
+              <span>{recipe.scenes.length} {t.scenesLabel}</span>
               <span>·</span>
-              <span>{duration}s Video</span>
+              <span>{duration}s {t.videoLabel}</span>
               <span>·</span>
-              <span>4 Plattformen</span>
+              <span>4 {t.platformsLabel}</span>
             </div>
           </div>
 
-          <div className="ccp-banner ccp-banner--success">
+          <div className="ccp-banner ccp-banner--info">
             <Zap size={18} />
-            <div>
-              <strong>H.I.T. Direkt-Posting aktiv:</strong> Dein Skript wird automatisch an CapCut übergeben.
-              Nach dem automatischen Videoschnitt kannst du es mit einem Klick sofort auf deinen Kanälen
-              (TikTok, Instagram, YouTube, LinkedIn, Facebook, Reddit) veröffentlichen.
-            </div>
+            <div>{t.honestBanner}</div>
           </div>
 
           <div className="ccp-section">
             <div className="ccp-section-header">
               <Mic size={18} />
-              <h3>Master Video Script</h3>
-              <CopyButton text={recipe.voiceover_script} label="Ganzes Skript kopieren" />
+              <h3>{t.masterScript}</h3>
+              <CopyButton text={recipe.voiceover_script} label={t.copyFullScript} />
             </div>
             <div className="ccp-script-box">
               <p className="ccp-script-text">{recipe.voiceover_script}</p>
@@ -430,11 +702,11 @@ export default function TikTokVideoPage() {
           <div className="ccp-section ccp-action-hub">
             <div className="ccp-section-header">
               <Zap size={18} />
-              <h3>H.I.T. Direct Action Hub</h3>
+              <h3>{t.actionHub}</h3>
             </div>
 
             <a
-              href={isMobile ? 'capcut://com.lemon.lvoverseas' : 'https://pippit.ai'}
+              href={isMobile ? 'capcut://com.lemon.lvoverseas' : 'https://www.capcut.com/editor?enter_from=link'}
               target={isMobile ? undefined : '_blank'}
               rel={isMobile ? undefined : 'noopener noreferrer'}
               className="ccp-action-primary"
@@ -442,45 +714,33 @@ export default function TikTokVideoPage() {
             >
               <Video size={20} />
               <div>
-                <span className="ccp-action-label">Video via CapCut-Autopilot erstellen & sofort posten</span>
-                <span className="ccp-action-sub">Skript + Prompts in CapCut einfügen → Video exportieren → Auf Kanälen posten</span>
+                <span className="ccp-action-label">{t.capcutPrimary}</span>
+                <span className="ccp-action-sub">{t.capcutSub}</span>
               </div>
               <ExternalLink size={16} />
             </a>
 
-            <div className="ccp-free-guard">
-              H.I.T. Free-Tipp: CapCut bietet im Editor manchmal ein Upgrade an. Du kannst die Videoerstellung mit dem kostenlosen Modell "Seedance Mini" einfach ohne Abo fortsetzen!
-            </div>
-
-            <div className="ccp-channels">
-              <span className="ccp-channels-label">Kanäle:</span>
-              {CHANNELS.map(ch => (
-                <span key={ch.name} className="ccp-channel-badge">
-                  <span className="ccp-channel-dot" />
-                  {ch.name}
-                </span>
-              ))}
-            </div>
+            <div className="ccp-free-guard">{t.freeTip}</div>
 
             <div className="ccp-capcut-links-secondary">
               <a href="capcut://" className="ccp-capcut-btn-sm mobile">
-                <Smartphone size={16} /> Smartphone
+                <Smartphone size={16} /> {t.capcutMobile}
               </a>
               <a href="https://capcut.com" target="_blank" rel="noopener noreferrer" className="ccp-capcut-btn-sm desktop">
-                <Monitor size={16} /> Web-Browser
+                <Monitor size={16} /> {t.capcutDesktop}
               </a>
             </div>
-            <p className="ccp-capcut-hint">Tipp: In CapCut einfach auf "Neues Video" klicken, um den kostenlosen Editor zu nutzen.</p>
+            <p className="ccp-capcut-hint">{t.capcutHint}</p>
           </div>
 
           <div className="ccp-section">
             <div className="ccp-section-header">
               <Image size={18} />
-              <h3>Szenen & Visual Prompts</h3>
+              <h3>{t.scenesPrompts}</h3>
             </div>
             <div className="ccp-scenes-list">
               {recipe.scenes.map((scene, i) => (
-                <SceneCard key={i} scene={scene} index={i} />
+                <SceneCard key={i} scene={scene} index={i} t={t} />
               ))}
             </div>
           </div>
@@ -488,24 +748,24 @@ export default function TikTokVideoPage() {
           <div className="ccp-section">
             <div className="ccp-section-header">
               <Lightbulb size={18} />
-              <h3>So geht's</h3>
+              <h3>{t.guide}</h3>
             </div>
             <div className="ccp-guide">
               <div className="ccp-guide-step">
                 <span className="ccp-guide-num">1</span>
-                <p><strong>Skript kopieren</strong> — Klick auf "Kopieren" und füge den Text in CapCut's Text-to-Speech ein.</p>
+                <p><strong>{isDE ? 'Skript kopieren' : 'Copy script'}</strong> — {t.guideStep1}</p>
               </div>
               <div className="ccp-guide-step">
                 <span className="ccp-guide-num">2</span>
-                <p><strong>Prompts für Bilder</strong> — Kopiere jeden Prompt und generiere damit Bilder in Midjourney, DALL-E oder CapCut's KI-Generator.</p>
+                <p><strong>{isDE ? 'Prompts für Bilder' : 'Prompts for images'}</strong> — {t.guideStep2}</p>
               </div>
               <div className="ccp-guide-step">
                 <span className="ccp-guide-num">3</span>
-                <p><strong>In CapCut zusammensetzen</strong> — Füge Bilder, Voiceover und Musik zusammen und exportiere dein Video.</p>
+                <p><strong>{isDE ? 'In CapCut zusammensetzen' : 'Assemble in CapCut'}</strong> — {t.guideStep3}</p>
               </div>
               <div className="ccp-guide-step">
                 <span className="ccp-guide-num">4</span>
-                <p><strong>Publishing-Texte nutzen</strong> — Kopiere die plattformspezifischen Captions und poste dein Video auf allen Kanälen.</p>
+                <p><strong>{isDE ? 'Publishing-Texte nutzen' : 'Use publishing texts'}</strong> — {t.guideStep4}</p>
               </div>
             </div>
           </div>
@@ -516,10 +776,11 @@ export default function TikTokVideoPage() {
               onClick={() => {
                 setRecipe(null)
                 setError('')
+                setShowSuccess(false)
                 setActivePlatform('tiktok_instagram')
               }}
             >
-              <RotateCcw size={16} /> Neues Rezept generieren
+              <RotateCcw size={16} /> {t.newRecipe}
             </button>
           </div>
         </div>
@@ -528,7 +789,7 @@ export default function TikTokVideoPage() {
   )
 }
 
-function SceneCard({ scene, index }) {
+function SceneCard({ scene, index, t }) {
   const [expanded, setExpanded] = useState(false)
 
   return (
@@ -547,13 +808,13 @@ function SceneCard({ scene, index }) {
       {expanded && (
         <div className="ccp-scene-body">
           <div className="ccp-scene-section">
-            <h4>Gesprochener Text</h4>
+            <h4>{t.spokenText}</h4>
             <p>{scene.spoken_text}</p>
           </div>
           <div className="ccp-scene-section">
             <div className="ccp-scene-prompt-header">
-              <h4>Visueller Prompt</h4>
-              <CopyButton text={scene.visual_prompt} label="Prompt kopieren" />
+              <h4>{t.visualPrompt}</h4>
+              <CopyButton text={scene.visual_prompt} label={t.promptCopy} />
             </div>
             <div className="ccp-scene-prompt">
               <code>{scene.visual_prompt}</code>

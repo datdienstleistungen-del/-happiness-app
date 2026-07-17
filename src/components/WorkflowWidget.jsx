@@ -107,7 +107,7 @@ export default function WorkflowWidget({ workflow, onClose }) {
     if (!step) return null
     const key = step.step_key || ''
     if (key.includes('script') || key.includes('text') || key.includes('content')) return '/creator-academy'
-    if (key.includes('video') || key.includes('tiktok')) return '/tiktok-video'
+    if (key.includes('video') || key.includes('tiktok')) return '/capcut-studio'
     if (key.includes('design') || key.includes('image') || key.includes('photo')) return '/photo-editor'
     if (key.includes('story')) return '/fotostory'
     if (key.includes('review') || key.includes('analytics')) return '/analytics'

@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Rocket, ArrowRight, Clock, Check, Sparkles, Loader } from 'lucide-react'
+import { Rocket, ArrowRight, Clock, Check, Sparkles, Loader, HelpCircle, Copy, PenTool } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations.jsx'
 import { supabase } from '../lib/supabase'
 import { trackWorkflowCreated } from '../intelligence/analytics'
+import { trackGoalSubmitted, trackQuickResult } from '../intelligence/analytics/custom'
+import { getChatEndpoint } from '../lib/hit'
 import Feed from '../components/Feed'
 import WorkflowWidget from '../components/WorkflowWidget'
+import CopyButton from '../components/CopyButton'
 import './DashboardPage.css'
 
 const QUICK_GOALS_BY_CHOICE = {
@@ -37,6 +40,12 @@ const QUICK_GOALS_DEFAULT = [
   'Content-Idee für YouTube generieren',
 ]
 
+function isSimpleGoal(goal) {
+  const lower = goal.toLowerCase()
+  return /post|beitrag|text|schreib|teilen|empfehl|tipp|idee|gruß|nachricht/i.test(lower)
+    && !/video|tiktok|reel|youtube|film|kurzvideo/i.test(lower)
+}
+
 const PHASE_ICONS = { plan: '📝', create: '🎨', grow: '🚀' }
 const STATUS_ICONS = { pending: '○', active: '●', completed: '✓', skipped: '–', failed: '✗' }
 
@@ -48,6 +57,9 @@ export default function DashboardPage() {
   const [workflows, setWorkflows] = useState([])
   const [loadingWorkflows, setLoadingWorkflows] = useState(true)
   const [selectedWf, setSelectedWf] = useState(null)
+  const [quickResult, setQuickResult] = useState(null)
+  const [quickLoading, setQuickLoading] = useState(false)
+  const [showHowModal, setShowHowModal] = useState(false)
 
   const onboardingChoice = localStorage.getItem('happiness-onboarding-choice') || 'creator'
   const quickGoals = QUICK_GOALS_BY_CHOICE[onboardingChoice] || QUICK_GOALS_DEFAULT
@@ -73,6 +85,32 @@ export default function DashboardPage() {
     const g = goal.trim()
     setGoal('')
 
+    if (isSimpleGoal(g)) {
+      setQuickLoading(true)
+      setQuickResult(null)
+      trackQuickResult(g)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token || ''
+        const res = await fetch(getChatEndpoint(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({
+            message: `Schreibe einen fertigen, postfertigen Post basierend auf diesem Ziel:\n\n"${g}"\n\nRegeln: Kein Meta-Kommentar. Nur den fertigen Text. Max 280 Zeichen für Social Media.`,
+            systemPrompt: 'Du bist ein erfahrener Social-Media-Texter. Schreibe kurze, prägnante, postfertige Texte.',
+            history: []
+          })
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setQuickResult({ goal: g, content: (data.response || '').trim() })
+        }
+      } catch {}
+      setQuickLoading(false)
+      return
+    }
+
+    trackGoalSubmitted(g, 'content')
     const { data: wf } = await supabase
       .from('workflows')
       .insert({ user_id: user.id, goal: g, status: 'clarifying', platform: 'content' })
@@ -112,6 +150,51 @@ export default function DashboardPage() {
         <h1>{getGreeting()}, {profile?.name || user?.email?.split('@')[0] || ''}</h1>
       </div>
 
+      {/* ── How it works ── */}
+      <div className="dashboard-how-it-works" onClick={() => setShowHowModal(true)}>
+        <HelpCircle size={16} />
+        <div>
+            <strong>{t('dashboard.howTitle') || 'So funktioniert es:'}</strong>
+          <span>{t('dashboard.howText') || 'Beschreib dein Ziel unten — H.I.T. generiert dir automatisch Texte, Skripte und Posts für alle Plattformen. Du kopierst und postest.'}</span>
+        </div>
+      </div>
+
+      {/* ── How it works Modal ── */}
+      {showHowModal && (
+        <div className="dashboard-modal-overlay" onClick={() => setShowHowModal(false)}>
+          <div className="dashboard-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="dashboard-modal-close" onClick={() => setShowHowModal(false)}>×</button>
+            <h2>So funktioniert H.I.T.</h2>
+            <div className="dashboard-modal-steps">
+              <div className="dashboard-modal-step">
+                <div className="dashboard-modal-step-num">1</div>
+                <div>
+                  <strong>Ziel beschreiben</strong>
+                  <p>Gib ein, was du erstellen möchtest — z.B. "TikTok über gesunde Gewohnheiten" oder "Facebook-Post für mein Business".</p>
+                </div>
+              </div>
+              <div className="dashboard-modal-step">
+                <div className="dashboard-modal-step-num">2</div>
+                <div>
+                  <strong>H.I.T. generiert Content</strong>
+                  <p>Die KI analysiert dein Ziel und erstellt automatisch fertige Texte, Skripte und Posts für alle Plattformen.</p>
+                </div>
+              </div>
+              <div className="dashboard-modal-step">
+                <div className="dashboard-modal-step-num">3</div>
+                <div>
+                  <strong>Kopieren & posten</strong>
+                  <p>Kopiere die fertigen Texte und poste sie direkt auf TikTok, Instagram, Facebook, LinkedIn oder andere Kanäle.</p>
+                </div>
+              </div>
+            </div>
+            <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => setShowHowModal(false)}>
+              Verstanden
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── H.I.T. Command Center ── */}
       <div className="hit-command-center">
         <div className="hit-command-header">
@@ -143,6 +226,29 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
+
+      {/* ── Quick Result (simple goals) ── */}
+      {quickLoading && (
+        <div className="dashboard-quick-result">
+          <div className="dashboard-quick-loading">
+            <Loader size={18} className="spin" />
+            <span>H.I.T. schreibt deinen Post...</span>
+          </div>
+        </div>
+      )}
+      {quickResult && (
+        <div className="dashboard-quick-result">
+          <div className="dashboard-quick-header">
+            <PenTool size={16} />
+            <strong>Fertiger Post für: {quickResult.goal}</strong>
+          </div>
+          <div className="dashboard-quick-content">{quickResult.content}</div>
+          <div className="dashboard-quick-actions">
+            <CopyButton text={quickResult.content} />
+            <button className="dashboard-quick-dismiss" onClick={() => setQuickResult(null)}>Schließen</button>
+          </div>
+        </div>
+      )}
 
       {/* ── Active Workflows ── */}
       <div className="dashboard-section">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Copy, Check, Sparkles, Share2, MessageCircle, Rocket, PenTool } from 'lucide-react'
+import { ArrowLeft, Copy, Check, Sparkles, Share2, MessageCircle, Rocket, PenTool, HelpCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { getChatEndpoint } from '../lib/hit'
@@ -155,6 +155,11 @@ export default function PostPreparationPage() {
           <p className="post-prep-subtitle">Waehle deinen Stil. Bekommst den fertigen Post. Direkt posten oder teilen.</p>
         </div>
 
+        <div className="post-prep-how-it-works">
+          <HelpCircle size={14} />
+          <span><strong>So geht's:</strong> Waehle unten einen Stil — die KI schreibt dir den fertigen Post. Dann kopieren und posten.</span>
+        </div>
+
         <div className="post-prep-content">
           <div className="post-prep-source">
             <div className="post-prep-source-section">
@@ -219,7 +224,7 @@ export default function PostPreparationPage() {
                 )}
                 <button
                   className="btn btn-outline"
-                  onClick={() => navigate('/tiktok-video', { state: { postText: rewrittenPost } })}
+                   onClick={() => navigate('/capcut-studio', { state: { postText: rewrittenPost } })}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                 >
                   <Rocket size={14} /> Als Video

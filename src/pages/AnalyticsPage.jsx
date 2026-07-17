@@ -1,21 +1,55 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, BarChart3, Lightbulb, Film, Globe, Hash, Video, MessageSquare } from 'lucide-react'
+import { ArrowLeft, BarChart3, Users, Eye, Copy, MapPin, Calendar, RefreshCw } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 import './AnalyticsPage.css'
 
-const METRICS = [
-  { id: 'ideas', label: 'Gesamt generierte Ideen', value: '—', icon: Lightbulb, color: '#F59E0B', event: 'hit_idea_submitted' },
-  { id: 'recipes', label: 'Erfolgreiche Video-Rezepte', value: '—', icon: Film, color: '#2D8C6F', event: 'hit_recipe_success' },
+const RANGES = [
+  { value: '24h', label: '24 Stunden' },
+  { value: '7d', label: '7 Tage' },
+  { value: '30d', label: '30 Tage' },
 ]
 
-const CHANNELS = [
-  { name: 'TikTok / Instagram', icon: Hash, color: '#E4405F', event: 'hit_platform_tab_click', platform: 'tiktok_instagram' },
-  { name: 'LinkedIn / Facebook', icon: Globe, color: '#0A66C2', event: 'hit_platform_tab_click', platform: 'linkedin_facebook' },
-  { name: 'YouTube Shorts', icon: Video, color: '#FF0000', event: 'hit_platform_tab_click', platform: 'youtube_shorts' },
-  { name: 'Reddit', icon: MessageSquare, color: '#FF4500', event: 'hit_platform_tab_click', platform: 'reddit' },
-]
+const EVENT_LABELS = {
+  page_view: 'Seitenaufrufe',
+  goal_submitted: 'Ziele eingegeben',
+  quick_result: 'Quick Results',
+  content_generated: 'Content generiert',
+  copy_action: 'Kopiert',
+  chat_message: 'Chat Nachrichten',
+  workflow_started: 'Workflows gestartet',
+  workflow_completed: 'Workflows abgeschlossen',
+}
 
 export default function AnalyticsPage() {
   const navigate = useNavigate()
+  const [range, setRange] = useState('7d')
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => { loadAnalytics() }, [range])
+
+  async function loadAnalytics() {
+    setLoading(true)
+    setError('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token || ''
+      const res = await fetch(`/.netlify/functions/analytics-query?range=${range}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        setError(err.error || 'Fehler beim Laden')
+      } else {
+        setData(await res.json())
+      }
+    } catch (e) {
+      setError(e.message)
+    }
+    setLoading(false)
+  }
 
   return (
     <div className="analytics-page">
@@ -23,59 +57,136 @@ export default function AnalyticsPage() {
         <button className="analytics-back" onClick={() => navigate(-1)}>
           <ArrowLeft size={20} />
         </button>
-        <h1><BarChart3 size={22} /> H.I.T. Analytics Dashboard</h1>
+        <h1><BarChart3 size={22} /> Custom Analytics</h1>
       </div>
 
-      <div className="analytics-subtitle">
-        Echtzeit-Übersicht deiner H.I.T. Creator Activity. Daten werden live aus Google Analytics 4 gespeist.
+      <div className="analytics-controls">
+        <div className="analytics-range-btns">
+          {RANGES.map(r => (
+            <button
+              key={r.value}
+              className={`analytics-range-btn ${range === r.value ? 'active' : ''}`}
+              onClick={() => setRange(r.value)}
+            >{r.label}</button>
+          ))}
+        </div>
+        <button className="analytics-refresh" onClick={loadAnalytics} disabled={loading}>
+          <RefreshCw size={14} className={loading ? 'spin' : ''} /> Aktualisieren
+        </button>
       </div>
 
-      <div className="analytics-grid">
-        {METRICS.map(m => {
-          const Icon = m.icon
-          return (
-            <div key={m.id} className="analytics-card">
-              <div className="analytics-card-icon" style={{ background: m.color }}>
-                <Icon size={22} />
+      {error && <div className="analytics-error">{error}</div>}
+
+      {loading && !data && (
+        <div className="analytics-loading">Lade Analytics...</div>
+      )}
+
+      {data && (
+        <>
+          <div className="analytics-grid">
+            <div className="analytics-card">
+              <div className="analytics-card-icon" style={{ background: '#1d9e75' }}>
+                <Eye size={22} />
               </div>
               <div className="analytics-card-content">
-                <span className="analytics-card-value">{m.value}</span>
-                <span className="analytics-card-label">{m.label}</span>
+                <span className="analytics-card-value">{data.totalEvents?.toLocaleString() || '0'}</span>
+                <span className="analytics-card-label">Events gesamt</span>
               </div>
-              <span className="analytics-card-event">{m.event}</span>
             </div>
-          )
-        })}
-      </div>
-
-      <div className="analytics-section">
-        <h2>Top Social Channels</h2>
-        <p className="analytics-section-sub">Click-Rates nach Plattform (basierend auf hit_platform_tab_click Events)</p>
-        <div className="analytics-channels">
-          {CHANNELS.map(ch => {
-            const Icon = ch.icon
-            return (
-              <div key={ch.name} className="analytics-channel-card">
-                <div className="analytics-channel-left">
-                  <div className="analytics-channel-icon" style={{ background: ch.color }}>
-                    <Icon size={16} />
-                  </div>
-                  <span className="analytics-channel-name">{ch.name}</span>
-                </div>
-                <div className="analytics-channel-bar">
-                  <div className="analytics-channel-fill" style={{ background: ch.color, width: '0%' }} />
-                </div>
-                <span className="analytics-channel-value">—</span>
+            <div className="analytics-card">
+              <div className="analytics-card-icon" style={{ background: '#0A66C2' }}>
+                <Users size={22} />
               </div>
-            )
-          })}
-        </div>
-      </div>
+              <div className="analytics-card-content">
+                <span className="analytics-card-value">{data.uniqueVisitors?.toLocaleString() || '0'}</span>
+                <span className="analytics-card-label">Eindeutige Besucher</span>
+              </div>
+            </div>
+            <div className="analytics-card">
+              <div className="analytics-card-icon" style={{ background: '#F59E0B' }}>
+                <Copy size={22} />
+              </div>
+              <div className="analytics-card-content">
+                <span className="analytics-card-value">{(data.eventCounts?.copy_action || 0).toLocaleString()}</span>
+                <span className="analytics-card-label">Kopier-Aktionen</span>
+              </div>
+            </div>
+            <div className="analytics-card">
+              <div className="analytics-card-icon" style={{ background: '#E4405F' }}>
+                <MapPin size={22} />
+              </div>
+              <div className="analytics-card-content">
+                <span className="analytics-card-value">{data.topCities?.length || 0}</span>
+                <span className="analytics-card-label">Städte erkannt</span>
+              </div>
+            </div>
+          </div>
 
-      <div className="analytics-footer">
-        <p>Daten werden über GA4 Events (hit_idea_submitted, hit_recipe_success, hit_platform_tab_click, hit_capcut_export_click) gesammelt.</p>
-        <p>Verknüpft mit dem Intelligence Layer: <code>src/intelligence/analytics/index.js</code></p>
-      </div>
+          <div className="analytics-section">
+            <h2>Events nach Typ</h2>
+            <div className="analytics-event-list">
+              {Object.entries(data.eventCounts || {})
+                .sort((a, b) => b[1] - a[1])
+                .map(([name, count]) => (
+                  <div key={name} className="analytics-event-row">
+                    <span className="analytics-event-name">{EVENT_LABELS[name] || name}</span>
+                    <div className="analytics-event-bar">
+                      <div
+                        className="analytics-event-fill"
+                        style={{ width: `${Math.min(100, (count / (data.totalEvents || 1)) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="analytics-event-count">{count.toLocaleString()}</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          {data.topCities?.length > 0 && (
+            <div className="analytics-section">
+              <h2>Top Städte</h2>
+              <div className="analytics-city-list">
+                {data.topCities.map((city, i) => (
+                  <div key={i} className="analytics-city-row">
+                    <span className="analytics-city-rank">#{i + 1}</span>
+                    <span className="analytics-city-name">{city.name}</span>
+                    <span className="analytics-city-count">{city.count} Events</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {data.dailyBreakdown?.length > 0 && (
+            <div className="analytics-section">
+              <h2>Täglicher Verlauf</h2>
+              <div className="analytics-daily-chart">
+                {data.dailyBreakdown.map((day, i) => {
+                  const maxVal = Math.max(...data.dailyBreakdown.map(d => d.page_views), 1)
+                  return (
+                    <div key={i} className="analytics-daily-col">
+                      <div className="analytics-daily-bar-wrap">
+                        <div
+                          className="analytics-daily-bar"
+                          style={{ height: `${(day.page_views / maxVal) * 100}%` }}
+                          title={`${day.page_views} Views, ${day.goals} Ziele, ${day.copies} Kopien`}
+                        />
+                      </div>
+                      <span className="analytics-daily-date">
+                        {new Date(day.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="analytics-footer">
+            <p>Daten werden in Supabase-Tabelle <code>events</code> gespeichert. DSGVO-konform, keine Google-Abhängigkeit.</p>
+          </div>
+        </>
+      )}
     </div>
   )
 }

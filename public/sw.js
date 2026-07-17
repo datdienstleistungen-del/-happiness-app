@@ -1,4 +1,4 @@
-const CACHE_NAME = 'happiness-v2';
+const CACHE_NAME = 'happiness-v3';
 const PRECACHE = ['/', '/index.html'];
 
 self.addEventListener('install', (e) => {
@@ -17,6 +17,9 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  const url = new URL(e.request.url);
+  if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith('/api/')) return;
   e.respondWith(
     fetch(e.request)
       .then((res) => {
@@ -26,4 +29,8 @@ self.addEventListener('fetch', (e) => {
       })
       .catch(() => caches.match(e.request))
   );
+});
+
+self.addEventListener('message', (e) => {
+  if (e.data === 'skipWaiting') self.skipWaiting();
 });

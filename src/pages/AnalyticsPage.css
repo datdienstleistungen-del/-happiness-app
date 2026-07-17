@@ -8,7 +8,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .analytics-header h1 {
@@ -36,11 +36,73 @@
   background: var(--bg-hover, #f1f5f9);
 }
 
-.analytics-subtitle {
-  font-size: 0.88rem;
-  color: var(--text-muted, #6b7280);
+/* Controls */
+.analytics-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 24px;
-  line-height: 1.5;
+  gap: 12px;
+}
+
+.analytics-range-btns {
+  display: flex;
+  gap: 4px;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 10px;
+}
+
+.analytics-range-btn {
+  background: none;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.analytics-range-btn.active {
+  background: #fff;
+  color: #1a1a2e;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.analytics-refresh {
+  background: none;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.analytics-refresh:hover {
+  background: #f1f5f9;
+}
+
+.analytics-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: #dc2626;
+  font-size: 0.85rem;
+  margin-bottom: 20px;
+}
+
+.analytics-loading {
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+  font-size: 0.9rem;
 }
 
 /* Metric Cards */
@@ -57,9 +119,8 @@
   border-radius: 14px;
   padding: 20px;
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  position: relative;
+  align-items: flex-start;
+  gap: 14px;
 }
 
 .analytics-card-icon {
@@ -70,6 +131,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .analytics-card-content {
@@ -89,16 +151,6 @@
   color: var(--text-muted, #6b7280);
 }
 
-.analytics-card-event {
-  font-size: 0.7rem;
-  font-family: monospace;
-  color: var(--text-muted, #94a3b8);
-  background: #f1f5f9;
-  padding: 3px 8px;
-  border-radius: 4px;
-  align-self: flex-start;
-}
-
 /* Section */
 .analytics-section {
   margin-bottom: 28px;
@@ -108,81 +160,146 @@
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--text, #1a1a2e);
-  margin: 0 0 4px;
+  margin: 0 0 14px;
 }
 
-.analytics-section-sub {
-  font-size: 0.82rem;
-  color: var(--text-muted, #6b7280);
-  margin: 0 0 16px;
-}
-
-/* Channel Cards */
-.analytics-channels {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.analytics-channel-card {
+/* Event List */
+.analytics-event-list {
   background: var(--bg-card, #ffffff);
   border: 1px solid var(--border, #e2e8f0);
   border-radius: 12px;
-  padding: 14px 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.analytics-channel-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 160px;
-}
-
-.analytics-channel-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.analytics-channel-name {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text, #1a1a2e);
-}
-
-.analytics-channel-bar {
-  flex: 1;
-  height: 8px;
-  background: #f1f5f9;
-  border-radius: 4px;
   overflow: hidden;
 }
 
-.analytics-channel-fill {
+.analytics-event-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.analytics-event-row:last-child {
+  border-bottom: none;
+}
+
+.analytics-event-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text, #1a1a2e);
+  min-width: 140px;
+}
+
+.analytics-event-bar {
+  flex: 1;
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.analytics-event-fill {
   height: 100%;
-  border-radius: 4px;
+  background: #1d9e75;
+  border-radius: 3px;
   transition: width 0.5s ease;
 }
 
-.analytics-channel-value {
+.analytics-event-count {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-muted, #6b7280);
-  min-width: 32px;
+  min-width: 40px;
   text-align: right;
+}
+
+/* City List */
+.analytics-city-list {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.analytics-city-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.analytics-city-row:last-child {
+  border-bottom: none;
+}
+
+.analytics-city-rank {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #94a3b8;
+  min-width: 28px;
+}
+
+.analytics-city-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text, #1a1a2e);
+  flex: 1;
+}
+
+.analytics-city-count {
+  font-size: 0.8rem;
+  color: var(--text-muted, #6b7280);
+}
+
+/* Daily Chart */
+.analytics-daily-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 120px;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 12px;
+  padding: 16px 12px 24px;
+  overflow-x: auto;
+}
+
+.analytics-daily-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 24px;
+}
+
+.analytics-daily-bar-wrap {
+  width: 100%;
+  height: 80px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.analytics-daily-bar {
+  width: 100%;
+  max-width: 20px;
+  background: #1d9e75;
+  border-radius: 3px 3px 0 0;
+  min-height: 2px;
+  transition: height 0.3s ease;
+}
+
+.analytics-daily-date {
+  font-size: 0.6rem;
+  color: #94a3b8;
+  white-space: nowrap;
 }
 
 /* Footer */
 .analytics-footer {
-  padding: 20px;
+  padding: 16px;
   background: #f8fafc;
   border: 1px solid var(--border, #e2e8f0);
   border-radius: 12px;
@@ -192,7 +309,7 @@
 }
 
 .analytics-footer p {
-  margin: 0 0 4px;
+  margin: 0;
 }
 
 .analytics-footer code {
@@ -212,11 +329,21 @@
     grid-template-columns: 1fr;
   }
 
-  .analytics-channel-left {
-    min-width: 120px;
+  .analytics-controls {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .analytics-channel-name {
-    font-size: 0.78rem;
+  .analytics-range-btns {
+    justify-content: center;
   }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
 }

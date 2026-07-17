@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Sparkles, User, Download, Trash2, X, Heart, MapPin, Briefcase,
-  Lock, ChefHat, Car, Users, Send, Brain, Wrench, MessageCircle, Plus, ChevronLeft, Menu, PenTool, Film
+  Lock, ChefHat, Car, Users, Send, Brain, Wrench, MessageCircle, Plus, ChevronLeft, Menu, PenTool, Film, HelpCircle
 } from 'lucide-react'
 import { getChatEndpoint } from '../lib/hit'
 import { useAuth } from '../context/AuthContext'
@@ -682,6 +682,11 @@ export default function AIChatPage() {
               <h1><BrandWord /> AI</h1>
               <p>{t('ai.welcomeDesc') || 'Was kann ich heute für dich tun?'}</p>
 
+              <div className="ai-how-it-works">
+                <HelpCircle size={14} />
+                <span>Stell eine Frage oder beschreib dein Ziel — H.I.T. hilft dir beim Kochen, Reparieren, Planen oder beim Erstellen von Content.</span>
+              </div>
+
               <div className="suggestion-chips">
                 <button onClick={() => setInput('Was soll ich heute kochen?')}>
                   <span className="chip-icon"><ChefHat size={16} /></span>
@@ -803,7 +808,7 @@ export default function AIChatPage() {
                 </button>
                 <button className="followup-btn" onClick={() => {
                   const lastContent = messages[messages.length - 1].content
-                  navigate('/tiktok-video', { state: { postText: lastContent } })
+                   navigate('/capcut-studio', { state: { postText: lastContent } })
                 }}>
                   <Film size={14} /> Als Video
                 </button>

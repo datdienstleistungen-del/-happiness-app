@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Check, ArrowRight, Clock, Sparkles, AlertTriangle, MessageCircle } from 'lucide-react'
+import { Check, ArrowRight, Clock, Sparkles, AlertTriangle, MessageCircle, HelpCircle } from 'lucide-react'
 import { useLanguage } from '../i18n/translations'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -356,7 +356,7 @@ export default function ExecutionPipeline() {
     updateStepStatus('publish', 'completed')
 
     if (intent.platform === 'tiktok' || /video|tiktok|reel|kurzvideo/.test(goalLower)) {
-      navigate('/tiktok-video', { state: { postText: generatedContent, pipelineResult: apiResult } })
+      navigate('/capcut-studio', { state: { postText: generatedContent, pipelineResult: apiResult } })
     } else if (intent.platform === 'marketplace') {
       navigate('/marketplace', { state: { form: { title: goal, description: goal, price: '', category: 'Sonstiges' }, startTab: 'create' } })
     } else {
@@ -455,6 +455,11 @@ export default function ExecutionPipeline() {
             <span className="ep-hit-h">H</span><span className="ep-hit-rest">.I.T.</span>
           </div>
           <p className="ep-goal">"{goal}"</p>
+        </div>
+
+        <div className="ep-how-it-works">
+          <HelpCircle size={14} />
+          <span>H.I.T. analysiert dein Ziel und generiert automatisch fertige Texte und Skripte. Du musst nur noch kopieren und posten.</span>
         </div>
 
         <div className="ep-steps">

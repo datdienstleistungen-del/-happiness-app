@@ -5,6 +5,7 @@ import { trackDemoStarted, trackDemoCompleted } from '../intelligence/analytics'
 import { useLanguage } from '../i18n/translations.jsx'
 import InstallButton from '../components/InstallButton'
 import Logo from '../components/Logo'
+import ShowcaseSection from '../components/ShowcaseSection'
 import './LandingPage.css'
 
 const DEMO_POST = `🥗 5 Gewohnheiten, die dein Leben verändern
@@ -223,6 +224,9 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+
+      {/* Showcase: Show, don't tell */}
+      <ShowcaseSection />
 
       {/* Platforms */}
       <div className="landing-platforms">
