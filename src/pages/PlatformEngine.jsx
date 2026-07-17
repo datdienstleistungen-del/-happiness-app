@@ -46,6 +46,7 @@ export default function PlatformEngine() {
   const [showMore, setShowMore] = useState(false)
   const [copiedAll, setCopiedAll] = useState(false)
   const [generatedMore, setGeneratedMore] = useState(false)
+  const [copiedPlatform, setCopiedPlatform] = useState(null)
 
   // Restore state from localStorage on mount (after navigating back from CapCut/Analytics)
   useEffect(() => {
@@ -340,8 +341,15 @@ export default function PlatformEngine() {
                 <div key={key} className="pe-platform-card">
                   <div className="pe-platform-card-header">
                     <span className="pe-platform-name">{r.icon} {r.name}</span>
-                    <button className="pe-copy-btn" onClick={() => copyToClipboard(getResultText(r), key)}>
-                      <Copy size={14} /> {t('platformEngine.copy')}
+                    <button
+                      className="pe-copy-btn pe-copy-btn-card"
+                      onClick={() => {
+                        copyToClipboard(getResultText(r), key)
+                        setCopiedPlatform(key)
+                        setTimeout(() => setCopiedPlatform(null), 2000)
+                      }}
+                    >
+                      <Copy size={14} /> {copiedPlatform === key ? t('platformEngine.copiedAll') || 'Kopiert!' : `${r.name} ${t('platformEngine.copy')}`}
                     </button>
                   </div>
                   {r.content.hook && <p className="pe-card-hook">{r.content.hook}</p>}
@@ -360,8 +368,11 @@ export default function PlatformEngine() {
           </div>
 
           {/* Action Buttons */}
+          <div className="pe-actions-hint">
+            <p>💡 {t('platformEngine.copyHint')}</p>
+          </div>
           <div className="pe-actions">
-            <button className="btn btn-primary" onClick={copyAllTop3}>
+            <button className="btn btn-outline" onClick={copyAllTop3}>
               <Copy size={16} /> {copiedAll ? 'Kopiert!' : t('platformEngine.copyAll')}
             </button>
             <button className="btn btn-outline" onClick={async () => {

@@ -354,6 +354,35 @@
   color: #fff;
 }
 
+/* Card-level copy button — bigger, more prominent */
+.pe-copy-btn-card {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  border-radius: 8px;
+  background: var(--primary, #085041);
+  color: #fff;
+  border: none;
+  font-weight: 700;
+}
+
+.pe-copy-btn-card:hover {
+  background: #064535;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(8, 80, 65, 0.3);
+}
+
+/* Hint text above actions */
+.pe-actions-hint {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.pe-actions-hint p {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0;
+}
+
 .pe-card-hook {
   font-weight: 700;
   font-size: 0.9rem;
