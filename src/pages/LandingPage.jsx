@@ -9,12 +9,12 @@ import Logo from '../components/Logo'
 import './LandingPage.css'
 
 const GOAL_CHIPS = [
-  { label: 'Mehr Kunden gewinnen', icon: '🎯', de: 'Mehr Kunden gewinnen', en: 'Get more customers' },
-  { label: 'Reichweite erhöhen', icon: '📈', de: 'Reichweite erhöhen', en: 'Increase reach' },
-  { label: 'Produkt verkaufen', icon: '🛒', de: 'Produkt verkaufen', en: 'Sell a product' },
-  { label: 'Community aufbauen', icon: '👥', de: 'Community aufbauen', en: 'Build community' },
-  { label: 'Event bewerben', icon: '🎪', de: 'Event bewerben', en: 'Promote event' },
-  { label: 'Mitarbeiter finden', icon: '💼', de: 'Mitarbeiter finden', en: 'Find employees' },
+  { icon: '🎯', de: 'Mehr Kunden gewinnen', en: 'Get more customers', es: 'Ganar más clientes', fr: 'Gagner plus de clients', it: 'Ottenere più clienti', nl: 'Meer klanten winnen', el: 'Κερδίστε περισσότερους πελάτες' },
+  { icon: '📈', de: 'Reichweite erhöhen', en: 'Increase reach', es: 'Aumentar alcance', fr: 'Augmenter la portée', it: 'Aumentare la portata', nl: 'Bereik vergroten', el: 'Αυξήστε την εμβέλεια' },
+  { icon: '🛒', de: 'Produkt verkaufen', en: 'Sell a product', es: 'Vender producto', fr: 'Vendre un produit', it: 'Vendere un prodotto', nl: 'Product verkopen', el: 'Πουλήστε ένα προϊόν' },
+  { icon: '👥', de: 'Community aufbauen', en: 'Build community', es: 'Crear comunidad', fr: 'Créer une communauté', it: 'Creare una community', nl: 'Community opbouwen', el: 'Χτίστε κοινότητα' },
+  { icon: '🎪', de: 'Event bewerben', en: 'Promote event', es: 'Promocionar evento', fr: 'Promouvoir un événement', it: 'Promuovere un evento', nl: 'Evenement promoten', el: 'Προωθήστε ένα event' },
+  { icon: '💼', de: 'Mitarbeiter finden', en: 'Find employees', es: 'Encontrar empleados', fr: 'Trouver des employés', it: 'Trovare dipendenti', nl: 'Medewerkers vinden', el: 'Βρείτε υπαλλήλους' },
 ]
 
 export default function LandingPage() {

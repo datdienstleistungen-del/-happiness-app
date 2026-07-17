@@ -28,6 +28,46 @@ const GOAL_CHIPS = {
     { label: 'Promote event', icon: '🎪' },
     { label: 'Find employees', icon: '💼' },
   ],
+  es: [
+    { label: 'Ganar más clientes', icon: '🎯' },
+    { label: 'Aumentar alcance', icon: '📈' },
+    { label: 'Vender producto', icon: '🛒' },
+    { label: 'Crear comunidad', icon: '👥' },
+    { label: 'Promocionar evento', icon: '🎪' },
+    { label: 'Encontrar empleados', icon: '💼' },
+  ],
+  fr: [
+    { label: 'Gagner plus de clients', icon: '🎯' },
+    { label: 'Augmenter la portée', icon: '📈' },
+    { label: 'Vendre un produit', icon: '🛒' },
+    { label: 'Créer une communauté', icon: '👥' },
+    { label: 'Promouvoir un événement', icon: '🎪' },
+    { label: 'Trouver des employés', icon: '💼' },
+  ],
+  it: [
+    { label: 'Ottenere più clienti', icon: '🎯' },
+    { label: 'Aumentare la portata', icon: '📈' },
+    { label: 'Vendere un prodotto', icon: '🛒' },
+    { label: 'Creare una community', icon: '👥' },
+    { label: 'Promuovere un evento', icon: '🎪' },
+    { label: 'Trovare dipendenti', icon: '💼' },
+  ],
+  nl: [
+    { label: 'Meer klanten winnen', icon: '🎯' },
+    { label: 'Bereik vergroten', icon: '📈' },
+    { label: 'Product verkopen', icon: '🛒' },
+    { label: 'Community opbouwen', icon: '👥' },
+    { label: 'Evenement promoten', icon: '🎪' },
+    { label: 'Medewerkers vinden', icon: '💼' },
+  ],
+  el: [
+    { label: 'Κερδίστε περισσότερους πελάτες', icon: '🎯' },
+    { label: 'Αυξήστε την εμβέλεια', icon: '📈' },
+    { label: 'Πουλήστε ένα προϊόν', icon: '🛒' },
+    { label: 'Χτίστε κοινότητα', icon: '👥' },
+    { label: 'Προωθήστε ένα event', icon: '🎪' },
+    { label: 'Βρείτε υπαλλήλους', icon: '💼' },
+  ],
 }
 
 export default function PlatformEngine() {
