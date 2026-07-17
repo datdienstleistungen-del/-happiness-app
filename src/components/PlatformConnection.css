@@ -1,0 +1,207 @@
+.pc-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  background: white;
+  margin-bottom: 12px;
+  transition: all 0.2s;
+}
+
+.pc-card:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.pc-checking {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #6b7280;
+}
+
+.pc-connected {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.pc-connected-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #22c55e;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pc-disconnected {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pc-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pc-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.pc-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pc-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.pc-desc {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 2px 0 0;
+}
+
+.pc-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 0.8rem;
+}
+
+.pc-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.pc-connect-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  background: #7c3aed;
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pc-connect-btn:hover:not(:disabled) {
+  background: #6d28d9;
+}
+
+.pc-connect-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pc-skip-btn {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #6b7280;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pc-skip-btn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.pc-hinweis {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.pc-spinner {
+  animation: pc-spin 1s linear infinite;
+}
+
+@keyframes pc-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Gate Styles */
+.pc-gate {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.pc-gate-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px;
+  color: #6b7280;
+}
+
+.pc-gate-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.pc-gate-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 8px;
+}
+
+.pc-gate-header p {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.pc-gate-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pc-gate-back {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #6b7280;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-align: center;
+}
+
+.pc-gate-back:hover {
+  background: #f9fafb;
+}

@@ -8,6 +8,8 @@ import { getChatEndpoint } from '../lib/hit'
 import { trackIdeaSubmitted, trackWorkflowCompleted, trackArtifactSaved, trackPlatformsDetected, trackMasterBriefGenerated, trackPlatformAgentResult, trackMultiPlatformCount } from '../intelligence/analytics'
 import { detectPlatforms, buildMasterBrief, runPlatformAgent } from '../intelligence/content-engine'
 import { generateQuestionSequence, getNextQuestion, buildMasterBriefFromAnswers } from '../intelligence/guided-questions'
+import { checkAllRequiredPlatforms } from '../intelligence/platform-connections'
+import PlatformConnection from '../components/PlatformConnection'
 import './ExecutionPipeline.css'
 
 const INTENT_PROMPT = `Du bist ein Intent-Analyst. Der Nutzer hat etwas eingegeben. Analysiere:
@@ -213,6 +215,8 @@ export default function ExecutionPipeline() {
   const [guidedIndex, setGuidedIndex] = useState(0)
   const [guidedAnswers, setGuidedAnswers] = useState({})
   const [guidedGoal, setGuidedGoal] = useState('')
+  const [requiredPlatforms, setRequiredPlatforms] = useState([])
+  const [platformCheckResult, setPlatformCheckResult] = useState(null)
   const [error, setError] = useState('')
   const [debugData, setDebugData] = useState(null)
   const [showResult, setShowResult] = useState(false)
@@ -294,20 +298,67 @@ export default function ExecutionPipeline() {
   }
 
   const startExecutionFromGuided = async (answers) => {
-    console.log('[Pipeline] Starting execution with answers:', answers)
-    const brief = buildMasterBriefFromAnswers(guidedGoal, answers)
+    try {
+      console.log('[Pipeline] Starting execution with answers:', answers)
+      const brief = buildMasterBriefFromAnswers(guidedGoal, answers)
 
-    // Detect platform from answers
-    const channel = answers.channel || 'social_media'
-    const platforms = Array.isArray(answers.platforms) ? answers.platforms : (answers.platforms ? [answers.platforms] : [])
-    let detectedPlatform = 'content'
+      // Detect platform from answers
+      const channel = answers.channel || 'social_media'
+      const platforms = Array.isArray(answers.platforms) ? answers.platforms : (answers.platforms ? [answers.platforms] : [])
+      let detectedPlatform = 'content'
 
-    if (channel === 'kleinanzeigen') detectedPlatform = 'marketplace'
-    else if (platforms.includes('tiktok') || /video|tiktok|reel|kurzvideo/.test(guidedGoal.toLowerCase())) detectedPlatform = 'tiktok'
-    else if (platforms.length > 0) detectedPlatform = platforms[0]
-    else if (/video|tiktok|reel|kurzvideo/.test(guidedGoal.toLowerCase())) detectedPlatform = 'tiktok'
+      if (channel === 'kleinanzeigen') detectedPlatform = 'marketplace'
+      else if (platforms.includes('tiktok') || /video|tiktok|reel|kurzvideo/.test(guidedGoal.toLowerCase())) detectedPlatform = 'tiktok'
+      else if (platforms.length > 0) detectedPlatform = platforms[0]
+      else if (/video|tiktok|reel|kurzvideo/.test(guidedGoal.toLowerCase())) detectedPlatform = 'tiktok'
 
+      // Bestimme welche Plattformen benötigt werden
+      const neededPlatforms = [detectedPlatform]
+      if (detectedPlatform === 'tiktok' && !neededPlatforms.includes('capcut')) {
+        neededPlatforms.push('capcut')
+      }
+      setRequiredPlatforms(neededPlatforms)
+
+      // Prüfe ob alle Plattformen verbunden sind
+      if (user) {
+        const checkResult = await checkAllRequiredPlatforms(user.id, neededPlatforms)
+        setPlatformCheckResult(checkResult)
+
+        if (!checkResult.allConnected) {
+          setPhase('connecting')
+          return
+        }
+      }
+
+      // Alle Plattformen verbunden — weiter mit Execution
+      proceedToExecution(answers, detectedPlatform, brief)
+    } catch (err) {
+      console.error('[Pipeline] Error in startExecutionFromGuided:', err)
+      setError('Ein Fehler ist aufgetreten. Bitte versuch es nochmal.')
+      setPhase('error')
+    }
+  }
+
+  const handleAllPlatformsConnected = () => {
+    // Re-run platform check and proceed
+    if (platformCheckResult && !platformCheckResult.allConnected) {
+      // Recalculate
+      const channel = guidedAnswers.channel || 'social_media'
+      const platforms = Array.isArray(guidedAnswers.platforms) ? guidedAnswers.platforms : (guidedAnswers.platforms ? [guidedAnswers.platforms] : [])
+      let detectedPlatform = 'content'
+      if (channel === 'kleinanzeigen') detectedPlatform = 'marketplace'
+      else if (platforms.includes('tiktok') || /video|tiktok|reel|kurzvideo/.test(guidedGoal.toLowerCase())) detectedPlatform = 'tiktok'
+      else if (platforms.length > 0) detectedPlatform = platforms[0]
+      else if (/video|tiktok|reel|kurzvideo/.test(guidedGoal.toLowerCase())) detectedPlatform = 'tiktok'
+
+      const brief = buildMasterBriefFromAnswers(guidedGoal, guidedAnswers)
+      proceedToExecution(guidedAnswers, detectedPlatform, brief)
+    }
+  }
+
+  const proceedToExecution = (answers, detectedPlatform, brief) => {
     // Build enriched goal from answers
+    const platforms = Array.isArray(answers.platforms) ? answers.platforms : (answers.platforms ? [answers.platforms] : [])
     const platformText = platforms.length > 0 ? platforms.join(', ') : ''
     const enrichedGoal = [
       guidedGoal,
@@ -490,6 +541,61 @@ export default function ExecutionPipeline() {
             <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '20px' }}>
               Frage {guidedIndex + 1} von {guidedQuestions.length}
             </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (phase === 'connecting') {
+    const missingPlatforms = platformCheckResult?.missing || requiredPlatforms
+
+    return (
+      <div className="ep-page">
+        <div className="ep-card">
+          <div className="ep-header">
+            <div className="ep-header-brand">
+              <span className="ep-hit-h">H</span><span className="ep-hit-rest">.I.T.</span>
+            </div>
+            <p className="ep-goal">"{guidedGoal}"</p>
+          </div>
+
+          <div style={{ textAlign: 'center', padding: '0 16px' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🔐</div>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '6px' }}>
+              Plattform verbinden
+            </h2>
+            <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '20px' }}>
+              Um Content zu erstellen, brauchst du ein eigenes Konto bei {missingPlatforms.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' und ')}.
+            </p>
+          </div>
+
+          <div style={{ maxWidth: '400px', margin: '0 auto' }}>
+            {missingPlatforms.map(platform => (
+              <PlatformConnection
+                key={platform}
+                platform={platform}
+                onConnected={(p) => {
+                  // Re-check all platforms
+                  checkAllRequiredPlatforms(user?.id, requiredPlatforms).then(result => {
+                    setPlatformCheckResult(result)
+                    if (result.allConnected) {
+                      handleAllPlatformsConnected()
+                    }
+                  })
+                }}
+              />
+            ))}
+          </div>
+
+          <div style={{ marginTop: '16px', textAlign: 'center' }}>
+            <button
+              className="ep-btn secondary"
+              onClick={() => setPhase('guided')}
+              style={{ fontSize: '0.85rem' }}
+            >
+              ← Zurück zu den Fragen
+            </button>
           </div>
         </div>
       </div>
