@@ -347,6 +347,18 @@ const translations = {
       infoDesc: 'Mientras te enfocas en tu objetivo, H.I.T. planifica el trabajo, encuentra información, crea contenido, mejora la calidad y te guía hasta el resultado final.',
       communityTitle: 'Inspiración de la Comunidad',
       communitySub: 'Mira lo que otras personas están creando.'
+    },
+    platformEngine: {
+      resultTitle: '¡Tu Paquete de Creador está listo!',
+      copy: 'Copiar',
+      copyAll: 'Copiar los 3',
+      shareAll: 'Compartir todos',
+      moreAvailable: 'Más versiones disponibles:',
+      moreButton: 'Generar más plataformas',
+      recsTitle: '💡 Recomendaciones de H.I.T.',
+      packageTitle: 'Tu paquete contiene:',
+      generating: 'H.I.T. está trabajando por ti...',
+      recommended: 'Plataformas recomendadas:'
     }
   },
   fr: {
@@ -433,6 +445,18 @@ const translations = {
       infoDesc: 'Pendant que vous vous concentrez sur votre objectif, H.I.T. planifie le travail, trouve des informations, crée du contenu, améliore la qualité et vous guide jusqu\'au résultat final.',
       communityTitle: 'Inspiration Communautaire',
       communitySub: 'Voyez ce que les autres créent.'
+    },
+    platformEngine: {
+      resultTitle: 'Votre Package Créateur est prêt !',
+      copy: 'Copier',
+      copyAll: 'Copier les 3',
+      shareAll: 'Tout partager',
+      moreAvailable: 'Plus de versions disponibles :',
+      moreButton: 'Générer plus de plateformes',
+      recsTitle: '💡 Recommandations de H.I.T.',
+      packageTitle: 'Votre paquet contient :',
+      generating: 'H.I.T. travaille pour vous...',
+      recommended: 'Plateformes recommandées :'
     }
   },
   it: {
@@ -519,6 +543,18 @@ const translations = {
       infoDesc: 'Mentre ti concentri sul tuo obiettivo, H.I.T. pianifica il lavoro, trova informazioni, crea contenuti, migliora la qualità e ti guida fino al risultato finale.',
       communityTitle: 'Ispirazione della Community',
       communitySub: 'Vedi cosa stanno creando gli altri.'
+    },
+    platformEngine: {
+      resultTitle: 'Il tuo Pacchetto Creatore è pronto!',
+      copy: 'Copia',
+      copyAll: 'Copia tutti e 3',
+      shareAll: 'Condividi tutti',
+      moreAvailable: 'Altre versioni disponibili:',
+      moreButton: 'Genera altre piattaforme',
+      recsTitle: '💡 Raccomandazioni di H.I.T.',
+      packageTitle: 'Il tuo pacchetto contiene:',
+      generating: 'H.I.T. sta lavorando per te...',
+      recommended: 'Piattaforme consigliate:'
     }
   },
   nl: {
@@ -605,6 +641,18 @@ const translations = {
       infoDesc: 'Terwijl jij je op je doel focust, plant H.I.T. het werk, vindt informatie, creëert content, verbetert kwaliteit en begeleid je tot het eindresultaat.',
       communityTitle: 'Community Inspiratie',
       communitySub: 'Zie wat anderen creëren.'
+    },
+    platformEngine: {
+      resultTitle: 'Je Creator-pakket is klaar!',
+      copy: 'Kopiëren',
+      copyAll: 'Alle 3 kopiëren',
+      shareAll: 'Alles delen',
+      moreAvailable: 'Meer versies beschikbaar:',
+      moreButton: 'Meer platforms genereren',
+      recsTitle: '💡 Aanbevelingen van H.I.T.',
+      packageTitle: 'Je pakket bevat:',
+      generating: 'H.I.T. werkt voor je...',
+      recommended: 'Aanbevolen platforms:'
     }
   },
   el: {
@@ -691,6 +739,18 @@ const translations = {
       infoDesc: 'Ενώ εσείς εστιάζετε στον στόχο σας, το H.I.T. σχεδιάζει τη δουλειά, βρίσκει πληροφορίες, δημιουργεί περιεχόμενο, βελτιώνει την ποιότητα και σας κατευθύνει στο τελικό αποτέλεσμα.',
       communityTitle: 'Έμπνευση Κοινότητας',
       communitySub: 'Δείτε τι δημιουργούν οι άλλοι.'
+    },
+    platformEngine: {
+      resultTitle: 'Το Δημιουργικό Πακέτο σας είναι έτοιμο!',
+      copy: 'Αντιγραφή',
+      copyAll: 'Αντιγραφή των 3',
+      shareAll: 'Κοινοποίηση όλων',
+      moreAvailable: 'Περισσότερες εκδόσεις διαθέσιμες:',
+      moreButton: 'Δημιουργία περισσότερων πλατφορμών',
+      recsTitle: '💡 Συστάσεις από το H.I.T.',
+      packageTitle: 'Το πακέτο σας περιέχει:',
+      generating: 'Το H.I.T. εργάζεται για εσάς...',
+      recommended: 'Συνιστώμενες πλατφόρμες:'
     }
   }
 }
