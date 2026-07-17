@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { getChatEndpoint } from '../lib/hit'
 import { trackIdeaSubmitted, trackWorkflowCompleted, trackArtifactSaved, trackPlatformsDetected, trackMasterBriefGenerated, trackPlatformAgentResult, trackMultiPlatformCount } from '../intelligence/analytics'
 import { detectPlatforms, buildMasterBrief, runPlatformAgent } from '../intelligence/content-engine'
+import { generateQuestionSequence, getNextQuestion, buildMasterBriefFromAnswers } from '../intelligence/guided-questions'
 import './ExecutionPipeline.css'
 
 const INTENT_PROMPT = `Du bist ein Intent-Analyst. Der Nutzer hat etwas eingegeben. Analysiere:
@@ -208,6 +209,10 @@ export default function ExecutionPipeline() {
   const [apiDone, setApiDone] = useState(false)
   const [clarifyText, setClarifyText] = useState('')
   const [clarifyAnswer, setClarifyAnswer] = useState('')
+  const [guidedQuestions, setGuidedQuestions] = useState([])
+  const [guidedIndex, setGuidedIndex] = useState(0)
+  const [guidedAnswers, setGuidedAnswers] = useState({})
+  const [guidedGoal, setGuidedGoal] = useState('')
   const [error, setError] = useState('')
   const [debugData, setDebugData] = useState(null)
   const [showResult, setShowResult] = useState(false)
@@ -249,96 +254,14 @@ export default function ExecutionPipeline() {
 
     trackIdeaSubmitted(goal)
 
-    let cancelled = false
-
-    analyzeIntent(goal).then(result => {
-      if (cancelled) return
-
-      if (!result) {
-        setError('H.I.T. konnte das Ziel nicht analysieren. API-Limit erreicht. Versuch es spaeter nochmal.')
-        updateWorkflowStatus('archived')
-        setPhase('error')
-        return
-      }
-
-      if (result.platform === 'chat') {
-        navigate('/ai-chat', { state: { message: goal } })
-        return
-      }
-
-      if (result.action === 'clarify') {
-        setClarifyText(result.clarifyQuestion || 'Was genau soll ich dafür tun?')
-        updateWorkflowStatus('clarifying')
-        setPhase('clarify')
-        return
-      }
-
-      setIntent(result)
-      setPhase('executing')
-      updateWorkflowStatus('executing')
-
-      const steps = STEP_LABELS_BY_PLATFORM[result.platform] || []
-      let stepIndex = 0
-
-      const runStep = () => {
-        if (stepIndex >= steps.length) {
-          setFinished(true)
-          updateWorkflowStatus('reviewing')
-          return
-        }
-        setCurrentStep(stepIndex)
-        updateStepStatus(steps[stepIndex].key, 'active')
-        const dur = steps[stepIndex].duration
-        setTimeout(() => {
-          updateStepStatus(steps[stepIndex].key, 'completed')
-          setCompletedSteps(prev => [...prev, stepIndex])
-          stepIndex++
-          runStep()
-        }, dur)
-      }
-
-      runStep()
-
-      if (result.platform !== 'marketplace') {
-        startRealWork(result.platform, goal).then(async (r) => {
-          setApiResult(r)
-          setApiDone(true)
-          if (debugMode && r) {
-            setDebugData({
-              goal,
-              detectedPlatforms: r.detectedPlatforms || [],
-              masterBrief: r.masterBrief || '',
-              agentResults: r.agentResults || [],
-              intent
-            })
-          }
-          if (r && workflowRef.current) {
-            if (r.contents) {
-              for (const item of r.contents) {
-                trackArtifactSaved(item.platform)
-                await supabase.from('workflow_artifacts').insert({
-                  workflow_id: workflowRef.current.id,
-                  artifact_type: item.platform,
-                  content: { content: item.content, agent: item.agent, masterBrief: r.masterBrief }
-                })
-              }
-            } else {
-              const artifactType = result.platform === 'tiktok' ? 'video' : 'post'
-              trackArtifactSaved(artifactType)
-              await supabase.from('workflow_artifacts').insert({
-                workflow_id: workflowRef.current.id,
-                artifact_type: artifactType,
-                content: r
-              })
-            }
-          }
-        })
-      } else {
-        setApiDone(true)
-      }
-    })
-
-    return () => { cancelled = true }
+    // Start guided flow: H.I.T. asks questions first
+    const questions = generateQuestionSequence(goal)
+    setGuidedQuestions(questions)
+    setGuidedGoal(goal)
+    setGuidedIndex(0)
+    setGuidedAnswers({})
+    setPhase('guided')
+    updateWorkflowStatus('guiding')
   }, [goal])
 
   useEffect(() => {
@@ -348,6 +271,98 @@ export default function ExecutionPipeline() {
     trackWorkflowCompleted(intent?.platform || 'content', Math.round((Date.now() - startTime) / 1000))
     setShowResult(true)
   }, [finished, apiDone, intent, goal, phase])
+
+  const handleGuidedAnswer = (questionId, value) => {
+    const newAnswers = { ...guidedAnswers, [questionId]: value }
+    setGuidedAnswers(newAnswers)
+
+    const next = getNextQuestion(guidedQuestions, newAnswers, guidedIndex + 1)
+    if (next) {
+      setGuidedIndex(next.index)
+    } else {
+      // All questions answered — start execution
+      startExecutionFromGuided(newAnswers)
+    }
+  }
+
+  const startExecutionFromGuided = async (answers) => {
+    const brief = buildMasterBriefFromAnswers(guidedGoal, answers)
+
+    // Detect platform from answers
+    const channel = answers.channel || 'social_media'
+    const platforms = answers.platforms || []
+    let detectedPlatform = 'content'
+
+    if (channel === 'kleinanzeigen') detectedPlatform = 'marketplace'
+    else if (platforms.includes('tiktok') || /video|tiktok|reel|kurzvideo/.test(guidedGoal.toLowerCase())) detectedPlatform = 'tiktok'
+    else if (platforms.length > 0) detectedPlatform = platforms[0]
+    else if (/video|tiktok|reel|kurzvideo/.test(guidedGoal.toLowerCase())) detectedPlatform = 'tiktok'
+
+    // Build enriched goal from answers
+    const enrichedGoal = [
+      guidedGoal,
+      `Zielgruppe: ${answers.audience || ''}`,
+      `Kanal: ${answers.channel || ''}${answers.platforms?.length ? ` (${answers.platforms.join(', ')})` : ''}`,
+      `Ziel: ${answers.goal_type || ''}`,
+      `Tonfall: ${answers.tone || ''}`,
+      answers.usp ? `USP: ${answers.usp}` : '',
+    ].filter(Boolean).join('. ')
+
+    setIntent({ platform: detectedPlatform, action: 'execute' })
+    setPhase('executing')
+    updateWorkflowStatus('executing')
+
+    const steps = STEP_LABELS_BY_PLATFORM[detectedPlatform] || []
+    let stepIndex = 0
+
+    const runStep = () => {
+      if (stepIndex >= steps.length) {
+        setFinished(true)
+        updateWorkflowStatus('reviewing')
+        return
+      }
+      setCurrentStep(stepIndex)
+      updateStepStatus(steps[stepIndex].key, 'active')
+      const dur = steps[stepIndex].duration
+      setTimeout(() => {
+        updateStepStatus(steps[stepIndex].key, 'completed')
+        setCompletedSteps(prev => [...prev, stepIndex])
+        stepIndex++
+        runStep()
+      }, dur)
+    }
+
+    runStep()
+
+    if (detectedPlatform !== 'marketplace') {
+      startRealWork(detectedPlatform, enrichedGoal).then(async (r) => {
+        setApiResult(r)
+        setApiDone(true)
+        if (r && workflowRef.current) {
+          if (r.contents) {
+            for (const item of r.contents) {
+              trackArtifactSaved(item.platform)
+              await supabase.from('workflow_artifacts').insert({
+                workflow_id: workflowRef.current.id,
+                artifact_type: item.platform,
+                content: { content: item.content, agent: item.agent, masterBrief: r.masterBrief }
+              })
+            }
+          } else {
+            const artifactType = detectedPlatform === 'tiktok' ? 'video' : 'post'
+            trackArtifactSaved(artifactType)
+            await supabase.from('workflow_artifacts').insert({
+              workflow_id: workflowRef.current.id,
+              artifact_type: artifactType,
+              content: r
+            })
+          }
+        }
+      })
+    } else {
+      setApiDone(true)
+    }
+  }
 
   const navigateToResult = () => {
     const generatedContent = apiResult?.content || apiResult?.contents?.[0]?.content || goal
@@ -365,11 +380,113 @@ export default function ExecutionPipeline() {
     }
   }
 
+  if (phase === 'guided') {
+    const next = getNextQuestion(guidedQuestions, guidedAnswers, guidedIndex)
+    if (!next) {
+      // fallback: should not happen
+      setPhase('analyzing')
+      return null
+    }
+    const q = next.question
+    const progress = ((guidedIndex) / guidedQuestions.length) * 100
+
+    return (
+      <div className="ep-page">
+        <div className="ep-card">
+          <div className="ep-header">
+            <div className="ep-header-brand">
+              <span className="ep-hit-h">H</span><span className="ep-hit-rest">.I.T.</span>
+            </div>
+            <p className="ep-goal">"{guidedGoal}"</p>
+          </div>
+
+          <div style={{ width: '100%', height: '4px', background: '#e5e7eb', borderRadius: '2px', marginBottom: '24px' }}>
+            <div style={{ width: `${progress}%`, height: '100%', background: '#7c3aed', borderRadius: '2px', transition: 'width 0.3s ease' }} />
+          </div>
+
+          <div style={{ textAlign: 'center', padding: '0 16px' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '8px' }}>
+              {guidedIndex === 0 ? '👋' : guidedIndex === guidedQuestions.length - 1 ? '✨' : '💬'}
+            </div>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '6px' }}>
+              {q.question}
+            </h2>
+            {q.hint && (
+              <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '20px' }}>
+                {q.hint}
+              </p>
+            )}
+
+            {q.type === 'text' ? (
+              <div style={{ maxWidth: '400px', margin: '0 auto' }}>
+                <input
+                  type="text"
+                  value={guidedAnswers[q.id] || ''}
+                  onChange={(e) => setGuidedAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && guidedAnswers[q.id]?.trim()) {
+                      handleGuidedAnswer(q.id, guidedAnswers[q.id])
+                    }
+                  }}
+                  placeholder={q.placeholder || 'Deine Antwort...'}
+                  autoFocus
+                  style={{
+                    width: '100%', padding: '12px 16px', borderRadius: '10px',
+                    border: '2px solid #e5e7eb', fontSize: '15px', outline: 'none',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#7c3aed'}
+                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                />
+                <button
+                  onClick={() => handleGuidedAnswer(q.id, guidedAnswers[q.id])}
+                  disabled={!guidedAnswers[q.id]?.trim()}
+                  style={{
+                    marginTop: '12px', padding: '10px 24px', borderRadius: '10px',
+                    border: 'none', background: guidedAnswers[q.id]?.trim() ? '#7c3aed' : '#d1d5db',
+                    color: 'white', fontWeight: '600', fontSize: '14px', cursor: guidedAnswers[q.id]?.trim() ? 'pointer' : 'not-allowed',
+                    transition: 'background 0.2s',
+                  }}
+                >
+                  Weiter →
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: '400px', margin: '0 auto' }}>
+                {q.options.map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => handleGuidedAnswer(q.id, opt.value)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '12px',
+                      padding: '12px 16px', borderRadius: '10px',
+                      border: guidedAnswers[q.id] === opt.value ? '2px solid #7c3aed' : '2px solid #e5e7eb',
+                      background: guidedAnswers[q.id] === opt.value ? '#f5f3ff' : 'white',
+                      cursor: 'pointer', textAlign: 'left', fontSize: '14px', fontWeight: '500',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.2rem' }}>{opt.icon}</span>
+                    <span>{opt.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '20px' }}>
+              Frage {guidedIndex + 1} von {guidedQuestions.length}
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (phase === 'clarify') {
     const handleClarifySubmit = () => {
       if (!clarifyAnswer.trim()) return
       const newGoal = `${goal} — ${clarifyAnswer.trim()}`
-      navigate('/execute', { state: { goal: newGoal } })
+      navigate('/execute?goal=' + encodeURIComponent(newGoal))
     }
 
     return (
