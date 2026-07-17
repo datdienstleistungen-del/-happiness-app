@@ -334,22 +334,27 @@ export default function PlatformEngine() {
 
           {/* Top 3 Platform Cards */}
           <div className="pe-platform-grid">
-            {top3Keys.map((key) => {
+            {top3Keys.map((key, index) => {
               const r = topResults[key]
               if (!r) return null
+              const isCopied = copiedPlatform === key
+              const copiedCount = copiedPlatform ? 1 : 0
               return (
-                <div key={key} className="pe-platform-card">
+                <div key={key} className={`pe-platform-card ${isCopied ? 'pe-platform-card-copied' : ''}`}>
                   <div className="pe-platform-card-header">
-                    <span className="pe-platform-name">{r.icon} {r.name}</span>
+                    <div className="pe-platform-name-group">
+                      <span className="pe-platform-step">{index + 1}/3</span>
+                      <span className="pe-platform-name">{r.icon} {r.name}</span>
+                    </div>
                     <button
-                      className="pe-copy-btn pe-copy-btn-card"
+                      className={`pe-copy-btn pe-copy-btn-card ${isCopied ? 'pe-copy-btn-done' : ''}`}
                       onClick={() => {
                         copyToClipboard(getResultText(r), key)
                         setCopiedPlatform(key)
                         setTimeout(() => setCopiedPlatform(null), 2000)
                       }}
                     >
-                      <Copy size={14} /> {copiedPlatform === key ? t('platformEngine.copiedAll') || 'Kopiert!' : `${r.name} ${t('platformEngine.copy')}`}
+                      {isCopied ? <><Check size={14} /> Kopiert!</> : <><Copy size={14} /> In CapCut einfügen</>}
                     </button>
                   </div>
                   {r.content.hook && <p className="pe-card-hook">{r.content.hook}</p>}
@@ -367,14 +372,8 @@ export default function PlatformEngine() {
             })}
           </div>
 
-          {/* Action Buttons */}
-          <div className="pe-actions-hint">
-            <p>💡 {t('platformEngine.copyHint')}</p>
-          </div>
+          {/* Action Buttons — nur Teilen */}
           <div className="pe-actions">
-            <button className="btn btn-outline" onClick={copyAllTop3}>
-              <Copy size={16} /> {copiedAll ? 'Kopiert!' : t('platformEngine.copyAll')}
-            </button>
             <button className="btn btn-outline" onClick={async () => {
               const text = Object.values(topResults).map(r => getResultText(r)).join('\n\n---\n\n')
               try {
