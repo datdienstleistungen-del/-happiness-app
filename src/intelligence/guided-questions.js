@@ -19,6 +19,17 @@ const AUDIENCE_QUESTIONS = {
       { label: 'Alle', value: 'alle', icon: '🌍' },
     ],
   },
+  verkaeufer: {
+    question: 'Wer ist dein potentieller Käufer?',
+    hint: 'Wen willst du erreichen?',
+    options: [
+      { label: 'Interessenten/Käufer', value: 'kaeufer', icon: '🏠' },
+      { label: 'Familien', value: 'familien', icon: '👨‍👩‍👧‍👦' },
+      { label: 'Investoren', value: 'investoren', icon: '💰' },
+      { label: 'Makler', value: 'makler', icon: '🤝' },
+      { label: 'Lokale Käufer', value: 'lokal', icon: '📍' },
+    ],
+  },
   vermieter: {
     question: 'Wer soll dein Ferienhaus buchen?',
     hint: 'Welche Art von Gästen suchst du?',
@@ -64,6 +75,16 @@ const CHANNEL_QUESTIONS = {
       { label: 'Alle Kanäle', value: 'alle', icon: '🚀' },
     ],
   },
+  verkaeufer: {
+    question: 'Wo möchtest du inserieren?',
+    hint: 'Welche Kanäle für den Verkauf?',
+    options: [
+      { label: 'Kleinanzeigen', value: 'kleinanzeigen', icon: '🏷️' },
+      { label: 'Social Media', value: 'social_media', icon: '📱' },
+      { label: 'Immobilienportale', value: 'webseite', icon: '🏠' },
+      { label: 'Alle Kanäle', value: 'alle', icon: '🚀' },
+    ],
+  },
   social_media: {
     question: 'Welche Plattformen?',
     hint: 'Mehrere möglich.',
@@ -89,6 +110,16 @@ const GOAL_QUESTIONS = {
       { label: 'Bekanntheit', value: 'bekanntheit', icon: '🌟' },
       { label: 'Vertrauen aufbauen', value: 'vertrauen', icon: '🤝' },
       { label: 'Direkt verkaufen', value: 'verkaufen', icon: '💰' },
+    ],
+  },
+  verkaeufer: {
+    question: 'Was ist dein wichtigstes Ziel?',
+    hint: 'Was soll der Inserat bewirken?',
+    options: [
+      { label: 'Schnell verkaufen', value: 'schnell', icon: '⚡' },
+      { label: 'Höheren Preis erzielen', value: 'preis', icon: '💎' },
+      { label: 'Viele Interessenten', value: 'interessenten', icon: '📩' },
+      { label: 'Seriösen Eindruck', value: 'serios', icon: '🤝' },
     ],
   },
   vermieter: {
@@ -128,9 +159,7 @@ const USP_QUESTIONS = {
 function detectContext(goal) {
   const lower = goal.toLowerCase()
   
-  // Verkauf geht vor Vermietung
-  if (/verkauf|verkaufen|veräußer|inserat|anzeige|biet/.test(lower)) return 'default'
-  // Nur wenn auch Vermietungs-Wörter dabei sind
+  if (/verkauf|verkaufen|veräußer|inserat|anzeige|biet|haus\s+verkauf|wohnung\s+verkauf/.test(lower)) return 'verkaeufer'
   if (/ferienhaus|urlaub|mieten|vermiet|wohnung|appartement|zimmer/.test(lower)) return 'vermieter'
   if (/business|unternehmen|firma|geschäft|kunde|kunden|umsatz|produkt|dienstleistung/.test(lower)) return 'business'
   if (/tiktok|instagram|youtube|content|creator|community|folger|follow/.test(lower)) return 'creator'
@@ -150,7 +179,7 @@ export function generateQuestionSequence(goal) {
   questions.push({ id: 'audience', ...audienceSet })
   
   // Q2: Channel
-  const channelSet = CHANNEL_QUESTIONS.default
+  const channelSet = CHANNEL_QUESTIONS[context] || CHANNEL_QUESTIONS.default
   questions.push({ id: 'channel', ...channelSet })
   
   // If social media selected, ask which platforms
