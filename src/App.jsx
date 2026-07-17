@@ -15,6 +15,7 @@ import { trackPageView, checkAndTrackReturnVisit, getVisitorId } from './intelli
 import InstallButton from './components/InstallButton'
 import Feed from './components/Feed'
 import DashboardPage from './pages/DashboardPage'
+import PlatformEngine from './pages/PlatformEngine'
 import LandingPage from './pages/LandingPage'
 import OnboardingGuard from './components/OnboardingGuard'
 import './App.css'
@@ -380,7 +381,7 @@ export default function App() {
               <Routes>
                 <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
                 <Route path="/register" element={user ? <Navigate to="/" /> : <RegisterPage />} />
-                <Route path="/" element={user ? <OnboardingGuard><DashboardPage /></OnboardingGuard> : <LandingPage />} />
+                <Route path="/" element={user ? <OnboardingGuard><PlatformEngine /></OnboardingGuard> : <LandingPage />} />
                 <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
                 <Route path="/today-question" element={<ProtectedRoute><TodayQuestionPage /></ProtectedRoute>} />
                 <Route path="/community" element={<CommunityPage />} />
@@ -398,6 +399,7 @@ export default function App() {
                 <Route path="/fotostory" element={<ErrorBoundary><ProtectedRoute><FotostoryPage /></ProtectedRoute></ErrorBoundary>} />
                 <Route path="/ai-chat" element={<ProtectedRoute><AIChatPage /></ProtectedRoute>} />
                 <Route path="/execute" element={<ProtectedRoute><ExecutionPipeline /></ProtectedRoute>} />
+                <Route path="/advanced" element={<ProtectedRoute><ExecutionPipeline /></ProtectedRoute>} />
                 <Route path="/creator-academy" element={<ProtectedRoute><CreatorAcademyPage /></ProtectedRoute>} />
                 <Route path="/post-preparation" element={<ProtectedRoute><PostPreparationPage /></ProtectedRoute>} />
                 <Route path="/capcut-studio" element={<ProtectedRoute><TikTokVideoPage /></ProtectedRoute>} />

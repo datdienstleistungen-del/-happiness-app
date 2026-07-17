@@ -1,107 +1,81 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Rocket, Target, Sparkles, Share2, ChevronRight, Check } from 'lucide-react'
+import { Rocket, Sparkles, Check, ArrowRight, Zap, Clock, Target } from 'lucide-react'
 import { trackDemoStarted, trackDemoCompleted } from '../intelligence/analytics'
 import { useLanguage } from '../i18n/translations.jsx'
 import InstallButton from '../components/InstallButton'
 import Logo from '../components/Logo'
-import ShowcaseSection from '../components/ShowcaseSection'
 import './LandingPage.css'
 
-const DEMO_POST = `🥗 5 Gewohnheiten, die dein Leben verändern
-
-1️⃣ Morgens 2 Liter Wasser trinken
-Dein Körper startet durch. Konzentration steigt ab 9 Uhr.
-
-2️⃣ 10 Minuten Bewegung vor der Arbeit
-Kein Fitnessstudio nötig. Stretching reicht.
-
-3️⃣ Handy 1 Stunde vor dem Schlafen weg
-Schlafqualität verbessert sich sofort.
-
-4️⃣ Jeden Tag 1 Seite lesen
-Wissen wächst, Stress sinkt.
-
-5️⃣ Abends 3 Dinge aufschreiben, für die du dankbar bist
-Gratitude = Mindset-Shift.
-
-💡 Probier es 7 Tage aus. Dein Körper wird es dir danken.
-
-#gesundheit #gewohnheiten #minimalismus #gesundleben #mindset`
-
-const DEMO_GOAL = 'TikTok-Post über 5 gesunde Gewohnheiten erstellen'
-
-const SIMULATED_STEPS = [
-  { label: 'Ziel analysieren', duration: 1200 },
-  { label: 'Content-Strategie planen', duration: 800 },
-  { label: 'Skript schreiben', duration: 1500 },
-  { label: 'Hashtags & Optimierung', duration: 600 },
-  { label: 'Ergebnis zusammenfassen', duration: 400 },
+const GOAL_CHIPS = [
+  { label: 'Mehr Kunden gewinnen', icon: '🎯', de: 'Mehr Kunden gewinnen', en: 'Get more customers' },
+  { label: 'Reichweite erhöhen', icon: '📈', de: 'Reichweite erhöhen', en: 'Increase reach' },
+  { label: 'Produkt verkaufen', icon: '🛒', de: 'Produkt verkaufen', en: 'Sell a product' },
+  { label: 'Community aufbauen', icon: '👥', de: 'Community aufbauen', en: 'Build community' },
+  { label: 'Event bewerben', icon: '🎪', de: 'Event bewerben', en: 'Promote event' },
+  { label: 'Mitarbeiter finden', icon: '💼', de: 'Mitarbeiter finden', en: 'Find employees' },
 ]
 
 export default function LandingPage() {
   const navigate = useNavigate()
-  const { t } = useLanguage()
-  const [demoGoal, setDemoGoal] = useState(DEMO_GOAL)
-  const [phase, setPhase] = useState('input') // input | running | typing | done
-  const [currentStep, setCurrentStep] = useState(0)
-  const [typedText, setTypedText] = useState('')
-  const [stepComplete, setStepComplete] = useState([])
-  const typeRef = useRef(null)
-  const stepIndexRef = useRef(0)
+  const { t, lang } = useLanguage()
+  const [goal, setGoal] = useState('')
+  const [phase, setPhase] = useState('input') // input | analysis | result | error
+  const [analysis, setAnalysis] = useState(null)
+  const [demoResult, setDemoResult] = useState(null)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    return () => { if (typeRef.current) clearTimeout(typeRef.current) }
+    document.title = 'Happiness — Creator Operating System'
   }, [])
 
-  const startDemo = () => {
-    if (!demoGoal.trim()) return
-    trackDemoStarted(demoGoal.trim())
-    setPhase('running')
-    setCurrentStep(0)
-    setStepComplete([])
-    setTypedText('')
-    stepIndexRef.current = 0
-    runStep(0)
+  const handleChipClick = (chip) => {
+    setGoal(chip[lang] || chip.de)
   }
 
-  const runStep = (idx) => {
-    if (idx >= SIMULATED_STEPS.length) {
-      setPhase('typing')
-      typeDemo()
-      return
-    }
-    setCurrentStep(idx)
-    setStepComplete(prev => [...prev.slice(0, idx)])
-    setTimeout(() => {
-      setStepComplete(prev => [...prev, idx])
-      runStep(idx + 1)
-    }, SIMULATED_STEPS[idx].duration)
-  }
+  const startDemo = async () => {
+    if (!goal.trim()) return
+    trackDemoStarted(goal.trim())
+    setPhase('analysis')
+    setError('')
 
-  const typeDemo = () => {
-    let i = 0
-    const chars = DEMO_POST.split('')
-    const typeNext = () => {
-      if (i >= chars.length) {
-        setPhase('done')
-        trackDemoCompleted(demoGoal.trim())
-        return
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: `Erstelle einen Instagram-Post für dieses Ziel: "${goal.trim()}". Antworte NUR mit JSON: {"hook":"...","body":"...","hashtags":["..."],"cta":"..."}`,
+          systemPrompt: `Du bist ein Instagram-Content-Experte. Erstelle einen kurzen, knackigen Post (100-150 Wörter). Hook im ersten Satz. 3-5 Hashtags. CTA am Ende. Antworte NUR mit validem JSON.`,
+          history: []
+        })
+      })
+
+      if (!res.ok) throw new Error('API Fehler')
+      const data = await res.json()
+
+      let parsed = null
+      try {
+        const jsonMatch = (data.response || '').match(/\{[\s\S]*\}/)
+        parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { body: data.response, hook: '', hashtags: [], cta: '' }
+      } catch {
+        parsed = { body: data.response || '', hook: '', hashtags: [], cta: '' }
       }
-      const chunk = chars.slice(i, i + 2).join('')
-      setTypedText(prev => prev + chunk)
-      i += 2
-      typeRef.current = setTimeout(typeNext, 12)
+
+      setDemoResult(parsed)
+      setPhase('result')
+      trackDemoCompleted(goal.trim())
+    } catch (err) {
+      console.error('Demo error:', err)
+      setError('Es ist ein Fehler aufgetreten. Bitte versuche es erneut.')
+      setPhase('input')
     }
-    typeNext()
   }
 
   const resetDemo = () => {
     setPhase('input')
-    setTypedText('')
-    setStepComplete([])
-    setCurrentStep(0)
-    if (typeRef.current) clearTimeout(typeRef.current)
+    setDemoResult(null)
+    setAnalysis(null)
+    setError('')
   }
 
   return (
@@ -110,84 +84,139 @@ export default function LandingPage() {
       <div className="hero landing-hero">
         <h1><Logo /></h1>
         <p className="landing-tagline">{t('landing.tagline')}</p>
+
         <div className="landing-input-wrap">
           <input
             className="landing-input"
             type="text"
-            value={demoGoal}
-            onChange={(e) => setDemoGoal(e.target.value)}
+            value={goal}
+            onChange={(e) => setGoal(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && startDemo()}
-            placeholder={t('dashboard.hitPlaceholder')}
+            placeholder={t('landing.placeholder')}
             disabled={phase !== 'input'}
           />
-          <button className="btn btn-primary" onClick={startDemo} disabled={phase !== 'input' || !demoGoal.trim()}>
-            <Rocket size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
-            {phase === 'input' ? t('landing.tryNow') : t('landing.demoWorking')}
+          <button
+            className="btn btn-primary landing-start-btn"
+            onClick={startDemo}
+            disabled={phase !== 'input' || !goal.trim()}
+          >
+            {phase === 'input' ? (
+              <><Rocket size={16} /> {t('landing.startButton')}</>
+            ) : (
+              <><span className="demo-spinner" /> {t('landing.working')}</>
+            )}
           </button>
         </div>
-        <div className="landing-actions" style={{ marginTop: '1rem' }}>
+
+        {error && <p className="landing-error">{error}</p>}
+
+        {/* Quick Chips */}
+        {phase === 'input' && (
+          <div className="landing-chips">
+            {GOAL_CHIPS.map((chip) => (
+              <button
+                key={chip.de}
+                className="landing-chip"
+                onClick={() => handleChipClick(chip)}
+              >
+                <span>{chip.icon}</span> {chip[lang] || chip.de}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="landing-meta">
+          {t('landing.meta')}
+        </div>
+
+        <div className="landing-actions">
           <Link to="/register" className="btn btn-outline">{t('landing.register')}</Link>
           <Link to="/login" className="btn btn-outline">{t('landing.login')}</Link>
         </div>
+
         <div className="landing-install">
           <InstallButton variant="hero" />
         </div>
       </div>
 
-      {/* Live Demo */}
-      {(phase === 'running' || phase === 'typing' || phase === 'done') && (
-        <div className="demo-panel">
-          <div className="demo-header">
-            <div className="demo-brand">
-              <span className="hit-letter">H</span>
-              <span className="hit-rest">.I.T.</span>
+      {/* Analysis Phase */}
+      {phase === 'analysis' && (
+        <div className="hit-analysis-card">
+          <div className="hit-analysis-header">
+            <div className="hit-brand">
+              <span className="hit-letter">H</span><span className="hit-rest">.I.T.</span>
             </div>
-            <span className="demo-status">
-              {phase === 'running' ? t('landing.demoWorking') :
-               phase === 'typing' ? t('landing.demoScripting') :
-               t('landing.demoDone')}
-            </span>
-            {phase === 'done' && (
-              <button className="demo-reset" onClick={resetDemo}>{t('landing.demoReset')}</button>
+            <span className="hit-status">{t('landing.analyzing')}</span>
+          </div>
+          <div className="hit-analysis-steps">
+            <div className="hit-step done"><Check size={14} /> {t('landing.stepGoal')}</div>
+            <div className="hit-step active"><span className="demo-spinner" /> {t('landing.stepStrategy')}</div>
+            <div className="hit-step"><span className="hit-step-num">3</span> {t('landing.stepContent')}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Result Phase — Demo with 1 platform */}
+      {phase === 'result' && demoResult && (
+        <div className="demo-result-card">
+          <div className="demo-result-header">
+            <div className="hit-brand">
+              <span className="hit-letter">H</span><span className="hit-rest">.I.T.</span>
+            </div>
+            <span className="hit-status">{t('landing.resultReady')}</span>
+            <button className="demo-reset" onClick={resetDemo}>{t('landing.demoReset')}</button>
+          </div>
+
+          <div className="demo-result-score">
+            <div className="score-item">
+              <span className="score-label">{t('landing.goalDetected')}</span>
+              <span className="score-value done">✅</span>
+            </div>
+            <div className="score-item">
+              <span className="score-label">{t('landing.strategyCreated')}</span>
+              <span className="score-value done">✅</span>
+            </div>
+            <div className="score-item">
+              <span className="score-label">{t('landing.contentChance')}</span>
+              <span className="score-value highlight">89%</span>
+            </div>
+            <div className="score-item">
+              <span className="score-label">{t('landing.savedTime')}</span>
+              <span className="score-value">≈ 2h</span>
+            </div>
+          </div>
+
+          <div className="demo-result-platform">
+            <div className="demo-result-platform-header">
+              <span className="platform-badge">📸 Instagram</span>
+              <button
+                className="copy-btn"
+                onClick={() => {
+                  const text = `${demoResult.hook ? demoResult.hook + '\n\n' : ''}${demoResult.body || ''}${demoResult.cta ? '\n\n' + demoResult.cta : ''}${demoResult.hashtags?.length ? '\n\n' + demoResult.hashtags.map(h => h.startsWith('#') ? h : '#' + h).join(' ') : ''}`
+                  navigator.clipboard.writeText(text)
+                }}
+              >
+                {t('landing.copy')}
+              </button>
+            </div>
+            {demoResult.hook && <p className="demo-result-hook">{demoResult.hook}</p>}
+            <p className="demo-result-body">{demoResult.body}</p>
+            {demoResult.cta && <p className="demo-result-cta">{demoResult.cta}</p>}
+            {demoResult.hashtags?.length > 0 && (
+              <p className="demo-result-tags">
+                {demoResult.hashtags.map((h, i) => (
+                  <span key={i} className="hashtag">{h.startsWith('#') ? h : '#' + h}</span>
+                ))}
+              </p>
             )}
           </div>
 
-          {/* Steps */}
-          {phase === 'running' && (
-            <div className="demo-steps">
-              {SIMULATED_STEPS.map((step, i) => (
-                <div key={i} className={`demo-step ${stepComplete.includes(i) ? 'done' : ''} ${currentStep === i && !stepComplete.includes(i) ? 'active' : ''}`}>
-                  <div className="demo-step-dot">
-                    {stepComplete.includes(i) ? <Check size={12} /> :
-                     currentStep === i ? <span className="demo-spinner" /> :
-                     <span>{i + 1}</span>}
-                  </div>
-                  <span className="demo-step-label">{step.label}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Typewriter output */}
-          {(phase === 'typing' || phase === 'done') && (
-            <div className="demo-output">
-              <div className="demo-output-text">
-                {typedText}
-                {phase === 'typing' && <span className="demo-cursor">|</span>}
-              </div>
-            </div>
-          )}
-
-          {/* CTA */}
-          {phase === 'done' && (
-            <div className="demo-cta">
-              <p>{t('landing.demoCta')}</p>
-              <Link to="/register" className="btn btn-primary">
-                <Sparkles size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
-                {t('landing.startFree')}
-              </Link>
-            </div>
-          )}
+          <div className="demo-result-cta-section">
+            <p className="demo-result-cta-text">{t('landing.demoCta')}</p>
+            <Link to="/register" className="btn btn-primary">
+              <Sparkles size={16} /> {t('landing.startFree')}
+            </Link>
+          </div>
         </div>
       )}
 
@@ -225,9 +254,6 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Showcase: Show, don't tell */}
-      <ShowcaseSection />
-
       {/* Platforms */}
       <div className="landing-platforms">
         <h2>{t('landing.platforms')}</h2>
@@ -237,11 +263,13 @@ export default function LandingPage() {
             { name: 'Instagram', icon: '📸' },
             { name: 'LinkedIn', icon: '💼' },
             { name: 'Facebook', icon: '👥' },
-            { name: 'Reddit', icon: '🔴' },
-            { name: 'Pinterest', icon: '📌' },
             { name: 'YouTube', icon: '▶️' },
-            { name: 'E-Mail', icon: '✉️' },
-            { name: 'Podcast', icon: '🎙️' },
+            { name: 'X / Twitter', icon: '🐦' },
+            { name: 'Pinterest', icon: '📌' },
+            { name: 'Reddit', icon: '🔴' },
+            { name: 'Blog', icon: '📝' },
+            { name: 'Newsletter', icon: '✉️' },
+            { name: 'Google Business', icon: '📍' },
             { name: 'Kleinanzeigen', icon: '🏷️' },
           ].map(p => (
             <div key={p.name} className="platform-card">

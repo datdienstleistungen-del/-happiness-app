@@ -193,14 +193,6 @@ export default function PostPreparationPage() {
                 </button>
               ))}
             </div>
-            <button
-              className="btn btn-outline"
-              onClick={() => setRewrittenPost(draft)}
-              disabled={loading}
-              style={{ marginTop: '8px', width: '100%' }}
-            >
-              Direkt verwenden — ohne Stiländerung
-            </button>
           </div>
 
           {loading && (
