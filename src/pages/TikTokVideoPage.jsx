@@ -85,8 +85,8 @@ const t = {
     ? 'Skript + Prompts in CapCut einfügen → Video exportieren → Auf Kanälen posten'
     : 'Paste script + prompts into CapCut → export video → post on channels',
   freeTip: isDE
-    ? 'H.I.T. Free-Tipp: CapCut bietet im Editor manchmal ein Upgrade an. Du kannst die Videoerstellung mit dem kostenlosen Modell "Seedance Mini" einfach ohne Abo fortsetzen!'
-    : 'H.I.T. Free Tip: CapCut sometimes offers an upgrade in the editor. You can continue creating videos with the free "Seedance Mini" model without a subscription!',
+    ? 'H.I.T. Free-Tipp: CapCut bietet oft ein günstiges oder kostenloses KI-Modell als Alternative an — schau im Editor, was gerade verfügbar ist.'
+    : 'H.I.T. Free Tip: CapCut often offers an affordable or free AI model as an alternative — check the editor to see what\'s currently available.',
   capcutMobile: isDE ? 'In CapCut öffnen' : 'Open in CapCut',
   capcutDesktop: isDE ? 'Im Browser öffnen' : 'Open in Browser',
   capcutHint: isDE ? 'Tipp: Kopiere das Skript und füge es in CapCut ein.' : 'Tip: Copy the script and paste it into CapCut.',
