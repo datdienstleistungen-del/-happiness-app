@@ -129,7 +129,8 @@ const translations = {
       recsTitle: '💡 Empfehlungen von H.I.T.',
       packageTitle: 'Dein Paket enthält:',
       generating: 'H.I.T. arbeitet für dich...',
-      recommended: 'Empfohlene Plattformen:'
+      recommended: 'Empfohlene Plattformen:',
+      copiedAll: 'Kopiert!'
     }
   },
   en: {
@@ -260,7 +261,8 @@ const translations = {
       recsTitle: '💡 Recommendations from H.I.T.',
       packageTitle: 'Your package contains:',
       generating: 'H.I.T. is working for you...',
-      recommended: 'Recommended platforms:'
+      recommended: 'Recommended platforms:',
+      copiedAll: 'Copied!'
     }
   },
   es: {

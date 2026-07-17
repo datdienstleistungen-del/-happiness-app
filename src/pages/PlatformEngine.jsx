@@ -337,13 +337,22 @@ export default function PlatformEngine() {
             <button className="btn btn-primary" onClick={copyAllTop3}>
               <Copy size={16} /> {copiedAll ? 'Kopiert!' : t('platformEngine.copyAll')}
             </button>
-            <button className="btn btn-outline" onClick={() => {
+            <button className="btn btn-outline" onClick={async () => {
               const text = Object.values(topResults).map(r => getResultText(r)).join('\n\n---\n\n')
-              if (navigator.share) {
-                navigator.share({ title: 'Creator-Paket von H.I.T.', text })
+              try {
+                if (navigator.share) {
+                  await navigator.share({ title: 'Creator-Paket von H.I.T.', text })
+                } else {
+                  throw new Error('no share')
+                }
+              } catch {
+                navigator.clipboard.writeText(text)
+                trackEvent('content_copied', { platform: 'all_share' })
+                setCopiedAll(true)
+                setTimeout(() => setCopiedAll(false), 2000)
               }
             }}>
-              <Share2 size={16} /> {t('platformEngine.shareAll')}
+              <Share2 size={16} /> {copiedAll ? t('platformEngine.copiedAll') || 'Kopiert!' : t('platformEngine.shareAll')}
             </button>
           </div>
 

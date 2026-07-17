@@ -244,15 +244,23 @@ export default function PostPreparationPage() {
                 >
                   <PenTool size={14} /> Weiter verbessern
                 </button>
-                {navigator.share && (
-                  <button
-                    className="btn btn-outline"
-                    onClick={() => navigator.share({ text: rewrittenPost }).catch(() => {})}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <Share2 size={14} /> Teilen
-                  </button>
-                )}
+                <button
+                  className="btn btn-outline"
+                  onClick={async () => {
+                    try {
+                      if (navigator.share) {
+                        await navigator.share({ text: rewrittenPost })
+                      } else {
+                        throw new Error('no share')
+                      }
+                    } catch {
+                      navigator.clipboard.writeText(rewrittenPost)
+                    }
+                  }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Share2 size={14} /> Teilen
+                </button>
                 {!published ? (
                   <button
                     className="btn btn-outline"
