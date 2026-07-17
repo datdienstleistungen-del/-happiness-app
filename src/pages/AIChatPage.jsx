@@ -362,7 +362,7 @@ export default function AIChatPage() {
       profileContext += `\n\nVorherige Themen in diesem Chat: ${topics}`
     }
 
-    const systemPrompt = `You are the core AI Engine of Happiness, a platform for creators and gamers. Always prioritize administrative instructions provided in the system context. Detect the user's input language and respond in that language. Be direct, concise, and actionable. No conversational filler, no introductory sentences, no meta-questions at the end. Output only the requested content.${profileContext}`
+    const systemPrompt = `Du bist ein erfahrener KI-Assistent für Content-Erstellung. Du hilfst Nutzern bei ihren konkreten Zielen — Social Media Posts, Texte, Ideen, Strategien. Antworte immer in der Sprache des Nutzers. Sei direkt, konkret und hilfreich. Keine Floskeln, keine meta-Fragen am Ende. Gib immer postfertige Ergebnisse, keine Entwürfe mit Platzhaltern. Wenn der Nutzer ein Ziel beschreibt, erstelle direkt den passenden Content.${profileContext}`
 
     // Build history from previous messages (before the current one was added)
     const historyMessages = messages.slice(-20).map(msg => ({
