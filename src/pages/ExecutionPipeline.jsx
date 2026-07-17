@@ -274,17 +274,22 @@ export default function ExecutionPipeline() {
   }, [finished, apiDone, intent, goal, phase])
 
   const handleGuidedAnswer = (questionId, value) => {
-    console.log('[Guided] Answer:', questionId, value)
-    const newAnswers = { ...guidedAnswers, [questionId]: value }
-    setGuidedAnswers(newAnswers)
+    try {
+      console.log('[Guided] Answer:', questionId, value)
+      const newAnswers = { ...guidedAnswers, [questionId]: value }
+      setGuidedAnswers(newAnswers)
 
-    const next = getNextQuestion(guidedQuestions, newAnswers, guidedIndex + 1)
-    console.log('[Guided] Next:', next ? next.question.id : 'DONE — starting execution')
-    if (next) {
-      setGuidedIndex(next.index)
-    } else {
-      // All questions answered — start execution
-      startExecutionFromGuided(newAnswers)
+      const next = getNextQuestion(guidedQuestions, newAnswers, guidedIndex + 1)
+      console.log('[Guided] Next:', next ? next.question.id : 'DONE — starting execution')
+      if (next) {
+        setGuidedIndex(next.index)
+      } else {
+        startExecutionFromGuided(newAnswers)
+      }
+    } catch (err) {
+      console.error('[Guided] Error:', err)
+      setError('Ein Fehler ist aufgetreten. Bitte versuch es nochmal.')
+      setPhase('error')
     }
   }
 
@@ -294,7 +299,7 @@ export default function ExecutionPipeline() {
 
     // Detect platform from answers
     const channel = answers.channel || 'social_media'
-    const platforms = answers.platforms || []
+    const platforms = Array.isArray(answers.platforms) ? answers.platforms : (answers.platforms ? [answers.platforms] : [])
     let detectedPlatform = 'content'
 
     if (channel === 'kleinanzeigen') detectedPlatform = 'marketplace'
@@ -303,10 +308,11 @@ export default function ExecutionPipeline() {
     else if (/video|tiktok|reel|kurzvideo/.test(guidedGoal.toLowerCase())) detectedPlatform = 'tiktok'
 
     // Build enriched goal from answers
+    const platformText = platforms.length > 0 ? platforms.join(', ') : ''
     const enrichedGoal = [
       guidedGoal,
       `Zielgruppe: ${answers.audience || ''}`,
-      `Kanal: ${answers.channel || ''}${answers.platforms?.length ? ` (${answers.platforms.join(', ')})` : ''}`,
+      `Kanal: ${answers.channel || ''}${platformText ? ` (${platformText})` : ''}`,
       `Ziel: ${answers.goal_type || ''}`,
       `Tonfall: ${answers.tone || ''}`,
       answers.usp ? `USP: ${answers.usp}` : '',
