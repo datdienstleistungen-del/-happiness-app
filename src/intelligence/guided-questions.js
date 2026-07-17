@@ -128,7 +128,10 @@ const USP_QUESTIONS = {
 function detectContext(goal) {
   const lower = goal.toLowerCase()
   
-  if (/ferienhaus|urlaub|mieten|vermiet|haus|wohnung|appartement|zimmer/.test(lower)) return 'vermieter'
+  // Verkauf geht vor Vermietung
+  if (/verkauf|verkaufen|veräußer|inserat|anzeige|biet/.test(lower)) return 'default'
+  // Nur wenn auch Vermietungs-Wörter dabei sind
+  if (/ferienhaus|urlaub|mieten|vermiet|wohnung|appartement|zimmer/.test(lower)) return 'vermieter'
   if (/business|unternehmen|firma|geschäft|kunde|kunden|umsatz|produkt|dienstleistung/.test(lower)) return 'business'
   if (/tiktok|instagram|youtube|content|creator|community|folger|follow/.test(lower)) return 'creator'
   
