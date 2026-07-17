@@ -251,6 +251,7 @@ export default function ExecutionPipeline() {
       navigate('/')
       return
     }
+    if (guidedQuestions.length > 0) return
 
     trackIdeaSubmitted(goal)
 
@@ -273,10 +274,12 @@ export default function ExecutionPipeline() {
   }, [finished, apiDone, intent, goal, phase])
 
   const handleGuidedAnswer = (questionId, value) => {
+    console.log('[Guided] Answer:', questionId, value)
     const newAnswers = { ...guidedAnswers, [questionId]: value }
     setGuidedAnswers(newAnswers)
 
     const next = getNextQuestion(guidedQuestions, newAnswers, guidedIndex + 1)
+    console.log('[Guided] Next:', next ? next.question.id : 'DONE — starting execution')
     if (next) {
       setGuidedIndex(next.index)
     } else {
@@ -286,6 +289,7 @@ export default function ExecutionPipeline() {
   }
 
   const startExecutionFromGuided = async (answers) => {
+    console.log('[Pipeline] Starting execution with answers:', answers)
     const brief = buildMasterBriefFromAnswers(guidedGoal, answers)
 
     // Detect platform from answers
@@ -358,6 +362,10 @@ export default function ExecutionPipeline() {
             })
           }
         }
+      }).catch(err => {
+        console.error('[Pipeline] startRealWork failed:', err)
+        setError('H.I.T. konnte die Arbeit nicht starten. Bitte versuch es nochmal.')
+        setPhase('error')
       })
     } else {
       setApiDone(true)
