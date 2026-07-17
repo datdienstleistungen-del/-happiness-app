@@ -297,6 +297,11 @@ export default function ExecutionPipeline() {
     }
   }
 
+  // Feature-Flag: Plattform-Connect-Gate
+  // false = Gate deaktiviert (bis erstes echtes OAuth steht)
+  // true = Gate aktiviert (Nutzer muss Plattform verbinden)
+  const PLATFORM_GATE_ENABLED = false
+
   const startExecutionFromGuided = async (answers) => {
     try {
       console.log('[Pipeline] Starting execution with answers:', answers)
@@ -312,14 +317,19 @@ export default function ExecutionPipeline() {
       else if (platforms.length > 0) detectedPlatform = platforms[0]
       else if (/video|tiktok|reel|kurzvideo/.test(guidedGoal.toLowerCase())) detectedPlatform = 'tiktok'
 
-      // Bestimme welche Plattformen benötigt werden
+      // Gate: Plattform-Check nur wenn aktiviert
+      if (!PLATFORM_GATE_ENABLED) {
+        proceedToExecution(answers, detectedPlatform, brief)
+        return
+      }
+
+      // Ab hier: echter Gate (wenn OAuth steht)
       const neededPlatforms = [detectedPlatform]
       if (detectedPlatform === 'tiktok' && !neededPlatforms.includes('capcut')) {
         neededPlatforms.push('capcut')
       }
       setRequiredPlatforms(neededPlatforms)
 
-      // Prüfe ob alle Plattformen verbunden sind
       if (user) {
         const checkResult = await checkAllRequiredPlatforms(user.id, neededPlatforms)
         setPlatformCheckResult(checkResult)
@@ -330,7 +340,6 @@ export default function ExecutionPipeline() {
         }
       }
 
-      // Alle Plattformen verbunden — weiter mit Execution
       proceedToExecution(answers, detectedPlatform, brief)
     } catch (err) {
       console.error('[Pipeline] Error in startExecutionFromGuided:', err)

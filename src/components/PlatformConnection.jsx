@@ -70,19 +70,10 @@ export default function PlatformConnection({ platform, onConnected, onSkip }) {
         return
       }
 
-      // Placeholder: Erfolgreiche Verbindung (für Testing)
-      const result = await connectPlatform(user.id, platform, {
-        accessToken: 'test_token_' + Date.now(),
-        platformUserId: 'test_user_' + Date.now(),
-        platformUsername: 'test_user',
-      })
-
-      if (result.success) {
-        setStatus('connected')
-        if (onConnected) onConnected(platform)
-      } else {
-        setError(result.error || 'Verbindung fehlgeschlagen.')
-      }
+      // Kein authType gematcht — Plattform-Konfiguration fehlt
+      setError(`${platformData.name || platform} wird noch nicht unterstützt. Diese Plattform kommt bald.`)
+      setIsConnecting(false)
+      return
     } catch (err) {
       console.error('[PlatformConnection] Connect error:', err)
       setError('Verbindung fehlgeschlagen. Bitte versuch es nochmal.')
