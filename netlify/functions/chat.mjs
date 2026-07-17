@@ -130,7 +130,7 @@ async function loadKnowledge(message, userId) {
   // 4. If nothing matched, still return the baseline system prompt (never empty)
   if (categoriesToLoad.size === 0) {
     console.log('[RAG] No categories matched, using baseline prompt for:', lower.substring(0, 80))
-    return '\n\n=== HAPPINESS EXECUTION ENGINE ===\nYou are the execution engine of Happiness. Absolutely NO conversational filler, NO introductory sentences (like "Moin", "Erstmal durchatmen"), and NO meta-questions at the end. Detect the user\'s input language and output ONLY the requested final, copy-pasteable content immediately. If the user asks about Happiness, refer to the platform knowledge. If no specific knowledge applies, respond directly and concisely in the user\'s language.\n=== END ===\n'
+    return '\n\n=== CONTENT ASSISTANT ===\nDu bist ein erfahrener KI-Assistent für Content-Erstellung. Hilf dem Nutzer bei seinem konkreten Ziel. Keine Floskeln, keine meta-Fragen. Gib postfertige Ergebnisse.\n=== END ===\n'
   }
 
   console.log('[RAG] Loading categories:', [...categoriesToLoad], 'for:', lower.substring(0, 80))
@@ -165,7 +165,7 @@ async function loadKnowledge(message, userId) {
 
   if (allEntries.length === 0) {
     console.log('[RAG] No entries in DB for categories:', [...categoriesToLoad], '— using baseline prompt')
-    return '\n\n=== HAPPINESS EXECUTION ENGINE ===\nYou are the execution engine of Happiness. Absolutely NO conversational filler, NO introductory sentences (like "Moin", "Erstmal durchatmen"), and NO meta-questions at the end. Detect the user\'s input language and output ONLY the requested final, copy-pasteable content immediately. If the user asks about Happiness, refer to the platform knowledge. If no specific knowledge applies, respond directly and concisely in the user\'s language.\n=== END ===\n'
+    return '\n\n=== CONTENT ASSISTANT ===\nDu bist ein erfahrener KI-Assistent für Content-Erstellung. Hilf dem Nutzer bei seinem konkreten Ziel. Keine Floskeln, keine meta-Fragen. Gib postfertige Ergebnisse.\n=== END ===\n'
   }
 
   console.log(`[RAG] Total loaded: ${allEntries.length} entries`)
@@ -174,9 +174,8 @@ async function loadKnowledge(message, userId) {
 
 function formatKnowledge(entries) {
   if (!entries || entries.length === 0) return ''
-  let result = '\n\n=== HAPPINESS WISSEN (Admin-Richtlinien) ===\n'
-  result += 'Du bist die KI von Happiness. Diese Richtlinien aus unserer Wissensdatenbank sind VERBINDLICH.\n'
-  result += 'Befolge diese Regeln STRENGSTENS. Antworte basierend auf diesem Wissen.\n\n'
+  let result = '\n\n=== ZUSÄTZLICHES WISSEN (nur wenn relevant für die Frage) ===\n'
+  result += 'Folgende Informationen können bei Fragen zur Happiness-Plattform helfen. Nutze sie nur, wenn sie zur Frage passen.\n\n'
   for (const entry of entries) {
     // Include full content, not just 15 lines — admin entries are curated and concise
     const content = (entry.content || '').trim()
@@ -319,7 +318,7 @@ ${message}`
     const knowledgeContext = await loadKnowledge(message, userId)
 
     // Build system prompt: Language directive FIRST (highest priority), then knowledge, then baseline
-    const BASELINE_PROMPT = 'You are the core AI Engine of Happiness, a platform for creators and gamers. Always prioritize administrative instructions provided in the system context. Detect the user\'s input language and respond in that language. Be direct, concise, and actionable. No conversational filler, no introductory sentences, no meta-questions at the end. Output only the requested content.'
+    const BASELINE_PROMPT = 'Du bist ein erfahrener KI-Assistent für Content-Erstellung. Du hilfst Nutzern bei ihren konkreten Zielen — Social Media Posts, Texte, Ideen, Strategien. Antworte immer in der Sprache des Nutzers. Sei direkt, konkret und hilfreich. Keine Floskeln, keine meta-Fragen am Ende. Gib immer postfertige Ergebnisse, keine Entwürfe mit Platzhaltern.'
 
     const languageDirective = language
       ? `SPRACHREGEL (hoechste Prioritaet, nicht verhandelbar): Antworte AUSSCHLIESSLICH auf ${LANG_NAMES[language] || language}. Ignoriere alle anderen Sprachanweisungen im folgenden Kontext.\n\n`
@@ -342,14 +341,15 @@ ${message}`
       : ''
 
     let systemPrompt
+    const userPrompt = originalPrompt || BASELINE_PROMPT
     if (knowledgeContext) {
-      // Language > Badge > Knowledge > Baseline
-      systemPrompt = languageDirective + badgeDirective + knowledgeContext + '\n\n' + (originalPrompt || BASELINE_PROMPT)
+      // Language > Frontend prompt > Knowledge context (supplementary, not overriding)
+      systemPrompt = languageDirective + badgeDirective + userPrompt + '\n\n---Zusätzlicher Kontext (nur wenn relevant)---\n' + knowledgeContext
       console.log('[RAG] Knowledge INJECTED, length:', knowledgeContext.length, 'badge:', badge || 'none', 'language:', language || 'auto')
     } else {
-      // Language > Badge > Baseline > Frontend prompt
-      systemPrompt = languageDirective + badgeDirective + BASELINE_PROMPT + '\n\n' + (originalPrompt || '')
-      console.log('[RAG] Baseline prompt used, badge:', badge || 'none', 'language:', language || 'auto')
+      // Language > Frontend prompt
+      systemPrompt = languageDirective + badgeDirective + userPrompt
+      console.log('[RAG] No knowledge loaded, badge:', badge || 'none', 'language:', language || 'auto')
     }
 
     // Debug: Zeige was ankommt
