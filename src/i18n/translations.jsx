@@ -130,7 +130,16 @@ const translations = {
       packageTitle: 'Dein Paket enthält:',
       generating: 'H.I.T. arbeitet für dich...',
       recommended: 'Empfohlene Plattformen:',
-      copiedAll: 'Kopiert!'
+      copiedAll: 'Kopiert!',
+      nextStepTitle: 'Was möchtest du jetzt tun?',
+      nextStepText: 'Kopiere dein {platform}-Skript, plane es für die beste Uhrzeit und warte 2 Tage, um die Analytics zu vergleichen.',
+      nextCapCut: 'In CapCut Studio öffnen',
+      nextCapCutDesc: 'Video direkt bearbeiten und exportieren',
+      nextAnalytics: 'Analytics-Tracking anlegen',
+      nextAnalyticsDesc: 'Ergebnisse in 2 Tagen vergleichen',
+      nextNewGoal: 'Neues Content-Ziel',
+      nextNewGoalDesc: 'Den H.I.T. erneut starten',
+      resetButton: 'Neues Content-Ziel eingeben'
     }
   },
   en: {
@@ -262,7 +271,16 @@ const translations = {
       packageTitle: 'Your package contains:',
       generating: 'H.I.T. is working for you...',
       recommended: 'Recommended platforms:',
-      copiedAll: 'Copied!'
+      copiedAll: 'Copied!',
+      nextStepTitle: 'What do you want to do next?',
+      nextStepText: 'Copy your {platform} script, schedule it for the best time, and wait 2 days to compare analytics.',
+      nextCapCut: 'Open in CapCut Studio',
+      nextCapCutDesc: 'Edit and export your video directly',
+      nextAnalytics: 'Set up Analytics Tracking',
+      nextAnalyticsDesc: 'Compare results in 2 days',
+      nextNewGoal: 'New Content Goal',
+      nextNewGoalDesc: 'Start H.I.T. again',
+      resetButton: 'Enter new content goal'
     }
   },
   es: {
@@ -360,7 +378,17 @@ const translations = {
       recsTitle: '💡 Recomendaciones de H.I.T.',
       packageTitle: 'Tu paquete contiene:',
       generating: 'H.I.T. está trabajando por ti...',
-      recommended: 'Plataformas recomendadas:'
+      recommended: 'Plataformas recomendadas:',
+      copiedAll: '¡Copiado!',
+      nextStepTitle: '¿Qué quieres hacer ahora?',
+      nextStepText: 'Copia tu guion de {platform}, programalo para la mejor hora y espera 2 días para comparar analíticas.',
+      nextCapCut: 'Abrir en CapCut Studio',
+      nextCapCutDesc: 'Edita y exporta tu video directamente',
+      nextAnalytics: 'Configurar seguimiento de analíticas',
+      nextAnalyticsDesc: 'Comparar resultados en 2 días',
+      nextNewGoal: 'Nuevo objetivo de contenido',
+      nextNewGoalDesc: 'Iniciar H.I.T. de nuevo',
+      resetButton: 'Ingresar nuevo objetivo'
     }
   },
   fr: {
@@ -458,7 +486,17 @@ const translations = {
       recsTitle: '💡 Recommandations de H.I.T.',
       packageTitle: 'Votre paquet contient :',
       generating: 'H.I.T. travaille pour vous...',
-      recommended: 'Plateformes recommandées :'
+      recommended: 'Plateformes recommandées :',
+      copiedAll: 'Copié !',
+      nextStepTitle: 'Que voulez-vous faire maintenant ?',
+      nextStepText: 'Copiez votre script {platform}, planifiez-le pour le meilleur moment et attendez 2 jours pour comparer les analyses.',
+      nextCapCut: 'Ouvrir dans CapCut Studio',
+      nextCapCutDesc: 'Éditez et exportez votre vidéo directement',
+      nextAnalytics: 'Configurer le suivi analytics',
+      nextAnalyticsDesc: 'Comparer les résultats dans 2 jours',
+      nextNewGoal: 'Nouvel objectif contenu',
+      nextNewGoalDesc: 'Relancer H.I.T.',
+      resetButton: 'Entrer un nouvel objectif'
     }
   },
   it: {
@@ -556,7 +594,17 @@ const translations = {
       recsTitle: '💡 Raccomandazioni di H.I.T.',
       packageTitle: 'Il tuo pacchetto contiene:',
       generating: 'H.I.T. sta lavorando per te...',
-      recommended: 'Piattaforme consigliate:'
+      recommended: 'Piattaforme consigliate:',
+      copiedAll: 'Copiato!',
+      nextStepTitle: 'Cosa vuoi fare adesso?',
+      nextStepText: 'Copia lo script di {platform}, pianificalo per il momento migliore e attendi 2 giorni per confrontare le analytics.',
+      nextCapCut: 'Apri in CapCut Studio',
+      nextCapCutDesc: 'Modifica ed esporta il tuo video direttamente',
+      nextAnalytics: 'Configura il monitoraggio analytics',
+      nextAnalyticsDesc: 'Confronta i risultati tra 2 giorni',
+      nextNewGoal: 'Nuovo obiettivo contenuto',
+      nextNewGoalDesc: 'Riavvia H.I.T.',
+      resetButton: 'Inserisci un nuovo obiettivo'
     }
   },
   nl: {
@@ -654,7 +702,17 @@ const translations = {
       recsTitle: '💡 Aanbevelingen van H.I.T.',
       packageTitle: 'Je pakket bevat:',
       generating: 'H.I.T. werkt voor je...',
-      recommended: 'Aanbevolen platforms:'
+      recommended: 'Aanbevolen platforms:',
+      copiedAll: 'Gekopieerd!',
+      nextStepTitle: 'Wat wil je nu doen?',
+      nextStepText: 'Kopieer je {platform}-script, plan het voor het beste moment en wacht 2 dagen om analytics te vergelijken.',
+      nextCapCut: 'Openen in CapCut Studio',
+      nextCapCutDesc: 'Bewerk en exporteer je video direct',
+      nextAnalytics: 'Analytics-tracking instellen',
+      nextAnalyticsDesc: 'Vergelijk resultaten over 2 dagen',
+      nextNewGoal: 'Nieuw contentdoel',
+      nextNewGoalDesc: 'H.I.T. opnieuw starten',
+      resetButton: 'Nieuw contentdoel invoeren'
     }
   },
   el: {
@@ -752,7 +810,17 @@ const translations = {
       recsTitle: '💡 Συστάσεις από το H.I.T.',
       packageTitle: 'Το πακέτο σας περιέχει:',
       generating: 'Το H.I.T. εργάζεται για εσάς...',
-      recommended: 'Συνιστώμενες πλατφόρμες:'
+      recommended: 'Συνιστώμενες πλατφόρμες:',
+      copiedAll: 'Αντιγράφηκε!',
+      nextStepTitle: 'Τι θέλετε να κάνετε τώρα;',
+      nextStepText: 'Αντιγράψτε το σενάριο {platform}, προγραμματίστε το για την καλύτερη ώρα και περιμένετε 2 ημέρες για να συγκρίνετε τα analytics.',
+      nextCapCut: 'Άνοιγμα στο CapCut Studio',
+      nextCapCutDesc: 'Επεξεργαστείτε και εξάγετε το βίντεο αμέσως',
+      nextAnalytics: 'Ρύθμιση παρακολούθησης analytics',
+      nextAnalyticsDesc: 'Σύγκριση αποτελεσμάτων σε 2 ημέρες',
+      nextNewGoal: 'Νέος στόχος περιεχομένου',
+      nextNewGoalDesc: 'Επανεκκίνηση H.I.T.',
+      resetButton: 'Εισαγάγετε νέο στόχο'
     }
   }
 }

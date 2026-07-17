@@ -592,4 +592,133 @@
   .pe-actions {
     flex-direction: column;
   }
+  .pe-next-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   Next Steps Section
+   ═══════════════════════════════════════════ */
+
+.pe-next-steps {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.pe-next-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.pe-next-banner-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.pe-next-banner-text strong {
+  display: block;
+  font-size: 1rem;
+  color: #065f46;
+  margin-bottom: 0.25rem;
+}
+
+.pe-next-banner-text p {
+  font-size: 0.875rem;
+  color: #047857;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.pe-next-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.pe-next-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem;
+  background: #fff;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.pe-next-card:hover {
+  border-color: #059669;
+  background: #f0fdf4;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
+}
+
+.pe-next-card-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0fdf4;
+  border-radius: 50%;
+  color: #059669;
+}
+
+.pe-next-card:hover .pe-next-card-icon {
+  background: #059669;
+  color: #fff;
+}
+
+.pe-next-card-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #111827;
+}
+
+.pe-next-card-desc {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.pe-next-card-reset {
+  border-color: #d1d5db;
+  border-style: dashed;
+}
+
+.pe-next-card-reset:hover {
+  border-color: #6366f1;
+  background: #eef2ff;
+  border-style: solid;
+}
+
+.pe-next-card-reset .pe-next-card-icon {
+  background: #eef2ff;
+  color: #6366f1;
+}
+
+.pe-next-card-reset:hover .pe-next-card-icon {
+  background: #6366f1;
+  color: #fff;
+}
+
+/* Reset Button — Prominent */
+.pe-reset-section {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
 }

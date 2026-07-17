@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Rocket, Check, Copy, Share2, Sparkles, ChevronDown, ChevronUp } from 'lucide-react'
+import { Rocket, Check, Copy, Share2, Sparkles, ChevronDown, ChevronUp, Film, BarChart3, RotateCcw, ArrowRight, Target } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations'
 import { getChatEndpoint } from '../lib/hit'
@@ -313,7 +313,7 @@ export default function PlatformEngine() {
                 <div key={key} className="pe-platform-card">
                   <div className="pe-platform-card-header">
                     <span className="pe-platform-name">{r.icon} {r.name}</span>
-                    <button className="pe-copy-btn" onClick={() => copyToClipboard(getResultText(r))}>
+                    <button className="pe-copy-btn" onClick={() => copyToClipboard(getResultText(r), key)}>
                       <Copy size={14} /> {t('platformEngine.copy')}
                     </button>
                   </div>
@@ -356,7 +356,7 @@ export default function PlatformEngine() {
             </button>
           </div>
 
-          {/* More Platforms */}
+          {/* Weitere Plattformen — direkt sichtbar */}
           {!generatedMore && (
             <div className="pe-more-section">
               <p className="pe-more-title">{t('platformEngine.moreAvailable')}</p>
@@ -384,7 +384,7 @@ export default function PlatformEngine() {
                   <div key={key} className="pe-platform-card pe-platform-card-small">
                     <div className="pe-platform-card-header">
                       <span className="pe-platform-name">{r.icon} {r.name}</span>
-                      <button className="pe-copy-btn" onClick={() => copyToClipboard(getResultText(r))}>
+                      <button className="pe-copy-btn" onClick={() => copyToClipboard(getResultText(r), key)}>
                         <Copy size={12} />
                       </button>
                     </div>
@@ -394,6 +394,45 @@ export default function PlatformEngine() {
               </div>
             </div>
           )}
+
+          {/* Next Steps — Was möchtest du jetzt tun? */}
+          <div className="pe-next-steps">
+            <div className="pe-next-banner">
+              <div className="pe-next-banner-icon">💡</div>
+              <div className="pe-next-banner-text">
+                <strong>{t('platformEngine.nextStepTitle')}</strong>
+                <p>{t('platformEngine.nextStepText', { platform: getAgentName(top3Keys[0] || 'instagram') })}</p>
+              </div>
+            </div>
+
+            <div className="pe-next-grid">
+              <button className="pe-next-card" onClick={() => navigate('/content-studio')}>
+                <div className="pe-next-card-icon"><Film size={24} /></div>
+                <div className="pe-next-card-label">{t('platformEngine.nextCapCut')}</div>
+                <div className="pe-next-card-desc">{t('platformEngine.nextCapCutDesc')}</div>
+              </button>
+              <button className="pe-next-card" onClick={() => navigate('/analytics')}>
+                <div className="pe-next-card-icon"><BarChart3 size={24} /></div>
+                <div className="pe-next-card-label">{t('platformEngine.nextAnalytics')}</div>
+                <div className="pe-next-card-desc">{t('platformEngine.nextAnalyticsDesc')}</div>
+              </button>
+              <button className="pe-next-card pe-next-card-reset" onClick={() => {
+                setPhase('input')
+                setGoal('')
+                setAnalysis(null)
+                setResults({})
+                setTopResults({})
+                setRecommendations([])
+                setProgress({})
+                setShowMore(false)
+                setGeneratedMore(false)
+              }}>
+                <div className="pe-next-card-icon"><Target size={24} /></div>
+                <div className="pe-next-card-label">{t('platformEngine.nextNewGoal')}</div>
+                <div className="pe-next-card-desc">{t('platformEngine.nextNewGoalDesc')}</div>
+              </button>
+            </div>
+          </div>
 
           {/* Recommendations */}
           {recommendations.length > 0 && (
@@ -426,9 +465,9 @@ export default function PlatformEngine() {
             </div>
           </div>
 
-          {/* Reset */}
+          {/* Reset — Prominent */}
           <div className="pe-reset-section">
-            <button className="btn btn-ghost" onClick={() => {
+            <button className="btn btn-primary btn-lg" onClick={() => {
               setPhase('input')
               setGoal('')
               setAnalysis(null)
@@ -439,7 +478,7 @@ export default function PlatformEngine() {
               setShowMore(false)
               setGeneratedMore(false)
             }}>
-              Neues Ziel eingeben
+              <RotateCcw size={18} /> {t('platformEngine.resetButton')}
             </button>
           </div>
         </div>
