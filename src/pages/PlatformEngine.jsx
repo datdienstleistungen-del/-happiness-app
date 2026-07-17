@@ -47,6 +47,7 @@ export default function PlatformEngine() {
   const [copiedAll, setCopiedAll] = useState(false)
   const [generatedMore, setGeneratedMore] = useState(false)
   const [copiedPlatform, setCopiedPlatform] = useState(null)
+  const [generatingSingle, setGeneratingSingle] = useState(null)
 
   // Restore state from localStorage on mount (after navigating back from CapCut/Analytics)
   useEffect(() => {
@@ -166,6 +167,26 @@ export default function PlatformEngine() {
     const alreadyGenerated = Object.keys(results)
     const remaining = allKeys.filter(k => !alreadyGenerated.includes(k))
     await startGenerating(remaining)
+  }
+
+  const handleGenerateSingle = async (platformKey) => {
+    setGeneratingSingle(platformKey)
+    try {
+      const chatEndpoint = getChatEndpoint()
+      let token = ''
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        token = session?.access_token || ''
+      } catch {}
+      const masterBrief = buildMasterBriefFromAnalysis(analysis)
+      const result = await runPlatformAgent(platformKey, goal, masterBrief, chatEndpoint, token)
+      if (result) {
+        setResults(prev => ({ ...prev, [platformKey]: result }))
+      }
+    } catch (err) {
+      console.error('Single generation failed:', err)
+    }
+    setGeneratingSingle(null)
   }
 
   const copyToClipboard = (text, platform = 'all') => {
@@ -393,42 +414,74 @@ export default function PlatformEngine() {
             </button>
           </div>
 
-          {/* Weitere Plattformen — direkt sichtbar */}
-          {!generatedMore && (
+          {/* Weitere Plattformen — einzeln generieren */}
+          {allPlatforms.filter(p => !top3Keys.includes(p.key)).length > 0 && (
             <div className="pe-more-section">
               <p className="pe-more-title">{t('platformEngine.moreAvailable')}</p>
+
+              {/* Bereits generierte weitere Plattformen — als volle Karten */}
+              {allPlatforms
+                .filter(p => !top3Keys.includes(p.key) && results[p.key])
+                .map((p, i) => {
+                  const r = results[p.key]
+                  return (
+                    <div key={p.key} className="pe-platform-card pe-platform-card-extra">
+                      <div className="pe-platform-card-header">
+                        <div className="pe-platform-name-group">
+                          <span className="pe-platform-name">{r.icon} {r.name}</span>
+                        </div>
+                        <button
+                          className={`pe-copy-btn pe-copy-btn-card ${copiedPlatform === p.key ? 'pe-copy-btn-done' : ''}`}
+                          onClick={() => {
+                            copyToClipboard(getResultText(r), p.key)
+                            setCopiedPlatform(p.key)
+                            setTimeout(() => setCopiedPlatform(null), 2000)
+                          }}
+                        >
+                          {copiedPlatform === p.key ? <><Check size={14} /> Kopiert!</> : <><Copy size={14} /> In CapCut einfügen</>}
+                        </button>
+                      </div>
+                      {r.content.hook && <p className="pe-card-hook">{r.content.hook}</p>}
+                      <p className="pe-card-body">{r.content.body}</p>
+                      {r.content.cta && <p className="pe-card-cta">{r.content.cta}</p>}
+                      {r.content.hashtags?.length > 0 && (
+                        <div className="pe-card-tags">
+                          {r.content.hashtags.map((h, i) => (
+                            <span key={i} className="pe-tag">{h.startsWith('#') ? h : '#' + h}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+
+              {/* Noch nicht generierte — einzeln auflisten */}
               <div className="pe-more-list">
                 {allPlatforms
-                  .filter(p => !top3Keys.includes(p.key))
-                  .slice(0, 6)
+                  .filter(p => !top3Keys.includes(p.key) && !results[p.key])
                   .map(p => (
-                    <span key={p.key} className="pe-more-item">{p.icon} {p.name}</span>
+                    <button
+                      key={p.key}
+                      className="pe-more-item-btn"
+                      onClick={() => handleGenerateSingle(p.key)}
+                      disabled={generatingSingle !== null}
+                    >
+                      {generatingSingle === p.key ? (
+                        <><span className="pe-spinner-small" /> Wird erstellt...</>
+                      ) : (
+                        <>{p.icon} {p.name} <span className="pe-more-plus">+</span></>
+                      )}
+                    </button>
                   ))
                 }
               </div>
-              <button className="btn btn-outline pe-more-btn" onClick={handleGenerateMore}>
-                {t('platformEngine.moreButton')}
-              </button>
-            </div>
-          )}
 
-          {/* Generated More — All 12 */}
-          {generatedMore && Object.keys(results).length > 3 && (
-            <div className="pe-all-platforms">
-              <h3>Alle {Object.keys(results).length} Plattformen</h3>
-              <div className="pe-platform-grid pe-platform-grid-all">
-                {Object.entries(results).map(([key, r]) => (
-                  <div key={key} className="pe-platform-card pe-platform-card-small">
-                    <div className="pe-platform-card-header">
-                      <span className="pe-platform-name">{r.icon} {r.name}</span>
-                      <button className="pe-copy-btn" onClick={() => copyToClipboard(getResultText(r), key)}>
-                        <Copy size={12} />
-                      </button>
-                    </div>
-                    <p className="pe-card-body pe-card-body-small">{r.content.body?.substring(0, 120)}...</p>
-                  </div>
-                ))}
-              </div>
+              {/* Alle generieren — secondary */}
+              {!generatedMore && allPlatforms.filter(p => !top3Keys.includes(p.key) && !results[p.key]).length > 1 && (
+                <button className="btn btn-outline pe-more-btn" onClick={handleGenerateMore}>
+                  {t('platformEngine.moreButton')}
+                </button>
+              )}
             </div>
           )}
 

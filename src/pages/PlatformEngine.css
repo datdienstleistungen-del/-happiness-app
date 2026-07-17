@@ -491,6 +491,53 @@
   color: var(--text-muted, #6b7280);
 }
 
+/* Individual generate buttons for more platforms */
+.pe-more-item-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border, #e5e7eb);
+  background: #fff;
+  color: var(--text, #111);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 500;
+  font-family: inherit;
+}
+
+.pe-more-item-btn:hover:not(:disabled) {
+  border-color: var(--primary, #085041);
+  background: #f0fdf4;
+  transform: translateY(-1px);
+}
+
+.pe-more-item-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pe-more-plus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--primary, #085041);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* Extra platform card (generated from "more") */
+.pe-platform-card-extra {
+  border: 1px solid #e5e7eb;
+  margin-bottom: 1rem;
+}
+
 .pe-more-btn {
   margin-top: 0.5rem;
 }
