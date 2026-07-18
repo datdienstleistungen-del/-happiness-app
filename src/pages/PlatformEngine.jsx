@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabase'
 import { analyzeGoal } from '../intelligence/goal-analyzer'
 import { generateRecommendations } from '../intelligence/hit-recommendations'
 import { buildMasterBriefFromAnalysis, runPlatformAgent, getAllPlatforms, getAgentIcon, getAgentName } from '../intelligence/content-engine'
-import { trackEvent } from '../intelligence/analytics/custom'
+import { trackEvent, trackLandingFunnel } from '../intelligence/analytics/custom'
 import NextActionHub from '../components/NextActionHub'
 import './PlatformEngine.css'
 
@@ -528,9 +528,16 @@ export default function PlatformEngine() {
 
           {/* Next Action Hub */}
           <NextActionHub
-            onOpenCapCut={() => saveStateAndNavigate('/capcut-studio')}
-            onTrackAnalytics={() => saveStateAndNavigate('/analytics')}
+            onOpenCapCut={() => {
+              trackLandingFunnel('post_result_action', { action: 'capcut' })
+              saveStateAndNavigate('/capcut-studio')
+            }}
+            onTrackAnalytics={() => {
+              trackLandingFunnel('post_result_action', { action: 'tracking' })
+              saveStateAndNavigate('/analytics')
+            }}
             onReset={() => {
+              trackLandingFunnel('post_result_action', { action: 'reset' })
               setPhase('input')
               setGoal('')
               setAnalysis(null)

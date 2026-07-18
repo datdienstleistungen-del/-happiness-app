@@ -4,6 +4,7 @@ import { Rocket, Send, Check, AlertTriangle, Lightbulb, MessageSquare, PenTool, 
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations'
+import { trackLandingFunnel } from '../intelligence/analytics/custom'
 import ShareBar from '../components/ShareBar'
 import './CreatorAcademyPage.css'
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom'
@@ -391,13 +392,13 @@ Antworte immer auf Deutsch. Antworte in klarem Fliesstext, wie ein professionell
               <div className="ca-feedback-actions-two">
                 <button
                   className="ca-btn ca-btn-optimize"
-                  onClick={() => { setFeedback(null); setSummary(null); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                  onClick={() => { trackLandingFunnel('post_result_action', { action: 'optimize' }); setFeedback(null); setSummary(null); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
                 >
                   <RotateCcw size={16} /> Erneut optimieren
                 </button>
                 <button
                   className="ca-btn ca-btn-publish"
-                  onClick={() => navigate('/post-preparation', { state: { draft, feedback, summary } })}
+                  onClick={() => { trackLandingFunnel('post_result_action', { action: 'prepare_post' }); navigate('/post-preparation', { state: { draft, feedback, summary } }) }}
                 >
                   <Rocket size={16} /> Zum Posten vorbereiten <ArrowRight size={14} />
                 </button>

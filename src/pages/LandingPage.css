@@ -40,11 +40,36 @@
   font-size: 0.95rem;
 }
 
+/* Question */
+.landing-question {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text, #111);
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+/* Social Proof */
+.landing-social-proof {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
+  font-size: 0.82rem;
+  color: var(--primary, #085041);
+  font-weight: 600;
+  margin-top: 0.75rem;
+}
+
+.landing-social-check {
+  font-weight: 800;
+}
+
 /* Meta */
 .landing-meta {
   font-size: 0.78rem;
   color: var(--text-muted, #6b7280);
-  margin-top: 0.75rem;
+  margin-top: 0.5rem;
   text-align: center;
 }
 

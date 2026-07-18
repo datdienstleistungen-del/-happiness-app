@@ -128,3 +128,7 @@ export function markFirstSession() {
     localStorage.setItem('happiness-first-session', Date.now().toString())
   }
 }
+
+export function trackLandingFunnel(step, metadata = {}) {
+  trackEvent(`landing_${step}`, metadata)
+}

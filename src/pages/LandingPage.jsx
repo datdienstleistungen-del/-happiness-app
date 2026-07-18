@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Rocket, Sparkles, Check, ArrowRight, Zap, Clock, Target } from 'lucide-react'
 import { trackDemoStarted, trackDemoCompleted } from '../intelligence/analytics'
+import { trackLandingFunnel } from '../intelligence/analytics/custom'
 import { useLanguage } from '../i18n/translations.jsx'
 import InstallButton from '../components/InstallButton'
 import VideoShowcase from '../components/VideoShowcase'
@@ -17,9 +18,20 @@ const GOAL_CHIPS = [
   { icon: '💼', de: 'Mitarbeiter finden', en: 'Find employees', es: 'Encontrar empleados', fr: 'Trouver des employés', it: 'Trovare dipendenti', nl: 'Medewerkers vinden', el: 'Βρείτε υπαλλήλους' },
 ]
 
+const PRE_FILL_EXAMPLES = [
+  { de: 'Mein nächstes Reel soll viral gehen', en: 'Make my next Reel go viral' },
+  { de: 'Mehr Reichweite auf Instagram', en: 'More reach on Instagram' },
+  { de: 'Mehr Kunden über LinkedIn gewinnen', en: 'Get more customers via LinkedIn' },
+  { de: 'Einen erfolgreichen YouTube Short planen', en: 'Plan a successful YouTube Short' },
+  { de: 'Einen TikTok erstellen, der geteilt wird', en: 'Create a TikTok that gets shared' },
+  { de: 'Mehr Anfragen über Social Media erhalten', en: 'Get more inquiries via social media' },
+]
+
 export default function LandingPage() {
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
+  const heroRef = useRef(null)
+  const inputChangedTracked = useRef(false)
   const [goal, setGoal] = useState('')
   const [phase, setPhase] = useState('input') // input | analysis | result | error
   const [analysis, setAnalysis] = useState(null)
@@ -28,17 +40,48 @@ export default function LandingPage() {
 
   useEffect(() => {
     document.title = 'Happiness — Creator Operating System'
+    trackLandingFunnel('opened')
+
+    const randomIndex = Math.floor(Math.random() * PRE_FILL_EXAMPLES.length)
+    setGoal(PRE_FILL_EXAMPLES[randomIndex][lang] || PRE_FILL_EXAMPLES[randomIndex].de)
+  }, [lang])
+
+  useEffect(() => {
+    if (!heroRef.current) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          trackLandingFunnel('hero_visible')
+          observer.disconnect()
+        }
+      },
+      { threshold: 0.5 }
+    )
+    observer.observe(heroRef.current)
+    return () => observer.disconnect()
   }, [])
 
   const handleChipClick = (chip) => {
     setGoal(chip[lang] || chip.de)
+    trackLandingFunnel('example_changed', { method: 'chip' })
+  }
+
+  const handleInputChange = (e) => {
+    setGoal(e.target.value)
+    if (!inputChangedTracked.current) {
+      inputChangedTracked.current = true
+      trackLandingFunnel('example_changed', { method: 'typed' })
+    }
   }
 
   const startDemo = async () => {
     if (!goal.trim()) return
+    trackLandingFunnel('generate_clicked')
     trackDemoStarted(goal.trim())
+    trackLandingFunnel('analysis_started')
     setPhase('analysis')
     setError('')
+    const startTime = Date.now()
 
     try {
       const res = await fetch('/api/chat', {
@@ -62,9 +105,11 @@ export default function LandingPage() {
         parsed = { body: data.response || '', hook: '', hashtags: [], cta: '' }
       }
 
+      trackLandingFunnel('analysis_completed', { duration_ms: Date.now() - startTime })
       setDemoResult(parsed)
       setPhase('result')
       trackDemoCompleted(goal.trim())
+      setTimeout(() => trackLandingFunnel('result_visible'), 100)
     } catch (err) {
       console.error('Demo error:', err)
       setError('Es ist ein Fehler aufgetreten. Bitte versuche es erneut.')
@@ -82,19 +127,22 @@ export default function LandingPage() {
   return (
     <div className="container">
       {/* Hero */}
-      <div className="hero landing-hero">
+      <div className="hero landing-hero" ref={heroRef}>
         <h1><Logo /></h1>
         <p className="landing-tagline">{t('landing.tagline')}</p>
+
+        <p className="landing-question">{t('landing.question')}</p>
 
         <div className="landing-input-wrap">
           <input
             className="landing-input"
             type="text"
             value={goal}
-            onChange={(e) => setGoal(e.target.value)}
+            onChange={handleInputChange}
             onKeyDown={(e) => e.key === 'Enter' && startDemo()}
             placeholder={t('landing.placeholder')}
             disabled={phase !== 'input'}
+            onFocus={() => trackLandingFunnel('input_focused')}
           />
           <button
             className="btn btn-primary landing-start-btn"
@@ -125,6 +173,10 @@ export default function LandingPage() {
             ))}
           </div>
         )}
+
+        <div className="landing-social-proof">
+          <span className="landing-social-check">✓</span> {t('landing.freeToStart')}
+        </div>
 
         <div className="landing-meta">
           {t('landing.meta')}
@@ -221,7 +273,10 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* How it works */}
+      {/* Video Showcase — Emotion first */}
+      <VideoShowcase />
+
+      {/* How it works — Logic second */}
       <div className="what-we-are">
         <h2>{t('landing.howItWorks')}</h2>
         <div className="what-we-are-content">
@@ -254,9 +309,6 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
-
-      {/* Video Showcase */}
-      <VideoShowcase />
 
       {/* Platforms */}
       <div className="landing-platforms">
