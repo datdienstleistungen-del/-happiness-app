@@ -1,93 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Check, ArrowRight, Clock, Sparkles, AlertTriangle, MessageCircle, HelpCircle } from 'lucide-react'
+import { Check, ArrowRight, Clock, Sparkles, HelpCircle } from 'lucide-react'
 import { useLanguage } from '../i18n/translations'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { getChatEndpoint } from '../lib/hit'
 import { trackIdeaSubmitted, trackWorkflowCompleted, trackArtifactSaved, trackPlatformsDetected, trackMasterBriefGenerated, trackPlatformAgentResult, trackMultiPlatformCount } from '../intelligence/analytics'
-import { detectPlatforms, buildMasterBrief, runPlatformAgent } from '../intelligence/content-engine'
+import { detectPlatforms, runPlatformAgent } from '../intelligence/content-engine'
 import { generateQuestionSequence, getNextQuestion, buildMasterBriefFromAnswers } from '../intelligence/guided-questions'
-import { checkAllRequiredPlatforms } from '../intelligence/platform-connections'
-import PlatformConnection from '../components/PlatformConnection'
 import './ExecutionPipeline.css'
-
-const INTENT_PROMPT = `Du bist ein Intent-Analyst. Der Nutzer hat etwas eingegeben. Analysiere:
-
-1. WAS ist das Ziel? (Was will der Nutzer konkret tun?)
-2. IST das Ziel GENUG DETAILLIERT um es direkt auszuführen?
-
-WICHTIG: Wenn "video", "tiktok", "reel" oder "kurzvideo" im Text vorkommt, ist die Plattform IMMER "tiktok" — egal ob LinkedIn, Instagram oder sonstwas erwähnt wird. Ein Video bleibt ein Video.
-
-Beispiele:
-- "Ich will ein TikTok über gesunde Gewohnheiten" → Ziel: tiktok, Detail: hoch, AUSFÜHREN
-- "Erstelle ein Video für LinkedIn" → Ziel: tiktok, Detail: hoch, AUSFÜHREN
-- "Video für Instagram Reels" → Ziel: tiktok, Detail: hoch, AUSFÜHREN
-- "Erstelle einen Facebook-Post über mein neues Produkt" → Ziel: facebook, Detail: hoch, AUSFÜHREN
-- "Soll ich eine Kleinanzeige für mein Auto schalten?" → Ziel: marketplace, Detail: mittel, KLÄREN
-- "Mir langweilt es sich" → Ziel: keins, AUSFÜHREN (zum Chat)
-
-Antworte NUR mit JSON:
-{"platform":"tiktok|facebook|instagram|marketplace|content|chat","intent":"konkret|vage","action":"execute|clarify","clarifyQuestion":"Falls clarify: kurze Frage auf Deutsch (max 15 Wörter), sonst null"}
-
-Regeln:
-- "execute" nur wenn konkreter Inhalt im Text steht (Produktname, Thema, Beschreibung)
-- "clarify" wenn der Nutzer nur die Plattform nennt aber keinen Inhalt nennt
-- "chat" wenn kein erkennbares Plattform-Ziel
-- platform "chat" → IMMER action "execute" (zum AI Chat weiterleiten)
-- Kein Text außer dem JSON`
-
-async function analyzeIntent(goal) {
-  let result = null
-  try {
-    const { data: { session } } = await supabase.auth.getSession()
-    const token = session?.access_token || ''
-
-    const response = await fetch(getChatEndpoint(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        message: `Analysiere diese Nutzereingabe:\n\n"${goal}"`,
-        systemPrompt: INTENT_PROMPT,
-        history: []
-      })
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      const raw = (data.response || '').trim()
-      const jsonMatch = raw.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
-        try { result = JSON.parse(jsonMatch[0]) } catch {}
-      }
-    }
-  } catch {}
-
-  if (!result) result = fallbackIntent(goal)
-
-  if (/video|tiktok|reel|kurzvideo/i.test(goal)) {
-    result.platform = 'tiktok'
-    result.action = 'execute'
-  }
-
-  return result
-}
-
-function fallbackIntent(goal) {
-  const lower = goal.toLowerCase()
-  if (/video|tiktok|reel|kurzvideo/.test(lower)) return { platform: 'tiktok', action: 'execute' }
-  if (/instagram|ig|story/.test(lower)) return { platform: 'instagram', action: 'execute' }
-  if (/facebook|fb/.test(lower)) return { platform: 'facebook', action: 'execute' }
-  if (/linkedin/.test(lower)) return { platform: 'linkedin', action: 'execute' }
-  if (/reddit/.test(lower)) return { platform: 'reddit', action: 'execute' }
-  if (/tweet|twitter|x /.test(lower)) return { platform: 'x', action: 'execute' }
-  if (/post|text|schreib|content|caption/.test(lower)) return { platform: 'content', action: 'execute' }
-  if (/feedback|review|verbesser|check/.test(lower)) return { platform: 'creator-academy', action: 'execute' }
-  return { platform: 'chat', action: 'execute' }
-}
 
 async function startRealWork(platform, goal) {
   try {
@@ -143,7 +64,6 @@ async function startRealWork(platform, goal) {
   } catch {
     return null
   }
-  return null
 }
 
 const STEP_LABELS_BY_PLATFORM = {
@@ -200,7 +120,6 @@ export default function ExecutionPipeline() {
   const { user } = useAuth()
   const [searchParams] = useSearchParams()
   const goal = searchParams.get('goal') || ''
-  const debugMode = searchParams.get('debug') === '1'
 
   const [phase, setPhase] = useState('analyzing')
   const [intent, setIntent] = useState(null)
@@ -209,16 +128,11 @@ export default function ExecutionPipeline() {
   const [finished, setFinished] = useState(false)
   const [apiResult, setApiResult] = useState(null)
   const [apiDone, setApiDone] = useState(false)
-  const [clarifyText, setClarifyText] = useState('')
-  const [clarifyAnswer, setClarifyAnswer] = useState('')
   const [guidedQuestions, setGuidedQuestions] = useState([])
   const [guidedIndex, setGuidedIndex] = useState(0)
   const [guidedAnswers, setGuidedAnswers] = useState({})
   const [guidedGoal, setGuidedGoal] = useState('')
-  const [requiredPlatforms, setRequiredPlatforms] = useState([])
-  const [platformCheckResult, setPlatformCheckResult] = useState(null)
   const [error, setError] = useState('')
-  const [debugData, setDebugData] = useState(null)
   const [showResult, setShowResult] = useState(false)
   const workflowRef = useRef(null)
   const startTime = useRef(Date.now())
@@ -297,11 +211,6 @@ export default function ExecutionPipeline() {
     }
   }
 
-  // Feature-Flag: Plattform-Connect-Gate
-  // false = Gate deaktiviert (bis erstes echtes OAuth steht)
-  // true = Gate aktiviert (Nutzer muss Plattform verbinden)
-  const PLATFORM_GATE_ENABLED = false
-
   const startExecutionFromGuided = async (answers) => {
     try {
       console.log('[Pipeline] Starting execution with answers:', answers)
@@ -317,51 +226,11 @@ export default function ExecutionPipeline() {
       else if (platforms.length > 0) detectedPlatform = platforms[0]
       else if (/video|tiktok|reel|kurzvideo/.test(guidedGoal.toLowerCase())) detectedPlatform = 'tiktok'
 
-      // Gate: Plattform-Check nur wenn aktiviert
-      if (!PLATFORM_GATE_ENABLED) {
-        proceedToExecution(answers, detectedPlatform, brief)
-        return
-      }
-
-      // Ab hier: echter Gate (wenn OAuth steht)
-      const neededPlatforms = [detectedPlatform]
-      if (detectedPlatform === 'tiktok' && !neededPlatforms.includes('capcut')) {
-        neededPlatforms.push('capcut')
-      }
-      setRequiredPlatforms(neededPlatforms)
-
-      if (user) {
-        const checkResult = await checkAllRequiredPlatforms(user.id, neededPlatforms)
-        setPlatformCheckResult(checkResult)
-
-        if (!checkResult.allConnected) {
-          setPhase('connecting')
-          return
-        }
-      }
-
       proceedToExecution(answers, detectedPlatform, brief)
     } catch (err) {
       console.error('[Pipeline] Error in startExecutionFromGuided:', err)
       setError('Ein Fehler ist aufgetreten. Bitte versuch es nochmal.')
       setPhase('error')
-    }
-  }
-
-  const handleAllPlatformsConnected = () => {
-    // Re-run platform check and proceed
-    if (platformCheckResult && !platformCheckResult.allConnected) {
-      // Recalculate
-      const channel = guidedAnswers.channel || 'social_media'
-      const platforms = Array.isArray(guidedAnswers.platforms) ? guidedAnswers.platforms : (guidedAnswers.platforms ? [guidedAnswers.platforms] : [])
-      let detectedPlatform = 'content'
-      if (channel === 'kleinanzeigen') detectedPlatform = 'marketplace'
-      else if (platforms.includes('tiktok') || /video|tiktok|reel|kurzvideo/.test(guidedGoal.toLowerCase())) detectedPlatform = 'tiktok'
-      else if (platforms.length > 0) detectedPlatform = platforms[0]
-      else if (/video|tiktok|reel|kurzvideo/.test(guidedGoal.toLowerCase())) detectedPlatform = 'tiktok'
-
-      const brief = buildMasterBriefFromAnswers(guidedGoal, guidedAnswers)
-      proceedToExecution(guidedAnswers, detectedPlatform, brief)
     }
   }
 
@@ -556,108 +425,6 @@ export default function ExecutionPipeline() {
     )
   }
 
-  if (phase === 'connecting') {
-    const missingPlatforms = platformCheckResult?.missing || requiredPlatforms
-
-    return (
-      <div className="ep-page">
-        <div className="ep-card">
-          <div className="ep-header">
-            <div className="ep-header-brand">
-              <span className="ep-hit-h">H</span><span className="ep-hit-rest">.I.T.</span>
-            </div>
-            <p className="ep-goal">"{guidedGoal}"</p>
-          </div>
-
-          <div style={{ textAlign: 'center', padding: '0 16px' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🔐</div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '6px' }}>
-              Plattform verbinden
-            </h2>
-            <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '20px' }}>
-              Um Content zu erstellen, brauchst du ein eigenes Konto bei {missingPlatforms.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' und ')}.
-            </p>
-          </div>
-
-          <div style={{ maxWidth: '400px', margin: '0 auto' }}>
-            {missingPlatforms.map(platform => (
-              <PlatformConnection
-                key={platform}
-                platform={platform}
-                onConnected={(p) => {
-                  // Re-check all platforms
-                  checkAllRequiredPlatforms(user?.id, requiredPlatforms).then(result => {
-                    setPlatformCheckResult(result)
-                    if (result.allConnected) {
-                      handleAllPlatformsConnected()
-                    }
-                  })
-                }}
-              />
-            ))}
-          </div>
-
-          <div style={{ marginTop: '16px', textAlign: 'center' }}>
-            <button
-              className="ep-btn secondary"
-              onClick={() => setPhase('guided')}
-              style={{ fontSize: '0.85rem' }}
-            >
-              ← Zurück zu den Fragen
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (phase === 'clarify') {
-    const handleClarifySubmit = () => {
-      if (!clarifyAnswer.trim()) return
-      const newGoal = `${goal} — ${clarifyAnswer.trim()}`
-      navigate('/execute?goal=' + encodeURIComponent(newGoal))
-    }
-
-    return (
-      <div className="ep-page">
-        <div className="ep-card">
-          <div className="ep-header">
-            <div className="ep-header-brand">
-              <span className="ep-hit-h">H</span><span className="ep-hit-rest">.I.T.</span>
-            </div>
-          </div>
-          <div className="ep-clarify">
-            <div className="ep-clarify-icon"><MessageCircle size={28} /></div>
-            <p className="ep-clarify-text">{clarifyText}</p>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '16px', width: '100%', maxWidth: '400px' }}>
-              <input
-                type="text"
-                className="ep-clarify-input"
-                value={clarifyAnswer}
-                onChange={(e) => setClarifyAnswer(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleClarifySubmit()}
-                placeholder="Deine Antwort..."
-                autoFocus
-                style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '14px' }}
-              />
-              <button
-                className="ep-btn primary"
-                onClick={handleClarifySubmit}
-                disabled={!clarifyAnswer.trim()}
-                style={{ whiteSpace: 'nowrap' }}
-              >
-                <ArrowRight size={16} />
-              </button>
-            </div>
-            <div className="ep-clarify-actions" style={{ marginTop: '12px' }}>
-              <button className="ep-btn secondary" onClick={() => navigate('/')}>Zurück</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   if (phase === 'analyzing') {
     return (
       <div className="ep-page">
@@ -801,39 +568,6 @@ export default function ExecutionPipeline() {
             <button className="ep-btn primary" onClick={navigateToResult}>
               Weiter →
             </button>
-          </div>
-        )}
-
-        {finished && apiDone && debugMode && debugData && (
-          <div className="ep-debug-panel">
-            <div className="ep-debug-header">
-              <span className="ep-debug-badge">DEBUG</span>
-              <span className="ep-debug-goal">"{debugData.goal}"</span>
-            </div>
-
-            <div className="ep-debug-section">
-              <h4 className="ep-debug-title">Detected Platforms</h4>
-              <div className="ep-debug-tags">
-                {debugData.detectedPlatforms.map(p => (
-                  <span key={p} className="ep-debug-tag">{p}</span>
-                ))}
-              </div>
-            </div>
-
-            <div className="ep-debug-section">
-              <h4 className="ep-debug-title">Master Brief</h4>
-              <pre className="ep-debug-code">{debugData.masterBrief}</pre>
-            </div>
-
-            {debugData.agentResults.map((agent, i) => (
-              <div key={i} className="ep-debug-section">
-                <h4 className="ep-debug-title">
-                  <span className="ep-debug-agent">{agent.agent}</span>
-                  <span className="ep-debug-platform">{agent.platform}</span>
-                </h4>
-                <pre className="ep-debug-code">{(agent.content || '').slice(0, 500)}{(agent.content || '').length > 500 ? '...' : ''}</pre>
-              </div>
-            ))}
           </div>
         )}
       </div>

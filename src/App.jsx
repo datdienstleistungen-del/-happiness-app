@@ -399,7 +399,6 @@ export default function App() {
                 <Route path="/fotostory" element={<ErrorBoundary><ProtectedRoute><FotostoryPage /></ProtectedRoute></ErrorBoundary>} />
                 <Route path="/ai-chat" element={<ProtectedRoute><AIChatPage /></ProtectedRoute>} />
                 <Route path="/execute" element={<ProtectedRoute><ExecutionPipeline /></ProtectedRoute>} />
-                <Route path="/advanced" element={<ProtectedRoute><ExecutionPipeline /></ProtectedRoute>} />
                 <Route path="/creator-academy" element={<ProtectedRoute><CreatorAcademyPage /></ProtectedRoute>} />
                 <Route path="/post-preparation" element={<ProtectedRoute><PostPreparationPage /></ProtectedRoute>} />
                 <Route path="/capcut-studio" element={<ProtectedRoute><TikTokVideoPage /></ProtectedRoute>} />
