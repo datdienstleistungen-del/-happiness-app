@@ -344,14 +344,32 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Tablet */
+@media (max-width: 768px) {
+  .what-we-are-steps {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .step-arrow {
+    display: none;
+  }
+}
+
 /* Mobile */
 @media (max-width: 480px) {
   .landing-chips {
     gap: 0.4rem;
   }
   .landing-chip {
-    padding: 0.35rem 0.7rem;
-    font-size: 0.75rem;
+    padding: 0.65rem 1rem;
+    font-size: 0.8rem;
+    min-height: 44px;
+    white-space: normal;
+  }
+  .copy-btn {
+    padding: 0.65rem 1rem;
+    font-size: 0.8rem;
+    min-height: 44px;
   }
   .demo-result-score {
     grid-template-columns: 1fr;
@@ -362,5 +380,41 @@
   .platform-card {
     padding: 0.4rem 0.75rem;
     font-size: 0.75rem;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   Touch Feedback & Accessibility
+   ═══════════════════════════════════════════ */
+
+.landing-chip,
+.copy-btn,
+.btn {
+  transition:
+    transform 120ms ease,
+    opacity 120ms ease,
+    box-shadow 120ms ease;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .landing-chip:active,
+  .copy-btn:active,
+  .btn:active {
+    transform: scale(0.97);
+    opacity: 0.92;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-chip,
+  .copy-btn,
+  .btn {
+    transition: none;
+  }
+  .landing-chip:active,
+  .copy-btn:active,
+  .btn:active {
+    transform: none;
+    opacity: 1;
   }
 }

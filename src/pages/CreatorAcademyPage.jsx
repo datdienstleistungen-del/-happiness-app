@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { Rocket, Send, Check, AlertTriangle, Lightbulb, MessageSquare, PenTool, CreditCard, Brain, MessageCircle } from 'lucide-react'
+import { Rocket, Send, Check, AlertTriangle, Lightbulb, MessageSquare, PenTool, CreditCard, Brain, MessageCircle, RotateCcw, ArrowRight, Target, Zap, TrendingUp } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useLanguage } from '../i18n/translations'
@@ -9,6 +9,7 @@ import './CreatorAcademyPage.css'
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom'
 import CopyButton from '../components/CopyButton'
 import { getChatEndpoint } from '../lib/hit'
+import { summarizeFeedback } from '../intelligence/feedback-summary'
 
 export default function CreatorAcademyPage() {
   const { user } = useAuth()
@@ -30,6 +31,8 @@ export default function CreatorAcademyPage() {
   const [freeContentUsed, setFreeContentUsed] = useState(0)
   const [isPremium, setIsPremium] = useState(false)
   const [showPaywall, setShowPaywall] = useState(false)
+  const [summary, setSummary] = useState(null)
+  const [summaryLoading, setSummaryLoading] = useState(false)
 
   useEffect(() => {
     const pipelineResult = location.state?.pipelineResult
@@ -46,6 +49,27 @@ export default function CreatorAcademyPage() {
     if (feedback) {
       localStorage.setItem('happiness-feedback', JSON.stringify(feedback))
     }
+  }, [feedback])
+
+  // Feedback Summary Agent — Fazit nach Feedback generieren
+  useEffect(() => {
+    if (!feedback || summaryLoading || summary) return
+
+    const fetchSummary = async () => {
+      setSummaryLoading(true)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token || ''
+        const result = await summarizeFeedback(draft, feedback, getChatEndpoint(), token)
+        setSummary(result)
+      } catch (err) {
+        console.warn('[Summary] Error:', err)
+      } finally {
+        setSummaryLoading(false)
+      }
+    }
+
+    fetchSummary()
   }, [feedback])
   const FREE_LIMIT = 5
 
@@ -77,6 +101,7 @@ export default function CreatorAcademyPage() {
     // Early Traction: limits removed
     setIsLoading(true)
     setFeedback(null)
+    setSummary(null)
     setError('')
     setPosted(false)
 
@@ -246,7 +271,7 @@ Antworte immer auf Deutsch. Antworte in klarem Fliesstext, wie ein professionell
               {draft && (
                 <button
                   className="ca-clear-btn"
-                  onClick={() => { setDraft(''); setFeedback(null); localStorage.removeItem('happiness-draft'); localStorage.removeItem('happiness-feedback'); }}
+                  onClick={() => { setDraft(''); setFeedback(null); setSummary(null); localStorage.removeItem('happiness-draft'); localStorage.removeItem('happiness-feedback'); }}
                   title="Entwurf löschen"
                 >
                   ✕ Entwurf löschen
@@ -310,19 +335,71 @@ Antworte immer auf Deutsch. Antworte in klarem Fliesstext, wie ein professionell
                 <div dangerouslySetInnerHTML={{ __html: formatFeedback(feedback) }} />
               </div>
               <CopyButton text={feedback} className="ca-copy-btn" />
-              <div className="ca-feedback-tip">
-                <Lightbulb size={14} />
-                <span>Tipp: Übernimm die Verbesserungen in deinen Entwurf und frag erneut nach Feedback.</span>
-              </div>
+
+              {/* Feedback Summary Agent — Fazit */}
+              {summaryLoading && (
+                <div className="ca-summary-loading">
+                  <span className="ca-spinner" />
+                  <span>Fazit wird erstellt...</span>
+                </div>
+              )}
+              {summary && (
+                <div className="ca-summary">
+                  <div className="ca-summary-header">
+                    <Zap size={16} />
+                    <h3>Fazit & nächste Schritte</h3>
+                  </div>
+                  <p className="ca-summary-text">{summary.summary}</p>
+
+                  <div className="ca-summary-problem">
+                    <Target size={14} />
+                    <div>
+                      <strong>Hauptproblem:</strong>
+                      <span>{summary.mainProblem}</span>
+                    </div>
+                  </div>
+
+                  <div className="ca-summary-improvement">
+                    <TrendingUp size={14} />
+                    <div>
+                      <strong>Wichtigste Verbesserung:</strong>
+                      <span>{summary.keyImprovement}</span>
+                    </div>
+                  </div>
+
+                  {summary.nextSteps?.length > 0 && (
+                    <div className="ca-summary-steps">
+                      <strong>Nächste Schritte:</strong>
+                      <ul>
+                        {summary.nextSteps.map((step, i) => (
+                          <li key={i}>{step}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="ca-summary-effect">
+                    <strong>Erwarteter Effekt:</strong> {summary.expectedEffect}
+                  </div>
+                </div>
+              )}
+
               <div className="ca-feedback-disclaimer">
                 Einschaetzung basierend auf bekannten Plattform-Mustern, keine Erfolgsgarantie.
               </div>
-              <div className="ca-feedback-actions">
+
+              <div className="ca-feedback-actions-two">
                 <button
-                  className="ca-btn ca-btn-primary"
-                  onClick={() => navigate('/post-preparation', { state: { draft, feedback } })}
+                  className="ca-btn ca-btn-optimize"
+                  onClick={() => { setFeedback(null); setSummary(null); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
                 >
-                  <Rocket size={16} /> Zum Posten vorbereiten
+                  <RotateCcw size={16} /> Erneut optimieren
+                </button>
+                <button
+                  className="ca-btn ca-btn-publish"
+                  onClick={() => navigate('/post-preparation', { state: { draft, feedback, summary } })}
+                >
+                  <Rocket size={16} /> Zum Posten vorbereiten <ArrowRight size={14} />
                 </button>
               </div>
               <ShareBar text={draft} title="Mein Content-Entwurf" />

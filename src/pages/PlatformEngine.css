@@ -677,6 +677,18 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Tablet */
+@media (max-width: 768px) {
+  .pe-next-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .pe-platform-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
 /* Mobile */
 @media (max-width: 480px) {
   .platform-engine {
@@ -689,8 +701,17 @@
     gap: 0.4rem;
   }
   .pe-chip {
-    padding: 0.35rem 0.7rem;
-    font-size: 0.75rem;
+    padding: 0.65rem 1rem;
+    font-size: 0.8rem;
+    min-height: 44px;
+  }
+  .pe-copy-btn-card {
+    padding: 0.75rem 1.25rem;
+    min-height: 44px;
+  }
+  .pe-more-item-btn {
+    padding: 0.7rem 1.1rem;
+    min-height: 44px;
   }
   .pe-score-grid {
     grid-template-columns: 1fr;
@@ -703,6 +724,9 @@
   }
   .pe-next-grid {
     grid-template-columns: 1fr;
+  }
+  .pe-rec-item {
+    flex-wrap: wrap;
   }
 }
 
@@ -830,4 +854,47 @@
   padding-top: 2rem;
   border-top: 1px solid #e5e7eb;
   text-align: center;
+}
+
+/* ═══════════════════════════════════════════
+   Touch Feedback & Accessibility
+   ═══════════════════════════════════════════ */
+
+/* Transition dauerhaft — flüssiges Drücken UND Loslassen */
+.pe-copy-btn-card,
+.pe-chip,
+.pe-more-item-btn,
+.btn {
+  transition:
+    transform 120ms ease,
+    opacity 120ms ease,
+    box-shadow 120ms ease;
+}
+
+/* Touch-Feedback — nur auf Touch-Geräten */
+@media (hover: none) and (pointer: coarse) {
+  .pe-copy-btn-card:active,
+  .pe-chip:active,
+  .pe-more-item-btn:active,
+  .btn:active {
+    transform: scale(0.97);
+    opacity: 0.92;
+  }
+}
+
+/* Accessibility — reduzierte Bewegung respektieren */
+@media (prefers-reduced-motion: reduce) {
+  .pe-copy-btn-card,
+  .pe-chip,
+  .pe-more-item-btn,
+  .btn {
+    transition: none;
+  }
+  .pe-copy-btn-card:active,
+  .pe-chip:active,
+  .pe-more-item-btn:active,
+  .btn:active {
+    transform: none;
+    opacity: 1;
+  }
 }

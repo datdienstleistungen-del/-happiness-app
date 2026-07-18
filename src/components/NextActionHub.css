@@ -1,0 +1,123 @@
+/* ═══════════════════════════════════════════
+   NextActionHub — Creator Operating System
+   ═══════════════════════════════════════════ */
+
+.nah-container {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Banner */
+.nah-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #f0f9ff, #eff6ff);
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  margin-bottom: 1.25rem;
+}
+
+.nah-banner-icon {
+  flex-shrink: 0;
+  color: #2563eb;
+  margin-top: 1px;
+}
+
+.nah-banner-text {
+  font-size: 0.875rem;
+  color: #1e40af;
+  margin: 0;
+  line-height: 1.55;
+}
+
+/* Action Grid */
+.nah-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.nah-action-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 1.25rem 1rem;
+  background: #fff;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.nah-action-card:hover {
+  border-color: var(--primary, #085041);
+  background: #f0fdf4;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(8, 80, 65, 0.12);
+}
+
+.nah-action-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0fdf4;
+  border-radius: 50%;
+  color: var(--primary, #085041);
+  transition: all 0.2s ease;
+}
+
+.nah-action-card:hover .nah-action-icon {
+  background: var(--primary, #085041);
+  color: #fff;
+}
+
+.nah-action-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #111827;
+}
+
+/* Reset */
+.nah-reset {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.7rem;
+  background: transparent;
+  border: 1px dashed #d1d5db;
+  border-radius: 10px;
+  color: #6b7280;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.nah-reset:hover {
+  border-color: #9ca3af;
+  color: #374151;
+  background: #f9fafb;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .nah-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .nah-action-card {
+    padding: 1rem;
+  }
+}

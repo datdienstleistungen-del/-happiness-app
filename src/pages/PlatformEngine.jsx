@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Rocket, Check, Copy, Share2, Sparkles, ChevronDown, ChevronUp, Film, BarChart3, RotateCcw, ArrowRight, Target, ArrowLeft } from 'lucide-react'
+import { Rocket, Check, Copy, Share2, Sparkles, ChevronDown, ChevronUp, RotateCcw, ArrowRight, ArrowLeft } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations'
 import { getChatEndpoint } from '../lib/hit'
@@ -9,6 +9,7 @@ import { analyzeGoal } from '../intelligence/goal-analyzer'
 import { generateRecommendations } from '../intelligence/hit-recommendations'
 import { buildMasterBriefFromAnalysis, runPlatformAgent, getAllPlatforms, getAgentIcon, getAgentName } from '../intelligence/content-engine'
 import { trackEvent } from '../intelligence/analytics/custom'
+import NextActionHub from '../components/NextActionHub'
 import './PlatformEngine.css'
 
 const GOAL_CHIPS = {
@@ -525,44 +526,23 @@ export default function PlatformEngine() {
             </div>
           )}
 
-          {/* Next Steps — Was möchtest du jetzt tun? */}
-          <div className="pe-next-steps">
-            <div className="pe-next-banner">
-              <div className="pe-next-banner-icon">💡</div>
-              <div className="pe-next-banner-text">
-                <strong>{t('platformEngine.nextStepTitle')}</strong>
-                <p>{t('platformEngine.nextStepText', { platform: getAgentName(top3Keys[0] || 'instagram') })}</p>
-              </div>
-            </div>
-
-            <div className="pe-next-grid">
-              <button className="pe-next-card" onClick={() => saveStateAndNavigate('/capcut-studio')}>
-                <div className="pe-next-card-icon"><Film size={24} /></div>
-                <div className="pe-next-card-label">{t('platformEngine.nextCapCut')}</div>
-                <div className="pe-next-card-desc">{t('platformEngine.nextCapCutDesc')}</div>
-              </button>
-              <button className="pe-next-card" onClick={() => saveStateAndNavigate('/analytics')}>
-                <div className="pe-next-card-icon"><BarChart3 size={24} /></div>
-                <div className="pe-next-card-label">{t('platformEngine.nextAnalytics')}</div>
-                <div className="pe-next-card-desc">{t('platformEngine.nextAnalyticsDesc')}</div>
-              </button>
-              <button className="pe-next-card pe-next-card-reset" onClick={() => {
-                setPhase('input')
-                setGoal('')
-                setAnalysis(null)
-                setResults({})
-                setTopResults({})
-                setRecommendations([])
-                setProgress({})
-                setShowMore(false)
-                setGeneratedMore(false)
-              }}>
-                <div className="pe-next-card-icon"><Target size={24} /></div>
-                <div className="pe-next-card-label">{t('platformEngine.nextNewGoal')}</div>
-                <div className="pe-next-card-desc">{t('platformEngine.nextNewGoalDesc')}</div>
-              </button>
-            </div>
-          </div>
+          {/* Next Action Hub */}
+          <NextActionHub
+            onOpenCapCut={() => saveStateAndNavigate('/capcut-studio')}
+            onTrackAnalytics={() => saveStateAndNavigate('/analytics')}
+            onReset={() => {
+              setPhase('input')
+              setGoal('')
+              setAnalysis(null)
+              setResults({})
+              setTopResults({})
+              setRecommendations([])
+              setProgress({})
+              setShowMore(false)
+              setGeneratedMore(false)
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }}
+          />
 
           {/* Recommendations */}
           {recommendations.length > 0 && (

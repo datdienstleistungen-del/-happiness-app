@@ -142,6 +142,12 @@ const translations = {
       nextNewGoalDesc: 'Den H.I.T. erneut starten',
       resetButton: 'Neues Content-Ziel eingeben'
     },
+    nextActionHub: {
+      banner: '💡 Nächster Schritt: Kopiere das Skript, plane den Post für die nächste empfohlene Uhrzeit und warte 2 Tage, um die Analytics zu vergleichen.',
+      capcutButton: '🎬 In CapCut Studio öffnen',
+      trackingButton: '📊 Tracking-Task anlegen',
+      resetButton: '🔄 Neues Content-Ziel eingeben'
+    },
     videoShowcase: {
       title: '3 Wörter rein. Fertiges Video raus.',
       subtitle: 'Schau dir an, was H.I.T. in Sekunden erstellt.',
@@ -295,6 +301,12 @@ const translations = {
       nextNewGoalDesc: 'Start H.I.T. again',
       resetButton: 'Enter new content goal'
     },
+    nextActionHub: {
+      banner: '💡 Next Step: Copy the script, schedule the post for the next recommended time, and wait 2 days to compare analytics.',
+      capcutButton: '🎬 Open in CapCut Studio',
+      trackingButton: '📊 Set up tracking task',
+      resetButton: '🔄 Enter new content goal'
+    },
     videoShowcase: {
       title: '3 words in. Finished video out.',
       subtitle: 'See what H.I.T. creates in seconds.',
@@ -413,6 +425,12 @@ const translations = {
       nextNewGoal: 'Nuevo objetivo de contenido',
       nextNewGoalDesc: 'Iniciar H.I.T. de nuevo',
       resetButton: 'Ingresar nuevo objetivo'
+    },
+    nextActionHub: {
+      banner: '💡 Siguiente paso: Copia el guion, programa la publicación para la próxima hora recomendada y espera 2 días para comparar analíticas.',
+      capcutButton: '🎬 Abrir en CapCut Studio',
+      trackingButton: '📊 Configurar tarea de seguimiento',
+      resetButton: '🔄 Ingresar nuevo objetivo'
     }
   },
   fr: {
@@ -521,6 +539,12 @@ const translations = {
       nextNewGoal: 'Nouvel objectif contenu',
       nextNewGoalDesc: 'Relancer H.I.T.',
       resetButton: 'Entrer un nouvel objectif'
+    },
+    nextActionHub: {
+      banner: '💡 Étape suivante : Copiez le script, planifiez la publication pour la prochaine heure recommandée et attendez 2 jours pour comparer les analyses.',
+      capcutButton: '🎬 Ouvrir dans CapCut Studio',
+      trackingButton: '📊 Configurer la tâche de suivi',
+      resetButton: '🔄 Entrer un nouvel objectif'
     }
   },
   it: {
@@ -629,6 +653,12 @@ const translations = {
       nextNewGoal: 'Nuovo obiettivo contenuto',
       nextNewGoalDesc: 'Riavvia H.I.T.',
       resetButton: 'Inserisci un nuovo obiettivo'
+    },
+    nextActionHub: {
+      banner: '💡 Prossimo passo: Copia lo script, pianifica la pubblicazione per il prossimo orario consigliato e attendi 2 giorni per confrontare le analytics.',
+      capcutButton: '🎬 Apri in CapCut Studio',
+      trackingButton: '📊 Configura il task di monitoraggio',
+      resetButton: '🔄 Inserisci un nuovo obiettivo'
     }
   },
   nl: {
@@ -737,6 +767,12 @@ const translations = {
       nextNewGoal: 'Nieuw contentdoel',
       nextNewGoalDesc: 'H.I.T. opnieuw starten',
       resetButton: 'Nieuw contentdoel invoeren'
+    },
+    nextActionHub: {
+      banner: '💡 Volgende stap: Kopieer het script, plan de post voor de volgende aanbevolen tijd en wacht 2 dagen om analytics te vergelijken.',
+      capcutButton: '🎬 Openen in CapCut Studio',
+      trackingButton: '📊 Tracking-taak instellen',
+      resetButton: '🔄 Nieuw contentdoel invoeren'
     }
   },
   el: {
@@ -845,6 +881,12 @@ const translations = {
       nextNewGoal: 'Νέος στόχος περιεχομένου',
       nextNewGoalDesc: 'Επανεκκίνηση H.I.T.',
       resetButton: 'Εισαγάγετε νέο στόχο'
+    },
+    nextActionHub: {
+      banner: '💡 Επόμενο βήμα: Αντιγράψτε το σενάριο, προγραμματίστε τη δημοσίευση για την επόμενη συνιστώμενη ώρα και περιμένετε 2 ημέρες για να συγκρίνετε τα analytics.',
+      capcutButton: '🎬 Άνοιγμα στο CapCut Studio',
+      trackingButton: '📊 Ρύθμιση task παρακολούθησης',
+      resetButton: '🔄 Εισαγάγετε νέο στόχο'
     }
   }
 }
