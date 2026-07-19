@@ -46,7 +46,16 @@ const translations = {
       improveContentDesc: 'Hole dir KI-Feedback zu deinem Post',
       learnSkills: 'Creator-Fähigkeiten lernen',
       learnSkillsDesc: 'Tipps und Strategien',
-      skipDashboard: 'Überspringen → Zum Dashboard'
+      skipDashboard: 'Überspringen → Zum Dashboard',
+      skillTitle: 'Wie sicher bist du im Videoschnitt?',
+      skillDesc: 'Happiness kann seine Empfehlungen besser an dich anpassen.',
+      skillBeginner: 'Anfänger',
+      skillBeginnerDesc: 'Ich hab noch nie ein Video geschnitten oder kenne mich kaum damit aus.',
+      skillIntermediate: 'Mittel',
+      skillIntermediateDesc: 'Ich kenn mich mit einem Schnittprogramm aus und hab schon mal Videos bearbeitet.',
+      skillPro: 'Profi',
+      skillProDesc: 'Ich arbeite regelmäßig mit professioneller Schnittsoftware.',
+      skillBack: 'Zurück'
     },
     hp: {
       leftTitle: 'Deine Ideen verdienen mehr als Antworten.',
@@ -207,7 +216,16 @@ const translations = {
       improveContentDesc: 'Get AI feedback on your post',
       learnSkills: 'Learn Creator Skills',
       learnSkillsDesc: 'Tips and strategies',
-      skipDashboard: 'Skip → Go to Dashboard'
+      skipDashboard: 'Skip → Go to Dashboard',
+      skillTitle: 'How confident are you with video editing?',
+      skillDesc: 'Happiness can tailor its recommendations to your experience level.',
+      skillBeginner: 'Beginner',
+      skillBeginnerDesc: "I've never edited a video or barely know how.",
+      skillIntermediate: 'Intermediate',
+      skillIntermediateDesc: "I'm familiar with editing software and have edited videos before.",
+      skillPro: 'Pro',
+      skillProDesc: 'I regularly work with professional editing software.',
+      skillBack: 'Back'
     },
     hp: {
       leftTitle: 'Your ideas deserve more than answers.',
@@ -368,7 +386,16 @@ const translations = {
       improveContentDesc: 'Obtén feedback de IA para tu publicación',
       learnSkills: 'Aprender Habilidades',
       learnSkillsDesc: 'Consejos y estrategias',
-      skipDashboard: 'Saltar → Ir al Panel'
+      skipDashboard: 'Saltar → Ir al Panel',
+      skillTitle: '¿Qué tan seguro te sientes con la edición de video?',
+      skillDesc: 'Happiness puede adaptar sus recomendaciones a tu nivel de experiencia.',
+      skillBeginner: 'Principiante',
+      skillBeginnerDesc: 'Nunca he editado un video o apenas sé cómo.',
+      skillIntermediate: 'Intermedio',
+      skillIntermediateDesc: 'Conozco un software de edición y he editado videos antes.',
+      skillPro: 'Profesional',
+      skillProDesc: 'Trabajo regularmente con software de edición profesional.',
+      skillBack: 'Atrás'
     },
     hp: {
       leftTitle: 'Tus ideas merecen más que respuestas.',
@@ -482,7 +509,16 @@ const translations = {
       improveContentDesc: 'Obtenez un retour IA sur votre publication',
       learnSkills: 'Apprendre des Compétences',
       learnSkillsDesc: 'Conseils et stratégies',
-      skipDashboard: 'Passer → Aller au Tableau de Bord'
+      skipDashboard: 'Passer → Aller au Tableau de Bord',
+      skillTitle: 'Comment te sens-tu avec le montage vidéo ?',
+      skillDesc: "Happiness peut adapter ses recommandations à ton niveau d'expérience.",
+      skillBeginner: 'Débutant',
+      skillBeginnerDesc: "Je n'ai jamais monté de vidéo ou à peine comment.",
+      skillIntermediate: 'Intermédiaire',
+      skillIntermediateDesc: "Je connais un logiciel de montage et j'ai déjà monté des vidéos.",
+      skillPro: 'Professionnel',
+      skillProDesc: 'Je travaille régulièrement avec un logiciel de montage professionnel.',
+      skillBack: 'Retour'
     },
     hp: {
       leftTitle: 'Vos idées méritent plus que des réponses.',
@@ -596,7 +632,16 @@ const translations = {
       improveContentDesc: 'Ottieni feedback AI sul tuo post',
       learnSkills: 'Impara Competenze',
       learnSkillsDesc: 'Consigli e strategie',
-      skipDashboard: 'Salta → Vai alla Dashboard'
+      skipDashboard: 'Salta → Vai alla Dashboard',
+      skillTitle: 'Quanto sei sicuro nel montaggio video?',
+      skillDesc: 'Happiness può adattare i suoi consigli al tuo livello di esperienza.',
+      skillBeginner: 'Principiante',
+      skillBeginnerDesc: 'Non ho mai montato un video o so appena come fare.',
+      skillIntermediate: 'Intermedio',
+      skillIntermediateDesc: 'Conosco un software di montaggio e ho già montato video.',
+      skillPro: 'Professionista',
+      skillProDesc: 'Lavoro regolarmente con software di montaggio professionale.',
+      skillBack: 'Indietro'
     },
     hp: {
       leftTitle: 'Le tue idee meritano più di risposte.',
@@ -710,7 +755,16 @@ const translations = {
       improveContentDesc: 'Krijg AI-feedback op je bericht',
       learnSkills: 'Vaardigheden Leren',
       learnSkillsDesc: 'Tips en strategieën',
-      skipDashboard: 'Overslaan → Naar Dashboard'
+      skipDashboard: 'Overslaan → Naar Dashboard',
+      skillTitle: 'Hoe zelfverzekerd ben je met videobewerking?',
+      skillDesc: 'Happiness kan zijn aanbevelingen afstemmen op je ervaringsniveau.',
+      skillBeginner: 'Beginner',
+      skillBeginnerDesc: "Ik heb nog nooit een video bewerkt of weet amper hoe.",
+      skillIntermediate: 'Gemiddeld',
+      skillIntermediateDesc: "Ik ken een bewerkingsprogramma en heb eerder video's bewerkt.",
+      skillPro: 'Professional',
+      skillProDesc: 'Ik werk regelmatig met professionele bewerkingssoftware.',
+      skillBack: 'Terug'
     },
     hp: {
       leftTitle: 'Je ideeën verdienen meer dan antwoorden.',
@@ -824,7 +878,16 @@ const translations = {
       improveContentDesc: 'Λάβετε σχόλια AI για την ανάρτησή σας',
       learnSkills: 'Μάθηση Δεξιοτήτων',
       learnSkillsDesc: 'Συμβουλές και στρατηγικές',
-      skipDashboard: 'Παράκαμψη → Μετάβαση στο Dashboard'
+      skipDashboard: 'Παράκαμψη → Μετάβαση στο Dashboard',
+      skillTitle: 'Πόσο σίγουρος αισθάνεσαι με το μοντάζ βίντεο;',
+      skillDesc: 'Η Happiness μπορεί να προσαρμόσει τις συστάσεις της στο επίπεδο εμπειρίας σου.',
+      skillBeginner: 'Αρχάριος',
+      skillBeginnerDesc: 'Δεν έχω κάνει ποτέ μοντάζ βίντεο ή ξέρω μόνο λίγα.',
+      skillIntermediate: 'Μεσαίος',
+      skillIntermediateDesc: 'Ξέρω ένα πρόγραμμα μοντάζ και έχω κάνει μοντάζ βίντεο πριν.',
+      skillPro: 'Επαγγελματίας',
+      skillProDesc: 'Δουλεύω τακτικά με επαγγελματικό λογισμικό μοντάζ.',
+      skillBack: 'Πίσω'
     },
     hp: {
       leftTitle: 'Οι ιδέες σας αξίζουν περισσότερο από απαντήσεις.',

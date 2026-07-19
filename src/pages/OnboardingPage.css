@@ -132,3 +132,29 @@
     padding: 28px 32px;
   }
 }
+
+/* Back Button — Skill Phase */
+.onboarding-back-btn {
+  display: inline-block;
+  margin-top: 24px;
+  padding: 10px 24px;
+  background: transparent;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.onboarding-back-btn:hover {
+  border-color: #1b6e6e;
+  color: #1b6e6e;
+}
+
+.onboarding-back-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
