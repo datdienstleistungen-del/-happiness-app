@@ -17,7 +17,27 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-47T32Z43L2');
+
+      var devParams = {};
+      var devMode = localStorage.getItem('developer_mode') === 'true';
+      var urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('developer') === 'true') {
+        devMode = true;
+        localStorage.setItem('developer_mode', 'true');
+      }
+      if (urlParams.get('developer') === 'false') {
+        devMode = false;
+        localStorage.removeItem('developer_mode');
+      }
+      if (devMode) {
+        devParams.traffic_type = 'internal';
+        devParams.debug_mode = true;
+        console.log('%c Developer Mode: ACTIVE', 'color: #1b6e6e; font-weight: bold; font-size: 14px;');
+      } else {
+        console.log('%c Developer Mode: OFF', 'color: #6b7280; font-weight: bold; font-size: 14px;');
+      }
+
+      gtag('config', 'G-47T32Z43L2', devParams);
     </script>
     <script>
       (function(){

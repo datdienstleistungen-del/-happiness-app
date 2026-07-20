@@ -2,8 +2,11 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
+import { initDeveloperMode } from './utils/developerMode'
 import './theme.css'
 import './index.css'
+
+initDeveloperMode()
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
