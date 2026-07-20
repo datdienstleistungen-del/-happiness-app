@@ -41,15 +41,35 @@ isDeveloperMode()  // true oder false
 Wenn Developer Mode aktiv ist:
 - GA4 bekommt `traffic_type: 'internal'`
 - GA4 bekommt `debug_mode: true`
+- GA4 bekommt `user_properties.role = 'developer'`
+- Event `developer_mode_enabled` wird getrackt
 - Die Konsole zeigt "Developer Mode: ACTIVE"
+
+## User Properties (immer)
+
+Für **alle** Besucher werden gesetzt:
+- `environment` → `localhost`, `preview`, oder `production` (basierend auf Hostname)
+- `app_version` → `1.0.0`
+
+Nur bei Developer Mode zusätzlich:
+- `role` → `developer`
+
+## Umgebungs-Erkennung
+
+| Hostname | Environment |
+|---|---|
+| `localhost` | `localhost` |
+| `*preview--*` | `preview` |
+| Alles andere | `production` |
 
 ## GA4 Filter einrichten
 
-1. Verwaltung → Dateneinstellungen → Datenfilter
-2. "Internal Traffic" Filter öffnen
-3. Auf "Testing" stellen
-4. Ein paar Tage testen
-5. Auf "Active" stellen
+1. Verwaltung → Datenstreams → Happiness Webstream → Tag-Einstellungen
+2. "Internen Traffic definieren" öffnen
+3. Regel erstellen: `traffic_type` = `internal`
+4. Auf "Testing" stellen
+5. Ein paar Tage testen
+6. Auf "Active" stellen
 
 ## Funktionsweise
 

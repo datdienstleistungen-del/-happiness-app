@@ -1,5 +1,12 @@
 const DEV_MODE_KEY = 'developer_mode'
 
+export function getEnvironment() {
+  const h = window.location.hostname
+  if (h === 'localhost') return 'localhost'
+  if (h.includes('preview--')) return 'preview'
+  return 'production'
+}
+
 export function enableDeveloperMode() {
   localStorage.setItem(DEV_MODE_KEY, 'true')
   applyDeveloperMode()
@@ -17,10 +24,17 @@ export function isDeveloperMode() {
 
 function applyDeveloperMode() {
   if (!isDeveloperMode()) return
-  if (typeof window.gtag === 'function') {
-    window.gtag('set', { traffic_type: 'internal' })
-    window.gtag('set', { debug_mode: true })
-  }
+  if (typeof window.gtag !== 'function') return
+
+  window.gtag('set', {
+    traffic_type: 'internal',
+    debug_mode: true,
+    user_properties: { role: 'developer' }
+  })
+
+  window.gtag('event', 'developer_mode_enabled', {
+    environment: getEnvironment()
+  })
 }
 
 export function initDeveloperMode() {

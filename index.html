@@ -18,7 +18,11 @@
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
 
-      var devParams = {};
+      var hostname = window.location.hostname;
+      var environment = hostname === 'localhost' ? 'localhost'
+        : hostname.includes('preview--') ? 'preview'
+        : 'production';
+
       var devMode = localStorage.getItem('developer_mode') === 'true';
       var urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('developer') === 'true') {
@@ -29,15 +33,28 @@
         devMode = false;
         localStorage.removeItem('developer_mode');
       }
+
+      var gaParams = {
+        user_properties: {
+          environment: environment,
+          app_version: '1.0.0'
+        }
+      };
+
       if (devMode) {
-        devParams.traffic_type = 'internal';
-        devParams.debug_mode = true;
+        gaParams.traffic_type = 'internal';
+        gaParams.debug_mode = true;
+        gaParams.user_properties.role = 'developer';
         console.log('%c Developer Mode: ACTIVE', 'color: #1b6e6e; font-weight: bold; font-size: 14px;');
       } else {
         console.log('%c Developer Mode: OFF', 'color: #6b7280; font-weight: bold; font-size: 14px;');
       }
 
-      gtag('config', 'G-47T32Z43L2', devParams);
+      gtag('config', 'G-47T32Z43L2', gaParams);
+
+      if (devMode) {
+        gtag('event', 'developer_mode_enabled', { environment: environment });
+      }
     </script>
     <script>
       (function(){
