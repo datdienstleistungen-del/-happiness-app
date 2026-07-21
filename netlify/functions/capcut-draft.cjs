@@ -31,12 +31,14 @@ exports.handler = async (event) => {
       const sceneId = `scene_material_${index}`
       const textId = `text_material_${index}`
       const fileName = `scene-${index + 1}.jpg`
+      const mediaUrl = scene.mediaUrl || null
 
       videoMaterials.push({
         id: sceneId,
         type: 'photo',
         local_path: fileName,
-        name: fileName
+        name: fileName,
+        url: mediaUrl
       })
 
       textMaterials.push({

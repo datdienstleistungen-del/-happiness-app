@@ -13,6 +13,7 @@ import CopyButton from '../components/CopyButton'
 import { trackRecipeGenerated, trackPlatformViewed, trackCapCutTriggered } from '../intelligence/analytics'
 import { trackExportToTool, trackPublishConfirmed } from '../intelligence/analytics/custom'
 import { copyScriptToClipboard, downloadScenesZip, downloadCapCutDraft } from '../utils/capcut-export'
+import { uploadToCloudinary } from '../utils/cloudinary'
 import './CapCutStudio.css'
 
 const isDE = navigator.language.startsWith('de')
@@ -218,6 +219,7 @@ export default function TikTokVideoPage() {
   const [scenesWithMedia, setScenesWithMedia] = useState([])
   const [isZipping, setIsZipping] = useState(false)
   const [toast, setToast] = useState(null)
+  const [uploadProgress, setUploadProgress] = useState({})
 
   const [videoUsed, setVideoUsed] = useState(0)
   const [contentUsed, setContentUsed] = useState(0)
@@ -378,10 +380,38 @@ export default function TikTokVideoPage() {
         ...updated[sceneIndex],
         mediaFile: file,
         mediaUrl: previewUrl,
-        mediaName: file.name
+        mediaName: file.name,
+        uploading: true,
+        cloudUrl: null
       }
       return updated
     })
+
+    try {
+      const result = await uploadToCloudinary(file, (percent) => {
+        setUploadProgress(prev => ({ ...prev, [sceneIndex]: percent }))
+      })
+
+      setScenesWithMedia(prev => {
+        const updated = [...prev]
+        updated[sceneIndex] = {
+          ...updated[sceneIndex],
+          cloudUrl: result.url,
+          cloudPublicId: result.publicId,
+          uploading: false
+        }
+        return updated
+      })
+      setUploadProgress(prev => ({ ...prev, [sceneIndex]: 100 }))
+    } catch (err) {
+      console.error('[Cloudinary] Upload failed:', err)
+      setScenesWithMedia(prev => {
+        const updated = [...prev]
+        updated[sceneIndex] = { ...updated[sceneIndex], uploading: false, uploadError: true }
+        return updated
+      })
+      showToast(isDE ? 'Upload fehlgeschlagen. Bitte erneut versuchen.' : 'Upload failed. Please try again.')
+    }
   }
 
   const removeMedia = (sceneIndex) => {
@@ -390,7 +420,7 @@ export default function TikTokVideoPage() {
       if (updated[sceneIndex]?.mediaUrl) {
         URL.revokeObjectURL(updated[sceneIndex].mediaUrl)
       }
-      updated[sceneIndex] = { ...updated[sceneIndex], mediaFile: null, mediaUrl: null, mediaName: null }
+      updated[sceneIndex] = { ...updated[sceneIndex], mediaFile: null, mediaUrl: null, mediaName: null, cloudUrl: null, uploading: false }
       return updated
     })
   }
@@ -405,14 +435,19 @@ export default function TikTokVideoPage() {
     if (!recipe?.scenes) return
     const scenesWithFiles = recipe.scenes.map((scene, i) => ({
       ...scene,
-      mediaFile: scenesWithMedia[i]?.mediaFile || null
+      mediaFile: scenesWithMedia[i]?.mediaFile || null,
+      mediaUrl: scenesWithMedia[i]?.cloudUrl || scenesWithMedia[i]?.mediaUrl || null
     }))
     await downloadScenesZip(scenesWithFiles, setIsZipping)
   }
 
   const handleDownloadDraft = async () => {
     if (!recipe) return
-    await downloadCapCutDraft(recipe, recipe.scenes)
+    const scenesWithCloud = recipe.scenes.map((scene, i) => ({
+      ...scene,
+      mediaUrl: scenesWithMedia[i]?.cloudUrl || null
+    }))
+    await downloadCapCutDraft(recipe, scenesWithCloud)
   }
 
   const getPlatformContent = (platform, payload) => {
@@ -984,8 +1019,20 @@ function SceneCard({ scene, index, t, showUpload, mediaData, onUpload, onRemove 
                   <img src={mediaData.mediaUrl} alt={`Scene ${index + 1}`} className="ccp-upload-thumb" />
                   <div className="ccp-upload-info">
                     <span className="ccp-upload-name">{mediaData.mediaName}</span>
+                    {mediaData.uploading ? (
+                      <div className="ccp-upload-progress">
+                        <div className="ccp-upload-progress-bar">
+                          <div className="ccp-upload-progress-fill" style={{ width: `${mediaData.uploadProgress || 0}%` }} />
+                        </div>
+                        <span className="ccp-upload-status">{isDE ? 'Wird hochgeladen...' : 'Uploading...'}</span>
+                      </div>
+                    ) : mediaData.cloudUrl ? (
+                      <span className="ccp-upload-success">{isDE ? '✓ In der Cloud gespeichert' : '✓ Saved to cloud'}</span>
+                    ) : mediaData.uploadError ? (
+                      <span className="ccp-upload-error">{isDE ? '✗ Upload fehlgeschlagen' : '✗ Upload failed'}</span>
+                    ) : null}
                     <button className="ccp-upload-remove" onClick={onRemove}>
-                      <X size={14} /> Entfernen
+                      <X size={14} /> {isDE ? 'Entfernen' : 'Remove'}
                     </button>
                   </div>
                 </div>
