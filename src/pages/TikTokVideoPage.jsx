@@ -6,11 +6,13 @@ import {
   Sparkles, ArrowLeft, Film, Check, AlertTriangle, ExternalLink,
   Smartphone, Monitor, RotateCcw, Clock, Mic, Image, ChevronDown, ChevronUp,
   Lightbulb, Zap, Share2, Globe, Video, MessageSquare, Hash, HelpCircle,
-  PartyPopper, ArrowRight, Copy
+  PartyPopper, ArrowRight, Copy, Upload, X, Download, FileArchive
 } from 'lucide-react'
+import heic2any from 'heic2any'
 import CopyButton from '../components/CopyButton'
 import { trackRecipeGenerated, trackPlatformViewed, trackCapCutTriggered } from '../intelligence/analytics'
 import { trackExportToTool, trackPublishConfirmed } from '../intelligence/analytics/custom'
+import { copyScriptToClipboard, downloadScenesZip, downloadCapCutDraft } from '../utils/capcut-export'
 import './CapCutStudio.css'
 
 const isDE = navigator.language.startsWith('de')
@@ -212,6 +214,11 @@ export default function TikTokVideoPage() {
   const [showExample, setShowExample] = useState(false)
   const [published, setPublished] = useState(false)
 
+  const [showUploadPrompt, setShowUploadPrompt] = useState(false)
+  const [scenesWithMedia, setScenesWithMedia] = useState([])
+  const [isZipping, setIsZipping] = useState(false)
+  const [toast, setToast] = useState(null)
+
   const [videoUsed, setVideoUsed] = useState(0)
   const [contentUsed, setContentUsed] = useState(0)
   const [isPremium, setIsPremium] = useState(false)
@@ -338,6 +345,74 @@ export default function TikTokVideoPage() {
     setTopic(EXAMPLE_RECIPE.video_title)
     setShowExample(false)
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const showToast = (msg) => {
+    setToast(msg)
+    setTimeout(() => setToast(null), 2500)
+  }
+
+  const handleMediaUpload = async (sceneIndex, e) => {
+    const rawFile = e.target.files?.[0]
+    if (!rawFile) return
+
+    let file = rawFile
+    const name = rawFile.name.toLowerCase()
+    if (name.endsWith('.heic') || name.endsWith('.heif')) {
+      try {
+        const blob = await heic2any({ blob: rawFile, toType: 'image/jpeg', quality: 0.85 })
+        file = new File([blob], rawFile.name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg'), { type: 'image/jpeg' })
+      } catch (err) {
+        console.error('HEIC conversion failed:', err)
+      }
+    }
+
+    const previewUrl = URL.createObjectURL(file)
+
+    setScenesWithMedia(prev => {
+      const updated = [...prev]
+      if (!updated[sceneIndex]) {
+        updated[sceneIndex] = { id: Date.now() + sceneIndex }
+      }
+      updated[sceneIndex] = {
+        ...updated[sceneIndex],
+        mediaFile: file,
+        mediaUrl: previewUrl,
+        mediaName: file.name
+      }
+      return updated
+    })
+  }
+
+  const removeMedia = (sceneIndex) => {
+    setScenesWithMedia(prev => {
+      const updated = [...prev]
+      if (updated[sceneIndex]?.mediaUrl) {
+        URL.revokeObjectURL(updated[sceneIndex].mediaUrl)
+      }
+      updated[sceneIndex] = { ...updated[sceneIndex], mediaFile: null, mediaUrl: null, mediaName: null }
+      return updated
+    })
+  }
+
+  const handleCopyScript = async () => {
+    if (!recipe?.scenes) return
+    await copyScriptToClipboard(recipe.scenes)
+    showToast(t.toastScriptCopied)
+  }
+
+  const handleDownloadZip = async () => {
+    if (!recipe?.scenes) return
+    const scenesWithFiles = recipe.scenes.map((scene, i) => ({
+      ...scene,
+      mediaFile: scenesWithMedia[i]?.mediaFile || null
+    }))
+    await downloadScenesZip(scenesWithFiles, setIsZipping)
+  }
+
+  const handleDownloadDraft = async () => {
+    if (!recipe) return
+    await downloadCapCutDraft(recipe, recipe.scenes)
   }
 
   const getPlatformContent = (platform, payload) => {
@@ -621,6 +696,21 @@ export default function TikTokVideoPage() {
         </div>
       )}
 
+      {recipe && !showUploadPrompt && scenesWithMedia.filter(s => s?.mediaUrl).length === 0 && (
+        <div className="ccp-upload-prompt">
+          <div className="ccp-upload-prompt-icon">📸</div>
+          <p>{t.capcut.uploadPromptTitle}</p>
+          <div className="ccp-upload-prompt-actions">
+            <button className="ccp-btn-primary" onClick={() => setShowUploadPrompt(true)}>
+              <Upload size={16} /> {t.capcut.btnUploadYes}
+            </button>
+            <button className="ccp-btn-outline" onClick={() => setShowUploadPrompt(false)}>
+              {t.capcut.btnUploadNo}
+            </button>
+          </div>
+        </div>
+      )}
+
       {recipe && (
         <div className="ccp-result">
           <div className="ccp-result-header">
@@ -738,10 +828,61 @@ export default function TikTokVideoPage() {
             </div>
             <div className="ccp-scenes-list">
               {recipe.scenes.map((scene, i) => (
-                <SceneCard key={i} scene={scene} index={i} t={t} />
+                <SceneCard
+                  key={i}
+                  scene={scene}
+                  index={i}
+                  t={t}
+                  showUpload={showUploadPrompt}
+                  mediaData={scenesWithMedia[i] || null}
+                  onUpload={(e) => handleMediaUpload(i, e)}
+                  onRemove={() => removeMedia(i)}
+                />
               ))}
             </div>
           </div>
+
+          {scenesWithMedia.filter(s => s?.mediaUrl).length > 0 && (
+            <div className="ccp-export-panel">
+              <div className="ccp-export-header">
+                <FileArchive size={20} />
+                <h3>{t.capcut.exportPanelTitle}</h3>
+              </div>
+              <div className="ccp-export-actions">
+                <button className="ccp-export-btn" onClick={handleCopyScript}>
+                  <Copy size={18} />
+                  <div>
+                    <span className="ccp-export-btn-label">{t.capcut.btnCopyScript}</span>
+                    <span className="ccp-export-btn-desc">{t.capcut.btnCopyScriptDesc}</span>
+                  </div>
+                </button>
+                <button className="ccp-export-btn" onClick={handleDownloadZip} disabled={isZipping}>
+                  <Download size={18} />
+                  <div>
+                    <span className="ccp-export-btn-label">
+                      {isZipping ? t.capcut.zippingProgress : t.capcut.btnDownloadZip}
+                    </span>
+                    <span className="ccp-export-btn-desc">{t.capcut.btnDownloadZipDesc}</span>
+                  </div>
+                </button>
+                <button className="ccp-export-btn" onClick={handleDownloadDraft}>
+                  <FileArchive size={18} />
+                  <div>
+                    <span className="ccp-export-btn-label">{t.capcut.btnDownloadDraft}</span>
+                    <span className="ccp-export-btn-desc">{t.capcut.btnDownloadDraftDesc}</span>
+                  </div>
+                </button>
+              </div>
+              <div className="ccp-export-guide">
+                <h4>{t.capcut.guideTitle}</h4>
+                <p>{t.capcut.guideStep1}</p>
+                <p>{t.capcut.guideStep2}</p>
+                <p>{t.capcut.guideStep3}</p>
+                <p>{t.capcut.guideStep4}</p>
+                <p>{t.capcut.guideStep5}</p>
+              </div>
+            </div>
+          )}
 
           <div className="ccp-section">
             <div className="ccp-section-header">
@@ -783,12 +924,16 @@ export default function TikTokVideoPage() {
           </div>
         </div>
       )}
+      {toast && (
+        <div className="ccp-toast">{toast}</div>
+      )}
     </div>
   )
 }
 
-function SceneCard({ scene, index, t }) {
+function SceneCard({ scene, index, t, showUpload, mediaData, onUpload, onRemove }) {
   const [expanded, setExpanded] = useState(false)
+  const fileInputRef = useRef(null)
 
   return (
     <div className="ccp-scene-card">
@@ -818,6 +963,35 @@ function SceneCard({ scene, index, t }) {
               <code>{scene.visual_prompt}</code>
             </div>
           </div>
+
+          {showUpload && (
+            <div className="ccp-scene-upload">
+              <h4>{t.capcut.sceneTitle} {index + 1}</h4>
+              {!mediaData?.mediaUrl ? (
+                <div className="ccp-upload-area" onClick={() => fileInputRef.current?.click()}>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={onUpload}
+                  />
+                  <Upload size={20} />
+                  <span>{t.capcut.btnUploadPhoto}</span>
+                </div>
+              ) : (
+                <div className="ccp-upload-preview">
+                  <img src={mediaData.mediaUrl} alt={`Scene ${index + 1}`} className="ccp-upload-thumb" />
+                  <div className="ccp-upload-info">
+                    <span className="ccp-upload-name">{mediaData.mediaName}</span>
+                    <button className="ccp-upload-remove" onClick={onRemove}>
+                      <X size={14} /> Entfernen
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -19,6 +19,7 @@
     "@supabase/supabase-js": "^2.49.0",
     "edge-tts": "^1.0.1",
     "heic2any": "^0.0.4",
+    "jszip": "^3.10.1",
     "lucide-react": "^1.22.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

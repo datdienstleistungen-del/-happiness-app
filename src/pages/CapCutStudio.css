@@ -1165,3 +1165,224 @@
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Upload Prompt */
+.ccp-upload-prompt {
+  background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+  border: 2px dashed #86efac;
+  border-radius: 16px;
+  padding: 28px 24px;
+  text-align: center;
+  margin-bottom: 24px;
+  animation: ccp-fadeIn 0.3s ease;
+}
+
+.ccp-upload-prompt-icon {
+  font-size: 2rem;
+  margin-bottom: 12px;
+}
+
+.ccp-upload-prompt p {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text, #1a1a2e);
+  margin-bottom: 16px;
+}
+
+.ccp-upload-prompt-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* Scene Upload Area */
+.ccp-scene-upload {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border, #e2e8f0);
+}
+
+.ccp-scene-upload h4 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--text, #1a1a2e);
+}
+
+.ccp-upload-area {
+  border: 2px dashed var(--border, #cbd5e1);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary, #64748b);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.ccp-upload-area:hover {
+  border-color: #2D8C6F;
+  background: #f0fdf4;
+  color: #2D8C6F;
+}
+
+.ccp-upload-preview {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: var(--bg-secondary, #f8fafc);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.ccp-upload-thumb {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid var(--border, #e2e8f0);
+}
+
+.ccp-upload-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ccp-upload-name {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.ccp-upload-remove {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 0.78rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  font-weight: 500;
+}
+
+.ccp-upload-remove:hover {
+  color: #dc2626;
+}
+
+/* Export Panel */
+.ccp-export-panel {
+  background: linear-gradient(135deg, #eff6ff, #f0f9ff);
+  border: 1px solid #bfdbfe;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  animation: ccp-fadeIn 0.3s ease;
+}
+
+.ccp-export-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.ccp-export-header h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text, #1a1a2e);
+  margin: 0;
+}
+
+.ccp-export-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.ccp-export-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: white;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+}
+
+.ccp-export-btn:hover {
+  border-color: #2D8C6F;
+  box-shadow: 0 2px 8px rgba(45,140,111,0.1);
+}
+
+.ccp-export-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ccp-export-btn-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text, #1a1a2e);
+}
+
+.ccp-export-btn-desc {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-secondary, #64748b);
+  margin-top: 2px;
+}
+
+.ccp-export-guide {
+  background: white;
+  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid var(--border, #e2e8f0);
+}
+
+.ccp-export-guide h4 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+  color: var(--text, #1a1a2e);
+}
+
+.ccp-export-guide p {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #64748b);
+  margin: 6px 0;
+  line-height: 1.5;
+}
+
+/* Toast */
+.ccp-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a2e;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  z-index: 9999;
+  animation: ccp-fadeIn 0.2s ease;
+}
