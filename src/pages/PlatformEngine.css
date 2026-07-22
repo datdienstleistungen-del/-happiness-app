@@ -404,6 +404,21 @@
   box-shadow: 0 2px 8px rgba(8, 80, 65, 0.3);
 }
 
+/* Button Group: Kopieren + CapCut */
+.pe-copy-btn-group {
+  display: flex;
+  gap: 6px;
+}
+
+.pe-copy-btn-primary {
+  background: #16a34a !important;
+}
+
+.pe-copy-btn-primary:hover {
+  background: #15803d !important;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+}
+
 /* Hint text above actions */
 .pe-actions-hint {
   text-align: center;

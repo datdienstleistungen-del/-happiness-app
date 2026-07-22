@@ -408,19 +408,31 @@ export default function PlatformEngine() {
                       <span className="pe-platform-step">{index + 1}/3</span>
                       <span className="pe-platform-name">{r.icon} {r.name}</span>
                     </div>
-                    <button
-                      className={`pe-copy-btn pe-copy-btn-card ${isCopied ? 'pe-copy-btn-done' : ''}`}
-                      onClick={() => {
-                        copyToClipboard(getResultText(r), key)
-                        setCopiedPlatform(key)
-                        setTimeout(() => setCopiedPlatform(null), 2000)
-                        const isMob = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-                        const url = isMob ? 'capcut://com.lemon.lvoverseas' : 'https://www.capcut.com/editor?enter_from=link'
-                        window.open(url, '_blank')
-                      }}
-                    >
-                      {isCopied ? <><Check size={14} /> Kopiert!</> : <><Copy size={14} /> In CapCut einfügen</>}
-                    </button>
+                    <div className="pe-copy-btn-group">
+                      <button
+                        className={`pe-copy-btn pe-copy-btn-card ${isCopied ? 'pe-copy-btn-done' : ''}`}
+                        onClick={() => {
+                          copyToClipboard(getResultText(r), key)
+                          setCopiedPlatform(key)
+                          setTimeout(() => setCopiedPlatform(null), 2000)
+                        }}
+                      >
+                        {isCopied ? <><Check size={14} /> Kopiert!</> : <><Copy size={14} /> Kopieren</>}
+                      </button>
+                      <button
+                        className="pe-copy-btn pe-copy-btn-card pe-copy-btn-primary"
+                        onClick={() => {
+                          copyToClipboard(getResultText(r), key)
+                          setCopiedPlatform(key)
+                          setTimeout(() => setCopiedPlatform(null), 2000)
+                          const isMob = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+                          const url = isMob ? 'capcut://com.lemon.lvoverseas' : 'https://www.capcut.com/editor?enter_from=link'
+                          window.open(url, '_blank')
+                        }}
+                      >
+                        <Copy size={14} /> In CapCut einfügen
+                      </button>
+                    </div>
                   </div>
                   {r.content.hook && <p className="pe-card-hook">{r.content.hook}</p>}
                   <p className="pe-card-body">{r.content.body}</p>
@@ -470,23 +482,35 @@ export default function PlatformEngine() {
                   const r = results[p.key]
                   return (
                     <div key={p.key} className="pe-platform-card pe-platform-card-extra">
-                      <div className="pe-platform-card-header">
+                        <div className="pe-platform-card-header">
                         <div className="pe-platform-name-group">
                           <span className="pe-platform-name">{r.icon} {r.name}</span>
                         </div>
-                        <button
-                          className={`pe-copy-btn pe-copy-btn-card ${copiedPlatform === p.key ? 'pe-copy-btn-done' : ''}`}
-                          onClick={() => {
-                            copyToClipboard(getResultText(r), p.key)
-                            setCopiedPlatform(p.key)
-                            setTimeout(() => setCopiedPlatform(null), 2000)
-                            const isMob = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-                            const url = isMob ? 'capcut://com.lemon.lvoverseas' : 'https://www.capcut.com/editor?enter_from=link'
-                            window.open(url, '_blank')
-                          }}
-                        >
-                          {copiedPlatform === p.key ? <><Check size={14} /> Kopiert!</> : <><Copy size={14} /> In CapCut einfügen</>}
-                        </button>
+                        <div className="pe-copy-btn-group">
+                          <button
+                            className={`pe-copy-btn pe-copy-btn-card ${copiedPlatform === p.key ? 'pe-copy-btn-done' : ''}`}
+                            onClick={() => {
+                              copyToClipboard(getResultText(r), p.key)
+                              setCopiedPlatform(p.key)
+                              setTimeout(() => setCopiedPlatform(null), 2000)
+                            }}
+                          >
+                            {copiedPlatform === p.key ? <><Check size={14} /> Kopiert!</> : <><Copy size={14} /> Kopieren</>}
+                          </button>
+                          <button
+                            className="pe-copy-btn pe-copy-btn-card pe-copy-btn-primary"
+                            onClick={() => {
+                              copyToClipboard(getResultText(r), p.key)
+                              setCopiedPlatform(p.key)
+                              setTimeout(() => setCopiedPlatform(null), 2000)
+                              const isMob = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+                              const url = isMob ? 'capcut://com.lemon.lvoverseas' : 'https://www.capcut.com/editor?enter_from=link'
+                              window.open(url, '_blank')
+                            }}
+                          >
+                            <Copy size={14} /> In CapCut einfügen
+                          </button>
+                        </div>
                       </div>
                       {r.content.hook && <p className="pe-card-hook">{r.content.hook}</p>}
                       <p className="pe-card-body">{r.content.body}</p>
