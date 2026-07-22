@@ -310,6 +310,86 @@ export default function LandingPage() {
         </div>
       </div>
 
+      {/* Wer wir sind */}
+      <div className="about-section">
+        <div className="about-content">
+          <h2 className="about-headline">
+            {lang === 'en' ? 'Yes, that magnificent fitness text was written 100% by us... 🤖' :
+             lang === 'es' ? '¡Sí, ese magnífico texto de fitness fue escrito al 100% por nosotros... 🤖' :
+             lang === 'fr' ? 'Oui, ce magnifique texte fitness a été écrit à 100 % par nous... 🤖' :
+             lang === 'it' ? 'Sì, quel magnifico testo fitness è stato scritto al 100% da noi... 🤖' :
+             lang === 'nl' ? 'Ja, die geweldige fittekst is voor 100% door ons geschreven... 🤖' :
+             lang === 'el' ? 'Ναι, αυτό το υπέροχο κείμενο fitness γράφτηκε 100% από εμάς... 🤖' :
+             'Ja, dieser grandiose Fitness-Text wurde zu 100 % von uns geschrieben... 🤖'}
+          </h2>
+          <p className="about-subtext">
+            {lang === 'en' ? "Maybe you just saw a viral video about fitness, mindset or business and ended up here through our link. And no — we don't sell training plans!" :
+             lang === 'es' ? 'Tal vez acabas de ver un video viral sobre fitness, mentalidad o negocios y aterrizaste aquí a través de nuestro enlace. ¡Y no — no vendemos planes de entrenamiento!' :
+             lang === 'fr' ? "Peut-être que vous venez de voir une vidéo virale sur le fitness, l'état d'esprit ou les affaires et que vous êtes atterri ici via notre lien. Et non — nous ne vendons pas de programmes d'entraînement !" :
+             lang === 'it' ? "Forse hai appena visto un video virale su fitness, mindset o business e sei finito qui attraverso il nostro link. E no — non vendiamo piani di allenamento!" :
+             lang === 'nl' ? "Misschien heb je net een viraal video over fitness, mindset of business gezien en ben je via onze link hier terechtgekomen. En nee — we verkopen geen trainingsplannen!" :
+             lang === 'el' ? 'Ίσως μόλις είδατε ένα ιοβόλο βίντεο για fitness, mindset ή business και κατελήξατε εδώ μέσω του συνδέσμου μας. Και όχι — δεν πουλάμε σχόλια γυμναστικής!' :
+             'Vielleicht hast du gerade ein virales Video über Fitness, Mindset oder Business gesehen und bist über unseren Link hier gelandet. Und nein – wir verkaufen keine Trainingspläne!'}
+          </p>
+          <p className="about-body">
+            {lang === 'en' ? "You landed here because you experienced the power of real AI content creation live in action. The text that just captivated you was created in less than 60 seconds right here on this platform." :
+             lang === 'es' ? 'Aterrizaste aquí porque experimentaste el poder de la creación de contenido con IA real en acción. El texto que te acaba de capturar se creó en menos de 60 segundos aquí mismo en esta plataforma.' :
+             lang === 'fr' ? "Vous êtes arrivé ici parce que vous avez vécu la puissance de la création de contenu IA en direct. Le texte qui vient de vous capturer a été créé en moins de 60 secondes ici même sur cette plateforme." :
+             lang === 'it' ? 'Sei finito qui perché hai sperimentato il potere della creazione di contenuti IA dal vivo. Il testo che ti ha appena affascinato è stato creato in meno di 60 secondi proprio qui su questa piattaforma.' :
+             lang === 'nl' ? 'Je bent hier terechtgekomen omdat je de kracht van echte AI-contentcreatie live in actie hebt ervaren. De tekst die je net heeft geboeid, is in minder dan 60 seconden precies hier op dit platform gemaakt.' :
+             lang === 'el' ? 'Κατελήξατε εδώ γιατί βιώσατε τη δύναμη της πραγματικής δημιουργίας περιεχομένων AI σε δράση. Το κείμενο πού σας είχε μόλις τώρα ελκύσει δημιουργήθηκε σε λιγότερο από 60 δευτερόλεπτα ακριβώς εδώ σε αυτή την πλατφόρμα.' :
+             'Du bist hier gelandet, weil du die Power echter KI-Content-Erstellung live in Aktion erlebt hast. Der Text, der dich gerade eben noch gefesselt hat, entstand in weniger als 60 Sekunden genau hier auf dieser Plattform.'}
+          </p>
+
+          <h3 className="about-what-title">
+            {lang === 'en' ? 'What is happiness-eu.netlify.app?' :
+             lang === 'es' ? '¿Qué es happiness-eu.netlify.app?' :
+             lang === 'fr' ? "Qu'est-ce que happiness-eu.netlify.app ?" :
+             lang === 'it' ? 'Che cos è happiness-eu.netlify.app?' :
+             lang === 'nl' ? 'Wat is happiness-eu.netlify.app?' :
+             lang === 'el' ? 'Τι είναι το happiness-eu.netlify.app;' :
+             'Was ist happiness-eu.netlify.app?'}
+          </h3>
+          <p className="about-body">
+            {lang === 'en' ? "We're your smart content machine. An innovative tool that writes high-converting social media texts, scripts, and recipes for creators, entrepreneurs, and businesses." :
+             lang === 'es' ? 'Somos tu máquina de contenido inteligente. Una herramienta innovadora que escribe textos, scripts y recetas de redes sociales de alta conversión para creadores, emprendedores y empresas.' :
+             lang === 'fr' ? "Nous sommes votre machine à contenu intelligente. Un outil innovant qui écrit des textes, scripts et recettes de réseaux sociaux à forte conversion pour les créateurs, entrepreneurs et entreprises." :
+             lang === 'it' ? 'Siamo la tua macchina per contenuti intelligenti. Un tool innovativo che scrive testi, script e ricette per social media ad alta conversione per creator, imprenditori e aziende.' :
+             lang === 'nl' ? "We zijn je slimme contentmachine. Een innovatief tool die hoog-converterende social media-teksten, scripts en recepten schrijft voor creators, ondernemers en bedrijven." :
+             lang === 'el' ? 'Είμαστε η έξυπνη μηχανή περιεχομένων σας. Ένα καινοτόμο εργαλείο που γράφφει κείμενα, σενάρια και συνταγές social media υψηλής μετατροπής για δημιουργούς, επιχειρηματίες και εταιρείες.' :
+             'Wir sind deine smarte Content-Maschine. Ein innovatives Tool, das für Creator, Selbstständige und Unternehmen hochgradig konvertierende Social-Media-Texte, Skripte und Rezepte schreibt.'}
+          </p>
+
+          <div className="about-features">
+            <div className="about-feature">
+              <span className="about-feature-icon">✍️</span>
+              <div>
+                <strong>{lang === 'en' ? 'No more writer\'s block' : lang === 'es' ? 'Adiós al bloqueo del escritor' : lang === 'fr' ? "Fin de la page blanche" : lang === 'it' ? 'Basta blocchi dello scrittore' : lang === 'nl' ? 'Geen writer\'s block meer' : lang === 'el' ? 'Όχι πια writer block' : 'Schluss mit Schreibblockaden'}</strong>
+                <p>{lang === 'en' ? 'Ad-level copywriting texts in no time.' : lang === 'es' ? 'Textos de nivel publicitario en un instante.' : lang === 'fr' ? "Textes de niveau pro en un instant." : lang === 'it' ? 'Testi di livello pubblicitario in un attimo.' : lang === 'nl' ? 'Teksten van reclameniveau in een oogwenk.' : lang === 'el' ? 'Κείμενα επιπέδου διαφημιστικού σε στιγμή.' : 'Texte auf Werbetexter-Niveau im Handumdrehen.'}</p>
+              </div>
+            </div>
+            <div className="about-feature">
+              <span className="about-feature-icon">⏰</span>
+              <div>
+                <strong>{lang === 'en' ? 'No more time pressure' : lang === 'es' ? 'Sin presión de tiempo' : lang === 'fr' ? 'Plus de pression temporelle' : lang === 'it' ? 'Niente più pressione del tempo' : lang === 'nl' ? 'Geen tijdsdruk meer' : lang === 'el' ? 'Χωρίς πίεση χρόνου' : 'Kein Zeitdruck mehr'}</strong>
+                <p>{lang === 'en' ? 'Create content for a whole week in minutes.' : lang === 'es' ? 'Crea contenido para toda una semana en minutos.' : lang === 'fr' ? "Créez le contenu d'une semaine entière en quelques minutes." : lang === 'it' ? 'Crea contenuti per un\'intera settimana in pochi minuti.' : lang === 'nl' ? 'Maak content voor een hele week in minuten.' : lang === 'el' ? 'Δημιουργήστε περιεχόμενα για μια ολόκληρη εβδομάδα σε λεπτά.' : 'Erstelle den Content für eine ganze Woche in wenigen Minuten.'}</p>
+              </div>
+            </div>
+            <div className="about-feature">
+              <span className="about-feature-icon">🎯</span>
+              <div>
+                <strong>{lang === 'en' ? 'Focus on your core business' : lang === 'es' ? 'Enfócate en tu negocio principal' : lang === 'fr' ? 'Concentrez-vous sur votre cœur de métier' : lang === 'it' ? 'Concentrati sul tuo business principale' : lang === 'nl' ? 'Focus op je core business' : lang === 'el' ? 'Εστιάστε στη βασική σας δραστηριότητα' : 'Fokus auf dein Core-Business'}</strong>
+                <p>{lang === 'en' ? 'Leave the writing to us and focus on what really moves you forward.' : lang === 'es' ? 'Déjanos escribir y concéntrate en lo que realmente te impulsa.' : lang === 'fr' ? "Laissez-nous écrire et concentrez-vous sur ce qui vous fait vraiment avancer." : lang === 'it' ? 'Lascia scrivere a noi e concentrati su ciò che ti fa davvero avanzare.' : lang === 'nl' ? 'Laat het schrijven aan ons over en concentreer je op wat je echt vooruit helpt.' : lang === 'el' ? 'Αφήστε εμάς να γράφουμε και εστιάστε σε αυτό που σας προωθεί πραγματικά.' : 'Überlass uns das Schreiben und konzentriere dich auf das, was dich wirklich voranbringt.'}</p>
+              </div>
+            </div>
+          </div>
+
+          <Link to="/register" className="btn btn-primary about-cta">
+            {lang === 'en' ? 'Try it for free' : lang === 'es' ? 'Pruébalo gratis' : lang === 'fr' ? 'Essayez gratuitement' : lang === 'it' ? 'Prova gratis' : lang === 'nl' ? 'Probeer gratis' : lang === 'el' ? 'Δοκιμάστε δωρεάν' : 'Kostenlos testen'}
+          </Link>
+        </div>
+      </div>
+
       {/* Platforms */}
       <div className="landing-platforms">
         <h2>{t('landing.platforms')}</h2>
