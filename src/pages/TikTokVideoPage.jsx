@@ -113,6 +113,29 @@ const t = {
   copyDescription: isDE ? 'Beschreibung kopieren' : 'Copy description',
   postTitle: isDE ? 'Post-Titel' : 'Post title',
   platformTexts: isDE ? 'Plattform-Texte' : 'Platform texts',
+  capcut: {
+    uploadPromptTitle: isDE
+      ? 'Möchtest du Fotos für CapCut hochladen?'
+      : 'Do you want to upload photos for CapCut?',
+    btnUploadYes: isDE ? 'Ja, Fotos hochladen' : 'Yes, upload photos',
+    btnUploadNo: isDE ? 'Nein, danke' : 'No, thanks',
+    exportPanelTitle: isDE ? 'Nach CapCut exportieren' : 'Export to CapCut',
+    btnCopyScript: isDE ? '📋 Skript in Zwischenablage' : '📋 Copy Script to Clipboard',
+    btnCopyScriptDesc: isDE ? 'Voiceover-Text wird kopiert' : 'Copies the voiceover text',
+    btnDownloadZip: isDE ? '📥 Fotos als Zip herunterladen' : '📥 Download Photos as ZIP',
+    btnDownloadZipDesc: isDE ? 'Alle hochgeladenen Fotos als .zip' : 'All uploaded photos as .zip',
+    btnDownloadDraft: isDE ? '📁 CapCut Projekt herunterladen' : '📁 Download CapCut Project',
+    btnDownloadDraftDesc: isDE ? 'draft_content.json für deine Timeline' : 'draft_content.json for your timeline',
+    zippingProgress: isDE ? 'Erstelle ZIP-Archiv...' : 'Creating ZIP archive...',
+    guideTitle: isDE ? "So funktioniert's:" : 'How it works:',
+    guideStep1: isDE ? '1. Klick auf "Skript kopieren".' : '1. Click "Copy Script".',
+    guideStep2: isDE ? '2. Lade die Fotos als ZIP herunter und entpacke sie.' : '2. Download photos as ZIP and extract.',
+    guideStep3: isDE ? '3. Lade das CapCut Projekt herunter (draft_content.json).' : '3. Download CapCut project (draft_content.json).',
+    guideStep4: isDE ? '4. Verschiebe JSON + Fotos in deinen CapCut-Entwurfsordner.' : '4. Move JSON + photos to your CapCut drafts folder.',
+    guideStep5: isDE ? '5. Öffne CapCut – das Projekt ist fertig!' : '5. Open CapCut – the project is ready!',
+    sceneTitle: isDE ? 'Szene' : 'Scene',
+    btnUploadPhoto: isDE ? 'Foto hochladen' : 'Upload photo',
+  },
 }
 
 const PLATFORMS = [
