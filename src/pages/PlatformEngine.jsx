@@ -414,6 +414,9 @@ export default function PlatformEngine() {
                         copyToClipboard(getResultText(r), key)
                         setCopiedPlatform(key)
                         setTimeout(() => setCopiedPlatform(null), 2000)
+                        const isMob = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+                        const url = isMob ? 'capcut://com.lemon.lvoverseas' : 'https://www.capcut.com/editor?enter_from=link'
+                        window.open(url, '_blank')
                       }}
                     >
                       {isCopied ? <><Check size={14} /> Kopiert!</> : <><Copy size={14} /> In CapCut einfügen</>}
@@ -477,6 +480,9 @@ export default function PlatformEngine() {
                             copyToClipboard(getResultText(r), p.key)
                             setCopiedPlatform(p.key)
                             setTimeout(() => setCopiedPlatform(null), 2000)
+                            const isMob = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+                            const url = isMob ? 'capcut://com.lemon.lvoverseas' : 'https://www.capcut.com/editor?enter_from=link'
+                            window.open(url, '_blank')
                           }}
                         >
                           {copiedPlatform === p.key ? <><Check size={14} /> Kopiert!</> : <><Copy size={14} /> In CapCut einfügen</>}
