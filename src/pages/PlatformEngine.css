@@ -913,3 +913,127 @@
     opacity: 1;
   }
 }
+
+/* Info Button + Modal */
+.pe-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pe-info-btn {
+  background: none;
+  border: 1.5px solid var(--primary, #085041);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--primary, #085041);
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.pe-info-btn:hover {
+  background: var(--primary, #085041);
+  color: #fff;
+}
+
+.pe-info-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.pe-info-modal {
+  background: var(--surface, #fff);
+  border-radius: 16px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 2rem;
+  position: relative;
+}
+
+.pe-info-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted, #6b7280);
+  padding: 4px;
+}
+.pe-info-close:hover {
+  color: var(--text, #111);
+}
+
+.pe-info-headline {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text, #111);
+  margin-bottom: 1rem;
+  line-height: 1.3;
+  padding-right: 2rem;
+}
+
+.pe-info-subtext {
+  font-size: 0.95rem;
+  color: var(--text-muted, #6b7280);
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.pe-info-body {
+  font-size: 0.9rem;
+  color: var(--text, #333);
+  margin-bottom: 1.25rem;
+  line-height: 1.7;
+}
+
+.pe-info-what-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text, #111);
+  margin: 1.5rem 0 0.75rem;
+}
+
+.pe-info-features {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.pe-info-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: var(--bg, #f8f9fa);
+}
+.pe-info-feature span {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.pe-info-feature strong {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text, #111);
+  margin-bottom: 0.2rem;
+}
+.pe-info-feature p {
+  font-size: 0.82rem;
+  color: var(--text-muted, #6b7280);
+  margin: 0;
+  line-height: 1.5;
+}
