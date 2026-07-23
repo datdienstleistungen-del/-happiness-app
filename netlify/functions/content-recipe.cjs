@@ -306,6 +306,67 @@ exports.handler = async (event) => {
     recipe.hook_check_notes = recipe.hook_check_notes || [];
     recipe.hook_check_suggestions = recipe.hook_check_suggestions || [];
 
+    // --- AUTOMATISCHER HOOK-CHECK (Pattern-basiert) ---
+    // Prüft Scene 1 auf bekannte Regelverletzungen (unabhängig vom LLM)
+    if (recipe.scenes && recipe.scenes.length > 0) {
+      const scene1 = recipe.scenes[0];
+      const text1 = (scene1.spoken_text || '').toLowerCase();
+      const visual1 = (scene1.visual_prompt || '').toLowerCase();
+      const autoNotes = [];
+      const autoSuggestions = [];
+
+      // Regel: setup_not_hook — Narrativer Einstieg statt direktem Konflikt
+      const setupPatterns = [
+        /^vor\s+\d+/, /^vor\s+(eins|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|elf|zwölf)/i,
+        /^vor\s+\d+\s+(monat|wochen|jahr)/i, /^vor\s+(eins|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|elf|zwölf)\s+(monat|wochen|jahr)/i,
+        /^ich\s+dachte/, /^ich\s+hatte/, /^letztens/,
+        /^erinnere\s+dich/, /^stell\s+dir/, /^weißt\s+du\s+noch/,
+        /^damals/, /^in\s+meiner/
+      ];
+      for (const p of setupPatterns) {
+        if (p.test(text1)) {
+          autoNotes.push(`Szene 1: Beginnt mit narrativem Einstieg statt direktem Konflikt/Pointe (${scene1.spoken_text.substring(0, 50)}...)`);
+          autoSuggestions.push("Starte mit Konflikt, Ergebnis oder überraschender Behauptung. Keinen Rückblick als Einstieg nutzen.");
+          break;
+        }
+      }
+
+      // Regel: static_start — Keine aktive Bewegung im visuellen Prompt
+      const staticPatterns = [
+        /sitting\s+(at|on|in)/i, /standing\s+still/i, /looking\s+(at|up|down)/i,
+        /static/i, /no\s+movement/i, /unmoving/i, /calm\s+scene/i
+      ];
+      const hasMovement = /\b(running|walking|jumping|dancing|moving|panning|zooming|action|fast|dynamic|swinging|throwing|catching|climbing|reaching|grabbing|pushing|pulling)\b/i;
+      const isStatic = staticPatterns.some(p => p.test(visual1)) && !hasMovement.test(visual1);
+      if (isStatic && text1.length > 0) {
+        autoNotes.push("Szene 1: Visuell passiv/statisch — keine aktive Bewegung im ersten Frame erkennbar.");
+        autoSuggestions.push("Zeige aktive Bewegung in Szene 1: Person geht, greift, dreht sich — kein Standbild.");
+      }
+
+      // Regel: no_cut_first_3s — Kein Schnitt innerhalb der ersten 3 Sek
+      // (Prüfe ob Szene 1 länger als 3 Sek ist und Szene 2 danach kommt)
+      if (recipe.scenes.length >= 2) {
+        const match1 = scene1.timestamp.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
+        const match2 = recipe.scenes[1].timestamp.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
+        if (match1 && match2) {
+          const end1 = parseInt(match1[3]) * 60 + parseInt(match1[4]);
+          const start1 = parseInt(match1[1]) * 60 + parseInt(match1[2]);
+          const start2 = parseInt(match2[1]) * 60 + parseInt(match2[2]);
+          const dur1 = end1 - start1;
+          if (dur1 >= 3 && (start2 - start1) >= 3) {
+            autoNotes.push(`Szene 1 dauert ${dur1} Sek — kein Schnitt/Perspektivwechsel vor Sekunde 3.`);
+            autoSuggestions.push("Füge vor Sekunde 3 einen Schnitt, Zoom oder Perspektivwechsel ein.");
+          }
+        }
+      }
+
+      // Nur hinzufügen wenn nicht bereits vom LLM gefüllt
+      if (autoNotes.length > 0 && recipe.hook_check_notes.length === 0) {
+        recipe.hook_check_notes = autoNotes;
+        recipe.hook_check_suggestions = autoSuggestions;
+      }
+    }
+
   } catch (parseError) {
     console.error('[CAPCUT-RECIPE] JSON parse error:', parseError.message, 'Raw:', aiResponse.substring(0, 200))
     return { statusCode: 500, body: JSON.stringify({ error: 'Rezept konnte nicht generiert werden. Bitte versuch es nochmal.' }) }
