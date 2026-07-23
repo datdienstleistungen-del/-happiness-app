@@ -1424,3 +1424,46 @@
   z-index: 9999;
   animation: ccp-fadeIn 0.2s ease;
 }
+
+/* Hook-Check Warnungen */
+.hook-check-warnings {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.hook-check-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 0.5rem;
+}
+
+.hook-check-notes {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: #78350f;
+  font-size: 0.9rem;
+}
+
+.hook-check-suggestions {
+  margin-top: 0.75rem;
+}
+
+.hook-check-suggestions summary {
+  cursor: pointer;
+  color: #92400e;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.hook-check-suggestions ul {
+  margin-top: 0.5rem;
+  padding-left: 1.5rem;
+  color: #78350f;
+  font-size: 0.85rem;
+}

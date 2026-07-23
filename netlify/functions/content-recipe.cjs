@@ -71,7 +71,9 @@ JSON-Struktur:
       "title": "Subreddit-freundlicher Titel (engagiert/Frage-Stil)",
       "body_text": "Ehrlich, nicht werblich. Community-first. PAS-Struktur."
     }
-  }
+  },
+  "hook_check_notes": [],
+  "hook_check_suggestions": []
 }
 
 REGELN:
@@ -195,6 +197,29 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ error: 'KI-Service nicht verfuegbar.' }) }
   }
 
+  // Hook-Rules aus Supabase laden
+  let hookRulesText = '';
+  try {
+    const rulesRes = await supabaseFetch(
+      '/rest/v1/hook_rules?select=rule_key,pattern_de,severity,fix_instruction&applies_to_step=eq.video_concept&active=eq.true'
+    );
+    
+    if (Array.isArray(rulesRes) && rulesRes.length > 0) {
+      hookRulesText = '\n\n--- HOOK-REGELN (VOR DER GENERIERUNG PRÜFEN) ---\n' +
+        rulesRes.map(r => 
+          `- [${r.severity.toUpperCase()}] ${r.pattern_de}\n  → BEHEBUNG: ${r.fix_instruction}`
+        ).join('\n') +
+        '\n\nWICHTIG: Generiere das Video-Konzept SO, dass diese Regeln EINGEHALTEN werden.' +
+        '\nFalls eine Regel verletzt wird, füge in die JSON-Antwort die Felder hinzu:' +
+        '\n- "hook_check_notes": ["Notiz zu Regelverletzung X"]' +
+        '\n- "hook_check_suggestions": ["Vorschlag zur Verbesserung Y"]';
+      console.log('[CAPCUT-RECIPE] Hook-Rules loaded:', rulesRes.length, 'rules');
+    }
+  } catch (e) {
+    console.error('[CAPCUT-RECIPE] Hook-Rules konnten nicht geladen werden:', e.message);
+    // Fallback: Kein Hard-Fail, Flow läuft ohne Constraint-Check weiter
+  }
+
   const userMessage = `Erstelle ein ${videoDuration}-Sekunden Video-Rezept fuer: ${topic.trim()}`
 
   let aiResponse = null
@@ -212,7 +237,7 @@ exports.handler = async (event) => {
         body: JSON.stringify({
           model: provider.model,
           messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'system', content: SYSTEM_PROMPT + hookRulesText },
             { role: 'user', content: userMessage }
           ],
           temperature: 0.8,
@@ -276,6 +301,10 @@ exports.handler = async (event) => {
         }
       }
     }
+
+    // Hook-Check-Felder sind optional (nicht erzwingen)
+    recipe.hook_check_notes = recipe.hook_check_notes || [];
+    recipe.hook_check_suggestions = recipe.hook_check_suggestions || [];
 
   } catch (parseError) {
     console.error('[CAPCUT-RECIPE] JSON parse error:', parseError.message, 'Raw:', aiResponse.substring(0, 200))

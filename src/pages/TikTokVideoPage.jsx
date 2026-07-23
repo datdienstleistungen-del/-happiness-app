@@ -782,6 +782,32 @@ export default function TikTokVideoPage() {
             </div>
           </div>
 
+          {/* Hook-Check Warnungen */}
+          {recipe.hook_check_notes && recipe.hook_check_notes.length > 0 && (
+            <div className="hook-check-warnings">
+              <div className="hook-check-header">
+                <AlertTriangle size={16} />
+                <span>Automatisch angepasst, damit dein Video nicht sofort Zuschauer verliert</span>
+              </div>
+              <ul className="hook-check-notes">
+                {recipe.hook_check_notes.map((note, i) => (
+                  <li key={i}>{note}</li>
+                ))}
+              </ul>
+              
+              {recipe.hook_check_suggestions && recipe.hook_check_suggestions.length > 0 && (
+                <details className="hook-check-suggestions">
+                  <summary>Verbesserungsvorschläge anzeigen</summary>
+                  <ul>
+                    {recipe.hook_check_suggestions.map((suggestion, i) => (
+                      <li key={i}>{suggestion}</li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+            </div>
+          )}
+
           <div className="ccp-banner ccp-banner--info">
             <Zap size={18} />
             <div>{t.honestBanner}</div>
