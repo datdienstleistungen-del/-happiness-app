@@ -68,7 +68,7 @@ export default function OpusCutterStudio() {
           </h2>
         </div>
         <a href="https://opus.pro" target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.25rem', borderRadius: '8px', textDecoration: 'none' }}>
-          🚀 Direkt zu Opus Clip wechseln
+          🚀 Direkt zu Opus Clip wechseln & Video erstellen
         </a>
       </div>
 
