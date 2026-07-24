@@ -488,14 +488,21 @@ Antworte ausschließlich im angegebenen Markdown-Format auf Deutsch. Antworte di
       })
 
       if (!res.ok) {
-        throw new Error(`Server antwortete mit Status ${res.status}`)
+        let errorText = ''
+        try {
+          const errData = await res.json()
+          errorText = errData.error || errData.message || JSON.stringify(errData)
+        } catch (_) {
+          errorText = await res.text().catch(() => '')
+        }
+        throw new Error(`Server-Status ${res.status}. ${errorText ? 'Fehler: ' + errorText : ''}`)
       }
 
       const resData = await res.json()
       setAiFeedback(resData.response)
     } catch (e) {
       console.error('[AI Audit Error]', e)
-      setError('Das KI-Audit konnte nicht durchgeführt werden. Bitte überprüfe deine Internetverbindung.')
+      setError(`Das KI-Audit konnte nicht durchgeführt werden. Details: ${e.message}`)
       setCooldown(0)
     } finally {
       setAiAuditing(false)
