@@ -329,7 +329,9 @@ ${message}`
     }
 
     // RAG: Load Happiness knowledge context
-    const knowledgeContext = await loadKnowledge(message, userId)
+    // Skip knowledge loading for script audits to minimize database latency
+    const isScriptAudit = originalPrompt && (originalPrompt.includes('Retention-Coach') || originalPrompt.includes('REICHWEITEN-PROGNOSE'))
+    const knowledgeContext = isScriptAudit ? '' : await loadKnowledge(message, userId)
 
     // Build system prompt: Language directive FIRST (highest priority), then knowledge, then baseline
     const BASELINE_PROMPT = 'Du bist ein erfahrener KI-Assistent für Content-Erstellung. Du hilfst Nutzern bei ihren konkreten Zielen — Social Media Posts, Texte, Ideen, Strategien. Antworte immer in der Sprache des Nutzers. Sei direkt, konkret und hilfreich. Keine Floskeln, keine meta-Fragen am Ende. Gib immer postfertige Ergebnisse, keine Entwürfe mit Platzhaltern.'
@@ -585,12 +587,13 @@ ${message}`
         }
       }
     } else {
-      // Text-only request: Fallback Chain: OpenRouter (free) -> Mistral -> Groq -> DeepSeek
+      // Text-only request: Fallback Chain
+      const isScriptAudit = systemPrompt && (systemPrompt.includes('Retention-Coach') || systemPrompt.includes('REICHWEITEN-PROGNOSE'))
       let success = false
 
-      // Stage 1: OpenRouter (kostenlos - primär)
+      // Stage 1: OpenRouter (kostenlos - primär, übersprungen bei Skript-Audit wegen Latenz)
       const orKey = process.env.OPENROUTER_API_KEY
-      if (orKey) {
+      if (orKey && !isScriptAudit) {
         try {
           const orRes = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
