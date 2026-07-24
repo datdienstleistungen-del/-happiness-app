@@ -187,6 +187,20 @@ function formatKnowledge(entries) {
   return result
 }
 
+async function fetchWithTimeout(url, options, timeoutMs = 8000) {
+  const controller = new AbortController()
+  const { signal } = controller
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const response = await fetch(url, { ...options, signal })
+    clearTimeout(timeoutId)
+    return response
+  } catch (err) {
+    clearTimeout(timeoutId)
+    throw err
+  }
+}
+
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -578,7 +592,7 @@ ${message}`
       const orKey = process.env.OPENROUTER_API_KEY
       if (orKey) {
         try {
-          const orRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          const orRes = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${orKey}`,
@@ -592,7 +606,7 @@ ${message}`
               temperature: 0.1,
               max_tokens: 4096
             })
-          })
+          }, 8000)
           if (orRes.ok) {
             const orData = await orRes.json()
             console.log('Antwort von:', 'openrouter-free')
@@ -621,7 +635,7 @@ ${message}`
         const mistralKey = process.env.MISTRAL_API_KEY
         if (mistralKey) {
           try {
-            const mistralRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
+            const mistralRes = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${mistralKey}`,
@@ -633,7 +647,7 @@ ${message}`
                 temperature: 0.1,
                 max_tokens: 4096
               })
-            })
+            }, 8000)
             if (mistralRes.ok) {
               const mistralData = await mistralRes.json()
               console.log('Antwort von:', 'mistral')
@@ -663,7 +677,7 @@ ${message}`
         const groqKey = process.env.GROQ_API_KEY
         if (groqKey) {
           try {
-            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            const groqRes = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${groqKey}`,
@@ -675,7 +689,7 @@ ${message}`
                 temperature: 0.1,
                 max_tokens: 4096
               })
-            })
+            }, 8000)
             if (groqRes.ok) {
               const groqData = await groqRes.json()
               console.log('Antwort von:', 'groq')
@@ -705,7 +719,7 @@ ${message}`
         const deepseekKey = process.env.DEEPSEEK_API_KEY
         if (deepseekKey) {
           try {
-            const dsRes = await fetch('https://api.deepseek.com/chat/completions', {
+            const dsRes = await fetchWithTimeout('https://api.deepseek.com/chat/completions', {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${deepseekKey}`,
@@ -717,7 +731,7 @@ ${message}`
                 temperature: 0.1,
                 max_tokens: 4096
               })
-            })
+            }, 8000)
             if (dsRes.ok) {
               const dsData = await dsRes.json()
               console.log('Antwort von:', 'deepseek-fallback')
