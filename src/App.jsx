@@ -94,15 +94,15 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
   ]
 
   const activeEditor = localStorage.getItem('hit_video_editor') || 'capcut'
-  const editorLink = activeEditor === 'ki-cutter' 
-    ? { to: '/opus-studio', icon: Film, label: 'Opus Studio' }
+  const studioRoute = activeEditor === 'ki-cutter' 
+    ? '/opus-studio' 
     : activeEditor === 'premiere'
-    ? { to: '/pro-studio', icon: Film, label: 'Pro Studio' }
-    : { to: '/capcut-studio', icon: Film, label: 'CapCut Studio' }
+    ? '/pro-studio' 
+    : '/capcut-studio'
 
   const studioLinks = [
     { to: '/creator-academy', icon: Rocket, label: 'Content Studio' },
-    editorLink,
+    { to: studioRoute, icon: Film, label: 'Video Studio' },
     { to: '/ai-chat', icon: Sparkles, label: 'AI Chat' },
     { to: '/analytics', icon: BarChart3, label: 'Analytics' },
   ]
