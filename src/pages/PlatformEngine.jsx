@@ -137,15 +137,7 @@ export default function PlatformEngine() {
   const [showInfo, setShowInfo] = useState(false)
   const [tickerIndex, setTickerIndex] = useState(0)
   const [duelIndex, setDuelIndex] = useState(0)
-  const [videoEditor, setVideoEditor] = useState(() => {
-    return localStorage.getItem('hit_video_editor') || 'capcut'
-  })
-
-  const handleVideoEditorChange = (e) => {
-    const val = e.target.value
-    setVideoEditor(val)
-    localStorage.setItem('hit_video_editor', val)
-  }
+  const videoEditor = 'capcut';
 
   // Restore state from localStorage on mount (after navigating back from CapCut/Analytics)
   useEffect(() => {
@@ -376,16 +368,7 @@ export default function PlatformEngine() {
               </div>
 
               <div className="pe-input-wrap">
-                <select
-                  className="pe-editor-select"
-                  value={videoEditor}
-                  onChange={handleVideoEditorChange}
-                  aria-label="Schnittprogramm wählen"
-                >
-                  <option value="capcut">🎬 CapCut / Mobile (Standard)</option>
-                  <option value="premiere">💻 Adobe Premiere / DaVinci</option>
-                  <option value="ki-cutter">🤖 KI-Video-Cutter (Opus/Veed)</option>
-                </select>
+
                 <input
                   className="pe-input"
                   type="text"
@@ -719,15 +702,8 @@ export default function PlatformEngine() {
           {/* Next Action Hub */}
           <NextActionHub
             onOpenCapCut={() => {
-              const editor = localStorage.getItem('hit_video_editor') || 'capcut'
-              trackLandingFunnel('post_result_action', { action: editor })
-              if (editor === 'ki-cutter') {
-                saveStateAndNavigate('/opus-studio')
-              } else if (editor === 'premiere') {
-                saveStateAndNavigate('/pro-studio')
-              } else {
-                saveStateAndNavigate('/capcut-studio')
-              }
+              trackLandingFunnel('post_result_action', { action: 'capcut' })
+              saveStateAndNavigate('/capcut-studio')
             }}
             onTrackAnalytics={() => {
               trackLandingFunnel('post_result_action', { action: 'tracking' })

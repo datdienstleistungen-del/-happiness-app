@@ -234,25 +234,6 @@ export default function TikTokVideoPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [activePlatform, setActivePlatform] = useState('tiktok_instagram')
-  const [targetPlatform, setTargetPlatform] = useState('tiktok')
-
-  const platformDetails = {
-    tiktok: {
-      description: 'Dein brandneues Video ist online! Entdecke spannende Einblicke und praktische Tipps für deinen Erfolg.',
-      hashtags: '#fyp #viral #foryoupage #contentcreator #happiness',
-      tips: 'Lade das Video zur Prime-Time (18:00 - 20:00 Uhr) hoch. Nutze einen trendigen TikTok Sound im Hintergrund (Leise auf 3%). Interagiere in den ersten 30 Minuten mit allen Kommentaren.'
-    },
-    shorts: {
-      description: 'Kurz, knackig und voller Mehrwert – so bringst du dein Leben auf das nächste Level!',
-      hashtags: '#shorts #ytshorts #viral #growth #happiness',
-      tips: 'YouTube Shorts belohnt hohe Completion Rates extrem. Halte das Video unter 30 Sekunden. Verwende ein starkes, kontrastreiches Standbild als Thumbnail im Upload-Prozess.'
-    },
-    reels: {
-      description: 'Lust auf Inspiration? Schau dir dieses Reel an und teile deine Gedanken in den Kommentaren!',
-      hashtags: '#reels #instagramreels #viralreels #creators #happiness',
-      tips: 'Teile Reels direkt auch in deinem Feed, um die Reichweite zu maximieren. Nutze relevante Nischen-Hashtags und verlinke Co-Autoren, falls vorhanden.'
-    }
-  }
   const [showSuccess, setShowSuccess] = useState(false)
   const [showExample, setShowExample] = useState(false)
   const [published, setPublished] = useState(false)
@@ -572,13 +553,6 @@ export default function TikTokVideoPage() {
         <h1><Film size={22} /> {t.header}</h1>
       </div>
 
-      {/* Target Platform Tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-        <button onClick={() => setTargetPlatform('tiktok')} className={`btn ${targetPlatform === 'tiktok' ? 'btn-primary' : 'btn-outline'}`} style={{ flex: 1 }}>📱 TikTok</button>
-        <button onClick={() => setTargetPlatform('shorts')} className={`btn ${targetPlatform === 'shorts' ? 'btn-primary' : 'btn-outline'}`} style={{ flex: 1 }}>📺 YouTube Shorts</button>
-        <button onClick={() => setTargetPlatform('reels')} className={`btn ${targetPlatform === 'reels' ? 'btn-primary' : 'btn-outline'}`} style={{ flex: 1 }}>📸 Instagram Reels</button>
-      </div>
-
       <div className="ccp-hero">
         <div className="ccp-hero-icon"><Zap size={28} /></div>
         <h2>{t.heroTitle}</h2>
@@ -850,34 +824,30 @@ export default function TikTokVideoPage() {
             </div>
           </div>
 
-          <div className="ccp-section ccp-social-tabs-section" style={{ padding: '1.5rem', borderRadius: '16px', background: 'rgba(255,255,255,0.85)', border: '1px solid var(--border)', boxShadow: '0 4px 24px rgba(0,0,0,0.05)', marginBottom: '1.5rem', display: 'block' }}>
-            <h4 style={{ margin: '0 0 1rem', fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)' }}>
-              📢 Veröffentlichungs-Details ({targetPlatform === 'tiktok' ? 'TikTok' : targetPlatform === 'shorts' ? 'YouTube Shorts' : 'Instagram Reels'})
-            </h4>
-            
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>Beschreibung & Caption</label>
-              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
-                <input type="text" readOnly value={platformDetails[targetPlatform].description} style={{ flex: 1, padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '0.9rem', background: '#f8fafc', outline: 'none' }} />
-                <button onClick={() => { navigator.clipboard.writeText(platformDetails[targetPlatform].description); alert('Kopiert!'); }} className="btn btn-outline" style={{ padding: '0.75rem' }}>Kopieren</button>
+          {recipe.publishing_payload && (
+            <div className="ccp-section ccp-social-tabs-section">
+              <div className="ccp-platform-tabs">
+                {PLATFORMS.map(p => {
+                  const Icon = p.icon
+                  return (
+                    <button
+                      key={p.id}
+                      className={`ccp-platform-tab ${activePlatform === p.id ? 'active' : ''}`}
+                      onClick={() => { setActivePlatform(p.id); trackPlatformViewed(p.id) }}
+                      style={activePlatform === p.id ? { borderColor: p.color, color: p.color } : {}}
+                    >
+                      <Icon size={14} />
+                      <span>{p.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              <div className="ccp-platform-content">
+                {getPlatformContent(activePlatform, recipe.publishing_payload)}
               </div>
             </div>
-
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>Hashtags</label>
-              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
-                <input type="text" readOnly value={platformDetails[targetPlatform].hashtags} style={{ flex: 1, padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '0.9rem', background: '#f8fafc', outline: 'none' }} />
-                <button onClick={() => { navigator.clipboard.writeText(platformDetails[targetPlatform].hashtags); alert('Kopiert!'); }} className="btn btn-outline" style={{ padding: '0.75rem' }}>Kopieren</button>
-              </div>
-            </div>
-
-            <div>
-              <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>💡 Posting-Tipps für maximale Reichweite</label>
-              <p style={{ margin: '0.25rem 0 0', fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                {platformDetails[targetPlatform].tips}
-              </p>
-            </div>
-          </div>
+          )}
 
           <div className="ccp-section ccp-action-hub">
             <div className="ccp-section-header">

@@ -45,8 +45,7 @@ const TodayQuestionPage = lazy(() => import('./pages/TodayQuestionPage'))
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'))
 const LeadRadarPage = lazy(() => import('./pages/LeadRadarPage'))
 const CreatorSuccessPage = lazy(() => import('./pages/CreatorSuccessPage'))
-const OpusCutterStudio = lazy(() => import('./pages/OpusCutterStudio'))
-const ProCutterStudio = lazy(() => import('./pages/ProCutterStudio'))
+
 
 function Sidebar({ mobileOpen, setMobileOpen }) {
   const { user, profile, signOut } = useAuth()
@@ -93,16 +92,9 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
     { to: '/', icon: Target, label: 'H.I.T.' },
   ]
 
-  const activeEditor = localStorage.getItem('hit_video_editor') || 'capcut'
-  const studioRoute = activeEditor === 'ki-cutter' 
-    ? '/opus-studio' 
-    : activeEditor === 'premiere'
-    ? '/pro-studio' 
-    : '/capcut-studio'
-
   const studioLinks = [
     { to: '/creator-academy', icon: Rocket, label: 'Content Studio' },
-    { to: studioRoute, icon: Film, label: 'Video Studio' },
+    { to: '/capcut-studio', icon: Film, label: 'CapCut Studio' },
     { to: '/ai-chat', icon: Sparkles, label: 'AI Chat' },
     { to: '/analytics', icon: BarChart3, label: 'Analytics' },
   ]
@@ -411,8 +403,6 @@ export default function App() {
                 <Route path="/creator-academy" element={<ProtectedRoute><CreatorAcademyPage /></ProtectedRoute>} />
                 <Route path="/post-preparation" element={<ProtectedRoute><PostPreparationPage /></ProtectedRoute>} />
                 <Route path="/capcut-studio" element={<ProtectedRoute><TikTokVideoPage /></ProtectedRoute>} />
-                <Route path="/opus-studio" element={<ProtectedRoute><OpusCutterStudio /></ProtectedRoute>} />
-                <Route path="/pro-studio" element={<ProtectedRoute><ProCutterStudio /></ProtectedRoute>} />
                 <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
                 <Route path="/admin/lead-radar" element={<ProtectedRoute><LeadRadarPage /></ProtectedRoute>} />
                 <Route path="/legal" element={<LegalPage />} />
