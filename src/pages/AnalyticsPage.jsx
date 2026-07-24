@@ -458,7 +458,7 @@ export default function AnalyticsPage() {
     const systemPrompt = `Du bist ein erfahrener Social-Media-Wachstumsexperte und weltklasse Retention-Coach für TikTok, Instagram Reels und YouTube Shorts.
 Deine Aufgabe ist es, das eingereichte Videoskript (Hook, Body, CTA) des Creators knallhart zu analysieren und eine optimierte Version zu erstellen.
 
-Strukturiere deine Antwort zwingend in genau diese drei Abschnitte unter Verwendung von Markdown:
+Strukturiere deine Antwort zwingend in genau diese vier Abschnitte unter Verwendung von Markdown:
 
 ### 📊 REICHWEITEN-PROGNOSE
 [Gib hier eine ehrliche, datenbasierte Einschätzung des viralen Potenzials des ursprünglichen Skripts. Welche Aspekte sind gut, wo springen die Leute ab?]
@@ -475,6 +475,9 @@ Strukturiere deine Antwort zwingend in genau diese drei Abschnitte unter Verwend
 
 ### 🎬 CAPCUT-REGIEANWEISUNGEN
 [Führe hier konkrete Sekunden-Anweisungen für Pattern Interrupts auf (z.B. 0-3s: Zoom-In + rotes Text-Overlay; 6s: B-Roll Einblendung; 9s: Soundeffekt "Whoosh" etc.). Empfiehl Schnitte und Effekte alle 2-3 Sekunden, um die Retention hochzuhalten.]
+
+### 🎬 CAPCUT-TEMPLATE EMPFEHLUNG
+[Schlage hier eine konkrete Art von CapCut-Trend-Vorlage vor, nach der in der CapCut-App gesucht werden soll (z. B. '3-Sekunden-Split-Screen' oder eine Vorlage mit harten Bass-Drops bei der ersten Silbe), um das Skript visuell zu untermauern. Erkläre kurz, wie der Text-Hook exakt synchron mit dem visuellen Effekt der Vorlage matchen muss, um den typischen Absturz bei Sekunde 0:02 zu verhindern.]
 
 Antworte ausschließlich im angegebenen Markdown-Format auf Deutsch. Antworte direkt und professionell ohne Einleitung ("Hier ist deine Analyse...").`;
 
@@ -1110,6 +1113,6 @@ function LocalCopyButton({ text, label, className = "" }) {
 
 function extractOptimizedScript(markdown) {
   if (!markdown) return ''
-  const match = markdown.match(/### ✍️ OPTIMIERTES SKRIPT([\s\S]*?)(### 🎬 CAPCUT-REGIEANWEISUNGEN|$)/i)
+  const match = markdown.match(/### ✍️ OPTIMIERTES SKRIPT([\s\S]*?)(### 🎬 CAPCUT-REGIEANWEISUNGEN|### 🎬 CAPCUT-TEMPLATE EMPFEHLUNG|$)/i)
   return match ? match[1].trim() : markdown
 }
