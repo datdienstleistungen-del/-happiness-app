@@ -218,35 +218,114 @@ export default function AnalyticsPage() {
   }
 
   function calculateDynamicCurve(hookText, bodyText, ctaText) {
+    const editor = localStorage.getItem('hit_video_editor') || 'capcut'
     const hookLen = (hookText || '').trim().length
     const bodyLen = (bodyText || '').trim().length
     const ctaLen = (ctaText || '').trim().length
+    const fullText = `${hookText} ${bodyText} ${ctaText}`
 
     const points = new Array(31).fill(100)
     
     let hookVal = 95
-    if (hookLen === 0 || hookLen > 130) {
-      hookVal = 25
-    } else if (hookLen > 90) {
-      hookVal = 55
-    }
-
     let bodyVal = 88
-    if (bodyLen < 300 || bodyLen > 800) {
-      bodyVal = 20
-    } else if (bodyLen < 400 || bodyLen > 650) {
-      bodyVal = 50
-    }
-
     let ctaVal = 82
-    if (ctaLen > 120) {
-      ctaVal = 5
-    } else if (ctaLen === 0) {
-      ctaVal = 30
+
+    if (editor === 'premiere') {
+      // Premiere / DaVinci professional cutting analysis
+      const hasBroll = fullText.toUpperCase().includes('[B-ROLL]')
+      const markerCount = (fullText.match(/\[.*?\]/g) || []).length
+
+      // Hook point (second 3):
+      if (hookLen === 0 || hookLen > 130) {
+        hookVal = 25
+      } else if (!hasBroll) {
+        hookVal = 30 // collapses without visual plan
+      } else if (hookLen > 90) {
+        hookVal = 55
+      }
+
+      // Body point (second 15):
+      if (bodyLen < 300 || bodyLen > 800) {
+        bodyVal = 20
+      } else if (!hasBroll || markerCount < 3) {
+        bodyVal = 25 // collapses due to lack of professional timeline pacing
+      } else if (bodyLen < 400 || bodyLen > 650) {
+        bodyVal = 50
+      }
+
+      // CTA point (second 30):
+      if (ctaLen > 120) {
+        ctaVal = 5
+      } else if (ctaLen === 0) {
+        ctaVal = 30
+      } else {
+        const ctaLower = ctaText.toLowerCase()
+        if (ctaLower.includes('j-cut') || ctaLower.includes('punch') || ctaLower.includes('zoom')) {
+          ctaVal = Math.min(95, bodyVal + 8)
+        }
+      }
+
+    } else if (editor === 'ki-cutter') {
+      // AI Cutter / Opus / Veed analysis
+      const wordCount = fullText.split(/\s+/).filter(Boolean).length
+      const wpm = wordCount > 0 ? Math.round(wordCount / 0.5) : 0
+      
+      const emojiSignalWords = ['krass', 'wow', 'stopp', 'geheim', 'fehler', 'geld', 'reich', 'neu', 'wichtig', 'tipp', 'trick', 'stoppt']
+      const hasEmojiSignals = emojiSignalWords.some(w => fullText.toLowerCase().includes(w))
+
+      // Hook point (second 3):
+      if (hookLen === 0 || hookLen > 130) {
+        hookVal = 25
+      } else if (wpm > 180 || wpm < 110) {
+        hookVal = 35 // speaking rate too fast/slow collapses hook retention
+      } else if (hookLen > 90) {
+        hookVal = 55
+      }
+
+      // Body point (second 15):
+      if (bodyLen < 300 || bodyLen > 800) {
+        bodyVal = 20
+      } else if (!hasEmojiSignals) {
+        bodyVal = Math.max(30, bodyVal - 20) // drops due to lack of auto-emoji triggers
+      } else if (bodyLen < 400 || bodyLen > 650) {
+        bodyVal = 50
+      }
+
+      // CTA point (second 30):
+      if (ctaLen > 120) {
+        ctaVal = 5
+      } else if (ctaLen === 0) {
+        ctaVal = 30
+      } else {
+        const ctaLower = ctaText.toLowerCase()
+        if (ctaLower.includes('opus') || ctaLower.includes('veed') || ctaLower.includes('auto-caption')) {
+          ctaVal = Math.min(95, bodyVal + 5)
+        }
+      }
+
     } else {
-      const ctaLower = ctaText.toLowerCase()
-      if (ctaLower.includes('loop') || ctaLower.includes('anfang') || ctaLower.includes('und das')) {
-        ctaVal = Math.min(95, bodyVal + 5)
+      // Default: 'capcut'
+      if (hookLen === 0 || hookLen > 130) {
+        hookVal = 25
+      } else if (hookLen > 90) {
+        hookVal = 55
+      }
+
+      if (bodyLen < 300 || bodyLen > 800) {
+        bodyVal = 20
+      } else if (bodyLen < 400 || bodyLen > 650) {
+        bodyVal = 50
+      }
+
+      if (ctaLen > 120) {
+        ctaVal = 5
+      } else if (ctaLen === 0) {
+        ctaVal = 30
+      } else {
+        const ctaLower = ctaText.toLowerCase()
+        if (ctaLower.includes('loop') || ctaLower.includes('anfang') || ctaLower.includes('und das')) {
+          ctaVal = Math.min(95, bodyVal + 5)
+        }
       }
     }
 
@@ -274,6 +353,7 @@ export default function AnalyticsPage() {
 
   function analyzeScriptLocally(hook, body, cta) {
     const points = calculateDynamicCurve(hook, body, cta)
+    const editor = localStorage.getItem('hit_video_editor') || 'capcut'
     
     const average = points.reduce((sum, p) => sum + p, 0) / points.length
     const score = Math.max(5, Math.min(100, Math.round(average * 1.08)))
@@ -282,33 +362,107 @@ export default function AnalyticsPage() {
     const hookLen = (hook || '').trim().length
     const bodyLen = (body || '').trim().length
     const ctaLen = (cta || '').trim().length
+    const fullText = `${hook} ${body} ${cta}`
 
-    if (hookLen === 0) {
-      tips.push('⚠️ Hook ist leer. Füge einen fesselnden Einstieg von 1-3 Sekunden hinzu.')
-    } else if (hookLen > 130) {
-      tips.push('⚠️ Hook ist zu lang (> 130 Zeichen). Zuschauer scrollen sofort ab.')
-    } else if (hookLen > 90) {
-      tips.push('⚠️ Hook ist etwas lang. Versuche, die Kernaussage schneller auf den Punkt zu bringen.')
-    } else {
-      tips.push('✅ Hook-Länge ist optimal für Kurzvideos!')
-    }
+    if (editor === 'premiere') {
+      // Premiere / DaVinci professional rules
+      const hasBroll = fullText.toUpperCase().includes('[B-ROLL]')
+      const markerCount = (fullText.match(/\[.*?\\]/g) || []).length
 
-    if (bodyLen === 0) {
-      tips.push('⚠️ Hauptteil ist leer. Beschreibe das Kern-Thema deines Videos.')
-    } else if (bodyLen < 300) {
-      tips.push('⚠️ Hauptteil ist sehr kurz (< 300 Zeichen). Das Video bietet eventuell zu wenig Mehrwert.')
-    } else if (bodyLen > 800) {
-      tips.push('⚠️ Hauptteil ist sehr lang (> 800 Zeichen). Das senkt die Dynamik und erhöht die Absprungrate.')
-    } else {
-      tips.push('✅ Hauptteil-Länge ist im perfekten Bereich für hohe Informationsdichte!')
-    }
+      // Hook tips
+      if (hookLen === 0) {
+        tips.push('⚠️ Hook ist leer! Erstelle ein Intro und plane J-Cuts im Tonschnitt ein.')
+      } else if (!hasBroll) {
+        tips.push('❌ Kein [B-ROLL] Marker im Hook! Ohne visuelle B-Roll-Einblendung in den ersten 3s stürzt die Kurve ab.')
+      } else if (hookLen > 130) {
+        tips.push('⚠️ Hook ist zu lang (> 130 Zeichen). Zuschauer springen vor dem ersten Videoschnitt ab.')
+      } else {
+        tips.push('✅ Hook ist bereit für Premiere (B-Roll und J-Cut-Audioschnitt eingeplant).')
+      }
 
-    if (ctaLen === 0) {
-      tips.push('⚠️ Ein klarer Call-to-Action fehlt. Sag Zuschauern, was sie tun sollen.')
-    } else if (ctaLen > 120) {
-      tips.push('⚠️ CTA/Loop ist zu lang (> 120 Zeichen). Zuschauer schalten vor dem Ende ab.')
+      // Body tips
+      if (bodyLen === 0) {
+        tips.push('⚠️ Hauptteil ist leer. Plane Szenenbilder und B-Roll-Wechsel ein.')
+      } else if (markerCount < 3) {
+        tips.push('❌ Zu wenige Schnittmarker! Profi-Pacing erfordert mindestens 3 Schnitt-Anweisungen (z.B. [ZOOM], [TEXT]).')
+      } else if (bodyLen < 300 || bodyLen > 800) {
+        tips.push('⚠️ Ungünstige Sprechdauer im Hauptteil. Halte dich an 300-800 Zeichen für 15-30s Timelines.')
+      } else {
+        tips.push('✅ Perfekte Timeline-Struktur mit ausreichend B-Roll- und Text-Overlays!')
+      }
+
+      // CTA tips
+      if (ctaLen === 0) {
+        tips.push('⚠️ Kein CTA vorhanden. Nutze J-Cuts am Ende für einen flüssigen Übergang.')
+      } else if (ctaLen > 120) {
+        tips.push('⚠️ CTA ist zu lang. Verhindert schnelles Weiterscrollen und senkt die Abschluss-Dynamik.')
+      } else {
+        tips.push('✅ CTA ist kurz und prägnant!')
+      }
+
+    } else if (editor === 'ki-cutter') {
+      // AI Cutter / Opus rules
+      const wordCount = fullText.split(/\s+/).filter(Boolean).length
+      const wpm = wordCount > 0 ? Math.round(wordCount / 0.5) : 0
+      const emojiSignalWords = ['krass', 'wow', 'stopp', 'geheim', 'fehler', 'geld', 'reich', 'neu', 'wichtig', 'tipp', 'trick', 'stoppt']
+      const hasEmojiSignals = emojiSignalWords.some(w => fullText.toLowerCase().includes(w))
+
+      // Hook tips
+      if (hookLen === 0) {
+        tips.push('⚠️ Hook ist leer. Der Auto-Cutter findet keinen passenden Einstiegspunkt.')
+      } else if (wpm > 180) {
+        tips.push(`⚠️ Sprechgeschwindigkeit ist zu hoch (${wpm} WPM). Die Opus Auto-Untertitel überlappen und werden unlesbar.`)
+      } else if (wpm < 110 && wpm > 0) {
+        tips.push(`⚠️ Sprechgeschwindigkeit ist zu niedrig (${wpm} WPM). KI-Zuschauer schalten wegen Langeweile ab.`)
+      } else {
+        tips.push('✅ Hook hat optimales Sprechtempo für automatische Transkription!')
+      }
+
+      // Body tips
+      if (bodyLen === 0) {
+        tips.push('⚠️ Hauptteil ist leer. Keine Sprechdaten für Opus Clip vorhanden.')
+      } else if (!hasEmojiSignals) {
+        tips.push('❌ Keine Emoji-Signalwörter gefunden! Baue Wörter wie "krass", "wow" oder "geheim" ein, um Auto-Emojis zu triggern.')
+      } else {
+        tips.push('✅ Sehr gut! Hohe Auto-Emoji-Dichte und hervorragende KI-Verständlichkeit.')
+      }
+
+      // CTA tips
+      if (ctaLen === 0) {
+        tips.push('⚠️ CTA fehlt. Opus kann das Outro-Segment nicht sauber als Share-CTA zuschneiden.')
+      } else {
+        tips.push('✅ CTA ist kurz und perfekt für Auto-Captions optimiert!')
+      }
+
     } else {
-      tips.push('✅ CTA ist kurz und direkt!')
+      // Default: 'capcut'
+      if (hookLen === 0) {
+        tips.push('⚠️ Hook ist leer. Füge einen fesselnden Einstieg von 1-3 Sekunden hinzu.')
+      } else if (hookLen > 130) {
+        tips.push('⚠️ Hook ist zu lang (> 130 Zeichen). Zuschauer scrollen sofort ab.')
+      } else if (hookLen > 90) {
+        tips.push('⚠️ Hook ist etwas lang. Versuche, die Kernaussage schneller auf den Punkt zu bringen.')
+      } else {
+        tips.push('✅ Hook-Länge ist optimal für Kurzvideos!')
+      }
+
+      if (bodyLen === 0) {
+        tips.push('⚠️ Hauptteil ist leer. Beschreibe das Kern-Thema deines Videos.')
+      } else if (bodyLen < 300) {
+        tips.push('⚠️ Hauptteil ist sehr kurz (< 300 Zeichen). Das Video bietet eventuell zu wenig Mehrwert.')
+      } else if (bodyLen > 800) {
+        tips.push('⚠️ Hauptteil ist sehr lang (> 800 Zeichen). Das senkt die Dynamik und erhöht die Absprungrate.')
+      } else {
+        tips.push('✅ Hauptteil-Länge ist im perfekten Bereich für hohe Informationsdichte!')
+      }
+
+      if (ctaLen === 0) {
+        tips.push('⚠️ Ein klarer Call-to-Action fehlt. Sag Zuschauern, was sie tun sollen.')
+      } else if (ctaLen > 120) {
+        tips.push('⚠️ CTA/Loop ist zu lang (> 120 Zeichen). Zuschauer schalten vor dem Ende ab.')
+      } else {
+        tips.push('✅ CTA ist kurz und direkt!')
+      }
     }
 
     const hookPct = points[3] + '%'
@@ -333,89 +487,243 @@ export default function AnalyticsPage() {
 
   const getTrafficLights = () => {
     const lights = []
-    
-    // 1. Hook
-    const hookLen = scriptHook.length
-    if (hookLen === 0) {
-      lights.push({ 
-        type: 'red', 
-        label: 'HOOK',
-        text: '⚠️ Kein Hook vorhanden! Ohne Hook scrollen 95% der Zuschauer sofort weiter.' 
-      })
-    } else if (hookLen > 130) {
-      lights.push({ 
-        type: 'red', 
-        label: 'HOOK',
-        text: '⚠️ Hook viel zu lang! Zuschauer scrollen in den ersten Sekunden weiter.' 
-      })
-    } else if (hookLen >= 80) {
-      lights.push({ 
-        type: 'yellow', 
-        label: 'HOOK',
-        text: '⚠️ Hook etwas lang. Halte ihn unter 80 Zeichen für maximalen Impact.' 
-      })
-    } else {
-      lights.push({ 
-        type: 'green', 
-        label: 'HOOK',
-        text: '✅ Hook hat eine ideale, knackige Länge!' 
-      })
-    }
+    const editor = localStorage.getItem('hit_video_editor') || 'capcut'
+    const fullText = `${scriptHook} ${scriptBody} ${scriptCta}`
 
-    // 2. Body
-    const bodyLen = scriptBody.length
-    if (bodyLen === 0) {
-      lights.push({ 
-        type: 'red', 
-        label: 'HAUPTTEIL',
-        text: '⚠️ Hauptteil leer. Bitte füge den Video-Inhalt ein.' 
-      })
-    } else if (bodyLen < 100 || bodyLen > 1000) {
-      lights.push({ 
-        type: 'red', 
-        label: 'HAUPTTEIL',
-        text: '⚠️ Hauptteil ungeeignet für optimale Retention (zu kurz oder zu überladen).' 
-      })
-    } else if (bodyLen >= 300 && bodyLen <= 800) {
-      lights.push({ 
-        type: 'green', 
-        label: 'HAUPTTEIL',
-        text: '✅ Hauptteil hat die optimale Pacing-Dichte!' 
-      })
-    } else {
-      lights.push({ 
-        type: 'yellow', 
-        label: 'HAUPTTEIL',
-        text: '⚠️ Hauptteil ist sehr kurz oder lang. Achte auf Pattern Interrupts.' 
-      })
-    }
+    if (editor === 'premiere') {
+      const hookLen = scriptHook.length
+      const hasBroll = fullText.toUpperCase().includes('[B-ROLL]')
+      if (hookLen === 0) {
+        lights.push({ 
+          type: 'red', 
+          label: 'HOOK',
+          text: '⚠️ Hook leer! Plane ein Intro und J-Cuts im Tonschnitt ein.' 
+        })
+      } else if (!hasBroll) {
+        lights.push({ 
+          type: 'red', 
+          label: 'HOOK',
+          text: '❌ Keine [B-ROLL] Anweisung im Hook. Der Einstieg wirkt visuell statisch!' 
+        })
+      } else if (hookLen > 130) {
+        lights.push({ 
+          type: 'yellow', 
+          label: 'HOOK',
+          text: '⚠️ Hook zu lang für Premiere. Kürze ihn, um den ersten Videoschnitt schneller zu setzen.' 
+        })
+      } else {
+        lights.push({ 
+          type: 'green', 
+          label: 'HOOK',
+          text: '✅ Hook ist perfekt vorbereitet für Premiere Pro (B-Roll und J-Cut).' 
+        })
+      }
 
-    // 3. CTA
-    const ctaLen = scriptCta.length
-    if (ctaLen === 0) {
-      lights.push({ 
-        type: 'red', 
-        label: 'CTA & LOOP',
-        text: '⚠️ Kein CTA vorhanden. Die Zuschauer wissen nicht, was sie tun sollen.' 
-      })
-    } else if (ctaLen > 120) {
-      lights.push({ 
-        type: 'red', 
-        label: 'CTA & LOOP',
-        text: '⚠️ CTA viel zu lang. Zuschauer schalten vor dem Videoende ab.' 
-      })
-    } else if (ctaLen >= 60) {
-      lights.push({ 
-        type: 'yellow', 
-        label: 'CTA & LOOP',
-        text: '⚠️ CTA etwas lang. Vermeide langes Verabschieden.' 
-      })
+      const bodyLen = scriptBody.length
+      const markerCount = (fullText.match(/\[.*?\]/g) || []).length
+      if (bodyLen === 0) {
+        lights.push({ 
+          type: 'red', 
+          label: 'TIMELINE PACING',
+          text: '⚠️ Hauptteil leer. Plane Szenenbilder und B-Roll-Wechsel ein.' 
+        })
+      } else if (markerCount < 3) {
+        lights.push({ 
+          type: 'red', 
+          label: 'TIMELINE PACING',
+          text: '❌ Zu wenige Schnittmarker! Profi-Pacing erfordert mindestens 3 Schnitt-Anweisungen (z.B. [ZOOM], [TEXT]).' 
+        })
+      } else if (bodyLen < 300 || bodyLen > 800) {
+        lights.push({ 
+          type: 'yellow', 
+          label: 'TIMELINE PACING',
+          text: '⚠️ Ungünstige Wortdichte. Halte dich an 300-800 Zeichen für optimale Keyframe-Anpassungen.' 
+        })
+      } else {
+        lights.push({ 
+          type: 'green', 
+          label: 'TIMELINE PACING',
+          text: '✅ Perfektes Pacing! Timeline enthält ausreichend Skalierungs-Wechsel und B-Rolls.' 
+        })
+      }
+
+      const ctaLen = scriptCta.length
+      if (ctaLen === 0) {
+        lights.push({ 
+          type: 'red', 
+          label: 'OUTRO TRANSITION',
+          text: '⚠️ Kein Outro-Schnitt geplant. Nutze J-Cuts für einen flüssigen Übergang.' 
+        })
+      } else if (ctaLen > 120) {
+        lights.push({ 
+          type: 'red', 
+          label: 'OUTRO TRANSITION',
+          text: '⚠️ Outro-Schnitt viel zu lang. Verringert die Abschluss-Dynamik in Premiere.' 
+        })
+      } else {
+        lights.push({ 
+          type: 'green', 
+          label: 'OUTRO TRANSITION',
+          text: '✅ Outro ist kurz und prägnant für DaVinci/Premiere optimiert!' 
+        })
+      }
+
+    } else if (editor === 'ki-cutter') {
+      const wordCount = fullText.split(/\s+/).filter(Boolean).length
+      const wpm = wordCount > 0 ? Math.round(wordCount / 0.5) : 0
+      const emojiSignalWords = ['krass', 'wow', 'stopp', 'geheim', 'fehler', 'geld', 'reich', 'neu', 'wichtig', 'tipp', 'trick', 'stoppt']
+      const hasEmojiSignals = emojiSignalWords.some(w => fullText.toLowerCase().includes(w))
+
+      const hookLen = scriptHook.length
+      if (hookLen === 0) {
+        lights.push({ 
+          type: 'red', 
+          label: 'KI-VERSTÄNDLICHKEIT',
+          text: '⚠️ Hook leer. Die Transkriptions-KI findet keinen Einstiegspunkt.' 
+        })
+      } else if (wpm > 180) {
+        lights.push({ 
+          type: 'red', 
+          label: 'KI-VERSTÄNDLICHKEIT',
+          text: `⚠️ Sprechgeschwindigkeit zu hoch (${wpm} WPM). Die Auto-Untertitel überlappen.` 
+        })
+      } else if (wpm < 110 && wpm > 0) {
+        lights.push({ 
+          type: 'yellow', 
+          label: 'KI-VERSTÄNDLICHKEIT',
+          text: `⚠️ Sprechgeschwindigkeit zu niedrig (${wpm} WPM). KI-Zuschauer schalten wegen Langeweile ab.` 
+        })
+      } else {
+        lights.push({ 
+          type: 'green', 
+          label: 'KI-VERSTÄNDLICHKEIT',
+          text: '✅ Sprechtempo ideal für automatische Transkription!' 
+        })
+      }
+
+      const bodyLen = scriptBody.length
+      if (bodyLen === 0) {
+        lights.push({ 
+          type: 'red', 
+          label: 'AUTO-EMOJIS',
+          text: '⚠️ Hauptteil leer. Keine Auto-Emoji Sprechdaten vorhanden.' 
+        })
+      } else if (!hasEmojiSignals) {
+        lights.push({ 
+          type: 'yellow', 
+          label: 'AUTO-EMOJIS',
+          text: '❌ Keine Emoji-Signalwörter gefunden! Verwende Wörter wie "krass", "wow" oder "geheim" für Auto-Emojis.' 
+        })
+      } else {
+        lights.push({ 
+          type: 'green', 
+          label: 'AUTO-EMOJIS',
+          text: '✅ Sehr gut! Hohe Auto-Emoji-Dichte für Opus/Veed vorhanden.' 
+        })
+      }
+
+      const ctaLen = scriptCta.length
+      if (ctaLen === 0) {
+        lights.push({ 
+          type: 'red', 
+          label: 'AUTO-CAPTION CTA',
+          text: '⚠️ CTA fehlt. Opus kann das Outro-Segment nicht sauber als Share-CTA zuschneiden.' 
+        })
+      } else if (ctaLen > 120) {
+        lights.push({ 
+          type: 'red', 
+          label: 'AUTO-CAPTION CTA',
+          text: '⚠️ Outro-Schnitt zu lang. Untertitel blockieren das CTA-Segment.' 
+        })
+      } else {
+        lights.push({ 
+          type: 'green', 
+          label: 'AUTO-CAPTION CTA',
+          text: '✅ CTA ist kurz und perfekt für Auto-Captions optimiert!' 
+        })
+      }
+
     } else {
-      lights.push({ 
-        type: 'green', 
-        label: 'CTA & LOOP',
-        text: '✅ CTA ist kurz und direkt!' 
-      })
+      const hookLen = scriptHook.length
+      if (hookLen === 0) {
+        lights.push({ 
+          type: 'red', 
+          label: 'HOOK',
+          text: '⚠️ Hook leer! Bitte füge einen Hook-Text hinzu.' 
+        })
+      } else if (hookLen > 130) {
+        lights.push({ 
+          type: 'red', 
+          label: 'HOOK',
+          text: '⚠️ Hook viel zu lang. Zuschauer scrollen sofort ab.' 
+        })
+      } else if (hookLen >= 90) {
+        lights.push({ 
+          type: 'yellow', 
+          label: 'HOOK',
+          text: '⚠️ Hook etwas lang. Versuche, die Kernaussage schneller zu bringen.' 
+        })
+      } else {
+        lights.push({ 
+          type: 'green', 
+          label: 'HOOK',
+          text: '✅ Hook hat eine ideale, knackige Länge!' 
+        })
+      }
+
+      const bodyLen = scriptBody.length
+      if (bodyLen === 0) {
+        lights.push({ 
+          type: 'red', 
+          label: 'HAUPTTEIL',
+          text: '⚠️ Hauptteil leer. Bitte füge den Video-Inhalt ein.' 
+        })
+      } else if (bodyLen < 100 || bodyLen > 1000) {
+        lights.push({ 
+          type: 'red', 
+          label: 'HAUPTTEIL',
+          text: '⚠️ Hauptteil ungeeignet für optimale Retention (zu kurz oder zu überladen).' 
+        })
+      } else if (bodyLen >= 300 && bodyLen <= 800) {
+        lights.push({ 
+          type: 'green', 
+          label: 'HAUPTTEIL',
+          text: '✅ Hauptteil hat die optimale Pacing-Dichte!' 
+        })
+      } else {
+        lights.push({ 
+          type: 'yellow', 
+          label: 'HAUPTTEIL',
+          text: '⚠️ Hauptteil ist sehr kurz oder lang. Achte auf Pattern Interrupts.' 
+        })
+      }
+
+      const ctaLen = scriptCta.length
+      if (ctaLen === 0) {
+        lights.push({ 
+          type: 'red', 
+          label: 'CTA & LOOP',
+          text: '⚠️ Kein CTA vorhanden. Die Zuschauer wissen nicht, was sie tun sollen.' 
+        })
+      } else if (ctaLen > 120) {
+        lights.push({ 
+          type: 'red', 
+          label: 'CTA & LOOP',
+          text: '⚠️ CTA viel zu lang. Zuschauer schalten vor dem Videoende ab.' 
+        })
+      } else if (ctaLen >= 60) {
+        lights.push({ 
+          type: 'yellow', 
+          label: 'CTA & LOOP',
+          text: '⚠️ CTA etwas lang. Vermeide langes Verabschieden.' 
+        })
+      } else {
+        lights.push({ 
+          type: 'green', 
+          label: 'CTA & LOOP',
+          text: '✅ CTA ist kurz und direkt!' 
+        })
+      }
     }
 
     return lights

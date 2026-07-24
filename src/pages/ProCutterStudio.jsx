@@ -7,6 +7,25 @@ export default function ProCutterStudio() {
   const navigate = useNavigate()
   const [copied, setCopied] = useState(false)
   const [savedState, setSavedState] = useState(null)
+  const [targetPlatform, setTargetPlatform] = useState('tiktok')
+
+  const platformDetails = {
+    tiktok: {
+      description: 'Dein brandneues Video ist online! Entdecke spannende Einblicke und praktische Tipps für deinen Erfolg.',
+      hashtags: '#fyp #viral #foryoupage #contentcreator #happiness',
+      tips: 'Lade das Video zur Prime-Time (18:00 - 20:00 Uhr) hoch. Nutze einen trendigen TikTok Sound im Hintergrund (Leise auf 3%). Interagiere in den ersten 30 Minuten mit allen Kommentaren.'
+    },
+    shorts: {
+      description: 'Kurz, knackig und voller Mehrwert – so bringst du dein Leben auf das nächste Level!',
+      hashtags: '#shorts #ytshorts #viral #growth #happiness',
+      tips: 'YouTube Shorts belohnt hohe Completion Rates extrem. Halte das Video unter 30 Sekunden. Verwende ein starkes, kontrastreiches Standbild als Thumbnail im Upload-Prozess.'
+    },
+    reels: {
+      description: 'Lust auf Inspiration? Schau dir dieses Reel an und teile deine Gedanken in den Kommentaren!',
+      hashtags: '#reels #instagramreels #viralreels #creators #happiness',
+      tips: 'Teile Reels direkt auch in deinem Feed, um die Reichweite zu maximieren. Nutze relevante Nischen-Hashtags und verlinke Co-Autoren, falls vorhanden.'
+    }
+  }
   const [markerText, setMarkerText] = useState(`00:00:00:00 - HOOK START (Zoom 110%)
 00:00:02:15 - PATTERN INTERRUPT (B-Roll Insert / Scale 120%)
 00:00:05:00 - BODY START (Zoom 100% / J-Cut Audio transition)
@@ -61,7 +80,44 @@ export default function ProCutterStudio() {
         </h2>
       </div>
 
-      <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
+      {/* Target Platform Tabs */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+        <button onClick={() => setTargetPlatform('tiktok')} className={`btn ${targetPlatform === 'tiktok' ? 'btn-primary' : 'btn-outline'}`} style={{ flex: 1 }}>📱 TikTok</button>
+        <button onClick={() => setTargetPlatform('shorts')} className={`btn ${targetPlatform === 'shorts' ? 'btn-primary' : 'btn-outline'}`} style={{ flex: 1 }}>📺 YouTube Shorts</button>
+        <button onClick={() => setTargetPlatform('reels')} className={`btn ${targetPlatform === 'reels' ? 'btn-primary' : 'btn-outline'}`} style={{ flex: 1 }}>📸 Instagram Reels</button>
+      </div>
+
+      {/* Publishing Details Card */}
+      <div className="pe-card" style={{ padding: '1.5rem', borderRadius: '16px', background: 'rgba(255,255,255,0.85)', border: '1px solid var(--border)', boxShadow: '0 4px 24px rgba(0,0,0,0.05)', marginBottom: '1.5rem' }}>
+        <h4 style={{ margin: '0 0 1rem', fontSize: '1rem', color: 'var(--text)' }}>
+          📢 Veröffentlichungs-Details ({targetPlatform === 'tiktok' ? 'TikTok' : targetPlatform === 'shorts' ? 'YouTube Shorts' : 'Instagram Reels'})
+        </h4>
+        
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>Beschreibung & Caption</label>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+            <input type="text" readOnly value={platformDetails[targetPlatform].description} style={{ flex: 1, padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '0.9rem', background: '#f8fafc', outline: 'none' }} />
+            <button onClick={() => { navigator.clipboard.writeText(platformDetails[targetPlatform].description); alert('Kopiert!'); }} className="btn btn-outline" style={{ padding: '0.75rem' }}>Kopieren</button>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>Hashtags</label>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+            <input type="text" readOnly value={platformDetails[targetPlatform].hashtags} style={{ flex: 1, padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid var(--border)', fontSize: '0.9rem', background: '#f8fafc', outline: 'none' }} />
+            <button onClick={() => { navigator.clipboard.writeText(platformDetails[targetPlatform].hashtags); alert('Kopiert!'); }} className="btn btn-outline" style={{ padding: '0.75rem' }}>Kopieren</button>
+          </div>
+        </div>
+
+        <div>
+          <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>💡 Posting-Tipps für maximale Reichweite</label>
+          <p style={{ margin: '0.25rem 0 0', fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            {platformDetails[targetPlatform].tips}
+          </p>
+        </div>
+      </div>
+
+<div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
         
         {/* Intro Banner */}
         <div className="home-welcome-card" style={{ padding: '1.5rem', borderRadius: '16px', background: 'rgba(255,255,255,0.45)', border: '1px solid var(--border)', backdropFilter: 'blur(12px)' }}>
