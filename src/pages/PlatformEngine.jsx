@@ -254,6 +254,14 @@ export default function PlatformEngine() {
       })
       setTopResults(top)
 
+      const videoPlatform = newResults.tiktok || newResults.instagram || newResults.youtube || Object.values(newResults)[0]
+      const contentPayload = videoPlatform?.content
+      if (contentPayload) {
+        localStorage.setItem('hit_latest_hook', contentPayload.hook || '')
+        localStorage.setItem('hit_latest_body', contentPayload.body || '')
+        localStorage.setItem('hit_latest_cta', contentPayload.cta || '')
+      }
+
       setPhase('result')
       trackEvent('package_received', { goal: goal.trim(), platformCount: platformsToGenerate.length })
     } catch (err) {
@@ -290,6 +298,12 @@ export default function PlatformEngine() {
       const result = await runPlatformAgent(platformKey, goal, masterBrief, chatEndpoint, token, videoEditor)
       if (result) {
         setResults(prev => ({ ...prev, [platformKey]: result }))
+        const contentPayload = result?.content
+        if (contentPayload && ['tiktok', 'instagram', 'youtube'].includes(platformKey)) {
+          localStorage.setItem('hit_latest_hook', contentPayload.hook || '')
+          localStorage.setItem('hit_latest_body', contentPayload.body || '')
+          localStorage.setItem('hit_latest_cta', contentPayload.cta || '')
+        }
       }
     } catch (err) {
       console.error('Single generation failed:', err)
@@ -710,13 +724,13 @@ export default function PlatformEngine() {
               const videoPlatform = results.tiktok || results.instagram || results.youtube || Object.values(results)[0]
               const content = videoPlatform?.content
               if (content) {
-                localStorage.setItem('current_script_hook', content.hook || '')
-                localStorage.setItem('current_script_body', content.body || '')
-                localStorage.setItem('current_script_cta', content.cta || '')
+                localStorage.setItem('hit_latest_hook', content.hook || '')
+                localStorage.setItem('hit_latest_body', content.body || '')
+                localStorage.setItem('hit_latest_cta', content.cta || '')
               } else {
-                localStorage.removeItem('current_script_hook')
-                localStorage.removeItem('current_script_body')
-                localStorage.removeItem('current_script_cta')
+                localStorage.removeItem('hit_latest_hook')
+                localStorage.removeItem('hit_latest_body')
+                localStorage.removeItem('hit_latest_cta')
               }
               saveStateAndNavigate('/analytics')
             }}

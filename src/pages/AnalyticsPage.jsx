@@ -135,9 +135,9 @@ export default function AnalyticsPage() {
   // Social analytics states
   const [socialPlatform, setSocialPlatform] = useState('tiktok')
   const [selectedPreset, setSelectedPreset] = useState('viral')
-  const [scriptHook, setScriptHook] = useState(() => localStorage.getItem('current_script_hook') || '')
-  const [scriptBody, setScriptBody] = useState(() => localStorage.getItem('current_script_body') || '')
-  const [scriptCta, setScriptCta] = useState(() => localStorage.getItem('current_script_cta') || '')
+  const [hookText, setHookText] = useState(localStorage.getItem('hit_latest_hook') || '');
+  const [bodyText, setBodyText] = useState(localStorage.getItem('hit_latest_body') || '');
+  const [ctaText, setCtaText] = useState(localStorage.getItem('hit_latest_cta') || '');
   
   const [analyzedCurve, setAnalyzedCurve] = useState(null)
   const [analyzerResults, setAnalyzerResults] = useState(null)
@@ -179,14 +179,14 @@ export default function AnalyticsPage() {
   // Run local analysis when inputs change
   useEffect(() => {
     handleLocalAnalysis()
-  }, [scriptHook, scriptBody, scriptCta])
+  }, [hookText, bodyText, ctaText])
 
   // Change inputs based on selected preset
   const handlePresetSelect = (presetKey) => {
     setSelectedPreset(presetKey)
-    setScriptHook(PRESET_SCRIPTS[presetKey].hook)
-    setScriptBody(PRESET_SCRIPTS[presetKey].body)
-    setScriptCta(PRESET_SCRIPTS[presetKey].cta)
+    setHookText(PRESET_SCRIPTS[presetKey].hook)
+    setBodyText(PRESET_SCRIPTS[presetKey].body)
+    setCtaText(PRESET_SCRIPTS[presetKey].cta)
     setAiFeedback(null)
   }
 
@@ -212,7 +212,7 @@ export default function AnalyticsPage() {
   }
 
   function handleLocalAnalysis() {
-    const analysis = analyzeScriptLocally(scriptHook, scriptBody, scriptCta)
+    const analysis = analyzeScriptLocally(hookText, bodyText, ctaText)
     setAnalyzedCurve(analysis.points)
     setAnalyzerResults(analysis)
   }
@@ -335,7 +335,7 @@ export default function AnalyticsPage() {
     const lights = []
     
     // 1. Hook
-    const hookLen = scriptHook.length
+    const hookLen = hookText.length
     if (hookLen === 0) {
       lights.push({ 
         type: 'red', 
@@ -363,7 +363,7 @@ export default function AnalyticsPage() {
     }
 
     // 2. Body
-    const bodyLen = scriptBody.length
+    const bodyLen = bodyText.length
     if (bodyLen === 0) {
       lights.push({ 
         type: 'red', 
@@ -391,7 +391,7 @@ export default function AnalyticsPage() {
     }
 
     // 3. CTA
-    const ctaLen = scriptCta.length
+    const ctaLen = ctaText.length
     if (ctaLen === 0) {
       lights.push({ 
         type: 'red', 
@@ -469,7 +469,7 @@ Antworte ausschließlich im angegebenen Markdown-Format auf Deutsch. Antworte di
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          message: `Hier ist mein Skript zur Analyse:\n\nHook (0-3s):\n"${scriptHook}"\n\nHauptteil:\n"${scriptBody}"\n\nCTA & Loop:\n"${scriptCta}"`,
+          message: `Hier ist mein Skript zur Analyse:\n\nHook (0-3s):\n"${hookText}"\n\nHauptteil:\n"${bodyText}"\n\nCTA & Loop:\n"${ctaText}"`,
           systemPrompt,
           userId: userId,
           history: [],
@@ -665,13 +665,13 @@ Antworte ausschließlich im angegebenen Markdown-Format auf Deutsch. Antworte di
               <div className="input-field">
                 <div className="input-field-header">
                   <label className="input-label">Hook (0 - 3 Sekunden)</label>
-                  <span className="char-counter">{scriptHook.length}/150</span>
+                  <span className="char-counter">{hookText.length}/150</span>
                 </div>
                 <textarea
-                  value={scriptHook}
+                  value={hookText}
                   maxLength={150}
                   onChange={(e) => {
-                    setScriptHook(e.target.value)
+                    setHookText(e.target.value)
                     setSelectedPreset('')
                   }}
                   placeholder="Wie fesselst du die Aufmerksamkeit sofort? Keine Begrüßungen!"
@@ -682,13 +682,13 @@ Antworte ausschließlich im angegebenen Markdown-Format auf Deutsch. Antworte di
               <div className="input-field">
                 <div className="input-field-header">
                   <label className="input-label">Video-Hauptteil (Body)</label>
-                  <span className="char-counter">{scriptBody.length}/1000</span>
+                  <span className="char-counter">{bodyText.length}/1000</span>
                 </div>
                 <textarea
-                  value={scriptBody}
+                  value={bodyText}
                   maxLength={1000}
                   onChange={(e) => {
-                    setScriptBody(e.target.value)
+                    setBodyText(e.target.value)
                     setSelectedPreset('')
                   }}
                   placeholder="Inhalt. Formuliere kurze, dynamische Sätze für schnelles Pacing."
@@ -699,13 +699,13 @@ Antworte ausschließlich im angegebenen Markdown-Format auf Deutsch. Antworte di
               <div className="input-field">
                 <div className="input-field-header">
                   <label className="input-label">Call to Action & Loop (Ende)</label>
-                  <span className="char-counter">{scriptCta.length}/150</span>
+                  <span className="char-counter">{ctaText.length}/150</span>
                 </div>
                 <textarea
-                  value={scriptCta}
+                  value={ctaText}
                   maxLength={150}
                   onChange={(e) => {
-                    setScriptCta(e.target.value)
+                    setCtaText(e.target.value)
                     setSelectedPreset('')
                   }}
                   placeholder="Wie schließt das Video? Perfekt ist ein offener Loop zurück zum Hook."
@@ -716,7 +716,7 @@ Antworte ausschließlich im angegebenen Markdown-Format auf Deutsch. Antworte di
               <button 
                 className="ai-audit-btn" 
                 onClick={runAiAudit}
-                disabled={aiAuditing || cooldown > 0 || (!scriptHook.trim() && !scriptBody.trim())}
+                disabled={aiAuditing || cooldown > 0 || (!hookText.trim() && !bodyText.trim())}
               >
                 {aiAuditing ? (
                   <>
