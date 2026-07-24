@@ -217,133 +217,106 @@ export default function AnalyticsPage() {
     setAnalyzerResults(analysis)
   }
 
-  function analyzeScriptLocally(hook, body, cta) {
-    let score = 70
-    const tips = []
+  function calculateDynamicCurve(hookText, bodyText, ctaText) {
+    const hookLen = (hookText || '').trim().length
+    const bodyLen = (bodyText || '').trim().length
+    const ctaLen = (ctaText || '').trim().length
+
+    const points = new Array(31).fill(100)
     
-    // 1. Hook Analysis
-    const hookWords = hook.trim().split(/\s+/).filter(Boolean)
-    let hookDrop = 15
-    
-    if (hookWords.length === 0) {
-      hookDrop = 65
-      tips.push('Dein Video hat keinen Hook! Schreibe unbedingt 1-2 Sätze am Anfang, die Aufmerksamkeit fesseln.')
-      score -= 30
-    } else if (hookWords.length < 4) {
-      hookDrop = 40
-      tips.push('Dein Hook ist sehr kurz. Stelle sicher, dass er ein klares Versprechen oder Problem formuliert.')
-      score -= 10
+    let hookVal = 95
+    if (hookLen === 0 || hookLen > 130) {
+      hookVal = 25
+    } else if (hookLen > 90) {
+      hookVal = 55
+    }
+
+    let bodyVal = 88
+    if (bodyLen < 300 || bodyLen > 800) {
+      bodyVal = 20
+    } else if (bodyLen < 400 || bodyLen > 650) {
+      bodyVal = 50
+    }
+
+    let ctaVal = 82
+    if (ctaLen > 120) {
+      ctaVal = 5
+    } else if (ctaLen === 0) {
+      ctaVal = 30
     } else {
-      const powerWords = ['fehler', 'geheimnis', 'warum', 'niemals', 'stopp', 'trick', 'wie du', 'geheime', 'vorsicht', 'wahrheit', 'unglaublich', 'psychologie', 'trickse']
-      const hasPowerWord = powerWords.some(pw => hook.toLowerCase().includes(pw))
-      
-      const boringPhrases = ['hallo', 'willkommen', 'mein name', 'heute zeige ich', 'ich wollte mal', 'hey leute', 'hallo zusammen']
-      const hasBoringPhrase = boringPhrases.some(bp => hook.toLowerCase().includes(bp))
-      
-      if (hasBoringPhrase) {
-        hookDrop = 48
-        tips.push('Vermeide Begrüßungen wie "Hallo" oder "Willkommen" im Hook. Starte sofort mit der Kernaussage.')
-        score -= 20
-      } else if (hasPowerWord) {
-        hookDrop = 8
-        tips.push('Sehr gut! Dein Hook nutzt psychologische Trigger-Wörter, um Neugier zu wecken.')
-        score += 15
-      } else {
-        tips.push('Dein Hook ist okay. Versuche ihn spannender zu machen, z.B. mit "Der größte Fehler..."')
+      const ctaLower = ctaText.toLowerCase()
+      if (ctaLower.includes('loop') || ctaLower.includes('anfang') || ctaLower.includes('und das')) {
+        ctaVal = Math.min(95, bodyVal + 5)
       }
     }
-    
-    // 2. Body Analysis
-    const bodyWords = body.trim().split(/\s+/).filter(Boolean)
-    let bodySlope = 1.4
-    
-    if (bodyWords.length === 0) {
-      bodySlope = 3.0
-      tips.push('Füge den Hauptteil deines Skripts hinzu, um das Pacing zu berechnen.')
-      score -= 20
-    } else {
-      const paragraphs = body.split('\n').filter(p => p.trim().length > 0)
-      const avgParagraphLength = bodyWords.length / Math.max(1, paragraphs.length)
-      
-      if (bodyWords.length > 150) {
-        bodySlope = 2.4
-        tips.push('Dein Hauptteil ist sehr lang (>150 Wörter). Das senkt das Pacing bei Kurzvideos drastisch.')
-        score -= 15
-      } else if (avgParagraphLength > 25) {
-        bodySlope = 1.8
-        tips.push('Lange Sätze senken die Dynamik. Kürzere Sätze und gedankliche Absätze helfen beim Schnitt.')
-        score -= 5
-      } else {
-        tips.push('Gute Textlänge im Hauptteil. Eignet sich für schnelle Schnitte (alle 2-3 Sekunden).')
-        score += 10
-      }
-    }
-    
-    // 3. CTA Analysis
-    const ctaWords = cta.trim().split(/\s+/).filter(Boolean)
-    let ctaDrop = 12
-    
-    if (ctaWords.length === 0) {
-      ctaDrop = 35
-      tips.push('Ein klarer Call-to-Action fehlt. Sag Zuschauern, was sie als Nächstes tun sollen.')
-      score -= 10
-    } else {
-      const ctaLower = cta.toLowerCase()
-      const goodCtaWords = ['folge', 'abonnier', 'kommentier', 'schreib in', 'link', 'klick', 'herz', 'plus', 'teilen']
-      const hasGoodCta = goodCtaWords.some(w => ctaLower.includes(w))
-      
-      const boringCta = ['danke', 'tschüss', 'schönen tag', 'bis zum nächsten mal']
-      const hasBoringCta = boringCta.some(w => ctaLower.includes(w))
-      
-      if (hasBoringCta) {
-        ctaDrop = 40
-        tips.push('Beende dein Video nicht mit "Danke" oder "Tschüss". Das signalisiert Zuschauern, wegzuschalten.')
-        score -= 20
-      } else if (hasGoodCta) {
-        ctaDrop = 6
-        tips.push('Starker CTA! Du forderst den Zuschauer aktiv und direkt zu einer Interaktion auf.')
-        score += 10
-      }
-    }
-    
-    // Points estimation
-    const points = []
-    let current = 100
-    
+
     for (let i = 0; i <= 30; i++) {
       if (i === 0) {
-        points.push(100)
+        points[i] = 100
       } else if (i <= 3) {
-        const fraction = i / 3
-        current = 100 - (hookDrop * fraction)
-        points.push(Math.round(current))
-      } else if (i < 27) {
-        const decay = bodySlope * (1 - (i / 100))
-        current = current - decay
-        points.push(Math.max(5, Math.round(current)))
+        const pct = i / 3
+        points[i] = Math.round(100 - (100 - hookVal) * pct)
+      } else if (i <= 15) {
+        const pct = (i - 3) / 12
+        points[i] = Math.round(hookVal - (hookVal - bodyVal) * pct)
+      } else if (i <= 27) {
+        const pct = (i - 15) / 12
+        points[i] = Math.round(bodyVal - (bodyVal - ctaVal) * pct)
       } else {
-        const remainingSeconds = 30 - i
-        const fraction = (3 - remainingSeconds) / 3
-        let endVal = current - (ctaDrop * fraction)
-        
-        // Loop indicators check
-        if (cta.toLowerCase().includes('loop') || cta.toLowerCase().includes('anfang') || cta.toLowerCase().includes('und das') || cta.toLowerCase().includes('wie du')) {
-          endVal = current + (10 * fraction)
-        }
-        
-        current = endVal
-        points.push(Math.max(1, Math.round(current)))
+        const pct = (i - 27) / 3
+        points[i] = Math.round(ctaVal)
       }
+      points[i] = Math.max(1, Math.min(100, points[i]))
     }
+
+    return points
+  }
+
+  function analyzeScriptLocally(hook, body, cta) {
+    const points = calculateDynamicCurve(hook, body, cta)
     
-    score = Math.max(5, Math.min(99, Math.round(score)))
+    const average = points.reduce((sum, p) => sum + p, 0) / points.length
+    const score = Math.max(5, Math.min(100, Math.round(average * 1.08)))
+    
+    const tips = []
+    const hookLen = (hook || '').trim().length
+    const bodyLen = (body || '').trim().length
+    const ctaLen = (cta || '').trim().length
+
+    if (hookLen === 0) {
+      tips.push('⚠️ Hook ist leer. Füge einen fesselnden Einstieg von 1-3 Sekunden hinzu.')
+    } else if (hookLen > 130) {
+      tips.push('⚠️ Hook ist zu lang (> 130 Zeichen). Zuschauer scrollen sofort ab.')
+    } else if (hookLen > 90) {
+      tips.push('⚠️ Hook ist etwas lang. Versuche, die Kernaussage schneller auf den Punkt zu bringen.')
+    } else {
+      tips.push('✅ Hook-Länge ist optimal für Kurzvideos!')
+    }
+
+    if (bodyLen === 0) {
+      tips.push('⚠️ Hauptteil ist leer. Beschreibe das Kern-Thema deines Videos.')
+    } else if (bodyLen < 300) {
+      tips.push('⚠️ Hauptteil ist sehr kurz (< 300 Zeichen). Das Video bietet eventuell zu wenig Mehrwert.')
+    } else if (bodyLen > 800) {
+      tips.push('⚠️ Hauptteil ist sehr lang (> 800 Zeichen). Das senkt die Dynamik und erhöht die Absprungrate.')
+    } else {
+      tips.push('✅ Hauptteil-Länge ist im perfekten Bereich für hohe Informationsdichte!')
+    }
+
+    if (ctaLen === 0) {
+      tips.push('⚠️ Ein klarer Call-to-Action fehlt. Sag Zuschauern, was sie tun sollen.')
+    } else if (ctaLen > 120) {
+      tips.push('⚠️ CTA/Loop ist zu lang (> 120 Zeichen). Zuschauer schalten vor dem Ende ab.')
+    } else {
+      tips.push('✅ CTA ist kurz und direkt!')
+    }
+
     const hookPct = points[3] + '%'
     const completionPct = points[30] + '%'
     
-    let pacingRating = 'Mittel'
-    if (bodySlope < 1.1) pacingRating = 'Sehr hoch'
-    else if (bodySlope < 1.5) pacingRating = 'Gut'
-    else if (bodySlope > 2.0) pacingRating = 'Schwach'
+    let pacingRating = 'Gut'
+    if (bodyLen > 800 || bodyLen < 300) pacingRating = 'Schwach'
+    else if (bodyLen > 650 || bodyLen < 400) pacingRating = 'Mittel'
     
     return {
       points,
@@ -806,10 +779,10 @@ Antworte ausschließlich im angegebenen Markdown-Format auf Deutsch. Antworte di
                       <line x1="270" y1="0" x2="270" y2="100" stroke="#f1f5f9" strokeDasharray="2" />
 
                       {/* Area Under Curve */}
-                      <path d={getAreaPathData(analyzedCurve)} fill="url(#retention-gradient)" />
+                      <path d={`M 0 0 C 15 0 15 ${(100 - (analyzedCurve[3] || 50)).toFixed(1)} 30 ${(100 - (analyzedCurve[3] || 50)).toFixed(1)} S 135 ${(100 - (analyzedCurve[15] || 50)).toFixed(1)} 150 ${(100 - (analyzedCurve[15] || 50)).toFixed(1)} S 285 ${(100 - (analyzedCurve[30] || 50)).toFixed(1)} 300 ${(100 - (analyzedCurve[30] || 50)).toFixed(1)} L 300 100 L 0 100 Z`} fill="url(#retention-gradient)" />
                       
                       {/* Curve Path */}
-                      <path d={getPathData(analyzedCurve)} fill="none" stroke="#1d9e75" strokeWidth="2.5" />
+                      <path d={`M 0 0 C 15 0 15 ${(100 - (analyzedCurve[3] || 50)).toFixed(1)} 30 ${(100 - (analyzedCurve[3] || 50)).toFixed(1)} S 135 ${(100 - (analyzedCurve[15] || 50)).toFixed(1)} 150 ${(100 - (analyzedCurve[15] || 50)).toFixed(1)} S 285 ${(100 - (analyzedCurve[30] || 50)).toFixed(1)} 300 ${(100 - (analyzedCurve[30] || 50)).toFixed(1)}`} fill="none" stroke="#1d9e75" strokeWidth="2.5" />
                       
                       {/* Key Points Markers */}
                       <g className="svg-hotspot" onClick={() => setActiveHotspot(3)}>
