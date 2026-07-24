@@ -243,7 +243,7 @@ export const handler = async (event) => {
     }
 
     const body = JSON.parse(event.body)
-    const { message, systemPrompt: originalPrompt, history, imageBase64, testVision, language, badge, mode } = body
+    const { message, systemPrompt: originalPrompt, history, imageBase64, testVision, language, badge, mode, videoEditor } = body
 
     const LANG_NAMES = { de: 'German', en: 'English', es: 'Spanish', fr: 'French', it: 'Italian', nl: 'Dutch', el: 'Greek' }
 
@@ -356,16 +356,27 @@ ${message}`
       ? `KONTEXT-BADGE: ${badge}\nEMOTIONALE ANPASSUNG: ${BADGE_DIRECTIVES[badge]}\n\n`
       : ''
 
+    // Video editor prompt injection
+    let editorDirective = ''
+    if (videoEditor === 'premiere') {
+      editorDirective = `BEDIENER-RICHTLINIE (Schnittprogramm: Adobe Premiere / DaVinci): Verwende in deinen Regieanweisungen professionelle Cutter-Begriffe (z. B. J-Cuts, L-Cuts, Keyframes, Skalierungs-Wechsel, Reframe, Zoom-Schnitt). Verwende keine mobilen Vorlagennamen.\n\n`
+    } else if (videoEditor === 'ki-cutter') {
+      editorDirective = `BEDIENER-RICHTLINIE (Schnittprogramm: KI-Video-Cutter wie Opus/Veed): Konzentriere dich in deinen Regieanweisungen auf Auto-Framing-Tipps (Hochkant-Ausschnittverlauf) und automatische Untertitel-Muster (Overlay-Timing, Wort-für-Wort-Farbhervorhebung). Halte die Schnitte einfach, da diese KI-gesteuert erfolgen.\n\n`
+    } else {
+      // Default: 'capcut'
+      editorDirective = `BEDIENER-RICHTLINIE (Schnittprogramm: CapCut / Mobile): Nutze in deinen Regieanweisungen und Empfehlungen bekannte CapCut-Trendvorlagen, mobile Übergänge (z. B. Shake, Flash) und mobile Schnellanweisungen für schnelle Edits am Handy.\n\n`
+    }
+
     let systemPrompt
     const userPrompt = originalPrompt || BASELINE_PROMPT
     if (knowledgeContext) {
-      // Language > Frontend prompt > Knowledge context (supplementary, not overriding)
-      systemPrompt = languageDirective + badgeDirective + userPrompt + '\n\n---Zusätzlicher Kontext (nur wenn relevant)---\n' + knowledgeContext
-      console.log('[RAG] Knowledge INJECTED, length:', knowledgeContext.length, 'badge:', badge || 'none', 'language:', language || 'auto')
+      // Language > Editor > Context Badge > Frontend prompt > Knowledge context
+      systemPrompt = languageDirective + editorDirective + badgeDirective + userPrompt + '\n\n---Zusätzlicher Kontext (nur wenn relevant)---\n' + knowledgeContext
+      console.log('[RAG] Knowledge INJECTED, length:', knowledgeContext.length, 'badge:', badge || 'none', 'language:', language || 'auto', 'editor:', videoEditor || 'default')
     } else {
-      // Language > Frontend prompt
-      systemPrompt = languageDirective + badgeDirective + userPrompt
-      console.log('[RAG] No knowledge loaded, badge:', badge || 'none', 'language:', language || 'auto')
+      // Language > Editor > Context Badge > Frontend prompt
+      systemPrompt = languageDirective + editorDirective + badgeDirective + userPrompt
+      console.log('[RAG] No knowledge loaded, badge:', badge || 'none', 'language:', language || 'auto', 'editor:', videoEditor || 'default')
     }
 
     // Debug: Zeige was ankommt

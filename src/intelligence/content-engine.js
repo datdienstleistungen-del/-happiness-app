@@ -226,7 +226,7 @@ export function getAllPlatforms() {
 /**
  * Führt einen einzelnen Plattform-Agent aus
  */
-export async function runPlatformAgent(platformKey, goal, masterBrief, chatEndpoint, token) {
+export async function runPlatformAgent(platformKey, goal, masterBrief, chatEndpoint, token, videoEditor = 'capcut') {
   const agent = PLATFORM_AGENTS[platformKey]
   if (!agent) return null
 
@@ -243,6 +243,7 @@ export async function runPlatformAgent(platformKey, goal, masterBrief, chatEndpo
         message: `Erstelle Content für ${agent.name}.`,
         systemPrompt,
         history: [],
+        videoEditor
       }),
     })
 

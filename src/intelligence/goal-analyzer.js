@@ -46,7 +46,7 @@ JSON-Schema:
  * @param {string} token - Auth-Token (optional)
  * @returns {Promise<object>} Analyse-Ergebnis
  */
-export async function analyzeGoal(goal, chatEndpoint, token = '') {
+export async function analyzeGoal(goal, chatEndpoint, token = '', videoEditor = 'capcut') {
   try {
     const headers = { 'Content-Type': 'application/json' }
     if (token) headers['Authorization'] = `Bearer ${token}`
@@ -57,7 +57,8 @@ export async function analyzeGoal(goal, chatEndpoint, token = '') {
       body: JSON.stringify({
         message: `Ziel des Nutzers: "${goal}"\n\nErstelle eine vollständige Content-Strategie.`,
         systemPrompt: ANALYSIS_PROMPT,
-        history: []
+        history: [],
+        videoEditor
       })
     })
 

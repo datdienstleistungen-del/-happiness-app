@@ -487,6 +487,7 @@ Antworte ausschließlich im angegebenen Markdown-Format auf Deutsch. Antworte di
       
       const userRes = await supabase.auth.getUser()
       const userId = userRes.data.user?.id
+      const videoEditor = localStorage.getItem('hit_video_editor') || 'capcut'
       
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -498,7 +499,8 @@ Antworte ausschließlich im angegebenen Markdown-Format auf Deutsch. Antworte di
           message: `Hier ist mein Skript zur Analyse:\n\nHook (0-3s):\n"${scriptHook}"\n\nHauptteil:\n"${scriptBody}"\n\nCTA & Loop:\n"${scriptCta}"`,
           systemPrompt,
           userId: userId,
-          history: []
+          history: [],
+          videoEditor
         })
       })
 

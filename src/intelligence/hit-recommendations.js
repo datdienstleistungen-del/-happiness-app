@@ -42,7 +42,7 @@ JSON-Schema:
  * @param {string} token - Auth-Token (optional)
  * @returns {Promise<object[]>} Empfehlungen
  */
-export async function generateRecommendations(goal, analysis, chatEndpoint, token = '') {
+export async function generateRecommendations(goal, analysis, chatEndpoint, token = '', videoEditor = 'capcut') {
   const headers = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = `Bearer ${token}`
 
@@ -60,7 +60,8 @@ Content-Score: ${analysis.contentScore}%`
       body: JSON.stringify({
         message: `Erstelle Empfehlungen für:\n\n${context}`,
         systemPrompt: RECOMMENDATION_PROMPT,
-        history: []
+        history: [],
+        videoEditor
       })
     })
 

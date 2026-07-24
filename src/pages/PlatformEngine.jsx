@@ -137,6 +137,15 @@ export default function PlatformEngine() {
   const [showInfo, setShowInfo] = useState(false)
   const [tickerIndex, setTickerIndex] = useState(0)
   const [duelIndex, setDuelIndex] = useState(0)
+  const [videoEditor, setVideoEditor] = useState(() => {
+    return localStorage.getItem('hit_video_editor') || 'capcut'
+  })
+
+  const handleVideoEditorChange = (e) => {
+    const val = e.target.value
+    setVideoEditor(val)
+    localStorage.setItem('hit_video_editor', val)
+  }
 
   // Restore state from localStorage on mount (after navigating back from CapCut/Analytics)
   useEffect(() => {
@@ -203,13 +212,13 @@ export default function PlatformEngine() {
         token = session?.access_token || ''
       } catch {}
 
-      const analysisResult = await analyzeGoal(goal.trim(), chatEndpoint, token)
+      const analysisResult = await analyzeGoal(goal.trim(), chatEndpoint, token, videoEditor)
       setAnalysis(analysisResult)
 
-      const recs = await generateRecommendations(goal.trim(), analysisResult, chatEndpoint, token)
+      const recs = await generateRecommendations(goal.trim(), analysisResult, chatEndpoint, token, videoEditor)
       setRecommendations(recs)
 
-      trackEvent('analysis_completed', { goal: goal.trim(), contentScore: analysisResult.contentScore })
+      trackEvent('analysis_completed', { goal: goal.trim(), contentScore: analysisResult.contentScore, videoEditor })
 
       setPhase('questions')
     } catch (err) {
@@ -236,7 +245,7 @@ export default function PlatformEngine() {
       const newResults = { ...results }
 
       const promises = platformsToGenerate.map(async (platformKey) => {
-        const result = await runPlatformAgent(platformKey, goal, masterBrief, chatEndpoint, token)
+        const result = await runPlatformAgent(platformKey, goal, masterBrief, chatEndpoint, token, videoEditor)
         if (result) {
           newResults[platformKey] = result
           setResults({ ...newResults })
@@ -286,7 +295,7 @@ export default function PlatformEngine() {
         token = session?.access_token || ''
       } catch {}
       const masterBrief = buildMasterBriefFromAnalysis(analysis)
-      const result = await runPlatformAgent(platformKey, goal, masterBrief, chatEndpoint, token)
+      const result = await runPlatformAgent(platformKey, goal, masterBrief, chatEndpoint, token, videoEditor)
       if (result) {
         setResults(prev => ({ ...prev, [platformKey]: result }))
       }
@@ -367,6 +376,16 @@ export default function PlatformEngine() {
               </div>
 
               <div className="pe-input-wrap">
+                <select
+                  className="pe-editor-select"
+                  value={videoEditor}
+                  onChange={handleVideoEditorChange}
+                  aria-label="Schnittprogramm wählen"
+                >
+                  <option value="capcut">🎬 CapCut / Mobile (Standard)</option>
+                  <option value="premiere">💻 Adobe Premiere / DaVinci</option>
+                  <option value="ki-cutter">🤖 KI-Video-Cutter (Opus/Veed)</option>
+                </select>
                 <input
                   className="pe-input"
                   type="text"
