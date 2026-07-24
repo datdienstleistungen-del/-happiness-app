@@ -731,6 +731,17 @@ export default function PlatformEngine() {
             }}
             onTrackAnalytics={() => {
               trackLandingFunnel('post_result_action', { action: 'tracking' })
+              const videoPlatform = results.tiktok || results.instagram || results.youtube || Object.values(results)[0]
+              const content = videoPlatform?.content
+              if (content) {
+                localStorage.setItem('current_script_hook', content.hook || '')
+                localStorage.setItem('current_script_body', content.body || '')
+                localStorage.setItem('current_script_cta', content.cta || '')
+              } else {
+                localStorage.removeItem('current_script_hook')
+                localStorage.removeItem('current_script_body')
+                localStorage.removeItem('current_script_cta')
+              }
               saveStateAndNavigate('/analytics')
             }}
             onReset={() => {

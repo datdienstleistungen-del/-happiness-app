@@ -135,9 +135,9 @@ export default function AnalyticsPage() {
   // Social analytics states
   const [socialPlatform, setSocialPlatform] = useState('tiktok')
   const [selectedPreset, setSelectedPreset] = useState('viral')
-  const [scriptHook, setScriptHook] = useState(PRESET_SCRIPTS.viral.hook)
-  const [scriptBody, setScriptBody] = useState(PRESET_SCRIPTS.viral.body)
-  const [scriptCta, setScriptCta] = useState(PRESET_SCRIPTS.viral.cta)
+  const [scriptHook, setScriptHook] = useState(() => localStorage.getItem('current_script_hook') || '')
+  const [scriptBody, setScriptBody] = useState(() => localStorage.getItem('current_script_body') || '')
+  const [scriptCta, setScriptCta] = useState(() => localStorage.getItem('current_script_cta') || '')
   
   const [analyzedCurve, setAnalyzedCurve] = useState(null)
   const [analyzerResults, setAnalyzerResults] = useState(null)
@@ -757,62 +757,75 @@ Antworte ausschließlich im angegebenen Markdown-Format auf Deutsch. Antworte di
               )}
 
               {/* SVG Retention Graph */}
-              {analyzedCurve && (
-                <div className="svg-chart-container">
-                  <div className="chart-y-axis">
-                    <span>100%</span>
-                    <span>50%</span>
-                    <span>0%</span>
-                  </div>
-                  <div className="chart-viewport">
-                    <svg viewBox="0 0 300 100" preserveAspectRatio="none">
-                      <defs>
-                        <linearGradient id="retention-gradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#1d9e75" stopOpacity="0.3" />
-                          <stop offset="100%" stopColor="#1d9e75" stopOpacity="0.0" />
-                        </linearGradient>
-                      </defs>
-                      
-                      {/* Grid Lines */}
-                      <line x1="0" y1="50" x2="300" y2="50" stroke="#f1f5f9" strokeDasharray="3" />
-                      <line x1="30" y1="0" x2="30" y2="100" stroke="#f1f5f9" strokeDasharray="2" />
-                      <line x1="270" y1="0" x2="270" y2="100" stroke="#f1f5f9" strokeDasharray="2" />
+              {analyzedCurve && (() => {
+                const hookVal = analyzedCurve[3] || 50
+                const bodyVal = analyzedCurve[15] || 50
+                const ctaVal = analyzedCurve[30] || 50
 
-                      {/* Area Under Curve */}
-                      <path d={`M 0 0 C 15 0 15 ${(100 - (analyzedCurve[3] || 50)).toFixed(1)} 30 ${(100 - (analyzedCurve[3] || 50)).toFixed(1)} S 135 ${(100 - (analyzedCurve[15] || 50)).toFixed(1)} 150 ${(100 - (analyzedCurve[15] || 50)).toFixed(1)} S 285 ${(100 - (analyzedCurve[30] || 50)).toFixed(1)} 300 ${(100 - (analyzedCurve[30] || 50)).toFixed(1)} L 300 100 L 0 100 Z`} fill="url(#retention-gradient)" />
+                const hookY = (150 - (hookVal * 1.5)).toFixed(1)
+                const bodyY = (150 - (bodyVal * 1.5)).toFixed(1)
+                const ctaY = (150 - (ctaVal * 1.5)).toFixed(1)
+
+                const pathD = `M 0 0 C 15 0 15 ${hookY} 30 ${hookY} S 135 ${bodyY} 150 ${bodyY} S 285 ${ctaY} 300 ${ctaY}`
+                const areaD = `${pathD} L 300 150 L 0 150 Z`
+
+                return (
+                  <div className="svg-chart-container">
+                    <div className="chart-y-axis">
+                      <span>100%</span>
+                      <span>50%</span>
+                      <span>0%</span>
+                    </div>
+                    <div className="chart-viewport">
+                      <svg viewBox="0 0 300 150" preserveAspectRatio="none">
+                        <defs>
+                          <linearGradient id="retention-gradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#1d9e75" stopOpacity="0.3" />
+                            <stop offset="100%" stopColor="#1d9e75" stopOpacity="0.0" />
+                          </linearGradient>
+                        </defs>
+                        
+                        {/* Grid Lines */}
+                        <line x1="0" y1="75" x2="300" y2="75" stroke="#f1f5f9" strokeDasharray="3" />
+                        <line x1="30" y1="0" x2="30" y2="150" stroke="#f1f5f9" strokeDasharray="2" />
+                        <line x1="270" y1="0" x2="270" y2="150" stroke="#f1f5f9" strokeDasharray="2" />
+
+                        {/* Area Under Curve */}
+                        <path d={areaD} fill="url(#retention-gradient)" />
+                        
+                        {/* Curve Path */}
+                        <path d={pathD} fill="none" stroke="#1d9e75" strokeWidth="2.5" />
+                        
+                        {/* Key Points Markers */}
+                        <g className="svg-hotspot" onClick={() => setActiveHotspot(3)}>
+                          <circle cx="30" cy={hookY} r="7" className={`hotspot-outer ${activeHotspot === 3 ? 'active' : ''}`} />
+                          <circle cx="30" cy={hookY} r="3.5" className="hotspot-inner" fill="#166534" />
+                        </g>
+                        <g className="svg-hotspot" onClick={() => setActiveHotspot(15)}>
+                          <circle cx="150" cy={bodyY} r="7" className={`hotspot-outer ${activeHotspot === 15 ? 'active' : ''}`} />
+                          <circle cx="150" cy={bodyY} r="3.5" className="hotspot-inner" fill="#166534" />
+                        </g>
+                        <g className="svg-hotspot" onClick={() => setActiveHotspot(30)}>
+                          <circle cx="300" cy={ctaY} r="7" className={`hotspot-outer ${activeHotspot === 30 ? 'active' : ''}`} />
+                          <circle cx="300" cy={ctaY} r="3.5" className="hotspot-inner" fill="#166534" />
+                        </g>
+                      </svg>
                       
-                      {/* Curve Path */}
-                      <path d={`M 0 0 C 15 0 15 ${(100 - (analyzedCurve[3] || 50)).toFixed(1)} 30 ${(100 - (analyzedCurve[3] || 50)).toFixed(1)} S 135 ${(100 - (analyzedCurve[15] || 50)).toFixed(1)} 150 ${(100 - (analyzedCurve[15] || 50)).toFixed(1)} S 285 ${(100 - (analyzedCurve[30] || 50)).toFixed(1)} 300 ${(100 - (analyzedCurve[30] || 50)).toFixed(1)}`} fill="none" stroke="#1d9e75" strokeWidth="2.5" />
-                      
-                      {/* Key Points Markers */}
-                      <g className="svg-hotspot" onClick={() => setActiveHotspot(3)}>
-                        <circle cx="30" cy={Math.max(4, Math.min(96, 100 - (analyzedCurve[3] || 50)))} r="7" className={`hotspot-outer ${activeHotspot === 3 ? 'active' : ''}`} />
-                        <circle cx="30" cy={Math.max(4, Math.min(96, 100 - (analyzedCurve[3] || 50)))} r="3.5" className="hotspot-inner" fill="#166534" />
-                      </g>
-                      <g className="svg-hotspot" onClick={() => setActiveHotspot(15)}>
-                        <circle cx="150" cy={Math.max(4, Math.min(96, 100 - (analyzedCurve[15] || 50)))} r="7" className={`hotspot-outer ${activeHotspot === 15 ? 'active' : ''}`} />
-                        <circle cx="150" cy={Math.max(4, Math.min(96, 100 - (analyzedCurve[15] || 50)))} r="3.5" className="hotspot-inner" fill="#166534" />
-                      </g>
-                      <g className="svg-hotspot" onClick={() => setActiveHotspot(30)}>
-                        <circle cx="300" cy={Math.max(4, Math.min(96, 100 - (analyzedCurve[30] || 50)))} r="7" className={`hotspot-outer ${activeHotspot === 30 ? 'active' : ''}`} />
-                        <circle cx="300" cy={Math.max(4, Math.min(96, 100 - (analyzedCurve[30] || 50)))} r="3.5" className="hotspot-inner" fill="#166534" />
-                      </g>
-                    </svg>
-                    
-                    <div className="chart-markers">
-                      <span className="marker-tag hook-tag" style={{ top: `${Math.max(5, Math.min(90, 100 - (analyzedCurve[3] || 50)))}%` }}>Hook</span>
-                      <span className="marker-tag cta-tag" style={{ top: `${Math.max(5, Math.min(90, 100 - (analyzedCurve[27] || 50)))}%` }}>CTA</span>
+                      <div className="chart-markers">
+                        <span className="marker-tag hook-tag" style={{ top: `${(hookY / 150 * 100).toFixed(1)}%` }}>Hook</span>
+                        <span className="marker-tag cta-tag" style={{ top: `${(ctaY / 150 * 100).toFixed(1)}%` }}>CTA</span>
+                      </div>
+                    </div>
+                    <div className="chart-x-axis">
+                      <span>0s</span>
+                      <span>3s (Hook)</span>
+                      <span>15s</span>
+                      <span>27s (CTA)</span>
+                      <span>30s</span>
                     </div>
                   </div>
-                  <div className="chart-x-axis">
-                    <span>0s</span>
-                    <span>3s (Hook)</span>
-                    <span>15s</span>
-                    <span>27s (CTA)</span>
-                    <span>30s</span>
-                  </div>
-                </div>
-              )}
+                )
+              })()}
 
               {/* Interactive Hotspot Popup Explanation */}
               {activeHotspot && (
