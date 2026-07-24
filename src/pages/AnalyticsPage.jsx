@@ -473,7 +473,7 @@ Antworte ausschließlich im angegebenen Markdown-Format auf Deutsch. Antworte di
       const userRes = await supabase.auth.getUser()
       const userId = userRes.data.user?.id
       
-      const res = await fetch(getChatEndpoint(), {
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
