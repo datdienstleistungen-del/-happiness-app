@@ -10,6 +10,7 @@ import { generateRecommendations } from '../intelligence/hit-recommendations'
 import { buildMasterBriefFromAnalysis, runPlatformAgent, getAllPlatforms, getAgentIcon, getAgentName } from '../intelligence/content-engine'
 import { trackEvent, trackLandingFunnel } from '../intelligence/analytics/custom'
 import NextActionHub from '../components/NextActionHub'
+import { VerticalLogo } from '../components/Logo'
 import './PlatformEngine.css'
 
 const GOAL_CHIPS = {
@@ -265,7 +266,7 @@ export default function PlatformEngine() {
         <div className="pe-input-phase">
           <div className="pe-hero">
             <div className="pe-title-row">
-              <h1 className="pe-title">H.I.T.</h1>
+              <VerticalLogo size="small" />
               <button className="pe-info-btn" onClick={() => setShowInfo(true)} aria-label="Info">
                 <Info size={18} />
               </button>

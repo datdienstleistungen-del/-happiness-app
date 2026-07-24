@@ -1,0 +1,85 @@
+/* ==========================================================================
+   Vertical H.I.T. Logo Styles
+   ========================================================================== */
+
+.hit-logo-vertical {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  font-family: system-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  user-select: none;
+}
+
+.hit-logo-vertical .logo-row {
+  display: flex;
+  align-items: baseline;
+  line-height: 1.05;
+}
+
+/* Large variant (Landingpage Hero) */
+.hit-logo-vertical.large .logo-row {
+  margin-bottom: 2px;
+}
+
+.hit-logo-vertical.large .letter-cap {
+  font-size: 3.5rem;
+  font-weight: 800;
+  display: inline-block;
+  min-width: 2.5rem;
+  text-align: center;
+}
+
+.hit-logo-vertical.large .letter-small {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-left: 2px;
+  letter-spacing: -0.5px;
+}
+
+/* Small variant (App Workspace Header) */
+.hit-logo-vertical.small .logo-row {
+  margin-bottom: 0px;
+}
+
+.hit-logo-vertical.small .letter-cap {
+  font-size: 1.7rem;
+  font-weight: 800;
+  display: inline-block;
+  min-width: 1.25rem;
+  text-align: center;
+}
+
+.hit-logo-vertical.small .letter-small {
+  font-size: 0.98rem;
+  font-weight: 600;
+  margin-left: 1px;
+  letter-spacing: -0.2px;
+}
+
+/* Colors of Happiness */
+.hit-logo-vertical .cap-h {
+  color: var(--color-petrol, #085041);
+}
+
+.hit-logo-vertical .cap-i {
+  color: var(--color-koralle, #d85a30);
+}
+
+.hit-logo-vertical .cap-t {
+  color: var(--color-mint, #1d9e75);
+}
+
+.hit-logo-vertical .letter-small {
+  color: var(--text, #0f172a);
+}
+
+/* Responsive adjustments for mobile viewport */
+@media (max-width: 600px) {
+  .hit-logo-vertical.large .letter-cap {
+    font-size: 2.8rem;
+    min-width: 2rem;
+  }
+  .hit-logo-vertical.large .letter-small {
+    font-size: 1.4rem;
+  }
+}

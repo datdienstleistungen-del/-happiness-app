@@ -1,3 +1,5 @@
+import './Logo.css'
+
 const COLORS = [
   'var(--color-petrol)',
   'var(--color-koralle)',
@@ -46,5 +48,24 @@ export default function Logo() {
         <span key={i} style={{ color: l.color }}>{l.char}</span>
       ))}
     </span>
+  );
+}
+
+export function VerticalLogo({ size = 'large' }) {
+  return (
+    <div className={`hit-logo-vertical ${size}`}>
+      <div className="logo-row">
+        <span className="letter-cap cap-h">H</span>
+        <span className="letter-small">appiness</span>
+      </div>
+      <div className="logo-row">
+        <span className="letter-cap cap-i">I</span>
+        <span className="letter-small">ntelligence</span>
+      </div>
+      <div className="logo-row">
+        <span className="letter-cap cap-t">T</span>
+        <span className="letter-small">eam</span>
+      </div>
+    </div>
   );
 }

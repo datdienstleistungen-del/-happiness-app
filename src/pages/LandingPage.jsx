@@ -6,7 +6,7 @@ import { trackLandingFunnel } from '../intelligence/analytics/custom'
 import { useLanguage } from '../i18n/translations.jsx'
 import InstallButton from '../components/InstallButton'
 import VideoShowcase from '../components/VideoShowcase'
-import Logo from '../components/Logo'
+import { VerticalLogo } from '../components/Logo'
 import './LandingPage.css'
 
 const GOAL_CHIPS = [
@@ -128,7 +128,7 @@ export default function LandingPage() {
     <div className="container">
       {/* Hero */}
       <div className="hero landing-hero" ref={heroRef}>
-        <h1><Logo /></h1>
+        <h1><VerticalLogo size="large" /></h1>
         <p className="landing-tagline">{t('landing.tagline')}</p>
 
         <p className="landing-question">{t('landing.question')}</p>
