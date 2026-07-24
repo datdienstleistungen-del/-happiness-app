@@ -1037,3 +1037,320 @@
   margin: 0;
   line-height: 1.5;
 }
+
+/* ==========================================================================
+   Ticker and Duel Grid Layout for PlatformEngine
+   ========================================================================== */
+
+.pe-main-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 2rem;
+  align-items: stretch;
+  margin-bottom: 2rem;
+}
+
+/* Ticker Widget Styling */
+.pe-ticker-widget {
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  padding: 1.5rem;
+  height: 100%;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  text-align: left;
+}
+
+.dark .pe-ticker-widget {
+  background: rgba(15, 23, 42, 0.45);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.pe-ticker-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex-grow: 1;
+}
+
+.pe-ticker-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.pe-ticker-icon {
+  font-size: 1.75rem;
+}
+
+.pe-ticker-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--color-petrol, #1b6e6e);
+  background: rgba(27, 110, 110, 0.08);
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+}
+
+.pe-ticker-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pe-ticker-question {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text, #0f172a);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.pe-ticker-solution {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-muted, #65676b);
+  margin: 0;
+}
+
+.pe-ticker-dots {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 1rem;
+}
+
+.pe-ticker-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pe-ticker-dot.active {
+  background: var(--color-petrol, #1b6e6e);
+  transform: scale(1.3);
+}
+
+/* Fade animation for ticker text */
+.pe-ticker-fade {
+  animation: tickerFade 0.35s ease-in-out;
+}
+
+@keyframes tickerFade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Duel Widget Styling */
+.pe-duel-widget {
+  margin-top: 2rem;
+  border-top: 1px solid var(--border, #ced0d4);
+  padding-top: 2rem;
+  width: 100%;
+  text-align: left;
+}
+
+.pe-duel-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.pe-duel-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text, #0f172a);
+}
+
+.pe-duel-tabs {
+  display: flex;
+  gap: 0.25rem;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.25rem;
+  border-radius: 8px;
+}
+
+.pe-duel-tab {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted, #65676b);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pe-duel-tab.active {
+  background: #fff;
+  color: var(--text, #0f172a);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.pe-duel-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.pe-duel-card {
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-height: 140px;
+  transition: all 0.3s ease;
+}
+
+.pe-duel-card-title {
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.pe-duel-card-text {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  font-style: italic;
+  margin: 0;
+}
+
+/* Card Themes */
+.pe-duel-card.bad {
+  background: rgba(220, 38, 38, 0.04);
+  border: 1px solid rgba(220, 38, 38, 0.15);
+  color: #7f1d1d;
+}
+.pe-duel-card.bad .pe-duel-card-title {
+  color: #dc2626;
+}
+
+.pe-duel-card.good {
+  background: rgba(217, 119, 6, 0.04);
+  border: 1px solid rgba(217, 119, 6, 0.15);
+  color: #78350f;
+}
+.pe-duel-card.good .pe-duel-card-title {
+  color: #d97706;
+}
+
+.pe-duel-card.hit {
+  background: rgba(29, 158, 117, 0.05);
+  border: 1px solid rgba(29, 158, 117, 0.25);
+  box-shadow: 0 4px 16px rgba(29, 158, 117, 0.05);
+  color: #064e3b;
+}
+.pe-duel-card.hit .pe-duel-card-title {
+  color: #1d9e75;
+}
+
+.dark .pe-duel-card.bad {
+  background: rgba(220, 38, 38, 0.1);
+  color: #fca5a5;
+}
+.dark .pe-duel-card.good {
+  background: rgba(217, 119, 6, 0.1);
+  color: #fcd34d;
+}
+.dark .pe-duel-card.hit {
+  background: rgba(29, 158, 117, 0.12);
+  color: #a7f3d0;
+}
+
+/* Highlight Colors matching corporate design */
+.highlight-coral {
+  color: var(--color-koralle, #d85a30);
+  font-weight: 600;
+}
+
+.highlight-mint {
+  color: var(--color-mint, #1d9e75);
+  font-weight: 600;
+}
+
+.highlight-amber {
+  color: var(--color-amber, #ba7517);
+  font-weight: 600;
+}
+
+.highlight-petrol {
+  color: var(--color-petrol, #085041);
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   Mobile-First Layout and UX Guards
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  /* Restructure main row on mobile: Input on top, ticker below it */
+  .pe-main-layout {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 1.5rem;
+  }
+
+  .pe-ticker-widget {
+    min-height: auto;
+    padding: 1.25rem;
+  }
+
+  .pe-duel-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .pe-duel-card {
+    min-height: auto;
+    padding: 1rem;
+  }
+
+  .pe-duel-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .pe-duel-tabs {
+    width: 100%;
+    display: flex;
+  }
+
+  .pe-duel-tab {
+    flex: 1;
+    text-align: center;
+    padding: 0.45rem 0.25rem;
+    font-size: 0.75rem;
+  }
+}
+

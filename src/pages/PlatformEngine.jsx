@@ -72,6 +72,50 @@ const GOAL_CHIPS = {
   ],
 }
 
+const TICKER_ITEMS = [
+  {
+    icon: '📦',
+    question: <>Niemand kauft dein Produkt auf <span className="highlight-coral">Kleinanzeigen?</span></>,
+    solution: <><span className="highlight-petrol font-bold">H.I.T.</span> macht den <span className="highlight-mint font-semibold">Verkaufstext unwiderstehlich</span>.</>
+  },
+  {
+    icon: '💼',
+    question: <>Deine <span className="highlight-amber">Bewerbung</span> klingt wie aus dem Jahr 1995?</>,
+    solution: <><span className="highlight-petrol font-bold">H.I.T.</span> bringt dein <span className="highlight-mint font-semibold">Anschreiben</span> auf das nächste Level.</>
+  },
+  {
+    icon: '📱',
+    question: <>Du sitzt seit 20 Minuten vor einem <span className="highlight-coral">leeren Post?</span></>,
+    solution: <><span className="highlight-petrol font-bold">H.I.T.</span> schreibt deinen <span className="highlight-mint font-semibold">Social-Media-Text</span> in 5 Sekunden.</>
+  },
+  {
+    icon: '🎬',
+    question: <>Dein Video hat nach 3 Sekunden schon <span className="highlight-amber">0 Zuschauer?</span></>,
+    solution: <><span className="highlight-petrol font-bold">H.I.T.</span> baut dir den <span className="highlight-mint font-semibold">perfekten Hook</span>.</>
+  }
+]
+
+const DUEL_SETS = [
+  {
+    title: 'Verkauf 📦',
+    bad: '„Verkaufe iPhone 13. Zustand gut, siehe Bilder. Keine Rücknahme.“',
+    good: '„Biete gepflegtes iPhone 13. Akku hält top, Display kratzerfrei. Bei Fragen gerne melden!“',
+    hit: '„Dein neues iPhone 13 wartet schon! 📱 Top-Zustand, langlebiger Akku & bereit für den Einsatz. Schnapp es dir, bevor es weg ist! ✨“'
+  },
+  {
+    title: 'Bewerbung 💼',
+    bad: '„Sehr geehrte Damen und Herren, hiermit bewerbe ich mich auf Ihre Stelle als...“',
+    good: '„Sehr geehrte Damen und Herren, mit meinen Fähigkeiten im Bereich X möchte ich Ihr Team unterstützen...“',
+    hit: '„Sie suchen jemanden, der ab Tag 1 voll anpackt und frischen Wind in Ihre Projekte bringt? Genau das biete ich Ihnen... 🚀“'
+  },
+  {
+    title: 'Video / Social Media 🎬',
+    bad: '„Hallo Leute, willkommen auf meinem Kanal! Heute zeige ich euch mal ein paar Tipps...“',
+    good: '„Wenn du Probleme beim Texten hast, schau dir diese drei einfachen Kniffe an...“',
+    hit: '„Hör sofort auf, deine Texte selbst zu schreiben! 🛑 Dieser eine Trick spart dir Stunden...“'
+  }
+]
+
 export default function PlatformEngine() {
   const { user } = useAuth()
   const { t, lang } = useLanguage()
@@ -91,6 +135,8 @@ export default function PlatformEngine() {
   const [copiedPlatform, setCopiedPlatform] = useState(null)
   const [generatingSingle, setGeneratingSingle] = useState(null)
   const [showInfo, setShowInfo] = useState(false)
+  const [tickerIndex, setTickerIndex] = useState(0)
+  const [duelIndex, setDuelIndex] = useState(0)
 
   // Restore state from localStorage on mount (after navigating back from CapCut/Analytics)
   useEffect(() => {
@@ -111,6 +157,24 @@ export default function PlatformEngine() {
       }
     } catch {}
   }, [])
+
+  // Auto-rotating ticker (every 4 seconds)
+  useEffect(() => {
+    if (phase !== 'input') return
+    const interval = setInterval(() => {
+      setTickerIndex((prev) => (prev + 1) % TICKER_ITEMS.length)
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [phase])
+
+  // Auto-rotating duel (every 6 seconds)
+  useEffect(() => {
+    if (phase !== 'input') return
+    const interval = setInterval(() => {
+      setDuelIndex((prev) => (prev + 1) % DUEL_SETS.length)
+    }, 6000)
+    return () => clearInterval(interval)
+  }, [phase])
 
   // Save state to localStorage before navigating away
   const saveStateAndNavigate = useCallback((path) => {
@@ -264,45 +328,111 @@ export default function PlatformEngine() {
       {/* Phase: INPUT */}
       {phase === 'input' && (
         <div className="pe-input-phase">
-          <div className="pe-hero">
-            <div className="pe-title-row">
-              <VerticalLogo size="small" />
-              <button className="pe-info-btn" onClick={() => setShowInfo(true)} aria-label="Info">
-                <Info size={18} />
-              </button>
+          <div className="pe-main-layout">
+            {/* Left Column: Glassmorphism Ticker */}
+            <div className="pe-left-column">
+              <div className="pe-ticker-widget">
+                <div key={tickerIndex} className="pe-ticker-content pe-ticker-fade">
+                  <div className="pe-ticker-header">
+                    <span className="pe-ticker-icon">{TICKER_ITEMS[tickerIndex].icon}</span>
+                    <span className="pe-ticker-badge">H.I.T. Power</span>
+                  </div>
+                  <div className="pe-ticker-text">
+                    <p className="pe-ticker-question">{TICKER_ITEMS[tickerIndex].question}</p>
+                    <p className="pe-ticker-solution">{TICKER_ITEMS[tickerIndex].solution}</p>
+                  </div>
+                </div>
+                <div className="pe-ticker-dots">
+                  {TICKER_ITEMS.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`pe-ticker-dot ${i === tickerIndex ? 'active' : ''}`}
+                      onClick={() => setTickerIndex(i)}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
-            <p className="pe-subtitle">{t('landing.tagline')}</p>
+
+            {/* Right Column: Main Hero and Form Input */}
+            <div className="pe-right-column">
+              <div className="pe-hero">
+                <div className="pe-title-row">
+                  <VerticalLogo size="small" />
+                  <button className="pe-info-btn" onClick={() => setShowInfo(true)} aria-label="Info">
+                    <Info size={18} />
+                  </button>
+                </div>
+                <p className="pe-subtitle">{t('landing.tagline')}</p>
+              </div>
+
+              <div className="pe-input-wrap">
+                <input
+                  className="pe-input"
+                  type="text"
+                  value={goal}
+                  onChange={(e) => setGoal(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && startAnalysis()}
+                  placeholder={t('landing.placeholder')}
+                />
+                <button
+                  className="btn btn-primary pe-start-btn"
+                  onClick={startAnalysis}
+                  disabled={!goal.trim()}
+                >
+                  <Rocket size={16} /> {t('landing.startButton')}
+                </button>
+              </div>
+
+              {error && <p className="pe-error">{error}</p>}
+
+              <div className="pe-chips">
+                {chips.map((chip) => (
+                  <button key={chip.label} className="pe-chip" onClick={() => handleChipClick(chip)}>
+                    <span>{chip.icon}</span> {chip.label}
+                  </button>
+                ))}
+              </div>
+
+              <p className="pe-meta">{t('landing.meta')}</p>
+            </div>
           </div>
 
-          <div className="pe-input-wrap">
-            <input
-              className="pe-input"
-              type="text"
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && startAnalysis()}
-              placeholder={t('landing.placeholder')}
-            />
-            <button
-              className="btn btn-primary pe-start-btn"
-              onClick={startAnalysis}
-              disabled={!goal.trim()}
-            >
-              <Rocket size={16} /> {t('landing.startButton')}
-            </button>
+          {/* Bottom Full-width Row: Niche Duel Comparison */}
+          <div className="pe-duel-widget">
+            <div className="pe-duel-header-row">
+              <span className="pe-duel-title">💡 Wie H.I.T. deinen Content transformiert:</span>
+              <div className="pe-duel-tabs">
+                {DUEL_SETS.map((set, i) => (
+                  <button
+                    key={set.title}
+                    className={`pe-duel-tab ${i === duelIndex ? 'active' : ''}`}
+                    onClick={() => setDuelIndex(i)}
+                  >
+                    {set.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div key={duelIndex} className="pe-duel-grid pe-ticker-fade">
+              {/* Bad Column */}
+              <div className="pe-duel-card bad">
+                <div className="pe-duel-card-title">❌ Ohne Struktur & Hook</div>
+                <p className="pe-duel-card-text">{DUEL_SETS[duelIndex].bad}</p>
+              </div>
+              {/* Good Column */}
+              <div className="pe-duel-card good">
+                <div className="pe-duel-card-title">💡 Standard Best Practice</div>
+                <p className="pe-duel-card-text">{DUEL_SETS[duelIndex].good}</p>
+              </div>
+              {/* HIT Column */}
+              <div className="pe-duel-card hit">
+                <div className="pe-duel-card-title">🚀 Mit H.I.T. optimiert</div>
+                <p className="pe-duel-card-text">{DUEL_SETS[duelIndex].hit}</p>
+              </div>
+            </div>
           </div>
-
-          {error && <p className="pe-error">{error}</p>}
-
-          <div className="pe-chips">
-            {chips.map((chip) => (
-              <button key={chip.label} className="pe-chip" onClick={() => handleChipClick(chip)}>
-                <span>{chip.icon}</span> {chip.label}
-              </button>
-            ))}
-          </div>
-
-          <p className="pe-meta">{t('landing.meta')}</p>
         </div>
       )}
 
