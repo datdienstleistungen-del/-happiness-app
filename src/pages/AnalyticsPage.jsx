@@ -157,6 +157,18 @@ export default function AnalyticsPage() {
     }
   }, [cooldown])
 
+  // Auto-scroll to AI feedback when it arrives
+  useEffect(() => {
+    if (aiFeedback) {
+      setTimeout(() => {
+        const element = document.querySelector('.ai-audit-feedback-card')
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }, 100)
+    }
+  }, [aiFeedback])
+
   // Load app activity analytics
   useEffect(() => { 
     if (activeTab === 'app') {
@@ -441,7 +453,7 @@ export default function AnalyticsPage() {
     setAiAuditing(true)
     setAiFeedback(null)
     setError('')
-    setCooldown(60)
+    setCooldown(10)
     
     const systemPrompt = `Du bist ein erfahrener Social-Media-Wachstumsexperte und weltklasse Retention-Coach für TikTok, Instagram Reels und YouTube Shorts.
 Deine Aufgabe ist es, das eingereichte Videoskript (Hook, Body, CTA) des Creators knallhart zu analysieren und eine optimierte Version zu erstellen.
