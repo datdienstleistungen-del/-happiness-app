@@ -719,8 +719,15 @@ export default function PlatformEngine() {
           {/* Next Action Hub */}
           <NextActionHub
             onOpenCapCut={() => {
-              trackLandingFunnel('post_result_action', { action: 'capcut' })
-              saveStateAndNavigate('/capcut-studio')
+              const editor = localStorage.getItem('hit_video_editor') || 'capcut'
+              trackLandingFunnel('post_result_action', { action: editor })
+              if (editor === 'ki-cutter') {
+                saveStateAndNavigate('/opus-studio')
+              } else if (editor === 'premiere') {
+                saveStateAndNavigate('/pro-studio')
+              } else {
+                saveStateAndNavigate('/capcut-studio')
+              }
             }}
             onTrackAnalytics={() => {
               trackLandingFunnel('post_result_action', { action: 'tracking' })
