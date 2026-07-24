@@ -1003,3 +1003,257 @@
     justify-content: center;
   }
 }
+
+/* ==========================================================================
+   Guided UX & Coaching Workflow Styles
+   ========================================================================== */
+
+/* Coaching Panel */
+.coaching-panel {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+  transition: all 0.3s ease;
+}
+
+.coaching-panel.expanded {
+  border-color: rgba(29, 158, 117, 0.3);
+}
+
+.coaching-panel-toggle {
+  width: 100%;
+  background: none;
+  border: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text, #0f172a);
+}
+
+.cpt-title {
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cpt-arrow {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1d9e75;
+}
+
+.coaching-panel-content {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--border, #cbd5e1);
+}
+
+.coaching-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.coaching-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.step-num {
+  width: 24px;
+  height: 24px;
+  background: rgba(29, 158, 117, 0.1);
+  color: #1d9e75;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.step-info h5 {
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: var(--text, #0f172a);
+}
+
+.step-info p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted, #64748b);
+  line-height: 1.4;
+}
+
+/* Traffic Lights */
+.social-traffic-lights {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.traffic-light-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.4;
+  border: 1px solid transparent;
+}
+
+.traffic-light-card.red {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.traffic-light-card.red .tl-label {
+  background: #f87171;
+  color: white;
+}
+
+.traffic-light-card.yellow {
+  background: #fffbeb;
+  border-color: #fef3c7;
+  color: #92400e;
+}
+
+.traffic-light-card.yellow .tl-label {
+  background: #fbbf24;
+  color: #92400e;
+}
+
+.traffic-light-card.green {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.traffic-light-card.green .tl-label {
+  background: #4ade80;
+  color: #166534;
+}
+
+.tl-label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.tl-text {
+  flex: 1;
+}
+
+/* Interactive SVG Hotspots */
+.svg-hotspot {
+  cursor: pointer;
+}
+
+.hotspot-outer {
+  fill: #1d9e75;
+  fill-opacity: 0.15;
+  stroke: #1d9e75;
+  stroke-width: 1.5;
+  transition: all 0.2s ease;
+  transform-origin: center;
+}
+
+.svg-hotspot:hover .hotspot-outer {
+  fill-opacity: 0.35;
+  r: 10px;
+}
+
+.hotspot-outer.active {
+  fill-opacity: 0.5;
+  stroke: #166534;
+  stroke-width: 2;
+  animation: pulse-ring 1.5s infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    r: 6px;
+    stroke-opacity: 1;
+  }
+  50% {
+    stroke-opacity: 0.5;
+  }
+  100% {
+    r: 12px;
+    stroke-opacity: 0;
+  }
+}
+
+/* Hotspot Popup Card */
+.hotspot-popup-card {
+  background: #f8fafc;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  position: relative;
+  animation: slide-up 0.25s ease-out;
+}
+
+@keyframes slide-up {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.hotspot-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.hotspot-popup-header h4 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin: 0;
+  color: #1d9e75;
+}
+
+.hotspot-popup-close {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--text-muted, #64748b);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.hotspot-popup-close:hover {
+  color: #0f172a;
+}
+
+.hotspot-popup-card p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted, #475569);
+  line-height: 1.45;
+}
+
+/* Mobile responsive guide adjustments */
+@media (max-width: 768px) {
+  .coaching-steps {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}

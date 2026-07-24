@@ -141,6 +141,8 @@ export default function AnalyticsPage() {
   
   const [analyzedCurve, setAnalyzedCurve] = useState(null)
   const [analyzerResults, setAnalyzerResults] = useState(null)
+  const [showGuide, setShowGuide] = useState(true)
+  const [activeHotspot, setActiveHotspot] = useState(null)
   
   // AI states
   const [aiAuditing, setAiAuditing] = useState(false)
@@ -344,6 +346,96 @@ export default function AnalyticsPage() {
     }
   }
 
+  const getTrafficLights = () => {
+    const lights = []
+    
+    // 1. Hook
+    const hookLen = scriptHook.length
+    if (hookLen === 0) {
+      lights.push({ 
+        type: 'red', 
+        label: 'HOOK',
+        text: '⚠️ Kein Hook vorhanden! Ohne Hook scrollen 95% der Zuschauer sofort weiter.' 
+      })
+    } else if (hookLen > 130) {
+      lights.push({ 
+        type: 'red', 
+        label: 'HOOK',
+        text: '⚠️ Hook viel zu lang! Zuschauer scrollen in den ersten Sekunden weiter.' 
+      })
+    } else if (hookLen >= 80) {
+      lights.push({ 
+        type: 'yellow', 
+        label: 'HOOK',
+        text: '⚠️ Hook etwas lang. Halte ihn unter 80 Zeichen für maximalen Impact.' 
+      })
+    } else {
+      lights.push({ 
+        type: 'green', 
+        label: 'HOOK',
+        text: '✅ Hook hat eine ideale, knackige Länge!' 
+      })
+    }
+
+    // 2. Body
+    const bodyLen = scriptBody.length
+    if (bodyLen === 0) {
+      lights.push({ 
+        type: 'red', 
+        label: 'HAUPTTEIL',
+        text: '⚠️ Hauptteil leer. Bitte füge den Video-Inhalt ein.' 
+      })
+    } else if (bodyLen < 100 || bodyLen > 1000) {
+      lights.push({ 
+        type: 'red', 
+        label: 'HAUPTTEIL',
+        text: '⚠️ Hauptteil ungeeignet für optimale Retention (zu kurz oder zu überladen).' 
+      })
+    } else if (bodyLen >= 300 && bodyLen <= 800) {
+      lights.push({ 
+        type: 'green', 
+        label: 'HAUPTTEIL',
+        text: '✅ Hauptteil hat die optimale Pacing-Dichte!' 
+      })
+    } else {
+      lights.push({ 
+        type: 'yellow', 
+        label: 'HAUPTTEIL',
+        text: '⚠️ Hauptteil ist sehr kurz oder lang. Achte auf Pattern Interrupts.' 
+      })
+    }
+
+    // 3. CTA
+    const ctaLen = scriptCta.length
+    if (ctaLen === 0) {
+      lights.push({ 
+        type: 'red', 
+        label: 'CTA & LOOP',
+        text: '⚠️ Kein CTA vorhanden. Die Zuschauer wissen nicht, was sie tun sollen.' 
+      })
+    } else if (ctaLen > 120) {
+      lights.push({ 
+        type: 'red', 
+        label: 'CTA & LOOP',
+        text: '⚠️ CTA viel zu lang. Zuschauer schalten vor dem Videoende ab.' 
+      })
+    } else if (ctaLen >= 60) {
+      lights.push({ 
+        type: 'yellow', 
+        label: 'CTA & LOOP',
+        text: '⚠️ CTA etwas lang. Vermeide langes Verabschieden.' 
+      })
+    } else {
+      lights.push({ 
+        type: 'green', 
+        label: 'CTA & LOOP',
+        text: '✅ CTA ist kurz und direkt!' 
+      })
+    }
+
+    return lights
+  }
+
   async function runAiAudit() {
     if (aiAuditing || cooldown > 0) return
     setAiAuditing(true)
@@ -459,6 +551,42 @@ Antworte ausschließlich im angegebenen Markdown-Format auf Deutsch. Antworte di
       {activeTab === 'social' && (
         <div className="social-analytics-container">
           
+          {/* Collapsible Coaching Panel */}
+          <div className={`coaching-panel ${showGuide ? 'expanded' : 'collapsed'}`}>
+            <button className="coaching-panel-toggle" onClick={() => setShowGuide(!showGuide)}>
+              <span className="cpt-title">🚀 Dein Fahrplan zum viralen Video</span>
+              <span className="cpt-arrow">{showGuide ? '▲ Ausblenden' : '▼ Einblenden'}</span>
+            </button>
+            
+            {showGuide && (
+              <div className="coaching-panel-content">
+                <div className="coaching-steps">
+                  <div className="coaching-step">
+                    <span className="step-num">1</span>
+                    <div className="step-info">
+                      <h5>📊 DIAGNOSE</h5>
+                      <p>Prüfe die Ampelkarten und deine Retention-Kurve auf Schwachstellen.</p>
+                    </div>
+                  </div>
+                  <div className="coaching-step">
+                    <span className="step-num">2</span>
+                    <div className="step-info">
+                      <h5>⚡ OPTIMIERUNG</h5>
+                      <p>Klicke unten auf "KI-Optimierungs-Audit starten", um Fehler beheben zu lassen.</p>
+                    </div>
+                  </div>
+                  <div className="coaching-step">
+                    <span className="step-num">3</span>
+                    <div className="step-info">
+                      <h5>🎬 ACTION</h5>
+                      <p>Kopiere das optimierte Skript und schneide dein Video exakt nach den CapCut-Regieanweisungen.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Brand Switcher */}
           <div className="social-brand-selector">
             {Object.entries(SOCIAL_PLATFORMS).map(([key, config]) => {
@@ -660,8 +788,18 @@ Antworte ausschließlich im angegebenen Markdown-Format auf Deutsch. Antworte di
                       <path d={getPathData(analyzedCurve)} fill="none" stroke="#1d9e75" strokeWidth="2.5" />
                       
                       {/* Key Points Markers */}
-                      <circle cx="30" cy={Math.max(2, Math.min(98, 100 - (analyzedCurve[3] || 50)))} r="4" fill="#166534" />
-                      <circle cx="270" cy={Math.max(2, Math.min(98, 100 - (analyzedCurve[27] || 50)))} r="4" fill="#166534" />
+                      <g className="svg-hotspot" onClick={() => setActiveHotspot(3)}>
+                        <circle cx="30" cy={Math.max(4, Math.min(96, 100 - (analyzedCurve[3] || 50)))} r="7" className={`hotspot-outer ${activeHotspot === 3 ? 'active' : ''}`} />
+                        <circle cx="30" cy={Math.max(4, Math.min(96, 100 - (analyzedCurve[3] || 50)))} r="3.5" className="hotspot-inner" fill="#166534" />
+                      </g>
+                      <g className="svg-hotspot" onClick={() => setActiveHotspot(15)}>
+                        <circle cx="150" cy={Math.max(4, Math.min(96, 100 - (analyzedCurve[15] || 50)))} r="7" className={`hotspot-outer ${activeHotspot === 15 ? 'active' : ''}`} />
+                        <circle cx="150" cy={Math.max(4, Math.min(96, 100 - (analyzedCurve[15] || 50)))} r="3.5" className="hotspot-inner" fill="#166534" />
+                      </g>
+                      <g className="svg-hotspot" onClick={() => setActiveHotspot(30)}>
+                        <circle cx="300" cy={Math.max(4, Math.min(96, 100 - (analyzedCurve[30] || 50)))} r="7" className={`hotspot-outer ${activeHotspot === 30 ? 'active' : ''}`} />
+                        <circle cx="300" cy={Math.max(4, Math.min(96, 100 - (analyzedCurve[30] || 50)))} r="3.5" className="hotspot-inner" fill="#166534" />
+                      </g>
                     </svg>
                     
                     <div className="chart-markers">
@@ -678,6 +816,35 @@ Antworte ausschließlich im angegebenen Markdown-Format auf Deutsch. Antworte di
                   </div>
                 </div>
               )}
+
+              {/* Interactive Hotspot Popup Explanation */}
+              {activeHotspot && (
+                <div className="hotspot-popup-card">
+                  <div className="hotspot-popup-header">
+                    <h4>
+                      {activeHotspot === 3 && '⏰ Sekunde 3: Die Hook-Schranke!'}
+                      {activeHotspot === 15 && '⚡ Sekunde 15: Das Aufmerksamkeits-Tief!'}
+                      {activeHotspot === 30 && '🔄 Sekunde 30: Die CTA-Falle!'}
+                    </h4>
+                    <button className="hotspot-popup-close" onClick={() => setActiveHotspot(null)}>×</button>
+                  </div>
+                  <p>
+                    {activeHotspot === 3 && 'Die Hook-Schranke! Hier entscheidet der TikTok-Algorithmus, ob dein Video in die Next-Batch-Ausspielung kommt. Ohne packenden Einstieg wischen 80% der Nutzer sofort weg.'}
+                    {activeHotspot === 15 && 'Das Aufmerksamkeits-Tief! Ohne Pattern Interrupts (Zooms, Soundeffekte, Text-Overlays) verlierst du hier schlagartig 50% der verbleibenden Zuschauer. Baue visuelle Abwechslung ein!'}
+                    {activeHotspot === 30 && 'Die CTA-Falle! Kündige das Ende deines Videos niemals an. Nutze einen nahtlosen Loop zurück zum Hook für maximale Watchtime.'}
+                  </p>
+                </div>
+              )}
+
+              {/* Traffic Light Badges */}
+              <div className="social-traffic-lights">
+                {getTrafficLights().map((light, i) => (
+                  <div key={i} className={`traffic-light-card ${light.type}`}>
+                    <span className="tl-label">{light.label}</span>
+                    <span className="tl-text">{light.text}</span>
+                  </div>
+                ))}
+              </div>
 
               {/* Key Metrics Blocks */}
               {analyzerResults && (
