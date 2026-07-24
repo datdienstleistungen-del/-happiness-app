@@ -3,7 +3,7 @@
    ═══════════════════════════════════════════ */
 
 .platform-engine {
-  max-width: 700px;
+  max-width: 1080px; /* Increased from 700px to allow columns and a wider layout */
   margin: 0 auto;
   padding: 2rem 1rem;
 }
@@ -106,6 +106,8 @@
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
   overflow: hidden;
   animation: peFadeIn 0.3s ease;
+  max-width: 700px; /* Keep standard cards centered and neat */
+  margin: 0 auto;
 }
 
 .pe-card-header {
@@ -285,6 +287,8 @@
 
 /* Result Phase */
 .pe-result-phase {
+  max-width: 700px; /* Center result phase cards */
+  margin: 0 auto;
   animation: peFadeIn 0.3s ease;
 }
 
@@ -1044,10 +1048,47 @@
 
 .pe-main-layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 2rem;
-  align-items: stretch;
+  grid-template-columns: 280px 1fr; /* Reduced ticker width to give more space to input */
+  gap: 2.5rem;
+  align-items: center;
   margin-bottom: 2rem;
+}
+
+/* Right column overrides to make input field larger and left-aligned */
+.pe-right-column {
+  text-align: left;
+}
+
+.pe-right-column .pe-hero {
+  text-align: left;
+}
+
+.pe-right-column .pe-title-row {
+  justify-content: flex-start;
+}
+
+.pe-right-column .pe-input-wrap {
+  max-width: 100%;
+}
+
+.pe-right-column .pe-input {
+  font-size: 1.1rem;
+  padding: 0.95rem 1.35rem;
+  border-radius: 14px;
+}
+
+.pe-right-column .pe-start-btn {
+  font-size: 1.1rem;
+  padding: 0.95rem 1.75rem;
+  border-radius: 14px;
+}
+
+.pe-right-column .pe-chips {
+  justify-content: flex-start;
+}
+
+.pe-right-column .pe-meta {
+  text-align: left;
 }
 
 /* Ticker Widget Styling */
