@@ -194,20 +194,20 @@ export const handler = async (event) => {
       console.error('[MODERATION] Groq Vision also failed:', groqError.message)
     }
 
-    // Both failed — fail open to not block users
-    console.warn(`[IMAGE MODERATION] Both providers failed — failing open. User: ${userId || 'anonymous'}`)
+    // Both failed — fail closed
+    console.warn(`[IMAGE MODERATION] Both providers failed — failing closed. User: ${userId || 'anonymous'}`)
     return {
       statusCode: 200,
       headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ allowed: true, reason: 'Moderation unavailable — passed through' })
+      body: JSON.stringify({ allowed: false, reason: 'Moderations-Dienst nicht erreichbar oder Fehler (fail closed)' })
     }
 
   } catch (error) {
-    console.error('[IMAGE MODERATION ERROR]', error.message)
+    console.error('[IMAGE MODERATION ERROR] Fail closed:', error.message)
     return {
       statusCode: 200,
       headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ allowed: true, reason: 'Moderation error — passed through' })
+      body: JSON.stringify({ allowed: false, reason: `Moderations-Fehler (fail closed): ${error.message}` })
     }
   }
 }

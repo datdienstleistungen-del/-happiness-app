@@ -237,17 +237,20 @@ export default function PlatformEngine() {
   }
 
   const copyAllTop3 = () => {
-    const allText = Object.values(topResults).map(r => {
-      const c = r.content
-      return `${r.icon} ${r.name}\n\n${c.hook ? c.hook + '\n\n' : ''}${c.body || ''}${c.cta ? '\n\n' + c.cta : ''}${c.hashtags?.length ? '\n\n' + c.hashtags.map(h => h.startsWith('#') ? h : '#' + h).join(' ') : ''}`
-    }).join('\n\n---\n\n')
+    const allText = Object.values(topResults)
+      .filter(r => r && r.content)
+      .map(r => {
+        const c = r.content
+        return `${r.icon} ${r.name}\n\n${c.hook ? c.hook + '\n\n' : ''}${c.body || ''}${c.cta ? '\n\n' + c.cta : ''}${c.hashtags?.length ? '\n\n' + c.hashtags.map(h => h.startsWith('#') ? h : '#' + h).join(' ') : ''}`
+      }).join('\n\n---\n\n')
     copyToClipboard(allText)
     setCopiedAll(true)
     setTimeout(() => setCopiedAll(false), 2000)
   }
 
   const getResultText = (r) => {
-    const c = r.content
+    const c = r?.content
+    if (!c) return ''
     return `${c.hook ? c.hook + '\n\n' : ''}${c.body || ''}${c.cta ? '\n\n' + c.cta : ''}${c.hashtags?.length ? '\n\n' + c.hashtags.map(h => h.startsWith('#') ? h : '#' + h).join(' ') : ''}`
   }
 
@@ -404,7 +407,7 @@ export default function PlatformEngine() {
           <div className="pe-platform-grid">
             {top3Keys.map((key, index) => {
               const r = topResults[key]
-              if (!r) return null
+              if (!r || !r.content) return null
               const isCopied = copiedPlatform === key
               const copiedCount = copiedPlatform ? 1 : 0
               return (
@@ -486,6 +489,7 @@ export default function PlatformEngine() {
                 .filter(p => !top3Keys.includes(p.key) && results[p.key])
                 .map((p, i) => {
                   const r = results[p.key]
+                  if (!r || !r.content) return null
                   return (
                     <div key={p.key} className="pe-platform-card pe-platform-card-extra">
                         <div className="pe-platform-card-header">

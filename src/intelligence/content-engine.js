@@ -159,7 +159,17 @@ export function detectPlatforms(goal) {
  * Parst die JSON-Antwort eines Agents
  */
 export function parsePlatformResult(rawText) {
-  if (!rawText) return null
+  if (!rawText) {
+    return {
+      hook: '',
+      title: '',
+      body: '',
+      hashtags: [],
+      cta: '',
+      imageIdea: '',
+      platformSpecific: {}
+    }
+  }
 
   try {
     const jsonMatch = rawText.match(/\{[\s\S]*\}/)
