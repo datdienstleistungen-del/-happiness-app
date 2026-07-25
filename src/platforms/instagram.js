@@ -26,5 +26,12 @@ Antworte NUR mit validem JSON:
   "platformSpecific": {
     "tips": ["string — Tipps/Steps"],
     "storySlideText": "string — Text für Instagram Story"
-  }
+  },
+  "footageSources": [
+    {
+      "platform": "YouTube | TikTok | Pexels | Pixabay",
+      "query": "string — Suchbegriff für Video-Footage",
+      "url": "string — Direkter Such-Link (z. B. https://www.youtube.com/results?search_query=... oder https://www.tiktok.com/search?q=...)"
+    }
+  ]
 }`

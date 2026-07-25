@@ -722,6 +722,35 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
     return `${c.hook ? c.hook + '\n\n' : ''}${c.body || ''}${c.cta ? '\n\n' + c.cta : ''}${c.hashtags?.length ? '\n\n' + c.hashtags.map(h => h.startsWith('#') ? h : '#' + h).join(' ') : ''}`
   }
 
+  const getFootageSources = (r, goalText) => {
+    if (r?.content?.footageSources && r.content.footageSources.length > 0) {
+      return r.content.footageSources
+    }
+    const query = encodeURIComponent(goalText || 'Fußball Kuriositäten')
+    return [
+      {
+        platform: 'YouTube',
+        query: goalText || 'Fußball Kuriositäten',
+        url: `https://www.youtube.com/results?search_query=${query}`
+      },
+      {
+        platform: 'TikTok',
+        query: goalText || 'Fußball Kuriositäten',
+        url: `https://www.tiktok.com/search?q=${query}`
+      },
+      {
+        platform: 'Pexels (Stock)',
+        query: goalText || 'Fußball Kuriositäten',
+        url: `https://www.pexels.com/search/video/${query}`
+      },
+      {
+        platform: 'Pixabay (Stock)',
+        query: goalText || 'Fußball Kuriositäten',
+        url: `https://pixabay.com/de/videos/search/${query}`
+      }
+    ]
+  }
+
   const allPlatforms = getAllPlatforms()
   const generatedPlatforms = Object.keys(results)
   const top3Keys = analysis?.topPlatforms || []
@@ -1181,6 +1210,56 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                               <p className="pe-preview-content">{r.content.imageIdea}</p>
                             </div>
                           )}
+                          <div className="pe-preview-block" style={{ borderLeftColor: 'var(--color-mint, #10b981)', background: 'var(--bg-secondary, #f9fafb)', padding: '12px', borderRadius: '8px', marginTop: '12px' }}>
+                            <div className="pe-preview-title" style={{ color: 'var(--color-mint, #059669)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', fontWeight: '700' }}>
+                              🎥 Video-Quellen & Footage finden
+                            </div>
+                            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted, #6b7280)', margin: '4px 0 10px 0', lineHeight: '1.4' }}>
+                              Passendes Footage für deine Szenen suchen und herunterladen:
+                            </p>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                              {getFootageSources(r, goal).map((src, sIdx) => {
+                                let icon = '🔗'
+                                if (src.platform.toLowerCase().includes('youtube')) icon = '▶️'
+                                if (src.platform.toLowerCase().includes('tiktok')) icon = '🎵'
+                                if (src.platform.toLowerCase().includes('pexels') || src.platform.toLowerCase().includes('pixabay')) icon = '📹'
+                                return (
+                                  <a
+                                    key={sIdx}
+                                    href={src.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      padding: '6px 12px',
+                                      fontSize: '0.78rem',
+                                      fontWeight: '600',
+                                      background: '#ffffff',
+                                      color: 'var(--text, #374151)',
+                                      border: '1px solid var(--border, #e5e7eb)',
+                                      borderRadius: '6px',
+                                      textDecoration: 'none',
+                                      transition: 'all 0.2s ease',
+                                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                    }}
+                                    onMouseOver={(e) => {
+                                      e.currentTarget.style.background = 'var(--bg-secondary, #f3f4f6)'
+                                      e.currentTarget.style.borderColor = 'var(--text-muted, #9ca3af)'
+                                    }}
+                                    onMouseOut={(e) => {
+                                      e.currentTarget.style.background = '#ffffff'
+                                      e.currentTarget.style.borderColor = 'var(--border, #e5e7eb)'
+                                    }}
+                                  >
+                                    <span>{icon}</span>
+                                    <span>{src.platform}: <strong style={{ color: 'var(--color-koralle, #d85a30)' }}>"{src.query}"</strong></span>
+                                  </a>
+                                )
+                              })}
+                            </div>
+                          </div>
                         </>
                       )
                     })()}
@@ -1637,6 +1716,56 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                               <p className="pe-preview-content">{r.content.imageIdea}</p>
                             </div>
                           )}
+                          <div className="pe-preview-block" style={{ borderLeftColor: 'var(--color-mint, #10b981)', background: 'var(--bg-secondary, #f9fafb)', padding: '12px', borderRadius: '8px', marginTop: '12px' }}>
+                            <div className="pe-preview-title" style={{ color: 'var(--color-mint, #059669)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', fontWeight: '700' }}>
+                              🎥 Video-Quellen & Footage finden
+                            </div>
+                            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted, #6b7280)', margin: '4px 0 10px 0', lineHeight: '1.4' }}>
+                              Passendes Footage für deine Szenen suchen und herunterladen:
+                            </p>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                              {getFootageSources(r, goal).map((src, sIdx) => {
+                                let icon = '🔗'
+                                if (src.platform.toLowerCase().includes('youtube')) icon = '▶️'
+                                if (src.platform.toLowerCase().includes('tiktok')) icon = '🎵'
+                                if (src.platform.toLowerCase().includes('pexels') || src.platform.toLowerCase().includes('pixabay')) icon = '📹'
+                                return (
+                                  <a
+                                    key={sIdx}
+                                    href={src.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      padding: '6px 12px',
+                                      fontSize: '0.78rem',
+                                      fontWeight: '600',
+                                      background: '#ffffff',
+                                      color: 'var(--text, #374151)',
+                                      border: '1px solid var(--border, #e5e7eb)',
+                                      borderRadius: '6px',
+                                      textDecoration: 'none',
+                                      transition: 'all 0.2s ease',
+                                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                    }}
+                                    onMouseOver={(e) => {
+                                      e.currentTarget.style.background = 'var(--bg-secondary, #f3f4f6)'
+                                      e.currentTarget.style.borderColor = 'var(--text-muted, #9ca3af)'
+                                    }}
+                                    onMouseOut={(e) => {
+                                      e.currentTarget.style.background = '#ffffff'
+                                      e.currentTarget.style.borderColor = 'var(--border, #e5e7eb)'
+                                    }}
+                                  >
+                                    <span>{icon}</span>
+                                    <span>{src.platform}: <strong style={{ color: 'var(--color-koralle, #d85a30)' }}>"{src.query}"</strong></span>
+                                  </a>
+                                )
+                              })}
+                            </div>
+                          </div>
                         </>
                       )
                     })()}

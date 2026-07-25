@@ -31,5 +31,12 @@ Antworte NUR mit validem JSON:
     "solution": "string — Lösung (10-40s)",
     "ctaTime": "string — Zeitstempel für CTA",
     "musicSuggestion": "string — Musikvorschlag"
-  }
+  },
+  "footageSources": [
+    {
+      "platform": "YouTube | TikTok | Pexels | Pixabay",
+      "query": "string — Suchbegriff für Video-Footage",
+      "url": "string — Direkter Such-Link (z. B. https://www.youtube.com/results?search_query=... oder https://www.tiktok.com/search?q=...)"
+    }
+  ]
 }`

@@ -183,7 +183,8 @@ export function parsePlatformResult(rawText) {
           hashtags: Array.isArray(parsed.hashtags) ? parsed.hashtags : [],
           cta: parsed.cta || '',
           imageIdea: parsed.imageIdea || '',
-          platformSpecific: parsed.platformSpecific || {}
+          platformSpecific: parsed.platformSpecific || {},
+          footageSources: Array.isArray(parsed.footageSources) ? parsed.footageSources : []
         }
       }
     }
@@ -199,7 +200,8 @@ export function parsePlatformResult(rawText) {
     hashtags: [],
     cta: '',
     imageIdea: '',
-    platformSpecific: {}
+    platformSpecific: {},
+    footageSources: []
   }
 }
 
