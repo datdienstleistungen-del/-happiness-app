@@ -604,7 +604,7 @@ export default function PlatformEngine() {
                       <div className="pe-suggestions">
                         <p className="pe-suggestions-title">{t('landing.suggestionsTitle')}</p>
                         <div className="pe-chips">
-                          {getGoalSuggestions().map((chip) => (
+                          {chips.map((chip) => (
                             <button
                               key={chip.label}
                               className="pe-chip"
@@ -965,7 +965,7 @@ export default function PlatformEngine() {
                   <div className="pe-suggestions">
                     <p className="pe-suggestions-title">{t('landing.suggestionsTitle')}</p>
                     <div className="pe-chips">
-                      {getGoalSuggestions().map((chip) => (
+                      {chips.map((chip) => (
                         <button
                           key={chip.label}
                           className="pe-chip"
