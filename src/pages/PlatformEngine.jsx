@@ -587,7 +587,28 @@ export default function PlatformEngine() {
                             <Info size={18} />
                           </button>
                         </div>
-                        <p className="pe-subtitle">{t('landing.tagline')}</p>
+                        <div className="pe-header-container" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
+                          <p className="pe-subtitle" style={{ margin: 0 }}>{t('landing.tagline')}</p>
+                          <span 
+                            className="new-feature-badge" 
+                            title={t('newFeatures.researchTooltip')}
+                            style={{
+                              fontSize: '9px',
+                              fontWeight: '700',
+                              background: 'var(--color-koralle, #d85a30)',
+                              color: '#ffffff',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              letterSpacing: '0.5px',
+                              cursor: 'help',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            {t('newFeatures.new')} (Recherche ℹ️)
+                          </span>
+                        </div>
                       </div>
 
                       <div className="pe-input-wrap">
@@ -969,7 +990,28 @@ export default function PlatformEngine() {
                         <Info size={18} />
                       </button>
                     </div>
-                    <p className="pe-subtitle">{t('landing.tagline')}</p>
+                    <div className="pe-header-container" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
+                      <p className="pe-subtitle" style={{ margin: 0 }}>{t('landing.tagline')}</p>
+                      <span 
+                        className="new-feature-badge" 
+                        title={t('newFeatures.researchTooltip')}
+                        style={{
+                          fontSize: '9px',
+                          fontWeight: '700',
+                          background: 'var(--color-koralle, #d85a30)',
+                          color: '#ffffff',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          letterSpacing: '0.5px',
+                          cursor: 'help',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        {t('newFeatures.new')} (Recherche ℹ️)
+                      </span>
+                    </div>
                   </div>
 
                   <div className="pe-input-wrap">

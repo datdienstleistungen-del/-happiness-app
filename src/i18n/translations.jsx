@@ -196,6 +196,13 @@ const translations = {
       zippingProgress: 'Erstelle ZIP-Archiv...',
       toastPromptCopied: 'Visueller Prompt kopiert!',
       toastScriptCopied: 'Gesamtes Skript in Zwischenablage kopiert!'
+    },
+    newFeatures: {
+      new: 'NEU',
+      analyticsTitle: 'Analytics',
+      analyticsTooltip: 'Detaillierte Einblicke in deine organische Reichweite, Bindungskurven und Ampel-Bewertungen für deine Skripte.',
+      researchTitle: 'Autonome Recherche',
+      researchTooltip: 'Gib einfach ein grobes Überthema ein (z. B. "Geschichtsfakt"). Die KI recherchiert selbstständig eine fesselnde Anekdote und verknüpft sie als Metapher.'
     }
   },
   en: {
@@ -393,6 +400,13 @@ const translations = {
       zippingProgress: 'Creating ZIP archive...',
       toastPromptCopied: 'Visual prompt copied!',
       toastScriptCopied: 'Full script copied to clipboard!'
+    },
+    newFeatures: {
+      new: 'NEW',
+      analyticsTitle: 'Analytics',
+      analyticsTooltip: 'Detailed insights into your organic reach, retention curves, and traffic-light ratings for your scripts.',
+      researchTitle: 'Autonomous Research',
+      researchTooltip: 'Just enter a rough topic (e.g. "history fact"). The AI independently researches a gripping anecdote and links it as a metaphor.'
     }
   },
   es: {
@@ -516,6 +530,13 @@ const translations = {
       capcutButton: '🎬 Abrir en CapCut Studio',
       trackingButton: '📊 Configurar tarea de seguimiento',
       resetButton: '🔄 Ingresar nuevo objetivo'
+    },
+    newFeatures: {
+      new: 'NUEVO',
+      analyticsTitle: 'Analytics',
+      analyticsTooltip: 'Información detallada sobre tu alcance orgánico, curvas de retención y calificaciones de semáforo para tus guiones.',
+      researchTitle: 'Búsqueda Autónoma',
+      researchTooltip: 'Simplemente ingresa un tema general (por ejemplo, "hecho histórico"). La IA investiga de forma independiente una anécdota fascinante y la conecta como metáfora.'
     }
   },
   fr: {
@@ -639,6 +660,13 @@ const translations = {
       capcutButton: '🎬 Ouvrir dans CapCut Studio',
       trackingButton: '📊 Configurer la tâche de suivi',
       resetButton: '🔄 Entrer un nouvel objectif'
+    },
+    newFeatures: {
+      new: 'NOUVEAU',
+      analyticsTitle: 'Analytics',
+      analyticsTooltip: 'Aperçu détaillé de votre portée organique, de vos courbes de rétention et des évaluations de feux tricolores pour vos scripts.',
+      researchTitle: 'Recherche Autonome',
+      researchTooltip: 'Saisissez simplement un sujet général (par ex. "fait historique"). L\'IA recherche de manière autonome une anecdote captivante et la lie sous forme de métaphore.'
     }
   },
   it: {
@@ -762,6 +790,13 @@ const translations = {
       capcutButton: '🎬 Apri in CapCut Studio',
       trackingButton: '📊 Configura il task di monitoraggio',
       resetButton: '🔄 Inserisci un nuovo obiettivo'
+    },
+    newFeatures: {
+      new: 'NUOVO',
+      analyticsTitle: 'Analytics',
+      analyticsTooltip: 'Approfondimenti dettagliati sulla tua portata organica, curve di fidelizzazione e valutazioni a semaforo per i tuoi script.',
+      researchTitle: 'Ricerca Autonoma',
+      researchTooltip: 'Inserisci semplicemente un argomento generale (ad es. "fatto storico"). L\'IA ricerca autonomamente un aneddoto avvincente e lo collega come metafora.'
     }
   },
   nl: {
@@ -885,6 +920,13 @@ const translations = {
       capcutButton: '🎬 Openen in CapCut Studio',
       trackingButton: '📊 Tracking-taak instellen',
       resetButton: '🔄 Nieuw contentdoel invoeren'
+    },
+    newFeatures: {
+      new: 'NIEUW',
+      analyticsTitle: 'Analytics',
+      analyticsTooltip: 'Gedetailleerd inzicht in je organische bereik, retentiecurves en stoplichtbeoordelingen voor je scripts.',
+      researchTitle: 'Autonoom Onderzoek',
+      researchTooltip: 'Voer eenvoudig een algemeen onderwerp in (bijv. "historisch feit"). De AI zoekt zelfstandig een boeiende anekdote en koppelt deze als metafoor.'
     }
   },
   el: {
@@ -1008,6 +1050,13 @@ const translations = {
       capcutButton: '🎬 Άνοιγμα στο CapCut Studio',
       trackingButton: '📊 Ρύθμιση task παρακολούθησης',
       resetButton: '🔄 Εισαγάγετε νέο στόχο'
+    },
+    newFeatures: {
+      new: 'ΝΕΟ',
+      analyticsTitle: 'Analytics',
+      analyticsTooltip: 'Λεπτομερείς πληροφορίες για την οργανική σας απήχηση, τις καμπύλες διατήρησης και τις αξιολογήσεις φωτεινού σηματοδότη για τα σενάριά σας.',
+      researchTitle: 'Αυτόνομη Έρευνα',
+      researchTooltip: 'Απλώς εισαγάγετε ένα γενικό θέμα (π.χ. "ιστορικό γεγονός"). Η AI ερευνά αυτόνομα μια συγκλονιστική ιστορία και τη συνδέει ως μεταφορά.'
     }
   }
 }

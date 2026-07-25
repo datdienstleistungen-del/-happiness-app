@@ -96,7 +96,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
     { to: '/creator-academy', icon: Rocket, label: 'Content Studio' },
     { to: '/capcut-studio', icon: Film, label: 'CapCut Studio' },
     { to: '/ai-chat', icon: Sparkles, label: 'AI Chat' },
-    { to: '/analytics', icon: BarChart3, label: 'Analytics' },
+    { to: '/analytics', icon: BarChart3, label: 'Analytics', badge: 'newFeatures.analyticsTooltip' },
   ]
 
   const discoverLinks = [
@@ -126,7 +126,30 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
       onClick={() => setMobileOpen(false)}
     >
       <span className="sidebar-icon"><link.icon size={19} /></span>
-      {!collapsed && <span>{link.label}</span>}
+      {!collapsed && (
+        <span className="sidebar-label-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+          <span>{link.label}</span>
+          {link.badge && (
+            <span 
+              className="new-feature-badge" 
+              title={t(link.badge)}
+              style={{
+                fontSize: '9px',
+                fontWeight: '700',
+                background: 'var(--color-koralle, #d85a30)',
+                color: '#ffffff',
+                padding: '1px 5px',
+                borderRadius: '4px',
+                marginLeft: '6px',
+                letterSpacing: '0.5px',
+                cursor: 'help'
+              }}
+            >
+              {t('newFeatures.new')}
+            </span>
+          )}
+        </span>
+      )}
     </Link>
   ))
 
