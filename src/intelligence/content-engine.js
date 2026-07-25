@@ -247,7 +247,10 @@ export async function runPlatformAgent(platformKey, goal, masterBrief, chatEndpo
       }),
     })
 
-    if (!response.ok) return null
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}))
+      throw new Error(errData.error || `HTTP-Fehler ${response.status}`)
+    }
     const data = await response.json()
     const parsed = parsePlatformResult(data.response)
 
@@ -258,8 +261,9 @@ export async function runPlatformAgent(platformKey, goal, masterBrief, chatEndpo
       content: parsed,
       raw: data.response
     }
-  } catch {
-    return null
+  } catch (err) {
+    console.error(`[ContentEngine] Agent failed for ${platformKey}:`, err)
+    throw err
   }
 }
 

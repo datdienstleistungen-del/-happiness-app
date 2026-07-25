@@ -580,10 +580,10 @@ export default function PlatformEngine() {
       const systemPrompt = `Du bist der H.I.T. Co-Pilot. Deine Aufgabe ist es, das bestehende Skript basierend auf den Wünschen des Nutzers anzupassen.
 
 Aktuelles Skript (JSON):
-\${currentScriptJson}
+${currentScriptJson}
 
 BENUTZER-ANWEISUNG FÜR DIE ANPASSUNG:
-"\${userInstruction}"
+"${userInstruction}"
 
 ### Richtlinien für die Antwort:
 1. Passe das Skript im Hauptteil (Body), Hook oder CTA entsprechend der Benutzer-Anweisung an.
@@ -601,10 +601,10 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer \${token}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          message: `Passe das Skript an basierend auf: \${userInstruction}`,
+          message: `Passe das Skript an basierend auf: ${userInstruction}`,
           systemPrompt,
           history: [],
           videoEditor
@@ -723,6 +723,29 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
 
   return (
     <div className="platform-engine">
+      {error && (
+        <div className="pe-error-banner" style={{
+          background: 'var(--color-koralle, #d85a30)',
+          color: '#ffffff',
+          padding: '0.75rem 1rem',
+          borderRadius: '10px',
+          marginBottom: '1rem',
+          fontSize: '0.9rem',
+          fontWeight: '600',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          animation: 'peFadeIn 0.3s ease'
+        }}>
+          <span>⚠️ {error}</span>
+          <button 
+            onClick={() => setError('')} 
+            style={{ background: 'none', border: 'none', color: '#ffffff', cursor: 'pointer', fontSize: '1.1rem', padding: '0 0.5rem' }}
+          >
+            ×
+          </button>
+        </div>
+      )}
       {/* Mobile Wizard Navigation */}
       <div className="pe-mobile-wizard-nav">
         <button
@@ -998,6 +1021,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
           })()}
 
           {/* STEP 3: STUDIO RESULTS SCREEN */}
+          {/* STEP 3: STUDIO RESULTS SCREEN */}
           {mobileStep === 'studio' && phase === 'result' && (
             <div className="pe-result-phase">
               <div className="pe-result-header">
@@ -1007,101 +1031,148 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                 </p>
               </div>
 
-              <div className="pe-platform-grid">
-                {top3Keys.map((key, index) => {
-                  const r = topResults[key]
-                  if (!r || !r.content) return null
-                  const isCopied = copiedPlatform === key
-                  return (
-                    <div key={key} className={`pe-platform-card ${isCopied ? 'pe-platform-card-copied' : ''}`}>
-                      <div className="pe-platform-card-header">
-                        <div className="pe-platform-name-group">
-                          <span className="pe-platform-step">{index + 1}/3</span>
-                          <span className="pe-platform-name">{r.icon} {r.name}</span>
-                        </div>
-                        <div className="pe-copy-btn-group">
-                          <button
-                            className={`pe-copy-btn pe-copy-btn-card ${isCopied ? 'pe-copy-btn-done' : ''}`}
-                            onClick={() => {
-                              copyToClipboard(getResultText(r), key)
-                              setCopiedPlatform(key)
-                              setTimeout(() => setCopiedPlatform(null), 2000)
-                            }}
-                          >
-                            {isCopied ? <><Check size={14} /> Kopiert!</> : <><Copy size={14} /> Kopieren</>}
-                          </button>
-                          <button
-                            className="pe-copy-btn pe-copy-btn-card pe-copy-btn-primary"
-                            onClick={() => {
-                              const content = r.content
-                              if (content) {
-                                localStorage.setItem('hit_latest_hook', content.hook || '')
-                                localStorage.setItem('hit_latest_body', content.body || '')
-                                localStorage.setItem('hit_latest_cta', content.cta || '')
-                              }
-                              saveStateAndNavigate('/capcut-studio')
-                            }}
-                          >
-                            In CapCut einfügen
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="pe-platform-card-body">
-                        {r.content.hook && (
-                          <div className="pe-content-field">
-                            <span className="pe-field-label">Hook (0-3s):</span>
-                            <p className="pe-field-value">{r.content.hook}</p>
-                          </div>
-                        )}
-                        {r.content.body && (
-                          <div className="pe-content-field">
-                            <span className="pe-field-label">Hauptteil:</span>
-                            <p className="pe-field-value">{r.content.body}</p>
-                          </div>
-                        )}
-                        {r.content.cta && (
-                          <div className="pe-content-field">
-                            <span className="pe-field-label">CTA & Loop:</span>
-                            <p className="pe-field-value">{r.content.cta}</p>
-                          </div>
-                        )}
+              <div className="pe-copilot-workspace">
+                {/* LINKE SPALTE: Co-Pilot Chatverlauf */}
+                <div className="pe-copilot-chat-card">
+                  <div className="pe-chat-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '1px solid var(--border, #e5e7eb)', paddingBottom: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '1.25rem' }}>🤖</span>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700' }}>H.I.T. Co-Pilot</h3>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted, #6b7280)' }}>Online</span>
                       </div>
                     </div>
-                  )
-                })}
-              </div>
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <button 
+                        className={`pe-chat-btn ${readingAloud ? 'active-audio' : ''}`} 
+                        onClick={toggleReadingAloud}
+                        title={readingAloud ? "Vorlesen deaktivieren" : "Antworten laut vorlesen"}
+                      >
+                        {readingAloud ? <Volume2 size={18} /> : <VolumeX size={18} />}
+                      </button>
+                    </div>
+                  </div>
 
-              <NextActionHub
-                onOpenCapCut={() => {
-                  trackLandingFunnel('post_result_action', { action: 'capcut' })
-                  saveStateAndNavigate('/capcut-studio')
-                }}
-                onTrackAnalytics={() => {
-                  trackLandingFunnel('post_result_action', { action: 'tracking' })
-                  const videoPlatform = results.tiktok || results.instagram || results.youtube || Object.values(results)[0]
-                  const content = videoPlatform?.content
-                  if (content) {
-                    localStorage.setItem('hit_latest_hook', content.hook || '')
-                    localStorage.setItem('hit_latest_body', content.body || '')
-                    localStorage.setItem('hit_latest_cta', content.cta || '')
-                  }
-                  saveStateAndNavigate('/analytics')
-                }}
-                onReset={() => {
-                  trackLandingFunnel('post_result_action', { action: 'reset' })
-                  setPhase('input')
-                  setGoal('')
-                  setResults({})
-                  setTopResults({})
-                  setRecommendations([])
-                  setProgress({})
-                  setMobileStep('input')
-                  localStorage.removeItem('hit_latest_hook')
-                  localStorage.removeItem('hit_latest_body')
-                  localStorage.removeItem('hit_latest_cta')
-                }}
-              />
+                  <div className="pe-chat-history">
+                    {chatHistory.map((msg, idx) => (
+                      <div key={idx} className={`pe-chat-message ${msg.role}`}>
+                        {msg.content}
+                      </div>
+                    ))}
+                    {phase === 'refining' && (
+                      <div className="pe-chat-message assistant" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span className="pe-spinner-small" />
+                        <span>H.I.T. überarbeitet das Skript...</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pe-copilot-input-area">
+                    <form 
+                      onSubmit={(e) => {
+                        e.preventDefault()
+                        refineScript(chatInput)
+                      }}
+                      className="pe-chat-input-bar"
+                    >
+                      <button
+                        type="button"
+                        className={`pe-chat-btn ${isRecording ? 'recording' : ''}`}
+                        onClick={toggleRecording}
+                        title="Per Sprache eingeben"
+                      >
+                        {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
+                      </button>
+                      <input
+                        type="text"
+                        className="pe-chat-input"
+                        placeholder="Wie soll ich das Skript anpassen?"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        disabled={phase === 'refining'}
+                      />
+                      <button
+                        type="submit"
+                        className="pe-chat-btn pe-chat-btn-primary"
+                        disabled={!chatInput.trim() || phase === 'refining'}
+                        title="Senden"
+                      >
+                        <Send size={16} />
+                      </button>
+                    </form>
+                  </div>
+                </div>
+
+                {/* RECHTE SPALTE: Live-Skript-Vorschau */}
+                <div className="pe-copilot-preview-card">
+                  <div className="pe-preview-header" style={{ marginBottom: '1rem', borderBottom: '1px solid var(--border, #e5e7eb)', paddingBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700' }}>🎬 Aktuelles Skript</h3>
+                    <span className="pe-platform-badge" style={{ background: 'var(--color-mint, #10b981)', color: '#fff', fontSize: '9px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                      TikTok / Short
+                    </span>
+                  </div>
+
+                  <div className="pe-preview-section">
+                    {(() => {
+                      const activePlatform = Object.keys(topResults)[0] || 'tiktok'
+                      const r = topResults[activePlatform]
+                      if (!r || !r.content) return <p>Kein Skript vorhanden.</p>
+                      return (
+                        <>
+                          {r.content.hook && (
+                            <div className="pe-preview-block">
+                              <div className="pe-preview-title">Hook (0-3s)</div>
+                              <p className="pe-preview-content">{r.content.hook}</p>
+                            </div>
+                          )}
+                          {r.content.body && (
+                            <div className="pe-preview-block">
+                              <div className="pe-preview-title">Hauptteil (Body & Metapher)</div>
+                              <p className="pe-preview-content">{r.content.body}</p>
+                            </div>
+                          )}
+                          {r.content.cta && (
+                            <div className="pe-preview-block">
+                              <div className="pe-preview-title">CTA & Loop (12-15s)</div>
+                              <p className="pe-preview-content">{r.content.cta}</p>
+                            </div>
+                          )}
+                          {r.content.imageIdea && (
+                            <div className="pe-preview-block" style={{ borderLeftColor: 'var(--color-koralle, #d85a30)' }}>
+                              <div className="pe-preview-title" style={{ color: 'var(--color-koralle, #d85a30)' }}>Visualisierungsidee / B-Roll</div>
+                              <p className="pe-preview-content">{r.content.imageIdea}</p>
+                            </div>
+                          )}
+                        </>
+                      )
+                    })()}
+                  </div>
+
+                  <NextActionHub
+                    onOpenCapCut={() => {
+                      trackLandingFunnel('post_result_action', { action: 'capcut' })
+                      saveStateAndNavigate('/capcut-studio')
+                    }}
+                    onTrackAnalytics={() => {
+                      trackLandingFunnel('post_result_action', { action: 'tracking' })
+                      saveStateAndNavigate('/analytics')
+                    }}
+                    onReset={() => {
+                      trackLandingFunnel('post_result_action', { action: 'reset' })
+                      setPhase('input')
+                      setGoal('')
+                      setResults({})
+                      setTopResults({})
+                      setRecommendations([])
+                      setProgress({})
+                      setMobileStep('input')
+                      localStorage.removeItem('hit_latest_hook')
+                      localStorage.removeItem('hit_latest_body')
+                      localStorage.removeItem('hit_latest_cta')
+                    }}
+                  />
+                </div>
+              </div>
             </div>
           )}
         </>
@@ -1326,155 +1397,6 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
             </div>
           )}
 
-          {mobileStep === 'studio' && phase === 'result' && (
-            <div className="pe-result-phase">
-              <div className="pe-result-header">
-                <h2 className="pe-result-title">✨ {t('platformEngine.resultTitle')}</h2>
-                <p className="pe-result-subtitle">
-                  {goal} · {top3Keys.length} Plattformen erstellt
-                </p>
-              </div>
-
-              <div className="pe-copilot-workspace">
-                {/* LINKE SPALTE: Co-Pilot Chatverlauf */}
-                <div className="pe-copilot-chat-card">
-                  <div className="pe-chat-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '1px solid var(--border, #e5e7eb)', paddingBottom: '0.75rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '1.25rem' }}>🤖</span>
-                      <div>
-                        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700' }}>H.I.T. Co-Pilot</h3>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted, #6b7280)' }}>Online</span>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.25rem' }}>
-                      <button 
-                        className={`pe-chat-btn ${readingAloud ? 'active-audio' : ''}`} 
-                        onClick={toggleReadingAloud}
-                        title={readingAloud ? "Vorlesen deaktivieren" : "Antworten laut vorlesen"}
-                      >
-                        {readingAloud ? <Volume2 size={18} /> : <VolumeX size={18} />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="pe-chat-history">
-                    {chatHistory.map((msg, idx) => (
-                      <div key={idx} className={`pe-chat-message ${msg.role}`}>
-                        {msg.content}
-                      </div>
-                    ))}
-                    {phase === 'refining' && (
-                      <div className="pe-chat-message assistant" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span className="pe-spinner-small" />
-                        <span>H.I.T. überarbeitet das Skript...</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="pe-copilot-input-area">
-                    <form 
-                      onSubmit={(e) => {
-                        e.preventDefault()
-                        refineScript(chatInput)
-                      }}
-                      className="pe-chat-input-bar"
-                    >
-                      <button
-                        type="button"
-                        className={`pe-chat-btn ${isRecording ? 'recording' : ''}`}
-                        onClick={toggleRecording}
-                        title="Per Sprache eingeben"
-                      >
-                        {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
-                      </button>
-                      <input
-                        type="text"
-                        className="pe-chat-input"
-                        placeholder="Wie soll ich das Skript anpassen?"
-                        value={chatInput}
-                        onChange={(e) => setChatInput(e.target.value)}
-                        disabled={phase === 'refining'}
-                      />
-                      <button
-                        type="submit"
-                        className="pe-chat-btn pe-chat-btn-primary"
-                        disabled={!chatInput.trim() || phase === 'refining'}
-                        title="Senden"
-                      >
-                        <Send size={16} />
-                      </button>
-                    </form>
-                  </div>
-                </div>
-
-                {/* RECHTE SPALTE: Live-Skript-Vorschau */}
-                <div className="pe-copilot-preview-card">
-                  <div className="pe-preview-header" style={{ marginBottom: '1rem', borderBottom: '1px solid var(--border, #e5e7eb)', paddingBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700' }}>🎬 Aktuelles Skript</h3>
-                    <span className="pe-platform-badge" style={{ background: 'var(--color-mint, #10b981)', color: '#fff', fontSize: '9px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase' }}>
-                      TikTok / Short
-                    </span>
-                  </div>
-
-                  <div className="pe-preview-section">
-                    {(() => {
-                      const activePlatform = Object.keys(topResults)[0] || 'tiktok'
-                      const r = topResults[activePlatform]
-                      if (!r || !r.content) return <p>Kein Skript vorhanden.</p>
-                      return (
-                        <>
-                          {r.content.hook && (
-                            <div className="pe-preview-block">
-                              <div className="pe-preview-title">Hook (0-3s)</div>
-                              <p className="pe-preview-content">{r.content.hook}</p>
-                            </div>
-                          )}
-                          {r.content.body && (
-                            <div className="pe-preview-block">
-                              <div className="pe-preview-title">Hauptteil (Body & Metapher)</div>
-                              <p className="pe-preview-content">{r.content.body}</p>
-                            </div>
-                          )}
-                          {r.content.cta && (
-                            <div className="pe-preview-block">
-                              <div className="pe-preview-title">CTA & Loop (12-15s)</div>
-                              <p className="pe-preview-content">{r.content.cta}</p>
-                            </div>
-                          )}
-                          {r.content.imageIdea && (
-                            <div className="pe-preview-block" style={{ borderLeftColor: 'var(--color-koralle, #d85a30)' }}>
-                              <div className="pe-preview-title" style={{ color: 'var(--color-koralle, #d85a30)' }}>Visualisierungsidee / B-Roll</div>
-                              <p className="pe-preview-content">{r.content.imageIdea}</p>
-                            </div>
-                          )}
-                        </>
-                      )
-                    })()}
-                  </div>
-
-                  <NextActionHub
-                    onOpenCapCut={() => {
-                      trackLandingFunnel('post_result_action', { action: 'capcut' })
-                      saveStateAndNavigate('/capcut-studio')
-                    }}
-                    onTrackAnalytics={() => {
-                      trackLandingFunnel('post_result_action', { action: 'tracking' })
-                      saveStateAndNavigate('/analytics')
-                    }}
-                    onReset={() => {
-                      trackLandingFunnel('post_result_action', { action: 'reset' })
-                      setPhase('input')
-                      setGoal('')
-                      setResults({})
-                      setTopResults({})
-                      setRecommendations([])
-                      setProgress({})
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Phase: RESULT */}
           {phase === 'result' && mobileStep !== 'studio' && (
