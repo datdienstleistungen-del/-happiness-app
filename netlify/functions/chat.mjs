@@ -444,11 +444,37 @@ ${message}`
       }
     }
 
+    const isContentGeneration = systemPrompt && (
+      systemPrompt.includes('MASTER-BRIEF') || 
+      systemPrompt.includes('Retention-Coach') || 
+      systemPrompt.includes('REICHWEITEN-PROGNOSE') || 
+      systemPrompt.includes('CAPCUT-TEMPLATE')
+    )
+
+    let finalSystemPrompt = systemPrompt || 'Du bist ein erfahrener Mentor, guter Freund und kluger Ratgeber.'
+    let reqTemperature = 0.1
+    let reqPresencePenalty = undefined
+
+    if (isContentGeneration) {
+      const tonalities = [
+        'Provokant / Die harte Wahrheit',
+        'Geheimnisvoll / Das Insider-Wissen',
+        'Humorvoll / Ironisch',
+        'Storytelling / Emotional',
+        'Direkt / Knallharter Nutzwert'
+      ]
+      const randomTonality = tonalities[Math.floor(Math.random() * tonalities.length)]
+      
+      finalSystemPrompt = `${finalSystemPrompt}\n\n### 🎭 ERZWUNGENE TONALITÄT FÜR DIESEN GENERIERUNGS-REQUEST:\n- Nutze zwingend folgende Tonalität und Perspektive: "${randomTonality}".\n\n### 🚫 HARTE SYSTEM-PROMPT BLACKLIST (VERBOTENE PHRASEN & REGELN):\n- Du darfst für den Video-Hook/Einstieg NIEMALS folgende Phrasen oder Wörter benutzen oder variieren:\n  * "Wusstest du schon..."\n  * "Der größte Fehler..."\n  * "Hör sofort auf..."\n  * "Machst du auch diesen Fehler..."\n- Wähle für den Hook zwingend einen völlig neuen, unerwarteten Einstieg, ein überraschendes Statement oder eine unkonventionelle Metapher, die perfekt zur Tonalität "${randomTonality}" passt. Keine langweiligen Phrasen!\n`
+      reqTemperature = 0.85
+      reqPresencePenalty = 0.6
+    }
+
     const hasImage = imageBase64 && typeof imageBase64 === 'string' && imageBase64.startsWith('data:image/')
     
     const buildMessages = (historyLimit, textOnly = false) => {
       const msgs = []
-      msgs.push({ role: 'system', content: systemPrompt || 'Du bist ein erfahrener Mentor, guter Freund und kluger Ratgeber.' })
+      msgs.push({ role: 'system', content: finalSystemPrompt })
       if (history && Array.isArray(history)) {
         for (const msg of history.slice(-historyLimit)) {
           msgs.push({
@@ -617,8 +643,9 @@ ${message}`
             body: JSON.stringify({
               model: 'google/gemma-4-26b-a4b-it:free',
               messages: buildMessages(historyLimit),
-              temperature: 0.1,
-              max_tokens: 4096
+              temperature: reqTemperature,
+              max_tokens: 4096,
+              ...(reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {})
             })
           }, 8000)
           if (orRes.ok) {
@@ -658,8 +685,9 @@ ${message}`
               body: JSON.stringify({
                 model: 'mistral-small-latest',
                 messages: buildMessages(historyLimit),
-                temperature: 0.1,
-                max_tokens: 4096
+                temperature: reqTemperature,
+                max_tokens: 4096,
+                ...(reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {})
               })
             }, 8000)
             if (mistralRes.ok) {
@@ -700,8 +728,9 @@ ${message}`
               body: JSON.stringify({
                 model: 'llama-3.3-70b-versatile',
                 messages: buildMessages(historyLimit),
-                temperature: 0.1,
-                max_tokens: 4096
+                temperature: reqTemperature,
+                max_tokens: 4096,
+                ...(reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {})
               })
             }, 8000)
             if (groqRes.ok) {
@@ -742,8 +771,9 @@ ${message}`
               body: JSON.stringify({
                 model: 'deepseek-v4-flash',
                 messages: buildMessages(historyLimit),
-                temperature: 0.1,
-                max_tokens: 4096
+                temperature: reqTemperature,
+                max_tokens: 4096,
+                ...(reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {})
               })
             }, 8000)
             if (dsRes.ok) {
