@@ -43,11 +43,16 @@ export default function Logo() {
     { char: 's', color: 'var(--color-petrol)' },
   ];
   return (
-    <span style={{ fontSize: '32px', fontWeight: 500 }}>
-      {letters.map((l, i) => (
-        <span key={i} style={{ color: l.color }}>{l.char}</span>
-      ))}
-    </span>
+    <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: '1.05' }}>
+      <span style={{ fontSize: '20px', fontWeight: 700, letterSpacing: '-0.2px' }}>
+        {letters.map((l, i) => (
+          <span key={i} style={{ color: l.color }}>{l.char}</span>
+        ))}
+      </span>
+      <span style={{ fontSize: '8px', color: '#6b7280', letterSpacing: '0.4px', textTransform: 'uppercase', fontWeight: 700, marginTop: '2px' }}>
+        Intelligence Team
+      </span>
+    </div>
   );
 }
 

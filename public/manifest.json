@@ -1,8 +1,8 @@
 {
-  "name": "Happiness App",
-  "short_name": "Happiness",
-  "description": "Deine europäische Plattform für Glück und Vernetzung",
-  "id": "happiness-app",
+  "name": "H.I.T. Studio",
+  "short_name": "H.I.T.",
+  "description": "Happiness Intelligence Team Studio für Creator",
+  "id": "hit-studio",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
