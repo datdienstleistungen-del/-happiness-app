@@ -98,6 +98,7 @@ const translations = {
     landing: {
       tagline: 'Von der Idee zum fertigen Content. In wenigen Minuten.',
       placeholder: 'Was möchtest du erreichen?',
+      suggestionsTitle: 'Oder starte mit einem Beispiel:',
       startButton: 'H.I.T. starten',
       working: 'H.I.T. arbeitet...',
       meta: 'Eine Idee. Content für 12 Plattformen. In wenigen Minuten.',
@@ -302,6 +303,7 @@ const translations = {
     landing: {
       tagline: 'From idea to finished content. In minutes.',
       placeholder: 'What do you want to achieve?',
+      suggestionsTitle: 'Or start with an example:',
       startButton: 'Start H.I.T.',
       working: 'H.I.T. is working...',
       meta: 'One idea. Content for 12 platforms. In minutes.',
