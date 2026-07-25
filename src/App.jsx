@@ -342,6 +342,14 @@ export default function App() {
       const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
       setProfile(data)
 
+      // Automatically ignore analytics for admin accounts on this device
+      if (data && data.role === 'admin') {
+        localStorage.setItem('ignore-analytics', 'true');
+        if (typeof window.gtag === 'function') {
+          window.gtag = function() {};
+        }
+      }
+
       const visitorId = getVisitorId()
       supabase.rpc('claim_anonymous_events', {
         p_user_id: userId,
