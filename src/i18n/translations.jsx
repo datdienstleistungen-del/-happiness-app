@@ -1069,7 +1069,7 @@ function detectBrowserLanguage() {
     const navLang = navigator.language?.split('-')[0]
     if (supported.includes(navLang)) return navLang
   } catch {}
-  return 'de'
+  return 'en'
 }
 
 export function LanguageProvider({ children }) {
