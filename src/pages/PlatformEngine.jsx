@@ -1021,8 +1021,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
           })()}
 
           {/* STEP 3: STUDIO RESULTS SCREEN */}
-          {/* STEP 3: STUDIO RESULTS SCREEN */}
-          {mobileStep === 'studio' && phase === 'result' && (
+          {mobileStep === 'studio' && (phase === 'result' || phase === 'refining') && (
             <div className="pe-result-phase">
               <div className="pe-result-header">
                 <h2 className="pe-result-title">✨ {t('platformEngine.resultTitle')}</h2>
@@ -1399,7 +1398,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
 
 
           {/* Phase: RESULT */}
-          {phase === 'result' && mobileStep !== 'studio' && (
+          {(phase === 'result' || phase === 'refining') && mobileStep !== 'studio' && (
             <div className="pe-result-phase">
               <div className="pe-result-header">
                 <h2 className="pe-result-title">✨ {t('platformEngine.resultTitle')}</h2>
