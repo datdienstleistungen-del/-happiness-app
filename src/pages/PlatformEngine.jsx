@@ -478,6 +478,8 @@ export default function PlatformEngine() {
     if (!goal.trim()) return
     setPhase('analysis')
     setError('')
+    setResults({})
+    setTopResults({})
     trackEvent('hit_started', { goal: goal.trim() })
 
     try {
@@ -654,6 +656,10 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
   }
 
   const handleStart = () => {
+    if (Object.keys(results).length > 0) {
+      setPhase('result')
+      return
+    }
     const top3 = analysis?.topPlatforms || ['instagram', 'facebook', 'linkedin']
     startGenerating(top3)
   }
@@ -784,7 +790,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
           {/* STEP 1: INPUT / LOADERS */}
           {mobileStep === 'input' && (
             <div className="pe-mobile-input-step">
-              {phase === 'input' && (
+              {(phase === 'input' || phase === 'result' || phase === 'refining') && (
                 <div className="pe-input-phase">
                   <div className="pe-main-layout">
                     {/* On mobile input step, we only show the right column */}
@@ -1104,11 +1110,44 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
 
                 {/* RECHTE SPALTE: Live-Skript-Vorschau */}
                 <div className="pe-copilot-preview-card">
-                  <div className="pe-preview-header" style={{ marginBottom: '1rem', borderBottom: '1px solid var(--border, #e5e7eb)', paddingBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="pe-preview-header" style={{ marginBottom: '1rem', borderBottom: '1px solid var(--border, #e5e7eb)', paddingBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                     <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700' }}>🎬 Aktuelles Skript</h3>
-                    <span className="pe-platform-badge" style={{ background: 'var(--color-mint, #10b981)', color: '#fff', fontSize: '9px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase' }}>
-                      TikTok / Short
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span className="pe-platform-badge" style={{ background: 'var(--color-mint, #10b981)', color: '#fff', fontSize: '9px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                        TikTok / Short
+                      </span>
+                      {(() => {
+                        const activePlatform = Object.keys(topResults)[0] || 'tiktok'
+                        const r = topResults[activePlatform]
+                        if (!r || !r.content) return null
+                        const isCopied = copiedPlatform === activePlatform
+                        return (
+                          <button
+                            className={`pe-copy-btn ${isCopied ? 'pe-copy-btn-done' : ''}`}
+                            onClick={() => {
+                              copyToClipboard(getResultText(r), activePlatform)
+                              setCopiedPlatform(activePlatform)
+                              setTimeout(() => setCopiedPlatform(null), 2000)
+                            }}
+                            style={{
+                              padding: '2px 8px',
+                              fontSize: '11px',
+                              fontWeight: '600',
+                              borderRadius: '6px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              background: isCopied ? 'var(--color-mint-light, #ecfdf5)' : 'var(--bg-secondary, #f3f4f6)',
+                              color: isCopied ? 'var(--color-mint, #059669)' : 'var(--text-muted, #4b5563)',
+                              border: '1px solid var(--border, #e5e7eb)',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {isCopied ? <><Check size={12} /> Kopiert!</> : <><Copy size={12} /> Kopieren</>}
+                          </button>
+                        )
+                      })()}
+                    </div>
                   </div>
 
                   <div className="pe-preview-section">
@@ -1326,9 +1365,32 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
           {/* Phase: QUESTIONS */}
           {phase === 'questions' && analysis && (
             <div className="pe-card pe-question-card">
-              <div className="pe-card-header">
-                <div className="pe-brand"><span className="pe-brand-h">H</span>.I.T.</div>
-                <span className="pe-status">{t('landing.analyzing')}</span>
+              <div className="pe-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div className="pe-brand"><span className="pe-brand-h">H</span>.I.T.</div>
+                  <span className="pe-status">{t('landing.analyzing')}</span>
+                </div>
+                <button
+                  onClick={() => setPhase('input')}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    fontSize: '0.8rem',
+                    fontWeight: '600',
+                    borderRadius: '6px',
+                    background: 'var(--bg-secondary, #f3f4f6)',
+                    color: 'var(--text, #374151)',
+                    border: '1px solid var(--border, #e5e7eb)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = 'var(--border, #e5e7eb)'}
+                  onMouseOut={(e) => e.currentTarget.style.background = 'var(--bg-secondary, #f3f4f6)'}
+                >
+                  <ArrowLeft size={14} /> Zurück zum Ziel
+                </button>
               </div>
 
               <div className="pe-score-grid">
@@ -1400,11 +1462,34 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
           {/* Phase: RESULT */}
           {(phase === 'result' || phase === 'refining') && mobileStep !== 'studio' && (
             <div className="pe-result-phase">
-              <div className="pe-result-header">
-                <h2 className="pe-result-title">✨ {t('platformEngine.resultTitle')}</h2>
-                <p className="pe-result-subtitle">
-                  {goal} · {top3Keys.length} Plattformen erstellt
-                </p>
+              <div className="pe-result-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', width: '100%' }}>
+                <div>
+                  <h2 className="pe-result-title">✨ {t('platformEngine.resultTitle')}</h2>
+                  <p className="pe-result-subtitle">
+                    {goal} · {top3Keys.length} Plattformen erstellt
+                  </p>
+                </div>
+                <button
+                  onClick={() => setPhase('questions')}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 14px',
+                    fontSize: '0.88rem',
+                    fontWeight: '600',
+                    borderRadius: '8px',
+                    background: 'var(--bg-secondary, #f3f4f6)',
+                    color: 'var(--text, #374151)',
+                    border: '1px solid var(--border, #e5e7eb)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = 'var(--border, #e5e7eb)'}
+                  onMouseOut={(e) => e.currentTarget.style.background = 'var(--bg-secondary, #f3f4f6)'}
+                >
+                  <ArrowLeft size={16} /> Zurück zur Analyse
+                </button>
               </div>
 
               <div className="pe-copilot-workspace">
@@ -1481,11 +1566,44 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
 
                 {/* RECHTE SPALTE: Live-Skript-Vorschau */}
                 <div className="pe-copilot-preview-card">
-                  <div className="pe-preview-header" style={{ marginBottom: '1rem', borderBottom: '1px solid var(--border, #e5e7eb)', paddingBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="pe-preview-header" style={{ marginBottom: '1rem', borderBottom: '1px solid var(--border, #e5e7eb)', paddingBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                     <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700' }}>🎬 Aktuelles Skript</h3>
-                    <span className="pe-platform-badge" style={{ background: 'var(--color-mint, #10b981)', color: '#fff', fontSize: '9px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase' }}>
-                      TikTok / Short
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span className="pe-platform-badge" style={{ background: 'var(--color-mint, #10b981)', color: '#fff', fontSize: '9px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                        TikTok / Short
+                      </span>
+                      {(() => {
+                        const activePlatform = Object.keys(topResults)[0] || 'tiktok'
+                        const r = topResults[activePlatform]
+                        if (!r || !r.content) return null
+                        const isCopied = copiedPlatform === activePlatform
+                        return (
+                          <button
+                            className={`pe-copy-btn ${isCopied ? 'pe-copy-btn-done' : ''}`}
+                            onClick={() => {
+                              copyToClipboard(getResultText(r), activePlatform)
+                              setCopiedPlatform(activePlatform)
+                              setTimeout(() => setCopiedPlatform(null), 2000)
+                            }}
+                            style={{
+                              padding: '2px 8px',
+                              fontSize: '11px',
+                              fontWeight: '600',
+                              borderRadius: '6px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              background: isCopied ? 'var(--color-mint-light, #ecfdf5)' : 'var(--bg-secondary, #f3f4f6)',
+                              color: isCopied ? 'var(--color-mint, #059669)' : 'var(--text-muted, #4b5563)',
+                              border: '1px solid var(--border, #e5e7eb)',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {isCopied ? <><Check size={12} /> Kopiert!</> : <><Copy size={12} /> Kopieren</>}
+                          </button>
+                        )
+                      })()}
+                    </div>
                   </div>
 
                   <div className="pe-preview-section">
