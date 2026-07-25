@@ -301,6 +301,16 @@ export default function App() {
 
   // Developer filter for Google Analytics
   useEffect(() => {
+    // Check URL parameters for explicit ignore-analytics toggle
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('ignore-analytics') === 'true') {
+      localStorage.setItem('ignore-analytics', 'true');
+      console.log('%c Analytics Tracking: MUTED (ignore-analytics set to true)', 'color: #d97706; font-weight: bold;');
+    } else if (params.get('ignore-analytics') === 'false') {
+      localStorage.removeItem('ignore-analytics');
+      console.log('%c Analytics Tracking: ACTIVE (ignore-analytics removed)', 'color: #10b981; font-weight: bold;');
+    }
+
     const isDeveloper = localStorage.getItem('ignore-analytics') === 'true';
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     const shouldTrack = window.gtag && !isLocalhost && !isDeveloper;
