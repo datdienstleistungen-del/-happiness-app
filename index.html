@@ -34,26 +34,45 @@
         localStorage.removeItem('developer_mode');
       }
 
-      var gaParams = {
-        user_properties: {
-          environment: environment,
-          app_version: '1.0.0'
-        }
-      };
-
-      if (devMode) {
-        gaParams.traffic_type = 'internal';
-        gaParams.debug_mode = true;
-        gaParams.user_properties.role = 'developer';
-        console.log('%c Developer Mode: ACTIVE', 'color: #1b6e6e; font-weight: bold; font-size: 14px;');
-      } else {
-        console.log('%c Developer Mode: OFF', 'color: #6b7280; font-weight: bold; font-size: 14px;');
+      // Check ignore-analytics URL parameter and localStorage
+      var ignoreAnalytics = localStorage.getItem('ignore-analytics') === 'true';
+      if (urlParams.get('ignore-analytics') === 'true') {
+        ignoreAnalytics = true;
+        localStorage.setItem('ignore-analytics', 'true');
+      }
+      if (urlParams.get('ignore-analytics') === 'false') {
+        ignoreAnalytics = false;
+        localStorage.removeItem('ignore-analytics');
       }
 
-      gtag('config', 'G-47T32Z43L2', gaParams);
+      var isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+      var shouldTrack = !isLocalhost && !ignoreAnalytics;
 
-      if (devMode) {
-        gtag('event', 'developer_mode_enabled', { environment: environment });
+      if (!shouldTrack) {
+        window.gtag = function() {};
+        console.log('%c Analytics Tracking: BLOCKED (ignore-analytics or localhost active)', 'color: #d97706; font-weight: bold;');
+      } else {
+        var gaParams = {
+          user_properties: {
+            environment: environment,
+            app_version: '1.0.0'
+          }
+        };
+
+        if (devMode) {
+          gaParams.traffic_type = 'internal';
+          gaParams.debug_mode = true;
+          gaParams.user_properties.role = 'developer';
+          console.log('%c Developer Mode: ACTIVE', 'color: #1b6e6e; font-weight: bold; font-size: 14px;');
+        } else {
+          console.log('%c Developer Mode: OFF', 'color: #6b7280; font-weight: bold; font-size: 14px;');
+        }
+
+        gtag('config', 'G-47T32Z43L2', gaParams);
+
+        if (devMode) {
+          gtag('event', 'developer_mode_enabled', { environment: environment });
+        }
       }
     </script>
     <script>
