@@ -226,20 +226,16 @@ export const handler = async (event) => {
     }
 
     let userId = null
-    if (token === 'test-bypass-key') {
-      userId = '00000000-0000-0000-0000-000000000000'
-    } else {
-      try {
-        const authRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-          headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_SERVICE_KEY }
-        })
-        if (authRes.ok) {
-          const userData = await authRes.json()
-          userId = userData.id
-        }
-      } catch (e) {
-        console.error('Auth check failed:', e.message)
+    try {
+      const authRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_SERVICE_KEY }
+      })
+      if (authRes.ok) {
+        const userData = await authRes.json()
+        userId = userData.id
       }
+    } catch (e) {
+      console.error('Auth check failed:', e.message)
     }
 
     if (!userId) {
