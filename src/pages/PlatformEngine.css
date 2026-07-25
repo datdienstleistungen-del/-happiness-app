@@ -1439,3 +1439,59 @@
   background: rgba(15, 23, 42, 0.9);
 }
 
+/* Mobile Wizard Navigation styles */
+.pe-mobile-wizard-nav {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .pe-mobile-wizard-nav {
+    display: flex;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border, rgba(0, 0, 0, 0.08));
+    padding: 6px;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    position: sticky;
+    top: 1rem;
+    z-index: 100;
+  }
+  
+  .dark .pe-mobile-wizard-nav {
+    background: rgba(15, 23, 42, 0.55);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .pe-wizard-tab {
+    flex: 1;
+    text-align: center;
+    padding: 0.75rem 0.5rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted, #64748b);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .dark .pe-wizard-tab {
+    color: #94a3b8;
+  }
+
+  .pe-wizard-tab.active {
+    background: var(--color-petrol, #085041);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(8, 80, 65, 0.25);
+  }
+
+  .pe-wizard-tab:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+

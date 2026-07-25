@@ -138,6 +138,196 @@ export default function PlatformEngine() {
   const [tickerIndex, setTickerIndex] = useState(0)
   const [duelIndex, setDuelIndex] = useState(0)
   const videoEditor = 'capcut';
+  const [mobileStep, setMobileStep] = useState('input');
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (phase === 'result' && isMobile) {
+      setMobileStep('analysis');
+    }
+  }, [phase, isMobile]);
+
+  const getMobileAnalysis = () => {
+    const videoPlatform = results.tiktok || results.instagram || results.youtube || Object.values(results)[0]
+    const content = videoPlatform?.content
+    if (!content) return null
+
+    const hook = content.hook || ''
+    const body = content.body || ''
+    const cta = content.cta || ''
+
+    const points = calculateDynamicCurveLocal(hook, body, cta)
+    const average = points.reduce((sum, p) => sum + p, 0) / points.length
+    const score = Math.max(5, Math.min(100, Math.round(average * 1.08)))
+
+    const hookY = (150 - (points[3] * 1.5)).toFixed(1)
+    const bodyY = (150 - (points[15] * 1.5)).toFixed(1)
+    const ctaY = (150 - (points[30] * 1.5)).toFixed(1)
+
+    const pathD = `M 0 0 C 15 0 15 ${hookY} 30 ${hookY} S 135 ${bodyY} 150 ${bodyY} S 285 ${ctaY} 300 ${ctaY}`
+    const areaD = `${pathD} L 300 150 L 0 150 Z`
+
+    const lights = getTrafficLightsLocal(hook, body, cta)
+
+    return {
+      score,
+      points,
+      hookY,
+      bodyY,
+      ctaY,
+      pathD,
+      areaD,
+      lights
+    }
+  }
+
+  function calculateDynamicCurveLocal(hookText, bodyText, ctaText) {
+    const hookLen = (hookText || '').trim().length
+    const bodyLen = (bodyText || '').trim().length
+    const ctaLen = (ctaText || '').trim().length
+
+    const points = new Array(31).fill(100)
+    
+    let hookVal = 95
+    if (hookLen === 0 || hookLen > 130) {
+      hookVal = 25
+    } else if (hookLen > 90) {
+      hookVal = 55
+    }
+
+    let bodyVal = 88
+    if (bodyLen < 300 || bodyLen > 800) {
+      bodyVal = 20
+    } else if (bodyLen < 400 || bodyLen > 650) {
+      bodyVal = 50
+    }
+
+    let ctaVal = 82
+    if (ctaLen > 120) {
+      ctaVal = 5
+    } else if (ctaLen === 0) {
+      ctaVal = 30
+    } else {
+      const ctaLower = ctaText.toLowerCase()
+      if (ctaLower.includes('loop') || ctaLower.includes('anfang') || ctaLower.includes('und das')) {
+        ctaVal = Math.min(95, bodyVal + 5)
+      }
+    }
+
+    for (let i = 0; i <= 30; i++) {
+      if (i === 0) {
+        points[i] = 100
+      } else if (i <= 3) {
+        const pct = i / 3
+        points[i] = Math.round(100 - (100 - hookVal) * pct)
+      } else if (i <= 15) {
+        const pct = (i - 3) / 12
+        points[i] = Math.round(hookVal - (hookVal - bodyVal) * pct)
+      } else if (i <= 27) {
+        const pct = (i - 15) / 12
+        points[i] = Math.round(bodyVal - (bodyVal - ctaVal) * pct)
+      } else {
+        const pct = (i - 27) / 3
+        points[i] = Math.round(ctaVal)
+      }
+      points[i] = Math.max(1, Math.min(100, points[i]))
+    }
+
+    return points
+  }
+
+  function getTrafficLightsLocal(hookText, bodyText, ctaText) {
+    const lights = []
+    
+    const hookLen = hookText.length
+    if (hookLen === 0) {
+      lights.push({ 
+        type: 'red', 
+        label: 'HOOK',
+        text: '⚠️ Hook leer! Bitte füge einen Hook-Text hinzu.' 
+      })
+    } else if (hookLen > 130) {
+      lights.push({ 
+        type: 'red', 
+        label: 'HOOK',
+        text: '⚠️ Hook viel zu lang. Zuschauer scrollen sofort ab.' 
+      })
+    } else if (hookLen >= 90) {
+      lights.push({ 
+        type: 'yellow', 
+        label: 'HOOK',
+        text: '⚠️ Hook etwas lang. Versuche, die Kernaussage schneller zu bringen.' 
+      })
+    } else {
+      lights.push({ 
+        type: 'green', 
+        label: 'HOOK',
+        text: '✅ Hook hat eine ideale, knackige Länge!' 
+      })
+    }
+
+    const bodyLen = bodyText.length
+    if (bodyLen === 0) {
+      lights.push({ 
+        type: 'red', 
+        label: 'HAUPTTEIL',
+        text: '⚠️ Hauptteil leer. Bitte füge den Video-Inhalt ein.' 
+      })
+    } else if (bodyLen < 100 || bodyLen > 1000) {
+      lights.push({ 
+        type: 'red', 
+        label: 'HAUPTTEIL',
+        text: '⚠️ Hauptteil ungeeignet für optimale Retention (zu kurz oder zu überladen).' 
+      })
+    } else if (bodyLen >= 300 && bodyLen <= 800) {
+      lights.push({ 
+        type: 'green', 
+        label: 'HAUPTTEIL',
+        text: '✅ Hauptteil hat die optimale Pacing-Dichte!' 
+      })
+    } else {
+      lights.push({ 
+        type: 'yellow', 
+        label: 'HAUPTTEIL',
+        text: '⚠️ Hauptteil ist sehr kurz oder lang. Achte auf Pattern Interrupts.' 
+      })
+    }
+
+    const ctaLen = ctaText.length
+    if (ctaLen === 0) {
+      lights.push({ 
+        type: 'red', 
+        label: 'CTA & LOOP',
+        text: '⚠️ Kein CTA vorhanden. Die Zuschauer wissen nicht, was sie tun sollen.' 
+      })
+    } else if (ctaLen > 120) {
+      lights.push({ 
+        type: 'red', 
+        label: 'CTA & LOOP',
+        text: '⚠️ CTA viel zu lang. Zuschauer schalten vor dem Videoende ab.' 
+      })
+    } else if (ctaLen >= 60) {
+      lights.push({ 
+        type: 'yellow', 
+        label: 'CTA & LOOP',
+        text: '⚠️ CTA etwas lang. Vermeide langes Verabschieden.' 
+      })
+    } else {
+      lights.push({ 
+        type: 'green', 
+        label: 'CTA & LOOP',
+        text: '✅ CTA ist kurz und direkt!' 
+      })
+    }
+
+    return lights
+  }
 
   // Restore state from localStorage on mount (after navigating back from CapCut/Analytics)
   useEffect(() => {
@@ -340,542 +530,651 @@ export default function PlatformEngine() {
 
   return (
     <div className="platform-engine">
-      {/* Phase: INPUT */}
-      {phase === 'input' && (
-        <div className="pe-input-phase">
-          <div className="pe-main-layout">
-            {/* Left Column: Glassmorphism Ticker */}
-            <div className="pe-left-column">
-              <div className="pe-ticker-widget">
-                <div key={tickerIndex} className="pe-ticker-content pe-ticker-fade">
-                  <div className="pe-ticker-header">
-                    <span className="pe-ticker-icon">{TICKER_ITEMS[tickerIndex].icon}</span>
-                    <span className="pe-ticker-badge">H.I.T. Power</span>
-                  </div>
-                  <div className="pe-ticker-text">
-                    <p className="pe-ticker-question">{TICKER_ITEMS[tickerIndex].question}</p>
-                    <p className="pe-ticker-solution">{TICKER_ITEMS[tickerIndex].solution}</p>
-                  </div>
-                </div>
-                <div className="pe-ticker-dots">
-                  {TICKER_ITEMS.map((_, i) => (
-                    <span
-                      key={i}
-                      className={`pe-ticker-dot ${i === tickerIndex ? 'active' : ''}`}
-                      onClick={() => setTickerIndex(i)}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
+      {/* Mobile Wizard Navigation */}
+      <div className="pe-mobile-wizard-nav">
+        <button
+          className={`pe-wizard-tab ${mobileStep === 'input' ? 'active' : ''}`}
+          onClick={() => setMobileStep('input')}
+        >
+          1. Text
+        </button>
+        <button
+          className={`pe-wizard-tab ${mobileStep === 'analysis' ? 'active' : ''}`}
+          onClick={() => {
+            if (Object.keys(results).length > 0) {
+              setMobileStep('analysis');
+            }
+          }}
+          disabled={Object.keys(results).length === 0}
+        >
+          2. Analyse
+        </button>
+        <button
+          className={`pe-wizard-tab ${mobileStep === 'studio' ? 'active' : ''}`}
+          onClick={() => {
+            if (Object.keys(results).length > 0) {
+              setMobileStep('studio');
+            }
+          }}
+          disabled={Object.keys(results).length === 0}
+        >
+          3. Studio
+        </button>
+      </div>
 
-            {/* Right Column: Main Hero and Form Input */}
-            <div className="pe-right-column">
-              <div className="pe-hero">
-                <div className="pe-title-row">
-                  <VerticalLogo size="small" />
-                  <button className="pe-info-btn" onClick={() => setShowInfo(true)} aria-label="Info">
-                    <Info size={18} />
-                  </button>
-                </div>
-                <p className="pe-subtitle">{t('landing.tagline')}</p>
-              </div>
-
-              <div className="pe-input-wrap">
-
-                <input
-                  className="pe-input"
-                  type="text"
-                  value={goal}
-                  onChange={(e) => setGoal(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && startAnalysis()}
-                  placeholder={t('landing.placeholder')}
-                />
-                <button
-                  className="btn btn-primary pe-start-btn"
-                  onClick={startAnalysis}
-                  disabled={!goal.trim()}
-                >
-                  <Rocket size={16} /> {t('landing.startButton')}
-                </button>
-              </div>
-
-              {error && <p className="pe-error">{error}</p>}
-
-              <div className="pe-chips">
-                {chips.map((chip) => (
-                  <button key={chip.label} className="pe-chip" onClick={() => handleChipClick(chip)}>
-                    <span>{chip.icon}</span> {chip.label}
-                  </button>
-                ))}
-              </div>
-
-              <p className="pe-meta">{t('landing.meta')}</p>
-            </div>
-          </div>
-
-          {/* Bottom Full-width Row: Niche Duel Comparison */}
-          <div className="pe-duel-widget">
-            <div className="pe-duel-header-row">
-              <span className="pe-duel-title">💡 Wie H.I.T. deinen Content transformiert:</span>
-              <div className="pe-duel-tabs">
-                {DUEL_SETS.map((set, i) => (
-                  <button
-                    key={set.title}
-                    className={`pe-duel-tab ${i === duelIndex ? 'active' : ''}`}
-                    onClick={() => setDuelIndex(i)}
-                  >
-                    {set.title}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div key={duelIndex} className="pe-duel-grid pe-ticker-fade">
-              {/* Bad Column */}
-              <div className="pe-duel-card bad">
-                <div className="pe-duel-card-title">❌ Ohne Struktur & Hook</div>
-                <p className="pe-duel-card-text">{DUEL_SETS[duelIndex].bad}</p>
-              </div>
-              {/* Good Column */}
-              <div className="pe-duel-card good">
-                <div className="pe-duel-card-title">💡 Standard Best Practice</div>
-                <p className="pe-duel-card-text">{DUEL_SETS[duelIndex].good}</p>
-              </div>
-              {/* HIT Column */}
-              <div className="pe-duel-card hit">
-                <div className="pe-duel-card-title">🚀 Mit H.I.T. optimiert</div>
-                <p className="pe-duel-card-text">{DUEL_SETS[duelIndex].hit}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Phase: ANALYSIS */}
-      {phase === 'analysis' && (
-        <div className="pe-card pe-analysis-card">
-          <div className="pe-card-header">
-            <div className="pe-brand"><span className="pe-brand-h">H</span>.I.T.</div>
-            <span className="pe-status">{t('landing.analyzing')}</span>
-          </div>
-          <div className="pe-analysis-steps">
-            <div className="pe-step done"><Check size={14} /> {t('landing.stepGoal')}</div>
-            <div className="pe-step active"><span className="pe-spinner" /> {t('landing.stepStrategy')}</div>
-            <div className="pe-step"><span className="pe-step-num">3</span> {t('landing.stepContent')}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Phase: QUESTIONS */}
-      {phase === 'questions' && analysis && (
-        <div className="pe-card pe-question-card">
-          <div className="pe-card-header">
-            <div className="pe-brand"><span className="pe-brand-h">H</span>.I.T.</div>
-            <span className="pe-status">{t('landing.analyzing')}</span>
-          </div>
-
-          <div className="pe-score-grid">
-            <div className="pe-score-item">
-              <span className="pe-score-label">{t('landing.goalDetected')}</span>
-              <span className="pe-score-value done">✅</span>
-            </div>
-            <div className="pe-score-item">
-              <span className="pe-score-label">{t('landing.strategyCreated')}</span>
-              <span className="pe-score-value done">✅</span>
-            </div>
-            <div className="pe-score-item">
-              <span className="pe-score-label">{t('landing.contentChance')}</span>
-              <span className="pe-score-value highlight">{analysis.contentScore}%</span>
-            </div>
-            <div className="pe-score-item">
-              <span className="pe-score-label">{t('landing.savedTime')}</span>
-              <span className="pe-score-value">{analysis.savedTime}</span>
-            </div>
-          </div>
-
-          <div className="pe-recommended">
-            <p className="pe-recommended-title">{t('platformEngine.recommended')}</p>
-            <div className="pe-recommended-list">
-              {top3Keys.map((key, i) => (
-                <span key={key} className="pe-recommended-item">
-                  {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} {getAgentName(key)}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="pe-question-actions">
-            <button className="btn btn-primary" onClick={handleStart}>
-              <Sparkles size={16} /> Weiter
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Phase: GENERATING */}
-      {phase === 'generating' && (
-        <div className="pe-card pe-generating-card">
-          <div className="pe-card-header">
-            <div className="pe-brand"><span className="pe-brand-h">H</span>.I.T.</div>
-            <span className="pe-status">{t('platformEngine.generating')}</span>
-          </div>
-
-          <div className="pe-progress-bar">
-            <div
-              className="pe-progress-fill"
-              style={{ width: `${(Object.keys(progress).length / (analysis?.topPlatforms?.length || 3)) * 100}%` }}
-            />
-          </div>
-
-          <div className="pe-progress-list">
-            {top3Keys.map((key) => (
-              <div key={key} className={`pe-progress-item ${progress[key] === 'done' ? 'done' : 'active'}`}>
-                {progress[key] === 'done' ? <Check size={14} /> : <span className="pe-spinner-small" />}
-                <span>{getAgentIcon(key)} {getAgentName(key)}</span>
-                {progress[key] === 'done' ? <span className="pe-progress-status">fertig</span> : <span className="pe-progress-status">wird erstellt...</span>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Phase: RESULT — Creator Package */}
-      {phase === 'result' && (
-        <div className="pe-result-phase">
-          <div className="pe-result-header">
-            <h2 className="pe-result-title">✨ {t('platformEngine.resultTitle')}</h2>
-            <p className="pe-result-subtitle">
-              {goal} · {top3Keys.length} Plattformen erstellt
-            </p>
-          </div>
-
-          {/* Top 3 Platform Cards */}
-          <div className="pe-platform-grid">
-            {top3Keys.map((key, index) => {
-              const r = topResults[key]
-              if (!r || !r.content) return null
-              const isCopied = copiedPlatform === key
-              const copiedCount = copiedPlatform ? 1 : 0
-              return (
-                <div key={key} className={`pe-platform-card ${isCopied ? 'pe-platform-card-copied' : ''}`}>
-                  <div className="pe-platform-card-header">
-                    <div className="pe-platform-name-group">
-                      <span className="pe-platform-step">{index + 1}/3</span>
-                      <span className="pe-platform-name">{r.icon} {r.name}</span>
-                    </div>
-                    <div className="pe-copy-btn-group">
-                      <button
-                        className={`pe-copy-btn pe-copy-btn-card ${isCopied ? 'pe-copy-btn-done' : ''}`}
-                        onClick={() => {
-                          copyToClipboard(getResultText(r), key)
-                          setCopiedPlatform(key)
-                          setTimeout(() => setCopiedPlatform(null), 2000)
-                        }}
-                      >
-                        {isCopied ? <><Check size={14} /> Kopiert!</> : <><Copy size={14} /> Kopieren</>}
-                      </button>
-                      <button
-                        className="pe-copy-btn pe-copy-btn-card pe-copy-btn-primary"
-                        onClick={() => {
-                          copyToClipboard(getResultText(r), key)
-                          setCopiedPlatform(key)
-                          setTimeout(() => setCopiedPlatform(null), 2000)
-                          const isMob = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-                          const url = isMob ? 'capcut://com.lemon.lvoverseas' : 'https://www.capcut.com/editor?enter_from=link'
-                          window.open(url, '_blank')
-                        }}
-                      >
-                        <Copy size={14} /> In CapCut einfügen
-                      </button>
-                    </div>
-                  </div>
-                  {r.content.hook && <p className="pe-card-hook">{r.content.hook}</p>}
-                  <p className="pe-card-body">{r.content.body}</p>
-                  {r.content.cta && <p className="pe-card-cta">{r.content.cta}</p>}
-                  {r.content.hashtags?.length > 0 && (
-                    <div className="pe-card-tags">
-                      {r.content.hashtags.map((h, i) => (
-                        <span key={i} className="pe-tag">{h.startsWith('#') ? h : '#' + h}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Action Buttons — nur Teilen */}
-          <div className="pe-actions">
-            <button className="btn btn-outline" onClick={async () => {
-              const text = Object.values(topResults).map(r => getResultText(r)).join('\n\n---\n\n')
-              try {
-                if (navigator.share) {
-                  await navigator.share({ title: 'Creator-Paket von H.I.T.', text })
-                } else {
-                  throw new Error('no share')
-                }
-              } catch {
-                navigator.clipboard.writeText(text)
-                trackEvent('content_copied', { platform: 'all_share' })
-                setCopiedAll(true)
-                setTimeout(() => setCopiedAll(false), 2000)
-              }
-            }}>
-              <Share2 size={16} /> {copiedAll ? t('platformEngine.copiedAll') || 'Kopiert!' : t('platformEngine.shareAll')}
-            </button>
-          </div>
-
-          {/* Weitere Plattformen — einzeln generieren */}
-          {allPlatforms.filter(p => !top3Keys.includes(p.key)).length > 0 && (
-            <div className="pe-more-section">
-              <p className="pe-more-title">{t('platformEngine.moreAvailable')}</p>
-
-              {/* Bereits generierte weitere Plattformen — als volle Karten */}
-              {allPlatforms
-                .filter(p => !top3Keys.includes(p.key) && results[p.key])
-                .map((p, i) => {
-                  const r = results[p.key]
-                  if (!r || !r.content) return null
-                  return (
-                    <div key={p.key} className="pe-platform-card pe-platform-card-extra">
-                        <div className="pe-platform-card-header">
-                        <div className="pe-platform-name-group">
-                          <span className="pe-platform-name">{r.icon} {r.name}</span>
-                        </div>
-                        <div className="pe-copy-btn-group">
-                          <button
-                            className={`pe-copy-btn pe-copy-btn-card ${copiedPlatform === p.key ? 'pe-copy-btn-done' : ''}`}
-                            onClick={() => {
-                              copyToClipboard(getResultText(r), p.key)
-                              setCopiedPlatform(p.key)
-                              setTimeout(() => setCopiedPlatform(null), 2000)
-                            }}
-                          >
-                            {copiedPlatform === p.key ? <><Check size={14} /> Kopiert!</> : <><Copy size={14} /> Kopieren</>}
-                          </button>
-                          <button
-                            className="pe-copy-btn pe-copy-btn-card pe-copy-btn-primary"
-                            onClick={() => {
-                              copyToClipboard(getResultText(r), p.key)
-                              setCopiedPlatform(p.key)
-                              setTimeout(() => setCopiedPlatform(null), 2000)
-                              const isMob = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-                              const url = isMob ? 'capcut://com.lemon.lvoverseas' : 'https://www.capcut.com/editor?enter_from=link'
-                              window.open(url, '_blank')
-                            }}
-                          >
-                            <Copy size={14} /> In CapCut einfügen
+      {/* RENDER INHALT FÜR SMARTPHONES */}
+      {isMobile ? (
+        <>
+          {/* STEP 1: INPUT / LOADERS */}
+          {mobileStep === 'input' && (
+            <div className="pe-mobile-input-step">
+              {phase === 'input' && (
+                <div className="pe-input-phase">
+                  <div className="pe-main-layout">
+                    {/* On mobile input step, we only show the right column */}
+                    <div className="pe-right-column">
+                      <div className="pe-hero">
+                        <div className="pe-title-row">
+                          <VerticalLogo size="small" />
+                          <button className="pe-info-btn" onClick={() => setShowInfo(true)} aria-label="Info">
+                            <Info size={18} />
                           </button>
                         </div>
+                        <p className="pe-subtitle">{t('landing.tagline')}</p>
                       </div>
-                      {r.content.hook && <p className="pe-card-hook">{r.content.hook}</p>}
-                      <p className="pe-card-body">{r.content.body}</p>
-                      {r.content.cta && <p className="pe-card-cta">{r.content.cta}</p>}
-                      {r.content.hashtags?.length > 0 && (
-                        <div className="pe-card-tags">
-                          {r.content.hashtags.map((h, i) => (
-                            <span key={i} className="pe-tag">{h.startsWith('#') ? h : '#' + h}</span>
+
+                      <div className="pe-input-wrap">
+                        <input
+                          className="pe-input"
+                          type="text"
+                          value={goal}
+                          onChange={(e) => setGoal(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && startAnalysis()}
+                          placeholder={t('landing.placeholder')}
+                        />
+                        <button
+                          className="btn btn-primary pe-start-btn"
+                          onClick={startAnalysis}
+                          disabled={!goal.trim()}
+                        >
+                          <Sparkles size={16} /> H.I.T. starten
+                        </button>
+                      </div>
+
+                      <div className="pe-suggestions">
+                        <p className="pe-suggestions-title">{t('landing.suggestionsTitle')}</p>
+                        <div className="pe-chips">
+                          {getGoalSuggestions().map((chip) => (
+                            <button
+                              key={chip.label}
+                              className="pe-chip"
+                              onClick={() => handleChipClick(chip)}
+                            >
+                              <span className="pe-chip-icon">{chip.icon}</span>
+                              <span className="pe-chip-label">{chip.label}</span>
+                            </button>
                           ))}
                         </div>
-                      )}
+                      </div>
                     </div>
-                  )
-                })}
+                  </div>
+                </div>
+              )}
 
-              {/* Noch nicht generierte — einzeln auflisten */}
-              <div className="pe-more-list">
-                {allPlatforms
-                  .filter(p => !top3Keys.includes(p.key) && !results[p.key])
-                  .map(p => (
-                    <button
-                      key={p.key}
-                      className="pe-more-item-btn"
-                      onClick={() => handleGenerateSingle(p.key)}
-                      disabled={generatingSingle !== null}
-                    >
-                      {generatingSingle === p.key ? (
-                        <><span className="pe-spinner-small" /> Wird erstellt...</>
-                      ) : (
-                        <>{p.icon} {p.name} <span className="pe-more-plus">+</span></>
-                      )}
+              {phase === 'analysis' && (
+                <div className="pe-card pe-analysis-card">
+                  <div className="pe-card-header">
+                    <div className="pe-brand"><span className="pe-brand-h">H</span>.I.T.</div>
+                    <span className="pe-status">{t('landing.analyzing')}</span>
+                  </div>
+                  <div className="pe-analysis-steps">
+                    <div className="pe-step done"><Check size={14} /> {t('landing.stepGoal')}</div>
+                    <div className="pe-step active"><span className="pe-spinner" /> {t('landing.stepStrategy')}</div>
+                    <div className="pe-step"><span className="pe-step-num">3</span> {t('landing.stepContent')}</div>
+                  </div>
+                </div>
+              )}
+
+              {phase === 'questions' && analysis && (
+                <div className="pe-card pe-question-card">
+                  <div className="pe-card-header">
+                    <div className="pe-brand"><span className="pe-brand-h">H</span>.I.T.</div>
+                    <span className="pe-status">{t('landing.analyzing')}</span>
+                  </div>
+
+                  <div className="pe-score-grid">
+                    <div className="pe-score-item">
+                      <span className="pe-score-label">{t('landing.goalDetected')}</span>
+                      <span className="pe-score-value done">✅</span>
+                    </div>
+                    <div className="pe-score-item">
+                      <span className="pe-score-label">{t('landing.strategyCreated')}</span>
+                      <span className="pe-score-value done">✅</span>
+                    </div>
+                    <div className="pe-score-item">
+                      <span className="pe-score-label">{t('landing.contentChance')}</span>
+                      <span className="pe-score-value highlight">{analysis.contentScore}%</span>
+                    </div>
+                    <div className="pe-score-item">
+                      <span className="pe-score-label">{t('landing.savedTime')}</span>
+                      <span className="pe-score-value">{analysis.savedTime}</span>
+                    </div>
+                  </div>
+
+                  <div className="pe-recommended">
+                    <p className="pe-recommended-title">{t('platformEngine.recommended')}</p>
+                    <div className="pe-recommended-list">
+                      {top3Keys.map((key, i) => (
+                        <span key={key} className="pe-recommended-item">
+                          {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} {getAgentName(key)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pe-question-actions">
+                    <button className="btn btn-primary" onClick={handleStart}>
+                      <Sparkles size={16} /> Weiter
                     </button>
-                  ))
-                }
-              </div>
+                  </div>
+                </div>
+              )}
 
-              {/* Alle generieren — secondary */}
-              {!generatedMore && allPlatforms.filter(p => !top3Keys.includes(p.key) && !results[p.key]).length > 1 && (
-                <button className="btn btn-outline pe-more-btn" onClick={handleGenerateMore}>
-                  {t('platformEngine.moreButton')}
-                </button>
+              {phase === 'generating' && (
+                <div className="pe-card pe-generating-card">
+                  <div className="pe-card-header">
+                    <div className="pe-brand"><span className="pe-brand-h">H</span>.I.T.</div>
+                    <span className="pe-status">{t('platformEngine.generating')}</span>
+                  </div>
+
+                  <div className="pe-progress-bar">
+                    <div
+                      className="pe-progress-fill"
+                      style={{ width: `${(Object.keys(progress).length / (analysis?.topPlatforms?.length || 3)) * 100}%` }}
+                    />
+                  </div>
+
+                  <div className="pe-progress-list">
+                    {top3Keys.map((key) => (
+                      <div key={key} className={`pe-progress-item ${progress[key] === 'done' ? 'done' : 'active'}`}>
+                        {progress[key] === 'done' ? <Check size={14} /> : <span className="pe-spinner-small" />}
+                        <span>{getAgentIcon(key)} {getAgentName(key)}</span>
+                        {progress[key] === 'done' ? <span className="pe-progress-status">fertig</span> : <span className="pe-progress-status">wird erstellt...</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           )}
 
-          {/* Next Action Hub */}
-          <NextActionHub
-            onOpenCapCut={() => {
-              trackLandingFunnel('post_result_action', { action: 'capcut' })
-              saveStateAndNavigate('/capcut-studio')
-            }}
-            onTrackAnalytics={() => {
-              trackLandingFunnel('post_result_action', { action: 'tracking' })
-              const videoPlatform = results.tiktok || results.instagram || results.youtube || Object.values(results)[0]
-              const content = videoPlatform?.content
-              if (content) {
-                localStorage.setItem('hit_latest_hook', content.hook || '')
-                localStorage.setItem('hit_latest_body', content.body || '')
-                localStorage.setItem('hit_latest_cta', content.cta || '')
-              } else {
-                localStorage.removeItem('hit_latest_hook')
-                localStorage.removeItem('hit_latest_body')
-                localStorage.removeItem('hit_latest_cta')
-              }
-              saveStateAndNavigate('/analytics')
-            }}
-            onReset={() => {
-              trackLandingFunnel('post_result_action', { action: 'reset' })
-              setPhase('input')
-              setGoal('')
-              setAnalysis(null)
-              setResults({})
-              setTopResults({})
-              setRecommendations([])
-              setProgress({})
-              setShowMore(false)
-              setGeneratedMore(false)
-              window.scrollTo({ top: 0, behavior: 'smooth' })
-            }}
-          />
+          {/* STEP 2: DYNAMIC SVG CURVE, SCORE & TRAFFIC LIGHTS */}
+          {mobileStep === 'analysis' && getMobileAnalysis() && (() => {
+            const analysisData = getMobileAnalysis();
+            return (
+              <div className="pe-card pe-mobile-analysis-card" style={{ padding: '1.5rem', borderRadius: '16px', background: 'rgba(255,255,255,0.85)', border: '1px solid var(--border)', boxShadow: '0 4px 24px rgba(0,0,0,0.05)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>Zuschauerbindung</h3>
+                  <div className="retention-score-badge" style={{
+                    background: 'rgba(29, 158, 117, 0.1)',
+                    color: '#1d9e75',
+                    padding: '4px 10px',
+                    borderRadius: '8px',
+                    fontSize: '0.88rem',
+                    fontWeight: 700
+                  }}>
+                    Score: {analysisData.score}/100
+                  </div>
+                </div>
 
-          {/* Recommendations */}
-          {recommendations.length > 0 && (
-            <div className="pe-recommendations">
-              <h3>{t('platformEngine.recsTitle')}</h3>
-              <div className="pe-rec-list">
-                {recommendations.map((rec, i) => (
-                  <div key={i} className="pe-rec-item">
-                    <span className="pe-rec-icon">{rec.icon}</span>
-                    <div>
-                      <strong>{rec.title}</strong>
-                      <p>{rec.text}</p>
+                <div className="svg-chart-container" style={{ marginBottom: '1.5rem' }}>
+                  <div className="chart-viewport" style={{ background: '#f8fafc', borderRadius: '12px', padding: '10px', position: 'relative' }}>
+                    <svg viewBox="0 0 300 150" preserveAspectRatio="none" style={{ width: '100%', height: '120px' }}>
+                      <defs>
+                        <linearGradient id="retention-gradient-mobile" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#1d9e75" stopOpacity="0.3" />
+                          <stop offset="100%" stopColor="#1d9e75" stopOpacity="0.0" />
+                        </linearGradient>
+                      </defs>
+                      <line x1="0" y1="75" x2="300" y2="75" stroke="#e2e8f0" strokeDasharray="3" />
+                      <line x1="30" y1="0" x2="30" y2="150" stroke="#e2e8f0" strokeDasharray="2" />
+                      <line x1="270" y1="0" x2="270" y2="150" stroke="#e2e8f0" strokeDasharray="2" />
+                      <path d={analysisData.areaD} fill="url(#retention-gradient-mobile)" />
+                      <path d={analysisData.pathD} fill="none" stroke="#1d9e75" strokeWidth="2.5" />
+                      <circle cx="30" cy={analysisData.hookY} r="4" fill="#166534" />
+                      <circle cx="150" cy={analysisData.bodyY} r="4" fill="#166534" />
+                      <circle cx="300" cy={analysisData.ctaY} r="4" fill="#166534" />
+                    </svg>
+                  </div>
+                </div>
+
+                <div className="social-traffic-lights" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {analysisData.lights.map((light, i) => (
+                    <div key={i} className={`traffic-light-card ${light.type}`} style={{
+                      padding: '10px 12px',
+                      borderRadius: '10px',
+                      background: light.type === 'green' ? 'rgba(29, 158, 117, 0.08)' : light.type === 'yellow' ? 'rgba(245, 158, 11, 0.08)' : 'rgba(220, 38, 38, 0.08)',
+                      borderLeft: `4px solid ${light.type === 'green' ? '#1d9e75' : light.type === 'yellow' ? '#f59e0b' : '#dc2626'}`
+                    }}>
+                      <span className="tl-label" style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', display: 'block', color: '#64748b' }}>{light.label}</span>
+                      <span className="tl-text" style={{ fontSize: '0.85rem', color: 'var(--text)' }}>{light.text}</span>
                     </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* STEP 3: STUDIO RESULTS SCREEN */}
+          {mobileStep === 'studio' && phase === 'result' && (
+            <div className="pe-result-phase">
+              <div className="pe-result-header">
+                <h2 className="pe-result-title">✨ {t('platformEngine.resultTitle')}</h2>
+                <p className="pe-result-subtitle">
+                  {goal} · {top3Keys.length} Plattformen erstellt
+                </p>
+              </div>
+
+              <div className="pe-platform-grid">
+                {top3Keys.map((key, index) => {
+                  const r = topResults[key]
+                  if (!r || !r.content) return null
+                  const isCopied = copiedPlatform === key
+                  return (
+                    <div key={key} className={`pe-platform-card ${isCopied ? 'pe-platform-card-copied' : ''}`}>
+                      <div className="pe-platform-card-header">
+                        <div className="pe-platform-name-group">
+                          <span className="pe-platform-step">{index + 1}/3</span>
+                          <span className="pe-platform-name">{r.icon} {r.name}</span>
+                        </div>
+                        <div className="pe-copy-btn-group">
+                          <button
+                            className={`pe-copy-btn pe-copy-btn-card ${isCopied ? 'pe-copy-btn-done' : ''}`}
+                            onClick={() => {
+                              copyToClipboard(getResultText(r), key)
+                              setCopiedPlatform(key)
+                              setTimeout(() => setCopiedPlatform(null), 2000)
+                            }}
+                          >
+                            {isCopied ? <><Check size={14} /> Kopiert!</> : <><Copy size={14} /> Kopieren</>}
+                          </button>
+                          <button
+                            className="pe-copy-btn pe-copy-btn-card pe-copy-btn-primary"
+                            onClick={() => {
+                              const content = r.content
+                              if (content) {
+                                localStorage.setItem('hit_latest_hook', content.hook || '')
+                                localStorage.setItem('hit_latest_body', content.body || '')
+                                localStorage.setItem('hit_latest_cta', content.cta || '')
+                              }
+                              saveStateAndNavigate('/capcut-studio')
+                            }}
+                          >
+                            In CapCut einfügen
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="pe-platform-card-body">
+                        {r.content.hook && (
+                          <div className="pe-content-field">
+                            <span className="pe-field-label">Hook (0-3s):</span>
+                            <p className="pe-field-value">{r.content.hook}</p>
+                          </div>
+                        )}
+                        {r.content.body && (
+                          <div className="pe-content-field">
+                            <span className="pe-field-label">Hauptteil:</span>
+                            <p className="pe-field-value">{r.content.body}</p>
+                          </div>
+                        )}
+                        {r.content.cta && (
+                          <div className="pe-content-field">
+                            <span className="pe-field-label">CTA & Loop:</span>
+                            <p className="pe-field-value">{r.content.cta}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <NextActionHub
+                onOpenCapCut={() => {
+                  trackLandingFunnel('post_result_action', { action: 'capcut' })
+                  saveStateAndNavigate('/capcut-studio')
+                }}
+                onTrackAnalytics={() => {
+                  trackLandingFunnel('post_result_action', { action: 'tracking' })
+                  const videoPlatform = results.tiktok || results.instagram || results.youtube || Object.values(results)[0]
+                  const content = videoPlatform?.content
+                  if (content) {
+                    localStorage.setItem('hit_latest_hook', content.hook || '')
+                    localStorage.setItem('hit_latest_body', content.body || '')
+                    localStorage.setItem('hit_latest_cta', content.cta || '')
+                  }
+                  saveStateAndNavigate('/analytics')
+                }}
+                onReset={() => {
+                  trackLandingFunnel('post_result_action', { action: 'reset' })
+                  setPhase('input')
+                  setGoal('')
+                  setResults({})
+                  setTopResults({})
+                  setRecommendations([])
+                  setProgress({})
+                  setMobileStep('input')
+                }}
+              />
+            </div>
+          )}
+        </>
+      ) : (
+        /* RENDER INHALT FÜR DESKTOP-BILDSCHIRME (> 768px) */
+        <>
+          {/* Phase: INPUT */}
+          {phase === 'input' && (
+            <div className="pe-input-phase">
+              <div className="pe-main-layout">
+                {/* Left Column: Glassmorphism Ticker */}
+                <div className="pe-left-column">
+                  <div className="pe-ticker-widget">
+                    <div key={tickerIndex} className="pe-ticker-content pe-ticker-fade">
+                      <div className="pe-ticker-header">
+                        <span className="pe-ticker-icon">{TICKER_ITEMS[tickerIndex].icon}</span>
+                        <span className="pe-ticker-badge">H.I.T. Power</span>
+                      </div>
+                      <div className="pe-ticker-text">
+                        <p className="pe-ticker-question">{TICKER_ITEMS[tickerIndex].question}</p>
+                        <p className="pe-ticker-solution">{TICKER_ITEMS[tickerIndex].solution}</p>
+                      </div>
+                    </div>
+                    <div className="pe-ticker-dots">
+                      {TICKER_ITEMS.map((_, i) => (
+                        <span
+                          key={i}
+                          className={`pe-ticker-dot ${i === tickerIndex ? 'active' : ''}`}
+                          onClick={() => setTickerIndex(i)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pe-duel-widget">
+                    <div className="pe-duel-header">
+                      <span className="pe-duel-icon">⚡</span>
+                      <span className="pe-duel-title">Vergleichs-Duell: {DUEL_SETS[duelIndex].title}</span>
+                    </div>
+                    <div className="pe-duel-grid">
+                      <div className="pe-duel-column pe-duel-bad">
+                        <span className="pe-duel-badge">Klassisch / KI-Standard</span>
+                        <p className="pe-duel-text">{DUEL_SETS[duelIndex].bad}</p>
+                      </div>
+                      <div className="pe-duel-column pe-duel-good">
+                        <span className="pe-duel-badge">Gut formuliert</span>
+                        <p className="pe-duel-text">{DUEL_SETS[duelIndex].good}</p>
+                      </div>
+                      <div className="pe-duel-column pe-duel-hit">
+                        <span className="pe-duel-badge">H.I.T. Magie ✨</span>
+                        <p className="pe-duel-text">{DUEL_SETS[duelIndex].hit}</p>
+                      </div>
+                    </div>
+                    <div className="pe-duel-dots">
+                      {DUEL_SETS.map((_, i) => (
+                        <span
+                          key={i}
+                          className={`pe-duel-dot ${i === duelIndex ? 'active' : ''}`}
+                          onClick={() => setDuelIndex(i)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Main Hero and Form Input */}
+                <div className="pe-right-column">
+                  <div className="pe-hero">
+                    <div className="pe-title-row">
+                      <VerticalLogo size="small" />
+                      <button className="pe-info-btn" onClick={() => setShowInfo(true)} aria-label="Info">
+                        <Info size={18} />
+                      </button>
+                    </div>
+                    <p className="pe-subtitle">{t('landing.tagline')}</p>
+                  </div>
+
+                  <div className="pe-input-wrap">
+                    <input
+                      className="pe-input"
+                      type="text"
+                      value={goal}
+                      onChange={(e) => setGoal(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && startAnalysis()}
+                      placeholder={t('landing.placeholder')}
+                    />
+                    <button
+                      className="btn btn-primary pe-start-btn"
+                      onClick={startAnalysis}
+                      disabled={!goal.trim()}
+                    >
+                      <Sparkles size={16} /> H.I.T. starten
+                    </button>
+                  </div>
+
+                  <div className="pe-suggestions">
+                    <p className="pe-suggestions-title">{t('landing.suggestionsTitle')}</p>
+                    <div className="pe-chips">
+                      {getGoalSuggestions().map((chip) => (
+                        <button
+                          key={chip.label}
+                          className="pe-chip"
+                          onClick={() => handleChipClick(chip)}
+                        >
+                          <span className="pe-chip-icon">{chip.icon}</span>
+                          <span className="pe-chip-label">{chip.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Phase: ANALYSIS */}
+          {phase === 'analysis' && (
+            <div className="pe-card pe-analysis-card">
+              <div className="pe-card-header">
+                <div className="pe-brand"><span className="pe-brand-h">H</span>.I.T.</div>
+                <span className="pe-status">{t('landing.analyzing')}</span>
+              </div>
+              <div className="pe-analysis-steps">
+                <div className="pe-step done"><Check size={14} /> {t('landing.stepGoal')}</div>
+                <div className="pe-step active"><span className="pe-spinner" /> {t('landing.stepStrategy')}</div>
+                <div className="pe-step"><span className="pe-step-num">3</span> {t('landing.stepContent')}</div>
+              </div>
+            </div>
+          )}
+
+          {/* Phase: QUESTIONS */}
+          {phase === 'questions' && analysis && (
+            <div className="pe-card pe-question-card">
+              <div className="pe-card-header">
+                <div className="pe-brand"><span className="pe-brand-h">H</span>.I.T.</div>
+                <span className="pe-status">{t('landing.analyzing')}</span>
+              </div>
+
+              <div className="pe-score-grid">
+                <div className="pe-score-item">
+                  <span className="pe-score-label">{t('landing.goalDetected')}</span>
+                  <span className="pe-score-value done">✅</span>
+                </div>
+                <div className="pe-score-item">
+                  <span className="pe-score-label">{t('landing.strategyCreated')}</span>
+                  <span className="pe-score-value done">✅</span>
+                </div>
+                <div className="pe-score-item">
+                  <span className="pe-score-label">{t('landing.contentChance')}</span>
+                  <span className="pe-score-value highlight">{analysis.contentScore}%</span>
+                </div>
+                <div className="pe-score-item">
+                  <span className="pe-score-label">{t('landing.savedTime')}</span>
+                  <span className="pe-score-value">{analysis.savedTime}</span>
+                </div>
+              </div>
+
+              <div className="pe-recommended">
+                <p className="pe-recommended-title">{t('platformEngine.recommended')}</p>
+                <div className="pe-recommended-list">
+                  {top3Keys.map((key, i) => (
+                    <span key={key} className="pe-recommended-item">
+                      {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} {getAgentName(key)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pe-question-actions">
+                <button className="btn btn-primary" onClick={handleStart}>
+                  <Sparkles size={16} /> Weiter
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Phase: GENERATING */}
+          {phase === 'generating' && (
+            <div className="pe-card pe-generating-card">
+              <div className="pe-card-header">
+                <div className="pe-brand"><span className="pe-brand-h">H</span>.I.T.</div>
+                <span className="pe-status">{t('platformEngine.generating')}</span>
+              </div>
+
+              <div className="pe-progress-bar">
+                <div
+                  className="pe-progress-fill"
+                  style={{ width: `${(Object.keys(progress).length / (analysis?.topPlatforms?.length || 3)) * 100}%` }}
+                />
+              </div>
+
+              <div className="pe-progress-list">
+                {top3Keys.map((key) => (
+                  <div key={key} className={`pe-progress-item ${progress[key] === 'done' ? 'done' : 'active'}`}>
+                    {progress[key] === 'done' ? <Check size={14} /> : <span className="pe-spinner-small" />}
+                    <span>{getAgentIcon(key)} {getAgentName(key)}</span>
+                    {progress[key] === 'done' ? <span className="pe-progress-status">fertig</span> : <span className="pe-progress-status">wird erstellt...</span>}
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Package Contents */}
-          <div className="pe-package-contents">
-            <h3>{t('platformEngine.packageTitle')}</h3>
-            <div className="pe-package-checks">
-              <span>✓ Strategie</span>
-              <span>✓ Hook</span>
-              <span>✓ Hashtags</span>
-              <span>✓ CTA</span>
-              <span>✓ Bildideen</span>
-              <span>✓ Veröffentlichungszeit</span>
-            </div>
-          </div>
+          {/* Phase: RESULT */}
+          {phase === 'result' && (
+            <div className="pe-result-phase">
+              <div className="pe-result-header">
+                <h2 className="pe-result-title">✨ {t('platformEngine.resultTitle')}</h2>
+                <p className="pe-result-subtitle">
+                  {goal} · {top3Keys.length} Plattformen erstellt
+                </p>
+              </div>
 
-          {/* Reset — Prominent */}
-          <div className="pe-reset-section">
-            <button className="btn btn-primary btn-lg" onClick={() => {
-              setPhase('input')
-              setGoal('')
-              setAnalysis(null)
-              setResults({})
-              setTopResults({})
-              setRecommendations([])
-              setProgress({})
-              setShowMore(false)
-              setGeneratedMore(false)
-            }}>
-              <RotateCcw size={18} /> {t('platformEngine.resetButton')}
-            </button>
-          </div>
-        </div>
-      )}
+              <div className="pe-platform-grid">
+                {top3Keys.map((key, index) => {
+                  const r = topResults[key]
+                  if (!r || !r.content) return null
+                  const isCopied = copiedPlatform === key
+                  return (
+                    <div key={key} className={`pe-platform-card ${isCopied ? 'pe-platform-card-copied' : ''}`}>
+                      <div className="pe-platform-card-header">
+                        <div className="pe-platform-name-group">
+                          <span className="pe-platform-step">{index + 1}/3</span>
+                          <span className="pe-platform-name">{r.icon} {r.name}</span>
+                        </div>
+                        <div className="pe-copy-btn-group">
+                          <button
+                            className={`pe-copy-btn pe-copy-btn-card ${isCopied ? 'pe-copy-btn-done' : ''}`}
+                            onClick={() => {
+                              copyToClipboard(getResultText(r), key)
+                              setCopiedPlatform(key)
+                              setTimeout(() => setCopiedPlatform(null), 2000)
+                            }}
+                          >
+                            {isCopied ? <><Check size={14} /> Kopiert!</> : <><Copy size={14} /> Kopieren</>}
+                          </button>
+                          <button
+                            className="pe-copy-btn pe-copy-btn-card pe-copy-btn-primary"
+                            onClick={() => {
+                              const content = r.content
+                              if (content) {
+                                localStorage.setItem('hit_latest_hook', content.hook || '')
+                                localStorage.setItem('hit_latest_body', content.body || '')
+                                localStorage.setItem('hit_latest_cta', content.cta || '')
+                              }
+                              saveStateAndNavigate('/capcut-studio')
+                            }}
+                          >
+                            In CapCut einfügen
+                          </button>
+                        </div>
+                      </div>
 
-      {showInfo && (
-        <div className="pe-info-overlay" onClick={() => setShowInfo(false)}>
-          <div className="pe-info-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="pe-info-close" onClick={() => setShowInfo(false)}>
-              <X size={20} />
-            </button>
-            <h2 className="pe-info-headline">
-              {lang === 'en' ? 'Yes, that magnificent fitness text was written 100% by us... 🤖' :
-               lang === 'es' ? '¡Sí, ese magnífico texto de fitness fue escrito al 100% por nosotros... 🤖' :
-               lang === 'fr' ? 'Oui, ce magnifique texte fitness a été écrit à 100 % par nous... 🤖' :
-               lang === 'it' ? 'Sì, quel magnifico testo fitness è stato scritto al 100% da noi... 🤖' :
-               lang === 'nl' ? 'Ja, die geweldige fittekst is voor 100% door ons geschreven... 🤖' :
-               lang === 'el' ? 'Ναι, αυτό το υπέροχο κείμενο fitness γράφτηκε 100% από εμάς... 🤖' :
-               'Ja, dieser grandiose Fitness-Text wurde zu 100 % von uns geschrieben... 🤖'}
-            </h2>
-            <p className="pe-info-subtext">
-              {lang === 'en' ? "Maybe you just saw a viral video about fitness, mindset or business and ended up here through our link. And no — we don't sell training plans!" :
-               lang === 'es' ? 'Tal vez acabas de ver un video viral sobre fitness, mentalidad o negocios y aterrizaste aquí a través de nuestro enlace. ¡Y no — no vendemos planes de entrenamiento!' :
-               lang === 'fr' ? "Peut-être que vous venez de voir une vidéo virale sur le fitness, l'état d'esprit ou les affaires et que vous êtes atterri ici via notre lien. Et non — nous ne vendons pas de programmes d'entraînement !" :
-               lang === 'it' ? "Forse hai appena visto un video virale su fitness, mindset o business e sei finito qui attraverso il nostro link. E no — non vendiamo piani di allenamento!" :
-               lang === 'nl' ? "Misschien heb je net een viraal video over fitness, mindset of business gezien en ben je via onze link hier terechtgekomen. En nee — we verkopen geen trainingsplannen!" :
-               lang === 'el' ? 'Ίσως μόλις είδατε ένα ιοβόλο βίντεο για fitness, mindset ή business και κατελήξατε εδώ μέσω του συνδέσμου μας. Και όχι — δεν πουλάμε σχόλια γυμναστικής!' :
-               'Vielleicht hast du gerade ein virales Video über Fitness, Mindset oder Business gesehen und bist über unseren Link hier gelandet. Und nein – wir verkaufen keine Trainingspläne!'}
-            </p>
-            <p className="pe-info-body">
-              {lang === 'en' ? "You landed here because you experienced the power of real AI content creation live in action. The text that just captivated you was created in less than 60 seconds right here on this platform." :
-               lang === 'es' ? 'Aterrizaste aquí porque experimentaste el poder de la creación de contenido con IA real en acción. El texto que te acaba de capturar se creó en menos de 60 segundos aquí mismo en esta plataforma.' :
-               lang === 'fr' ? "Vous êtes arrivé ici parce que vous avez vécu la puissance de la création de contenu IA en direct. Le texte qui vient de vous capturer a été créé en moins de 60 secondes ici même sur cette plateforme." :
-               lang === 'it' ? 'Sei finito qui perché hai sperimentato il potere della creazione di contenuti IA dal vivo. Il testo che ti ha appena affascinato è stato creato in meno di 60 secondi proprio qui su questa piattaforma.' :
-               lang === 'nl' ? 'Je bent hier terechtgekomen omdat je de kracht van echte AI-contentcreatie live in actie hebt ervaren. De tekst die je net heeft geboeid, is in minder dan 60 seconden precies hier op dit platform gemaakt.' :
-               lang === 'el' ? 'Κατελήξατε εδώ γιατί βιώσατε τη δύναμη της πραγματικής δημιουργίας περιεχομένων AI σε δράση. Το κείμενο πού σας είχε μόλις τώρα ελκύσει δημιουργήθηκε σε λιγότερο από 60 δευτερόλεπτα ακριβώς εδώ σε αυτή την πλατφόρμα.' :
-               'Du bist hier gelandet, weil du die Power echter KI-Content-Erstellung live in Aktion erlebt hast. Der Text, der dich gerade eben noch gefesselt hat, entstand in weniger als 60 Sekunden genau hier auf dieser Plattform.'}
-            </p>
-            <h3 className="pe-info-what-title">
-              {lang === 'en' ? 'What is happiness?' :
-               lang === 'es' ? '¿Qué es happiness?' :
-               lang === 'fr' ? "Qu'est-ce que happiness ?" :
-               lang === 'it' ? 'Che cos è happiness?' :
-               lang === 'nl' ? 'Wat is happiness?' :
-               lang === 'el' ? 'Τι είναι το happiness;' :
-               'Was ist happiness?'}
-            </h3>
-            <p className="pe-info-body">
-              {lang === 'en' ? "We're your smart content machine. An innovative tool that writes high-converting social media texts, scripts, and recipes for creators, entrepreneurs, and businesses." :
-               lang === 'es' ? 'Somos tu máquina de contenido inteligente. Una herramienta innovadora que escribe textos, scripts y recetas de redes sociales de alta conversión para creadores, emprendedores y empresas.' :
-               lang === 'fr' ? "Nous sommes votre machine à contenu intelligente. Un outil innovant qui écrit des textes, scripts et recettes de réseaux sociaux à forte conversion pour les créateurs, entrepreneurs et entreprises." :
-               lang === 'it' ? 'Siamo la tua macchina per contenuti intelligenti. Un tool innovativo che scrive testi, script e ricette per social media ad alta conversione per creator, imprenditori e aziende.' :
-               lang === 'nl' ? "We zijn je slimme contentmachine. Een innovatief tool die hoog-converterende social media-teksten, scripts en recepten schrijft voor creators, ondernemers en bedrijven." :
-               lang === 'el' ? 'Είμαστε η έξυπνη μηχανή περιεχομένων σας. Ένα καινοτόμο εργαλείο που γράφφει κείμενα, σενάρια και συνταγές social media υψηλής μετατροπής για δημιουργούς, επιχειρηματίες και εταιρείες.' :
-               'Wir sind deine smarte Content-Maschine. Ein innovatives Tool, das für Creator, Selbstständige und Unternehmen hochgradig konvertierende Social-Media-Texte, Skripte und Rezepte schreibt.'}
-            </p>
-            <div className="pe-info-features">
-              <div className="pe-info-feature">
-                <span>✍️</span>
-                <div>
-                  <strong>{lang === 'en' ? 'No more writer\'s block' : lang === 'es' ? 'Adiós al bloqueo del escritor' : lang === 'fr' ? "Fin de la page blanche" : lang === 'it' ? 'Basta blocchi dello scrittore' : lang === 'nl' ? 'Geen writer\'s block meer' : lang === 'el' ? 'Όχι πια writer block' : 'Schluss mit Schreibblockaden'}</strong>
-                  <p>{lang === 'en' ? 'Ad-level copywriting texts in no time.' : lang === 'es' ? 'Textos de nivel publicitario en un instante.' : lang === 'fr' ? "Textes de niveau pro en un instant." : lang === 'it' ? 'Testi di livello pubblicitario in un attimo.' : lang === 'nl' ? 'Teksten van reclameniveau in een oogwenk.' : lang === 'el' ? 'Κείμενα επιπέδου διαφημιστικού σε στιγμή.' : 'Texte auf Werbetexter-Niveau im Handumdrehen.'}</p>
-                </div>
+                      <div className="pe-platform-card-body">
+                        {r.content.hook && (
+                          <div className="pe-content-field">
+                            <span className="pe-field-label">Hook (0-3s):</span>
+                            <p className="pe-field-value">{r.content.hook}</p>
+                          </div>
+                        )}
+                        {r.content.body && (
+                          <div className="pe-content-field">
+                            <span className="pe-field-label">Hauptteil:</span>
+                            <p className="pe-field-value">{r.content.body}</p>
+                          </div>
+                        )}
+                        {r.content.cta && (
+                          <div className="pe-content-field">
+                            <span className="pe-field-label">CTA & Loop:</span>
+                            <p className="pe-field-value">{r.content.cta}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
-              <div className="pe-info-feature">
-                <span>⏰</span>
-                <div>
-                  <strong>{lang === 'en' ? 'No more time pressure' : lang === 'es' ? 'Sin presión de tiempo' : lang === 'fr' ? 'Plus de pression temporelle' : lang === 'it' ? 'Niente più pressione del tempo' : lang === 'nl' ? 'Geen tijdsdruk meer' : lang === 'el' ? 'Χωρίς πίεση χρόνου' : 'Kein Zeitdruck mehr'}</strong>
-                  <p>{lang === 'en' ? 'Create content for a whole week in minutes.' : lang === 'es' ? 'Crea contenido para toda una semana en minutos.' : lang === 'fr' ? "Créez le contenu d'une semaine entière en quelques minutes." : lang === 'it' ? 'Crea contenuti per un\'intera settimana in pochi minuti.' : lang === 'nl' ? 'Maak content voor een hele week in minuten.' : lang === 'el' ? 'Δημιουργήστε περιεχόμενα για μια ολόκληρη εβδομάδα σε λεπτά.' : 'Erstelle den Content für eine ganze Woche in wenigen Minuten.'}</p>
-                </div>
-              </div>
-              <div className="pe-info-feature">
-                <span>🎯</span>
-                <div>
-                  <strong>{lang === 'en' ? 'Focus on your core business' : lang === 'es' ? 'Enfócate en tu negocio principal' : lang === 'fr' ? 'Concentrez-vous sur votre cœur de métier' : lang === 'it' ? 'Concentrati sul tuo business principale' : lang === 'nl' ? 'Focus op je core business' : lang === 'el' ? 'Εστιάστε στη βασική σας δραστηριότητα' : 'Fokus auf dein Core-Business'}</strong>
-                  <p>{lang === 'en' ? 'Leave the writing to us and focus on what really moves you forward.' : lang === 'es' ? 'Déjanos escribir y concéntrate en lo que realmente te impulsa.' : lang === 'fr' ? "Laissez-nous écrire et concentrez-vous sur ce qui vous fait vraiment avancer." : lang === 'it' ? 'Lascia scrivere a noi e concentrati su ciò che ti fa davvero avanzare.' : lang === 'nl' ? 'Laat het schrijven aan ons over en concentreer je op wat je echt vooruit helpt.' : lang === 'el' ? 'Αφήστε εμάς να γράφουμε και εστιάστε σε αυτό που σας προωθεί πραγματικά.' : 'Überlass uns das Schreiben und konzentriere dich auf das, was dich wirklich voranbringt.'}</p>
-                </div>
-              </div>
+
+              <NextActionHub
+                onOpenCapCut={() => {
+                  trackLandingFunnel('post_result_action', { action: 'capcut' })
+                  saveStateAndNavigate('/capcut-studio')
+                }}
+                onTrackAnalytics={() => {
+                  trackLandingFunnel('post_result_action', { action: 'tracking' })
+                  const videoPlatform = results.tiktok || results.instagram || results.youtube || Object.values(results)[0]
+                  const content = videoPlatform?.content
+                  if (content) {
+                    localStorage.setItem('hit_latest_hook', content.hook || '')
+                    localStorage.setItem('hit_latest_body', content.body || '')
+                    localStorage.setItem('hit_latest_cta', content.cta || '')
+                  }
+                  saveStateAndNavigate('/analytics')
+                }}
+                onReset={() => {
+                  trackLandingFunnel('post_result_action', { action: 'reset' })
+                  setPhase('input')
+                  setGoal('')
+                  setResults({})
+                  setTopResults({})
+                  setRecommendations([])
+                  setProgress({})
+                }}
+              />
             </div>
-          </div>
-        </div>
+          )}
+        </>
       )}
     </div>
-  )
+  );
 }
