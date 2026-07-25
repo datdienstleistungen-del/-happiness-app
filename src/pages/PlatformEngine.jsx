@@ -155,12 +155,18 @@ export default function PlatformEngine() {
 
   const getMobileAnalysis = () => {
     const videoPlatform = results.tiktok || results.instagram || results.youtube || Object.values(results)[0]
-    const content = videoPlatform?.content
-    if (!content) return null
+    let hook = videoPlatform?.content?.hook
+    let body = videoPlatform?.content?.body
+    let cta = videoPlatform?.content?.cta
 
-    const hook = content.hook || ''
-    const body = content.body || ''
-    const cta = content.cta || ''
+    // Fallback to localStorage if results content is not available
+    if (!hook && !body && !cta) {
+      hook = localStorage.getItem('hit_latest_hook') || ''
+      body = localStorage.getItem('hit_latest_body') || ''
+      cta = localStorage.getItem('hit_latest_cta') || ''
+    }
+
+    if (!hook && !body && !cta) return null
 
     const points = calculateDynamicCurveLocal(hook, body, cta)
     const average = points.reduce((sum, p) => sum + p, 0) / points.length
@@ -709,8 +715,15 @@ export default function PlatformEngine() {
           )}
 
           {/* STEP 2: DYNAMIC SVG CURVE, SCORE & TRAFFIC LIGHTS */}
-          {mobileStep === 'analysis' && getMobileAnalysis() && (() => {
+          {mobileStep === 'analysis' && (() => {
             const analysisData = getMobileAnalysis();
+            if (!analysisData) {
+              return (
+                <div className="pe-card pe-mobile-analysis-card" style={{ padding: '2rem', textAlign: 'center', background: 'rgba(255,255,255,0.85)', border: '1px solid var(--border)', borderRadius: '16px' }}>
+                  <p style={{ margin: 0, color: 'var(--text-muted)' }}>Keine Analyse-Daten vorhanden. Bitte erstelle zuerst einen Text in Schritt 1.</p>
+                </div>
+              );
+            }
             return (
               <div className="pe-card pe-mobile-analysis-card" style={{ padding: '1.5rem', borderRadius: '16px', background: 'rgba(255,255,255,0.85)', border: '1px solid var(--border)', boxShadow: '0 4px 24px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
