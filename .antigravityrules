@@ -1,0 +1,5 @@
+# Antigravity Rules for happiness-app-react
+
+- NEVER run interactive CLI commands like 'netlify env:list' or 'netlify login' in the background.
+- All automatic, interactive background environment scans are strictly disabled.
+- Always use 'cmd /c' for shell executions on Windows to ensure the terminal terminates correctly.

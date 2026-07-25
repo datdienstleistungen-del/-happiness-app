@@ -299,6 +299,16 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
+  // Developer filter for Google Analytics
+  useEffect(() => {
+    const isDeveloper = localStorage.getItem('ignore-analytics') === 'true';
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const shouldTrack = window.gtag && !isLocalhost && !isDeveloper;
+    if (!shouldTrack) {
+      window.gtag = function() {};
+    }
+  }, []);
+
   // Track page views for activity monitoring
   useEffect(() => {
     if (user) {
