@@ -533,6 +533,7 @@ export default function PlatformEngine() {
   const allPlatforms = getAllPlatforms()
   const generatedPlatforms = Object.keys(results)
   const top3Keys = analysis?.topPlatforms || []
+  const hasGeneratedScript = Object.keys(results).length > 0 || !!localStorage.getItem('hit_latest_body')
 
   return (
     <div className="platform-engine">
@@ -547,22 +548,22 @@ export default function PlatformEngine() {
         <button
           className={`pe-wizard-tab ${mobileStep === 'analysis' ? 'active' : ''}`}
           onClick={() => {
-            if (Object.keys(results).length > 0) {
+            if (hasGeneratedScript) {
               setMobileStep('analysis');
             }
           }}
-          disabled={Object.keys(results).length === 0}
+          disabled={!hasGeneratedScript}
         >
           2. Analyse
         </button>
         <button
           className={`pe-wizard-tab ${mobileStep === 'studio' ? 'active' : ''}`}
           onClick={() => {
-            if (Object.keys(results).length > 0) {
+            if (hasGeneratedScript) {
               setMobileStep('studio');
             }
           }}
-          disabled={Object.keys(results).length === 0}
+          disabled={!hasGeneratedScript}
         >
           3. Studio
         </button>
@@ -774,6 +775,17 @@ export default function PlatformEngine() {
                     </div>
                   ))}
                 </div>
+
+                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'stretch' }}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => setMobileStep('studio')}
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.88rem' }}
+                  >
+                    <span>Weiter zum Studio</span>
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
               </div>
             );
           })()}
@@ -878,6 +890,9 @@ export default function PlatformEngine() {
                   setRecommendations([])
                   setProgress({})
                   setMobileStep('input')
+                  localStorage.removeItem('hit_latest_hook')
+                  localStorage.removeItem('hit_latest_body')
+                  localStorage.removeItem('hit_latest_cta')
                 }}
               />
             </div>
