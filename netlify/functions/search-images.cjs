@@ -10,7 +10,7 @@ exports.handler = async (event) => {
 
     if (pexelsKey) {
       const response = await fetch(
-        `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=${count}&orientation=landscape`,
+        `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=${count}&orientation=landscape&locale=de-DE`,
         { headers: { Authorization: pexelsKey } }
       )
       if (response.ok) {

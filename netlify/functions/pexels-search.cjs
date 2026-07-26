@@ -27,7 +27,7 @@ exports.handler = async (event) => {
     }
 
     const response = await fetch(
-      `https://api.pexels.com/videos/search?query=${encodeURIComponent(query)}&per_page=${count}&size=medium`,
+      `https://api.pexels.com/videos/search?query=${encodeURIComponent(query)}&per_page=${count}&size=medium&locale=de-DE`,
       {
         headers: { 'Authorization': apiKey }
       }

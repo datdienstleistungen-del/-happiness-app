@@ -290,7 +290,7 @@ async function searchPexelsImage(query, apiKey) {
   if (!apiKey) return pickDefault(query)
   try {
     const res = await fetch(
-      `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=3&orientation=portrait`,
+      `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=3&orientation=portrait&locale=de-DE`,
       { headers: { 'Authorization': apiKey } }
     )
     if (!res.ok) return pickDefault(query)
