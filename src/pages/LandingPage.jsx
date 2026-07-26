@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Rocket, Sparkles, Check, ArrowRight, Zap, Clock, Target } from 'lucide-react'
+import { Rocket, Sparkles, Check, ArrowRight, Zap, Clock, Target, Mic, MicOff } from 'lucide-react'
 import { trackDemoStarted, trackDemoCompleted } from '../intelligence/analytics'
 import { trackLandingFunnel } from '../intelligence/analytics/custom'
 import { useLanguage } from '../i18n/translations.jsx'
 import InstallButton from '../components/InstallButton'
 import VideoShowcase from '../components/VideoShowcase'
 import { VerticalLogo } from '../components/Logo'
+import MockStudioExplainer from '../components/MockStudioExplainer'
 import './LandingPage.css'
 
 const GOAL_CHIPS = [
@@ -27,16 +28,37 @@ const PRE_FILL_EXAMPLES = [
   { de: 'Mehr Anfragen über Social Media erhalten', en: 'Get more inquiries via social media' },
 ]
 
+const SPEECH_LANG_MAP = {
+  de: 'de-DE',
+  en: 'en-US',
+  es: 'es-ES',
+  fr: 'fr-FR',
+  it: 'it-IT',
+  nl: 'nl-NL',
+  el: 'el-GR'
+}
+
 export default function LandingPage() {
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
   const heroRef = useRef(null)
+  const goalInputRef = useRef(null)
   const inputChangedTracked = useRef(false)
   const [goal, setGoal] = useState('')
   const [phase, setPhase] = useState('input') // input | analysis | result | error
   const [analysis, setAnalysis] = useState(null)
   const [demoResult, setDemoResult] = useState(null)
   const [error, setError] = useState('')
+  const [isRecording, setIsRecording] = useState(false)
+  const [recognition, setRecognition] = useState(null)
+  const [showExplainer, setShowExplainer] = useState(() => {
+    return localStorage.getItem('hit_hide_explainer') !== 'true'
+  })
+
+  const handleStartTour = () => {
+    trackLandingFunnel('tour_clicked')
+    navigate('/register?startTour=true')
+  }
 
   useEffect(() => {
     document.title = 'Happiness — Creator Operating System'
@@ -45,6 +67,13 @@ export default function LandingPage() {
     const randomIndex = Math.floor(Math.random() * PRE_FILL_EXAMPLES.length)
     setGoal(PRE_FILL_EXAMPLES[randomIndex][lang] || PRE_FILL_EXAMPLES[randomIndex].de)
   }, [lang])
+
+  useEffect(() => {
+    if (goalInputRef.current) {
+      goalInputRef.current.style.height = 'auto';
+      goalInputRef.current.style.height = `${goalInputRef.current.scrollHeight}px`;
+    }
+  }, [goal])
 
   useEffect(() => {
     if (!heroRef.current) return
@@ -74,6 +103,50 @@ export default function LandingPage() {
     }
   }
 
+  // Speech Recognition initialization
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (SpeechRecognition) {
+      const rec = new SpeechRecognition()
+      rec.continuous = false
+      rec.lang = SPEECH_LANG_MAP[lang] || 'de-DE'
+      rec.interimResults = false
+
+      rec.onstart = () => {
+        setIsRecording(true)
+      }
+
+      rec.onresult = (event) => {
+        const transcript = event.results[0][0].transcript
+        setGoal(transcript)
+        setIsRecording(false)
+      }
+
+      rec.onerror = (e) => {
+        console.error('Speech recognition error', e)
+        setIsRecording(false)
+      }
+
+      rec.onend = () => {
+        setIsRecording(false)
+      }
+
+      setRecognition(rec)
+    }
+  }, [lang])
+
+  const toggleRecording = () => {
+    if (!recognition) {
+      alert(lang === 'de' ? 'Spracherkennung wird in diesem Browser nicht unterstützt.' : 'Speech recognition is not supported in this browser.')
+      return
+    }
+    if (isRecording) {
+      recognition.stop()
+    } else {
+      recognition.start()
+    }
+  }
+
   const startDemo = async () => {
     if (!goal.trim()) return
     trackLandingFunnel('generate_clicked')
@@ -84,12 +157,24 @@ export default function LandingPage() {
     const startTime = Date.now()
 
     try {
+      const languageNames = {
+        de: 'Deutsch (German)',
+        en: 'Englisch (English)',
+        es: 'Spanisch (Español)',
+        fr: 'Französisch (Français)',
+        it: 'Italienisch (Italiano)',
+        nl: 'Niederländisch (Nederlands)',
+        el: 'Griechisch (Greek/Ελληνικά)'
+      }
+      const langName = languageNames[lang] || 'Deutsch (German)'
+      const langInstruction = `\n\nCRITICAL REQUIREMENT: The user's language is ${langName}. All generated content (including text, hooks, descriptions, titles, explanations, suggestions, and responses) MUST be written in ${langName}. Do not translate structural JSON keys, but write all their string values in ${langName}.`
+
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: `Erstelle einen Instagram-Post für dieses Ziel: "${goal.trim()}". Antworte NUR mit JSON: {"hook":"...","body":"...","hashtags":["..."],"cta":"..."}`,
-          systemPrompt: `Du bist ein Instagram-Content-Experte. Erstelle einen kurzen, knackigen Post (100-150 Wörter). Hook im ersten Satz. 3-5 Hashtags. CTA am Ende. Antworte NUR mit validem JSON.`,
+          systemPrompt: `Du bist ein Instagram-Content-Experte. Erstelle einen kurzen, knackigen Post (100-150 Wörter). Hook im ersten Satz. 3-5 Hashtags. CTA am Ende. Antworte NUR mit validem JSON.` + langInstruction,
           history: []
         })
       })
@@ -128,67 +213,108 @@ export default function LandingPage() {
     <div className="container">
       {/* Hero */}
       <div className="hero landing-hero" ref={heroRef}>
-        <h1><VerticalLogo size="large" /></h1>
-        <p className="landing-tagline">{t('landing.tagline')}</p>
+        <div className={showExplainer ? "landing-layout-wrapper" : "landing-layout-single"}>
+          <div className={showExplainer ? "landing-left-column" : "landing-single-column"}>
+            <h1><VerticalLogo size="large" /></h1>
+            <p className="landing-tagline">{t('landing.tagline')}</p>
 
-        <p className="landing-question">{t('landing.question')}</p>
+            <p className="landing-question">{t('landing.question')}</p>
 
-        <div className="landing-input-wrap">
-          <input
-            className="landing-input"
-            type="text"
-            value={goal}
-            onChange={handleInputChange}
-            onKeyDown={(e) => e.key === 'Enter' && startDemo()}
-            placeholder={t('landing.placeholder')}
-            disabled={phase !== 'input'}
-            onFocus={() => trackLandingFunnel('input_focused')}
-          />
-          <button
-            className="btn btn-primary landing-start-btn"
-            onClick={startDemo}
-            disabled={phase !== 'input' || !goal.trim()}
-          >
-            {phase === 'input' ? (
-              <><Rocket size={16} /> {t('landing.startButton')}</>
-            ) : (
-              <><span className="demo-spinner" /> {t('landing.working')}</>
-            )}
-          </button>
-        </div>
-
-        {error && <p className="landing-error">{error}</p>}
-
-        {/* Quick Chips */}
-        {phase === 'input' && (
-          <div className="landing-chips">
-            {GOAL_CHIPS.map((chip) => (
+            <div className="landing-input-wrap">
+              <div style={{ display: 'flex', flex: 1, position: 'relative', alignItems: 'center' }}>
+                <textarea
+                  ref={goalInputRef}
+                  className="landing-input"
+                  style={{ 
+                    width: '100%', 
+                    paddingRight: '45px', 
+                    resize: 'none', 
+                    overflowY: 'hidden', 
+                    height: 'auto',
+                    minHeight: '46px', 
+                    maxHeight: '200px', 
+                    lineHeight: '1.4'
+                  }}
+                  rows={1}
+                  value={goal}
+                  onChange={(e) => {
+                    handleInputChange(e);
+                    e.target.style.height = 'auto';
+                    e.target.style.height = `${e.target.scrollHeight}px`;
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      startDemo();
+                    }
+                  }}
+                  placeholder={t('landing.placeholder')}
+                  disabled={phase !== 'input'}
+                  onFocus={() => trackLandingFunnel('input_focused')}
+                />
+                <button
+                  type="button"
+                  className={`landing-mic-btn ${isRecording ? 'recording' : ''}`}
+                  onClick={toggleRecording}
+                  disabled={phase !== 'input'}
+                  title={lang === 'de' ? 'Per Sprache eingeben' : 'Input via speech'}
+                >
+                  {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
+                </button>
+              </div>
               <button
-                key={chip.de}
-                className="landing-chip"
-                onClick={() => handleChipClick(chip)}
+                className="btn btn-primary landing-start-btn"
+                onClick={startDemo}
+                disabled={phase !== 'input' || !goal.trim()}
               >
-                <span>{chip.icon}</span> {chip[lang] || chip.de}
+                {phase === 'input' ? (
+                  <><Rocket size={16} /> {t('landing.startButton')}</>
+                ) : (
+                  <><span className="demo-spinner" /> {t('landing.working')}</>
+                )}
               </button>
-            ))}
+            </div>
+
+            {error && <p className="landing-error">{error}</p>}
+
+            {/* Quick Chips */}
+            {phase === 'input' && (
+              <div className="landing-chips">
+                {GOAL_CHIPS.map((chip) => (
+                  <button
+                    key={chip.de}
+                    className="landing-chip"
+                    onClick={() => handleChipClick(chip)}
+                  >
+                    <span>{chip.icon}</span> {chip[lang] || chip.de}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="landing-social-proof">
+              <span className="landing-social-check">✓</span> {t('landing.freeToStart')}
+            </div>
+
+            <div className="landing-meta">
+              {t('landing.meta')}
+            </div>
+
+            <div className="landing-actions">
+              <Link to="/register" className="btn btn-outline">{t('landing.register')}</Link>
+              <Link to="/login" className="btn btn-outline">{t('landing.login')}</Link>
+            </div>
+
+            <div className="landing-install">
+              <InstallButton variant="hero" />
+            </div>
           </div>
-        )}
 
-        <div className="landing-social-proof">
-          <span className="landing-social-check">✓</span> {t('landing.freeToStart')}
-        </div>
-
-        <div className="landing-meta">
-          {t('landing.meta')}
-        </div>
-
-        <div className="landing-actions">
-          <Link to="/register" className="btn btn-outline">{t('landing.register')}</Link>
-          <Link to="/login" className="btn btn-outline">{t('landing.login')}</Link>
-        </div>
-
-        <div className="landing-install">
-          <InstallButton variant="hero" />
+          {showExplainer && (
+            <div className="landing-right-column">
+              <MockStudioExplainer onStartTour={handleStartTour} />
+            </div>
+          )}
         </div>
       </div>
 

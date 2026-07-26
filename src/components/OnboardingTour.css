@@ -1,0 +1,141 @@
+.ot-highlight {
+  position: absolute;
+  pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.7);
+  border: 2.5px solid var(--color-mint, #10b981);
+  border-radius: 12px;
+  z-index: 100000;
+  transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  animation: otPulseBorder 2s infinite ease-in-out;
+}
+
+@keyframes otPulseBorder {
+  0%, 100% { border-color: var(--color-mint, #10b981); box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.7), 0 0 10px rgba(16, 185, 129, 0.4); }
+  50% { border-color: var(--color-koralle, #d85a30); box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.7), 0 0 15px rgba(216, 90, 48, 0.6); }
+}
+
+.ot-tooltip {
+  position: absolute;
+  width: 320px;
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 1rem;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+  z-index: 100001;
+  transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  animation: otTooltipIn 0.3s ease-out;
+  color: #fff;
+  text-align: left;
+}
+
+@keyframes otTooltipIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.ot-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.ot-close-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.ot-content {
+  margin-right: 15px;
+}
+
+.ot-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ot-text {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.ot-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 0.75rem;
+}
+
+.ot-progress {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 600;
+}
+
+.ot-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.ot-btn {
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ot-btn-primary {
+  background: var(--primary, #085041);
+  color: #fff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(8, 80, 65, 0.3);
+}
+
+.ot-btn-primary:hover {
+  background: #0c6b57;
+  transform: translateY(-1px);
+}
+
+.ot-btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ot-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.ot-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.7);
+  z-index: 100000;
+  pointer-events: auto;
+}

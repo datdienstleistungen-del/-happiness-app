@@ -4,7 +4,7 @@ import {
   Sparkles, MessageCircle, Users, ShoppingCart, Briefcase,
   BookOpen, Building2, Clapperboard, Camera, Film, Bell, Settings,
   User, ChevronLeft, ChevronRight, Rocket, Hash, Menu, BarChart3, Trophy, Radar,
-  Target, FolderOpen, Globe, LayoutDashboard
+  Target, FolderOpen, Globe, LayoutDashboard, Search
 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.jsx'
@@ -45,6 +45,8 @@ const TodayQuestionPage = lazy(() => import('./pages/TodayQuestionPage'))
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'))
 const LeadRadarPage = lazy(() => import('./pages/LeadRadarPage'))
 const CreatorSuccessPage = lazy(() => import('./pages/CreatorSuccessPage'))
+const TourPage = lazy(() => import('./pages/TourPage'))
+const VideoFinderPage = lazy(() => import('./pages/VideoFinderPage'))
 
 
 function Sidebar({ mobileOpen, setMobileOpen }) {
@@ -95,8 +97,10 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
   const studioLinks = [
     { to: '/creator-academy', icon: Rocket, label: 'Content Studio' },
     { to: '/capcut-studio', icon: Film, label: 'CapCut Studio' },
+    { to: '/video-finder', icon: Search, label: 'Video Finder' },
     { to: '/ai-chat', icon: Sparkles, label: 'AI Chat' },
     { to: '/analytics', icon: BarChart3, label: 'Analytics', badge: 'newFeatures.analyticsTooltip' },
+    { to: '/tour', icon: BookOpen, label: 'Studio-Tour' },
   ]
 
   const discoverLinks = [
@@ -455,6 +459,8 @@ export default function App() {
                 <Route path="/post-preparation" element={<ProtectedRoute><PostPreparationPage /></ProtectedRoute>} />
                 <Route path="/capcut-studio" element={<ProtectedRoute><TikTokVideoPage /></ProtectedRoute>} />
                 <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
+                <Route path="/tour" element={<ProtectedRoute><TourPage /></ProtectedRoute>} />
+                <Route path="/video-finder" element={<ProtectedRoute><VideoFinderPage /></ProtectedRoute>} />
                 <Route path="/admin/lead-radar" element={<ProtectedRoute><LeadRadarPage /></ProtectedRoute>} />
                 <Route path="/legal" element={<LegalPage />} />
                 <Route path="/impressum" element={<LegalPage />} />

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Rocket, Check, Copy, Share2, Sparkles, ChevronDown, ChevronUp, RotateCcw, ArrowRight, ArrowLeft, Info, X, Mic, MicOff, Volume2, VolumeX, MessageSquare, Send } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -116,6 +116,26 @@ const DUEL_SETS = [
   }
 ]
 
+const SPEECH_LANG_MAP = {
+  de: 'de-DE',
+  en: 'en-US',
+  es: 'es-ES',
+  fr: 'fr-FR',
+  it: 'it-IT',
+  nl: 'nl-NL',
+  el: 'el-GR'
+}
+
+const GENERIC_VIDEO_FALLBACKS = {
+  de: 'Kreatives Video',
+  en: 'Creative video',
+  es: 'Video creativo',
+  fr: 'Vidéo créative',
+  it: 'Video creativo',
+  nl: 'Creatieve video',
+  el: 'Δημιουργικό βίντεο'
+}
+
 export default function PlatformEngine() {
   const { user } = useAuth()
   const { t, lang } = useLanguage()
@@ -147,6 +167,30 @@ export default function PlatformEngine() {
   const [isRecording, setIsRecording] = useState(false)
   const [recognition, setRecognition] = useState(null)
   const [readingAloud, setReadingAloud] = useState(false)
+  const [tourActive, setTourActive] = useState(false)
+
+  const goalMobileRef = useRef(null)
+  const goalDesktopRef = useRef(null)
+  const chatMobileRef = useRef(null)
+  const chatDesktopRef = useRef(null)
+
+  useEffect(() => {
+    [goalMobileRef, goalDesktopRef].forEach(ref => {
+      if (ref.current) {
+        ref.current.style.height = 'auto';
+        ref.current.style.height = `${ref.current.scrollHeight}px`;
+      }
+    });
+  }, [goal])
+
+  useEffect(() => {
+    [chatMobileRef, chatDesktopRef].forEach(ref => {
+      if (ref.current) {
+        ref.current.style.height = 'auto';
+        ref.current.style.height = `${ref.current.scrollHeight}px`;
+      }
+    });
+  }, [chatInput])
 
   // Speech Recognition initialization
   useEffect(() => {
@@ -154,7 +198,7 @@ export default function PlatformEngine() {
     if (SpeechRecognition) {
       const rec = new SpeechRecognition()
       rec.continuous = false
-      rec.lang = lang === 'de' ? 'de-DE' : lang === 'en' ? 'en-US' : 'de-DE'
+      rec.lang = SPEECH_LANG_MAP[lang] || 'de-DE'
       rec.interimResults = false
 
       rec.onstart = () => {
@@ -204,7 +248,7 @@ export default function PlatformEngine() {
     const cleanText = text.replace(/\{[\s\S]*\}/g, '').replace(/[*#`_-]/g, '').trim()
     
     const utterance = new SpeechSynthesisUtterance(cleanText)
-    utterance.lang = lang === 'de' ? 'de-DE' : lang === 'en' ? 'en-US' : 'de-DE'
+    utterance.lang = SPEECH_LANG_MAP[lang] || 'de-DE'
     window.speechSynthesis.speak(utterance)
   }
 
@@ -437,11 +481,22 @@ export default function PlatformEngine() {
           setResults(s.results || {})
           setTopResults(s.topResults || {})
           setGeneratedMore(s.generatedMore || false)
+          if (s.chatHistory) setChatHistory(s.chatHistory)
         }
         localStorage.removeItem('hit_engine_state')
       }
     } catch {}
   }, [])
+
+  // Trigger interactive onboarding tour based on query params
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('startTour') === 'true') {
+      setTourActive(true)
+      // Clean query params so it doesn't trigger repeatedly on reload
+      navigate('/', { replace: true })
+    }
+  }, [navigate])
 
   // Auto-rotating ticker (every 4 seconds)
   useEffect(() => {
@@ -463,10 +518,10 @@ export default function PlatformEngine() {
 
   // Save state to localStorage before navigating away
   const saveStateAndNavigate = useCallback((path) => {
-    const state = { phase, goal, analysis, recommendations, results, topResults, generatedMore }
+    const state = { phase, goal, analysis, recommendations, results, topResults, generatedMore, chatHistory }
     localStorage.setItem('hit_engine_state', JSON.stringify(state))
     navigate(path)
-  }, [phase, goal, analysis, recommendations, results, topResults, generatedMore, navigate])
+  }, [phase, goal, analysis, recommendations, results, topResults, generatedMore, chatHistory, navigate])
 
   const chips = GOAL_CHIPS[lang] || GOAL_CHIPS.de
 
@@ -474,13 +529,14 @@ export default function PlatformEngine() {
     setGoal(chip.label)
   }
 
-  const startAnalysis = async () => {
-    if (!goal.trim()) return
+  const startAnalysis = async (overrideGoal) => {
+    const activeGoal = typeof overrideGoal === 'string' ? overrideGoal : goal
+    if (!activeGoal.trim()) return
     setPhase('analysis')
     setError('')
     setResults({})
     setTopResults({})
-    trackEvent('hit_started', { goal: goal.trim() })
+    trackEvent('hit_started', { goal: activeGoal.trim() })
 
     try {
       const chatEndpoint = getChatEndpoint()
@@ -490,13 +546,13 @@ export default function PlatformEngine() {
         token = session?.access_token || ''
       } catch {}
 
-      const analysisResult = await analyzeGoal(goal.trim(), chatEndpoint, token, videoEditor)
+      const analysisResult = await analyzeGoal(activeGoal.trim(), chatEndpoint, token, videoEditor, lang)
       setAnalysis(analysisResult)
 
-      const recs = await generateRecommendations(goal.trim(), analysisResult, chatEndpoint, token, videoEditor)
+      const recs = await generateRecommendations(activeGoal.trim(), analysisResult, chatEndpoint, token, videoEditor, lang)
       setRecommendations(recs)
 
-      trackEvent('analysis_completed', { goal: goal.trim(), contentScore: analysisResult.contentScore, videoEditor })
+      trackEvent('analysis_completed', { goal: activeGoal.trim(), contentScore: analysisResult.contentScore, videoEditor })
 
       setPhase('questions')
     } catch (err) {
@@ -522,16 +578,15 @@ export default function PlatformEngine() {
 
       const newResults = { ...results }
 
-      const promises = platformsToGenerate.map(async (platformKey) => {
-        const result = await runPlatformAgent(platformKey, goal, masterBrief, chatEndpoint, token, videoEditor)
+      for (const platformKey of platformsToGenerate) {
+        const result = await runPlatformAgent(platformKey, goal, masterBrief, chatEndpoint, token, videoEditor, lang)
         if (result) {
           newResults[platformKey] = result
           setResults({ ...newResults })
         }
         setProgress(prev => ({ ...prev, [platformKey]: 'done' }))
-      })
-
-      await Promise.all(promises)
+      }
+      console.log('[startGenerating] promises resolved. newResults keys:', Object.keys(newResults))
 
       const top3 = analysis.topPlatforms || Object.keys(newResults).slice(0, 3)
       const top = {}
@@ -579,6 +634,18 @@ export default function PlatformEngine() {
       const currentScript = results[activePlatform]?.content || { hook: '', body: '', cta: '' }
       const currentScriptJson = JSON.stringify(currentScript, null, 2)
 
+      const languageNames = {
+        de: 'Deutsch (German)',
+        en: 'Englisch (English)',
+        es: 'Spanisch (Español)',
+        fr: 'Französisch (Français)',
+        it: 'Italienisch (Italiano)',
+        nl: 'Niederländisch (Nederlands)',
+        el: 'Griechisch (Greek/Ελληνικά)'
+      }
+      const langName = languageNames[lang] || 'Deutsch (German)'
+      const langInstruction = `\n\nCRITICAL REQUIREMENT: The user's language is ${langName}. All generated content (including text, hooks, descriptions, titles, explanations, suggestions, and responses) MUST be written in ${langName}. Do not translate structural JSON keys, but write all their string values and any conversational explanations/dialogue in ${langName}.`
+
       const systemPrompt = `Du bist der H.I.T. Co-Pilot. Deine Aufgabe ist es, das bestehende Skript basierend auf den Wünschen des Nutzers anzupassen.
 
 Aktuelles Skript (JSON):
@@ -597,7 +664,7 @@ BENUTZER-ANWEISUNG FÜR DIE ANPASSUNG:
   "cta": "...",
   "imageIdea": "..."
 }
-Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwort sowohl den Dialog als auch das JSON-Skript enthält.`
+Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwort sowohl den Dialog als auch das JSON-Skript enthält.` + langInstruction
 
       const response = await fetch(chatEndpoint, {
         method: 'POST',
@@ -683,7 +750,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
         token = session?.access_token || ''
       } catch {}
       const masterBrief = buildMasterBriefFromAnalysis(analysis)
-      const result = await runPlatformAgent(platformKey, goal, masterBrief, chatEndpoint, token, videoEditor)
+      const result = await runPlatformAgent(platformKey, goal, masterBrief, chatEndpoint, token, videoEditor, lang)
       if (result) {
         setResults(prev => ({ ...prev, [platformKey]: result }))
         const contentPayload = result?.content
@@ -699,9 +766,15 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
     setGeneratingSingle(null)
   }
 
-  const copyToClipboard = (text, platform = 'all') => {
+  const copyToClipboard = (text, platform = 'all', r = null) => {
     navigator.clipboard.writeText(text)
     trackEvent('content_copied', { platform })
+    if (r && r.content) {
+      const c = r.content
+      localStorage.setItem('hit_latest_hook', c.hook || '')
+      localStorage.setItem('hit_latest_body', c.body || '')
+      localStorage.setItem('hit_latest_cta', c.cta || '')
+    }
   }
 
   const copyAllTop3 = () => {
@@ -726,29 +799,84 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
     if (r?.content?.footageSources && r.content.footageSources.length > 0) {
       return r.content.footageSources
     }
-    const query = encodeURIComponent(goalText || 'Fußball Kuriositäten')
+    let queryText = goalText || analysis?.goal || ''
+    if (!queryText.trim() && r?.content) {
+      const textToExtractFrom = r.content.imageIdea || r.content.hook || r.content.body || ''
+      const words = textToExtractFrom.split(/\s+/).filter(w => w.length > 3).slice(0, 3)
+      if (words.length > 0) {
+        queryText = words.join(' ')
+      }
+    }
+    if (!queryText.trim()) {
+      queryText = GENERIC_VIDEO_FALLBACKS[lang] || 'Creative video'
+    }
+
+    // Translate/optimize for stock platforms if language is not English
+    let stockQueryText = queryText
+    if (lang !== 'en') {
+      const lower = queryText.toLowerCase()
+      const STOCK_TRANSLATIONS = {
+        'fußballkuriositäten': 'funny football soccer bloopers',
+        'fussballkuriositäten': 'funny football soccer bloopers',
+        'fußball': 'soccer football',
+        'fussball': 'soccer football',
+        'kunden': 'business clients meeting success',
+        'verkauf': 'product showcase e-commerce sales',
+        'community': 'people connection community handshake',
+        'event': 'concert party crowd event',
+        'mitarbeiter': 'teamwork office hiring',
+        'bewerb': 'job interview resume',
+        'fitness': 'fitness gym workout',
+        'kochen': 'cooking kitchen food recipe',
+        'essen': 'food cooking dining',
+        'reise': 'travel adventure destination',
+        'natur': 'nature landscape forest'
+      }
+      for (const [key, value] of Object.entries(STOCK_TRANSLATIONS)) {
+        if (lower.includes(key)) {
+          stockQueryText = value
+          break
+        }
+      }
+    }
+
+    const query = encodeURIComponent(queryText)
+    const stockQuery = encodeURIComponent(stockQueryText)
+
     return [
       {
         platform: 'YouTube',
-        query: goalText || 'Fußball Kuriositäten',
+        query: queryText,
         url: `https://www.youtube.com/results?search_query=${query}`
       },
       {
         platform: 'TikTok',
-        query: goalText || 'Fußball Kuriositäten',
+        query: queryText,
         url: `https://www.tiktok.com/search?q=${query}`
       },
       {
         platform: 'Pexels (Stock)',
-        query: goalText || 'Fußball Kuriositäten',
-        url: `https://www.pexels.com/search/video/${query}`
+        query: stockQueryText,
+        url: `https://www.pexels.com/search/video/${stockQuery}`
       },
       {
         platform: 'Pixabay (Stock)',
-        query: goalText || 'Fußball Kuriositäten',
-        url: `https://pixabay.com/de/videos/search/${query}`
+        query: stockQueryText,
+        url: `https://pixabay.com/de/videos/search/${stockQuery}`
       }
     ]
+  }
+
+  const handleTourStepAction = (stepIndex, direction) => {
+    if (direction === 'next') {
+      if (stepIndex === 0 && phase === 'input') {
+        const sample = 'Fußball-Fails'
+        setGoal(sample)
+        startAnalysis(sample)
+      } else if (stepIndex === 1 && phase === 'questions') {
+        handleStart()
+      }
+    }
   }
 
   const allPlatforms = getAllPlatforms()
@@ -825,9 +953,9 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                     {/* On mobile input step, we only show the right column */}
                     <div className="pe-right-column">
                       <div className="pe-hero">
-                        <div className="pe-title-row">
+                        <div className="pe-title-row" style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                           <VerticalLogo size="small" />
-                          <button className="pe-info-btn" onClick={() => setShowInfo(true)} aria-label="Info">
+                          <button className="pe-info-btn" onClick={() => setShowInfo(true)} aria-label="Info" style={{ marginLeft: 'auto' }}>
                             <Info size={18} />
                           </button>
                         </div>
@@ -856,12 +984,23 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                       </div>
 
                       <div className="pe-input-wrap">
-                        <input
+                        <textarea
+                          ref={goalMobileRef}
                           className="pe-input"
-                          type="text"
+                          style={{ resize: 'none', overflowY: 'hidden', height: 'auto', minHeight: '46px', maxHeight: '200px', lineHeight: '1.4' }}
+                          rows={1}
                           value={goal}
-                          onChange={(e) => setGoal(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && startAnalysis()}
+                          onChange={(e) => {
+                            setGoal(e.target.value);
+                            e.target.style.height = 'auto';
+                            e.target.style.height = `${e.target.scrollHeight}px`;
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              startAnalysis();
+                            }
+                          }}
                           placeholder={t('landing.placeholder')}
                         />
                         <button
@@ -1117,12 +1256,24 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                       >
                         {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
                       </button>
-                      <input
-                        type="text"
+                      <textarea
+                        ref={chatMobileRef}
                         className="pe-chat-input"
+                        style={{ resize: 'none', overflowY: 'hidden', height: 'auto', minHeight: '38px', maxHeight: '150px', lineHeight: '1.4', paddingTop: '8px', paddingBottom: '8px' }}
+                        rows={1}
                         placeholder="Wie soll ich das Skript anpassen?"
                         value={chatInput}
-                        onChange={(e) => setChatInput(e.target.value)}
+                        onChange={(e) => {
+                          setChatInput(e.target.value);
+                          e.target.style.height = 'auto';
+                          e.target.style.height = `${e.target.scrollHeight}px`;
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            refineScript(chatInput);
+                          }
+                        }}
                         disabled={phase === 'refining'}
                       />
                       <button
@@ -1154,7 +1305,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                           <button
                             className={`pe-copy-btn ${isCopied ? 'pe-copy-btn-done' : ''}`}
                             onClick={() => {
-                              copyToClipboard(getResultText(r), activePlatform)
+                              copyToClipboard(getResultText(r), activePlatform, r)
                               setCopiedPlatform(activePlatform)
                               setTimeout(() => setCopiedPlatform(null), 2000)
                             }}
@@ -1259,6 +1410,11 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                                 )
                               })}
                             </div>
+                            <p style={{ fontSize: '0.68rem', color: 'var(--text-muted, #9ca3af)', marginTop: '8px', lineHeight: '1.3' }}>
+                              {lang === 'de' 
+                                ? 'Hinweis: H.I.T. verlinkt auf externe Suchergebnisse. Bitte beachte die Urheberrechte und Nutzungsbedingungen der jeweiligen Plattformen.' 
+                                : 'Note: H.I.T. links to external search results. Please respect the copyright and terms of service of the respective platforms.'}
+                            </p>
                           </div>
                         </>
                       )
@@ -1283,6 +1439,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                       setRecommendations([])
                       setProgress({})
                       setMobileStep('input')
+                      setChatHistory([])
                       localStorage.removeItem('hit_latest_hook')
                       localStorage.removeItem('hit_latest_body')
                       localStorage.removeItem('hit_latest_cta')
@@ -1358,9 +1515,9 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                 {/* Right Column: Main Hero and Form Input */}
                 <div className="pe-right-column">
                   <div className="pe-hero">
-                    <div className="pe-title-row">
+                    <div className="pe-title-row" style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                       <VerticalLogo size="small" />
-                      <button className="pe-info-btn" onClick={() => setShowInfo(true)} aria-label="Info">
+                      <button className="pe-info-btn" onClick={() => setShowInfo(true)} aria-label="Info" style={{ marginLeft: 'auto' }}>
                         <Info size={18} />
                       </button>
                     </div>
@@ -1389,12 +1546,23 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                   </div>
 
                   <div className="pe-input-wrap">
-                    <input
+                    <textarea
+                      ref={goalDesktopRef}
                       className="pe-input"
-                      type="text"
+                      style={{ resize: 'none', overflowY: 'hidden', height: 'auto', minHeight: '46px', maxHeight: '200px', lineHeight: '1.4' }}
+                      rows={1}
                       value={goal}
-                      onChange={(e) => setGoal(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && startAnalysis()}
+                      onChange={(e) => {
+                        setGoal(e.target.value);
+                        e.target.style.height = 'auto';
+                        e.target.style.height = `${e.target.scrollHeight}px`;
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          startAnalysis();
+                        }
+                      }}
                       placeholder={t('landing.placeholder')}
                     />
                     <button
@@ -1548,27 +1716,48 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                     {goal} · {top3Keys.length} Plattformen erstellt
                   </p>
                 </div>
-                <button
-                  onClick={() => setPhase('questions')}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 14px',
-                    fontSize: '0.88rem',
-                    fontWeight: '600',
-                    borderRadius: '8px',
-                    background: 'var(--bg-secondary, #f3f4f6)',
-                    color: 'var(--text, #374151)',
-                    border: '1px solid var(--border, #e5e7eb)',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.background = 'var(--border, #e5e7eb)'}
-                  onMouseOut={(e) => e.currentTarget.style.background = 'var(--bg-secondary, #f3f4f6)'}
-                >
-                  <ArrowLeft size={16} /> Zurück zur Analyse
-                </button>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button
+                    onClick={() => setTourActive(true)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 14px',
+                      fontSize: '0.88rem',
+                      fontWeight: '600',
+                      borderRadius: '8px',
+                      background: 'rgba(16, 185, 129, 0.1)',
+                      color: 'var(--color-mint, #10b981)',
+                      border: '1px solid rgba(16, 185, 129, 0.2)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    ❓ Tour starten
+                  </button>
+                  <button
+                    onClick={() => setPhase('questions')}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 14px',
+                      fontSize: '0.88rem',
+                      fontWeight: '600',
+                      borderRadius: '8px',
+                      background: 'var(--bg-secondary, #f3f4f6)',
+                      color: 'var(--text, #374151)',
+                      border: '1px solid var(--border, #e5e7eb)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = 'var(--border, #e5e7eb)'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'var(--bg-secondary, #f3f4f6)'}
+                  >
+                    <ArrowLeft size={16} /> Zurück zur Analyse
+                  </button>
+                </div>
               </div>
 
               <div className="pe-copilot-workspace">
@@ -1623,12 +1812,24 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                       >
                         {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
                       </button>
-                      <input
-                        type="text"
+                      <textarea
+                        ref={chatDesktopRef}
                         className="pe-chat-input"
+                        style={{ resize: 'none', overflowY: 'hidden', height: 'auto', minHeight: '38px', maxHeight: '150px', lineHeight: '1.4', paddingTop: '8px', paddingBottom: '8px' }}
+                        rows={1}
                         placeholder="Wie soll ich das Skript anpassen?"
                         value={chatInput}
-                        onChange={(e) => setChatInput(e.target.value)}
+                        onChange={(e) => {
+                          setChatInput(e.target.value);
+                          e.target.style.height = 'auto';
+                          e.target.style.height = `${e.target.scrollHeight}px`;
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            refineScript(chatInput);
+                          }
+                        }}
                         disabled={phase === 'refining'}
                       />
                       <button
@@ -1660,7 +1861,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                           <button
                             className={`pe-copy-btn ${isCopied ? 'pe-copy-btn-done' : ''}`}
                             onClick={() => {
-                              copyToClipboard(getResultText(r), activePlatform)
+                              copyToClipboard(getResultText(r), activePlatform, r)
                               setCopiedPlatform(activePlatform)
                               setTimeout(() => setCopiedPlatform(null), 2000)
                             }}
@@ -1765,6 +1966,11 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                                 )
                               })}
                             </div>
+                            <p style={{ fontSize: '0.68rem', color: 'var(--text-muted, #9ca3af)', marginTop: '8px', lineHeight: '1.3' }}>
+                              {lang === 'de' 
+                                ? 'Hinweis: H.I.T. verlinkt auf externe Suchergebnisse. Bitte beachte die Urheberrechte und Nutzungsbedingungen der jeweiligen Plattformen.' 
+                                : 'Note: H.I.T. links to external search results. Please respect the copyright and terms of service of the respective platforms.'}
+                            </p>
                           </div>
                         </>
                       )
@@ -1788,6 +1994,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                       setTopResults({})
                       setRecommendations([])
                       setProgress({})
+                      setChatHistory([])
                     }}
                   />
                 </div>
@@ -1795,6 +2002,53 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
             </div>
           )}
         </>
+      )}
+      {showInfo && (
+        <div className="pe-info-overlay" onClick={() => setShowInfo(false)}>
+          <div className="pe-info-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="pe-info-close" onClick={() => setShowInfo(false)} aria-label="Schließen">
+              <X size={20} />
+            </button>
+            <h3 className="pe-info-headline">H.I.T. Studio – Dein Content-Co-Pilot</h3>
+            <p className="pe-info-subtext">
+              Erstelle virale Skripte und finde das passende Footage für deine Videos in Sekundenschnelle.
+            </p>
+            <div className="pe-info-body">
+              H.I.T. (Happiness Intelligence Team) nimmt dir die lästige Arbeit ab: Statt manuell nach Clips zu suchen und Skripte zu schreiben, sucht H.I.T. relevante Videoquellen und bereitet dir ein fertiges CapCut-Projekt vor.
+            </div>
+            <h4 className="pe-info-what-title">Was H.I.T. für dich tut:</h4>
+            <div className="pe-info-features">
+              <div className="pe-info-feature">
+                <span>🎯</span>
+                <div>
+                  <strong>Zielgruppen-Fokus</strong>
+                  <p>H.I.T. analysiert deine Idee und optimiert sie für deine Nische.</p>
+                </div>
+              </div>
+              <div className="pe-info-feature">
+                <span>🤖</span>
+                <div>
+                  <strong>Co-Pilot Skript-Optimierung</strong>
+                  <p>Passe das Skript im Chat in Sekundenschnelle an deine Wünsche an.</p>
+                </div>
+              </div>
+              <div className="pe-info-feature">
+                <span>🎥</span>
+                <div>
+                  <strong>Footage-Sourcing</strong>
+                  <p>Erhalte direkte Links zu den besten Video-Clips im Web – kein langes Suchen.</p>
+                </div>
+              </div>
+              <div className="pe-info-feature">
+                <span>⚡</span>
+                <div>
+                  <strong>CapCut-Export</strong>
+                  <p>Lade das fertige Projekt herunter und öffne es direkt in CapCut.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

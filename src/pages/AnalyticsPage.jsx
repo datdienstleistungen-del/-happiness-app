@@ -146,6 +146,7 @@ export default function AnalyticsPage() {
   
   // AI states
   const [aiAuditing, setAiAuditing] = useState(false)
+  const [optimizingPart, setOptimizingPart] = useState(null)
   const [aiFeedback, setAiFeedback] = useState(null)
   const [cooldown, setCooldown] = useState(0)
 
@@ -499,6 +500,86 @@ Antworte ausschließlich im angegebenen Markdown-Format auf Deutsch. Antworte di
     }
   }
 
+  async function optimizePart(partKey) {
+    if (optimizingPart || aiAuditing) return
+    setOptimizingPart(partKey)
+    setError('')
+
+    let prompt = ''
+    let textToOptimize = ''
+    if (partKey === 'hook') {
+      prompt = `Du bist ein weltklasse Retention-Coach für Kurzvideos (TikTok, Reels, Shorts).
+Deine einzige Aufgabe ist es, den eingereichten Hook eines Videoskripts zu optimieren, um die Zuschauerbindung in den ersten 3 Sekunden zu maximieren.
+Der Hook muss extrem packend, neugierig machend und präzise sein (maximal 150 Zeichen).
+Antworte AUSSCHLIESSLICH mit dem neuen, optimierten Hook-Text auf Deutsch. Schreibe KEINE Einleitung, KEINE Anmerkungen, KEIN JSON, KEINE Anführungszeichen. Nur den nackten, optimierten Text.`
+      textToOptimize = hookText
+    } else if (partKey === 'body') {
+      prompt = `Du bist ein weltklasse Retention-Coach für Kurzvideos (TikTok, Reels, Shorts).
+Deine einzige Aufgabe ist es, den Hauptteil (Body) eines Videoskripts zu optimieren, um die Aufmerksamkeit hochzuhalten.
+Kürze Füllwörter, mache den Text dynamisch, strukturiert und flüssig zu sprechen (maximal 1000 Zeichen).
+Antworte AUSSCHLIESSLICH mit dem neuen, optimierten Hauptteil-Text auf Deutsch. Schreibe KEINE Einleitung, KEINE Anmerkungen, KEIN JSON, KEINE Anführungszeichen. Nur den nackten, optimierten Text.`
+      textToOptimize = bodyText
+    } else if (partKey === 'cta') {
+      prompt = `Du bist ein weltklasse Retention-Coach für Kurzvideos (TikTok, Reels, Shorts).
+Deine einzige Aufgabe ist es, den Call-to-Action (CTA) & End-Loop eines Videoskripts zu optimieren, um das Videoende knackig zu halten und einen nahtlosen Übergang zurück zum Anfang (Loop) zu schaffen (maximal 120 Zeichen).
+Kürze Abschiedsfloskeln.
+Antworte AUSSCHLIESSLICH mit dem neuen, optimierten CTA-Text auf Deutsch. Schreibe KEINE Einleitung, KEINE Anmerkungen, KEIN JSON, KEINE Anführungszeichen. Nur den nackten, optimierten Text.`
+      textToOptimize = ctaText
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token || ''
+      const userRes = await supabase.auth.getUser()
+      const userId = userRes.data.user?.id
+      const videoEditor = localStorage.getItem('hit_video_editor') || 'capcut'
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          message: `Hier ist der Text zur Optimierung:\n"${textToOptimize}"`,
+          systemPrompt: prompt,
+          userId: userId,
+          history: [],
+          videoEditor
+        })
+      })
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`)
+      }
+
+      const resData = await res.json()
+      let cleaned = resData.response || ''
+      cleaned = cleaned.replace(/^[`'"\s]+|[`'"\s]+$/g, '')
+      cleaned = cleaned.replace(/^hook:\s*/i, '')
+      cleaned = cleaned.replace(/^hauptteil:\s*/i, '')
+      cleaned = cleaned.replace(/^body:\s*/i, '')
+      cleaned = cleaned.replace(/^cta:\s*/i, '')
+      cleaned = cleaned.replace(/^call to action:\s*/i, '')
+      
+      if (partKey === 'hook') {
+        setHookText(cleaned)
+        localStorage.setItem('hit_latest_hook', cleaned)
+      } else if (partKey === 'body') {
+        setBodyText(cleaned)
+        localStorage.setItem('hit_latest_body', cleaned)
+      } else if (partKey === 'cta') {
+        setCtaText(cleaned)
+        localStorage.setItem('hit_latest_cta', cleaned)
+      }
+    } catch (e) {
+      console.error('[Part Optimization Error]', e)
+      setError(`Die Optimierung ist fehlgeschlagen: ${e.message}`)
+    } finally {
+      setOptimizingPart(null)
+    }
+  }
+
   // Generate SVG path for curve
   const getPathData = (points) => {
     if (!points || points.length === 0) return ''
@@ -848,12 +929,28 @@ Antworte ausschließlich im angegebenen Markdown-Format auf Deutsch. Antworte di
 
               {/* Traffic Light Badges */}
               <div className="social-traffic-lights">
-                {getTrafficLights().map((light, i) => (
-                  <div key={i} className={`traffic-light-card ${light.type}`}>
-                    <span className="tl-label">{light.label}</span>
-                    <span className="tl-text">{light.text}</span>
-                  </div>
-                ))}
+                {getTrafficLights().map((light, i) => {
+                  const partKey = light.label === 'HOOK' ? 'hook' : light.label === 'HAUPTTEIL' ? 'body' : 'cta';
+                  const isOptimizing = optimizingPart === partKey;
+                  return (
+                    <div 
+                      key={i} 
+                      className={`traffic-light-card ${light.type} clickable-tl-card ${isOptimizing ? 'loading' : ''}`}
+                      onClick={() => !isOptimizing && optimizePart(partKey)}
+                      title={light.type !== 'green' ? "Klicken, um diesen Abschnitt per KI zu optimieren" : undefined}
+                    >
+                      <span className="tl-label" style={{ display: 'flex', alignItems: 'center', gap: '4px', width: 'auto' }}>
+                        {light.label}
+                        {light.type !== 'green' && (
+                          <span style={{ fontSize: '9px', opacity: 0.85, fontWeight: '700' }}>
+                            {isOptimizing ? ' ⏳' : ' ✨'}
+                          </span>
+                        )}
+                      </span>
+                      <span className="tl-text">{light.text}</span>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Key Metrics Blocks */}

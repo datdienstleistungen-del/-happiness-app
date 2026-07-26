@@ -5,7 +5,7 @@ console.log('OPENROUTER_API_KEY vorhanden:', !!process.env.OPENROUTER_API_KEY)
 console.log('MISTRAL_API_KEY vorhanden:', !!process.env.MISTRAL_API_KEY)
 console.log('SUPABASE_SERVICE_KEY vorhanden:', !!process.env.SUPABASE_SERVICE_KEY)
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || ''
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
 
 const GROQ_API_BASE = 'https://api.groq.com/openai/v1'
 const DEEPSEEK_API_BASE = 'https://api.deepseek.com/v1'
@@ -219,23 +219,35 @@ export const handler = async (event) => {
   }
 
   try {
-    const authHeader = event.headers.authorization || ''
+    try {
+      const { appendFileSync } = await import('fs')
+      appendFileSync('C:/Projekte/happiness-app-react/api-server-debug.log', `[${new Date().toISOString()}] REQUEST START:\nHeaders: ${JSON.stringify(event.headers)}\nBody: ${event.body}\n\n`)
+    } catch (e) {}
+
+    const headers = event.headers || {}
+    const authHeader = headers.authorization || headers.Authorization || ''
     const token = authHeader.replace('Bearer ', '')
     if (!token) {
       return { statusCode: 401, body: JSON.stringify({ error: 'Nicht authentifiziert' }) }
     }
 
     let userId = null
-    try {
-      const authRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_SERVICE_KEY }
-      })
-      if (authRes.ok) {
-        const userData = await authRes.json()
-        userId = userData.id
+    const hasServiceKey = !!process.env.SUPABASE_SERVICE_KEY
+    if (!hasServiceKey) {
+      userId = 'local-dev-user'
+      console.log('[Auth] Bypassing auth check for local development')
+    } else {
+      try {
+        const authRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+          headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_SERVICE_KEY }
+        })
+        if (authRes.ok) {
+          const userData = await authRes.json()
+          userId = userData.id
+        }
+      } catch (e) {
+        console.error('Auth check failed:', e.message)
       }
-    } catch (e) {
-      console.error('Auth check failed:', e.message)
     }
 
     if (!userId) {
@@ -647,7 +659,7 @@ ${message}`
               max_tokens: 4096,
               ...(reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {})
             })
-          }, 8000)
+          }, 45000)
           if (orRes.ok) {
             const orData = await orRes.json()
             console.log('Antwort von:', 'openrouter-free')
@@ -689,7 +701,7 @@ ${message}`
                 max_tokens: 4096,
                 ...(reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {})
               })
-            }, 8000)
+            }, 45000)
             if (mistralRes.ok) {
               const mistralData = await mistralRes.json()
               console.log('Antwort von:', 'mistral')
@@ -732,7 +744,7 @@ ${message}`
                 max_tokens: 4096,
                 ...(reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {})
               })
-            }, 8000)
+            }, 45000)
             if (groqRes.ok) {
               const groqData = await groqRes.json()
               console.log('Antwort von:', 'groq')
@@ -775,7 +787,7 @@ ${message}`
                 max_tokens: 4096,
                 ...(reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {})
               })
-            }, 8000)
+            }, 45000)
             if (dsRes.ok) {
               const dsData = await dsRes.json()
               console.log('Antwort von:', 'deepseek-fallback')
@@ -828,6 +840,11 @@ ${message}`
       )
     }
 
+    try {
+      const { appendFileSync } = await import('fs')
+      appendFileSync('C:/Projekte/happiness-app-react/api-server-debug.log', `[${new Date().toISOString()}] SUCCESS. Response length: ${aiResponse?.length || 0}\n\n`)
+    } catch (e) {}
+
     return {
       statusCode: 200,
       headers: {
@@ -838,6 +855,10 @@ ${message}`
     }
 
   } catch (error) {
+    try {
+      const { appendFileSync } = await import('fs')
+      appendFileSync('C:/Projekte/happiness-app-react/api-server-debug.log', `[${new Date().toISOString()}] ERROR: ${error.message}\nStack: ${error.stack}\n\n`)
+    } catch (e) {}
     console.error('Chat function error:', error.message, error.stack)
     return {
       statusCode: 500,

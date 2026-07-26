@@ -42,9 +42,21 @@ JSON-Schema:
  * @param {string} token - Auth-Token (optional)
  * @returns {Promise<object[]>} Empfehlungen
  */
-export async function generateRecommendations(goal, analysis, chatEndpoint, token = '', videoEditor = 'capcut') {
+export async function generateRecommendations(goal, analysis, chatEndpoint, token = '', videoEditor = 'capcut', lang = 'de') {
   const headers = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = `Bearer ${token}`
+
+  const languageNames = {
+    de: 'Deutsch (German)',
+    en: 'Englisch (English)',
+    es: 'Spanisch (Español)',
+    fr: 'Französisch (Français)',
+    it: 'Italienisch (Italiano)',
+    nl: 'Niederländisch (Nederlands)',
+    el: 'Griechisch (Greek/Ελληνικά)'
+  }
+  const langName = languageNames[lang] || 'Deutsch (German)'
+  const langInstruction = `\n\nCRITICAL REQUIREMENT: The user's language is ${langName}. All generated content (including text, hooks, descriptions, titles, explanations, suggestions, and responses) MUST be written in ${langName}. Do not translate structural JSON keys, but write all their string values and any conversational output in ${langName}.`
 
   const context = `Ziel: "${goal}"
 Branche: ${analysis.industry}
@@ -59,7 +71,7 @@ Content-Score: ${analysis.contentScore}%`
       headers,
       body: JSON.stringify({
         message: `Erstelle Empfehlungen für:\n\n${context}`,
-        systemPrompt: RECOMMENDATION_PROMPT,
+        systemPrompt: RECOMMENDATION_PROMPT + langInstruction,
         history: [],
         videoEditor
       })

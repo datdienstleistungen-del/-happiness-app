@@ -1147,6 +1147,41 @@
   color: #166534;
 }
 
+.clickable-tl-card {
+  transition: all 0.2s ease-in-out;
+}
+
+.clickable-tl-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.clickable-tl-card.red:hover {
+  border-color: #fca5a5;
+  background: #fff5f5;
+}
+
+.clickable-tl-card.yellow:hover {
+  border-color: #fde047;
+  background: #fffbeb;
+}
+
+.clickable-tl-card.green:hover {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.clickable-tl-card.loading {
+  opacity: 0.7;
+  cursor: wait;
+  animation: pulseCard 1.5s infinite ease-in-out;
+}
+
+@keyframes pulseCard {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(0.99); }
+}
+
 .tl-label {
   font-size: 0.65rem;
   font-weight: 800;

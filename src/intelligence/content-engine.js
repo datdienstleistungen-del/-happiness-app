@@ -228,11 +228,23 @@ export function getAllPlatforms() {
 /**
  * Führt einen einzelnen Plattform-Agent aus
  */
-export async function runPlatformAgent(platformKey, goal, masterBrief, chatEndpoint, token, videoEditor = 'capcut') {
+export async function runPlatformAgent(platformKey, goal, masterBrief, chatEndpoint, token, videoEditor = 'capcut', lang = 'de') {
   const agent = PLATFORM_AGENTS[platformKey]
   if (!agent) return null
 
-  const systemPrompt = `${agent.prompt}\n\n---\n\nMASTER-BRIEF:\n${masterBrief}\n\n---\n\nErstelle den fertigen Content basierend auf dem Master-Brief und den Plattform-Regeln.`
+  const languageNames = {
+    de: 'Deutsch (German)',
+    en: 'Englisch (English)',
+    es: 'Spanisch (Español)',
+    fr: 'Französisch (Français)',
+    it: 'Italienisch (Italiano)',
+    nl: 'Niederländisch (Nederlands)',
+    el: 'Griechisch (Greek/Ελληνικά)'
+  }
+  const langName = languageNames[lang] || 'Deutsch (German)'
+  const langInstruction = `\n\nCRITICAL REQUIREMENT: The user's language is ${langName}. All generated content (including text, hooks, descriptions, titles, explanations, suggestions, and responses) MUST be written in ${langName}. Do not translate structural JSON keys, but write all their string values and any conversational output in ${langName}.`
+
+  const systemPrompt = `${agent.prompt}\n\n---\n\nMASTER-BRIEF:\n${masterBrief}\n\n---\n\nErstelle den fertigen Content basierend auf dem Master-Brief und den Plattform-Regeln.` + langInstruction
 
   try {
     const response = await fetch(chatEndpoint, {

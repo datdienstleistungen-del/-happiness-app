@@ -46,17 +46,29 @@ JSON-Schema:
  * @param {string} token - Auth-Token (optional)
  * @returns {Promise<object>} Analyse-Ergebnis
  */
-export async function analyzeGoal(goal, chatEndpoint, token = '', videoEditor = 'capcut') {
+export async function analyzeGoal(goal, chatEndpoint, token = '', videoEditor = 'capcut', lang = 'de') {
   try {
     const headers = { 'Content-Type': 'application/json' }
     if (token) headers['Authorization'] = `Bearer ${token}`
+
+    const languageNames = {
+      de: 'Deutsch (German)',
+      en: 'Englisch (English)',
+      es: 'Spanisch (Español)',
+      fr: 'Französisch (Français)',
+      it: 'Italienisch (Italiano)',
+      nl: 'Niederländisch (Nederlands)',
+      el: 'Griechisch (Greek/Ελληνικά)'
+    }
+    const langName = languageNames[lang] || 'Deutsch (German)'
+    const langInstruction = `\n\nCRITICAL REQUIREMENT: The user's language is ${langName}. All generated content (including text, hooks, descriptions, titles, explanations, suggestions, and responses) MUST be written in ${langName}. Do not translate structural JSON keys, but write all their string values and any conversational output in ${langName}.`
 
     const response = await fetch(chatEndpoint, {
       method: 'POST',
       headers,
       body: JSON.stringify({
         message: `Ziel des Nutzers: "${goal}"\n\nErstelle eine vollständige Content-Strategie.`,
-        systemPrompt: ANALYSIS_PROMPT,
+        systemPrompt: ANALYSIS_PROMPT + langInstruction,
         history: [],
         videoEditor
       })
@@ -87,23 +99,68 @@ export async function analyzeGoal(goal, chatEndpoint, token = '', videoEditor = 
   }
 }
 
+const PLATFORM_KEY_MAP = {
+  'tiktok': 'tiktok',
+  'tik tok': 'tiktok',
+  'instagram': 'instagram',
+  'instagram reels': 'instagram',
+  'reels': 'instagram',
+  'facebook': 'facebook',
+  'facebook reels': 'facebook',
+  'linkedin': 'linkedin',
+  'youtube': 'youtube',
+  'youtube shorts': 'youtube',
+  'shorts': 'youtube',
+  'kleinanzeigen': 'kleinanzeigen',
+  'ebay kleinanzeigen': 'kleinanzeigen',
+  'reddit': 'reddit',
+  'pinterest': 'pinterest',
+  'email': 'email',
+  'e-mail': 'email',
+  'podcast': 'podcast',
+  'twitter': 'twitter',
+  'x': 'twitter',
+  'blog': 'blog',
+  'googlebusiness': 'googleBusiness',
+  'google business': 'googleBusiness',
+  'google business profile': 'googleBusiness',
+  'newsletter': 'newsletter'
+}
+
 /**
  * Normalisiert das LLM-Ergebnis auf ein einheitliches Schema
  */
 function normalizeAnalysis(parsed, goal) {
+  const rawTop = Array.isArray(parsed.topPlatforms) ? parsed.topPlatforms : [];
+  const topPlatforms = rawTop.map(p => {
+    const clean = p.toLowerCase().trim()
+    return PLATFORM_KEY_MAP[clean] || clean
+  }).filter(p => Object.values(PLATFORM_KEY_MAP).includes(p)).slice(0, 3)
+
+  const rawAll = Array.isArray(parsed.allPlatforms) ? parsed.allPlatforms : [];
+  const allPlatforms = rawAll.map(p => {
+    const clean = p.toLowerCase().trim()
+    return PLATFORM_KEY_MAP[clean] || clean
+  }).filter(p => Object.values(PLATFORM_KEY_MAP).includes(p))
+
+  const contentTypes = {}
+  if (parsed.contentTypes && typeof parsed.contentTypes === 'object') {
+    Object.entries(parsed.contentTypes).forEach(([key, val]) => {
+      const clean = key.toLowerCase().trim()
+      const normalizedKey = PLATFORM_KEY_MAP[clean] || clean
+      contentTypes[normalizedKey] = val
+    })
+  }
+
   return {
     goal: parsed.goal || goal,
     industry: parsed.industry || 'Allgemein',
     targetAudience: parsed.targetAudience || 'Allgemein',
     contentScore: clamp(parsed.contentScore || 75, 0, 100),
     savedTime: parsed.savedTime || '≈ 1 Stunde',
-    topPlatforms: Array.isArray(parsed.topPlatforms)
-      ? parsed.topPlatforms.slice(0, 3)
-      : ['instagram', 'facebook', 'linkedin'],
-    allPlatforms: Array.isArray(parsed.allPlatforms)
-      ? parsed.allPlatforms
-      : ['instagram', 'facebook', 'linkedin', 'tiktok', 'youtube', 'twitter', 'pinterest', 'reddit', 'blog', 'newsletter', 'googleBusiness', 'kleinanzeigen'],
-    contentTypes: parsed.contentTypes || {},
+    topPlatforms: topPlatforms.length > 0 ? topPlatforms : ['instagram', 'facebook', 'linkedin'],
+    allPlatforms: allPlatforms.length > 0 ? allPlatforms : ['instagram', 'facebook', 'linkedin', 'tiktok', 'youtube', 'twitter', 'pinterest', 'reddit', 'blog', 'newsletter', 'googleBusiness', 'kleinanzeigen'],
+    contentTypes: contentTypes,
     tone: parsed.tone || 'Freundlich, professionell',
     hooks: Array.isArray(parsed.hooks) ? parsed.hooks.slice(0, 3) : [],
     hashtags: Array.isArray(parsed.hashtags) ? parsed.hashtags.slice(0, 10) : [],

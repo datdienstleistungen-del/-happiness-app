@@ -88,6 +88,18 @@ exports.handler = async (event) => {
 
 function getDefaultVideos(query) {
   const videoMap = {
+    prank: [
+      { url: 'https://cdn.pixabay.com/video/2023/10/24/186358-877717454_large.mp4', thumbnail: 'https://cdn.pixabay.com/video/2023/10/24/186358-877717454_tiny.jpg', duration: 10, width: 1920, height: 1080 },
+      { url: 'https://cdn.pixabay.com/video/2021/04/14/71060-538053641_large.mp4', thumbnail: 'https://cdn.pixabay.com/video/2021/04/14/71060-538053641_tiny.jpg', duration: 8, width: 1920, height: 1080 }
+    ],
+    fussball: [
+      { url: 'https://cdn.pixabay.com/video/2023/11/04/187766-880956557_large.mp4', thumbnail: 'https://cdn.pixabay.com/video/2023/11/04/187766-880956557_tiny.jpg', duration: 12, width: 1920, height: 1080 },
+      { url: 'https://cdn.pixabay.com/video/2023/07/26/173360-849557007_large.mp4', thumbnail: 'https://cdn.pixabay.com/video/2023/07/26/173360-849557007_tiny.jpg', duration: 15, width: 1920, height: 1080 }
+    ],
+    comedy: [
+      { url: 'https://cdn.pixabay.com/video/2022/10/16/135069-760902720_large.mp4', thumbnail: 'https://cdn.pixabay.com/video/2022/10/16/135069-760902720_tiny.jpg', duration: 9, width: 1920, height: 1080 },
+      { url: 'https://cdn.pixabay.com/video/2021/08/17/85376-589201998_large.mp4', thumbnail: 'https://cdn.pixabay.com/video/2021/08/17/85376-589201998_tiny.jpg', duration: 11, width: 1920, height: 1080 }
+    ],
     motivation: [
       { url: 'https://cdn.pixabay.com/video/2024/01/19/197387-905037703_large.mp4', thumbnail: '', duration: 15, width: 1920, height: 1080 },
       { url: 'https://cdn.pixabay.com/video/2023/11/14/189139-893868591_large.mp4', thumbnail: '', duration: 12, width: 1920, height: 1080 },
@@ -114,6 +126,10 @@ function getDefaultVideos(query) {
   }
 
   const lowerQuery = query?.toLowerCase() || ''
+  if (lowerQuery.includes('prank')) return videoMap.prank
+  if (lowerQuery.includes('fussball') || lowerQuery.includes('fußball') || lowerQuery.includes('soccer') || lowerQuery.includes('football')) return videoMap.fussball
+  if (lowerQuery.includes('comedy') || lowerQuery.includes('funny') || lowerQuery.includes('lustig') || lowerQuery.includes('kurios') || lowerQuery.includes('lachen')) return videoMap.comedy
+  
   for (const [key, videos] of Object.entries(videoMap)) {
     if (lowerQuery.includes(key)) return videos
   }
