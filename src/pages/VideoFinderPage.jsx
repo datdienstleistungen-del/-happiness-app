@@ -37,6 +37,11 @@ export default function VideoFinderPage() {
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
 
+  // External Importer States
+  const [activeSource, setActiveSource] = useState('pexels') // 'pexels' or 'viral'
+  const [importedUrl, setImportedUrl] = useState('')
+  const [topic, setTopic] = useState('')
+
   // Search on mount with default category
   useEffect(() => {
     handleSearch('satisfying')
@@ -76,6 +81,40 @@ export default function VideoFinderPage() {
     }
   }
 
+  const searchExternal = (platform) => {
+    const term = query.trim() || 'viral clip'
+    let url = ''
+    if (platform === 'youtube') {
+      url = `https://www.youtube.com/results?search_query=${encodeURIComponent(term)}+shorts`
+    } else {
+      url = `https://www.tiktok.com/search?q=${encodeURIComponent(term)}`
+    }
+    window.open(url, '_blank')
+  }
+
+  const handleImportVideo = () => {
+    if (!importedUrl.trim()) {
+      setError('Bitte füge eine Video-URL ein.')
+      return
+    }
+    if (!topic.trim()) {
+      setError('Bitte gib an, worum es in dem Video geht (Thema).')
+      return
+    }
+    setError('')
+    
+    const mockVideo = {
+      id: 'viral-import',
+      url: importedUrl,
+      title: topic,
+      duration: 15,
+      width: 1080,
+      height: 1920
+    }
+    
+    setSelectedVideo(mockVideo)
+  }
+
   async function generateScriptForVideo() {
     if (!selectedVideo || generatingScript) return
     
@@ -84,8 +123,10 @@ export default function VideoFinderPage() {
     setGeneratedScript(null)
 
     const toneLabel = TONES.find(t => t.value === selectedTone)?.label || 'Unterhaltsam'
+    const scriptTopic = activeSource === 'viral' ? topic : (query || 'Unterhaltung')
+    
     const systemPrompt = `Du bist H.I.T., ein weltklasse Retention-Coach und Skriptschreiber für TikTok- und Shorts-Videos.
-Deine Aufgabe ist es, für ein gegebenes Video (Thema: "${query || 'Unterhaltung'}") ein unterhaltsames, virales Videoskript zu schreiben.
+Deine Aufgabe ist es, für ein gegebenes Video (Thema: "${scriptTopic}") ein unterhaltsames, virales Videoskript zu schreiben.
 Der gewünschte Tonfall ist: "${toneLabel}".
 ${customInstructions ? `Zusätzliche Anweisungen des Users: "${customInstructions}"` : ''}
 
@@ -144,7 +185,6 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
 
       const resData = await res.json()
       let cleaned = resData.response || ''
-      // Basic JSON cleanup
       cleaned = cleaned.replace(/^```json\n?/i, '').replace(/```\s*$/g, '').trim()
       
       const parsedRecipe = JSON.parse(cleaned)
@@ -168,15 +208,15 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
   const handleSendToCapCut = () => {
     if (!generatedScript || !selectedVideo) return
     
-    // Structure the recipe so that TikTokVideoPage.jsx recognizes it immediately
+    const scriptTopic = activeSource === 'viral' ? topic : (query || 'Action')
+
     const recipeToImport = {
       video_title: generatedScript.video_title,
       voiceover_script: generatedScript.voiceover_script,
-      // Map scenes and include visual prompt for each
       scenes: generatedScript.scenes.map((s, i) => ({
         timestamp: s.timestamp,
         spoken_text: s.spoken_text,
-        visual_prompt: `cinematic shot, stock video of ${query || 'action'}, photorealistic, 4k, --ar 9:16`
+        visual_prompt: `cinematic shot, stock video of ${scriptTopic}, photorealistic, 4k, --ar 9:16`
       })),
       publishing_payload: generatedScript.publishing_payload
     }
@@ -200,61 +240,157 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
           <p>Suche nach viralen Clip-Kategorien, lade sie herunter und generiere ein passendes Skript für deinen Kanal.</p>
         </div>
 
-        {/* Search & Tags Area */}
-        <div className="vf-search-panel">
-          <div className="vf-search-bar">
-            <Search size={18} className="vf-search-icon" />
-            <input
-              type="text"
-              placeholder="Z. B. Pranks, Fußball, Fails, Katzen..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            />
-            <button className="vf-search-btn" onClick={() => handleSearch()}>
-              Suchen
-            </button>
-          </div>
-
-          <div className="vf-quick-tags">
-            {PRESET_CATEGORIES.map(cat => (
-              <button
-                key={cat.id}
-                className="vf-tag-btn"
-                onClick={() => {
-                  setQuery(cat.query)
-                  handleSearch(cat.query)
-                }}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
+        {/* Source Tabs */}
+        <div className="vf-tabs">
+          <button
+            className={`vf-tab-btn-source ${activeSource === 'pexels' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveSource('pexels')
+              setSelectedVideo(null)
+              setGeneratedScript(null)
+              setError('')
+            }}
+          >
+            📸 Pexels Stock-Archiv
+          </button>
+          <button
+            className={`vf-tab-btn-source ${activeSource === 'viral' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveSource('viral')
+              setSelectedVideo(null)
+              setGeneratedScript(null)
+              setError('')
+            }}
+          >
+            🚀 Viral-Finder (YouTube / TikTok)
+          </button>
         </div>
 
-        {error && <div className="vf-error-banner">{error}</div>}
+        {activeSource === 'pexels' ? (
+          <>
+            {/* Search & Tags Area */}
+            <div className="vf-search-panel">
+              <div className="vf-search-bar">
+                <Search size={18} className="vf-search-icon" />
+                <input
+                  type="text"
+                  placeholder="Z. B. Pranks, Fußball, Fails, Katzen..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+                <button className="vf-search-btn" onClick={() => handleSearch()}>
+                  Suchen
+                </button>
+              </div>
 
-        {/* Videos Grid */}
-        {loading ? (
-          <div className="vf-loading-state">
-            <div className="vf-spinner"></div>
-            <p>Passende Clips werden gesucht...</p>
-          </div>
-        ) : videos.length === 0 ? (
-          <div className="vf-empty-state">
-            <Film size={48} />
-            <p>Keine Clips gefunden. Starte eine neue Suche.</p>
-          </div>
+              <div className="vf-quick-tags">
+                {PRESET_CATEGORIES.map(cat => (
+                  <button
+                    key={cat.id}
+                    className="vf-tag-btn"
+                    onClick={() => {
+                      setQuery(cat.query)
+                      handleSearch(cat.query)
+                    }}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {error && <div className="vf-error-banner">{error}</div>}
+
+            {/* Videos Grid */}
+            {loading ? (
+              <div className="vf-loading-state">
+                <div className="vf-spinner"></div>
+                <p>Passende Clips werden gesucht...</p>
+              </div>
+            ) : videos.length === 0 ? (
+              <div className="vf-empty-state">
+                <Film size={48} />
+                <p>Keine Clips gefunden. Starte eine neue Suche.</p>
+              </div>
+            ) : (
+              <div className="vf-grid">
+                {videos.map(video => (
+                  <VideoCard
+                    key={video.id}
+                    video={video}
+                    isSelected={selectedVideo?.id === video.id}
+                    onSelect={setSelectedVideo}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         ) : (
-          <div className="vf-grid">
-            {videos.map(video => (
-              <VideoCard
-                key={video.id}
-                video={video}
-                isSelected={selectedVideo?.id === video.id}
-                onSelect={setSelectedVideo}
-              />
-            ))}
+          /* Viral Importer View */
+          <div className="vf-viral-container">
+            <div className="vf-viral-intro">
+              <h3>Finde virale Clips direkt an der Quelle</h3>
+              <p>Such auf YouTube oder TikTok nach hochaktiven Inhalten (z. B. <i>„Minecraft parkour background“</i> oder <i>„Football fail shorts“</i>), kopiere den Link und füge ihn unten ein.</p>
+              
+              <div className="vf-external-search-wrap">
+                <div className="vf-external-search-input-group">
+                  <input
+                    type="text"
+                    placeholder="Suchbegriff für externe Suche..."
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                  <button className="vf-ext-btn yt" onClick={() => searchExternal('youtube')}>
+                    🌐 Auf YouTube Shorts suchen
+                  </button>
+                  <button className="vf-ext-btn tt" onClick={() => searchExternal('tiktok')}>
+                    📱 Auf TikTok suchen
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="vf-importer-box">
+              <h4>🔗 Video-Link importieren</h4>
+              
+              {error && <div className="vf-error-banner">{error}</div>}
+
+              <div className="vf-importer-fields">
+                <div className="vf-importer-field">
+                  <label>1. Video-URL (von YouTube, TikTok, Instagram...)</label>
+                  <input
+                    type="text"
+                    placeholder="z. B. https://www.youtube.com/shorts/..."
+                    value={importedUrl}
+                    onChange={(e) => setImportedUrl(e.target.value)}
+                  />
+                </div>
+                <div className="vf-importer-field">
+                  <label>2. Worum geht es in dem Video? (Thema)</label>
+                  <input
+                    type="text"
+                    placeholder="z. B. Hund rutscht auf Banane aus, Minecraft ASMR loop..."
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <button className="vf-import-btn" onClick={handleImportVideo}>
+                Video verknüpfen & Skript schreiben
+              </button>
+
+              <div className="vf-downloaders-hint">
+                <h5>💡 Wie lade ich das Video für meine Veröffentlichung herunter?</h5>
+                <p>Kopiere deine Video-URL und nutze einen kostenlosen, schnellen Downloader im Web:</p>
+                <ul>
+                  <li>Für TikTok-Videos: <a href="https://ssstik.io" target="_blank" rel="noreferrer">ssstik.io</a> oder <a href="https://snaptik.app" target="_blank" rel="noreferrer">snaptik.app</a></li>
+                  <li>Für YouTube-Videos: <a href="https://savefrom.net" target="_blank" rel="noreferrer">savefrom.net</a> oder <a href="https://y2mate.is" target="_blank" rel="noreferrer">y2mate.is</a></li>
+                </ul>
+                <p className="vf-hint-small">Das heruntergeladene Video kannst du dann ganz einfach in CapCut Studio mit dem unten erstellten Skript zusammenfügen!</p>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -268,27 +404,39 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
           </div>
 
           <div className="vf-sidebar-body">
-            {/* Selected Video Player */}
+            {/* Selected Video Player / Placeholder */}
             <div className="vf-player-wrapper">
-              <video
-                key={selectedVideo.url}
-                src={selectedVideo.url}
-                controls
-                playsInline
-                className="vf-large-player"
-              />
+              {selectedVideo.id === 'viral-import' ? (
+                <div className="vf-import-placeholder">
+                  <Film size={40} className="vf-placeholder-icon" />
+                  <p className="vf-placeholder-title">{selectedVideo.title}</p>
+                  <a href={selectedVideo.url} target="_blank" rel="noreferrer" className="vf-open-link-btn">
+                    🌐 Original-Video öffnen
+                  </a>
+                </div>
+              ) : (
+                <video
+                  key={selectedVideo.url}
+                  src={selectedVideo.url}
+                  controls
+                  playsInline
+                  className="vf-large-player"
+                />
+              )}
             </div>
 
             <div className="vf-action-section">
-              <a
-                href={selectedVideo.url}
-                download={`hit_clip_${selectedVideo.id}.mp4`}
-                target="_blank"
-                rel="noreferrer"
-                className="vf-download-action-btn"
-              >
-                <Download size={16} /> Clip herunterladen (MP4)
-              </a>
+              {selectedVideo.id !== 'viral-import' && (
+                <a
+                  href={selectedVideo.url}
+                  download={`hit_clip_${selectedVideo.id}.mp4`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="vf-download-action-btn"
+                >
+                  <Download size={16} /> Clip herunterladen (MP4)
+                </a>
+              )}
             </div>
 
             {/* Script parameters */}

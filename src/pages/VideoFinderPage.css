@@ -536,3 +536,285 @@
   font-size: 0.85rem;
   margin-bottom: 1.5rem;
 }
+
+/* Source Tabs styling */
+.vf-tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid var(--border, #e5e7eb);
+  padding-bottom: 0.5rem;
+}
+
+.vf-tab-btn-source {
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-muted, #6b7280);
+  cursor: pointer;
+  padding: 8px 16px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.vf-tab-btn-source:hover {
+  color: var(--text-primary, #111827);
+}
+
+.vf-tab-btn-source.active {
+  color: var(--color-mint, #10b981);
+}
+
+.vf-tab-btn-source.active::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--color-mint, #10b981);
+  border-radius: 2px;
+}
+
+/* Viral Importer Dashboard Styling */
+.vf-viral-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.vf-viral-intro {
+  background: var(--bg-card, #ffffff);
+  padding: 1.5rem;
+  border-radius: 14px;
+  border: 1px solid var(--border, #e5e7eb);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.vf-viral-intro h3 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text-primary, #111827);
+  margin-bottom: 0.5rem;
+}
+
+.vf-viral-intro p {
+  color: var(--text-muted, #6b7280);
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+}
+
+.vf-external-search-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.vf-external-search-input-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.vf-external-search-input-group input {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #e5e7eb);
+  font-size: 0.95rem;
+  background: var(--bg-secondary, #f3f4f6);
+  color: var(--text-primary, #111827);
+  outline: none;
+}
+
+.vf-external-search-input-group input:focus {
+  border-color: var(--color-mint, #10b981);
+  background: var(--bg-card, #ffffff);
+}
+
+.vf-ext-btn {
+  border: none;
+  outline: none;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 11px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: white;
+  transition: opacity 0.2s;
+}
+
+.vf-ext-btn.yt {
+  background: #ff0000;
+}
+
+.vf-ext-btn.tt {
+  background: #010101;
+}
+
+.vf-ext-btn:hover {
+  opacity: 0.9;
+}
+
+/* Importer Box Styling */
+.vf-importer-box {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
+  padding: 2rem;
+  border-radius: 14px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.vf-importer-box h4 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-primary, #111827);
+  margin-bottom: 1.5rem;
+}
+
+.vf-importer-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.vf-importer-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.vf-importer-field label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted, #4b5563);
+}
+
+.vf-importer-field input {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #e5e7eb);
+  font-size: 0.95rem;
+  outline: none;
+  background: var(--bg-secondary, #f3f4f6);
+  color: var(--text-primary, #111827);
+  transition: all 0.2s;
+}
+
+.vf-importer-field input:focus {
+  border-color: var(--color-mint, #10b981);
+  background: var(--bg-card, #ffffff);
+}
+
+.vf-import-btn {
+  background: var(--color-mint, #10b981);
+  color: white;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  transition: opacity 0.2s;
+}
+
+.vf-import-btn:hover {
+  opacity: 0.95;
+}
+
+/* Downloaders hint */
+.vf-downloaders-hint {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+
+.vf-downloaders-hint h5 {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-primary, #111827);
+  margin-bottom: 0.75rem;
+}
+
+.vf-downloaders-hint p {
+  color: var(--text-muted, #6b7280);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+}
+
+.vf-downloaders-hint ul {
+  padding-left: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.vf-downloaders-hint li {
+  font-size: 0.88rem;
+  color: var(--text-muted, #6b7280);
+  margin-bottom: 0.4rem;
+}
+
+.vf-downloaders-hint a {
+  color: var(--color-mint, #10b981);
+  text-decoration: underline;
+  font-weight: 700;
+}
+
+.vf-hint-small {
+  font-style: italic;
+  font-size: 0.8rem;
+}
+
+/* Import video placeholder card in sidebar */
+.vf-import-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2.5rem 1.5rem;
+  background: var(--bg-secondary, #f3f4f6);
+  border-radius: 12px;
+  border: 2px dashed var(--border, #e5e7eb);
+  text-align: center;
+  width: 100%;
+  height: 100%;
+}
+
+.vf-placeholder-icon {
+  color: var(--color-mint, #10b981);
+}
+
+.vf-placeholder-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary, #111827);
+  margin: 0;
+}
+
+.vf-open-link-btn {
+  background: var(--text-primary, #111827);
+  color: white !important;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  display: inline-block;
+  transition: opacity 0.2s;
+}
+
+.vf-open-link-btn:hover {
+  opacity: 0.9;
+}
