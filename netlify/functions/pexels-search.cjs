@@ -89,39 +89,29 @@ exports.handler = async (event) => {
 function getDefaultVideos(query) {
   const videoMap = {
     prank: [
-      { url: 'https://cdn.pixabay.com/video/2023/10/24/186358-877717454_large.mp4', thumbnail: 'https://cdn.pixabay.com/video/2023/10/24/186358-877717454_tiny.jpg', duration: 10, width: 1920, height: 1080 },
-      { url: 'https://cdn.pixabay.com/video/2021/04/14/71060-538053641_large.mp4', thumbnail: 'https://cdn.pixabay.com/video/2021/04/14/71060-538053641_tiny.jpg', duration: 8, width: 1920, height: 1080 }
+      { url: 'https://res.cloudinary.com/demo/video/upload/c_fill,g_auto,w_540,h_960/dog.mp4', thumbnail: 'https://res.cloudinary.com/demo/video/upload/c_fill,g_auto,w_180,h_320,so_0/dog.jpg', duration: 13, width: 540, height: 960 },
+      { url: 'https://res.cloudinary.com/demo/video/upload/c_fill,g_auto,w_540,h_960/elephants.mp4', thumbnail: 'https://res.cloudinary.com/demo/video/upload/c_fill,g_auto,w_180,h_320,so_0/elephants.jpg', duration: 52, width: 540, height: 960 }
     ],
     fussball: [
-      { url: 'https://cdn.pixabay.com/video/2023/11/04/187766-880956557_large.mp4', thumbnail: 'https://cdn.pixabay.com/video/2023/11/04/187766-880956557_tiny.jpg', duration: 12, width: 1920, height: 1080 },
-      { url: 'https://cdn.pixabay.com/video/2023/07/26/173360-849557007_large.mp4', thumbnail: 'https://cdn.pixabay.com/video/2023/07/26/173360-849557007_tiny.jpg', duration: 15, width: 1920, height: 1080 }
+      { url: 'https://res.cloudinary.com/demo/video/upload/c_fill,g_auto,w_540,h_960/finish_line.mp4', thumbnail: 'https://res.cloudinary.com/demo/video/upload/c_fill,g_auto,w_180,h_320,so_0/finish_line.jpg', duration: 5, width: 540, height: 960 }
     ],
     comedy: [
-      { url: 'https://cdn.pixabay.com/video/2022/10/16/135069-760902720_large.mp4', thumbnail: 'https://cdn.pixabay.com/video/2022/10/16/135069-760902720_tiny.jpg', duration: 9, width: 1920, height: 1080 },
-      { url: 'https://cdn.pixabay.com/video/2021/08/17/85376-589201998_large.mp4', thumbnail: 'https://cdn.pixabay.com/video/2021/08/17/85376-589201998_tiny.jpg', duration: 11, width: 1920, height: 1080 }
+      { url: 'https://res.cloudinary.com/demo/video/upload/c_fill,g_auto,w_540,h_960/dog.mp4', thumbnail: 'https://res.cloudinary.com/demo/video/upload/c_fill,g_auto,w_180,h_320,so_0/dog.jpg', duration: 13, width: 540, height: 960 }
     ],
     motivation: [
-      { url: 'https://cdn.pixabay.com/video/2024/01/19/197387-905037703_large.mp4', thumbnail: '', duration: 15, width: 1920, height: 1080 },
-      { url: 'https://cdn.pixabay.com/video/2023/11/14/189139-893868591_large.mp4', thumbnail: '', duration: 12, width: 1920, height: 1080 },
-      { url: 'https://cdn.pixabay.com/video/2020/07/30/45788-444930032_large.mp4', thumbnail: '', duration: 18, width: 1920, height: 1080 }
+      { url: 'https://res.cloudinary.com/demo/video/upload/c_fill,g_auto,w_540,h_960/mountains.mp4', thumbnail: 'https://res.cloudinary.com/demo/video/upload/c_fill,g_auto,w_180,h_320,so_0/mountains.jpg', duration: 9, width: 540, height: 960 }
     ],
     nature: [
-      { url: 'https://cdn.pixabay.com/video/2024/02/20/201560-914568892_large.mp4', thumbnail: '', duration: 20, width: 1920, height: 1080 },
-      { url: 'https://cdn.pixabay.com/video/2023/09/14/180771-864159450_large.mp4', thumbnail: '', duration: 15, width: 1920, height: 1080 },
-      { url: 'https://cdn.pixabay.com/video/2021/08/20/85615-590008498_large.mp4', thumbnail: '', duration: 10, width: 1920, height: 1080 }
+      { url: 'https://res.cloudinary.com/demo/video/upload/c_fill,g_auto,w_540,h_960/mountains.mp4', thumbnail: 'https://res.cloudinary.com/demo/video/upload/c_fill,g_auto,w_180,h_320,so_0/mountains.jpg', duration: 9, width: 540, height: 960 }
     ],
     dankbarkeit: [
-      { url: 'https://cdn.pixabay.com/video/2022/08/18/124174-740902698_large.mp4', thumbnail: '', duration: 16, width: 1920, height: 1080 },
-      { url: 'https://cdn.pixabay.com/video/2021/11/22/96133-648037089_large.mp4', thumbnail: '', duration: 14, width: 1920, height: 1080 },
-      { url: 'https://cdn.pixabay.com/video/2020/05/25/40130-424930959_large.mp4', thumbnail: '', duration: 12, width: 1920, height: 1080 }
+      { url: 'https://res.cloudinary.com/demo/video/upload/c_fill,g_auto,w_540,h_960/elephants.mp4', thumbnail: 'https://res.cloudinary.com/demo/video/upload/c_fill,g_auto,w_180,h_320,so_0/elephants.jpg', duration: 52, width: 540, height: 960 }
     ],
     meditation: [
-      { url: 'https://cdn.pixabay.com/video/2021/04/22/72192-541029498_large.mp4', thumbnail: '', duration: 20, width: 1920, height: 1080 },
-      { url: 'https://cdn.pixabay.com/video/2020/08/09/46761-449928498_large.mp4', thumbnail: '', duration: 15, width: 1920, height: 1080 }
+      { url: 'https://res.cloudinary.com/demo/video/upload/c_fill,g_auto,w_540,h_960/mountains.mp4', thumbnail: 'https://res.cloudinary.com/demo/video/upload/c_fill,g_auto,w_180,h_320,so_0/mountains.jpg', duration: 9, width: 540, height: 960 }
     ],
     wellness: [
-      { url: 'https://cdn.pixabay.com/video/2021/02/20/65515-514573652_large.mp4', thumbnail: '', duration: 18, width: 1920, height: 1080 },
-      { url: 'https://cdn.pixabay.com/video/2020/06/01/40691-428644498_large.mp4', thumbnail: '', duration: 12, width: 1920, height: 1080 }
+      { url: 'https://res.cloudinary.com/demo/video/upload/c_fill,g_auto,w_540,h_960/dog.mp4', thumbnail: 'https://res.cloudinary.com/demo/video/upload/c_fill,g_auto,w_180,h_320,so_0/dog.jpg', duration: 13, width: 540, height: 960 }
     ]
   }
 
