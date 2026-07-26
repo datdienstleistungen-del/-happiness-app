@@ -5,9 +5,13 @@ import { supabase } from '../lib/supabase'
 import './VideoFinderPage.css'
 
 const PRESET_CATEGORIES = [
-  { id: 'prank', label: '🎭 Pranks', query: 'prank' },
-  { id: 'soccer', label: '⚽ Fußball-Fails', query: 'fussball' },
-  { id: 'comedy', label: '😂 Lustige Clips', query: 'comedy' },
+  { id: 'satisfying', label: '🌊 Satisfying (ASMR)', query: 'satisfying' },
+  { id: 'gaming', label: '🎮 Gaming / Loops', query: 'gaming' },
+  { id: 'prank', label: '🎭 Pranks & Fails', query: 'prank' },
+  { id: 'soccer', label: '⚽ Fußball-Clips', query: 'fussball' },
+  { id: 'timelapse', label: '⏱️ Zeitraffer (Timelapse)', query: 'timelapse' },
+  { id: 'sports', label: '🏂 Extremsport', query: 'extreme sports' },
+  { id: 'comedy', label: '😂 Comedy & Funny', query: 'comedy' },
   { id: 'kurios', label: '🤯 Kuriositäten', query: 'kurios' }
 ]
 
@@ -35,7 +39,7 @@ export default function VideoFinderPage() {
 
   // Search on mount with default category
   useEffect(() => {
-    handleSearch('prank')
+    handleSearch('satisfying')
   }, [])
 
   async function handleSearch(searchQuery) {
