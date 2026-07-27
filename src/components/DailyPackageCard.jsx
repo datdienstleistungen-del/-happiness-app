@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import './DailyPackageCard.css'
 
 export default function DailyPackageCard({ onStartWithPackage }) {
+  const navigate = useNavigate()
   const [pkg, setPkg] = useState(null)
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(null)
@@ -104,6 +106,14 @@ export default function DailyPackageCard({ onStartWithPackage }) {
     }
   }
 
+  const sendToAnalytics = () => {
+    if (!pkg) return
+    localStorage.setItem('hit_latest_hook', pkg.hook)
+    localStorage.setItem('hit_latest_body', pkg.script)
+    localStorage.setItem('hit_latest_cta', pkg.hashtags?.map(t => '#' + t).join(' ') || '')
+    navigate('/analytics')
+  }
+
   if (loading) {
     return (
       <div className="dp-card dp-loading">
@@ -174,6 +184,9 @@ export default function DailyPackageCard({ onStartWithPackage }) {
       <div className="dp-actions">
         <button className="dp-btn dp-btn-copy-all" onClick={copyAll}>
           {copied === 'all' ? '✓ Alles kopiert' : 'Alles kopieren'}
+        </button>
+        <button className="dp-btn dp-btn-analyze" onClick={sendToAnalytics}>
+          Analysieren & Verbessern
         </button>
         {!pkg.used && (
           <button className="dp-btn dp-btn-done" onClick={markAsUsed}>

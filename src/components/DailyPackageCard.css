@@ -199,6 +199,17 @@
   background: rgba(0, 200, 83, 0.25);
 }
 
+.dp-btn-analyze {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  flex: 0.5;
+}
+
+.dp-btn-analyze:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
 .dp-done-badge {
   display: flex;
   align-items: center;
