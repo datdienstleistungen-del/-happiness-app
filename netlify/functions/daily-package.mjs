@@ -74,19 +74,24 @@ export const handler = async (event) => {
 
     const { data: settings } = await supabase
       .from('ai_settings')
-      .select('language')
+      .select('language, daily_package_settings')
       .eq('user_id', user.id)
       .single()
 
     const lang = settings?.language || 'de'
-    const industry = profile?.industry || 'Allgemein'
+    const pkgSettings = settings?.daily_package_settings || {}
+    const industry = pkgSettings.topic || profile?.industry || 'Allgemein'
     const audience = profile?.target_audience || '18-35 Jahre'
-    const tone = profile?.tone || 'authentisch'
+    const tone = pkgSettings.tone || profile?.tone || 'authentisch'
+    const platform = pkgSettings.platform || 'tiktok'
+    const duration = pkgSettings.duration || 30
 
     const userContext = `Branche: ${industry}
 Zielgruppe: ${audience}
 Tonfall: ${tone}
-Sprache: ${lang === 'de' ? 'Deutsch' : 'Englisch'}`
+Sprache: ${lang === 'de' ? 'Deutsch' : 'Englisch'}
+Plattform: ${platform}
+Videodauer: ${duration} Sekunden`
 
     // Generate with Mistral
     const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
@@ -114,7 +119,7 @@ Sprache: ${lang === 'de' ? 'Deutsch' : 'Englisch'}`
         script: 'Du scrollst durch feeds und fühlst dich leer. Alle posten, aber niemand sagt etwas Wichtiges. Doch was, wenn ich dir sage: Du kannst in 30 Sekunden etwas posten, das bleibt? Kein Glamour, keine Filter. Einfach du, ehrlich und direkt. Das ist Content, der verbindet. Probier es aus. Poste heute etwas Echtes.',
         hashtags: ['authentisch', 'echtbleiben', 'contentcreator', 'tiktokdeutsch', 'kreatorszene'],
         best_time: '18:30 Uhr',
-        platform: 'tiktok'
+        platform: platform
       }
       return {
         statusCode: 200,
@@ -138,7 +143,7 @@ Sprache: ${lang === 'de' ? 'Deutsch' : 'Englisch'}`
         script: pkg.script,
         hashtags: pkg.hashtags,
         best_time: pkg.best_time,
-        platform: pkg.platform || 'tiktok',
+        platform: pkg.platform || platform,
         used: false
       })
       .select()
