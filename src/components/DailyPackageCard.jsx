@@ -1,39 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Settings, X } from 'lucide-react'
+import { Settings, X, MessageSquare, Check, ChevronRight } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import './DailyPackageCard.css'
-
-const DEFAULT_SETTINGS = {
-  topic: '',
-  platform: 'tiktok',
-  tone: 'authentisch',
-  duration: 30,
-  language: 'de'
-}
-
-const PLATFORMS = [
-  { value: 'tiktok', label: 'TikTok' },
-  { value: 'instagram', label: 'Instagram Reels' },
-  { value: 'youtube', label: 'YouTube Shorts' },
-  { value: 'facebook', label: 'Facebook' },
-  { value: 'linkedin', label: 'LinkedIn' }
-]
-
-const TONES = [
-  { value: 'authentisch', label: 'Authentisch' },
-  { value: 'lustig', label: 'Lustig' },
-  { value: 'informativ', label: 'Informativ' },
-  { value: 'motivierend', label: 'Motivierend' },
-  { value: 'provokant', label: 'Provokant' },
-  { value: 'entspannt', label: 'Entspannt' }
-]
-
-const DURATIONS = [
-  { value: 15, label: '15 Sek' },
-  { value: 30, label: '30 Sek' },
-  { value: 60, label: '60 Sek' }
-]
 
 export default function DailyPackageCard() {
   const navigate = useNavigate()
@@ -41,13 +10,16 @@ export default function DailyPackageCard() {
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(null)
   const [streak, setStreak] = useState(0)
-  const [showSettings, setShowSettings] = useState(false)
-  const [settings, setSettings] = useState(DEFAULT_SETTINGS)
-  const [savingSettings, setSavingSettings] = useState(false)
+
+  // Freetext flow
+  const [showFreetext, setShowFreetext] = useState(false)
+  const [freetextStep, setFreetextStep] = useState('input') // input | confirm | generating
+  const [freetextInput, setFreetextInput] = useState('')
+  const [freetextSummary, setFreetextSummary] = useState('')
+  const [freetextError, setFreetextError] = useState('')
 
   useEffect(() => {
     loadPackage()
-    loadSettings()
   }, [])
 
   const loadPackage = async () => {
@@ -75,41 +47,66 @@ export default function DailyPackageCard() {
     }
   }
 
-  const loadSettings = async () => {
+  const loadPackageWithFreetext = async (userText) => {
+    setFreetextStep('generating')
+    setFreetextError('')
+
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
 
-      const { data } = await supabase
-        .from('ai_settings')
-        .select('daily_package_settings')
-        .eq('user_id', user.id)
-        .single()
+      const res = await fetch('/api/daily-package', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ customRequest: userText })
+      })
 
-      if (data?.daily_package_settings) {
-        setSettings({ ...DEFAULT_SETTINGS, ...data.daily_package_settings })
+      if (res.ok) {
+        const data = await res.json()
+        setPkg(data.package)
+        setShowFreetext(false)
+        setFreetextStep('input')
+        setFreetextInput('')
+        loadStreak()
+      } else {
+        setFreetextError('Fehler beim Generieren. Bitte versuch es nochmal.')
+        setFreetextStep('confirm')
       }
     } catch (e) {
-      console.warn('[Settings] Load error:', e.message)
+      setFreetextError('Fehler beim Generieren.')
+      setFreetextStep('confirm')
     }
   }
 
-  const saveSettings = async () => {
-    setSavingSettings(true)
+  const summarizeRequest = async () => {
+    if (!freetextInput.trim()) return
+    setFreetextStep('confirm')
+    setFreetextError('')
+
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
 
-      await supabase
-        .from('ai_settings')
-        .update({ daily_package_settings: settings })
-        .eq('user_id', user.id)
+      const res = await fetch('/api/daily-package', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ summarizeOnly: true, customRequest: freetextInput })
+      })
 
-      setShowSettings(false)
+      if (res.ok) {
+        const data = await res.json()
+        setFreetextSummary(data.summary || freetextInput)
+      } else {
+        setFreetextSummary(freetextInput)
+      }
     } catch (e) {
-      console.warn('[Settings] Save error:', e.message)
-    } finally {
-      setSavingSettings(false)
+      setFreetextSummary(freetextInput)
     }
   }
 
@@ -129,11 +126,11 @@ export default function DailyPackageCard() {
 
       let currentStreak = 0
       const today = new Date()
-      
+
       for (let i = 0; i < data.length; i++) {
         const pkgDate = new Date(data[i].package_date)
         const diffDays = Math.floor((today - pkgDate) / (1000 * 60 * 60 * 24))
-        
+
         if (diffDays === i) {
           currentStreak++
         } else {
@@ -159,25 +156,9 @@ export default function DailyPackageCard() {
 
   const copyAll = async () => {
     if (!pkg) return
-    const full = `${pkg.hook}\n\n${pkg.script}\n\n${pkg.hashtags.map(t => '#' + t).join(' ')}`
+    const watermark = '\n\nErstellt mit https://happiness-eu.netlify.app'
+    const full = `${pkg.hook}\n\n${pkg.script}\n\n${pkg.hashtags.map(t => '#' + t).join(' ')}${watermark}`
     await copyToClipboard(full, 'all')
-  }
-
-  const markAsUsed = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      await supabase
-        .from('daily_packages')
-        .update({ used: true })
-        .eq('user_id', user.id)
-        .eq('package_date', new Date().toISOString().split('T')[0])
-
-      setPkg(prev => ({ ...prev, used: true }))
-    } catch (e) {
-      console.warn('[MarkUsed] Error:', e.message)
-    }
   }
 
   const sendToAnalytics = () => {
@@ -202,7 +183,7 @@ export default function DailyPackageCard() {
   const hashtagsText = pkg.hashtags?.map(t => '#' + t).join(' ') || ''
 
   return (
-    <div className={`dp-card ${pkg.used ? 'dp-used' : ''}`}>
+    <div className="dp-card">
       <div className="dp-header">
         <div className="dp-title-row">
           <span className="dp-badge">HEUTE</span>
@@ -215,8 +196,8 @@ export default function DailyPackageCard() {
               <span>{streak} Tag{streak > 1 ? 'e' : ''} streak</span>
             </div>
           )}
-          <button className="dp-settings-btn" onClick={() => setShowSettings(true)}>
-            <Settings size={16} />
+          <button className="dp-settings-btn" onClick={() => setShowFreetext(true)} title="Paket anpassen">
+            <MessageSquare size={16} />
           </button>
         </div>
       </div>
@@ -224,7 +205,7 @@ export default function DailyPackageCard() {
       <div className="dp-hook">
         <span className="dp-label">Hook (0-2 Sek)</span>
         <p className="dp-hook-text">{pkg.hook}</p>
-        <button 
+        <button
           className={`dp-copy-btn ${copied === 'hook' ? 'dp-copied' : ''}`}
           onClick={() => copyToClipboard(pkg.hook, 'hook')}
         >
@@ -235,7 +216,7 @@ export default function DailyPackageCard() {
       <div className="dp-script">
         <span className="dp-label">Script ({pkg.platform || 'TikTok'})</span>
         <p>{pkg.script}</p>
-        <button 
+        <button
           className={`dp-copy-btn ${copied === 'script' ? 'dp-copied' : ''}`}
           onClick={() => copyToClipboard(pkg.script, 'script')}
         >
@@ -247,7 +228,7 @@ export default function DailyPackageCard() {
         <div className="dp-hashtags">
           <span className="dp-label">Hashtags</span>
           <p className="dp-hashtags-text">{hashtagsText}</p>
-          <button 
+          <button
             className={`dp-copy-btn ${copied === 'hashtags' ? 'dp-copied' : ''}`}
             onClick={() => copyToClipboard(hashtagsText, 'hashtags')}
           >
@@ -265,92 +246,69 @@ export default function DailyPackageCard() {
           {copied === 'all' ? '✓ Alles kopiert' : 'Alles kopieren'}
         </button>
         <button className="dp-btn dp-btn-analyze" onClick={sendToAnalytics}>
-          Analysieren & Verbessern
+          Analysieren
         </button>
-        {!pkg.used && (
-          <button className="dp-btn dp-btn-done" onClick={markAsUsed}>
-            Erledigt ✓
-          </button>
-        )}
-        {pkg.used && (
-          <span className="dp-done-badge">Bereits verwendet</span>
-        )}
       </div>
 
-      {showSettings && (
-        <div className="dp-settings-overlay" onClick={() => setShowSettings(false)}>
-          <div className="dp-settings-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="dp-settings-header">
-              <h3>Paket-Einstellungen</h3>
-              <button className="dp-settings-close" onClick={() => setShowSettings(false)}>
+      <div className="dp-watermark">
+        Erstellt mit <a href="https://happiness-eu.netlify.app" target="_blank" rel="noopener noreferrer">happiness-eu.netlify.app</a>
+      </div>
+
+      {/* === FREETEXT MODAL === */}
+      {showFreetext && (
+        <div className="dp-freetext-overlay" onClick={() => { setShowFreetext(false); setFreetextStep('input'); setFreetextInput(''); }}>
+          <div className="dp-freetext-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="dp-freetext-header">
+              <h3>{freetextStep === 'input' ? 'Was möchtest du heute?' : freetextStep === 'confirm' ? 'Stimmt das so?' : 'Generiere...'}</h3>
+              <button className="dp-freetext-close" onClick={() => { setShowFreetext(false); setFreetextStep('input'); setFreetextInput(''); }}>
                 <X size={18} />
               </button>
             </div>
 
-            <div className="dp-settings-body">
-              <label className="dp-settings-label">
-                Thema / Branche
-                <input
-                  type="text"
-                  className="dp-settings-input"
-                  placeholder="z.B. Fitness, Kochen, Gaming..."
-                  value={settings.topic}
-                  onChange={(e) => setSettings(s => ({ ...s, topic: e.target.value }))}
+            {freetextStep === 'input' && (
+              <div className="dp-freetext-body">
+                <p className="dp-freetext-hint">Beschreib frei, was dein nächstes Video soll. Thema, Stil, Ziel — alles was dir einfällt.</p>
+                <textarea
+                  className="dp-freetext-textarea"
+                  placeholder='z.B. "Ein motivierendes Video über Fitness, 30 Sekunden, für TikTok. Mein Produkt ist eine App die beim Trainieren hilft."'
+                  value={freetextInput}
+                  onChange={(e) => setFreetextInput(e.target.value)}
+                  rows={5}
                 />
-              </label>
-
-              <label className="dp-settings-label">
-                Plattform
-                <select
-                  className="dp-settings-select"
-                  value={settings.platform}
-                  onChange={(e) => setSettings(s => ({ ...s, platform: e.target.value }))}
+                <button
+                  className="dp-freetext-next"
+                  onClick={summarizeRequest}
+                  disabled={!freetextInput.trim()}
                 >
-                  {PLATFORMS.map(p => (
-                    <option key={p.value} value={p.value}>{p.label}</option>
-                  ))}
-                </select>
-              </label>
+                  Weiter <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
 
-              <label className="dp-settings-label">
-                Tonfall
-                <select
-                  className="dp-settings-select"
-                  value={settings.tone}
-                  onChange={(e) => setSettings(s => ({ ...s, tone: e.target.value }))}
-                >
-                  {TONES.map(t => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-              </label>
+            {freetextStep === 'confirm' && (
+              <div className="dp-freetext-body">
+                <div className="dp-freetext-summary">
+                  <p className="dp-freetext-summary-label">Die KI hat das verstanden:</p>
+                  <p className="dp-freetext-summary-text">{freetextSummary}</p>
+                </div>
+                {freetextError && <p className="dp-freetext-error">{freetextError}</p>}
+                <div className="dp-freetext-actions">
+                  <button className="dp-freetext-back" onClick={() => setFreetextStep('input')}>
+                    Zurück
+                  </button>
+                  <button className="dp-freetext-generate" onClick={() => loadPackageWithFreetext(freetextInput)}>
+                    Paket generieren
+                  </button>
+                </div>
+              </div>
+            )}
 
-              <label className="dp-settings-label">
-                Videodauer
-                <select
-                  className="dp-settings-select"
-                  value={settings.duration}
-                  onChange={(e) => setSettings(s => ({ ...s, duration: parseInt(e.target.value) }))}
-                >
-                  {DURATIONS.map(d => (
-                    <option key={d.value} value={d.value}>{d.label}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <div className="dp-settings-footer">
-              <button className="dp-btn dp-btn-cancel" onClick={() => setShowSettings(false)}>
-                Abbrechen
-              </button>
-              <button 
-                className="dp-btn dp-btn-save" 
-                onClick={saveSettings}
-                disabled={savingSettings}
-              >
-                {savingSettings ? 'Speichern...' : 'Speichern'}
-              </button>
-            </div>
+            {freetextStep === 'generating' && (
+              <div className="dp-freetext-body dp-freetext-loading">
+                <div className="dp-freetext-spinner"></div>
+                <p>Dein Paket wird erstellt...</p>
+              </div>
+            )}
           </div>
         </div>
       )}

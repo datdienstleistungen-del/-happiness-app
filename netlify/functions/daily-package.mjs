@@ -36,6 +36,15 @@ export const handler = async (event) => {
     return { statusCode: 401, body: JSON.stringify({ error: 'Nicht authentifiziert' }) }
   }
 
+  // Parse body for freetext flow
+  let body = {}
+  try {
+    body = JSON.parse(event.body || '{}')
+  } catch (e) {
+    body = {}
+  }
+  const { summarizeOnly, customRequest } = body
+
   try {
     // Auth check
     const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
@@ -49,19 +58,57 @@ export const handler = async (event) => {
 
     const today = new Date().toISOString().split('T')[0]
 
-    // Check if package already exists for today
-    const { data: existing } = await supabase
-      .from('daily_packages')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('package_date', today)
-      .single()
+    // SUMMARIZE ONLY: User wrote freetext, we summarize it for confirmation
+    if (summarizeOnly && customRequest) {
+      const summaryResponse = await fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${MISTRAL_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'mistral-small-latest',
+          messages: [
+            { role: 'system', content: 'Du fassst den Wunsch des Users in 1-2 klaren Sätzen zusammen. Antworte NUR mit der Zusammenfassung, kein Markdown, kein extra Text.' },
+            { role: 'user', content: `Fasse zusammen was der User möchte:\n\n"${customRequest}"` }
+          ],
+          temperature: 0.3,
+          max_tokens: 200
+        })
+      })
 
-    if (existing) {
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ package: existing, cached: true })
+      if (summaryResponse.ok) {
+        const summaryData = await summaryResponse.json()
+        const summary = summaryData.choices?.[0]?.message?.content?.trim() || customRequest
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ summary })
+        }
+      } else {
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ summary: customRequest })
+        }
+      }
+    }
+
+    // Check if package already exists for today (skip for custom requests)
+    if (!customRequest) {
+      const { data: existing } = await supabase
+        .from('daily_packages')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('package_date', today)
+        .single()
+
+      if (existing) {
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ package: existing, cached: true })
+        }
       }
     }
 
@@ -79,19 +126,26 @@ export const handler = async (event) => {
       .single()
 
     const lang = settings?.language || 'de'
-    const pkgSettings = settings?.daily_package_settings || {}
-    const industry = pkgSettings.topic || profile?.industry || 'Allgemein'
-    const audience = profile?.target_audience || '18-35 Jahre'
-    const tone = pkgSettings.tone || profile?.tone || 'authentisch'
-    const platform = pkgSettings.platform || 'tiktok'
-    const duration = pkgSettings.duration || 30
 
-    const userContext = `Branche: ${industry}
+    // Use custom request or fall back to profile-based context
+    let userContext
+    if (customRequest) {
+      userContext = `Wunsch des Users: "${customRequest}"\nSprache: ${lang === 'de' ? 'Deutsch' : 'Englisch'}`
+    } else {
+      const pkgSettings = settings?.daily_package_settings || {}
+      const industry = pkgSettings.topic || profile?.industry || 'Allgemein'
+      const audience = profile?.target_audience || '18-35 Jahre'
+      const tone = pkgSettings.tone || profile?.tone || 'authentisch'
+      const platform = pkgSettings.platform || 'tiktok'
+      const duration = pkgSettings.duration || 30
+
+      userContext = `Branche: ${industry}
 Zielgruppe: ${audience}
 Tonfall: ${tone}
 Sprache: ${lang === 'de' ? 'Deutsch' : 'Englisch'}
 Plattform: ${platform}
 Videodauer: ${duration} Sekunden`
+    }
 
     // Generate with Mistral
     const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
@@ -104,7 +158,9 @@ Videodauer: ${duration} Sekunden`
         model: 'mistral-small-latest',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: `Erstelle ein Creator-Paket für heute.\n\n${userContext}` }
+          { role: 'user', content: customRequest
+            ? `Erstelle ein Creator-Paket basierend auf diesem Wunsch:\n\n${userContext}`
+            : `Erstelle ein Creator-Paket für heute.\n\n${userContext}` }
         ],
         temperature: 0.7,
         max_tokens: 1024
