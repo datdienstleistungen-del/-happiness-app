@@ -23,7 +23,7 @@ Regeln:
 - Hook muss innerhalb von 2 Sekunden Aufmerksamkeit erregenden
 - Script: Keine Füllwörter, direkte Sprache, PSA-Modell (Problem → Agitation → Solution)
 - Hashtags: Relevant + trending, mix aus großen und Nischen
-- Plattform: Standard TikTok, es sei denn der User will etwas anderes`,
+- Plattform: Standard TikTok, es sei denn der User will etwas anderes`
 
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
