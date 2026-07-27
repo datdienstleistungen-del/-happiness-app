@@ -9,9 +9,10 @@ exports.handler = async (event) => {
   try {
     const { query, count = 5 } = JSON.parse(event.body)
 
-    const apiKey = process.env.PEXELS_API_KEY
+    const pexelsKey = process.env.PEXELS_API_KEY
+    const pixabayKey = process.env.PIXABAY_API_KEY
 
-    if (!apiKey) {
+    if (!pexelsKey && !pixabayKey) {
       return {
         statusCode: 200,
         headers: {
@@ -26,14 +27,68 @@ exports.handler = async (event) => {
       }
     }
 
-    const response = await fetch(
-      `https://api.pexels.com/videos/search?query=${encodeURIComponent(query)}&per_page=${count}&size=medium&locale=de-DE`,
-      {
-        headers: { 'Authorization': apiKey }
-      }
-    )
+    let pexelsVideos = []
+    let pixabayVideos = []
 
-    if (!response.ok) {
+    // 1. Fetch from Pexels if key exists
+    if (pexelsKey) {
+      try {
+        const response = await fetch(
+          `https://api.pexels.com/videos/search?query=${encodeURIComponent(query)}&per_page=${count}&size=medium&locale=de-DE`,
+          {
+            headers: { 'Authorization': pexelsKey }
+          }
+        )
+
+        if (response.ok) {
+          const data = await response.json()
+          pexelsVideos = data.videos?.map(v => ({
+            id: `pexels-${v.id}`,
+            url: v.video_files?.find(f => f.quality === 'hd' && f.file_type === 'video/mp4')?.link
+              || v.video_files?.[0]?.link,
+            thumbnail: v.image,
+            duration: v.duration,
+            width: v.video_files?.find(f => f.quality === 'hd')?.width || 1920,
+            height: v.video_files?.find(f => f.quality === 'hd')?.height || 1080,
+            source: 'pexels'
+          })).filter(v => v.url) || []
+        }
+      } catch (err) {
+        console.error('Pexels API error:', err.message)
+      }
+    }
+
+    // 2. Fetch from Pixabay if key exists
+    if (pixabayKey) {
+      try {
+        const response = await fetch(
+          `https://pixabay.com/api/videos/?key=${pixabayKey}&q=${encodeURIComponent(query)}&per_page=${count}&lang=de`
+        )
+
+        if (response.ok) {
+          const data = await response.json()
+          pixabayVideos = data.hits?.map(h => {
+            const files = h.videos || {}
+            const videoObj = files.medium || files.small || files.large || files.tiny
+            return {
+              id: `pixabay-${h.id}`,
+              url: videoObj?.url,
+              thumbnail: h.picture_id ? `https://i.vimeocdn.com/video/${h.picture_id}_640x360.jpg` : '',
+              duration: h.duration,
+              width: videoObj?.width || 1280,
+              height: videoObj?.height || 720,
+              source: 'pixabay'
+            }
+          }).filter(v => v.url) || []
+        }
+      } catch (err) {
+        console.error('Pixabay API error:', err.message)
+      }
+    }
+
+    const combinedVideos = [...pexelsVideos, ...pixabayVideos]
+
+    if (combinedVideos.length === 0) {
       return {
         statusCode: 200,
         headers: {
@@ -47,17 +102,6 @@ exports.handler = async (event) => {
         })
       }
     }
-
-    const data = await response.json()
-    const videos = data.videos?.map(v => ({
-      id: v.id,
-      url: v.video_files?.find(f => f.quality === 'hd' && f.file_type === 'video/mp4')?.link
-        || v.video_files?.[0]?.link,
-      thumbnail: v.image,
-      duration: v.duration,
-      width: v.video_files?.find(f => f.quality === 'hd')?.width || 1920,
-      height: v.video_files?.find(f => f.quality === 'hd')?.height || 1080
-    })).filter(v => v.url) || []
 
     return {
       statusCode: 200,
@@ -66,7 +110,7 @@ exports.handler = async (event) => {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type'
       },
-      body: JSON.stringify({ videos, source: 'pexels' })
+      body: JSON.stringify({ videos: combinedVideos, source: pexelsKey ? 'pexels-pixabay' : 'pixabay' })
     }
 
   } catch (error) {

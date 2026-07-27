@@ -219,11 +219,6 @@ export const handler = async (event) => {
   }
 
   try {
-    try {
-      const { appendFileSync } = await import('fs')
-      appendFileSync('C:/Projekte/happiness-app-react/api-server-debug.log', `[${new Date().toISOString()}] REQUEST START:\nHeaders: ${JSON.stringify(event.headers)}\nBody: ${event.body}\n\n`)
-    } catch (e) {}
-
     const headers = event.headers || {}
     const authHeader = headers.authorization || headers.Authorization || ''
     const token = authHeader.replace('Bearer ', '')
@@ -232,14 +227,20 @@ export const handler = async (event) => {
     }
 
     let userId = null
-    const hasServiceKey = !!process.env.SUPABASE_SERVICE_KEY
-    if (!hasServiceKey) {
+    const isLocalDev = process.env.NETLIFY_DEV === 'true' || process.env.CONTEXT === 'dev'
+
+    if (isLocalDev && !process.env.SUPABASE_SERVICE_KEY) {
       userId = 'local-dev-user'
-      console.log('[Auth] Bypassing auth check for local development')
+      console.log('[Auth] Local dev bypass active')
     } else {
+      if (!process.env.SUPABASE_SERVICE_KEY) {
+        console.error('[Auth] Error: SUPABASE_SERVICE_KEY is missing in production environment!')
+        return { statusCode: 500, body: JSON.stringify({ error: 'Server-Konfigurationsfehler' }) }
+      }
+
       try {
         const authRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-          headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_SERVICE_KEY }
+          headers: { 'Authorization': `Bearer ${token}`, 'apikey': process.env.SUPABASE_SERVICE_KEY }
         })
         if (authRes.ok) {
           const userData = await authRes.json()
