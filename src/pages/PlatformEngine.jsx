@@ -10,6 +10,7 @@ import { generateRecommendations } from '../intelligence/hit-recommendations'
 import { buildMasterBriefFromAnalysis, runPlatformAgent, getAllPlatforms, getAgentIcon, getAgentName } from '../intelligence/content-engine'
 import { trackEvent, trackLandingFunnel } from '../intelligence/analytics/custom'
 import NextActionHub from '../components/NextActionHub'
+import DailyPackageCard from '../components/DailyPackageCard'
 import { VerticalLogo } from '../components/Logo'
 import './PlatformEngine.css'
 
@@ -952,6 +953,9 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                   <div className="pe-main-layout">
                     {/* On mobile input step, we only show the right column */}
                     <div className="pe-right-column">
+                      {user && (
+                        <DailyPackageCard />
+                      )}
                       <div className="pe-hero">
                         <div className="pe-title-row" style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                           <VerticalLogo size="small" />
@@ -1514,6 +1518,9 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
 
                 {/* Right Column: Main Hero and Form Input */}
                 <div className="pe-right-column">
+                  {user && (
+                    <DailyPackageCard />
+                  )}
                   <div className="pe-hero">
                     <div className="pe-title-row" style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                       <VerticalLogo size="small" />
