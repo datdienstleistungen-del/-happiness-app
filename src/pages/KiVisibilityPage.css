@@ -1,0 +1,378 @@
+.kiv-page {
+  padding: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.kiv-loading {
+  text-align: center;
+  padding: 60px;
+  color: rgba(255,255,255,0.5);
+}
+
+.kiv-header {
+  margin-bottom: 32px;
+}
+
+.kiv-header h1 {
+  font-size: 24px;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.kiv-header p {
+  font-size: 14px;
+  color: rgba(255,255,255,0.5);
+}
+
+.kiv-paywall {
+  text-align: center;
+  padding: 80px 20px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.kiv-paywall-icon {
+  color: rgba(255,255,255,0.2);
+  margin-bottom: 16px;
+}
+
+.kiv-paywall h2 {
+  font-size: 20px;
+  color: #fff;
+  margin-bottom: 12px;
+}
+
+.kiv-paywall p {
+  font-size: 14px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.kiv-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 32px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .kiv-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kiv-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.kiv-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kiv-field label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255,255,255,0.4);
+}
+
+.kiv-field input,
+.kiv-field textarea,
+.kiv-field select {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #fff;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.kiv-field input:focus,
+.kiv-field textarea:focus {
+  border-color: #00d4ff;
+}
+
+.kiv-field input::placeholder,
+.kiv-field textarea::placeholder {
+  color: rgba(255,255,255,0.3);
+}
+
+.kiv-slug-input {
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.kiv-slug-prefix {
+  font-size: 12px;
+  color: rgba(255,255,255,0.3);
+  padding: 10px 12px;
+  white-space: nowrap;
+}
+
+.kiv-slug-input input {
+  border: none;
+  background: none;
+  flex: 1;
+  padding: 10px 0;
+  min-width: 0;
+}
+
+.kiv-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.kiv-toggle-btn {
+  flex: 1;
+  padding: 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.5);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.kiv-toggle-btn.active {
+  background: rgba(0,212,255,0.1);
+  border-color: #00d4ff;
+  color: #00d4ff;
+}
+
+.kiv-toggle-btn:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.kiv-platforms-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.kiv-platform-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0,212,255,0.1);
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 12px;
+  color: #00d4ff;
+}
+
+.kiv-platform-tag button {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0;
+  line-height: 1;
+}
+
+.kiv-platform-tag button:hover {
+  color: #ff5252;
+}
+
+.kiv-platform-add {
+  display: flex;
+  gap: 8px;
+}
+
+.kiv-platform-add select,
+.kiv-platform-add input {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #fff;
+  outline: none;
+}
+
+.kiv-platform-add select {
+  flex: 0 0 120px;
+}
+
+.kiv-platform-add input {
+  flex: 1;
+}
+
+.kiv-platform-add button {
+  background: rgba(0,212,255,0.15);
+  border: none;
+  color: #00d4ff;
+  width: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.kiv-platform-add button:hover {
+  background: rgba(0,212,255,0.25);
+}
+
+.kiv-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: rgba(255,255,255,0.8);
+}
+
+.kiv-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: #00d4ff;
+}
+
+.kiv-preview-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #00d4ff;
+  text-decoration: none;
+  margin-top: 4px;
+}
+
+.kiv-preview-link:hover {
+  text-decoration: underline;
+}
+
+.kiv-actions {
+  display: flex;
+  gap: 12px;
+  padding-top: 12px;
+}
+
+.kiv-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.kiv-btn-save {
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  color: #000;
+}
+
+.kiv-btn-save:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,212,255,0.3);
+}
+
+.kiv-btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.kiv-btn-premium {
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  color: #000;
+}
+
+.kiv-preview {
+  position: sticky;
+  top: 24px;
+}
+
+.kiv-preview h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 12px;
+}
+
+.kiv-preview-card {
+  background: #1a1a2e;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+}
+
+.kiv-preview-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.kiv-preview-niche {
+  font-size: 13px;
+  color: #00d4ff;
+  margin-bottom: 4px;
+}
+
+.kiv-preview-type {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.3);
+  margin-bottom: 12px;
+}
+
+.kiv-preview-bio {
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.kiv-preview-offer {
+  background: rgba(0,212,255,0.08);
+  border-left: 2px solid #00d4ff;
+  padding: 8px 12px;
+  border-radius: 0 6px 6px 0;
+  font-size: 12px;
+  color: rgba(255,255,255,0.8);
+  text-align: left;
+  margin-bottom: 12px;
+}
+
+.kiv-preview-platforms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.kiv-preview-platform {
+  background: rgba(255,255,255,0.06);
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+}
+
+.kiv-preview-location {
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+}

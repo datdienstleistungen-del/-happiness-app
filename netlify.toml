@@ -13,6 +13,12 @@
   to = "/.netlify/functions/:splat"
   status = 200
 
+# Public creator profiles — serve HTML+JSON-LD for crawlers (BEFORE SPA fallback)
+[[redirects]]
+  from = "/creator/:slug"
+  to = "/.netlify/functions/creator-profile/:slug"
+  status = 200
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

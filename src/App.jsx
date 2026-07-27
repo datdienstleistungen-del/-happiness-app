@@ -4,7 +4,7 @@ import {
   Sparkles, MessageCircle, Users, ShoppingCart, Briefcase,
   BookOpen, Building2, Clapperboard, Camera, Film, Bell, Settings,
   User, ChevronLeft, ChevronRight, Rocket, Hash, Menu, BarChart3, Trophy, Radar,
-  Target, FolderOpen, Globe, LayoutDashboard, Search
+  Target, FolderOpen, Globe, LayoutDashboard, Search, Eye
 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.jsx'
@@ -47,6 +47,7 @@ const LeadRadarPage = lazy(() => import('./pages/LeadRadarPage'))
 const CreatorSuccessPage = lazy(() => import('./pages/CreatorSuccessPage'))
 const TourPage = lazy(() => import('./pages/TourPage'))
 const VideoFinderPage = lazy(() => import('./pages/VideoFinderPage'))
+const KiVisibilityPage = lazy(() => import('./pages/KiVisibilityPage'))
 
 
 function Sidebar({ mobileOpen, setMobileOpen }) {
@@ -100,6 +101,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
     { to: '/video-finder', icon: Search, label: 'Video Finder' },
     { to: '/ai-chat', icon: Sparkles, label: 'AI Chat' },
     { to: '/analytics', icon: BarChart3, label: 'Analytics', badge: 'newFeatures.analyticsTooltip' },
+    { to: '/ki-sichtbarkeit', icon: Eye, label: 'KI-Sichtbarkeit', badge: 'PRO' },
     { to: '/tour', icon: BookOpen, label: 'Studio-Tour' },
   ]
 
@@ -461,6 +463,7 @@ export default function App() {
                 <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
                 <Route path="/tour" element={<ProtectedRoute><TourPage /></ProtectedRoute>} />
                 <Route path="/video-finder" element={<ProtectedRoute><VideoFinderPage /></ProtectedRoute>} />
+                <Route path="/ki-sichtbarkeit" element={<ProtectedRoute><KiVisibilityPage /></ProtectedRoute>} />
                 <Route path="/admin/lead-radar" element={<ProtectedRoute><LeadRadarPage /></ProtectedRoute>} />
                 <Route path="/legal" element={<LegalPage />} />
                 <Route path="/impressum" element={<LegalPage />} />
