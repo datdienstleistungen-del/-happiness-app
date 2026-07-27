@@ -1,0 +1,46 @@
+# H.I.T. (Happiness Intelligence Team)
+
+> AI Creator Operating System — Von der Idee zum fertigen Content in wenigen Minuten.
+
+## Was ist H.I.T.?
+
+H.I.T. ist eine webbasierte KI-Plattform, die angehenden und etablierten Content-Creators hilft, professionelle Social-Media-Inhalte zu erstellen. Der Nutzer gibt ein Ziel ein (z.B. "Mehr Reichweite auf TikTok"), und H.I.T. analysiert den Wunsch, empfiehlt passende Plattformen und generiert innerhalb von Minuten ein vollständiges Creator-Paket: Hook, Skript, Hashtags, beste Postings-Zeit und plattformspezifische Anpassungen.
+
+## Kernfunktionen
+
+- **Zielanalyse**: KI-basierte Analyse des Creatorziels mit Plattform-Empfehlungen
+- **Content-Generierung**: Automatische Erstellung von Hooks, Skripten, CTAs und Hashtags
+- **Multi-Plattform**: Angepasste Inhalte für TikTok, Instagram, YouTube, LinkedIn, Facebook, Reddit, Pinterest, Blog, Newsletter, Google Business, Kleinanzeigen
+- **7-Sprachen-Support**: Deutsch, Englisch, Spanisch, Französisch, Italienisch, Niederländisch, Griechisch
+- **Co-Pilot Chat**: Natürlichsprachliche Verfeinerung generierter Inhalte
+- **Retention-Analyse**: Visuelle Zuschauerbindungs-Simulation mit KI-Optimierung
+- **Video Finder**: Suche nach Stock-Material (Pexels) und Import viraler Videos (YouTube/TikTok)
+- **CapCut Studio**: Generierung von CapCut-fähigen Videoskripten
+
+## Zielgruppe
+
+- Angehende Creator, die nicht wissen, wie sie starten sollen
+- Kleine Unternehmen und Freelancer, die regelmäßigen Social-Media-Content benötigen
+- Marketing-Teams, die Content-Workflows beschleunigen wollen
+
+## Was ist H.I.T. NICHT?
+
+- H.I.T. ist kein Video-Editor oder Renderer — es generiert Skripte und Konzepte, kein fertiges Video
+- H.I.T. ist kein Ersatz für menschliche Kreativität, sondern ein Werkzeug zur Beschleunigung
+- H.I.T. postet nicht automatisch auf Social-Media — der Nutzer kopiert und postet manuell
+
+## Technische Details
+
+- Plattform: React + Vite (Single Page Application)
+- Backend: Netlify Functions (Serverless)
+- KI-Provider: Mistral AI, OpenRouter, Groq, DeepSeek
+- Datenbank: Supabase (PostgreSQL)
+- Hosting: Netlify
+
+## URL
+
+https://happiness-eu.netlify.app
+
+## Kontakt
+
+https://happiness-eu.netlify.app — Über die App oder das Kontaktformular erreichbar.
