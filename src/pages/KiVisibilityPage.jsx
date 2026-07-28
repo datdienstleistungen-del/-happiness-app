@@ -220,22 +220,22 @@ export default function KiVisibilityPage() {
           <div className="kiv-explainer-item">
             <div className="kiv-explainer-icon"><Bot size={20} /></div>
             <div>
-              <strong>Wie funktioniert das?</strong>
-              <p>Du füllst dein Profil aus — Name, Nische, was du anbietest. Happiness speichert das als strukturiertes Profil, das von KI-Systemen gelesen werden kann.</p>
+              <strong>Was ist das hier?</strong>
+              <p>Du erstellst ein öffentliches Profil mit deinem Namen, deiner Nische und deinen Angeboten. Dieses Profil wird speziell für KI-Systeme aufbereitet — nicht für Google, nicht für Menschen, sondern für ChatGPT, Claude und Perplexity.</p>
             </div>
           </div>
           <div className="kiv-explainer-item">
             <div className="kiv-explainer-icon"><Search size={20} /></div>
             <div>
-              <strong>Was passiert dann?</strong>
-              <p>Wenn jemand ChatGPT, Claude oder Perplexity fragt: „Kennt jemand einen guten Fitness-Creator?" — kann dein Profil als Antwort erscheinen. Ohne dass du etwas weiteres tun musst.</p>
+              <strong>Was bringt dir das?</strong>
+              <p>Wenn jemand ChatGPT fragt: „Kennt jemand einen guten Creator für Fitness in Berlin?" — kann dein Profil als Antwort auftauchen. Ohne dass du etwas weiteres tun musst. Dein Name erscheint direkt in der KI-Antwort.</p>
             </div>
           </div>
           <div className="kiv-explainer-item">
             <div className="kiv-explainer-icon"><MessageCircle size={20} /></div>
             <div>
-              <strong>Warum ist das wichtig?</strong>
-              <p>Immer mehr Menschen nutzen KI statt Google. Wer dort nicht sichtbar ist, verliert Reichweite. Dieses Profil sorgt dafür, dass du in dieser neuen Suche auftauchst.</p>
+              <strong>Warum jetzt?</strong>
+              <p>Menschen suchen nicht mehr nur bei Google — sie fragen KI-Systeme. Wer dort nicht sichtbar ist, existiert nicht. Mit diesem Profil bist du einer der Ersten, die in dieser neuen Suche auftauchen.</p>
             </div>
           </div>
         </div>

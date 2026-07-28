@@ -7,28 +7,28 @@
 .kiv-loading {
   text-align: center;
   padding: 60px;
-  color: rgba(255,255,255,0.5);
+  color: #999;
 }
 
 .kiv-header {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .kiv-header h1 {
   font-size: 24px;
-  color: #fff;
+  color: #1a1a1a;
   margin-bottom: 6px;
 }
 
 .kiv-header p {
   font-size: 14px;
-  color: rgba(255,255,255,0.5);
+  color: #666;
 }
 
 .kiv-explainer {
   margin-bottom: 32px;
-  background: rgba(0,212,255,0.04);
-  border: 1px solid rgba(0,212,255,0.1);
+  background: linear-gradient(135deg, #e8f4f4, #f0faf6);
+  border: 1px solid #c5e4dd;
   border-radius: 12px;
   padding: 24px;
 }
@@ -48,24 +48,24 @@
   flex-shrink: 0;
   width: 36px;
   height: 36px;
-  background: rgba(0,212,255,0.1);
+  background: #085041;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #00d4ff;
+  color: #fff;
 }
 
 .kiv-explainer-item strong {
   font-size: 13px;
-  color: #fff;
+  color: #1a1a1a;
   display: block;
   margin-bottom: 4px;
 }
 
 .kiv-explainer-item p {
   font-size: 12px;
-  color: rgba(255,255,255,0.55);
+  color: #555;
   line-height: 1.5;
   margin: 0;
 }
@@ -78,19 +78,19 @@
 }
 
 .kiv-paywall-icon {
-  color: rgba(255,255,255,0.2);
+  color: #ccc;
   margin-bottom: 16px;
 }
 
 .kiv-paywall h2 {
   font-size: 20px;
-  color: #fff;
+  color: #1a1a1a;
   margin-bottom: 12px;
 }
 
 .kiv-paywall p {
   font-size: 14px;
-  color: rgba(255,255,255,0.5);
+  color: #666;
   margin-bottom: 24px;
   line-height: 1.5;
 }
@@ -124,44 +124,44 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: rgba(255,255,255,0.4);
+  color: #888;
 }
 
 .kiv-field input,
 .kiv-field textarea,
 .kiv-field select {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: #f7f8fa;
+  border: 1px solid #ddd;
   border-radius: 8px;
   padding: 10px 12px;
   font-size: 14px;
-  color: #fff;
+  color: #1a1a1a;
   outline: none;
   transition: border-color 0.2s;
 }
 
 .kiv-field input:focus,
 .kiv-field textarea:focus {
-  border-color: #00d4ff;
+  border-color: #085041;
 }
 
 .kiv-field input::placeholder,
 .kiv-field textarea::placeholder {
-  color: rgba(255,255,255,0.3);
+  color: #aaa;
 }
 
 .kiv-slug-input {
   display: flex;
   align-items: center;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: #f7f8fa;
+  border: 1px solid #ddd;
   border-radius: 8px;
   overflow: hidden;
 }
 
 .kiv-slug-prefix {
   font-size: 12px;
-  color: rgba(255,255,255,0.3);
+  color: #999;
   padding: 10px 12px;
   white-space: nowrap;
 }
@@ -182,23 +182,24 @@
 .kiv-toggle-btn {
   flex: 1;
   padding: 10px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: #f7f8fa;
+  border: 1px solid #ddd;
   border-radius: 8px;
-  color: rgba(255,255,255,0.5);
+  color: #666;
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .kiv-toggle-btn.active {
-  background: rgba(0,212,255,0.1);
-  border-color: #00d4ff;
-  color: #00d4ff;
+  background: #e8f4f4;
+  border-color: #085041;
+  color: #085041;
+  font-weight: 600;
 }
 
 .kiv-toggle-btn:hover {
-  background: rgba(255,255,255,0.08);
+  background: #eaeaea;
 }
 
 .kiv-platforms-list {
@@ -212,17 +213,18 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(0,212,255,0.1);
+  background: #e8f4f4;
+  border: 1px solid #c5e4dd;
   padding: 4px 10px;
   border-radius: 16px;
   font-size: 12px;
-  color: #00d4ff;
+  color: #085041;
 }
 
 .kiv-platform-tag button {
   background: none;
   border: none;
-  color: rgba(255,255,255,0.4);
+  color: #999;
   cursor: pointer;
   font-size: 14px;
   padding: 0;
@@ -230,7 +232,7 @@
 }
 
 .kiv-platform-tag button:hover {
-  color: #ff5252;
+  color: #e74c3c;
 }
 
 .kiv-platform-add {
@@ -240,12 +242,12 @@
 
 .kiv-platform-add select,
 .kiv-platform-add input {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: #f7f8fa;
+  border: 1px solid #ddd;
   border-radius: 8px;
   padding: 8px 10px;
   font-size: 13px;
-  color: #fff;
+  color: #1a1a1a;
   outline: none;
 }
 
@@ -258,9 +260,9 @@
 }
 
 .kiv-platform-add button {
-  background: rgba(0,212,255,0.15);
+  background: #085041;
   border: none;
-  color: #00d4ff;
+  color: #fff;
   width: 36px;
   border-radius: 8px;
   cursor: pointer;
@@ -268,7 +270,7 @@
 }
 
 .kiv-platform-add button:hover {
-  background: rgba(0,212,255,0.25);
+  background: #0a6652;
 }
 
 .kiv-checkbox {
@@ -277,13 +279,13 @@
   gap: 10px;
   cursor: pointer;
   font-size: 14px;
-  color: rgba(255,255,255,0.8);
+  color: #333;
 }
 
 .kiv-checkbox input {
   width: 18px;
   height: 18px;
-  accent-color: #00d4ff;
+  accent-color: #085041;
 }
 
 .kiv-preview-link {
@@ -291,7 +293,7 @@
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #00d4ff;
+  color: #085041;
   text-decoration: none;
   margin-top: 4px;
 }
@@ -320,13 +322,14 @@
 }
 
 .kiv-btn-save {
-  background: linear-gradient(135deg, #00d4ff, #0099ff);
-  color: #000;
+  background: #085041;
+  color: #fff;
 }
 
 .kiv-btn-save:hover {
+  background: #0a6652;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,212,255,0.3);
+  box-shadow: 0 4px 12px rgba(8, 80, 65, 0.3);
 }
 
 .kiv-btn-save:disabled {
@@ -337,8 +340,12 @@
 }
 
 .kiv-btn-premium {
-  background: linear-gradient(135deg, #00d4ff, #0099ff);
-  color: #000;
+  background: #085041;
+  color: #fff;
+}
+
+.kiv-btn-premium:hover {
+  background: #0a6652;
 }
 
 .kiv-preview {
@@ -350,7 +357,7 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: rgba(255,255,255,0.4);
+  color: #888;
   margin-bottom: 12px;
 }
 
@@ -379,7 +386,7 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.4);
   margin-bottom: 12px;
 }
 
