@@ -78,7 +78,7 @@ async function tryGroqImages(imagePayloads) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llava-v1.5-7b-4096-preview',
+        model: 'llama-3.2-90b-vision-preview',
         messages: buildImageMessages(imagePayloads),
         temperature: 0.2,
         max_tokens: 4096
@@ -117,7 +117,7 @@ async function tryOpenRouterImages(imagePayloads) {
         model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
         messages: buildImageMessages(imagePayloads),
         temperature: 0.2,
-        max_tokens: 4096
+        max_tokens: 128
       })
     })
     if (!res.ok) {
@@ -134,6 +134,48 @@ async function tryOpenRouterImages(imagePayloads) {
   } catch (e) {
     console.error('[analyze-video] OpenRouter images failed:', e.message)
     return { error: `OpenRouter exception: ${e.message}` }
+  }
+}
+
+async function tryMistralImages(imagePayloads) {
+  if (!MISTRAL_API_KEY) return { error: 'MISTRAL_API_KEY not configured' }
+  try {
+    const content = [
+      { type: 'text', text: 'Analysiere diese Bilderserie (Frames aus einem Video) und gib die Szenen-Beats als JSON zurück. Antworte ausschließlich mit validem JSON.' }
+    ]
+    for (const img of imagePayloads) {
+      content.push({ type: 'image_url', image_url: { url: img } })
+    }
+    const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${MISTRAL_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'pixtral-12b-2409',
+        messages: [
+          { role: 'system', content: ANALYSIS_SYSTEM_PROMPT },
+          { role: 'user', content }
+        ],
+        temperature: 0.2,
+        max_tokens: 4096
+      })
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      const msg = err?.error?.message || JSON.stringify(err)
+      console.error('[analyze-video] Mistral failed:', res.status, msg)
+      return { error: `Mistral ${res.status}: ${msg}` }
+    }
+    const data = await res.json()
+    const text = data.choices?.[0]?.message?.content || ''
+    const parsed = parseAnalysisResponse(text)
+    if (parsed) return { data: parsed }
+    return { error: `Mistral returned unparseable response (${text.length} chars): ${text.substring(0, 200)}` }
+  } catch (e) {
+    console.error('[analyze-video] Mistral images failed:', e.message)
+    return { error: `Mistral exception: ${e.message}` }
   }
 }
 
@@ -186,6 +228,13 @@ export const handler = async (event) => {
       let orResult = await tryOpenRouterImages(frames)
       sceneAnalysis = orResult?.data || null
       if (orResult?.error) allErrors.push(`OpenRouter: ${orResult.error}`)
+    }
+
+    if (!sceneAnalysis) {
+      console.log('[analyze-video] OpenRouter failed, trying Mistral...')
+      let mistralResult = await tryMistralImages(frames)
+      sceneAnalysis = mistralResult?.data || null
+      if (mistralResult?.error) allErrors.push(`Mistral: ${mistralResult.error}`)
     }
 
     if (!sceneAnalysis) {
