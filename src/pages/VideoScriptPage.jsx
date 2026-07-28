@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Upload, Film, Copy, Check, ArrowRight, Loader, AlertCircle, FileVideo, Link as LinkIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -11,9 +11,63 @@ const GENRES = [
   { id: 'lernvideo_erwachsene', emoji: '🎓', label: 'Lernvideo (Erwachsene)', desc: 'Informativ, strukturiert, sachlich' }
 ]
 
+async function extractFramesFromVideo(videoSrc, maxFrames = 10) {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video')
+    video.crossOrigin = 'anonymous'
+    video.muted = true
+    video.preload = 'auto'
+
+    video.onloadedmetadata = async () => {
+      const duration = video.duration
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+
+      // Cap at 60 seconds
+      const effectiveDuration = Math.min(duration, 60)
+      const interval = effectiveDuration / maxFrames
+
+      // Scale down to save bandwidth (max 512px wide)
+      const scale = Math.min(1, 512 / (video.videoWidth || 640))
+      canvas.width = Math.round((video.videoWidth || 640) * scale)
+      canvas.height = Math.round((video.videoHeight || 360) * scale)
+
+      const frames = []
+
+      for (let i = 0; i < maxFrames; i++) {
+        const time = i * interval
+        try {
+          video.currentTime = time
+          await new Promise((res, rej) => {
+            const timeout = setTimeout(() => rej(new Error('seek timeout')), 3000)
+            video.onseeked = () => { clearTimeout(timeout); res() }
+          })
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
+          frames.push(dataUrl)
+        } catch (e) {
+          console.warn('[extractFrames] Frame', i, 'failed:', e.message)
+        }
+      }
+
+      video.src = ''
+      resolve(frames)
+    }
+
+    video.onerror = () => reject(new Error('Video konnte nicht geladen werden'))
+
+    if (videoSrc instanceof File) {
+      video.src = URL.createObjectURL(videoSrc)
+    } else {
+      video.src = videoSrc
+    }
+  })
+}
+
 export default function VideoScriptPage() {
   const navigate = useNavigate()
   const fileInputRef = useRef(null)
+  const videoRef = useRef(null)
 
   const [step, setStep] = useState(1)
   const [videoUrl, setVideoUrl] = useState('')
@@ -28,8 +82,6 @@ export default function VideoScriptPage() {
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
   const [statusText, setStatusText] = useState('')
-  const [needsDescription, setNeedsDescription] = useState(false)
-  const [videoDescription, setVideoDescription] = useState('')
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0]
@@ -47,78 +99,26 @@ export default function VideoScriptPage() {
     setError('')
   }
 
-  const handleStartAnalysis = () => {
+  const handleStartAnalysis = async () => {
     if (!videoUrl && !videoFile) {
       setError('Bitte gib eine Video-URL ein oder lade eine Datei hoch.')
       return
     }
     setStep(3)
-    analyzeVideo()
-  }
-
-  const analyzeVideo = async () => {
-    setStatusText('Video wird analysiert...')
-    setError('')
-    setNeedsDescription(false)
+    setStatusText('Frames werden extrahiert...')
 
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const token = session?.access_token || ''
+      // Step 1: Extract frames in browser
+      const source = videoUrl || videoFile
+      const frames = await extractFramesFromVideo(source, 10)
 
-      let body = { video_filename: videoFile?.name || 'video' }
-
-      if (videoUrl) {
-        body.video_url = videoUrl
-      } else if (videoFile) {
-        const reader = new FileReader()
-        const base64 = await new Promise((resolve, reject) => {
-          reader.onload = () => resolve(reader.result)
-          reader.onerror = reject
-          reader.readAsDataURL(videoFile)
-        })
-        body.video_base64 = base64
+      if (frames.length === 0) {
+        throw new Error('Keine Frames aus dem Video extrahiert werden.')
       }
 
-      const res = await fetch('/api/analyze-video-scene', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(body)
-      })
+      setStatusText(`Video wird analysiert (${frames.length} Frames)...`)
 
-      const data = await res.json()
-
-      if (!res.ok) {
-        if (data.needs_description) {
-          setNeedsDescription(true)
-          setStep(2)
-          return
-        }
-        throw new Error(data.error || 'Analyse fehlgeschlagen')
-      }
-
-      setSceneAnalysis(data.scene_analysis)
-      setStep(2)
-    } catch (e) {
-      console.error('[VideoScript] Analysis error:', e.message)
-      setError(e.message || 'Fehler bei der Video-Analyse. Bitte versuche es erneut.')
-      setStep(1)
-    }
-  }
-
-  const handleDescriptionSubmit = async () => {
-    if (!videoDescription.trim()) {
-      setError('Bitte beschreibe das Video kurz.')
-      return
-    }
-
-    setStep(3)
-    setStatusText('Video wird anhand der Beschreibung analysiert...')
-    setError('')
-
-    try {
+      // Step 2: Send frames to analyze function
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token || ''
 
@@ -129,7 +129,7 @@ export default function VideoScriptPage() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          description: videoDescription,
+          frames,
           video_filename: videoFile?.name || videoUrl || 'video'
         })
       })
@@ -139,12 +139,11 @@ export default function VideoScriptPage() {
       if (!res.ok) throw new Error(data.error || 'Analyse fehlgeschlagen')
 
       setSceneAnalysis(data.scene_analysis)
-      setNeedsDescription(false)
       setStep(2)
     } catch (e) {
-      console.error('[VideoScript] Description analysis error:', e.message)
-      setError(e.message || 'Fehler bei der Analyse.')
-      setStep(2)
+      console.error('[VideoScript] Analysis error:', e.message)
+      setError(e.message || 'Fehler bei der Video-Analyse.')
+      setStep(1)
     }
   }
 
@@ -215,8 +214,6 @@ export default function VideoScriptPage() {
     setGeneratedScript('')
     setScriptId(null)
     setError('')
-    setNeedsDescription(false)
-    setVideoDescription('')
   }
 
   return (
@@ -308,38 +305,14 @@ export default function VideoScriptPage() {
 
           {(videoUrl || videoFile) && (
             <button className="vsp-btn vsp-btn-primary" onClick={handleStartAnalysis}>
-              <ArrowRight size={16} /> Weiter
+              <ArrowRight size={16} /> Video analysieren
             </button>
           )}
         </div>
       )}
 
-      {/* STEP 2: Genre Selection OR Description Input */}
-      {step === 2 && needsDescription && (
-        <div className="vsp-description-section">
-          <p className="vsp-desc-intro">
-            Das Video konnte nicht automatisch analysiert werden. Beschreibe bitte kurz, was im Video passiert — die KI erstellt daraus die Szenen-Analyse.
-          </p>
-          <div className="vsp-field">
-            <label>Beschreibe das Video</label>
-            <textarea
-              value={videoDescription}
-              onChange={(e) => setVideoDescription(e.target.value)}
-              placeholder="z.B. 'Ein Mann sitzt auf einer Bank im Park, bemerkt eine Taube die seine Brille stiehlt, rennt der Taube hinterher, fällt in einen Brunnen'"
-              rows={5}
-            />
-          </div>
-          <button
-            className="vsp-btn vsp-btn-primary"
-            onClick={handleDescriptionSubmit}
-            disabled={!videoDescription.trim()}
-          >
-            <ArrowRight size={16} /> Analyse starten
-          </button>
-        </div>
-      )}
-
-      {step === 2 && !needsDescription && sceneAnalysis && (
+      {/* STEP 2: Genre Selection */}
+      {step === 2 && sceneAnalysis && (
         <div className="vsp-genre-section">
           <p className="vsp-analysis-ok">
             <Check size={16} /> Video analysiert — {sceneAnalysis.beats?.length || 0} Szenen erkannt

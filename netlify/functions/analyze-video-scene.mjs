@@ -4,13 +4,12 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY
 const GROQ_API_KEY = process.env.GROQ_API_KEY
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY
 const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY
 
-const ANALYSIS_SYSTEM_PROMPT = `Analysiere dieses Video Szene für Szene. Gib für jeden erkennbaren Beat
-(Zeitabschnitt mit eigener Handlung/Emotion) folgende Informationen als JSON
-zurück:
+const ANALYSIS_SYSTEM_PROMPT = `Analysiere diese Bilderserie (Frames aus einem Video) Szene für Szene.
+Gib für jeden erkennbaren Beat (Zeitabschnitt mit eigener Handlung/Emotion) folgende Informationen als JSON zurück:
 
 {
   "beats": [
@@ -24,9 +23,9 @@ zurück:
   ]
 }
 
-Setze face_visible_closeup nur auf true, wenn ein Gesicht nah, frontal und
-klar erkennbar im Bild ist. Antworte ausschließlich mit validem JSON, kein
-Fließtext, keine Markdown-Codeblöcke.`
+Setze face_visible_closeup nur auf true, wenn ein Gesicht nah, frontal und klar erkennbar im Bild ist.
+Die Frames sind in chronologischer Reihenfolge. Schätze die Zeitstempel basierend auf der Anzahl der Frames und der geschätzten Videolänge.
+Antworte ausschließlich mit validem JSON, kein Fließtext, keine Markdown-Codeblöcke.`
 
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
@@ -34,22 +33,9 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization'
 }
 
-function buildVideoMessages(videoPayload) {
-  return [
-    { role: 'system', content: ANALYSIS_SYSTEM_PROMPT },
-    {
-      role: 'user',
-      content: [
-        { type: 'text', text: 'Analysiere dieses Video und gib die Szenen-Beats als JSON zurück.' },
-        { type: 'video_url', video_url: { url: videoPayload } }
-      ]
-    }
-  ]
-}
-
 function buildImageMessages(imagePayloads) {
   const content = [
-    { type: 'text', text: 'Analysiere diese Bilderserie (Frames aus einem Video) und gib die Szenen-Beats als JSON zurück. Achte auf Zeitstempel basierend auf der Reihenfolge der Bilder.' }
+    { type: 'text', text: 'Analysiere diese Bilderserie (Frames aus einem Video) und gib die Szenen-Beats als JSON zurück.' }
   ]
   for (const img of imagePayloads) {
     content.push({ type: 'image_url', image_url: { url: img } })
@@ -76,30 +62,32 @@ function parseAnalysisResponse(text) {
   }
 }
 
-async function tryOpenRouterVideo(videoPayload) {
-  if (!OPENROUTER_API_KEY) return null
+async function tryGroqImages(imagePayloads) {
+  if (!GROQ_API_KEY) return null
   try {
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://happiness-eu.netlify.app',
-        'X-Title': 'Happiness Video Analysis'
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'google/gemma-4-26b-a4b-it:free',
-        messages: buildVideoMessages(videoPayload),
+        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+        messages: buildImageMessages(imagePayloads),
         temperature: 0.2,
         max_tokens: 4096
       })
     })
-    if (!res.ok) return null
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      console.error('[analyze-video] Groq failed:', res.status, err?.error?.message)
+      return null
+    }
     const data = await res.json()
     const text = data.choices?.[0]?.message?.content || ''
     return parseAnalysisResponse(text)
   } catch (e) {
-    console.error('[analyze-video] OpenRouter video failed:', e.message)
+    console.error('[analyze-video] Groq images failed:', e.message)
     return null
   }
 }
@@ -122,85 +110,16 @@ async function tryOpenRouterImages(imagePayloads) {
         max_tokens: 4096
       })
     })
-    if (!res.ok) return null
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      console.error('[analyze-video] OpenRouter failed:', res.status, err?.error?.message)
+      return null
+    }
     const data = await res.json()
     const text = data.choices?.[0]?.message?.content || ''
     return parseAnalysisResponse(text)
   } catch (e) {
     console.error('[analyze-video] OpenRouter images failed:', e.message)
-    return null
-  }
-}
-
-async function tryGroqImages(imagePayloads) {
-  if (!GROQ_API_KEY) return null
-  try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-        messages: buildImageMessages(imagePayloads),
-        temperature: 0.2,
-        max_tokens: 4096
-      })
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    const text = data.choices?.[0]?.message?.content || ''
-    return parseAnalysisResponse(text)
-  } catch (e) {
-    console.error('[analyze-video] Groq images failed:', e.message)
-    return null
-  }
-}
-
-async function tryMistralText(description) {
-  if (!MISTRAL_API_KEY) return null
-  try {
-    const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${MISTRAL_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'mistral-small-latest',
-        messages: [
-          {
-            role: 'system',
-            content: `Du analysierst Videos basierend auf Textbeschreibungen. Erstelle eine realistische Szenen-Analyse als JSON.
-Antworte NUR mit validem JSON in diesem Format:
-{
-  "beats": [
-    {
-      "start_time": "0:00",
-      "end_time": "0:03",
-      "description": "Was visuell passiert",
-      "face_visible_closeup": false,
-      "suggested_focus": "z.B. Reaktion, Übergang"
-    }
-  ]
-}`
-          },
-          {
-            role: 'user',
-            content: `Beschreibe die Szenen dieses Videos und erstelle eine Beat-für-Beat-Analyse:\n\n${description}`
-          }
-        ],
-        temperature: 0.3,
-        max_tokens: 4096
-      })
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    const text = data.choices?.[0]?.message?.content || ''
-    return parseAnalysisResponse(text)
-  } catch (e) {
-    console.error('[analyze-video] Mistral text failed:', e.message)
     return null
   }
 }
@@ -232,38 +151,24 @@ export const handler = async (event) => {
     let body = {}
     try { body = JSON.parse(event.body || '{}') } catch { body = {} }
 
-    const { video_url, video_base64, video_filename, description } = body
+    const { frames, video_filename } = body
 
-    if (!video_url && !video_base64 && !description) {
+    if (!frames || !Array.isArray(frames) || frames.length === 0) {
       return {
         statusCode: 400,
         headers: CORS_HEADERS,
-        body: JSON.stringify({ error: 'Entweder video_url, video_base64 oder description erforderlich' })
+        body: JSON.stringify({ error: 'frames Array (base64 Data-URLs) ist erforderlich' })
       }
     }
 
-    let sceneAnalysis = null
+    console.log(`[analyze-video] Received ${frames.length} frames, trying Groq Vision...`)
 
-    // Strategy 1: Video URL -> OpenRouter Gemma video
-    if (video_url && !sceneAnalysis) {
-      console.log('[analyze-video] Trying OpenRouter Gemma with video URL...')
-      sceneAnalysis = await tryOpenRouterVideo(video_url)
-    }
+    // Try Groq first (fast, reliable)
+    let sceneAnalysis = await tryGroqImages(frames)
 
-    // Strategy 2: Video base64 -> OpenRouter Gemma video
-    if (video_base64 && !sceneAnalysis) {
-      const dataUrl = video_base64.startsWith('data:') ? video_base64 : `data:video/mp4;base64,${video_base64}`
-      console.log('[analyze-video] Trying OpenRouter Gemma with base64 video...')
-      sceneAnalysis = await tryOpenRouterVideo(dataUrl)
-    }
-
-    // Strategy 3: If we have a URL, try extracting frames via a frame extraction service or skip
-    // For now, if video URL analysis fails, we skip to text fallback
-
-    // Strategy 4: Text description fallback -> Mistral
-    if (!sceneAnalysis && description) {
-      console.log('[analyze-video] Trying Mistral text fallback...')
-      sceneAnalysis = await tryMistralText(description)
+    if (!sceneAnalysis) {
+      console.log('[analyze-video] Groq failed, trying OpenRouter...')
+      sceneAnalysis = await tryOpenRouterImages(frames)
     }
 
     if (!sceneAnalysis) {
@@ -271,8 +176,7 @@ export const handler = async (event) => {
         statusCode: 502,
         headers: CORS_HEADERS,
         body: JSON.stringify({
-          error: 'Video konnte nicht automatisch analysiert werden. Bitte beschreibe das Video kurz als Text.',
-          needs_description: true
+          error: 'Video-Analyse fehlgeschlagen. Bitte versuche es erneut.'
         })
       }
     }
