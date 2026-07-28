@@ -38,7 +38,7 @@ Struktur: klares Lernziel am Anfang benennen → 2-3 Kernpunkte mit Text-Overlay
 Ruhiges, sachliches Tempo, keine übertriebenen Sound-Effekte.`
 }
 
-function buildSystemPrompt(sceneAnalysis, contentGoal, userPremise) {
+function buildSystemPrompt(sceneAnalysis, contentGoal, userPremise, adText) {
   const genreDesc = GENRE_DESCRIPTIONS[contentGoal] || contentGoal
   const genreAddition = GENRE_ADDITIONS[contentGoal] || ''
 
@@ -66,6 +66,13 @@ Allgemein:
 
   if (userPremise) {
     prompt += `\n\nZusätzliche Idee/Prämisse des Users: ${userPremise}`
+  }
+
+  if (adText) {
+    prompt += `\n\nWICHTIG — FOLGENDER WERBETEXT MUSS IM DREHBUCH VORKOMMEN (1:1 als TTS-Offscreen-Stimme oder Text-Overlay einbauen):
+"${adText}"
+
+Der Werbetext soll an passender Stelle im Drehbuch eingebaut werden — idealerweise als TTS-Offscreen-Stimme oder großes Text-Overlay. Er darf nicht verändert oder paraphrasiert werden.`
   }
 
   prompt += `\n\nAntworte NUR mit dem fertigen Drehbuch. Kein Markdown, keine Codeblöcke, kein Vorwort.`
@@ -205,7 +212,7 @@ export const handler = async (event) => {
     let body = {}
     try { body = JSON.parse(event.body || '{}') } catch { body = {} }
 
-    const { scene_analysis, content_goal, user_premise, video_filename, script_id } = body
+    const { scene_analysis, content_goal, user_premise, ad_text, video_filename, script_id } = body
 
     if (!scene_analysis || !content_goal) {
       return {
@@ -223,7 +230,7 @@ export const handler = async (event) => {
       }
     }
 
-    const systemPrompt = buildSystemPrompt(scene_analysis, content_goal, user_premise)
+    const systemPrompt = buildSystemPrompt(scene_analysis, content_goal, user_premise, ad_text)
 
     // Fallback chain: Groq → Mistral → OpenRouter → DeepSeek
     let script = null

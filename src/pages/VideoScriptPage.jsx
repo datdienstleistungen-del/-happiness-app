@@ -75,6 +75,7 @@ export default function VideoScriptPage() {
   const [inputMode, setInputMode] = useState('url')
   const [selectedGenre, setSelectedGenre] = useState(null)
   const [userPremise, setUserPremise] = useState('')
+  const [adText, setAdText] = useState('')
   const [sceneAnalysis, setSceneAnalysis] = useState(null)
   const [generatedScript, setGeneratedScript] = useState('')
   const [scriptId, setScriptId] = useState(null)
@@ -180,6 +181,7 @@ export default function VideoScriptPage() {
           scene_analysis: sceneAnalysis,
           content_goal: selectedGenre,
           user_premise: userPremise || undefined,
+          ad_text: adText || undefined,
           video_filename: videoFile?.name || 'video'
         })
       })
@@ -222,6 +224,7 @@ export default function VideoScriptPage() {
     setVideoPreview(null)
     setSelectedGenre(null)
     setUserPremise('')
+    setAdText('')
     setSceneAnalysis(null)
     setGeneratedScript('')
     setScriptId(null)
@@ -352,6 +355,17 @@ export default function VideoScriptPage() {
               placeholder="z.B. 'Es geht um einen Trick, den viele nicht kennen' oder 'Reaktion auf etwas Überraschendes'"
               rows={3}
             />
+          </div>
+
+          <div className="vsp-field">
+            <label>Werbung / Call-to-Action (optional)</label>
+            <textarea
+              value={adText}
+              onChange={(e) => setAdText(e.target.value)}
+              placeholder="z.B. 'Besuche uns unter www.beispiel.de — 20% Rabatt mit Code HAPPY20' oder 'Lade jetzt die App herunter'"
+              rows={3}
+            />
+            <span className="vsp-hint">Dieser Text wird 1:1 im Drehbuch verwendet (als TTS-Stimme oder Text-Overlay)</span>
           </div>
 
           {selectedGenre && (
