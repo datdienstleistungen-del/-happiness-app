@@ -818,3 +818,50 @@
 .vf-open-link-btn:hover {
   opacity: 0.9;
 }
+
+/* ==========================================================================
+   Mobile Responsive
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .vf-container {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .vf-main-content {
+    padding: 1rem;
+  }
+
+  .vf-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+  }
+
+  .vf-sidebar-panel {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--border, #e5e7eb);
+    max-height: 80vh;
+  }
+
+  .vf-header h2 {
+    font-size: 1.3rem;
+  }
+
+  .vf-search-bar {
+    flex-wrap: wrap;
+  }
+
+  .vf-search-btn {
+    width: 100%;
+  }
+
+  .vf-external-search-input-group {
+    flex-direction: column;
+  }
+
+  .vf-external-search-input-group input {
+    min-width: 100%;
+  }
+}
