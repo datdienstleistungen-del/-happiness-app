@@ -15,11 +15,11 @@ export default function VideoScriptPage() {
   const navigate = useNavigate()
   const fileInputRef = useRef(null)
 
-  const [step, setStep] = useState(1) // 1=input, 2=genre, 3=analyzing, 4=generating, 5=result
+  const [step, setStep] = useState(1)
   const [videoUrl, setVideoUrl] = useState('')
   const [videoFile, setVideoFile] = useState(null)
   const [videoPreview, setVideoPreview] = useState(null)
-  const [inputMode, setInputMode] = useState('url') // 'url' or 'upload'
+  const [inputMode, setInputMode] = useState('url')
   const [selectedGenre, setSelectedGenre] = useState(null)
   const [userPremise, setUserPremise] = useState('')
   const [sceneAnalysis, setSceneAnalysis] = useState(null)
@@ -28,6 +28,8 @@ export default function VideoScriptPage() {
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
   const [statusText, setStatusText] = useState('')
+  const [needsDescription, setNeedsDescription] = useState(false)
+  const [videoDescription, setVideoDescription] = useState('')
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0]
@@ -57,6 +59,7 @@ export default function VideoScriptPage() {
   const analyzeVideo = async () => {
     setStatusText('Video wird analysiert...')
     setError('')
+    setNeedsDescription(false)
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -89,7 +92,7 @@ export default function VideoScriptPage() {
 
       if (!res.ok) {
         if (data.needs_description) {
-          setError(data.error || 'Video konnte nicht analysiert werden. Bitte beschreibe das Video kurz als Text.')
+          setNeedsDescription(true)
           setStep(2)
           return
         }
@@ -97,11 +100,51 @@ export default function VideoScriptPage() {
       }
 
       setSceneAnalysis(data.scene_analysis)
-      setStep(2) // Go to genre selection
+      setStep(2)
     } catch (e) {
       console.error('[VideoScript] Analysis error:', e.message)
       setError(e.message || 'Fehler bei der Video-Analyse. Bitte versuche es erneut.')
       setStep(1)
+    }
+  }
+
+  const handleDescriptionSubmit = async () => {
+    if (!videoDescription.trim()) {
+      setError('Bitte beschreibe das Video kurz.')
+      return
+    }
+
+    setStep(3)
+    setStatusText('Video wird anhand der Beschreibung analysiert...')
+    setError('')
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token || ''
+
+      const res = await fetch('/api/analyze-video-scene', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          description: videoDescription,
+          video_filename: videoFile?.name || videoUrl || 'video'
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) throw new Error(data.error || 'Analyse fehlgeschlagen')
+
+      setSceneAnalysis(data.scene_analysis)
+      setNeedsDescription(false)
+      setStep(2)
+    } catch (e) {
+      console.error('[VideoScript] Description analysis error:', e.message)
+      setError(e.message || 'Fehler bei der Analyse.')
+      setStep(2)
     }
   }
 
@@ -172,6 +215,8 @@ export default function VideoScriptPage() {
     setGeneratedScript('')
     setScriptId(null)
     setError('')
+    setNeedsDescription(false)
+    setVideoDescription('')
   }
 
   return (
@@ -247,7 +292,7 @@ export default function VideoScriptPage() {
                 <div className="vsp-upload-preview">
                   <FileVideo size={32} />
                   <span>{videoFile?.name}</span>
-                  <button onClick={(e) => { e.stopPropagation(); handleFileSelect({ target: { files: null } }); setVideoFile(null); setVideoPreview(null); }}>
+                  <button onClick={(e) => { e.stopPropagation(); setVideoFile(null); setVideoPreview(null); }}>
                     Entfernen
                   </button>
                 </div>
@@ -269,8 +314,32 @@ export default function VideoScriptPage() {
         </div>
       )}
 
-      {/* STEP 2: Genre Selection */}
-      {step === 2 && sceneAnalysis && (
+      {/* STEP 2: Genre Selection OR Description Input */}
+      {step === 2 && needsDescription && (
+        <div className="vsp-description-section">
+          <p className="vsp-desc-intro">
+            Das Video konnte nicht automatisch analysiert werden. Beschreibe bitte kurz, was im Video passiert — die KI erstellt daraus die Szenen-Analyse.
+          </p>
+          <div className="vsp-field">
+            <label>Beschreibe das Video</label>
+            <textarea
+              value={videoDescription}
+              onChange={(e) => setVideoDescription(e.target.value)}
+              placeholder="z.B. 'Ein Mann sitzt auf einer Bank im Park, bemerkt eine Taube die seine Brille stiehlt, rennt der Taube hinterher, fällt in einen Brunnen'"
+              rows={5}
+            />
+          </div>
+          <button
+            className="vsp-btn vsp-btn-primary"
+            onClick={handleDescriptionSubmit}
+            disabled={!videoDescription.trim()}
+          >
+            <ArrowRight size={16} /> Analyse starten
+          </button>
+        </div>
+      )}
+
+      {step === 2 && !needsDescription && sceneAnalysis && (
         <div className="vsp-genre-section">
           <p className="vsp-analysis-ok">
             <Check size={16} /> Video analysiert — {sceneAnalysis.beats?.length || 0} Szenen erkannt
