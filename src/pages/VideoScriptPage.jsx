@@ -26,7 +26,7 @@ async function extractFramesFromVideo(videoSrc, maxFrames = 6) {
       const effectiveDuration = Math.min(duration, 60)
       const interval = effectiveDuration / maxFrames
 
-      const maxW = 384
+      const maxW = 256
       const scale = Math.min(1, maxW / (video.videoWidth || 640))
       canvas.width = Math.round((video.videoWidth || 640) * scale)
       canvas.height = Math.round((video.videoHeight || 360) * scale)
@@ -42,7 +42,7 @@ async function extractFramesFromVideo(videoSrc, maxFrames = 6) {
             video.onseeked = () => { clearTimeout(timeout); res() }
           })
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.5)
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.4)
           frames.push(dataUrl)
         } catch (e) {
           console.warn('[extractFrames] Frame', i, 'failed:', e.message)
@@ -109,14 +109,15 @@ export default function VideoScriptPage() {
     try {
       // Step 1: Extract frames in browser
       const source = videoUrl || videoFile
-      const frames = await extractFramesFromVideo(source, 6)
+      const frames = await extractFramesFromVideo(source, 3)
 
       if (frames.length === 0) {
         throw new Error('Keine Frames aus dem Video extrahiert werden.')
       }
 
       const totalSize = frames.reduce((sum, f) => sum + f.length, 0)
-      console.log(`[VideoScript] ${frames.length} frames extracted, total size: ${(totalSize / 1024 / 1024).toFixed(1)}MB`)
+      console.log(`[VideoScript] ${frames.length} frames, total: ${(totalSize / 1024 / 1024).toFixed(1)}MB, each: ${(totalSize / frames.length / 1024).toFixed(0)}KB`)
+      console.log('[VideoScript] Frame 0 preview:', frames[0]?.substring(0, 80))
 
       if (totalSize > 4 * 1024 * 1024) {
         throw new Error('Video ist zu groß für die automatische Analyse. Bitte versuche ein kürzeres Video (< 30 Sek.).')
@@ -127,6 +128,7 @@ export default function VideoScriptPage() {
       // Step 2: Send frames to analyze function
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token || ''
+      console.log('[VideoScript] Auth token present:', !!token)
 
       const res = await fetch('/api/analyze-video-scene', {
         method: 'POST',
@@ -142,7 +144,12 @@ export default function VideoScriptPage() {
 
       const data = await res.json()
 
-      if (!res.ok) throw new Error(data.error || 'Analyse fehlgeschlagen')
+      console.log('[VideoScript] API response:', res.status, JSON.stringify(data).substring(0, 500))
+
+      if (!res.ok) {
+        const detail = data.details ? ` (${data.details})` : ''
+        throw new Error(data.error + detail || 'Analyse fehlgeschlagen')
+      }
       setSceneAnalysis(data.scene_analysis)
       setStep(2)
     } catch (e) {
