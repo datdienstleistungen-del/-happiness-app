@@ -147,8 +147,8 @@ export default function VideoScriptPage() {
       console.log('[VideoScript] API response:', res.status, JSON.stringify(data).substring(0, 500))
 
       if (!res.ok) {
-        const detail = data.details ? ` (${data.details})` : ''
-        throw new Error(data.error + detail || 'Analyse fehlgeschlagen')
+        const detail = data.details ? `\n${data.details}` : ''
+        throw new Error((data.error || 'Analyse fehlgeschlagen') + detail)
       }
       setSceneAnalysis(data.scene_analysis)
       setStep(2)

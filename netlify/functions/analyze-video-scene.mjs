@@ -65,7 +65,7 @@ function parseAnalysisResponse(text) {
 async function tryGroqImages(imagePayloads) {
   if (!GROQ_API_KEY) {
     console.error('[analyze-video] GROQ_API_KEY not set')
-    return null
+    return { error: 'GROQ_API_KEY not configured' }
   }
   try {
     const totalSize = imagePayloads.reduce((s, p) => s + p.length, 0)
@@ -86,21 +86,24 @@ async function tryGroqImages(imagePayloads) {
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
-      console.error('[analyze-video] Groq failed:', res.status, err?.error?.message || JSON.stringify(err))
-      return null
+      const msg = err?.error?.message || JSON.stringify(err)
+      console.error('[analyze-video] Groq failed:', res.status, msg)
+      return { error: `Groq ${res.status}: ${msg}` }
     }
     const data = await res.json()
     const text = data.choices?.[0]?.message?.content || ''
     console.log('[analyze-video] Groq response length:', text.length)
-    return parseAnalysisResponse(text)
+    const parsed = parseAnalysisResponse(text)
+    if (parsed) return { data: parsed }
+    return { error: `Groq returned unparseable response (${text.length} chars): ${text.substring(0, 200)}` }
   } catch (e) {
     console.error('[analyze-video] Groq images failed:', e.message)
-    return null
+    return { error: `Groq exception: ${e.message}` }
   }
 }
 
 async function tryOpenRouterImages(imagePayloads) {
-  if (!OPENROUTER_API_KEY) return null
+  if (!OPENROUTER_API_KEY) return { error: 'OPENROUTER_API_KEY not configured' }
   try {
     const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -119,15 +122,18 @@ async function tryOpenRouterImages(imagePayloads) {
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
-      console.error('[analyze-video] OpenRouter failed:', res.status, err?.error?.message)
-      return null
+      const msg = err?.error?.message || JSON.stringify(err)
+      console.error('[analyze-video] OpenRouter failed:', res.status, msg)
+      return { error: `OpenRouter ${res.status}: ${msg}` }
     }
     const data = await res.json()
     const text = data.choices?.[0]?.message?.content || ''
-    return parseAnalysisResponse(text)
+    const parsed = parseAnalysisResponse(text)
+    if (parsed) return { data: parsed }
+    return { error: `OpenRouter returned unparseable response (${text.length} chars): ${text.substring(0, 200)}` }
   } catch (e) {
     console.error('[analyze-video] OpenRouter images failed:', e.message)
-    return null
+    return { error: `OpenRouter exception: ${e.message}` }
   }
 }
 
@@ -171,11 +177,15 @@ export const handler = async (event) => {
     console.log(`[analyze-video] Received ${frames.length} frames, trying Groq Vision...`)
 
     // Try Groq first (fast, reliable)
-    let sceneAnalysis = await tryGroqImages(frames)
+    let groqResult = await tryGroqImages(frames)
+    let sceneAnalysis = groqResult?.data || null
+    let lastError = groqResult?.error || ''
 
     if (!sceneAnalysis) {
       console.log('[analyze-video] Groq failed, trying OpenRouter...')
-      sceneAnalysis = await tryOpenRouterImages(frames)
+      let orResult = await tryOpenRouterImages(frames)
+      sceneAnalysis = orResult?.data || null
+      lastError = orResult?.error || lastError
     }
 
     if (!sceneAnalysis) {
@@ -183,7 +193,8 @@ export const handler = async (event) => {
         statusCode: 502,
         headers: CORS_HEADERS,
         body: JSON.stringify({
-          error: 'Video-Analyse fehlgeschlagen. Die KI-Modelle konnten die Frames nicht verarbeiten. Versuche ein kürzeres Video.'
+          error: 'Video-Analyse fehlgeschlagen. Die KI-Modelle konnten die Frames nicht verarbeiten.',
+          details: lastError
         })
       }
     }
