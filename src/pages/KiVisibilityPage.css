@@ -25,6 +25,51 @@
   color: rgba(255,255,255,0.5);
 }
 
+.kiv-explainer {
+  margin-bottom: 32px;
+  background: rgba(0,212,255,0.04);
+  border: 1px solid rgba(0,212,255,0.1);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.kiv-explainer-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+}
+
+.kiv-explainer-item {
+  display: flex;
+  gap: 12px;
+}
+
+.kiv-explainer-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  background: rgba(0,212,255,0.1);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00d4ff;
+}
+
+.kiv-explainer-item strong {
+  font-size: 13px;
+  color: #fff;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.kiv-explainer-item p {
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+  line-height: 1.5;
+  margin: 0;
+}
+
 .kiv-paywall {
   text-align: center;
   padding: 80px 20px;

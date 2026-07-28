@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, ExternalLink, Save, Check, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, ExternalLink, Save, Check, AlertCircle, Bot, Search, MessageCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import './KiVisibilityPage.css'
 
@@ -197,7 +197,7 @@ export default function KiVisibilityPage() {
         <div className="kiv-paywall">
           <AlertCircle size={48} className="kiv-paywall-icon" />
           <h2>KI-Sichtbarkeit ist ein Premium-Feature</h2>
-          <p>Erstelle ein öffentliches Profil, das von AI-Suchsystemen (ChatGPT, Claude, Perplexity) gefunden werden kann.</p>
+          <p>Mit diesem Feature wird dein Profil von AI-Systemen wie ChatGPT, Claude und Perplexity gefunden. Wenn jemand nach einer Nische wie deiner sucht, kannst du dort erscheinen.</p>
           <button className="kiv-btn kiv-btn-premium" onClick={() => navigate('/ai-chat')}>
             Premium freischalten
           </button>
@@ -212,7 +212,33 @@ export default function KiVisibilityPage() {
     <div className="kiv-page">
       <div className="kiv-header">
         <h1>KI-Sichtbarkeit</h1>
-        <p>Erstelle ein öffentliches Profil, das von AI-Suchsystemen gefunden werden kann.</p>
+        <p>Mit deinem Premium-Profil kannst du in KI-Systemen sichtbar werden.</p>
+      </div>
+
+      <div className="kiv-explainer">
+        <div className="kiv-explainer-row">
+          <div className="kiv-explainer-item">
+            <div className="kiv-explainer-icon"><Bot size={20} /></div>
+            <div>
+              <strong>Wie funktioniert das?</strong>
+              <p>Du füllst dein Profil aus — Name, Nische, was du anbietest. Happiness speichert das als strukturiertes Profil, das von KI-Systemen gelesen werden kann.</p>
+            </div>
+          </div>
+          <div className="kiv-explainer-item">
+            <div className="kiv-explainer-icon"><Search size={20} /></div>
+            <div>
+              <strong>Was passiert dann?</strong>
+              <p>Wenn jemand ChatGPT, Claude oder Perplexity fragt: „Kennt jemand einen guten Fitness-Creator?" — kann dein Profil als Antwort erscheinen. Ohne dass du etwas weiteres tun musst.</p>
+            </div>
+          </div>
+          <div className="kiv-explainer-item">
+            <div className="kiv-explainer-icon"><MessageCircle size={20} /></div>
+            <div>
+              <strong>Warum ist das wichtig?</strong>
+              <p>Immer mehr Menschen nutzen KI statt Google. Wer dort nicht sichtbar ist, verliert Reichweite. Dieses Profil sorgt dafür, dass du in dieser neuen Suche auftauchst.</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="kiv-layout">
