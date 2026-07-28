@@ -78,7 +78,7 @@ async function tryGroqImages(imagePayloads) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+        model: 'llava-v1.5-7b-4096-preview',
         messages: buildImageMessages(imagePayloads),
         temperature: 0.2,
         max_tokens: 4096
@@ -114,7 +114,7 @@ async function tryOpenRouterImages(imagePayloads) {
         'X-Title': 'Happiness Video Analysis'
       },
       body: JSON.stringify({
-        model: 'google/gemma-4-31b-it:free',
+        model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
         messages: buildImageMessages(imagePayloads),
         temperature: 0.2,
         max_tokens: 4096
@@ -179,22 +179,23 @@ export const handler = async (event) => {
     // Try Groq first (fast, reliable)
     let groqResult = await tryGroqImages(frames)
     let sceneAnalysis = groqResult?.data || null
-    let lastError = groqResult?.error || ''
+    let allErrors = groqResult?.error ? [`Groq: ${groqResult.error}`] : []
 
     if (!sceneAnalysis) {
       console.log('[analyze-video] Groq failed, trying OpenRouter...')
       let orResult = await tryOpenRouterImages(frames)
       sceneAnalysis = orResult?.data || null
-      lastError = orResult?.error || lastError
+      if (orResult?.error) allErrors.push(`OpenRouter: ${orResult.error}`)
     }
 
     if (!sceneAnalysis) {
+      console.error('[analyze-video] ALL PROVIDERS FAILED:', allErrors)
       return {
         statusCode: 502,
         headers: CORS_HEADERS,
         body: JSON.stringify({
           error: 'Video-Analyse fehlgeschlagen. Die KI-Modelle konnten die Frames nicht verarbeiten.',
-          details: lastError
+          details: allErrors.join(' | ')
         })
       }
     }
