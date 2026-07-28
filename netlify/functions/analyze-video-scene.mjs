@@ -63,8 +63,14 @@ function parseAnalysisResponse(text) {
 }
 
 async function tryGroqImages(imagePayloads) {
-  if (!GROQ_API_KEY) return null
+  if (!GROQ_API_KEY) {
+    console.error('[analyze-video] GROQ_API_KEY not set')
+    return null
+  }
   try {
+    const totalSize = imagePayloads.reduce((s, p) => s + p.length, 0)
+    console.log(`[analyze-video] Groq: ${imagePayloads.length} images, ${(totalSize / 1024 / 1024).toFixed(1)}MB total`)
+    
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -80,11 +86,12 @@ async function tryGroqImages(imagePayloads) {
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
-      console.error('[analyze-video] Groq failed:', res.status, err?.error?.message)
+      console.error('[analyze-video] Groq failed:', res.status, err?.error?.message || JSON.stringify(err))
       return null
     }
     const data = await res.json()
     const text = data.choices?.[0]?.message?.content || ''
+    console.log('[analyze-video] Groq response length:', text.length)
     return parseAnalysisResponse(text)
   } catch (e) {
     console.error('[analyze-video] Groq images failed:', e.message)
@@ -176,7 +183,7 @@ export const handler = async (event) => {
         statusCode: 502,
         headers: CORS_HEADERS,
         body: JSON.stringify({
-          error: 'Video-Analyse fehlgeschlagen. Bitte versuche es erneut.'
+          error: 'Video-Analyse fehlgeschlagen. Die KI-Modelle konnten die Frames nicht verarbeiten. Versuche ein kürzeres Video.'
         })
       }
     }

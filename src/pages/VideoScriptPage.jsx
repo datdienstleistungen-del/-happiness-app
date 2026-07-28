@@ -11,7 +11,7 @@ const GENRES = [
   { id: 'lernvideo_erwachsene', emoji: '🎓', label: 'Lernvideo (Erwachsene)', desc: 'Informativ, strukturiert, sachlich' }
 ]
 
-async function extractFramesFromVideo(videoSrc, maxFrames = 10) {
+async function extractFramesFromVideo(videoSrc, maxFrames = 6) {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video')
     video.crossOrigin = 'anonymous'
@@ -23,12 +23,11 @@ async function extractFramesFromVideo(videoSrc, maxFrames = 10) {
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')
 
-      // Cap at 60 seconds
       const effectiveDuration = Math.min(duration, 60)
       const interval = effectiveDuration / maxFrames
 
-      // Scale down to save bandwidth (max 512px wide)
-      const scale = Math.min(1, 512 / (video.videoWidth || 640))
+      const maxW = 384
+      const scale = Math.min(1, maxW / (video.videoWidth || 640))
       canvas.width = Math.round((video.videoWidth || 640) * scale)
       canvas.height = Math.round((video.videoHeight || 360) * scale)
 
@@ -43,7 +42,7 @@ async function extractFramesFromVideo(videoSrc, maxFrames = 10) {
             video.onseeked = () => { clearTimeout(timeout); res() }
           })
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.5)
           frames.push(dataUrl)
         } catch (e) {
           console.warn('[extractFrames] Frame', i, 'failed:', e.message)
@@ -54,7 +53,7 @@ async function extractFramesFromVideo(videoSrc, maxFrames = 10) {
       resolve(frames)
     }
 
-    video.onerror = () => reject(new Error('Video konnte nicht geladen werden'))
+    video.onerror = () => reject(new Error('Video konnte nicht geladen werden. CORS-Beschränkungen möglich.'))
 
     if (videoSrc instanceof File) {
       video.src = URL.createObjectURL(videoSrc)
@@ -110,10 +109,17 @@ export default function VideoScriptPage() {
     try {
       // Step 1: Extract frames in browser
       const source = videoUrl || videoFile
-      const frames = await extractFramesFromVideo(source, 10)
+      const frames = await extractFramesFromVideo(source, 6)
 
       if (frames.length === 0) {
         throw new Error('Keine Frames aus dem Video extrahiert werden.')
+      }
+
+      const totalSize = frames.reduce((sum, f) => sum + f.length, 0)
+      console.log(`[VideoScript] ${frames.length} frames extracted, total size: ${(totalSize / 1024 / 1024).toFixed(1)}MB`)
+
+      if (totalSize > 4 * 1024 * 1024) {
+        throw new Error('Video ist zu groß für die automatische Analyse. Bitte versuche ein kürzeres Video (< 30 Sek.).')
       }
 
       setStatusText(`Video wird analysiert (${frames.length} Frames)...`)
@@ -137,7 +143,6 @@ export default function VideoScriptPage() {
       const data = await res.json()
 
       if (!res.ok) throw new Error(data.error || 'Analyse fehlgeschlagen')
-
       setSceneAnalysis(data.scene_analysis)
       setStep(2)
     } catch (e) {
