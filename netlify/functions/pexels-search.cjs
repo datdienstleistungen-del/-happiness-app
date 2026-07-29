@@ -28,6 +28,61 @@ exports.handler = async (event) => {
       }
     }
 
+    // German to English translation for common search terms
+    const deToEn = {
+      'fußball': 'football', 'fussball': 'football', 'tor': 'goal celebration',
+      'küche': 'kitchen', 'kochen': 'cooking', 'kühlschrank': 'fridge',
+      'essen': 'food eating', 'rezept': 'recipe', 'haustier': 'pet',
+      'hund': 'dog', 'katze': 'cat', 'natur': 'nature', 'berg': 'mountain',
+      'meer': 'ocean sea', 'strand': 'beach', 'sonnenuntergang': 'sunset',
+      'sonnenaufgang': 'sunrise', 'wald': 'forest', 'wasserfall': 'waterfall',
+      'stadt': 'city', 'straße': 'street', 'auto': 'car', 'zug': 'train',
+      'flugzeug': 'airplane', 'fliegen': 'flying', 'reisen': 'travel',
+      'urlaub': 'vacation', 'strandurlaub': 'beach vacation',
+      'arbeit': 'work office', 'büro': 'office', 'meeting': 'business meeting',
+      'sport': 'sports fitness', 'fitness': 'fitness workout', 'yoga': 'yoga',
+      'laufen': 'running', 'schwimmen': 'swimming', 'radfahren': 'cycling',
+      'musik': 'music', 'tanzen': 'dancing', 'gitarre': 'guitar',
+      'feuerwerk': 'fireworks', 'party': 'party celebration',
+      'weihnachten': 'christmas', 'oster': 'easter', 'halloween': 'halloween',
+      'regen': 'rain', 'schnee': 'snow', 'sturm': 'storm',
+      'blume': 'flower', 'baum': 'tree', 'garten': 'garden',
+      'kind': 'children kids', 'baby': 'baby', 'familie': 'family',
+      'freunde': 'friends', 'lachen': 'laughing laughing',
+      'traurig': 'sad crying', 'überraschung': 'surprise',
+      'angst': 'fear scared', 'wut': 'anger angry',
+      'glücklich': 'happy joy', 'liebe': 'love romance',
+      'hochzeit': 'wedding', 'geburt': 'birthday',
+      'deko': 'decoration interior', 'decoration': 'decoration interior design',
+      'einrichtung': 'interior design', 'wohnzimmer': 'living room',
+      'schlafzimmer': 'bedroom', 'bad': 'bathroom',
+      'makeup': 'makeup beauty', 'schönheit': 'beauty',
+      'mode': 'fashion clothing', 'kleidung': 'clothing fashion',
+      'technik': 'technology', 'computer': 'computer', 'handy': 'smartphone',
+      'spiel': 'game gaming', 'spielzeug': 'toy',
+      'auto': 'car driving', 'fahrrad': 'bicycle cycling',
+      'flugzeug': 'airplane airport', 'flughafen': 'airport',
+      'restaurant': 'restaurant cafe', 'cafe': 'cafe coffee',
+      'bar': 'bar nightlife', 'nacht': 'night city',
+      'tag': 'daytime sunny', 'morgen': 'morning sunrise',
+      'abend': 'evening sunset', 'nacht': 'night stars'
+    }
+
+    // Translate German query to English
+    let searchQuery = query
+    const lowerQuery = query.toLowerCase().trim()
+    if (deToEn[lowerQuery]) {
+      searchQuery = deToEn[lowerQuery]
+    } else {
+      // Check if query contains German words
+      for (const [de, en] of Object.entries(deToEn)) {
+        if (lowerQuery.includes(de)) {
+          searchQuery = en
+          break
+        }
+      }
+    }
+
     // Expand query: add vertical/portrait keywords for TikTok-relevant results
     const expandedQuery = `${query} portrait vertical`
 
@@ -39,7 +94,7 @@ exports.handler = async (event) => {
       try {
         // Search with orientation=portrait for vertical videos
         const response = await fetch(
-          `https://api.pexels.com/videos/search?query=${encodeURIComponent(query)}&per_page=${count}&size=medium&locale=de-DE&orientation=portrait`,
+          `https://api.pexels.com/videos/search?query=${encodeURIComponent(searchQuery)}&per_page=${count}&size=medium&locale=de-DE&orientation=portrait`,
           {
             headers: { 'Authorization': pexelsKey }
           }
@@ -63,7 +118,7 @@ exports.handler = async (event) => {
         // If not enough portrait results, also search landscape
         if (pexelsVideos.length < count) {
           const responseLandscape = await fetch(
-            `https://api.pexels.com/videos/search?query=${encodeURIComponent(query)}&per_page=${count}&size=medium&locale=de-DE`,
+            `https://api.pexels.com/videos/search?query=${encodeURIComponent(searchQuery)}&per_page=${count}&size=medium&locale=de-DE`,
             {
               headers: { 'Authorization': pexelsKey }
             }
@@ -102,7 +157,7 @@ exports.handler = async (event) => {
     if (pixabayKey) {
       try {
         const response = await fetch(
-          `https://pixabay.com/api/videos/?key=${pixabayKey}&q=${encodeURIComponent(query)}&per_page=${count}&lang=de&video_type=all`
+          `https://pixabay.com/api/videos/?key=${pixabayKey}&q=${encodeURIComponent(searchQuery)}&per_page=${count}&lang=de&video_type=all`
         )
 
         if (response.ok) {

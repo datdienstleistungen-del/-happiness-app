@@ -4,15 +4,15 @@ import { Search, Film, Download, Sparkles, Check, Copy, ArrowRight, Play, Pause 
 import { supabase } from '../lib/supabase'
 import './VideoFinderPage.css'
 
-const PRESET_CATEGORIES = [
+  const PRESET_CATEGORIES = [
   { id: 'satisfying', label: '🌊 Satisfying (ASMR)', query: 'satisfying' },
   { id: 'gaming', label: '🎮 Gaming / Loops', query: 'gaming' },
   { id: 'prank', label: '🎭 Pranks & Fails', query: 'prank' },
-  { id: 'soccer', label: '⚽ Fußball-Clips', query: 'fussball' },
+  { id: 'soccer', label: '⚽ Fußball-Clips', query: 'football' },
   { id: 'timelapse', label: '⏱️ Zeitraffer (Timelapse)', query: 'timelapse' },
   { id: 'sports', label: '🏂 Extremsport', query: 'extreme sports' },
   { id: 'comedy', label: '😂 Comedy & Funny', query: 'comedy' },
-  { id: 'kurios', label: '🤯 Kuriositäten', query: 'kurios' }
+  { id: 'kurios', label: '🤯 Kuriositäten', query: 'unusual strange' }
 ]
 
 const TONES = [
