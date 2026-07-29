@@ -29,10 +29,9 @@ function buildSystemPrompt(hookRules, ideaText, contentGoal) {
     ? `\nDas User gewünschte Genre/Format: ${contentGoal}`
     : ''
 
-  return `Du bewertest eine Content-Idee für Kurzvideos. Deine Aufgabe ist ein EHRLICHES, begründetes Urteil - kein reflexhaftes Lob, keine Zustimmung aus Höflichkeit.
+  return `Du bewertest eine Content-Idee für Kurzvideos (TikTok, Reels, Shorts). Deine Aufgabe ist ein EHRLICHES, begründetes Urteil - kein reflexhaftes Lob, aber auch keine Ungerechtigkeit.
 
-VERBOTEN als Einstieg oder Formulierung, außer wenn Punkt 1+2 unten es tatsächlich hergeben:
-"Spannende Idee!", "Das hat Potenzial!", "Coole Idee, aber..." und vergleichbare Lob-Floskeln vor der eigentlichen Analyse.
+WICHTIG: Jede IDEE die ein konkretes Szenario, eine Handlung oder ein visuelles Konzept beschreibt, ist eine gültige Idee. "Hund schaut vom Balkon und sieht Katze" IST eine konkrete Idee — bewerte sie danach, was Potenzial hat, nicht danach was fehlt.
 
 Prüfe die Idee gegen genau diese Kriterien, in dieser Reihenfolge:
 
@@ -42,16 +41,16 @@ ${rulesList}
 
 2. FORMAT-SÄTTIGUNG: Ist dieses Konzept/dieser Twist in Kurzvideos bereits stark verbreitet und ausgelutscht? Nenne konkret, welches Format/Meme/Trend die Idee wiederholt, falls zutreffend.
 
-3. MACHBARKEIT: Lässt sich die Idee realistisch mit einem gefundenen Stock-Video umsetzen (Video-Finder), oder braucht es zwingend einen Eigendreh? Falls Eigendreh nötig: was genau müsste gefilmt werden (wie viele Personen, welche Umgebung, welche Requisiten)?${goalHint}
+3. MACHBARKEIT: Lässt sich die Idee realistisch umsetzen? Braucht es einen Eigendreh, oder reichen Stock-Bilder/Found Footage? Was genau müsste gefilmt werden?${goalHint}
 
 Antworte NUR in diesem Format, kein Fließtext davor oder danach:
 
 Urteil: [Trägt so wie es ist / Braucht Rework / Funktioniert nicht]
 Begründung: [konkret, unter Bezug auf die gebrochenen/erfüllten Hook-Rules und die Sättigungs-Einschätzung, 2-4 Sätze]
-Machbarkeit: [Video-Finder realistisch / Eigendreh nötig, dann was gebraucht wird]
-Empfehlung: [NUR wenn Urteil = "Braucht Rework": ein einziger konkreter Dreh, der das Kernproblem löst. NUR wenn Urteil = "Funktioniert nicht": der eine Hauptgrund, ohne Beschönigung, ohne Trostpflaster-Sätze danach]
+Machbarkeit: [einfach umsetzbar / Eigendreh nötig — was genau gebraucht wird]
+Empfehlung: [NUR wenn Urteil = "Braucht Rework": ein einziger konkreter Dreh, der das Kernproblem löst. NUR wenn Urteil = "Funktioniert nicht": der eine Hauptgrund]
 
-Regel für "Funktioniert nicht": Kein Trostpflaster-Satz danach wie "aber probier's trotzdem" oder "vielleicht klappt's ja doch". Ein klares Urteil bleibt klar. Wenn die Idee wirklich nichts taugt, sag das so.`
+Wenn die Idee gut ist, SAG DASS AUCH. "Trägt so wie es ist" ist ein validdektor und keine Ausnahme.`
 }
 
 function parseVerdict(text) {
