@@ -30,38 +30,50 @@ export const handler = async (event) => {
       ? `\n\nRegeln für Hooks (aus der Praxis):\n${hookRules.map(r => `- ${r.rule} (Gewicht: ${r.weight}/10)`).join('\n')}`
       : ''
 
-    const prompt = `Du bist ein TikTok Content-Stratege. Du hilfst Creators konkrete Content-Ideen zu entwickeln.
+    const prompt = `Du bist ein TikTok-Experte der VIRALE Clips analysiert. Du生成ierst keine "schönen" Ideen — du生成ierst IDEEN DIE FUNKTIONIEREN. Jede Idee muss durch einen "Would I stop scrolling?" Test kommen.
 
 Ziel des Creators: ${goal}
 Plattform: ${platform}
 Anzahl Ideen: ${count}
 
-Erstelle ${count} konkrete, umsetzbare Content-Ideen. Für jede Idee:
-1. EIN konkreter Hook (die ersten 3 Sekunden) - muss neugierig machen
-2. Was passiert im Video (2-3 Sätze)
-3. Warum das funktioniert (Psychologie/Algorithmus)
-4. Ein konkreter Suchbegriff für Referenz-Videos (Englisch, z.B. "satisfying paint peeling", "kitchen organization hack")
-5. Schwierigkeitsgrad (Einfach/Mittel/Schwer)
+REGELN FÜR VIRALE IDEEN:
+- Hook muss in 1 Sekunde entscheiden: Scroll weiter oder stehen bleiben
+- Kein "Hallo ich bin..." — direkt rein mit dem Content
+- controversy > harmlos. Eine starke Meinung ist besser als "schöner" Content
+- "Du machst X falsch" funktioniert immer besser als "So machst du X"
+- Konflikt erzeugt Interesse: Zeig das Problem VOR der Lösung
+- Specific beats generic: "Mein Kühlschrank sieht aus wie bei Hoarders" > "Mein Kühlschrank"
+- Pattern Interrupt: Iwas muss in den ersten 0.5 Sekunden passieren das den Zuschauer überrascht
 
-Wichtig:
-- KEIN AI-Content-Generierung-Vorschlag (kein "Nutze KI für...")
-- Fokus auf manuelle Umsetzung die der Creator MIT DEM HANDY machen kann
-- Jede Idee muss sich VONANDER UNTERSCHIEDEN
-- Keine generischen Vorschläge wie "Zeig dein Alltag"
-- Konkret und sofort umsetzbar
+Für jede Idee:
+1. HOOK (die ersten 1-3 Sekunden) — muss SOFORT Aufmerksamkeit erregen. Kein Aufwärmen. Direkt der schärfste Punkt.
+2. VIDEO-BESCHREIBUNG — Was passiert konkret (nicht "zeig deinen Alltag" sondern SZENE für SZENE)
+3. WARUM ES FUNKTIONIERT — Psychologischer Trigger (Neugier, Wut, Lachen, Schock)
+4. SUCHBEGRIFF — Englischer Begriff für Referenz-Videos (z.B. "disgusting kitchen cleaning", "apartment tour small space hacks")
+5. SCHWIERIGKEIT — Einfach/Mittel/Schwer
+
+VERBOTEN:
+- "Hallo ich bin [Name] und heute zeige ich euch..."
+- "5 Tipps für..."
+- "So funktioniert..."
+- Generische Hooks wie "Wer kennt das nicht..."
+- "In diesem Video zeige ich euch..."
+- Iwas das nach YouTube-Tutorial klingt
+
+IDEEN MÜSSEN SICH VONANDER UNTERSCHIEDEN — kein Copy-Paste mit anderen Worten.
 
 Antworte NUR mit einem gültigen JSON Array:
 [
   {
-    "hook": "Hook Text hier",
-    "content": "Beschreibung was passiert",
-    "why_it_works": "Warum funktioniert das",
-    "search_term": "englischer Suchbegriff für Referenz",
+    "hook": "Schockierender erster Satz der Aufmerksamkeit erregt",
+    "content": "Konkrete Szenen Beschreibung, nicht abstrakt",
+    "why_it_works": "Welcher psychologische Trigger wird ausgelöst",
+    "search_term": "englischer Suchbegriff für Referenz-Videos",
     "difficulty": "Einfach"
   }
 ]${rulesText}
 
-Antworte NUR mit dem JSON Array, kein Text davor oder danach.`
+NUR das JSON Array. Kein Text davor oder danach. Kein ```json``` markdown.`
 
     // Try Mistral first
     let ideas = null
@@ -75,7 +87,7 @@ Antworte NUR mit dem JSON Array, kein Text davor oder danach.`
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'mistral-small-latest',
+          model: 'mistral-large-latest',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.7,
           max_tokens: 4000
@@ -112,7 +124,7 @@ Antworte NUR mit dem JSON Array, kein Text davor oder danach.`
             body: JSON.stringify({
               model: 'openai/gpt-oss-120b',
               messages: [{ role: 'user', content: prompt }],
-              temperature: 0.7,
+              temperature: 0.8,
               max_tokens: 4000
             })
           })
