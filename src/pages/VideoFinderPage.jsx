@@ -38,9 +38,14 @@ export default function VideoFinderPage() {
   const [error, setError] = useState('')
 
   // External Importer States
-  const [activeSource, setActiveSource] = useState('pexels') // 'pexels' or 'viral'
+  const [activeSource, setActiveSource] = useState('pexels') // 'pexels', 'viral', or 'archive'
   const [importedUrl, setImportedUrl] = useState('')
   const [topic, setTopic] = useState('')
+
+  // Internet Archive States
+  const [archiveVideos, setArchiveVideos] = useState([])
+  const [archiveLoading, setArchiveLoading] = useState(false)
+  const [archiveQuery, setArchiveQuery] = useState('')
 
   // Search on mount with default category
   useEffect(() => {
@@ -231,6 +236,34 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
     })
   }
 
+  async function handleArchiveSearch(searchQuery) {
+    const term = searchQuery || archiveQuery
+    if (!term.trim()) return
+
+    setArchiveLoading(true)
+    setError('')
+    setSelectedVideo(null)
+    setGeneratedScript(null)
+
+    try {
+      const res = await fetch('/api/archive-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: term, count: 12 })
+      })
+
+      if (!res.ok) throw new Error(`HTTP-Fehler ${res.status}`)
+
+      const data = await res.json()
+      setArchiveVideos(data.videos || [])
+    } catch (e) {
+      console.error('[Archive Search Error]', e)
+      setError('Fehler bei der Internet Archive Suche. Bitte versuche es noch einmal.')
+    } finally {
+      setArchiveLoading(false)
+    }
+  }
+
   return (
     <div className="vf-container">
       <div className="vf-main-content">
@@ -263,6 +296,17 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
             }}
           >
             🚀 Viral-Finder (YouTube / TikTok)
+          </button>
+          <button
+            className={`vf-tab-btn-source ${activeSource === 'archive' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveSource('archive')
+              setSelectedVideo(null)
+              setGeneratedScript(null)
+              setError('')
+            }}
+          >
+            🏛️ Internet Archive (Public Domain)
           </button>
         </div>
 
@@ -392,6 +436,77 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
               </div>
             </div>
           </div>
+        ) : (
+          /* Internet Archive View */
+          <div className="vf-viral-container">
+            <div className="vf-viral-intro">
+              <h3>🏛️ Internet Archive — Public Domain Videos</h3>
+              <p>Kostenlose, rechtlich sichere Videos aus dem Internet Archive. Alle Inhalte sind Public Domain oder Creative Commons lizenziert.</p>
+
+              <div className="vf-search-bar" style={{ marginTop: '1rem' }}>
+                <Search size={18} className="vf-search-icon" />
+                <input
+                  type="text"
+                  placeholder="z. B. nature, space, vintage, cooking, animals..."
+                  value={archiveQuery}
+                  onChange={(e) => setArchiveQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleArchiveSearch()}
+                />
+                <button className="vf-search-btn" onClick={() => handleArchiveSearch()}>
+                  Durchsuchen
+                </button>
+              </div>
+
+              <div className="vf-quick-tags" style={{ marginTop: '0.75rem' }}>
+                {[
+                  { label: '🌍 Nature', query: 'nature' },
+                  { label: '🚀 Space', query: 'space' },
+                  { label: '🎬 Vintage', query: 'vintage' },
+                  { label: '🍳 Cooking', query: 'cooking' },
+                  { label: '🐾 Animals', query: 'animals' },
+                  { label: '🏙️ City', query: 'city' },
+                  { label: '🎵 Music', query: 'music' },
+                  { label: '⚡ Science', query: 'science' }
+                ].map(cat => (
+                  <button
+                    key={cat.query}
+                    className="vf-tag-btn"
+                    onClick={() => {
+                      setArchiveQuery(cat.query)
+                      handleArchiveSearch(cat.query)
+                    }}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {error && <div className="vf-error-banner">{error}</div>}
+
+            {archiveLoading ? (
+              <div className="vf-loading-state">
+                <div className="vf-spinner"></div>
+                <p>Internet Archive wird durchsucht...</p>
+              </div>
+            ) : archiveVideos.length === 0 ? (
+              <div className="vf-empty-state">
+                <Film size={48} />
+                <p>Suche nach Public Domain Videos. Alle Inhalte sind legal nutzbar.</p>
+              </div>
+            ) : (
+              <div className="vf-grid">
+                {archiveVideos.map(video => (
+                  <ArchiveVideoCard
+                    key={video.id}
+                    video={video}
+                    isSelected={selectedVideo?.id === video.id}
+                    onSelect={setSelectedVideo}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -406,7 +521,18 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
           <div className="vf-sidebar-body">
             {/* Selected Video Player / Placeholder */}
             <div className="vf-player-wrapper">
-              {selectedVideo.id === 'viral-import' ? (
+              {selectedVideo.source === 'archive' ? (
+                <div className="vf-import-placeholder">
+                  <Film size={40} className="vf-placeholder-icon" />
+                  <p className="vf-placeholder-title">{selectedVideo.title}</p>
+                  <a href={selectedVideo.url} target="_blank" rel="noreferrer" className="vf-open-link-btn">
+                    🏛️ Im Internet Archive ansehen
+                  </a>
+                  <a href={selectedVideo.downloadUrl} target="_blank" rel="noreferrer" className="vf-open-link-btn" style={{ background: '#10b981' }}>
+                    ⬇️ Alle Dateien herunterladen
+                  </a>
+                </div>
+              ) : selectedVideo.id === 'viral-import' ? (
                 <div className="vf-import-placeholder">
                   <Film size={40} className="vf-placeholder-icon" />
                   <p className="vf-placeholder-title">{selectedVideo.title}</p>
@@ -426,7 +552,16 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
             </div>
 
             <div className="vf-action-section">
-              {selectedVideo.id !== 'viral-import' && (
+              {selectedVideo.source === 'archive' ? (
+                <a
+                  href={selectedVideo.downloadUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="vf-download-action-btn"
+                >
+                  <Download size={16} /> Alle Dateien herunterladen
+                </a>
+              ) : selectedVideo.id !== 'viral-import' ? (
                 <a
                   href={selectedVideo.url}
                   download={`hit_clip_${selectedVideo.id}.mp4`}
@@ -557,6 +692,33 @@ function VideoCard({ video, onSelect, isSelected }) {
         >
           <Download size={14} />
         </a>
+      </div>
+    </div>
+  )
+}
+
+// Internet Archive Video Card
+function ArchiveVideoCard({ video, onSelect, isSelected }) {
+  return (
+    <div
+      className={`vf-video-card ${isSelected ? 'selected' : ''}`}
+      onClick={() => onSelect(video)}
+      style={{ cursor: 'pointer' }}
+    >
+      <div className="vf-video-wrapper" style={{ background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center', padding: '1rem' }}>
+          <Film size={32} style={{ color: '#10b981', marginBottom: '0.5rem' }} />
+          <p style={{ color: '#fff', fontSize: '0.8rem', margin: 0 }}>🏛️ Public Domain</p>
+        </div>
+      </div>
+      <div className="vf-card-footer" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+        <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary, #111827)' }}>
+          {video.title.substring(0, 50)}{video.title.length > 50 ? '...' : ''}
+        </span>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {video.date && <span className="vf-resolution-tag">{video.date.substring(0, 4)}</span>}
+          {video.rating > 0 && <span className="vf-resolution-tag">⭐ {video.rating.toFixed(1)}</span>}
+        </div>
       </div>
     </div>
   )
