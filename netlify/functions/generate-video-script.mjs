@@ -38,7 +38,7 @@ Struktur: klares Lernziel am Anfang benennen → 2-3 Kernpunkte mit Text-Overlay
 Ruhiges, sachliches Tempo, keine übertriebenen Sound-Effekte.`
 }
 
-function buildSystemPrompt(sceneAnalysis, contentGoal, userPremise, adText) {
+function buildSystemPrompt(sceneAnalysis, contentGoal, userPremise, adText, selectedHook) {
   const genreDesc = GENRE_DESCRIPTIONS[contentGoal] || contentGoal
   const genreAddition = GENRE_ADDITIONS[contentGoal] || ''
 
@@ -49,9 +49,19 @@ ${JSON.stringify(sceneAnalysis, null, 2)}
 WICHTIGE REGEL: EditPilot kann aktuell keinen echten Lip-Sync auf neu generierten Dialog erzeugen. Formuliere daher NIEMALS Anweisungen wie "Lippen synchron animieren". Löse gesprochene Inhalte stattdessen über:
 - Untertitel/Text-Overlay
 - TTS-Offscreen-Stimme
-- Reaktions-Cuts und Zooms
+- Reaktions-Cuts und Zooms`
 
-Gib das Drehbuch in diesem Format aus, direkt copy-paste-fähig für den EditPilot-Chat in CapCut:
+  if (selectedHook) {
+    prompt += `\n\nWICHTIG — DER USER HAT FOLGENDEN HOOK AUSGEWÄHLT. Das Drehbuch MUSS mit diesem Hook beginnen (Sekunde 0:00-0:01):
+- Visuelles Bild: ${selectedHook.visual}
+- Text-Overlay: "${selectedHook.text}"
+- Audio: ${selectedHook.audio}
+- Psychologischer Trigger: ${selectedHook.trigger}
+
+Der Hook ist die ERSTE Sekunde. Direkt danach kommt der Rest des Drehbuchs.`
+  }
+
+  prompt += `\n\nGib das Drehbuch in diesem Format aus, direkt copy-paste-fähig für den EditPilot-Chat in CapCut:
 
 Bearbeite dieses Video als ${genreDesc}. Timeline:
 
@@ -212,7 +222,7 @@ export const handler = async (event) => {
     let body = {}
     try { body = JSON.parse(event.body || '{}') } catch { body = {} }
 
-    const { scene_analysis, content_goal, user_premise, ad_text, video_filename, script_id } = body
+    const { scene_analysis, content_goal, user_premise, ad_text, video_filename, script_id, selected_hook } = body
 
     if (!scene_analysis || !content_goal) {
       return {
@@ -230,7 +240,7 @@ export const handler = async (event) => {
       }
     }
 
-    const systemPrompt = buildSystemPrompt(scene_analysis, content_goal, user_premise, ad_text)
+    const systemPrompt = buildSystemPrompt(scene_analysis, content_goal, user_premise, ad_text, selected_hook)
 
     // Fallback chain: Groq → Mistral → OpenRouter → DeepSeek
     let script = null

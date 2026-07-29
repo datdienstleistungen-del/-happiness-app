@@ -409,3 +409,79 @@
   gap: 12px;
   flex-wrap: wrap;
 }
+
+.vsp-hooks-section h3 {
+  font-size: 18px;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.vsp-hooks-hint {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.vsp-hooks-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vsp-hook-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.vsp-hook-card:hover {
+  border-color: #6c63ff;
+  box-shadow: 0 4px 12px rgba(108, 99, 255, 0.1);
+}
+
+.vsp-hook-card.active {
+  border-color: #6c63ff;
+  background: #f5f3ff;
+  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.15);
+}
+
+.vsp-hook-number {
+  font-size: 12px;
+  font-weight: 800;
+  color: #6c63ff;
+  margin-bottom: 4px;
+}
+
+.vsp-hook-trigger {
+  display: inline-block;
+  background: #f3f4f6;
+  color: #555;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.vsp-hook-visual,
+.vsp-hook-text,
+.vsp-hook-audio {
+  font-size: 13px;
+  color: #333;
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.vsp-hook-visual strong,
+.vsp-hook-text strong,
+.vsp-hook-audio strong {
+  color: #1a1a1a;
+}

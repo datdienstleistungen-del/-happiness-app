@@ -82,6 +82,9 @@ export default function VideoScriptPage() {
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
   const [statusText, setStatusText] = useState('')
+  const [hooks, setHooks] = useState([])
+  const [selectedHook, setSelectedHook] = useState(null)
+  const [hooksLoading, setHooksLoading] = useState(false)
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0]
@@ -160,10 +163,60 @@ export default function VideoScriptPage() {
     }
   }
 
+  const handleGenerateHooks = async () => {
+    if (!selectedGenre) return
+
+    setStep(3)
+    setStatusText('Hooks werden generiert...')
+    setError('')
+    setHooks([])
+    setSelectedHook(null)
+    setHooksLoading(true)
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token || ''
+
+      const res = await fetch('/api/generate-hooks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          genre: selectedGenre,
+          premise: userPremise || undefined,
+          scene_description: sceneAnalysis?.beats?.map(b => b.description).join(' | ') || undefined
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) throw new Error(data.error || 'Hook-Generierung fehlgeschlagen')
+
+      if (data.hooks && data.hooks.length > 0) {
+        setHooks(data.hooks)
+      } else {
+        throw new Error(data.error || 'Keine Hooks generiert')
+      }
+    } catch (e) {
+      console.error('[VideoScript] Hook generation error:', e.message)
+      setError(e.message || 'Fehler bei der Hook-Generierung.')
+      setStep(2)
+    } finally {
+      setHooksLoading(false)
+    }
+  }
+
+  const handleSelectHookAndContinue = () => {
+    if (!selectedHook) return
+    handleGenerateScript()
+  }
+
   const handleGenerateScript = async () => {
     if (!selectedGenre || !sceneAnalysis) return
 
-    setStep(4)
+    setStep(5)
     setStatusText('Drehbuch wird geschrieben...')
     setError('')
 
@@ -182,7 +235,8 @@ export default function VideoScriptPage() {
           content_goal: selectedGenre,
           user_premise: userPremise || undefined,
           ad_text: adText || undefined,
-          video_filename: videoFile?.name || 'video'
+          video_filename: videoFile?.name || 'video',
+          selected_hook: selectedHook || undefined
         })
       })
 
@@ -192,7 +246,7 @@ export default function VideoScriptPage() {
 
       setGeneratedScript(data.script)
       setScriptId(data.script_id)
-      setStep(5)
+      setStep(6)
     } catch (e) {
       console.error('[VideoScript] Generation error:', e.message)
       setError(e.message || 'Fehler bei der Drehbuch-Generierung.')
@@ -229,6 +283,9 @@ export default function VideoScriptPage() {
     setGeneratedScript('')
     setScriptId(null)
     setError('')
+    setHooks([])
+    setSelectedHook(null)
+    setHooksLoading(false)
   }
 
   return (
@@ -246,8 +303,11 @@ export default function VideoScriptPage() {
         <div className={`vsp-step ${step >= 2 ? 'active' : ''} ${step > 2 ? 'done' : ''}`}>
           <span>2</span> Genre
         </div>
-        <div className={`vsp-step ${step >= 4 ? 'active' : ''} ${step > 4 ? 'done' : ''}`}>
-          <span>3</span> Drehbuch
+        <div className={`vsp-step ${step >= 3 ? 'active' : ''} ${step > 3 ? 'done' : ''}`}>
+          <span>3</span> Hook
+        </div>
+        <div className={`vsp-step ${step >= 5 ? 'active' : ''} ${step > 5 ? 'done' : ''}`}>
+          <span>4</span> Drehbuch
         </div>
       </div>
 
@@ -369,22 +429,65 @@ export default function VideoScriptPage() {
           </div>
 
           {selectedGenre && (
-            <button className="vsp-btn vsp-btn-primary" onClick={handleGenerateScript}>
-              <Film size={16} /> Drehbuch generieren
+            <button className="vsp-btn vsp-btn-primary" onClick={handleGenerateHooks}>
+              <Film size={16} /> Hooks generieren
             </button>
           )}
         </div>
       )}
 
-      {/* STEP 3: Analyzing */}
+      {/* STEP 3: Hook Selection */}
       {step === 3 && (
-        <div className="vsp-loading">
-          <Loader size={32} className="vsp-spinner" />
-          <p>{statusText}</p>
+        <div className="vsp-hooks-section">
+          {hooksLoading ? (
+            <div className="vsp-loading">
+              <Loader size={32} className="vsp-spinner" />
+              <p>{statusText}</p>
+            </div>
+          ) : hooks.length > 0 ? (
+            <>
+              <h3>Wähle deinen Hook (Sekunde 0:00-0:01)</h3>
+              <p className="vsp-hooks-hint">Der Hook entscheidet ob Zuschauer wegwischen oder bleiben. Wähle den stärksten.</p>
+
+              <div className="vsp-hooks-grid">
+                {hooks.map((hook, i) => (
+                  <button
+                    key={i}
+                    className={`vsp-hook-card ${selectedHook === i ? 'active' : ''}`}
+                    onClick={() => setSelectedHook(i)}
+                  >
+                    <div className="vsp-hook-number">#{i + 1}</div>
+                    <div className="vsp-hook-trigger">{hook.trigger}</div>
+                    <div className="vsp-hook-visual">
+                      <strong>👁️ Szenen-Bild:</strong> {hook.visual}
+                    </div>
+                    <div className="vsp-hook-text">
+                      <strong>📝 Text:</strong> {hook.text}
+                    </div>
+                    <div className="vsp-hook-audio">
+                      <strong>🔊 Audio:</strong> {hook.audio}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {selectedHook !== null && (
+                <button className="vsp-btn vsp-btn-primary" onClick={handleSelectHookAndContinue} style={{ marginTop: '1.5rem' }}>
+                  <ArrowRight size={16} /> Mit diesem Hook weiter → Drehbuch generieren
+                </button>
+              )}
+            </>
+          ) : (
+            <div className="vsp-loading">
+              <Loader size={32} className="vsp-spinner" />
+              <p>Keine Hooks geladen. Versuche es erneut.</p>
+              <button className="vsp-btn vsp-btn-secondary" onClick={() => setStep(2)}>← Zurück</button>
+            </div>
+          )}
         </div>
       )}
 
-      {/* STEP 4: Generating */}
+      {/* STEP 4: Analyzing */}
       {step === 4 && (
         <div className="vsp-loading">
           <Loader size={32} className="vsp-spinner" />
@@ -392,8 +495,16 @@ export default function VideoScriptPage() {
         </div>
       )}
 
-      {/* STEP 5: Result */}
-      {step === 5 && generatedScript && (
+      {/* STEP 5: Generating */}
+      {step === 5 && (
+        <div className="vsp-loading">
+          <Loader size={32} className="vsp-spinner" />
+          <p>{statusText}</p>
+        </div>
+      )}
+
+      {/* STEP 6: Result */}
+      {step === 6 && generatedScript && (
         <div className="vsp-result">
           <div className="vsp-result-header">
             <Check size={20} className="vsp-result-check" />
