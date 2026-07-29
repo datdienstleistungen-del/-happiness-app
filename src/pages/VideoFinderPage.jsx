@@ -1,14 +1,7 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
-import { useTranslation } from '../hooks/useTranslation'
-import { useAuth } from '../hooks/useAuth'
+import { useState } from 'react'
 import './VideoFinderPage.css'
 
-const OnboardingTour = lazy(() => import('../components/OnboardingTour'))
-
 export default function VideoFinderPage() {
-  const { t, language } = useTranslation()
-  const { user, profile } = useAuth()
-
   const [goal, setGoal] = useState('')
   const [ideas, setIdeas] = useState([])
   const [loading, setLoading] = useState(false)
@@ -48,10 +41,10 @@ export default function VideoFinderPage() {
       } else if (data.ideas && data.ideas.length > 0) {
         setIdeas(data.ideas)
       } else {
-        setError(t('videoFinder.noIdeas', 'Keine Ideen generiert. Versuche es mit einer konkreteren Beschreibung.'))
+        setError('Keine Ideen generiert. Versuche es mit einer konkreteren Beschreibung.')
       }
     } catch (err) {
-      setError(t('videoFinder.generationFailed', 'Fehler bei der Ideengenerierung'))
+      setError('Fehler bei der Ideengenerierung')
     } finally {
       setLoading(false)
     }
@@ -91,9 +84,9 @@ export default function VideoFinderPage() {
     <div className="vf-page">
       <div className="vf-hero">
         <div className="vf-hero-icon">💡</div>
-        <h1 className="vf-hero-title">{t('videoFinder.title', 'Ideenschmiede')}</h1>
-        <p className="wf-hero-subtitle">
-          {t('videoFinder.subtitle', 'Beschreibe dein Ziel und H.I.T. generiert konkrete Content-Ideen mit Hooks und Referenzen.')}
+        <h1 className="vf-hero-title">Ideenschmiede</h1>
+        <p className="vf-hero-subtitle">
+          Beschreibe dein Ziel und H.I.T. generiert konkrete Content-Ideen mit Hooks und Referenzen.
         </p>
       </div>
 
@@ -103,7 +96,7 @@ export default function VideoFinderPage() {
             className="vf-textarea"
             value={goal}
             onChange={(e) => setGoal(e.target.value)}
-            placeholder={t('videoFinder.placeholder', 'z.B. "Ich mache Deko-Hacks für mein kleines Apartment" oder "Fitness-Tipps für Anfänger"')}
+            placeholder='z.B. "Ich mache Deko-Hacks für mein kleines Apartment" oder "Fitness-Tipps für Anfänger"'
             rows={3}
           />
           <button
@@ -112,9 +105,9 @@ export default function VideoFinderPage() {
             disabled={loading || !goal.trim()}
           >
             {loading ? (
-              <>⏳ {t('videoFinder.generating', 'H.I.T. denkt nach...')}</>
+              <>⏳ H.I.T. denkt nach...</>
             ) : (
-              <>💡 {t('videoFinder.generate', 'Ideen generieren')}</>
+              <>💡 Ideen generieren</>
             )}
           </button>
         </div>
@@ -129,7 +122,7 @@ export default function VideoFinderPage() {
       {ideas.length > 0 && (
         <div className="vf-ideas-section">
           <h2 className="vf-section-title">
-            💡 {t('videoFinder.yourIdeas', 'Deine Content-Ideen')}
+            💡 Deine Content-Ideen
           </h2>
 
           <div className="vf-ideas-grid">
@@ -140,7 +133,7 @@ export default function VideoFinderPage() {
               >
                 <div className="vf-idea-header">
                   <span className="vf-idea-number">#{index + 1}</span>
-                  <span className={`vf-idea-difficulty vf-idea-difficulty--${idea.difficulty?.toLowerCase() || 'mittel'}`}>
+                  <span className={`vf-idea-difficulty vf-idea-difficulty--${(idea.difficulty || 'mittel').toLowerCase()}`}>
                     {idea.difficulty || 'Mittel'}
                   </span>
                 </div>
@@ -189,7 +182,7 @@ export default function VideoFinderPage() {
           {referenceLoading ? (
             <div className="vf-loading">
               <div className="vf-loading-spinner" />
-              <p>{t('videoFinder.searchingReferences', 'Suche Referenz-Videos...')}</p>
+              <p>Suche Referenz-Videos...</p>
             </div>
           ) : referenceVideos.length > 0 ? (
             <div className="vf-videos-grid">
@@ -221,12 +214,12 @@ export default function VideoFinderPage() {
             </div>
           ) : (
             <div className="vf-no-references">
-              <p>{t('videoFinder.noReferences', 'Keine Referenz-Videos gefunden. Versuche einen anderen Suchbegriff.')}</p>
+              <p>Keine Referenz-Videos gefunden. Versuche einen anderen Suchbegriff.</p>
             </div>
           )}
 
           <div className="vf-reference-hint">
-            💡 {t('videoFinder.referenceHint', 'Nutze diese Videos als Inspiration für dein eigenes Video. Kopiere den Stil, nicht den Inhalt.')}
+            💡 Nutze diese Videos als Inspiration für dein eigenes Video. Kopiere den Stil, nicht den Inhalt.
           </div>
         </div>
       )}
@@ -234,8 +227,8 @@ export default function VideoFinderPage() {
       {ideas.length === 0 && !loading && (
         <div className="vf-empty-state">
           <div className="vf-empty-icon">✨</div>
-          <h3>{t('videoFinder.emptyTitle', 'Beschreibe dein Ziel')}</h3>
-          <p>{t('videoFinder.emptyText', 'Je konkreter deine Beschreibung, desto besser werden die Ideen. Statt "Kochen" schreibe "Schnelle Rezepte für Studenten unter 10 Minuten".')}</p>
+          <h3>Beschreibe dein Ziel</h3>
+          <p>Je konkreter deine Beschreibung, desto besser werden die Ideen. Statt "Kochen" schreibe "Schnelle Rezepte für Studenten unter 10 Minuten".</p>
         </div>
       )}
     </div>
