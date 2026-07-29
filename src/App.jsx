@@ -102,7 +102,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
     { to: '/ideenschmiede', icon: Lightbulb, label: 'Ideenschmiede' },
     { to: '/capcut-studio', icon: Film, label: 'CapCut Studio' },
     { to: '/video-finder', icon: Search, label: 'Video Finder' },
-    { to: '/video-script', icon: Video, label: 'Video-Drehbuch' },
+    { to: '/video-script', icon: Video, label: 'Video-Drehbuch', badge: 'NEU' },
     { to: '/ai-chat', icon: Sparkles, label: 'AI Chat' },
     { to: '/analytics', icon: BarChart3, label: 'Analytics', badge: 'newFeatures.analyticsTooltip' },
     { to: '/ki-sichtbarkeit', icon: Eye, label: 'KI-Sichtbarkeit', badge: 'PRO' },
