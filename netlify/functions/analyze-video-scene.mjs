@@ -78,7 +78,7 @@ async function tryGroqImages(imagePayloads) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama-3.2-90b-vision-preview',
+        model: 'qwen/qwen3.6-27b',
         messages: buildImageMessages(imagePayloads),
         temperature: 0.2,
         max_tokens: 4096
@@ -117,7 +117,7 @@ async function tryOpenRouterImages(imagePayloads) {
         model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
         messages: buildImageMessages(imagePayloads),
         temperature: 0.2,
-        max_tokens: 128
+        max_tokens: 4096
       })
     })
     if (!res.ok) {
