@@ -443,6 +443,10 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
               <h3>🏛️ Internet Archive — Public Domain Videos</h3>
               <p>Kostenlose, rechtlich sichere Videos aus dem Internet Archive. Alle Inhalte sind Public Domain oder Creative Commons lizenziert.</p>
 
+              <div style={{ background: 'var(--color-mint-light, #ecfdf5)', border: '1px solid var(--color-mint, #10b981)', borderRadius: '8px', padding: '10px 14px', fontSize: '0.85rem', marginTop: '0.75rem', color: '#065f46' }}>
+                <strong>Tipp für TikTok:</strong> Die meisten Archiv-Videos sind im Querformat (16:9). In CapCut einfach das Format auf 9:16 stellen und das Video heranzoomen.
+              </div>
+
               <div className="vf-search-bar" style={{ marginTop: '1rem' }}>
                 <Search size={18} className="vf-search-icon" />
                 <input
@@ -479,6 +483,10 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
                     {cat.label}
                   </button>
                 ))}
+              </div>
+
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted, #6b7280)', marginTop: '0.75rem', fontStyle: 'italic' }}>
+                ⚖️ Hinweis: Manche CC-Lizenzen (CC-BY) erfordern die Nennung des Urhebers. Prüfe die Videobeschreibung auf Archive.org vor der Veröffentlichung.
               </div>
             </div>
 
@@ -525,12 +533,22 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
                 <div className="vf-import-placeholder">
                   <Film size={40} className="vf-placeholder-icon" />
                   <p className="vf-placeholder-title">{selectedVideo.title}</p>
-                  <a href={selectedVideo.url} target="_blank" rel="noreferrer" className="vf-open-link-btn">
-                    🏛️ Im Internet Archive ansehen
-                  </a>
-                  <a href={selectedVideo.downloadUrl} target="_blank" rel="noreferrer" className="vf-open-link-btn" style={{ background: '#10b981' }}>
-                    ⬇️ Alle Dateien herunterladen
-                  </a>
+                  {selectedVideo.hasVideo ? (
+                    <video
+                      key={selectedVideo.url}
+                      src={selectedVideo.url}
+                      controls
+                      playsInline
+                      className="vf-large-player"
+                    />
+                  ) : (
+                    <a href={selectedVideo.detailsUrl} target="_blank" rel="noreferrer" className="vf-open-link-btn">
+                      🏛️ Im Internet Archive ansehen
+                    </a>
+                  )}
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #6b7280)', marginTop: '0.5rem', fontStyle: 'italic' }}>
+                    ⚖️ Prüfe die Lizenz auf der Archive.org-Seite vor Veröffentlichung. CC-BY erfordert Urheber-Nennung.
+                  </div>
                 </div>
               ) : selectedVideo.id === 'viral-import' ? (
                 <div className="vf-import-placeholder">
@@ -708,7 +726,9 @@ function ArchiveVideoCard({ video, onSelect, isSelected }) {
       <div className="vf-video-wrapper" style={{ background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center', padding: '1rem' }}>
           <Film size={32} style={{ color: '#10b981', marginBottom: '0.5rem' }} />
-          <p style={{ color: '#fff', fontSize: '0.8rem', margin: 0 }}>🏛️ Public Domain</p>
+          <p style={{ color: '#fff', fontSize: '0.8rem', margin: 0 }}>
+            {video.hasVideo ? '▶️ Video verfügbar' : '🏛️ Public Domain'}
+          </p>
         </div>
       </div>
       <div className="vf-card-footer" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>

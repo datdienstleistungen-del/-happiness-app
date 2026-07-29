@@ -4,6 +4,27 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization'
 }
 
+async function getBestMp4(identifier) {
+  try {
+    const res = await fetch(`https://archive.org/metadata/${identifier}/files`)
+    if (!res.ok) return null
+    const data = await res.json()
+    const result = data?.result || []
+    
+    const mp4s = result
+      .filter(f => f.name?.endsWith('.mp4') && f.format)
+      .sort((a, b) => {
+        const aRes = parseInt(a.name.match(/(\d+)p/)?.[1] || '0')
+        const bRes = parseInt(b.name.match(/(\d+)p/)?.[1] || '0')
+        return bRes - aRes
+      })
+    
+    return mp4s[0]?.name || null
+  } catch {
+    return null
+  }
+}
+
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: CORS_HEADERS, body: '' }
@@ -32,15 +53,24 @@ export const handler = async (event) => {
     const data = await res.json()
     const docs = data.response?.docs || []
 
-    const videos = docs.map(doc => ({
-      id: doc.identifier,
-      title: doc.title || doc.identifier,
-      description: doc.description || '',
-      url: `https://archive.org/details/${doc.identifier}`,
-      downloadUrl: `https://archive.org/download/${doc.identifier}`,
-      date: doc.date || '',
-      rating: doc.avg_rating || 0,
-      source: 'archive'
+    const videos = await Promise.all(docs.map(async (doc) => {
+      const bestFile = await getBestMp4(doc.identifier)
+      const videoUrl = bestFile 
+        ? `https://archive.org/download/${doc.identifier}/${bestFile}`
+        : `https://archive.org/details/${doc.identifier}`
+      
+      return {
+        id: doc.identifier,
+        title: doc.title || doc.identifier,
+        description: doc.description || '',
+        url: videoUrl,
+        downloadUrl: `https://archive.org/download/${doc.identifier}`,
+        detailsUrl: `https://archive.org/details/${doc.identifier}`,
+        date: doc.date || '',
+        rating: doc.avg_rating || 0,
+        source: 'archive',
+        hasVideo: !!bestFile
+      }
     }))
 
     return {
