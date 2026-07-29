@@ -636,14 +636,11 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
 
             {/* External Sources */}
             <div style={{ marginTop: '2rem', padding: '1.25rem', background: 'var(--bg-card, #ffffff)', borderRadius: '14px', border: '1px solid var(--border, #e5e7eb)' }}>
-              <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem' }}>🔗 Weitere kostenlose Quellen</h4>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted, #6b7280)', marginBottom: '0.75rem' }}>Falls du noch mehr Material suchst — diese Seiten bieten ebenfalls kostenlose, lizenzfreie Videos:</p>
+              <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem' }}>🔗 Weitere rechtlich sichere Quellen</h4>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted, #6b7280)', marginBottom: '0.75rem' }}>Diese Seiten bieten ebenfalls kostenlose, lizenzfreie Videos mit klarer kommerzieller Nutzbarkeit:</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 <a href="https://coverr.co" target="_blank" rel="noreferrer" className="vf-tag-btn" style={{ textDecoration: 'none' }}>Coverr</a>
-                <a href="https://www.videezy.com/free-video/vertical" target="_blank" rel="noreferrer" className="vf-tag-btn" style={{ textDecoration: 'none' }}>Videezy</a>
-                <a href="https://mazwai.com" target="_blank" rel="noreferrer" className="vf-tag-btn" style={{ textDecoration: 'none' }}>Mazwai</a>
-                <a href="https://www.dareful.com" target="_blank" rel="noreferrer" className="vf-tag-btn" style={{ textDecoration: 'none' }}>Dareful (4K)</a>
-                <a href="https://www.vidsplay.com" target="_blank" rel="noreferrer" className="vf-tag-btn" style={{ textDecoration: 'none' }}>Vidsplay</a>
+                <a href="https://www.dareful.com" target="_blank" rel="noreferrer" className="vf-tag-btn" style={{ textDecoration: 'none' }}>Dareful (4K CC)</a>
               </div>
             </div>
           </div>
