@@ -47,6 +47,11 @@ export default function VideoFinderPage() {
   const [archiveLoading, setArchiveLoading] = useState(false)
   const [archiveQuery, setArchiveQuery] = useState('')
 
+  // Mixkit States
+  const [mixkitVideos, setMixkitVideos] = useState([])
+  const [mixkitLoading, setMixkitLoading] = useState(false)
+  const [mixkitQuery, setMixkitQuery] = useState('')
+
   // Search on mount with default category
   useEffect(() => {
     handleSearch('satisfying')
@@ -264,6 +269,34 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
     }
   }
 
+  async function handleMixkitSearch(searchQuery, vertical = false) {
+    const term = searchQuery || mixkitQuery
+    if (!term.trim()) return
+
+    setMixkitLoading(true)
+    setError('')
+    setSelectedVideo(null)
+    setGeneratedScript(null)
+
+    try {
+      const res = await fetch('/api/mixkit-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: term, count: 12, vertical })
+      })
+
+      if (!res.ok) throw new Error(`HTTP-Fehler ${res.status}`)
+
+      const data = await res.json()
+      setMixkitVideos(data.videos || [])
+    } catch (e) {
+      console.error('[Mixkit Search Error]', e)
+      setError('Fehler bei der Mixkit Suche. Bitte versuche es noch einmal.')
+    } finally {
+      setMixkitLoading(false)
+    }
+  }
+
   return (
     <div className="vf-container">
       <div className="vf-main-content">
@@ -307,6 +340,17 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
             }}
           >
             🏛️ Internet Archive (Public Domain)
+          </button>
+          <button
+            className={`vf-tab-btn-source ${activeSource === 'mixkit' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveSource('mixkit')
+              setSelectedVideo(null)
+              setGeneratedScript(null)
+              setError('')
+            }}
+          >
+            📱 Mixkit (Vertikale Clips)
           </button>
         </div>
 
@@ -515,6 +559,94 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
               </div>
             )}
           </div>
+        ) : activeSource === 'mixkit' ? (
+          /* Mixkit View */
+          <div className="vf-viral-container">
+            <div className="vf-viral-intro">
+              <h3>📱 Mixkit — Kostenlose Stock-Videos für TikTok</h3>
+              <p>Hochwertige, kostenlose Videos. Viele bereits im vertikalen 9:16-Format — perfekt für TikTok und CapCut.</p>
+
+              <div style={{ background: 'var(--color-mint-light, #ecfdf5)', border: '1px solid var(--color-mint, #10b981)', borderRadius: '8px', padding: '10px 14px', fontSize: '0.85rem', marginTop: '0.75rem', color: '#065f46' }}>
+                <strong>✨ Vorteil:</strong> Viele Mixkit-Videos sind bereits im vertikalen 9:16-Format. Kein Zuschneiden in CapCut nötig — direkt importieren und loslegen.
+              </div>
+
+              <div className="vf-search-bar" style={{ marginTop: '1rem' }}>
+                <Search size={18} className="vf-search-icon" />
+                <input
+                  type="text"
+                  placeholder="z. B. laptop, coffee, fitness, city, nature..."
+                  value={mixkitQuery}
+                  onChange={(e) => setMixkitQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleMixkitSearch()}
+                />
+                <button className="vf-search-btn" onClick={() => handleMixkitSearch()}>
+                  Suchen
+                </button>
+              </div>
+
+              <div className="vf-quick-tags" style={{ marginTop: '0.75rem' }}>
+                {[
+                  { label: '💻 Tech', query: 'laptop' },
+                  { label: '☕ Lifestyle', query: 'coffee' },
+                  { label: '💪 Fitness', query: 'fitness' },
+                  { label: '🏙️ City', query: 'city' },
+                  { label: '🌿 Nature', query: 'nature' },
+                  { label: '🎵 Music', query: 'music' },
+                  { label: '👨‍💻 Business', query: 'business' },
+                  { label: '🎨 Creative', query: 'creative' }
+                ].map(cat => (
+                  <button
+                    key={cat.query}
+                    className="vf-tag-btn"
+                    onClick={() => {
+                      setMixkitQuery(cat.query)
+                      handleMixkitSearch(cat.query)
+                    }}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {error && <div className="vf-error-banner">{error}</div>}
+
+            {mixkitLoading ? (
+              <div className="vf-loading-state">
+                <div className="vf-spinner"></div>
+                <p>Mixkit wird durchsucht...</p>
+              </div>
+            ) : mixkitVideos.length === 0 ? (
+              <div className="vf-empty-state">
+                <Film size={48} />
+                <p>Suche nach kostenlosen Stock-Videos für dein nächstes TikTok.</p>
+              </div>
+            ) : (
+              <div className="vf-grid">
+                {mixkitVideos.map(video => (
+                  <MixkitVideoCard
+                    key={video.id}
+                    video={video}
+                    isSelected={selectedVideo?.id === video.id}
+                    onSelect={setSelectedVideo}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* External Sources */}
+            <div style={{ marginTop: '2rem', padding: '1.25rem', background: 'var(--bg-card, #ffffff)', borderRadius: '14px', border: '1px solid var(--border, #e5e7eb)' }}>
+              <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem' }}>🔗 Weitere kostenlose Quellen</h4>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted, #6b7280)', marginBottom: '0.75rem' }}>Falls du noch mehr Material suchst — diese Seiten bieten ebenfalls kostenlose, lizenzfreie Videos:</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                <a href="https://coverr.co" target="_blank" rel="noreferrer" className="vf-tag-btn" style={{ textDecoration: 'none' }}>Coverr</a>
+                <a href="https://www.videezy.com/free-video/vertical" target="_blank" rel="noreferrer" className="vf-tag-btn" style={{ textDecoration: 'none' }}>Videezy</a>
+                <a href="https://mazwai.com" target="_blank" rel="noreferrer" className="vf-tag-btn" style={{ textDecoration: 'none' }}>Mazwai</a>
+                <a href="https://www.dareful.com" target="_blank" rel="noreferrer" className="vf-tag-btn" style={{ textDecoration: 'none' }}>Dareful (4K)</a>
+                <a href="https://www.vidsplay.com" target="_blank" rel="noreferrer" className="vf-tag-btn" style={{ textDecoration: 'none' }}>Vidsplay</a>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
@@ -550,6 +682,14 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
                     ⚖️ Prüfe die Lizenz auf der Archive.org-Seite vor Veröffentlichung. CC-BY erfordert Urheber-Nennung.
                   </div>
                 </div>
+              ) : selectedVideo.source === 'mixkit' ? (
+                <video
+                  key={selectedVideo.url}
+                  src={selectedVideo.url}
+                  controls
+                  playsInline
+                  className="vf-large-player"
+                />
               ) : selectedVideo.id === 'viral-import' ? (
                 <div className="vf-import-placeholder">
                   <Film size={40} className="vf-placeholder-icon" />
@@ -578,6 +718,16 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
                   className="vf-download-action-btn"
                 >
                   <Download size={16} /> Alle Dateien herunterladen
+                </a>
+              ) : selectedVideo.source === 'mixkit' ? (
+                <a
+                  href={selectedVideo.url}
+                  download={`mixkit_${selectedVideo.id}.mp4`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="vf-download-action-btn"
+                >
+                  <Download size={16} /> Video herunterladen (MP4)
                 </a>
               ) : selectedVideo.id !== 'viral-import' ? (
                 <a
@@ -738,6 +888,72 @@ function ArchiveVideoCard({ video, onSelect, isSelected }) {
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {video.date && <span className="vf-resolution-tag">{video.date.substring(0, 4)}</span>}
           {video.rating > 0 && <span className="vf-resolution-tag">⭐ {video.rating.toFixed(1)}</span>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Mixkit Video Card
+function MixkitVideoCard({ video, onSelect, isSelected }) {
+  const videoRef = useRef(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+
+  const handleMouseEnter = () => {
+    if (videoRef.current) {
+      videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {})
+    }
+  }
+
+  const handleMouseLeave = () => {
+    if (videoRef.current) {
+      videoRef.current.pause()
+      videoRef.current.currentTime = 0
+      setIsPlaying(false)
+    }
+  }
+
+  return (
+    <div
+      className={`vf-video-card ${isSelected ? 'selected' : ''}`}
+      onClick={() => onSelect(video)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      style={{ cursor: 'pointer' }}
+    >
+      <div className="vf-video-wrapper">
+        {video.thumbnail ? (
+          <img
+            src={video.thumbnail}
+            alt={video.title}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#1a1a2e' }}>
+            <Film size={32} style={{ color: '#10b981' }} />
+          </div>
+        )}
+        <div className={`vf-play-overlay ${isPlaying ? 'playing' : ''}`}>
+          {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+        </div>
+        {video.isVertical && (
+          <span style={{ position: 'absolute', top: '8px', left: '8px', background: '#10b981', color: '#fff', fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px' }}>
+            9:16
+          </span>
+        )}
+        {video.duration > 0 && (
+          <span className="vf-duration-tag">{video.duration}s</span>
+        )}
+      </div>
+      <div className="vf-card-footer" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+        <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary, #111827)' }}>
+          {video.title.substring(0, 45)}{video.title.length > 45 ? '...' : ''}
+        </span>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+          <span className="vf-resolution-tag">{video.width}x{video.height}</span>
+          {video.tags?.slice(0, 2).map(tag => (
+            <span key={tag} className="vf-resolution-tag">{tag}</span>
+          ))}
         </div>
       </div>
     </div>
