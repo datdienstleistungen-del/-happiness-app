@@ -17,7 +17,12 @@ const CORS_HEADERS = {
 
 function buildSystemPrompt(hookRules, ideaText, contentGoal) {
   const rulesList = hookRules
-    .map((r, i) => `${i + 1}. [${r.severity === 'critical' ? 'KRITISCH' : 'MODERAT'}] ${r.rule_text}`)
+    .map((r, i) => {
+      const text = r.rule_text || r.rule || ''
+      const sev = r.severity === 'critical' ? 'KRITISCH' : 'MODERAT'
+      const weight = r.weight ? ` (Gewicht: ${r.weight}/10)` : ''
+      return `${i + 1}. [${sev}]${weight} ${text}`
+    })
     .join('\n')
 
   const goalHint = contentGoal
@@ -215,28 +220,44 @@ export const handler = async (event) => {
       }
     }
 
-    // 1. Load active hook rules from Supabase
-    const { data: rules, error: rulesError } = await supabase
+    // 1. Load active hook rules from Supabase (try both column names)
+    let rules = []
+    let rulesError = null
+
+    const result1 = await supabase
       .from('hook_rules')
       .select('*')
-      .eq('is_active', true)
-      .order('severity', { ascending: true })
+      .eq('active', true)
+      .order('weight', { ascending: false })
+
+    if (result1.error) {
+      const result2 = await supabase
+        .from('hook_rules')
+        .select('*')
+        .eq('is_active', true)
+      if (!result2.error) rules = result2.data || []
+      else rulesError = result2.error
+    } else {
+      rules = result1.data || []
+    }
 
     if (rulesError) {
       console.error('[evaluate-idea] Failed to load hook_rules:', rulesError.message)
-      return {
-        statusCode: 500,
-        headers: CORS_HEADERS,
-        body: JSON.stringify({ error: 'Hook-Rules konnten nicht geladen werden' })
-      }
     }
 
+    // If no rules table or empty, use built-in defaults
     if (!rules || rules.length === 0) {
-      return {
-        statusCode: 500,
-        headers: CORS_HEADERS,
-        body: JSON.stringify({ error: 'Keine aktiven Hook-Rules vorhanden' })
-      }
+      rules = [
+        { rule_text: 'Hook muss in den ersten 1-3 Sekunden Konflikt, Neugier oder Schock erzeugen', severity: 'critical', weight: 10 },
+        { rule_text: 'Kein "Hallo ich bin..." oder langsamer Einstieg', severity: 'critical', weight: 9 },
+        { rule_text: 'Keine generischen Hooks wie "Wer kennt das nicht..."', severity: 'critical', weight: 8 },
+        { rule_text: 'Pattern Interrupt: Iwas muss in 0.5 Sekunden den Zuschauer überraschen', severity: 'critical', weight: 8 },
+        { rule_text: 'Specific beats generic: Konkret > Abstrakt', severity: 'moderate', weight: 7 },
+        { rule_text: 'Setup → Conflict → Payoff Struktur einhalten', severity: 'moderate', weight: 7 },
+        { rule_text: 'Kein YouTube-Tutorial-Stil ("In diesem Video zeige ich euch...")', severity: 'critical', weight: 9 },
+        { rule_text: 'Starkes Statement oder kontroverse Meinung > harmonischer Einstieg', severity: 'moderate', weight: 6 }
+      ]
+      console.log('[evaluate-idea] Using built-in default rules (no hook_rules table found)')
     }
 
     // 2. Build system prompt with dynamic rules
