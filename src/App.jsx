@@ -4,7 +4,7 @@ import {
   Sparkles, MessageCircle, Users, ShoppingCart, Briefcase,
   BookOpen, Building2, Clapperboard, Camera, Film, Bell, Settings,
   User, ChevronLeft, ChevronRight, Rocket, Hash, Menu, BarChart3, Trophy, Radar,
-  Target, FolderOpen, Globe, LayoutDashboard, Search, Eye, Video
+  Target, FolderOpen, Globe, LayoutDashboard, Search, Eye, Video, Lightbulb
 } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.jsx'
@@ -49,6 +49,7 @@ const TourPage = lazy(() => import('./pages/TourPage'))
 const VideoFinderPage = lazy(() => import('./pages/VideoFinderPage'))
 const KiVisibilityPage = lazy(() => import('./pages/KiVisibilityPage'))
 const VideoScriptPage = lazy(() => import('./pages/VideoScriptPage'))
+const IdeenschmiedePage = lazy(() => import('./pages/IdeenschmiedePage'))
 
 
 function Sidebar({ mobileOpen, setMobileOpen }) {
@@ -98,6 +99,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
 
   const studioLinks = [
     { to: '/creator-academy', icon: Rocket, label: 'Content Studio' },
+    { to: '/ideenschmiede', icon: Lightbulb, label: 'Ideenschmiede' },
     { to: '/capcut-studio', icon: Film, label: 'CapCut Studio' },
     { to: '/video-finder', icon: Search, label: 'Video Finder' },
     { to: '/video-script', icon: Video, label: 'Video-Drehbuch' },
@@ -466,6 +468,7 @@ export default function App() {
                 <Route path="/tour" element={<ProtectedRoute><TourPage /></ProtectedRoute>} />
                 <Route path="/video-finder" element={<ProtectedRoute><VideoFinderPage /></ProtectedRoute>} />
                 <Route path="/video-script" element={<ProtectedRoute><VideoScriptPage /></ProtectedRoute>} />
+                <Route path="/ideenschmiede" element={<ProtectedRoute><IdeenschmiedePage /></ProtectedRoute>} />
                 <Route path="/ki-sichtbarkeit" element={<ProtectedRoute><KiVisibilityPage /></ProtectedRoute>} />
                 <Route path="/admin/lead-radar" element={<ProtectedRoute><LeadRadarPage /></ProtectedRoute>} />
                 <Route path="/legal" element={<LegalPage />} />
