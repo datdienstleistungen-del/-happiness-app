@@ -93,30 +93,15 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
     navigate('/login')
   }
 
-  const mainLinks = [
-    { to: '/', icon: Target, label: 'H.I.T.' },
-  ]
+  const mainLinks = []
 
   const studioLinks = [
-    { to: '/creator-academy', icon: Rocket, label: 'Content Studio' },
-    { to: '/ideenschmiede', icon: Lightbulb, label: 'Ideenschmiede' },
-    { to: '/capcut-studio', icon: Film, label: 'CapCut Studio' },
     { to: '/video-finder', icon: Search, label: 'Video Finder' },
     { to: '/video-script', icon: Video, label: 'Video-Drehbuch', badge: 'NEU' },
-    { to: '/ai-chat', icon: Sparkles, label: 'AI Chat' },
-    { to: '/analytics', icon: BarChart3, label: 'Analytics', badge: 'newFeatures.analyticsTooltip' },
-    { to: '/ki-sichtbarkeit', icon: Eye, label: 'KI-Sichtbarkeit', badge: 'PRO' },
-    { to: '/tour', icon: BookOpen, label: 'Studio-Tour' },
+    { to: '/capcut-studio', icon: Film, label: 'CapCut Studio' },
   ]
 
-  const discoverLinks = [
-    { to: '/community', icon: Globe, label: 'Community Feed' },
-    { to: '/friends', icon: Users, label: 'Streamer Squads' },
-    { to: '/marketplace', icon: ShoppingCart, label: t('nav.marketplace') },
-    { to: '/jobs', icon: Briefcase, label: t('nav.jobs') },
-    { to: '/courses', icon: BookOpen, label: t('nav.courses') },
-    { to: '/housing', icon: Building2, label: t('nav.housing') },
-  ]
+  const discoverLinks = []
 
   const accountLinks = [
     { to: '/notifications', icon: Bell, label: t('nav.notifications') },
@@ -184,15 +169,23 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
       </div>
 
       <nav className="sidebar-nav">
-        {renderLinks(mainLinks)}
+        {mainLinks.length > 0 && (
+          <>
+            {renderLinks(mainLinks)}
+            <div className="sidebar-divider"></div>
+          </>
+        )}
 
-        <div className="sidebar-divider"></div>
         {!collapsed && <div className="sidebar-section-title">My Studio</div>}
         {renderLinks(studioLinks)}
 
-        <div className="sidebar-divider"></div>
-        {!collapsed && <div className="sidebar-section-title">Entdecken</div>}
-        {renderLinks(discoverLinks)}
+        {discoverLinks.length > 0 && (
+          <>
+            <div className="sidebar-divider"></div>
+            {!collapsed && <div className="sidebar-section-title">Entdecken</div>}
+            {renderLinks(discoverLinks)}
+          </>
+        )}
 
         <div className="sidebar-divider"></div>
         {!collapsed && <div className="sidebar-section-title">Konto</div>}
@@ -243,17 +236,17 @@ function MobileBar() {
   return (
     <>
       <nav className="mobile-bottom-nav">
-        <Link to="/" className={`mobile-nav-link ${location.pathname === '/' ? 'active' : ''}`}>
-          <Target size={20} />
-          <span>H.I.T.</span>
+        <Link to="/video-finder" className={`mobile-nav-link ${location.pathname === '/video-finder' ? 'active' : ''}`}>
+          <Search size={20} />
+          <span>Finder</span>
         </Link>
-        <Link to="/creator-academy" className={`mobile-nav-link ${location.pathname === '/creator-academy' ? 'active' : ''}`}>
-          <FolderOpen size={20} />
-          <span>Studio</span>
+        <Link to="/video-script" className={`mobile-nav-link ${location.pathname === '/video-script' ? 'active' : ''}`}>
+          <Video size={20} />
+          <span>Drehbuch</span>
         </Link>
-        <Link to="/community" className={`mobile-nav-link ${location.pathname === '/community' ? 'active' : ''}`}>
-          <Globe size={20} />
-          <span>Entdecken</span>
+        <Link to="/capcut-studio" className={`mobile-nav-link ${location.pathname === '/capcut-studio' ? 'active' : ''}`}>
+          <Film size={20} />
+          <span>CapCut</span>
         </Link>
         <Link to="/profile" className={`mobile-nav-link ${location.pathname === '/profile' ? 'active' : ''}`}>
           <User size={20} />
@@ -420,11 +413,6 @@ export default function App() {
                   <Logo />
                 </Link>
                 <div className="public-topbar-links">
-                  <Link to="/marketplace" className={location.pathname === '/marketplace' ? 'active' : ''}>Marktplatz</Link>
-                  <Link to="/jobs" className={location.pathname === '/jobs' ? 'active' : ''}>Jobs</Link>
-                  <Link to="/courses" className={location.pathname === '/courses' ? 'active' : ''}>Kurse</Link>
-                  <Link to="/housing" className={location.pathname === '/housing' ? 'active' : ''}>Wohnungen</Link>
-                  <Link to="/community" className={location.pathname === '/community' ? 'active' : ''}>Community</Link>
                 </div>
                 <div className="public-topbar-actions">
                   <Link to="/login" className="btn btn-outline btn-sm">Anmelden</Link>
@@ -443,7 +431,8 @@ export default function App() {
               <Routes>
                 <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
                 <Route path="/register" element={user ? <Navigate to="/" /> : <RegisterPage />} />
-                <Route path="/" element={user ? <OnboardingGuard><PlatformEngine /></OnboardingGuard> : <LandingPage />} />
+                <Route path="/" element={user ? <OnboardingGuard><Navigate to="/video-finder" replace /></OnboardingGuard> : <LandingPage />} />
+                <Route path="/dashboard" element={<ProtectedRoute><PlatformEngine /></ProtectedRoute>} />
                 <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
                 <Route path="/today-question" element={<ProtectedRoute><TodayQuestionPage /></ProtectedRoute>} />
                 <Route path="/community" element={<CommunityPage />} />

@@ -31,7 +31,23 @@ export default function OnboardingGuard({ children }) {
           localStorage.setItem('happiness-onboarding-done', 'true')
           setStatus('done')
         } else {
-          setStatus('redirect')
+          // Stilles Onboarding im Hintergrund abschließen
+          supabase
+            .from('profiles')
+            .update({
+              onboarding_completed: true,
+              onboarding_choice: 'creator',
+              editing_skill_level: 'beginner'
+            })
+            .eq('id', user.id)
+            .then(() => {
+              localStorage.setItem('happiness-onboarding-done', 'true')
+              setStatus('done')
+            })
+            .catch(() => {
+              localStorage.setItem('happiness-onboarding-done', 'true')
+              setStatus('done')
+            })
         }
       } catch {
         setStatus('done')

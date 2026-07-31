@@ -462,6 +462,19 @@ export default function TikTokVideoPage() {
       mediaUrl: scenesWithMedia[i]?.cloudUrl || scenesWithMedia[i]?.mediaUrl || null
     }))
     await downloadScenesZip(scenesWithFiles, setIsZipping)
+
+    // Log usage event
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        supabase.from('usage_events').insert({
+          user_id: user.id,
+          event_type: 'zip_exported'
+        }).then()
+      }
+    } catch (e) {
+      console.warn('[Usage Tracking] Error logging zip_exported:', e.message)
+    }
   }
 
   const handleDownloadDraft = async () => {
@@ -471,6 +484,19 @@ export default function TikTokVideoPage() {
       mediaUrl: scenesWithMedia[i]?.cloudUrl || null
     }))
     await downloadCapCutDraft(recipe, scenesWithCloud)
+
+    // Log usage event
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        supabase.from('usage_events').insert({
+          user_id: user.id,
+          event_type: 'zip_exported'
+        }).then()
+      }
+    } catch (e) {
+      console.warn('[Usage Tracking] Error logging zip_exported:', e.message)
+    }
   }
 
   const getPlatformContent = (platform, payload) => {

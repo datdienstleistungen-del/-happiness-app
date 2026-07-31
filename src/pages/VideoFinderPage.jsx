@@ -74,6 +74,16 @@ export default function VideoFinderPage() {
 
       const data = await res.json()
       setVideos(data.videos || [])
+
+      // Silent usage logging
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (user) {
+          supabase.from('usage_events').insert({
+            user_id: user.id,
+            event_type: 'video_finder_used'
+          }).then()
+        }
+      }).catch(() => {})
     } catch (e) {
       console.error('[Video Search Error]', e)
       setError('Fehler bei der Videosuche. Bitte versuche es noch einmal.')
@@ -190,6 +200,14 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
 
       const parsedRecipe = JSON.parse(cleaned)
       setGeneratedScript(parsedRecipe)
+
+      // Silent usage logging
+      if (userId) {
+        supabase.from('usage_events').insert({
+          user_id: userId,
+          event_type: 'script_generated'
+        }).then()
+      }
     } catch (e) {
       console.error('[Script Generation Error]', e)
       setError('Skript-Generierung fehlgeschlagen. Bitte versuche es noch einmal.')
@@ -252,6 +270,16 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
 
       const data = await res.json()
       setArchiveVideos(data.videos || [])
+
+      // Silent usage logging
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (user) {
+          supabase.from('usage_events').insert({
+            user_id: user.id,
+            event_type: 'video_finder_used'
+          }).then()
+        }
+      }).catch(() => {})
     } catch (e) {
       console.error('[Archive Search Error]', e)
       setError('Fehler bei der Internet Archive Suche. Bitte versuche es noch einmal.')
@@ -280,6 +308,16 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
 
       const data = await res.json()
       setMixkitVideos(data.videos || [])
+
+      // Silent usage logging
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (user) {
+          supabase.from('usage_events').insert({
+            user_id: user.id,
+            event_type: 'video_finder_used'
+          }).then()
+        }
+      }).catch(() => {})
     } catch (e) {
       console.error('[Mixkit Search Error]', e)
       setError('Fehler bei der Mixkit Suche. Bitte versuche es noch einmal.')
