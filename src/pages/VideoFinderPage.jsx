@@ -550,7 +550,16 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
 
             <div className="vf-action-section">
               {selectedVideo.source === 'archive' ? (
-                <a href={selectedVideo.downloadUrl} target="_blank" rel="noreferrer" className="vf-download-action-btn"><Download size={16} /> Alle Dateien herunterladen</a>
+                selectedVideo.hasVideo ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
+                    <a href={selectedVideo.url} download={`archive_${selectedVideo.id}.mp4`} target="_blank" rel="noreferrer" className="vf-download-action-btn"><Download size={16} /> Video herunterladen</a>
+                    <span style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '2px', lineHeight: '1.2' }}>
+                      * Tipp: Falls das Video im neuen Tab abspielt, klicke im Player auf die drei Punkte (...) und wähle "Herunterladen" oder nutze Rechtsklick &rarr; "Video speichern unter".
+                    </span>
+                  </div>
+                ) : (
+                  <a href={selectedVideo.downloadUrl} target="_blank" rel="noreferrer" className="vf-download-action-btn"><Download size={16} /> Automatischer Download nicht möglich (hier manuell wählen)</a>
+                )
               ) : selectedVideo.source === 'mixkit' ? (
                 <a href={selectedVideo.url} download={`mixkit_${selectedVideo.id}.mp4`} target="_blank" rel="noreferrer" className="vf-download-action-btn"><Download size={16} /> Video herunterladen</a>
               ) : selectedVideo.id !== 'viral-import' ? (

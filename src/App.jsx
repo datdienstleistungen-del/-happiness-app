@@ -195,9 +195,9 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
       <div className="sidebar-footer">
         {!collapsed && (
           <div className="sidebar-legal">
-            <Link to="/legal?tab=impressum" className="sidebar-legal-link">{t('legal.impressum') || 'Impressum'}</Link>
-            <Link to="/legal?tab=datenschutz" className="sidebar-legal-link">{t('legal.privacy') || 'Datenschutz'}</Link>
-            <Link to="/legal?tab=agb" className="sidebar-legal-link">AGB</Link>
+            <Link to="/legal?tab=impressum" className="sidebar-legal-link">{t('legal.impressum')}</Link>
+            <Link to="/legal?tab=datenschutz" className="sidebar-legal-link">{t('legal.privacy')}</Link>
+            <Link to="/legal?tab=agb" className="sidebar-legal-link">{t('legal.terms')}</Link>
           </div>
         )}
         <select
