@@ -22,41 +22,64 @@ export const handler = async (event) => {
   }
 
   try {
-    let searchUrl = `https://api.mixkit.co/api/v1/videos?query=${encodeURIComponent(query)}&limit=${count}`
+    const searchUrl = `https://mixkit.co/free-stock-video/${encodeURIComponent(query.toLowerCase().trim())}/`
+    const res = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    })
+    if (!res.ok) throw new Error(`Mixkit Web returned status ${res.status}`)
 
-    const res = await fetch(searchUrl)
-    if (!res.ok) throw new Error(`Mixkit API returned ${res.status}`)
+    const html = await res.text()
+    const blocks = html.split('<video ').slice(1)
+    const videos = []
 
-    const data = await res.json()
-    let items = data.entries || data || []
+    for (const block of blocks) {
+      if (videos.length >= count) break
 
-    // Filter for vertical (9:16) if requested
-    if (vertical) {
-      items = items.filter(item => {
-        const w = item.width || 0
-        const h = item.height || 0
-        return h > w // portrait orientation
+      const srcMatch = block.match(/src="([^"]+)"/)
+      const videoSrc = srcMatch ? srcMatch[1] : null
+      if (!videoSrc) continue
+
+      const idMatch = videoSrc.match(/\/videos\/(\d+)\//)
+      const id = idMatch ? idMatch[1] : null
+      if (!id) continue
+
+      const titleMatch = block.match(/title="([^"]+)"/) || block.match(/alt="([^"]+)"/)
+      let title = titleMatch ? titleMatch[1] : null
+      if (!title) {
+        const textMatch = block.match(/class="[^"]*item-grid-card__title[^"]*"[^>]*>([\s\S]*?)<\/a>/) ||
+                           block.match(/class="[^"]*item-grid-card__header[^"]*"[^>]*>([\s\S]*?)<\/a>/)
+        title = textMatch ? textMatch[1].trim() : `Mixkit Video ${id}`
+      }
+
+      const hrefMatch = block.match(/href="(\/free-stock-video\/[a-zA-Z0-9_-]+\/)"/)
+      const detailsUrl = hrefMatch ? `https://mixkit.co${hrefMatch[1]}` : `https://mixkit.co/free-stock-video/`
+
+      const highQualityUrl = `https://assets.mixkit.co/videos/${id}/${id}-1080.mp4`
+      const thumbnail = `https://assets.mixkit.co/videos/${id}/${id}-thumb-720-0.jpg`
+
+      // Filter vertical if vertical is requested
+      const isVertical = videoSrc.includes('vertical') || false
+      if (vertical && !isVertical) continue
+
+      videos.push({
+        id,
+        title,
+        description: '',
+        url: highQualityUrl,
+        previewUrl: videoSrc,
+        thumbnail,
+        detailsUrl,
+        source: 'mixkit',
+        isVertical
       })
     }
-
-    const videos = items.slice(0, count).map(item => ({
-      id: item.id,
-      title: item.title || 'Untitled',
-      description: item.description || '',
-      url: item.video_files?.[0]?.link || item.url || '',
-      thumbnail: item.image || item.screenshot || '',
-      width: item.width || 0,
-      height: item.height || 0,
-      duration: item.duration || 0,
-      tags: item.tags || [],
-      source: 'mixkit',
-      isVertical: (item.height || 0) > (item.width || 0)
-    }))
 
     return {
       statusCode: 200,
       headers: CORS_HEADERS,
-      body: JSON.stringify({ videos, total: items.length })
+      body: JSON.stringify({ videos, total: videos.length })
     }
   } catch (e) {
     console.error('[mixkit-search] Error:', e.message)
