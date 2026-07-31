@@ -78,6 +78,8 @@
   border-radius: 10px;
   padding: 0.35rem 0.6rem;
   transition: border-color 0.15s;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .vf-search-bar:focus-within {
@@ -97,6 +99,8 @@
   padding: 0.6rem 0;
   outline: none;
   color: #333;
+  min-width: 0;
+  width: 100%;
 }
 
 .vf-search-bar input::placeholder {
@@ -114,6 +118,7 @@
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .vf-search-btn:hover {
