@@ -33,6 +33,7 @@ export const handler = async (event) => {
     const html = await res.text()
     const blocks = html.split('<video ').slice(1)
     const videos = []
+    const preflightChecks = []
 
     for (const block of blocks) {
       if (videos.length >= count) break
@@ -63,7 +64,7 @@ export const handler = async (event) => {
       const isVertical = videoSrc.includes('vertical') || false
       if (vertical && !isVertical) continue
 
-      videos.push({
+      const videoData = {
         id,
         title,
         description: '',
@@ -73,8 +74,22 @@ export const handler = async (event) => {
         detailsUrl,
         source: 'mixkit',
         isVertical
-      })
+      }
+      videos.push(videoData)
+
+      preflightChecks.push((async () => {
+        try {
+          const headRes = await fetch(highQualityUrl, { method: 'HEAD' })
+          if (!headRes.ok) {
+            videoData.url = videoSrc
+          }
+        } catch {
+          videoData.url = videoSrc
+        }
+      })())
     }
+
+    await Promise.all(preflightChecks)
 
     return {
       statusCode: 200,
