@@ -27,6 +27,7 @@ export default function VideoFinderPage() {
   const [query, setQuery] = useState('')
   const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(false)
+  const [pexelsSearched, setPexelsSearched] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState(null)
 
   const [selectedTone, setSelectedTone] = useState('funny')
@@ -43,10 +44,12 @@ export default function VideoFinderPage() {
   const [archiveVideos, setArchiveVideos] = useState([])
   const [archiveLoading, setArchiveLoading] = useState(false)
   const [archiveQuery, setArchiveQuery] = useState('')
+  const [archiveSearched, setArchiveSearched] = useState(false)
 
   const [mixkitVideos, setMixkitVideos] = useState([])
   const [mixkitLoading, setMixkitLoading] = useState(false)
   const [mixkitQuery, setMixkitQuery] = useState('')
+  const [mixkitSearched, setMixkitSearched] = useState(false)
 
   async function handleSearch(searchQuery) {
     const term = searchQuery || query
@@ -74,6 +77,7 @@ export default function VideoFinderPage() {
 
       const data = await res.json()
       setVideos(data.videos || [])
+      setPexelsSearched(true)
 
       // Silent usage logging
       supabase.auth.getUser().then(({ data: { user } }) => {
@@ -270,6 +274,7 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
 
       const data = await res.json()
       setArchiveVideos(data.videos || [])
+      setArchiveSearched(true)
 
       // Silent usage logging
       supabase.auth.getUser().then(({ data: { user } }) => {
@@ -308,6 +313,7 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
 
       const data = await res.json()
       setMixkitVideos(data.videos || [])
+      setMixkitSearched(true)
 
       // Silent usage logging
       supabase.auth.getUser().then(({ data: { user } }) => {
@@ -401,7 +407,11 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
             ) : videos.length === 0 ? (
               <div className="vf-empty-state">
                 <Film size={48} />
-                <p>Gib einen Suchbegriff ein oder klicke auf eine Kategorie.</p>
+                <p>
+                  {pexelsSearched
+                    ? 'Keine Videos zu diesem Suchbegriff gefunden. Bitte versuche es mit anderen Begriffen.'
+                    : 'Gib einen Suchbegriff ein oder klicke auf eine Kategorie.'}
+                </p>
               </div>
             ) : (
               <div className="vf-grid">
@@ -467,7 +477,14 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
             {archiveLoading ? (
               <div className="vf-loading-state"><div className="vf-spinner"></div><p>Internet Archive wird durchsucht...</p></div>
             ) : archiveVideos.length === 0 ? (
-              <div className="vf-empty-state"><Film size={48} /><p>Suche nach Public Domain Videos.</p></div>
+              <div className="vf-empty-state">
+                <Film size={48} />
+                <p>
+                  {archiveSearched
+                    ? 'Keine freien Public Domain Videos zu diesem Suchbegriff gefunden. Bitte versuche es mit englischen Schlagwörtern.'
+                    : 'Suche nach Public Domain Videos.'}
+                </p>
+              </div>
             ) : (
               <div className="vf-grid">
                 {archiveVideos.map(video => (
@@ -498,7 +515,14 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
             {mixkitLoading ? (
               <div className="vf-loading-state"><div className="vf-spinner"></div><p>Mixkit wird durchsucht...</p></div>
             ) : mixkitVideos.length === 0 ? (
-              <div className="vf-empty-state"><Film size={48} /><p>Suche nach kostenlosen Stock-Videos.</p></div>
+              <div className="vf-empty-state">
+                <Film size={48} />
+                <p>
+                  {mixkitSearched
+                    ? 'Keine Mixkit-Videos zu diesem Suchbegriff gefunden. Bitte versuche es mit englischen Schlagwörtern.'
+                    : 'Suche nach kostenlosen Stock-Videos.'}
+                </p>
+              </div>
             ) : (
               <div className="vf-grid">
                 {mixkitVideos.map(video => (

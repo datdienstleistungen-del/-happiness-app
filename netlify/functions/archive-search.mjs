@@ -43,7 +43,7 @@ export const handler = async (event) => {
   }
 
   try {
-    const searchQuery = `${query} mediatype:movies`
+    const searchQuery = `(${query}) AND mediatype:movies AND (licenseurl:*publicdomain* OR licenseurl:*creativecommons*)`
     const fields = ['identifier', 'title', 'description', 'item_size', 'avg_rating', 'date']
     const url = `https://archive.org/advancedsearch.php?q=${encodeURIComponent(searchQuery)}&fl[]=${fields.join('&fl[]=')}&output=json&rows=${count}&sort[]=downloads+desc`
 
