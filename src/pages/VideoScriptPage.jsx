@@ -86,6 +86,7 @@ export default function VideoScriptPage() {
   } = useStudio()
 
   const [copied, setCopied] = useState(false)
+  const [copiedHookIndex, setCopiedHookIndex] = useState(null)
   const [error, setError] = useState('')
   const [statusText, setStatusText] = useState('')
   const [hooksLoading, setHooksLoading] = useState(false)
@@ -212,12 +213,34 @@ export default function VideoScriptPage() {
     }
   }
 
-  const handleSelectHookAndContinue = () => {
-    if (!selectedHook) return
-    handleGenerateScript()
+  const handleCopyHookText = async (hook, index) => {
+    const textToCopy = `Hook #${index + 1} (${hook.trigger || ''})
+👁️ Szenen-Bild: ${hook.visual || ''}
+📝 Text: ${hook.text || ''}
+🔊 Audio: ${hook.audio || ''}`
+
+    try {
+      await navigator.clipboard.writeText(textToCopy)
+      setCopiedHookIndex(index)
+      setTimeout(() => setCopiedHookIndex(null), 2500)
+    } catch {
+      const textarea = document.createElement('textarea')
+      textarea.value = textToCopy
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+      setCopiedHookIndex(index)
+      setTimeout(() => setCopiedHookIndex(null), 2500)
+    }
   }
 
-  const handleGenerateScript = async () => {
+  const handleSelectHookAndContinue = () => {
+    if (selectedHook === null) return
+    handleGenerateScript(selectedHook)
+  }
+
+  const handleGenerateScript = async (hookIdx = selectedHook) => {
     if (!selectedGenre || !sceneAnalysis) return
 
     setStep(5)
@@ -240,7 +263,7 @@ export default function VideoScriptPage() {
           user_premise: userPremise || undefined,
           ad_text: adText || undefined,
           video_filename: videoFile?.name || 'video',
-          selected_hook: selectedHook || undefined
+          selected_hook: hookIdx !== null && hooks[hookIdx] ? hooks[hookIdx] : undefined
         })
       })
 
@@ -451,16 +474,38 @@ export default function VideoScriptPage() {
           ) : hooks.length > 0 ? (
             <>
               <h3>Wähle deinen Hook (Sekunde 0:00-0:01)</h3>
-              <p className="vsp-hooks-hint">Der Hook entscheidet ob Zuschauer wegwischen oder bleiben. Wähle den stärksten.</p>
+              <p className="vsp-hooks-hint">Wähle oder kopiere den stärksten Hook für dein Video.</p>
+
+              <div className="vsp-desc-intro" style={{ marginBottom: '1.5rem', background: '#e8f4f4', borderColor: '#085041', color: '#085041', fontSize: '13.5px' }}>
+                💡 <strong>Einfache Schnell-Aktionen pro Hook-Idee:</strong>
+                <ul style={{ margin: '8px 0 0 16px', padding: 0 }}>
+                  <li>Klicke auf <strong>"📋 Hook kopieren"</strong>, um die Idee sofort in die Zwischenablage zu kopieren.</li>
+                  <li>Klicke auf <strong>"✨ Drehbuch generieren"</strong>, um sofort das vollständige Skript schreiben zu lassen.</li>
+                </ul>
+              </div>
 
               <div className="vsp-hooks-grid">
                 {hooks.map((hook, i) => (
-                  <button
+                  <div
                     key={i}
                     className={`vsp-hook-card ${selectedHook === i ? 'active' : ''}`}
                     onClick={() => setSelectedHook(i)}
+                    style={{ cursor: 'pointer' }}
                   >
-                    <div className="vsp-hook-number">#{i + 1}</div>
+                    <div className="vsp-hook-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <div className="vsp-hook-number" style={{ margin: 0, fontWeight: '800' }}>Hook #{i + 1}</div>
+                      <div className="vsp-hook-select-indicator" style={{ fontSize: '12px', fontWeight: '600' }}>
+                        {selectedHook === i ? (
+                          <span className="vsp-indicator-selected" style={{ background: '#e8f4f4', color: '#085041', border: '1px solid #085041', padding: '3px 8px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <Check size={12} /> Ausgewählt
+                          </span>
+                        ) : (
+                          <span className="vsp-indicator-unselected" style={{ background: '#f3f4f6', color: '#666', border: '1px solid #d1d5db', padding: '3px 8px', borderRadius: '12px' }}>
+                            Auswählen
+                          </span>
+                        )}
+                      </div>
+                    </div>
                     <div className="vsp-hook-trigger">{hook.trigger}</div>
                     <div className="vsp-hook-visual">
                       <strong>👁️ Szenen-Bild:</strong> {hook.visual}
@@ -471,12 +516,33 @@ export default function VideoScriptPage() {
                     <div className="vsp-hook-audio">
                       <strong>🔊 Audio:</strong> {hook.audio}
                     </div>
-                  </button>
+
+                    <div className="vsp-hook-card-actions" style={{ display: 'flex', gap: '8px', marginTop: '16px', borderTop: '1px solid #eee', paddingTop: '12px' }} onClick={(e) => e.stopPropagation()}>
+                      <button 
+                        className="vsp-btn vsp-btn-secondary" 
+                        onClick={(e) => { e.stopPropagation(); handleCopyHookText(hook, i); }}
+                        style={{ padding: '8px 12px', fontSize: '12px', flex: 1, justifyContent: 'center' }}
+                      >
+                        {copiedHookIndex === i ? (
+                          <><Check size={14} /> Kopiert!</>
+                        ) : (
+                          <><Copy size={14} /> Hook kopieren</>
+                        )}
+                      </button>
+                      <button 
+                        className="vsp-btn vsp-btn-primary" 
+                        onClick={(e) => { e.stopPropagation(); setSelectedHook(i); handleGenerateScript(i); }}
+                        style={{ padding: '8px 12px', fontSize: '12px', flex: 1, justifyContent: 'center' }}
+                      >
+                        <Sparkles size={14} /> Drehbuch generieren
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
 
               {selectedHook !== null && (
-                <button className="vsp-btn vsp-btn-primary" onClick={handleSelectHookAndContinue} style={{ marginTop: '1.5rem' }}>
+                <button className="vsp-btn vsp-btn-primary" onClick={handleSelectHookAndContinue} style={{ marginTop: '1.5rem', width: '100%', justifyContent: 'center' }}>
                   <ArrowRight size={16} /> Mit diesem Hook weiter → Drehbuch generieren
                 </button>
               )}

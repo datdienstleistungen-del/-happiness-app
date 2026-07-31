@@ -443,20 +443,20 @@
 }
 
 .vsp-hook-card:hover {
-  border-color: #6c63ff;
-  box-shadow: 0 4px 12px rgba(108, 99, 255, 0.1);
+  border-color: #085041;
+  box-shadow: 0 4px 12px rgba(8, 80, 65, 0.1);
 }
 
 .vsp-hook-card.active {
-  border-color: #6c63ff;
-  background: #f5f3ff;
-  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.15);
+  border-color: #085041;
+  background: #e8f4f4;
+  box-shadow: 0 0 0 3px rgba(8, 80, 65, 0.15);
 }
 
 .vsp-hook-number {
   font-size: 12px;
   font-weight: 800;
-  color: #6c63ff;
+  color: #085041;
   margin-bottom: 4px;
 }
 

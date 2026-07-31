@@ -31,14 +31,16 @@ export const handler = async (event) => {
     }
 
     const genreLabel = genreLabels[genre] || genre
-    const premiseHint = premise ? `\nPrämisse des Users: "${premise}"` : ''
-    const sceneHint = scene_description ? `\nSzenen-Beschreibung des Videos: "${scene_description}"` : ''
+    const premiseHint = premise ? `\nPrämisse des Users (Zwingender inhaltlicher Kern): "${premise}"` : ''
+    const sceneHint = scene_description ? `\nSzenen-Beschreibung des Videos (Visualisierungs-Grundlage): "${scene_description}"` : ''
 
     const prompt = `Du bist ein weltklasse TikTok-Hook-Spezialist. Du generierst 5 radikal verschiedene Hooks für ein TikTok-Video.
 
 Genre: ${genreLabel}${premiseHint}${sceneHint}
 
 REGELN FÜR JEDEN HOOK:
+- Die Prämisse/Idee des Users ("${premise || ''}") MUSS das Hauptthema sein und inhaltlich im gesprochenen Text/Text-Overlay vorkommen. Weiche nicht davon ab!
+- Nutze die Szenen-Beschreibung des Videos als visuelle Untermalung (z.B. wenn dort Katzen/Hunde vorkommen, binde sie visuell ein, aber das THEMA des Textes bleibt die User-Prämisse).
 - Frame 1 (Sekunde 0:00-0:01) muss BÄNGERN — kein langsamer Zoom, kein Aufwärmen
 - Kein "Hallo ich bin..." oder "Heute zeige ich euch..."
 - Text-Overlay muss in 0.5 Sekunden sichtbar sein

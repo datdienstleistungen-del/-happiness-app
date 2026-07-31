@@ -75,7 +75,7 @@ Allgemein:
 - ${genreAddition}`
 
   if (userPremise) {
-    prompt += `\n\nZusätzliche Idee/Prämisse des Users: ${userPremise}`
+    prompt += `\n\nWICHTIG — Das Drehbuch MUSS sich inhaltlich um diese Idee/Prämisse des Users drehen: "${userPremise}". Die erkannten Videoszenen dienen nur als visueller Hintergrund, der gesprochene Text und die Botschaft müssen deiner Prämisse folgen.`
   }
 
   if (adText) {
