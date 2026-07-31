@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useStudio } from '../context/StudioContext'
 import { supabase } from '../lib/supabase'
 import {
   Sparkles, ArrowLeft, Film, Check, AlertTriangle, ExternalLink,
@@ -228,18 +229,20 @@ export default function TikTokVideoPage() {
   const location = useLocation()
   const [searchParams] = useSearchParams()
 
-  const [topic, setTopic] = useState(location.state?.postText || '')
-  const [duration, setDuration] = useState(30)
-  const [recipe, setRecipe] = useState(null)
+  const {
+    capcutTopic: topic, setCapcutTopic: setTopic,
+    capcutDuration: duration, setCapcutDuration: setDuration,
+    capcutRecipe: recipe, setCapcutRecipe: setRecipe,
+    capcutActivePlatform: activePlatform, setCapcutActivePlatform: setActivePlatform,
+    capcutShowSuccess: showSuccess, setCapcutShowSuccess: setShowSuccess,
+    capcutPublished: published, setCapcutPublished: setPublished,
+    capcutScenesWithMedia: scenesWithMedia, setCapcutScenesWithMedia: setScenesWithMedia
+  } = useStudio()
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [activePlatform, setActivePlatform] = useState('tiktok_instagram')
-  const [showSuccess, setShowSuccess] = useState(false)
   const [showExample, setShowExample] = useState(false)
-  const [published, setPublished] = useState(false)
-
   const [showUploadPrompt, setShowUploadPrompt] = useState(false)
-  const [scenesWithMedia, setScenesWithMedia] = useState([])
   const [isZipping, setIsZipping] = useState(false)
   const [toast, setToast] = useState(null)
   const [uploadProgress, setUploadProgress] = useState({})

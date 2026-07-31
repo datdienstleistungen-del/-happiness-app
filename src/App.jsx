@@ -9,6 +9,7 @@ import {
 import { supabase } from './lib/supabase'
 import { LanguageProvider, useLanguage, LANGUAGES } from './i18n/translations.jsx'
 import AuthContext, { useAuth } from './context/AuthContext'
+import { StudioProvider } from './context/StudioContext'
 import Logo, { renderBrandText } from './components/Logo'
 import { useOneSignal } from './hooks/useOneSignal'
 import { trackPageView, checkAndTrackReturnVisit, getVisitorId } from './intelligence/analytics/custom'
@@ -401,7 +402,8 @@ export default function App() {
   return (
     <LanguageProvider>
       <AuthContext.Provider value={{ user, profile, loading, fetchProfile, signOut }}>
-        {loading ? (
+        <StudioProvider>
+          {loading ? (
           <LoadingScreen />
         ) : (
           <>
@@ -471,6 +473,7 @@ export default function App() {
             {user && !['/onboarding', '/today-question'].includes(location.pathname) && <MobileBar />}
           </>
         )}
+        </StudioProvider>
       </AuthContext.Provider>
     </LanguageProvider>
   )

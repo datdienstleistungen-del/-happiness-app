@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Upload, Film, Copy, Check, ArrowRight, Loader, AlertCircle, FileVideo, Link as LinkIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { useStudio } from '../context/StudioContext'
 import './VideoScriptPage.css'
 
 const GENRES = [
@@ -68,22 +69,25 @@ export default function VideoScriptPage() {
   const fileInputRef = useRef(null)
   const videoRef = useRef(null)
 
-  const [step, setStep] = useState(1)
-  const [videoUrl, setVideoUrl] = useState('')
-  const [videoFile, setVideoFile] = useState(null)
-  const [videoPreview, setVideoPreview] = useState(null)
-  const [inputMode, setInputMode] = useState('url')
-  const [selectedGenre, setSelectedGenre] = useState(null)
-  const [userPremise, setUserPremise] = useState('')
-  const [adText, setAdText] = useState('')
-  const [sceneAnalysis, setSceneAnalysis] = useState(null)
-  const [generatedScript, setGeneratedScript] = useState('')
-  const [scriptId, setScriptId] = useState(null)
+  const {
+    scriptStep: step, setScriptStep: setStep,
+    scriptVideoUrl: videoUrl, setScriptVideoUrl: setVideoUrl,
+    scriptVideoFile: videoFile, setScriptVideoFile: setVideoFile,
+    scriptVideoPreview: videoPreview, setScriptVideoPreview: setVideoPreview,
+    scriptInputMode: inputMode, setScriptInputMode: setInputMode,
+    scriptSelectedGenre: selectedGenre, setScriptSelectedGenre: setSelectedGenre,
+    scriptUserPremise: userPremise, setScriptUserPremise: setUserPremise,
+    scriptAdText: adText, setScriptAdText: setAdText,
+    scriptSceneAnalysis: sceneAnalysis, setScriptSceneAnalysis: setSceneAnalysis,
+    scriptGeneratedScript: generatedScript, setScriptGeneratedScript: setGeneratedScript,
+    scriptId, setScriptId,
+    scriptHooks: hooks, setScriptHooks: setHooks,
+    scriptSelectedHook: selectedHook, setScriptSelectedHook: setSelectedHook
+  } = useStudio()
+
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
   const [statusText, setStatusText] = useState('')
-  const [hooks, setHooks] = useState([])
-  const [selectedHook, setSelectedHook] = useState(null)
   const [hooksLoading, setHooksLoading] = useState(false)
 
   const handleFileSelect = (e) => {

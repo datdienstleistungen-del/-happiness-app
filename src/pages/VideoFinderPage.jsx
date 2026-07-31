@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Film, Download, Sparkles, Check, Copy, ArrowRight, Play, Pause } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { useStudio } from '../context/StudioContext'
 import './VideoFinderPage.css'
 
 const PRESET_CATEGORIES = [
@@ -24,32 +25,30 @@ const TONES = [
 
 export default function VideoFinderPage() {
   const navigate = useNavigate()
-  const [query, setQuery] = useState('')
-  const [videos, setVideos] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [pexelsSearched, setPexelsSearched] = useState(false)
-  const [selectedVideo, setSelectedVideo] = useState(null)
-
-  const [selectedTone, setSelectedTone] = useState('funny')
-  const [customInstructions, setCustomInstructions] = useState('')
-  const [generatingScript, setGeneratingScript] = useState(false)
-  const [generatedScript, setGeneratedScript] = useState(null)
-  const [copied, setCopied] = useState(false)
-  const [error, setError] = useState('')
-
-  const [activeSource, setActiveSource] = useState('pexels')
-  const [importedUrl, setImportedUrl] = useState('')
-  const [topic, setTopic] = useState('')
-
-  const [archiveVideos, setArchiveVideos] = useState([])
-  const [archiveLoading, setArchiveLoading] = useState(false)
-  const [archiveQuery, setArchiveQuery] = useState('')
-  const [archiveSearched, setArchiveSearched] = useState(false)
-
-  const [mixkitVideos, setMixkitVideos] = useState([])
-  const [mixkitLoading, setMixkitLoading] = useState(false)
-  const [mixkitQuery, setMixkitQuery] = useState('')
-  const [mixkitSearched, setMixkitSearched] = useState(false)
+  const {
+    query, setQuery,
+    videos, setVideos,
+    loading, setLoading,
+    pexelsSearched, setPexelsSearched,
+    selectedVideo, setSelectedVideo,
+    selectedTone, setSelectedTone,
+    customInstructions, setCustomInstructions,
+    generatingScript, setGeneratingScript,
+    generatedScript, setGeneratedScript,
+    copied, setCopied,
+    error, setError,
+    activeSource, setActiveSource,
+    importedUrl, setImportedUrl,
+    topic, setTopic,
+    archiveVideos, setArchiveVideos,
+    archiveLoading, setArchiveLoading,
+    archiveQuery, setArchiveQuery,
+    archiveSearched, setArchiveSearched,
+    mixkitVideos, setMixkitVideos,
+    mixkitLoading, setMixkitLoading,
+    mixkitQuery, setMixkitQuery,
+    mixkitSearched, setMixkitSearched
+  } = useStudio()
 
   async function handleSearch(searchQuery) {
     const term = searchQuery || query
