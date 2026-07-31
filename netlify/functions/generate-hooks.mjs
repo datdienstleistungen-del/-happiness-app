@@ -1,4 +1,3 @@
-import { getMistralKey, getSupabaseClient } from '../util/_helpers.mjs'
 
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
@@ -96,7 +95,7 @@ NUR das JSON Array. Kein Text davor oder danach. Kein markdown.`
 
     // Try Mistral
     if (!hooks) {
-      const mistralKey = getMistralKey()
+      const mistralKey = process.env.MISTRAL_API_KEY || ''
       try {
         const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
           method: 'POST',
