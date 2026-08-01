@@ -32,6 +32,7 @@ export default function CoachChatPage() {
   })
 
   const messagesEndRef = useRef(null)
+  const sessionMessageCount = useRef(0)
 
   // Scroll to bottom helper
   const scrollToBottom = () => {
@@ -67,6 +68,11 @@ export default function CoachChatPage() {
           const data = await res.json()
           if (data.history) {
             setChatHistory(data.history)
+            if (data.history.length > 0) {
+              if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+                window.gtag('event', 'coach_return_visit')
+              }
+            }
           }
         }
       } catch (err) {
@@ -99,6 +105,15 @@ export default function CoachChatPage() {
   const executeSendMessage = async (msgText) => {
     setMessage('')
     setPendingMessage('')
+
+    sessionMessageCount.current += 1
+    if (sessionMessageCount.current === 1) {
+      if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+        window.gtag('event', 'coach_message_sent', {
+          message_count: 1
+        })
+      }
+    }
     
     // Optimistic user message rendering
     const userMsg = { role: 'user', content: msgText }
@@ -149,6 +164,10 @@ export default function CoachChatPage() {
     localStorage.setItem('coach_consent_active', 'true')
     localStorage.setItem('coach_consent_choice_made', 'true')
 
+    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+      window.gtag('event', 'coach_consent_given')
+    }
+
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token
       const visitorId = getOrCreateVisitorId()
@@ -176,6 +195,10 @@ export default function CoachChatPage() {
     setConsentGranted(false)
     localStorage.setItem('coach_consent_active', 'false')
     localStorage.setItem('coach_consent_choice_made', 'true')
+
+    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+      window.gtag('event', 'coach_consent_declined')
+    }
 
     if (pendingMessage) {
       executeSendMessage(pendingMessage)
