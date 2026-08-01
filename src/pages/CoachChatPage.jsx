@@ -177,8 +177,23 @@ export default function CoachChatPage() {
   }
 
   // Reset chat, generate a new anonymous visitor_id, and delete consent
-  const handleClearHistory = () => {
+  const handleClearHistory = async () => {
     if (window.confirm('Möchtest du dieses Gespräch und alle gespeicherten Daten wirklich löschen?')) {
+      const visitorId = localStorage.getItem('hit_visitor_id')
+
+      try {
+        const token = (await supabase.auth.getSession()).data.session?.access_token
+        const headers = {}
+        if (token) headers['Authorization'] = `Bearer ${token}`
+
+        await fetch(`/api/coach-consent?visitor_id=${visitorId}`, {
+          method: 'DELETE',
+          headers
+        })
+      } catch (err) {
+        console.error('[CoachPage] Failed to delete conversation from server:', err)
+      }
+
       // Detach visitor session
       localStorage.removeItem('hit_visitor_id')
       localStorage.removeItem('coach_consent_active')
