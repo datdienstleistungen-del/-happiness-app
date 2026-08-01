@@ -266,6 +266,24 @@ const translations = {
       analyticsTooltip: 'Detaillierte Einblicke in deine organische Reichweite, Bindungskurven und Ampel-Bewertungen für deine Skripte.',
       researchTitle: 'Autonome Recherche',
       researchTooltip: 'Gib einfach ein grobes Überthema ein (z. B. "Geschichtsfakt"). Die KI recherchiert selbstständig eine fesselnde Anekdote und verknüpft sie als Metapher.'
+    },
+    coach: {
+      title: "Happiness Coach",
+      subtitle: "Lebensbegleiter & Ruheoase",
+      clearBtn: "Gespräch löschen",
+      clearConfirm: "Möchtest du dieses Gespräch und alle gespeicherten Daten wirklich löschen?",
+      welcomeTitle: "Ein Ort zum Reden",
+      welcomeDesc: "Wenn gerade viel los ist, du vor einer schweren Entscheidung stehst oder einfach jemand zum unvoreingenommenen Zuhören fehlt. Lass uns über das sprechen, was dich gerade beschäftigt.",
+      placeholderWelcome: "Was beschäftigt dich gerade?",
+      placeholderInput: "Antworte dem Coach...",
+      safetyText: "100% vertraulich • Ohne Registrierung nutzbar",
+      loadingHistory: "Verlauf wird geladen...",
+      sendError: "Beim Senden der Nachricht ist ein Fehler aufgetreten. Bitte versuche es noch einmal.",
+      consentTitle: "Vertraulichkeit & Speicherung",
+      consentText1: "Deine Gespräche werden verschlüsselt gespeichert, damit ich mich beim nächsten Mal an dich erinnern und an unser Gespräch anknüpfen kann.",
+      consentText2: "Du kannst deine gesamten Gespräche und Einwilligungen jederzeit mit dem Mülleimer-Symbol oben rechts rückstandslos löschen.",
+      consentAccept: "Zustimmen & Senden",
+      consentDecline: "Anonym bleiben (Nicht speichern)"
     }
   },
   en: {
@@ -533,6 +551,24 @@ const translations = {
       analyticsTooltip: 'Detailed insights into your organic reach, retention curves, and traffic-light ratings for your scripts.',
       researchTitle: 'Autonomous Research',
       researchTooltip: 'Just enter a rough topic (e.g. "history fact"). The AI independently researches a gripping anecdote and links it as a metaphor.'
+    },
+    coach: {
+      title: "Happiness Coach",
+      subtitle: "Life Companion & Oasis of Calm",
+      clearBtn: "Delete conversation",
+      clearConfirm: "Do you really want to delete this conversation and all saved data?",
+      welcomeTitle: "A Place to Talk",
+      welcomeDesc: "When things are a bit much, you face a difficult decision, or you simply lack someone to listen without judgment. Let's talk about what's on your mind.",
+      placeholderWelcome: "What's on your mind right now?",
+      placeholderInput: "Reply to the coach...",
+      safetyText: "100% confidential • Usable without registration",
+      loadingHistory: "Loading history...",
+      sendError: "An error occurred while sending your message. Please try again.",
+      consentTitle: "Confidentiality & Storage",
+      consentText1: "Your conversations are encrypted and saved so I can remember you next time and build on our conversation.",
+      consentText2: "You can delete all your conversations and consent settings at any time without leaving a trace using the trash icon in the top right.",
+      consentAccept: "Agree & Send",
+      consentDecline: "Stay anonymous (Do not save)"
     }
   },
   es: {
@@ -725,6 +761,24 @@ const translations = {
       analyticsTooltip: 'Información detallada sobre tu alcance orgánico, curvas de retención y calificaciones de semáforo para tus guiones.',
       researchTitle: 'Búsqueda Autónoma',
       researchTooltip: 'Simplemente ingresa un tema general (por ejemplo, "hecho histórico"). La IA investiga de forma independiente una anécdota fascinante y la conecta como metáfora.'
+    },
+    coach: {
+      title: "Happiness Coach",
+      subtitle: "Compañero de vida y oasis de calma",
+      clearBtn: "Eliminar conversación",
+      clearConfirm: "¿Realmente deseas eliminar esta conversación y todos los datos guardados?",
+      welcomeTitle: "Un lugar para hablar",
+      welcomeDesc: "Cuando las cosas son demasiado, te enfrentas a una decisión difícil o simplemente te falta alguien que te escuche sin juzgarte. Hablemos de lo que tienes en mente.",
+      placeholderWelcome: "¿Qué tienes en mente en este momento?",
+      placeholderInput: "Responder al coach...",
+      safetyText: "100% confidencial • Utilizable sin registro",
+      loadingHistory: "Cargando historial...",
+      sendError: "Ocurrió un error al enviar tu mensaje. Por favor, inténtalo de nuevo.",
+      consentTitle: "Confidencialidad y almacenamiento",
+      consentText1: "Tus conversaciones se guardan encriptadas para que pueda recordarte la próxima vez y continuar nuestra charla.",
+      consentText2: "Puedes eliminar todas tus conversaciones y consentimientos en cualquier momento sin dejar rastro usando el icono de papelera arriba a la derecha.",
+      consentAccept: "Aceptar y enviar",
+      consentDecline: "Mantenerse anónimo (No guardar)"
     }
   },
   fr: {
@@ -917,6 +971,24 @@ const translations = {
       analyticsTooltip: 'Aperçu détaillé de votre portée organique, de vos courbes de rétention et des évaluations de feux tricolores pour vos scripts.',
       researchTitle: 'Recherche Autonome',
       researchTooltip: 'Saisissez simplement un sujet général (par ex. "fait historique"). L\'IA recherche de manière autonome une anecdote captivante et la lie sous forme de métaphore.'
+    },
+    coach: {
+      title: "Happiness Coach",
+      subtitle: "Compagnon de vie & oasis de calme",
+      clearBtn: "Supprimer la conversation",
+      clearConfirm: "Voulez-vous vraiment supprimer cette conversation et toutes les données enregistrées ?",
+      welcomeTitle: "Un espace pour parler",
+      welcomeDesc: "Quand les choses sont un peu trop lourdes, que vous faites face à une décision difficile ou que vous manquez simplement de quelqu'un pour vous écouter sans jugement. Parlons de ce qui vous préoccupe.",
+      placeholderWelcome: "Qu'est-ce qui vous préoccupe en ce moment ?",
+      placeholderInput: "Répondre au coach...",
+      safetyText: "100% confidentiel • Utilisable sans inscription",
+      loadingHistory: "Chargement de l'historique...",
+      sendError: "Une erreur est survenue lors de l'envoi de votre message. Veuillez réessayer.",
+      consentTitle: "Confidentialité & Stockage",
+      consentText1: "Vos conversations sont cryptées et enregistrées afin que je puisse me souvenir de vous la prochaine fois et poursuivre notre échange.",
+      consentText2: "Vous pouvez supprimer toutes vos conversations et consentements à tout moment sans laisser de trace à l'aide de l'icône corbeille en haut à droite.",
+      consentAccept: "Accepter & Envoyer",
+      consentDecline: "Rester anonyme (Ne pas enregistrer)"
     }
   },
   it: {
@@ -1109,6 +1181,24 @@ const translations = {
       analyticsTooltip: 'Approfondimenti dettagliati sulla tua portata organica, curve di fidelizzazione e valutazioni a semaforo per i tuoi script.',
       researchTitle: 'Ricerca Autonoma',
       researchTooltip: 'Inserisci semplicemente un argomento generale (ad es. "fatto storico"). L\'IA ricerca autonomamente un aneddoto avvincente e lo collega come metafora.'
+    },
+    coach: {
+      title: "Happiness Coach",
+      subtitle: "Compagno di vita & oasi di calma",
+      clearBtn: "Elimina conversazione",
+      clearConfirm: "Vuoi davvero eliminare questa conversazione e tutti i dati salvati?",
+      welcomeTitle: "Un luogo per parlare",
+      welcomeDesc: "Quando le cose sono un po' troppo, ti trovi di fronte a una decisione difficile o semplicemente ti manca qualcuno che ti ascolti senza giudicare. Parliamo di cosa hai in mente.",
+      placeholderWelcome: "Cosa hai in mente in questo momento?",
+      placeholderInput: "Rispondi al coach...",
+      safetyText: "100% riservato • Utilizzabile senza registrazione",
+      loadingHistory: "Caricamento cronologia...",
+      sendError: "Si è verificato un errore durante l'invio del messaggio. Riprova.",
+      consentTitle: "Riservatezza & Archiviazione",
+      consentText1: "Le tue conversazioni vengono crittografate e salvate in modo che io possa ricordarti la prossima volta e riprendere il discorso.",
+      consentText2: "Puoi eliminare tutte le conversazioni e i consensi in qualsiasi momento senza lasciare traccia usando l'icona del cestino in alto a destra.",
+      consentAccept: "Accetta & Invia",
+      consentDecline: "Rimani anonimo (Non salvare)"
     }
   },
   nl: {
@@ -1301,6 +1391,24 @@ const translations = {
       analyticsTooltip: 'Gedetailleerd inzicht in je organische bereik, retentiecurves en stoplichtbeoordelingen voor je scripts.',
       researchTitle: 'Autonoom Onderzoek',
       researchTooltip: 'Voer eenvoudig een algemeen onderwerp in (bijv. "historisch feit"). De AI zoekt zelfstandig een boeiende anekdote en koppelt deze als metafoor.'
+    },
+    coach: {
+      title: "Happiness Coach",
+      subtitle: "Levensgezel & oase van rust",
+      clearBtn: "Gesprek wissen",
+      clearConfirm: "Wil je dit gesprek en alle opgeslagen gegevens echt wissen?",
+      welcomeTitle: "Een plek om te praten",
+      welcomeDesc: "Als het even te veel is, je voor een moeilijke beslissing staat of gewoon iemand mist die zonder oordeel luistert. Laten we praten over wat je bezighoudt.",
+      placeholderWelcome: "Wat houdt je op dit moment bezig?",
+      placeholderInput: "Antwoord de coach...",
+      safetyText: "100% vertrouwelijk • Te gebruiken zonder registratie",
+      loadingHistory: "Geschiedenis laden...",
+      sendError: "Er is een fout opgetreden bij het verzenden van je bericht. Probeer het opnieuw.",
+      consentTitle: "Vertrouwelijkheid & Opslag",
+      consentText1: "Je gesprekken worden gecodeerd opgeslagen zodat ik je de volgende keer kan herinneren en kan aansluiten bij ons gesprek.",
+      consentText2: "Je kunt al je gesprekken en toestemmingen op elk gewenst moment zonder sporen wissen met het prullenbak-pictogram rechtsboven.",
+      consentAccept: "Akkoord & Verzenden",
+      consentDecline: "Anoniem blijven (Niet opslaan)"
     }
   },
   el: {
@@ -1493,6 +1601,24 @@ const translations = {
       analyticsTooltip: 'Λεπτομερείς πληροφορίες για την οργανική σας απήχηση, τις καμπύλες διατήρησης και τις αξιολογήσεις φωτεινού σηματοδότη για τα σενάριά σας.',
       researchTitle: 'Αυτόνομη Έρευνα',
       researchTooltip: 'Απλώς εισαγάγετε ένα γενικό θέμα (π.χ. "ιστορικό γεγονός"). Η AI ερευνά αυτόνομα μια συγκλονιστική ιστορία και τη συνδέει ως μεταφορά.'
+    },
+    coach: {
+      title: "Happiness Coach",
+      subtitle: "Συντροφιά ζωής & όαση ηρεμίας",
+      clearBtn: "Διαγραφή συνομιλίας",
+      clearConfirm: "Θέλετε πράγματι να διαγράψετε αυτή τη συνομιλία και όλα τα αποθηκευμένα δεδομένα;",
+      welcomeTitle: "Ένας χώρος για συζήτηση",
+      welcomeDesc: "Όταν τα πράγματα είναι λίγο πολύ, αντιμετωπίζετε μια δύσκολη απόφαση ή απλώς σας λείπει κάποιος να σας ακούσει χωρίς κριτική. Ας μιλήσουμε για αυτό που σας απασχολεί.",
+      placeholderWelcome: "Τι σας απασχολεί αυτή τη στιγμή;",
+      placeholderInput: "Απαντήστε στον coach...",
+      safetyText: "100% εμπιστευτικό • Διαθέσιμο χωρίς εγγραφή",
+      loadingHistory: "Φόρτωση ιστορικού...",
+      sendError: "Παρουσιάστηκε σφάλμα κατά την αποστολή του μηνύματός σας. Παρακαλώ δοκιμάστε ξανά.",
+      consentTitle: "Εμπιστευτικότητα & Αποθήκευση",
+      consentText1: "Οι συνομιλίες σας αποθηκεύονται κρυπτογραφημένες ώστε να μπορώ να σας θυμηθώ την επόμενη φορά και να συνεχίσουμε τη συζήτησή μας.",
+      consentText2: "Μπορείτε να διαγράψετε όλες τις συνομιλίες και τις συγκαταθέσεις σας ανά πάσα στιγμή χωρίς ίχνη χρησιμοποιώντας το εικονίδιο σκουπιδιών πάνω δεξιά.",
+      consentAccept: "Συμφωνώ & Αποστολή",
+      consentDecline: "Παραμείνετε ανώνυμος (Όχι αποθήκευση)"
     }
   }
 }

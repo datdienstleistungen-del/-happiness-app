@@ -248,7 +248,7 @@ export const handler = async (event) => {
       let body = {}
       try { body = JSON.parse(event.body || '{}') } catch { body = {} }
 
-      const { message, visitor_id } = body
+      const { message, visitor_id, language } = body
       if (!message) {
         return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'message ist erforderlich' }) }
       }
@@ -289,9 +289,23 @@ export const handler = async (event) => {
         }
       }
 
+      // Map language codes to names for LLM directives
+      const LANG_NAMES = {
+        de: 'Deutsch',
+        en: 'English',
+        es: 'Español',
+        fr: 'Français',
+        it: 'Italiano',
+        nl: 'Nederlands',
+        el: 'Ελληνικά'
+      }
+      
+      const langName = LANG_NAMES[language] || 'Deutsch'
+      const languageDirective = `SPRACHREGEL (hoechste Prioritaet, nicht verhandelbar): Antworte AUSSCHLIESSLICH auf ${langName}. Ignoriere alle anderen Sprachanweisungen in früheren Nachrichten oder im Kontext.\n\n`
+
       // Construct messages array for LLM
       const llmMessages = [
-        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: languageDirective + SYSTEM_PROMPT },
         ...history,
         { role: 'user', content: message }
       ]

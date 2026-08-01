@@ -17,7 +17,7 @@ function getOrCreateVisitorId() {
 
 export default function CoachChatPage() {
   const { user } = useAuth()
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const [message, setMessage] = useState('')
   const [chatHistory, setChatHistory] = useState([])
   const [loading, setLoading] = useState(false)
@@ -112,7 +112,8 @@ export default function CoachChatPage() {
         headers,
         body: JSON.stringify({
           message: msgText,
-          visitor_id: visitorId
+          visitor_id: visitorId,
+          language: lang
         })
       })
 
@@ -128,7 +129,7 @@ export default function CoachChatPage() {
       }
     } catch (err) {
       console.error('[CoachPage] Send error:', err)
-      setError('Beim Senden der Nachricht ist ein Fehler aufgetreten. Bitte versuche es noch einmal.')
+      setError(t('coach.sendError'))
       // Remove the last optimistic user message if sending failed
       setChatHistory(prev => prev.slice(0, -1))
     } finally {
@@ -178,7 +179,7 @@ export default function CoachChatPage() {
 
   // Reset chat, generate a new anonymous visitor_id, and delete consent
   const handleClearHistory = async () => {
-    if (window.confirm('Möchtest du dieses Gespräch und alle gespeicherten Daten wirklich löschen?')) {
+    if (window.confirm(t('coach.clearConfirm'))) {
       const visitorId = localStorage.getItem('hit_visitor_id')
 
       try {
@@ -215,18 +216,18 @@ export default function CoachChatPage() {
             <Heart size={20} fill="var(--primary)" color="var(--primary)" />
           </div>
           <div className="coach-header-info">
-            <h1>Happiness Coach</h1>
-            <span className="coach-header-subtitle">Lebensbegleiter & Ruheoase</span>
+            <h1>{t('coach.title')}</h1>
+            <span className="coach-header-subtitle">{t('coach.subtitle')}</span>
           </div>
         </div>
         {chatHistory.length > 0 && (
           <button 
             className="coach-clear-btn" 
             onClick={handleClearHistory} 
-            title="Gesprächsverlauf und Daten löschen"
+            title={t('coach.clearBtn')}
           >
             <Trash2 size={16} />
-            <span className="clear-btn-text">Gespräch löschen</span>
+            <span className="clear-btn-text">{t('coach.clearBtn')}</span>
           </button>
         )}
       </header>
@@ -239,18 +240,16 @@ export default function CoachChatPage() {
             <div className="coach-icon-ring">
               <Heart size={48} className="pulse-heart" />
             </div>
-            <h2>Ein Ort zum Reden</h2>
+            <h2>{t('coach.welcomeTitle')}</h2>
             <p>
-              Wenn gerade viel los ist, du vor einer schweren Entscheidung stehst oder einfach 
-              jemand zum unvoreingenommenen Zuhören fehlt. Lass uns über das sprechen, was dich 
-              gerade beschäftigt.
+              {t('coach.welcomeDesc')}
             </p>
             <form onSubmit={handleSendAttempt} className="coach-welcome-input-wrap">
               <input
                 type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Was beschäftigt dich gerade?"
+                placeholder={t('coach.placeholderWelcome')}
                 disabled={loading}
                 autoFocus
                 required
@@ -261,7 +260,7 @@ export default function CoachChatPage() {
             </form>
             <div className="coach-safety-tag">
               <ShieldAlert size={14} />
-              <span>100% vertraulich • Ohne Registrierung nutzbar</span>
+              <span>{t('coach.safetyText')}</span>
             </div>
           </div>
         ) : (
@@ -270,7 +269,7 @@ export default function CoachChatPage() {
             {loadingHistory && (
               <div className="coach-history-loading">
                 <RefreshCw className="spin-icon" size={20} />
-                <span>Verlauf wird geladen...</span>
+                <span>{t('coach.loadingHistory')}</span>
               </div>
             )}
             <div className="coach-messages-list">
@@ -310,7 +309,7 @@ export default function CoachChatPage() {
               type="text"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Antworte dem Coach..."
+              placeholder={t('coach.placeholderInput')}
               disabled={loading}
               required
             />
@@ -327,16 +326,14 @@ export default function CoachChatPage() {
           <div className="coach-consent-modal">
             <div className="consent-header">
               <ShieldAlert size={28} className="consent-alert-icon" />
-              <h3>Vertraulichkeit & Speicherung</h3>
+              <h3>{t('coach.consentTitle')}</h3>
             </div>
             <div className="consent-body">
               <p>
-                Deine Gespräche werden verschlüsselt gespeichert, damit ich mich beim nächsten Mal an dich 
-                erinnern und an unser Gespräch anknüpfen kann.
+                {t('coach.consentText1')}
               </p>
               <p className="consent-highlight">
-                Du kannst deine gesamten Gespräche und Einwilligungen jederzeit mit dem Mülleimer-Symbol 
-                oben rechts rückstandslos löschen.
+                {t('coach.consentText2')}
               </p>
             </div>
             <div className="consent-actions">
@@ -345,14 +342,14 @@ export default function CoachChatPage() {
                 className="btn btn-secondary consent-decline-btn" 
                 onClick={handleDeclineConsent}
               >
-                Anonym bleiben (Nicht speichern)
+                {t('coach.consentDecline')}
               </button>
               <button 
                 type="button" 
                 className="btn btn-primary consent-accept-btn" 
                 onClick={handleAcceptConsent}
               >
-                <Check size={16} /> Zustimmen & Senden
+                <Check size={16} /> {t('coach.consentAccept')}
               </button>
             </div>
           </div>
