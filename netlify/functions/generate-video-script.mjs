@@ -195,6 +195,37 @@ async function tryDeepSeek(systemPrompt) {
   }
 }
 
+async function checkGuestRateLimit(visitorId, clientIp) {
+  if (!visitorId) return { allowed: false, error: 'visitor_id ist erforderlich im Gast-Modus' }
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  // Check count by visitorId
+  const { count: visitorCount } = await supabase
+    .from('events')
+    .select('id', { count: 'exact', head: true })
+    .eq('event_name', 'script_generation')
+    .eq('visitor_id', visitorId)
+    .gte('created_at', today.toISOString())
+
+  // Check count by IP in metadata
+  const { count: ipCount } = await supabase
+    .from('events')
+    .select('id', { count: 'exact', head: true })
+    .eq('event_name', 'script_generation')
+    .eq('metadata->>ip', clientIp)
+    .gte('created_at', today.toISOString())
+
+  const totalCount = Math.max(visitorCount || 0, ipCount || 0)
+  console.log(`[RateLimit-Script] visitor: ${visitorId}, ip: ${clientIp}, count: ${totalCount}`)
+
+  if (totalCount >= 3) {
+    return { allowed: false, error: 'Limit für kostenlose Generierungen erreicht (maximal 3 pro Tag). Bitte registriere dich, um unbegrenzt Videos zu erstellen!' }
+  }
+  return { allowed: true }
+}
+
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: CORS_HEADERS, body: '' }
@@ -205,24 +236,36 @@ export const handler = async (event) => {
 
   const authHeader = event.headers.authorization || ''
   const token = authHeader.replace('Bearer ', '')
-  if (!token) {
-    return { statusCode: 401, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Nicht authentifiziert' }) }
-  }
+  const clientIp = event.headers['x-nf-client-connection-ip'] || '127.0.0.1'
 
   try {
-    const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: { 'Authorization': `Bearer ${token}`, 'apikey': process.env.VITE_SUPABASE_ANON_KEY }
-    }).then(r => r.json())
+    let user = null
+    if (token) {
+      const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'apikey': process.env.VITE_SUPABASE_ANON_KEY }
+      }).then(r => r.json())
 
-    const user = authResponse?.id ? authResponse : authResponse?.data?.user
-    if (!user) {
-      return { statusCode: 401, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Ungültiges Token' }) }
+      user = authResponse?.id ? authResponse : authResponse?.data?.user
+      if (!user) {
+        return { statusCode: 401, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Ungültiges Token' }) }
+      }
     }
 
     let body = {}
     try { body = JSON.parse(event.body || '{}') } catch { body = {} }
 
-    const { scene_analysis, content_goal, user_premise, ad_text, video_filename, script_id, selected_hook } = body
+    const { scene_analysis, content_goal, user_premise, ad_text, video_filename, script_id, selected_hook, visitor_id } = body
+
+    if (!user) {
+      const rateLimit = await checkGuestRateLimit(visitor_id, clientIp)
+      if (!rateLimit.allowed) {
+        return {
+          statusCode: 403,
+          headers: CORS_HEADERS,
+          body: JSON.stringify({ error: rateLimit.error })
+        }
+      }
+    }
 
     if (!scene_analysis || !content_goal) {
       return {
@@ -273,7 +316,21 @@ export const handler = async (event) => {
       }
     }
 
-    // Save to Supabase (update existing or insert new)
+    // Save to Supabase (update existing or insert new) if user is authenticated
+    if (!user) {
+      await supabase.from('events').insert({
+        visitor_id: visitor_id,
+        event_name: 'script_generation',
+        metadata: { ip: clientIp }
+      })
+
+      return {
+        statusCode: 200,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ script })
+      }
+    }
+
     if (script_id) {
       await supabase
         .from('video_scripts')

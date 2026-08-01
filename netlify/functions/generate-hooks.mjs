@@ -1,26 +1,89 @@
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL
+const CORS_HEADERS = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+}
+
+async function checkGuestRateLimit(visitorId, clientIp) {
+  if (!visitorId) return { allowed: false, error: 'visitor_id ist erforderlich im Gast-Modus' }
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const supabaseKey = process.env.SUPABASE_SERVICE_KEY
+  const supabase = createClient(supabaseUrl, supabaseKey)
+
+  // Check count by visitorId
+  const { count: visitorCount } = await supabase
+    .from('events')
+    .select('id', { count: 'exact', head: true })
+    .eq('event_name', 'script_generation')
+    .eq('visitor_id', visitorId)
+    .gte('created_at', today.toISOString())
+
+  // Check count by IP in metadata
+  const { count: ipCount } = await supabase
+    .from('events')
+    .select('id', { count: 'exact', head: true })
+    .eq('event_name', 'script_generation')
+    .eq('metadata->>ip', clientIp)
+    .gte('created_at', today.toISOString())
+
+  const totalCount = Math.max(visitorCount || 0, ipCount || 0)
+  console.log(`[RateLimit-Hooks] visitor: ${visitorId}, ip: ${clientIp}, count: ${totalCount}`)
+
+  if (totalCount >= 3) {
+    return { allowed: false, error: 'Limit für kostenlose Generierungen erreicht (maximal 3 pro Tag). Bitte registriere dich, um unbegrenzt Videos zu erstellen!' }
+  }
+  return { allowed: true }
+}
 
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' }, body: '' }
+    return { statusCode: 200, headers: CORS_HEADERS, body: '' }
   }
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
+    return { statusCode: 405, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Method not allowed' }) }
   }
 
+  const authHeader = event.headers.authorization || ''
+  const token = authHeader.replace('Bearer ', '')
+  const clientIp = event.headers['x-nf-client-connection-ip'] || '127.0.0.1'
+
   try {
-    const authHeader = event.headers.authorization || ''
-    const token = authHeader.replace('Bearer ', '')
-    if (!token) {
-      return { statusCode: 401, body: JSON.stringify({ error: 'Nicht authentifiziert' }) }
+    let user = null
+    if (token) {
+      const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'apikey': process.env.VITE_SUPABASE_ANON_KEY }
+      }).then(r => r.json())
+
+      user = authResponse?.id ? authResponse : authResponse?.data?.user
+      if (!user) {
+        return { statusCode: 401, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Ungültiges Token' }) }
+      }
     }
 
     let body = {}
     try { body = JSON.parse(event.body || '{}') } catch { body = {} }
 
-    const { genre, premise, scene_description } = body
+    const { genre, premise, scene_description, visitor_id } = body
+
+    if (!user) {
+      const rateLimit = await checkGuestRateLimit(visitor_id, clientIp)
+      if (!rateLimit.allowed) {
+        return {
+          statusCode: 403,
+          headers: CORS_HEADERS,
+          body: JSON.stringify({ error: rateLimit.error })
+        }
+      }
+    }
 
     if (!genre) {
-      return { statusCode: 400, body: JSON.stringify({ error: 'genre ist erforderlich' }) }
+      return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'genre ist erforderlich' }) }
     }
 
     const genreLabels = {
@@ -130,9 +193,19 @@ NUR das JSON Array. Kein Text davor oder danach. Kein markdown.`
       }
     }
 
+    if (!user) {
+      const supabaseKey = process.env.SUPABASE_SERVICE_KEY
+      const supabase = createClient(supabaseUrl, supabaseKey)
+      await supabase.from('events').insert({
+        visitor_id: visitor_id,
+        event_name: 'script_generation',
+        metadata: { ip: clientIp }
+      })
+    }
+
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' },
+      headers: CORS_HEADERS,
       body: JSON.stringify({ hooks, total: hooks.length })
     }
 

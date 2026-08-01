@@ -214,14 +214,30 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
         <InstallButton variant="sidebar" />
 
         <div className="sidebar-user">
-          <div className="sidebar-avatar">
-            {(profile?.name || user?.email || '?')[0].toUpperCase()}
-          </div>
-          {!collapsed && (
-            <div className="sidebar-user-info">
-              <div className="sidebar-user-name">{profile?.name || user?.email}</div>
-              <button className="sidebar-logout" onClick={handleSignOut}>{t('nav.logout')}</button>
-            </div>
+          {user ? (
+            <>
+              <div className="sidebar-avatar">
+                {(profile?.name || user?.email || '?')[0].toUpperCase()}
+              </div>
+              {!collapsed && (
+                <div className="sidebar-user-info">
+                  <div className="sidebar-user-name">{profile?.name || user?.email}</div>
+                  <button className="sidebar-logout" onClick={handleSignOut}>{t('nav.logout')}</button>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="sidebar-avatar" onClick={() => navigate('/login')} style={{ cursor: 'pointer', background: 'var(--color-koralle, #d85a30)' }}>
+                👤
+              </div>
+              {!collapsed && (
+                <div className="sidebar-user-info">
+                  <div className="sidebar-user-name">Gast-Modus</div>
+                  <button className="sidebar-logout" onClick={() => navigate('/login')} style={{ color: 'var(--color-koralle, #d85a30)', fontWeight: 'bold' }}>Anmelden</button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -407,8 +423,8 @@ export default function App() {
           <LoadingScreen />
         ) : (
           <>
-            {user && !['/onboarding', '/today-question'].includes(location.pathname) && <Sidebar mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />}
-            {!user && location.pathname !== '/login' && location.pathname !== '/register' && (
+            {((user && !['/onboarding', '/today-question'].includes(location.pathname)) || (!user && ['/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) && <Sidebar mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />}
+            {!user && !['/login', '/register', '/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname) && (
               <nav className="public-topbar">
                 <Link to="/" className="public-topbar-brand">
                   <img src="/favicon.svg" alt="H" style={{ width: '28px', height: '28px' }} />
@@ -422,8 +438,8 @@ export default function App() {
                 </div>
               </nav>
             )}
-              <main className={user && !['/onboarding', '/today-question'].includes(location.pathname) ? 'main-content with-sidebar' : 'main-content full'}>
-              {user && (
+              <main className={((user && !['/onboarding', '/today-question'].includes(location.pathname)) || (!user && ['/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) ? 'main-content with-sidebar' : 'main-content full'}>
+              {((user && !['/onboarding', '/today-question'].includes(location.pathname)) || (!user && ['/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) && (
                 <button className="mobile-menu-btn" onClick={() => setMobileSidebarOpen(true)}>
                   <Menu size={22} />
                 </button>
@@ -456,9 +472,9 @@ export default function App() {
                 <Route path="/post-preparation" element={<ProtectedRoute><PostPreparationPage /></ProtectedRoute>} />
                 <Route path="/capcut-studio" element={<ProtectedRoute><TikTokVideoPage /></ProtectedRoute>} />
                 <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
-                <Route path="/tour" element={<ProtectedRoute><TourPage /></ProtectedRoute>} />
-                <Route path="/video-finder" element={<ProtectedRoute><VideoFinderPage /></ProtectedRoute>} />
-                <Route path="/video-script" element={<ProtectedRoute><VideoScriptPage /></ProtectedRoute>} />
+                <Route path="/tour" element={<TourPage />} />
+                <Route path="/video-finder" element={<VideoFinderPage />} />
+                <Route path="/video-script" element={<VideoScriptPage />} />
                 <Route path="/ideenschmiede" element={<ProtectedRoute><IdeenschmiedePage /></ProtectedRoute>} />
                 <Route path="/ki-sichtbarkeit" element={<ProtectedRoute><KiVisibilityPage /></ProtectedRoute>} />
                 <Route path="/admin/lead-radar" element={<ProtectedRoute><LeadRadarPage /></ProtectedRoute>} />
@@ -469,8 +485,8 @@ export default function App() {
               </Routes>
               </Suspense>
               </ErrorBoundary>
-            </main>
-            {user && !['/onboarding', '/today-question'].includes(location.pathname) && <MobileBar />}
+             </main>
+             {((user && !['/onboarding', '/today-question'].includes(location.pathname)) || (!user && ['/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) && <MobileBar />}
           </>
         )}
         </StudioProvider>

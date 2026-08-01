@@ -1,9 +1,19 @@
 import { useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Upload, Film, Copy, Check, ArrowRight, Loader, AlertCircle, FileVideo, Link as LinkIcon } from 'lucide-react'
+import { Upload, Film, Copy, Check, ArrowRight, Loader, AlertCircle, FileVideo, Link as LinkIcon, Sparkles } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useStudio } from '../context/StudioContext'
+import AuthModal from '../components/AuthModal'
 import './VideoScriptPage.css'
+
+function getOrCreateVisitorId() {
+  let vid = localStorage.getItem('hit_visitor_id')
+  if (!vid) {
+    vid = 'guest_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+    localStorage.setItem('hit_visitor_id', vid)
+  }
+  return vid
+}
 
 const GENRES = [
   { id: 'comedy_prank', emoji: '🎭', label: 'Comedy / Prank', desc: 'Unterhaltung, Pointen, Reaktionen' },
@@ -90,6 +100,7 @@ export default function VideoScriptPage() {
   const [error, setError] = useState('')
   const [statusText, setStatusText] = useState('')
   const [hooksLoading, setHooksLoading] = useState(false)
+  const [authModalOpen, setAuthModalOpen] = useState(false)
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0]
@@ -143,11 +154,12 @@ export default function VideoScriptPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': token ? `Bearer ${token}` : ''
         },
         body: JSON.stringify({
           frames,
-          video_filename: videoFile?.name || videoUrl || 'video'
+          video_filename: videoFile?.name || videoUrl || 'video',
+          visitor_id: getOrCreateVisitorId()
         })
       })
 
@@ -186,12 +198,13 @@ export default function VideoScriptPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': token ? `Bearer ${token}` : ''
         },
         body: JSON.stringify({
           genre: selectedGenre,
           premise: userPremise || undefined,
-          scene_description: sceneAnalysis?.beats?.map(b => b.description).join(' | ') || undefined
+          scene_description: sceneAnalysis?.beats?.map(b => b.description).join(' | ') || undefined,
+          visitor_id: getOrCreateVisitorId()
         })
       })
 
@@ -255,7 +268,7 @@ export default function VideoScriptPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': token ? `Bearer ${token}` : ''
         },
         body: JSON.stringify({
           scene_analysis: sceneAnalysis,
@@ -263,7 +276,8 @@ export default function VideoScriptPage() {
           user_premise: userPremise || undefined,
           ad_text: adText || undefined,
           video_filename: videoFile?.name || 'video',
-          selected_hook: hookIdx !== null && hooks[hookIdx] ? hooks[hookIdx] : undefined
+          selected_hook: hookIdx !== null && hooks[hookIdx] ? hooks[hookIdx] : undefined,
+          visitor_id: getOrCreateVisitorId()
         })
       })
 
@@ -279,6 +293,50 @@ export default function VideoScriptPage() {
       setError(e.message || 'Fehler bei der Drehbuch-Generierung.')
       setStep(2)
     }
+  }
+
+  const handleSaveScriptToDb = async (userId) => {
+    if (!generatedScript || !sceneAnalysis) return null
+
+    try {
+      const { data, error } = await supabase
+        .from('video_scripts')
+        .insert({
+          user_id: userId,
+          video_filename: videoFile?.name || 'video',
+          content_goal: selectedGenre,
+          scene_analysis: sceneAnalysis,
+          generated_script: generatedScript
+        })
+        .select()
+
+      if (error) throw error
+      if (data && data[0]) {
+        setScriptId(data[0].id)
+        console.log('[VideoScript] Script saved to DB successfully under ID:', data[0].id)
+        return data[0].id
+      }
+    } catch (e) {
+      console.error('[VideoScript] Error saving script to DB:', e.message)
+    }
+    return null
+  }
+
+  const handleSendToCapCut = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    const user = session?.user
+
+    if (!user) {
+      setAuthModalOpen(true)
+    } else {
+      await handleSaveScriptToDb(user.id)
+      navigate('/capcut-studio')
+    }
+  }
+
+  const handleAuthSuccess = async (authUser) => {
+    await handleSaveScriptToDb(authUser.id)
+    navigate('/capcut-studio')
   }
 
   const handleCopy = async () => {
@@ -588,16 +646,32 @@ export default function VideoScriptPage() {
             <pre>{generatedScript}</pre>
           </div>
 
-          <div className="vsp-result-actions">
-            <button className="vsp-btn vsp-btn-copy" onClick={handleCopy}>
-              {copied ? <><Check size={16} /> Kopiert!</> : <><Copy size={16} /> In Zwischenablage kopieren</>}
+          <div className="vsp-result-actions" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '1.5rem' }}>
+            <button 
+              className="vsp-btn vsp-btn-primary" 
+              onClick={handleSendToCapCut}
+              style={{ width: '100%', justifyContent: 'center', padding: '12px' }}
+            >
+              🎬 An CapCut Studio senden
             </button>
-            <button className="vsp-btn vsp-btn-secondary" onClick={handleReset}>
-              Neues Video
-            </button>
+            <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+              <button className="vsp-btn vsp-btn-copy" onClick={handleCopy} style={{ flex: 1, justifyContent: 'center' }}>
+                {copied ? <><Check size={16} /> Kopiert!</> : <><Copy size={16} /> Kopieren</>}
+              </button>
+              <button className="vsp-btn vsp-btn-secondary" onClick={handleReset} style={{ flex: 1, justifyContent: 'center' }}>
+                Neues Video
+              </button>
+            </div>
           </div>
         </div>
       )}
+
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onSuccess={handleAuthSuccess}
+        title="Melde dich an, um fortzufahren"
+      />
     </div>
   )
 }
