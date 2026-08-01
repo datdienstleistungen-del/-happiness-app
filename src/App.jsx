@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense, Component } from 'react'
 import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom'
 import {
-  Sparkles, MessageCircle, Users, ShoppingCart, Briefcase,
+  Sparkles, MessageCircle, Heart, Users, ShoppingCart, Briefcase,
   BookOpen, Building2, Clapperboard, Camera, Film, Bell, Settings,
   User, ChevronLeft, ChevronRight, Rocket, Hash, Menu, BarChart3, Trophy, Radar,
   Target, FolderOpen, Globe, LayoutDashboard, Search, Eye, Video, Lightbulb
@@ -48,6 +48,7 @@ const LeadRadarPage = lazy(() => import('./pages/LeadRadarPage'))
 const CreatorSuccessPage = lazy(() => import('./pages/CreatorSuccessPage'))
 const TourPage = lazy(() => import('./pages/TourPage'))
 const VideoFinderPage = lazy(() => import('./pages/VideoFinderPage'))
+const CoachChatPage = lazy(() => import('./pages/CoachChatPage'))
 const KiVisibilityPage = lazy(() => import('./pages/KiVisibilityPage'))
 const VideoScriptPage = lazy(() => import('./pages/VideoScriptPage'))
 const IdeenschmiedePage = lazy(() => import('./pages/IdeenschmiedePage'))
@@ -94,7 +95,9 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
     navigate('/login')
   }
 
-  const mainLinks = []
+  const mainLinks = [
+    { to: '/', icon: Heart, label: 'Happiness Coach' }
+  ]
 
   const studioLinks = [
     { to: '/video-finder', icon: Search, label: 'Video Finder' },
@@ -177,7 +180,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
           </>
         )}
 
-        {!collapsed && <div className="sidebar-section-title">My Studio</div>}
+        {!collapsed && <div className="sidebar-section-title">Video-Studio</div>}
         {renderLinks(studioLinks)}
 
         {discoverLinks.length > 0 && (
@@ -253,17 +256,13 @@ function MobileBar() {
   return (
     <>
       <nav className="mobile-bottom-nav">
-        <Link to="/video-finder" className={`mobile-nav-link ${location.pathname === '/video-finder' ? 'active' : ''}`}>
-          <Search size={20} />
-          <span>Finder</span>
+        <Link to="/" className={`mobile-nav-link ${location.pathname === '/' ? 'active' : ''}`}>
+          <Heart size={20} />
+          <span>Coach</span>
         </Link>
-        <Link to="/video-script" className={`mobile-nav-link ${location.pathname === '/video-script' ? 'active' : ''}`}>
+        <Link to="/video-finder" className={`mobile-nav-link ${['/video-finder', '/video-script', '/capcut-studio'].includes(location.pathname) ? 'active' : ''}`}>
           <Video size={20} />
-          <span>Drehbuch</span>
-        </Link>
-        <Link to="/capcut-studio" className={`mobile-nav-link ${location.pathname === '/capcut-studio' ? 'active' : ''}`}>
-          <Film size={20} />
-          <span>CapCut</span>
+          <span>Studio</span>
         </Link>
         <Link to="/profile" className={`mobile-nav-link ${location.pathname === '/profile' ? 'active' : ''}`}>
           <User size={20} />
@@ -423,7 +422,7 @@ export default function App() {
           <LoadingScreen />
         ) : (
           <>
-            {((user && !['/onboarding', '/today-question'].includes(location.pathname)) || (!user && ['/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) && <Sidebar mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />}
+            {((user && !['/onboarding', '/today-question'].includes(location.pathname)) || (!user && ['/', '/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) && <Sidebar mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />}
             {!user && !['/login', '/register', '/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname) && (
               <nav className="public-topbar">
                 <Link to="/" className="public-topbar-brand">
@@ -449,7 +448,8 @@ export default function App() {
               <Routes>
                 <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
                 <Route path="/register" element={user ? <Navigate to="/" /> : <RegisterPage />} />
-                <Route path="/" element={user ? <OnboardingGuard><Navigate to="/video-finder" replace /></OnboardingGuard> : <LandingPage />} />
+                <Route path="/" element={<CoachChatPage />} />
+                <Route path="/landing" element={<LandingPage />} />
                 <Route path="/dashboard" element={<ProtectedRoute><PlatformEngine /></ProtectedRoute>} />
                 <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
                 <Route path="/today-question" element={<ProtectedRoute><TodayQuestionPage /></ProtectedRoute>} />
@@ -486,7 +486,7 @@ export default function App() {
               </Suspense>
               </ErrorBoundary>
              </main>
-             {((user && !['/onboarding', '/today-question'].includes(location.pathname)) || (!user && ['/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) && <MobileBar />}
+             {((user && !['/onboarding', '/today-question'].includes(location.pathname)) || (!user && ['/', '/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) && <MobileBar />}
           </>
         )}
         </StudioProvider>
