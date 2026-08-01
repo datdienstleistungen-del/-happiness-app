@@ -42,6 +42,11 @@ export default function CoachChatPage() {
     scrollToBottom()
   }, [chatHistory, loading])
 
+  // Dynamically set localized page title
+  useEffect(() => {
+    document.title = `${t('coach.title')} - ${t('coach.subtitle')}`
+  }, [t])
+
   // Fetch chat history from server on mount (only if consent was previously granted)
   useEffect(() => {
     const fetchHistory = async () => {
