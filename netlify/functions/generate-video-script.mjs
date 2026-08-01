@@ -205,7 +205,7 @@ async function checkGuestRateLimit(visitorId, clientIp) {
   const { count: visitorCount } = await supabase
     .from('events')
     .select('id', { count: 'exact', head: true })
-    .eq('event_name', 'script_generation')
+    .eq('event_name', 'guest_generate_script')
     .eq('visitor_id', visitorId)
     .gte('created_at', today.toISOString())
 
@@ -213,7 +213,7 @@ async function checkGuestRateLimit(visitorId, clientIp) {
   const { count: ipCount } = await supabase
     .from('events')
     .select('id', { count: 'exact', head: true })
-    .eq('event_name', 'script_generation')
+    .eq('event_name', 'guest_generate_script')
     .eq('metadata->>ip', clientIp)
     .gte('created_at', today.toISOString())
 
@@ -320,7 +320,7 @@ export const handler = async (event) => {
     if (!user) {
       await supabase.from('events').insert({
         visitor_id: visitor_id,
-        event_name: 'script_generation',
+        event_name: 'guest_generate_script',
         metadata: { ip: clientIp }
       })
 
