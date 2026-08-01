@@ -42,12 +42,7 @@
     }
     </script>
 
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-47T32Z43L2"></script>
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
       var hostname = window.location.hostname;
       var environment = hostname === 'localhost' ? 'localhost'
         : hostname.includes('preview--') ? 'preview'
@@ -82,6 +77,16 @@
         window.gtag = function() {};
         console.log('%c Analytics Tracking: BLOCKED (ignore-analytics or localhost active)', 'color: #d97706; font-weight: bold;');
       } else {
+        // Dynamically load Google Analytics script only when tracking is allowed
+        var script = document.createElement('script');
+        script.async = true;
+        script.src = "https://www.googletagmanager.com/gtag/js?id=G-47T32Z43L2";
+        document.head.appendChild(script);
+
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
         var gaParams = {
           user_properties: {
             environment: environment,
