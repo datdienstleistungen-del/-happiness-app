@@ -57,7 +57,7 @@ export default function LandingPage() {
 
   const handleStartTour = () => {
     trackLandingFunnel('tour_clicked')
-    navigate('/register?startTour=true')
+    navigate('/tour')
   }
 
   useEffect(() => {

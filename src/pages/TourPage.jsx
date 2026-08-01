@@ -278,7 +278,7 @@ export default function TourPage() {
       </div>
 
       <div className="tour-cta-section">
-        <button className="tour-cta-btn" onClick={() => navigate('/')}>
+        <button className="tour-cta-btn" onClick={() => navigate('/video-finder')}>
           <Sparkles size={20} />
           {text.cta}
           <ArrowRight size={20} />
