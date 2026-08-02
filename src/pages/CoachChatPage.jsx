@@ -463,6 +463,9 @@ export default function CoachChatPage() {
               <p className="consent-highlight">
                 {t('coach.consentText2')}
               </p>
+              <p className="consent-highlight" style={{ marginTop: '0.5rem', fontWeight: 'bold' }}>
+                {t('coach.consentText3')}
+              </p>
             </div>
             <div className="consent-actions">
               <button 

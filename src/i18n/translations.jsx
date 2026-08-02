@@ -282,6 +282,7 @@ const translations = {
       consentTitle: "Vertraulichkeit & Speicherung",
       consentText1: "Deine Gespräche werden verschlüsselt gespeichert, damit ich mich beim nächsten Mal an dich erinnern und an unser Gespräch anknüpfen kann.",
       consentText2: "Du kannst deine gesamten Gespräche und Einwilligungen jederzeit mit dem Mülleimer-Symbol oben rechts rückstandslos löschen.",
+      consentText3: "Hochgeladene Fotos und Dokumente werden nur flüchtig für die Antwort verwendet und danach restlos verworfen (nie gespeichert).",
       consentAccept: "Zustimmen & Senden",
       consentDecline: "Anonym bleiben (Nicht speichern)"
     }
@@ -567,6 +568,7 @@ const translations = {
       consentTitle: "Confidentiality & Storage",
       consentText1: "Your conversations are encrypted and saved so I can remember you next time and build on our conversation.",
       consentText2: "You can delete all your conversations and consent settings at any time without leaving a trace using the trash icon in the top right.",
+      consentText3: "Uploaded photos and documents are only used fleetingly for the response and are then completely discarded (never stored).",
       consentAccept: "Agree & Send",
       consentDecline: "Stay anonymous (Do not save)"
     }
@@ -777,6 +779,7 @@ const translations = {
       consentTitle: "Confidencialidad y almacenamiento",
       consentText1: "Tus conversaciones se guardan encriptadas para que pueda recordarte la próxima vez y continuar nuestra charla.",
       consentText2: "Puedes eliminar todas tus conversaciones y consentimientos en cualquier momento sin dejar rastro usando el icono de papelera arriba a la derecha.",
+      consentText3: "Las fotos y documentos subidos solo se usan fugazmente para la respuesta y luego se descartan por completo (nunca se guardan).",
       consentAccept: "Aceptar y enviar",
       consentDecline: "Mantenerse anónimo (No guardar)"
     }
@@ -987,6 +990,7 @@ const translations = {
       consentTitle: "Confidentialité & Stockage",
       consentText1: "Vos conversations sont cryptées et enregistrées afin que je puisse me souvenir de vous la prochaine fois et poursuivre notre échange.",
       consentText2: "Vous pouvez supprimer toutes vos conversations et consentements à tout moment sans laisser de trace à l'aide de l'icône corbeille en haut à droite.",
+      consentText3: "Les photos et documents téléchargés ne sont utilisés que de manière éphémère pour la réponse et sont ensuite complètement supprimés (jamais stockés).",
       consentAccept: "Accepter & Envoyer",
       consentDecline: "Rester anonyme (Ne pas enregistrer)"
     }
@@ -1197,6 +1201,7 @@ const translations = {
       consentTitle: "Riservatezza & Archiviazione",
       consentText1: "Le tue conversazioni vengono crittografate e salvate in modo che io possa ricordarti la prossima volta e riprendere il discorso.",
       consentText2: "Puoi eliminare tutte le conversazioni e i consensi in qualsiasi momento senza lasciare traccia usando l'icona del cestino in alto a destra.",
+      consentText3: "Le foto e i documenti caricati vengono usati solo in modo effimero per la risposta e poi completamente scartati (mai salvati).",
       consentAccept: "Accetta & Invia",
       consentDecline: "Rimani anonimo (Non salvare)"
     }
@@ -1407,6 +1412,7 @@ const translations = {
       consentTitle: "Vertrouwelijkheid & Opslag",
       consentText1: "Je gesprekken worden gecodeerd opgeslagen zodat ik je de volgende keer kan herinneren en kan aansluiten bij ons gesprek.",
       consentText2: "Je kunt al je gesprekken en toestemmingen op elk gewenst moment zonder sporen wissen met het prullenbak-pictogram rechtsboven.",
+      consentText3: "Geüploade foto's en documenten worden slechts vluchtig gebruikt voor het antwoord en daarna volledig weggegooid (nooit opgeslagen).",
       consentAccept: "Akkoord & Verzenden",
       consentDecline: "Anoniem blijven (Niet opslaan)"
     }
