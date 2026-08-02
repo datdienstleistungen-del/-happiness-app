@@ -410,6 +410,7 @@ export const handler = async (event) => {
           }
         }
       }
+    }
 
       if (!responseText) {
         return {
