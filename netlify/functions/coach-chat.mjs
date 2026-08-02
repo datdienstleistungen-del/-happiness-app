@@ -285,6 +285,28 @@ export const handler = async (event) => {
         return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'visitor_id ist erforderlich' }) }
       }
 
+      // --- Guest Upload Rate Limit Pre-Check ---
+      if (image_url && !user && activeVisitorId) {
+        const { data: limitData, error: limitErr } = await supabase
+          .from('coach_guest_uploads')
+          .select('*')
+          .eq('visitor_id', activeVisitorId)
+          .maybeSingle()
+          
+        if (!limitErr && limitData) {
+          const today = new Date().toDateString()
+          const lastUploadDate = new Date(limitData.last_upload).toDateString()
+          if (lastUploadDate === today && limitData.upload_count >= 3) {
+            console.log(`[coach-chat] Guest rate limit reached for visitor: ${activeVisitorId}`)
+            return {
+              statusCode: 429,
+              headers: CORS_HEADERS,
+              body: JSON.stringify({ error: 'Kostenloses Upload-Limit (3/3) erreicht.', code: 'limit_reached' })
+            }
+          }
+        }
+      }
+
       // Check Consent serverseitig
       let consentQuery = supabase.from('coach_consent').select('id')
       if (user) {
@@ -398,6 +420,28 @@ export const handler = async (event) => {
       }
 
       console.log(`[coach-chat] Response generated successfully using ${providerUsed}. Consent: ${hasConsent}`)
+
+      // --- Update Guest Rate Limit ---
+      if (image_url && !user && activeVisitorId) {
+        const { data: limitData } = await supabase
+          .from('coach_guest_uploads')
+          .select('*')
+          .eq('visitor_id', activeVisitorId)
+          .maybeSingle()
+
+        const todayStr = new Date().toDateString()
+        
+        if (limitData) {
+          const lastUploadDate = new Date(limitData.last_upload).toDateString()
+          const newCount = (lastUploadDate === todayStr) ? limitData.upload_count + 1 : 1
+          await supabase.from('coach_guest_uploads')
+            .update({ upload_count: newCount, last_upload: new Date().toISOString() })
+            .eq('visitor_id', activeVisitorId)
+        } else {
+          await supabase.from('coach_guest_uploads')
+            .insert([{ visitor_id: activeVisitorId, upload_count: 1, last_upload: new Date().toISOString() }])
+        }
+      }
 
       // Speichere in DB nur falls Consent vorliegt
       if (hasConsent) {

@@ -212,6 +212,10 @@ export default function CoachChatPage() {
       })
 
       if (!res.ok) {
+        if (res.status === 429) {
+          const errData = await res.json().catch(() => ({}))
+          throw new Error(errData.error || 'Upload-Limit erreicht')
+        }
         throw new Error('Server returned an error')
       }
 
@@ -223,7 +227,8 @@ export default function CoachChatPage() {
       }
     } catch (err) {
       console.error('[CoachPage] Send error:', err)
-      setError(t('coach.sendError'))
+      const isRateLimit = err.message && err.message.includes('Upload-Limit')
+      setError(isRateLimit ? 'Du hast dein tägliches Limit für kostenlose Bild-Uploads (3/3) erreicht. Bitte logge dich ein oder versuche es morgen wieder.' : t('coach.sendError'))
       // Remove the last optimistic user message if sending failed
       setChatHistory(prev => prev.slice(0, -1))
     } finally {
