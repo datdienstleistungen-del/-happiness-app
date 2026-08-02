@@ -17,6 +17,44 @@ const PRESET_CATEGORIES = [
   { id: 'kurios', label: '🤯 Kuriositäten', query: 'unusual strange' }
 ]
 
+async function extractFramesFromVideo(videoSrc, maxFrames = 5) {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video')
+    video.crossOrigin = 'anonymous'
+    video.muted = true
+    video.preload = 'auto'
+
+    video.onloadedmetadata = async () => {
+      const duration = video.duration
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      const effectiveDuration = Math.min(duration, 60)
+      const interval = effectiveDuration / maxFrames
+      const scale = Math.min(1, 256 / (video.videoWidth || 640))
+      canvas.width = Math.round((video.videoWidth || 640) * scale)
+      canvas.height = Math.round((video.videoHeight || 360) * scale)
+      const frames = []
+      for (let i = 0; i < maxFrames; i++) {
+        const time = i * interval
+        try {
+          video.currentTime = time
+          await new Promise((res, rej) => {
+            const timeout = setTimeout(() => rej(new Error('seek timeout')), 3000)
+            video.onseeked = () => { clearTimeout(timeout); res() }
+          })
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.4)
+          frames.push(dataUrl)
+        } catch (e) { console.warn('Frame fail:', e) }
+      }
+      video.src = ''
+      resolve(frames)
+    }
+    video.onerror = () => reject(new Error('Video CORS error'))
+    video.src = videoSrc
+  })
+}
+
 export default function VideoFinderPage() {
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
@@ -322,6 +360,8 @@ export default function VideoFinderPage() {
     selectedTone, setSelectedTone,
     customInstructions, setCustomInstructions,
     generatingScript, setGeneratingScript,
+    chatInput, setChatInput,
+    analyzingFrames, setAnalyzingFrames,
     generatedScript, setGeneratedScript,
     copied, setCopied,
     error, setError,
@@ -423,50 +463,55 @@ export default function VideoFinderPage() {
     setGeneratingScript(true)
     setError('')
     setGeneratedScript(null)
+    setAnalyzingFrames(false)
 
-    const toneLabel = TONES.find(t => t.value === selectedTone)?.label || 'Unterhaltsam'
+    // Versuche, Frames für GPT-4o Vision zu extrahieren (falls CORS es erlaubt)
+    let frames = []
+    if (selectedVideo.hasVideo !== false && selectedVideo.id !== 'viral-import') {
+      setAnalyzingFrames(true)
+      try {
+        frames = await extractFramesFromVideo(selectedVideo.url, 4)
+      } catch (err) {
+        console.warn('Daumenkino gescheitert (CORS). Sende nur Text-Metadaten.', err)
+      }
+      setAnalyzingFrames(false)
+    }
+
     const scriptTopic = activeSource === 'viral' ? topic : (query || 'Unterhaltung')
+    const userPrompt = chatInput ? chatInput.trim() : 'Ich brauche ein witziges, virales TikTok-Video daraus.'
 
     const languageNames = {
-      de: 'deutscher',
-      en: 'englischer',
-      es: 'spanischer',
-      fr: 'französischer',
-      it: 'italienischer',
-      nl: 'niederländischer',
-      el: 'griechischer'
+      de: 'deutscher', en: 'englischer', es: 'spanischer', fr: 'französischer', it: 'italienischer', nl: 'niederländischer', el: 'griechischer'
     }
     const currentLanguageName = languageNames[lang] || 'deutscher'
 
-    const systemPrompt = `Du bist H.I.T., ein weltklasse Retention-Coach und Skriptschreiber für TikTok- und Shorts-Videos.
-Deine Aufgabe ist es, für ein gegebenes Video (Thema: "${scriptTopic}") ein unterhaltsames, virales Videoskript zu schreiben.
-Der gewünschte Tonfall ist: "${toneLabel}".
-${customInstructions ? `Zusätzliche Anweisungen des Users: "${customInstructions}"` : ''}
+    const systemPrompt = `Du bist die "Video-Ideenschmiede" (H.I.T. Regisseur).
+Deine Aufgabe: Der User gibt dir (falls möglich) Bilder aus einem gefundenen Video (Thema: "${scriptTopic}") und eine Idee: "${userPrompt}".
+Erstelle daraus einen exakten SCHRITT-FÜR-SCHRITT BAUPLAN (Schnittanweisung & Voiceover), damit der User das Video manuell in CapCut schneiden kann.
+Schreibe in ${currentLanguageName} Sprache.
 
-Erstelle ein vollständiges Skript in ${currentLanguageName} Sprache.
-
-Strukturiere deine Antwort zwingend als JSON mit folgender Struktur:
+Strukturiere deine Antwort ZWINGEND als JSON:
 {
-  "video_title": "Ein kurzer, catchy Titel (max 60 Zeichen)",
-  "voiceover_script": "Der vollständige Sprechtext des Videos. Teile ihn in kurze, sprechbare Sätze auf (ca. 100-120 Wörter).",
+  "video_title": "Titel der Video-Idee",
+  "voiceover_script": "Zusammenfassung",
   "publishing_payload": {
     "tiktok_instagram": {
       "hook": "Der Hook-Satz (die ersten 3 Sekunden)",
-      "description": "Die Video-Beschreibung inkl. passender Hashtags"
+      "description": "Die Video-Beschreibung inkl. Hashtags"
     }
   },
-  "scenes": [
+  "blueprint": [
     {
-      "timestamp": "00:00 - 00:05",
-      "spoken_text": "Der erste Teil des Sprechtexts"
+      "step": 1,
+      "timestamp": "0-3s",
+      "instruction": "Schneide hier hart auf die Szene mit der Schüssel. Füge dicken Text 'WTF 1950s' in die Mitte ein.",
+      "voiceover": "Wusstet ihr, dass Pudding früher SO aussah?"
     },
     {
-      "timestamp": "00:05 - 00:15",
-      "spoken_text": "Der zweite Teil des Sprechtexts"
-    },
-    {
-      "timestamp": "00:15 - 00:30",
-      "spoken_text": "Der dritte Teil des Sprechtexts"
+      "step": 2,
+      "timestamp": "3-8s",
+      "instruction": "Zoom auf das Gesicht. Erhöhe die Geschwindigkeit auf 1.5x.",
+      "voiceover": "Das Zeug bestand gefühlt nur aus Beton und Zucker..."
     }
   ]
 }
@@ -479,20 +524,28 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
       const userRes = await supabase.auth.getUser()
       const userId = userRes.data.user?.id
 
-      const res = await fetch('/api/chat', {
+      const reqConfig = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          message: `Erstelle das Skript für das ausgewählte Video.`,
+          message: userPrompt,
           systemPrompt,
           userId,
           history: [],
           videoEditor: 'capcut'
         })
-      })
+      }
+
+      if (frames.length > 0) {
+        const bodyObj = JSON.parse(reqConfig.body)
+        bodyObj.imagesBase64 = frames
+        reqConfig.body = JSON.stringify(bodyObj)
+      }
+
+      const res = await fetch('/api/chat', reqConfig)
 
       if (!res.ok) throw new Error(`HTTP-Fehler ${res.status}`)
 
@@ -896,21 +949,27 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
               ) : null}
             </div>
 
-            <div className="vf-generator-setup">
-              <label>{getTxt('labelTone')}</label>
-              <select value={selectedTone} onChange={(e) => setSelectedTone(e.target.value)}>
-                {TONES.map(t => (<option key={t.value} value={t.value}>{t.label}</option>))}
-              </select>
-              <label>{getTxt('labelInstructions')}</label>
-              <textarea placeholder={getTxt('placeholderInstructions')} value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)} />
-              <button className="vf-generate-script-btn" onClick={generateScriptForVideo} disabled={generatingScript}>
+            <div className="vf-generator-setup" style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151' }}>💡 Ideenschmiede</label>
+              <textarea 
+                placeholder='z. B. "Ich brauche das für ein witziges TikTok" oder "Mache daraus eine Schulpräsentation" (Optional)' 
+                value={chatInput || ''} 
+                onChange={(e) => setChatInput(e.target.value)} 
+                style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.9rem', resize: 'vertical' }}
+              />
+              <button 
+                className="vf-generate-script-btn" 
+                onClick={generateScriptForVideo} 
+                disabled={generatingScript || analyzingFrames}
+                style={{ alignSelf: 'flex-end', marginTop: '4px', background: 'var(--brand-purple)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}
+              >
                 <Sparkles size={16} />
-                {generatingScript ? getTxt('genScriptLoading') : getTxt('btnGenScript')}
+                {analyzingFrames ? 'Video wird analysiert...' : generatingScript ? 'Bauplan wird erstellt...' : 'Idee absenden'}
               </button>
             </div>
 
-            {generatingScript && (
-              <div className="vf-script-loading"><div className="vf-script-shimmer"></div><p>{getTxt('genScriptLoading')}</p></div>
+            {generatingScript && !analyzingFrames && (
+              <div className="vf-script-loading"><div className="vf-script-shimmer"></div><p>KI schreibt den Regie-Bauplan...</p></div>
             )}
 
             {generatedScript && (
@@ -922,8 +981,22 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
                   </button>
                 </div>
                 <div className="vf-script-output-body">
-                  <div className="vf-meta-badge"><strong>Hook (0-3s):</strong> {generatedScript.publishing_payload?.tiktok_instagram?.hook}</div>
-                  <p className="vf-script-text">{generatedScript.voiceover_script}</p>
+                  <div className="vf-meta-badge" style={{ marginBottom: '1rem' }}><strong>Hook (0-3s):</strong> {generatedScript.publishing_payload?.tiktok_instagram?.hook}</div>
+                  
+                  {generatedScript.blueprint ? (
+                    <div className="vf-blueprint-steps" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <h5 style={{ margin: '0 0 0.5rem 0', color: '#1f2937' }}>🎬 Schnitt & Voiceover Anweisung:</h5>
+                      {generatedScript.blueprint.map((step, idx) => (
+                        <div key={idx} style={{ background: '#f3f4f6', padding: '12px', borderRadius: '8px', borderLeft: '4px solid var(--brand-purple)' }}>
+                          <strong style={{ display: 'block', fontSize: '0.8rem', color: '#6b7280', marginBottom: '4px' }}>Schritt {step.step} ({step.timestamp})</strong>
+                          <div style={{ fontSize: '0.9rem', color: '#111827', marginBottom: '6px' }}><strong>✂️ Schnitt:</strong> {step.instruction}</div>
+                          <div style={{ fontSize: '0.9rem', color: '#111827' }}><strong>🎤 Audio:</strong> "{step.voiceover}"</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="vf-script-text">{generatedScript.voiceover_script}</p>
+                  )}
                 </div>
                 <button className="vf-export-capcut-btn" onClick={handleSendToCapCut}>
                   {getTxt('exportCapcut')} <ArrowRight size={16} />

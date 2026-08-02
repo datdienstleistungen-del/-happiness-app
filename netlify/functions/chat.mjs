@@ -483,7 +483,8 @@ ${message}`
       reqPresencePenalty = 0.6
     }
 
-    const hasImage = imageBase64 && typeof imageBase64 === 'string' && imageBase64.startsWith('data:image/')
+    const hasImage = (imageBase64 && typeof imageBase64 === 'string' && imageBase64.startsWith('data:image/')) || 
+                     (imagesBase64 && Array.isArray(imagesBase64) && imagesBase64.length > 0)
     
     const buildMessages = (historyLimit, textOnly = false) => {
       const msgs = []
@@ -499,9 +500,15 @@ ${message}`
       let userContent
       if (hasImage && !textOnly) {
         userContent = [
-          { type: 'text', text: message || 'Analysiere dieses Bild.' },
-          { type: 'image_url', image_url: { url: imageBase64 } }
+          { type: 'text', text: message || 'Analysiere dieses Bild / Video.' }
         ]
+        if (imagesBase64 && Array.isArray(imagesBase64)) {
+          imagesBase64.forEach(img => {
+            userContent.push({ type: 'image_url', image_url: { url: img } })
+          })
+        } else if (imageBase64) {
+          userContent.push({ type: 'image_url', image_url: { url: imageBase64 } })
+        }
       } else {
         userContent = message || 'Hallo'
       }
@@ -516,7 +523,7 @@ ${message}`
     const sysTok = (systemPrompt || '').length / 4
     const histTok = (history || []).reduce((s, m) => s + (m.content || '').length, 0) / 4
     const msgTok = (message || '').length / 4
-    const imgTok = (imageBase64 || '').length / 4
+    const imgTok = (imageBase64 ? imageBase64.length : (imagesBase64 ? imagesBase64.reduce((sum, img) => sum + img.length, 0) : 0)) / 4
     console.log(`TOKEN-AUFTEILUNG: systemPrompt=${Math.round(sysTok)} history=${Math.round(histTok)} message=${Math.round(msgTok)} image=${Math.round(imgTok)} total=${Math.round(sysTok+histTok+msgTok+imgTok)}`)
 
     const SAFE_THRESHOLD = !hasImage ? 100000 : 7500
@@ -545,44 +552,72 @@ ${message}`
     const providerErrors = []
 
     if (hasImage) {
-      const apiKey = process.env.GROQ_API_KEY
-      if (!apiKey) {
-        return {
-          statusCode: 500,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify({ error: 'GROQ_API_KEY nicht konfiguriert' })
-        }
-      }
-      
       let res = null
       let data = null
 
-      try {
-        res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-            messages: buildMessages(historyLimit),
-            temperature: 0.1,
-            max_tokens: 4096
+      // Versuche zuerst OpenAI GPT-4o für Bilder (Beste Qualität für Video-Frames)
+      const openAiKey = process.env.OPENAI_API_KEY
+      if (openAiKey) {
+        try {
+          res = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${openAiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'gpt-4o',
+              messages: buildMessages(historyLimit),
+              temperature: 0.4,
+              max_tokens: 2500
+            })
           })
-        })
-        data = await res.json()
-      } catch (err) {
-        console.error('Groq Vision fetch failed:', err.message)
+          data = await res.json()
+        } catch (err) { console.error('OpenAI Vision fetch failed:', err.message) }
+        
+        if (res && res.ok && data && data.choices) {
+          console.log('Antwort von:', 'openai-gpt-4o-vision')
+          aiResponse = data.choices?.[0]?.message?.content || ''
+          usage = data.usage
+          provider = 'openai'
+          modelName = 'gpt-4o'
+        }
       }
 
-      if (res && res.ok && data && data.choices) {
-        console.log('Antwort von:', 'groq-vision')
-        aiResponse = data.choices?.[0]?.message?.content || 'Entschuldigung, ich konnte keine Antwort generieren.'
-        usage = data.usage
-        provider = 'groq'
-        modelName = 'meta-llama/llama-4-scout-17b-16e-instruct'
-      } else {
+      // Fallback zu Groq Vision
+      if (!aiResponse) {
+        const apiKey = process.env.GROQ_API_KEY
+        if (!apiKey && !openAiKey) {
+          return {
+            statusCode: 500,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+            body: JSON.stringify({ error: 'Weder OPENAI_API_KEY noch GROQ_API_KEY konfiguriert für Vision' })
+          }
+        }
+        
+        if (apiKey) {
+          try {
+            res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                model: 'llama-3.2-90b-vision-instruct',
+                messages: buildMessages(historyLimit),
+                temperature: 0.1,
+                max_tokens: 4096
+              })
+            })
+            data = await res.json()
+          } catch (err) { console.error('Groq Vision fetch failed:', err.message) }
+
+          if (res && res.ok && data && data.choices) {
+            console.log('Antwort von:', 'groq-vision')
+            aiResponse = data.choices?.[0]?.message?.content || 'Entschuldigung, ich konnte keine Antwort generieren.'
+            usage = data.usage
+            provider = 'groq'
+            modelName = 'llama-3.2-90b-vision-instruct'
+          }
+        }
+      }
+
+      if (!aiResponse) {
         const errMsg = (data?.error?.message || '').toLowerCase()
         console.log('Vision model failed, falling back to text-only with Groq. Error:', errMsg)
         
