@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Heart, Send, ShieldAlert, Sparkles, Trash2, ArrowRight, Check, RefreshCw, Paperclip, X, Image as ImageIcon, FileText, Volume2 } from 'lucide-react'
+import { Heart, Send, ShieldAlert, Sparkles, Trash2, ArrowRight, ArrowUp, Check, RefreshCw, Paperclip, X, Image as ImageIcon, FileText, Volume2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
