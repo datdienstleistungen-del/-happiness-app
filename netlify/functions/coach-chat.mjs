@@ -25,6 +25,34 @@ WICHTIGE GRENZEN:
 - Du erinnerst dich an frühere Gespräche (Verlauf wird dir mitgegeben) und kannst behutsam daran anknüpfen.`
 
 // LLM Fallback Callers
+async function tryOpenAIGpt4o(messages) {
+  const key = process.env.OPENAI_API_KEY
+  if (!key) return null
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages,
+        temperature: 0.7,
+        max_tokens: 1024
+      })
+    })
+    if (!res.ok) {
+      console.warn(`[LLM-OpenAI] Response not ok: ${res.status}`)
+      return null
+    }
+    const data = await res.json()
+    return data.choices?.[0]?.message?.content || null
+  } catch (e) {
+    console.error('[LLM-OpenAI] Error:', e.message)
+    return null
+  }
+}
 async function tryGroq(messages) {
   const key = process.env.GROQ_API_KEY
   if (!key) return null
@@ -248,9 +276,9 @@ export const handler = async (event) => {
       let body = {}
       try { body = JSON.parse(event.body || '{}') } catch { body = {} }
 
-      const { message, visitor_id, language } = body
-      if (!message) {
-        return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'message ist erforderlich' }) }
+      const { message, visitor_id, language, image_url } = body
+      if (!message && !image_url) {
+        return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'message oder image_url ist erforderlich' }) }
       }
       const activeVisitorId = visitor_id || (user ? null : '')
       if (!activeVisitorId && !user) {
@@ -307,19 +335,32 @@ export const handler = async (event) => {
       const llmMessages = [
         { role: 'system', content: languageDirective + SYSTEM_PROMPT },
         ...history,
-        { role: 'user', content: message }
+        { role: 'user', content: image_url ? [
+          { type: 'text', text: message || 'Bitte analysiere dieses Bild.' },
+          { type: 'image_url', image_url: { url: image_url } }
+        ] : message }
       ]
 
       // Execute Fallback Chain
-      // 1. Groq (llama-3.3-70b-versatile)
-      // 2. OpenRouter (google/gemma-4-26b-a4b-it:free)
-      // 3. Mistral API (mistral-small-latest)
-      // 4. DeepSeek API (deepseek-v4-flash)
-      // 5. OpenRouter (deepseek/deepseek-v4-flash)
+      // 1. OpenAI (GPT-4o) if image is present
+      // 2. Groq (llama-3.3-70b-versatile)
+      // 3. OpenRouter (google/gemma-4-26b-a4b-it:free)
+      // 4. Mistral API (mistral-small-latest)
+      // 5. DeepSeek API (deepseek-v4-flash)
+      // 6. OpenRouter (deepseek/deepseek-v4-flash)
       let responseText = null
       let providerUsed = ''
 
-      responseText = await tryGroq(llmMessages)
+      if (image_url) {
+        console.log('[coach-chat] Image detected, routing to OpenAI GPT-4o Vision')
+        responseText = await tryOpenAIGpt4o(llmMessages)
+        if (responseText) {
+          providerUsed = 'OpenAI (GPT-4o Vision)'
+        }
+      }
+
+      if (!responseText) {
+        responseText = await tryGroq(llmMessages)
       if (responseText) {
         providerUsed = 'Groq (Llama 3.3 70B)'
       } else {
@@ -365,7 +406,7 @@ export const handler = async (event) => {
             visitor_id: activeVisitorId || '',
             user_id: user ? user.id : null,
             role: 'user',
-            content: message
+            content: image_url ? `[Bildanhang] ${message}` : message
           },
           {
             visitor_id: activeVisitorId || '',

@@ -450,6 +450,89 @@
   color: var(--text) !important;
 }
 
+/* Attachment & Input Inner Styles */
+.coach-input-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.coach-attach-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+}
+
+.coach-attach-btn:hover {
+  background: var(--bg-card);
+  color: var(--primary);
+}
+
+.coach-attachment-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--primary);
+}
+
+.attachment-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+}
+
+.attachment-clear {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.attachment-clear:hover {
+  color: var(--danger);
+}
+
+/* TTS Button Styles */
+.coach-tts-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-top: 0.5rem;
+  padding: 0.4rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  align-self: flex-start;
+}
+
+.coach-tts-btn:hover {
+  background: var(--bg-card);
+  color: var(--primary);
+}
+
 /* Hide clear btn text on small screens */
 @media (max-width: 480px) {
   .clear-btn-text {

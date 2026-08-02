@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Heart, Send, ShieldAlert, Sparkles, Trash2, ArrowRight, Check, RefreshCw } from 'lucide-react'
+import { Heart, Send, ShieldAlert, Sparkles, Trash2, ArrowRight, Check, RefreshCw, Paperclip, X, Image as ImageIcon, FileText, Volume2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -25,6 +25,12 @@ export default function CoachChatPage() {
   const [showConsentModal, setShowConsentModal] = useState(false)
   const [pendingMessage, setPendingMessage] = useState('')
   const [error, setError] = useState('')
+  
+  const [attachment, setAttachment] = useState(null)
+  const [attachmentPreview, setAttachmentPreview] = useState(null)
+  const [playingAudio, setPlayingAudio] = useState(null)
+  const fileInputRef = useRef(null)
+  const audioRef = useRef(null)
   
   // Track client-side consent state
   const [consentGranted, setConsentGranted] = useState(() => {
@@ -84,10 +90,66 @@ export default function CoachChatPage() {
     fetchHistory()
   }, [consentGranted, user])
 
+  // Handle attachments
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        setAttachment(ev.target.result)
+        setAttachmentPreview({ type: 'image', url: ev.target.result, name: file.name })
+      }
+      reader.readAsDataURL(file)
+    } else {
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        const textContent = `[Inhalt der angehängten Datei "${file.name}"]\n\n${ev.target.result}`
+        setAttachment(textContent)
+        setAttachmentPreview({ type: 'text', name: file.name })
+      }
+      reader.readAsText(file)
+    }
+    e.target.value = ''
+  }
+
+  const clearAttachment = () => {
+    setAttachment(null)
+    setAttachmentPreview(null)
+  }
+
+  // TTS playback
+  const handlePlayVoice = async (text, index) => {
+    if (playingAudio === index) {
+      if (audioRef.current) audioRef.current.pause()
+      setPlayingAudio(null)
+      return
+    }
+    setPlayingAudio(index)
+    try {
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, voice: 'nova' })
+      })
+      if (!res.ok) throw new Error('TTS failed')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      if (audioRef.current) audioRef.current.pause()
+      audioRef.current = new Audio(url)
+      audioRef.current.onended = () => setPlayingAudio(null)
+      audioRef.current.play()
+    } catch (e) {
+      console.error(e)
+      setPlayingAudio(null)
+    }
+  }
+
   // Triggered when user clicks Send
   const handleSendAttempt = (e) => {
     e.preventDefault()
-    if (!message.trim() || loading) return
+    if ((!message.trim() && !attachment) || loading) return
 
     setError('')
     // If consent hasn't been set, show the consent dialogue first
@@ -103,8 +165,12 @@ export default function CoachChatPage() {
 
   // Handle actual API call to send message
   const executeSendMessage = async (msgText) => {
+    const currentAttachment = attachment
+    const currentAttachmentPreview = attachmentPreview
+    
     setMessage('')
     setPendingMessage('')
+    clearAttachment()
 
     sessionMessageCount.current += 1
     if (sessionMessageCount.current === 1) {
@@ -116,7 +182,10 @@ export default function CoachChatPage() {
     }
     
     // Optimistic user message rendering
-    const userMsg = { role: 'user', content: msgText }
+    const displayMsg = currentAttachmentPreview 
+      ? `[Anhang: ${currentAttachmentPreview.name}]\n\n${msgText}` 
+      : msgText
+    const userMsg = { role: 'user', content: displayMsg }
     setChatHistory(prev => [...prev, userMsg])
     setLoading(true)
 
@@ -127,11 +196,16 @@ export default function CoachChatPage() {
       const headers = { 'Content-Type': 'application/json' }
       if (token) headers['Authorization'] = `Bearer ${token}`
 
+      const payloadMsg = currentAttachmentPreview && currentAttachmentPreview.type === 'text' 
+        ? `${currentAttachment}\n\n${msgText}` 
+        : msgText
+
       const res = await fetch('/api/coach-chat', {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          message: msgText,
+          message: payloadMsg,
+          image_url: currentAttachmentPreview && currentAttachmentPreview.type === 'image' ? currentAttachment : undefined,
           visitor_id: visitorId,
           language: lang
         })
@@ -273,18 +347,29 @@ export default function CoachChatPage() {
               {t('coach.welcomeDesc')}
             </p>
             <form onSubmit={handleSendAttempt} className="coach-welcome-input-wrap">
-              <input
-                type="text"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder={t('coach.placeholderWelcome')}
-                disabled={loading}
-                autoFocus
-                required
-              />
-              <button type="submit" disabled={loading || !message.trim()} className="coach-send-circle">
-                <ArrowRight size={22} />
-              </button>
+              {attachmentPreview && (
+                <div className="coach-attachment-preview">
+                  {attachmentPreview.type === 'image' ? <ImageIcon size={16} /> : <FileText size={16} />}
+                  <span className="attachment-name">{attachmentPreview.name}</span>
+                  <button type="button" onClick={clearAttachment} className="attachment-clear"><X size={14} /></button>
+                </div>
+              )}
+              <div className="coach-input-inner">
+                <button type="button" className="coach-attach-btn" onClick={() => fileInputRef.current?.click()} title="Datei / Foto hochladen">
+                  <Paperclip size={20} />
+                </button>
+                <input
+                  type="text"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder={t('coach.placeholderWelcome')}
+                  disabled={loading}
+                  autoFocus
+                />
+                <button type="submit" disabled={loading || (!message.trim() && !attachment)} className="coach-send-circle">
+                  <ArrowRight size={22} />
+                </button>
+              </div>
             </form>
             <div className="coach-safety-tag">
               <ShieldAlert size={14} />
@@ -305,7 +390,16 @@ export default function CoachChatPage() {
                 <div key={index} className={`coach-msg-bubble-container ${msg.role}`}>
                   <div className="coach-msg-bubble">
                     {msg.role === 'assistant' ? (
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      <>
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        <button 
+                          className="coach-tts-btn"
+                          onClick={() => handlePlayVoice(msg.content, index)}
+                          title="Vorlesen"
+                        >
+                          {playingAudio === index ? <RefreshCw className="spin-icon" size={14} /> : <Volume2 size={14} />}
+                        </button>
+                      </>
                     ) : (
                       <p>{msg.content}</p>
                     )}
@@ -328,22 +422,32 @@ export default function CoachChatPage() {
         )}
       </main>
 
-      {/* Input bar (only shown when chat has started) */}
       {chatHistory.length > 0 && (
         <footer className="coach-chat-footer">
           {error && <div className="coach-error-banner">{error}</div>}
           <form onSubmit={handleSendAttempt} className="coach-bottom-input-bar">
-            <input
-              type="text"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder={t('coach.placeholderInput')}
-              disabled={loading}
-              required
-            />
-            <button type="submit" disabled={loading || !message.trim()} className="coach-send-button">
-              <Send size={18} />
-            </button>
+            {attachmentPreview && (
+              <div className="coach-attachment-preview">
+                {attachmentPreview.type === 'image' ? <ImageIcon size={16} /> : <FileText size={16} />}
+                <span className="attachment-name">{attachmentPreview.name}</span>
+                <button type="button" onClick={clearAttachment} className="attachment-clear"><X size={14} /></button>
+              </div>
+            )}
+            <div className="coach-input-inner">
+              <button type="button" className="coach-attach-btn" onClick={() => fileInputRef.current?.click()} title="Datei / Foto hochladen">
+                <Paperclip size={20} />
+              </button>
+              <input
+                type="text"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder={t('coach.placeholderInput')}
+                disabled={loading}
+              />
+              <button type="submit" disabled={loading || (!message.trim() && !attachment)} className="coach-send-button">
+                <Send size={18} />
+              </button>
+            </div>
           </form>
         </footer>
       )}
@@ -383,6 +487,9 @@ export default function CoachChatPage() {
           </div>
         </div>
       )}
+
+      {/* Hidden File Input */}
+      <input type="file" ref={fileInputRef} className="hidden-file-input" onChange={handleFileSelect} accept="image/*,.pdf,.txt,.doc,.docx,.csv" style={{ display: 'none' }} />
     </div>
   )
 }
