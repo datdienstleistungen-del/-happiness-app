@@ -100,9 +100,9 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
   ]
 
   const studioLinks = [
-    { to: '/video-finder', icon: Search, label: 'Video Finder' },
-    { to: '/video-script', icon: Video, label: 'Video-Drehbuch', badge: 'NEU' },
-    { to: '/capcut-studio', icon: Film, label: 'CapCut Studio' },
+    { to: '/video-finder', icon: Search, label: t('nav.videoFinder') },
+    { to: '/video-script', icon: Video, label: t('nav.videoScript'), badge: 'NEU' },
+    { to: '/capcut-studio', icon: Film, label: t('nav.capcutStudio') },
   ]
 
   const discoverLinks = []
@@ -180,19 +180,31 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
           </>
         )}
 
-        {!collapsed && <div className="sidebar-section-title">Video-Studio</div>}
+        {!collapsed && (
+          <div className="sidebar-section-title">
+            {lang === 'es' ? 'Estudio de Video' : lang === 'nl' ? 'Videostudio' : lang === 'fr' ? 'Studio Vidéo' : lang === 'it' ? 'Studio Video' : lang === 'el' ? 'Στούντιο Βίντεο' : lang === 'en' ? 'Video Studio' : 'Video-Studio'}
+          </div>
+        )}
         {renderLinks(studioLinks)}
 
         {discoverLinks.length > 0 && (
           <>
             <div className="sidebar-divider"></div>
-            {!collapsed && <div className="sidebar-section-title">Entdecken</div>}
+            {!collapsed && (
+              <div className="sidebar-section-title">
+                {lang === 'es' ? 'Descubrir' : lang === 'nl' ? 'Ontdekken' : lang === 'fr' ? 'Découvrir' : lang === 'it' ? 'Scopri' : lang === 'el' ? 'Ανακάλυψη' : lang === 'en' ? 'Discover' : 'Entdecken'}
+              </div>
+            )}
             {renderLinks(discoverLinks)}
           </>
         )}
 
         <div className="sidebar-divider"></div>
-        {!collapsed && <div className="sidebar-section-title">Konto</div>}
+        {!collapsed && (
+          <div className="sidebar-section-title">
+            {lang === 'es' ? 'Cuenta' : lang === 'nl' ? 'Account' : lang === 'fr' ? 'Compte' : lang === 'it' ? 'Account' : lang === 'el' ? 'Λογαριασμός' : lang === 'en' ? 'Account' : 'Konto'}
+          </div>
+        )}
         {renderLinks(accountLinks)}
       </nav>
 
@@ -236,8 +248,10 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
               </div>
               {!collapsed && (
                 <div className="sidebar-user-info">
-                  <div className="sidebar-user-name">Gast-Modus</div>
-                  <button className="sidebar-logout" onClick={() => navigate('/login')} style={{ color: 'var(--color-koralle, #d85a30)', fontWeight: 'bold' }}>Anmelden</button>
+                  <div className="sidebar-user-name">
+                    {lang === 'es' ? 'Modo Invitado' : lang === 'nl' ? 'Gastmodus' : lang === 'fr' ? 'Mode Invité' : lang === 'it' ? 'Modalità Ospite' : lang === 'el' ? 'Λειτουργία Επισκέπτη' : lang === 'en' ? 'Guest Mode' : 'Gast-Modus'}
+                  </div>
+                  <button className="sidebar-logout" onClick={() => navigate('/login')} style={{ color: 'var(--color-koralle, #d85a30)', fontWeight: 'bold' }}>{t('auth.login')}</button>
                 </div>
               )}
             </>

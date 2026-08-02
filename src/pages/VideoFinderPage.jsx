@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Search, Film, Download, Sparkles, Check, Copy, ArrowRight, Play, Pause } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useStudio } from '../context/StudioContext'
+import { useLanguage } from '../i18n/translations'
 import './VideoFinderPage.css'
 
 const PRESET_CATEGORIES = [
@@ -16,15 +17,302 @@ const PRESET_CATEGORIES = [
   { id: 'kurios', label: '🤯 Kuriositäten', query: 'unusual strange' }
 ]
 
-const TONES = [
-  { value: 'funny', label: '😂 Lustiger Kommentar (Reaktion)' },
-  { value: 'facts', label: '🧠 Spannendes Storytelling (Fakten)' },
-  { value: 'sarcastic', label: '😏 Ironisch & Sarkastisch' },
-  { value: 'hyped', label: '🔥 Hype & Energiegeladen' }
-]
-
 export default function VideoFinderPage() {
   const navigate = useNavigate()
+  const { t, lang } = useLanguage()
+
+  const getTxt = (key) => {
+    const dict = {
+      de: {
+        viralTitle: 'Finde virale Clips direkt an der Quelle',
+        viralSub: 'Such auf YouTube oder TikTok nach hochaktiven Inhalten, kopiere den Link und füge ihn unten ein.',
+        searchPlaceholder: 'Suchbegriff...',
+        ytShorts: '🌐 YouTube Shorts',
+        tiktok: '📱 TikTok',
+        importTitle: '🔗 Video-Link importieren',
+        labelUrl: '1. Video-URL',
+        labelTopic: '2. Worum geht es? (Thema)',
+        placeholderUrl: 'z. B. https://www.youtube.com/shorts/...',
+        placeholderTopic: 'z. B. Hund rutscht auf Banane aus...',
+        btnImport: 'Video verknüpfen & Skript schreiben',
+        archiveTitle: '🏛️ Internet Archive — Public Domain Videos',
+        archiveSub: 'Kostenlose, rechtlich sichere Videos. Alle Inhalte sind Public Domain oder Creative Commons.',
+        archiveTip: 'Tipp: Die meisten Archiv-Videos sind Querformat (16:9). In CapCut auf 9:16 stellen und heranzoomen.',
+        archiveLoading: 'Internet Archive wird durchsucht...',
+        archiveEmpty: 'Keine freien Public Domain Videos zu diesem Suchbegriff gefunden. Bitte versuche es mit englischen Schlagwörtern.',
+        archiveInfo: 'Suche nach Public Domain Videos.',
+        mixkitTitle: '📱 Mixkit — Kostenlose Stock-Videos',
+        mixkitSub: 'Hochwertige, kostenlose Videos. Viele bereits im vertikalen 9:16-Format.',
+        mixkitLoading: 'Mixkit wird durchsucht...',
+        mixkitEmpty: 'Keine Mixkit-Videos zu diesem Suchbegriff gefunden. Bitte versuche es mit englischen Schlagwörtern.',
+        mixkitInfo: 'Suche nach kostenlosen Stock-Videos.',
+        otherSources: '🔗 Weitere rechtlich sichere Quellen',
+        detailsTitle: 'Videodetails & Skript',
+        openArchive: '🏛️ Im Internet Archive ansehen',
+        openOriginal: '🌐 Original-Video öffnen',
+        downloadVideo: 'Video herunterladen',
+        downloadTip: '* Tipp: Falls das Video im neuen Tab abspielt, klicke im Player auf die drei Punkte (...) und wähle "Herunterladen" oder nutze Rechtsklick &rarr; "Video speichern unter".',
+        downloadManual: 'Automatischer Download nicht möglich (hier manuell wählen)',
+        labelTone: 'Tonalität des Skripts',
+        labelInstructions: 'Spezielle Anweisungen (optional)',
+        placeholderInstructions: 'z. B. "Fokus auf Gesichtsausdruck" oder "Keine Emojis"...',
+        btnGenScript: 'KI-Skript erstellen',
+        genScriptLoading: 'KI formuliert das Skript...',
+        exportCapcut: 'An CapCut Studio senden',
+        errorArchive: 'Fehler bei der Internet Archive Suche. Bitte versuche es noch einmal.',
+        errorMixkit: 'Fehler bei der Mixkit Suche. Bitte versuche es noch einmal.',
+        btnBack: 'Zurück'
+      },
+      en: {
+        viralTitle: 'Find viral clips directly at the source',
+        viralSub: 'Search on YouTube or TikTok for highly active content, copy the link and paste it below.',
+        searchPlaceholder: 'Search term...',
+        ytShorts: '🌐 YouTube Shorts',
+        tiktok: '📱 TikTok',
+        importTitle: '🔗 Import video link',
+        labelUrl: '1. Video URL',
+        labelTopic: '2. What is it about? (Topic)',
+        placeholderUrl: 'e.g. https://www.youtube.com/shorts/...',
+        placeholderTopic: 'e.g. Dog slipping on banana peel...',
+        btnImport: 'Link video & write script',
+        archiveTitle: '🏛️ Internet Archive — Public Domain Videos',
+        archiveSub: 'Free, legally safe videos. All content is Public Domain or Creative Commons.',
+        archiveTip: 'Tip: Most archive videos are landscape (16:9). Set to 9:16 in CapCut and zoom in.',
+        archiveLoading: 'Searching Internet Archive...',
+        archiveEmpty: 'No free Public Domain videos found for this search term. Please try with English keywords.',
+        archiveInfo: 'Search for Public Domain videos.',
+        mixkitTitle: '📱 Mixkit — Free Stock Videos',
+        mixkitSub: 'High quality, free videos. Many already in vertical 9:16 format.',
+        mixkitLoading: 'Searching Mixkit...',
+        mixkitEmpty: 'No Mixkit videos found for this search term. Please try with English keywords.',
+        mixkitInfo: 'Search for free stock videos.',
+        otherSources: '🔗 Other legally safe sources',
+        detailsTitle: 'Video details & script',
+        openArchive: '🏛️ View in Internet Archive',
+        openOriginal: '🌐 Open original video',
+        downloadVideo: 'Download video',
+        downloadTip: '* Tip: If the video plays in a new tab, click the three dots (...) in the player and select "Download" or right-click & choose "Save video as".',
+        downloadManual: 'Automatic download not possible (select manually here)',
+        labelTone: 'Script tone',
+        labelInstructions: 'Special instructions (optional)',
+        placeholderInstructions: 'e.g. "Focus on facial expression" or "No emojis"...',
+        btnGenScript: 'Create AI script',
+        genScriptLoading: 'AI is formulating the script...',
+        exportCapcut: 'Send to CapCut Studio',
+        errorArchive: 'Error searching Internet Archive. Please try again.',
+        errorMixkit: 'Error searching Mixkit. Please try again.',
+        btnBack: 'Back'
+      },
+      nl: {
+        viralTitle: 'Vind virale clips direct bij de bron',
+        viralSub: 'Zoek op YouTube of TikTok naar zeer actieve inhoud, kopieer de link en plak deze hieronder.',
+        searchPlaceholder: 'Zoekterm...',
+        ytShorts: '🌐 YouTube Shorts',
+        tiktok: '📱 TikTok',
+        importTitle: '🔗 Video-link importeren',
+        labelUrl: '1. Video-URL',
+        labelTopic: '2. Waar gaat het over? (Onderwerp)',
+        placeholderUrl: 'bijv. https://www.youtube.com/shorts/...',
+        placeholderTopic: 'bijv. Hond glijdt uit over bananenschil...',
+        btnImport: 'Video koppelen & script schrijven',
+        archiveTitle: '🏛️ Internet Archive — Public Domain Video\'s',
+        archiveSub: 'Gratis, juridisch veilige video\'s. Alle inhoud is openbaar domein of Creative Commons.',
+        archiveTip: 'Tip: De meeste archiefvideo\'s zijn in liggend formaat (16:9). Stel in CapCut in op 9:16 en zoom in.',
+        archiveLoading: 'Zoeken in Internet Archive...',
+        archiveEmpty: 'Geen gratis Public Domain video\'s gevonden voor deze zoekterm. Probeer het met Engelse trefwoorden.',
+        archiveInfo: 'Zoek naar Public Domain video\'s.',
+        mixkitTitle: '📱 Mixkit — Gratis Stock Video\'s',
+        mixkitSub: 'Hoogwaardige, gratis video\'s. Vele al in verticaal 9:16-formaat.',
+        mixkitLoading: 'Zoeken in Mixkit...',
+        mixkitEmpty: 'Geen Mixkit video\'s gevonden voor deze zoekterm. Probeer het met Engelse trefwoorden.',
+        mixkitInfo: 'Zoek naar gratis stockvideo\'s.',
+        otherSources: '🔗 Andere juridisch veilige bronnen',
+        detailsTitle: 'Videodetails & script',
+        openArchive: '🏛️ Bekijken in Internet Archive',
+        openOriginal: '🌐 Originele video openen',
+        downloadVideo: 'Video downloaden',
+        downloadTip: '* Tip: Als de video in een nieuw tabblad wordt afgespeeld, klik dan op de drie stipjes (...) in de speler en selecteer "Downloaden" of klik met de rechtermuisknop en kies "Video opslaan als".',
+        downloadManual: 'Automatische download niet mogelijk (hier handmatig selecteren)',
+        labelTone: 'Tonaliteit van het script',
+        labelInstructions: 'Speciale instructies (optioneel)',
+        placeholderInstructions: 'bijv. "Focus op gezichtsuitdrukking" of "Geen emoji\'s"...',
+        btnGenScript: 'KI-script maken',
+        genScriptLoading: 'KI is het script aan het formuleren...',
+        exportCapcut: 'Naar CapCut Studio sturen',
+        errorArchive: 'Fout bij het zoeken in Internet Archive. Probeer het opnieuw.',
+        errorMixkit: 'Fout bij het zoeken in Mixkit. Probeer het opnieuw.',
+        btnBack: 'Terug'
+      },
+      es: {
+        viralTitle: 'Encuentra clips virales directamente en la fuente',
+        viralSub: 'Busca contenido altamente activo en YouTube o TikTok, copia el enlace y pégalo abajo.',
+        searchPlaceholder: 'Término de búsqueda...',
+        ytShorts: '🌐 YouTube Shorts',
+        tiktok: '📱 TikTok',
+        importTitle: '🔗 Importar enlace de video',
+        labelUrl: '1. URL del video',
+        labelTopic: '2. ¿De qué se trata? (Tema)',
+        placeholderUrl: 'ej. https://www.youtube.com/shorts/...',
+        placeholderTopic: 'ej. Perro resbalando con cáscara de plátano...',
+        btnImport: 'Vincular video y escribir guion',
+        archiveTitle: '🏛️ Internet Archive — Videos de Dominio Público',
+        archiveSub: 'Videos gratuitos y legalmente seguros. Todo el contenido es Dominio Público o Creative Commons.',
+        archiveTip: 'Consejo: La mayoría de los videos de archivo son horizontales (16:9). Configura a 9:16 en CapCut y haz zoom.',
+        archiveLoading: 'Buscando en Internet Archive...',
+        archiveEmpty: 'No se encontraron videos gratuitos de Dominio Público para este término de búsqueda. Intente con palabras clave en inglés.',
+        archiveInfo: 'Buscar videos de Dominio Público.',
+        mixkitTitle: '📱 Mixkit — Videos de Stock Gratuitos',
+        mixkitSub: 'Videos gratuitos de alta calidad. Muchos ya en formato vertical 9:16.',
+        mixkitLoading: 'Buscando en Mixkit...',
+        mixkitEmpty: 'No se encontraron videos de Mixkit para este término de búsqueda. Intente con palabras clave en inglés.',
+        mixkitInfo: 'Buscar videos de stock gratuitos.',
+        otherSources: '🔗 Otras fuentes legalmente seguras',
+        detailsTitle: 'Detalles del video y guion',
+        openArchive: '🏛️ Ver en Internet Archive',
+        openOriginal: '🌐 Abrir video original',
+        downloadVideo: 'Descargar video',
+        downloadTip: '* Consejo: Si el video se reproduce en una nueva pestaña, haz clic en los tres puntos (...) en el reproductor y selecciona "Descargar" o haz clic derecho y elige "Guardar video como".',
+        downloadManual: 'Descarga automática no disponible (seleccionar manualmente aquí)',
+        labelTone: 'Tono del guion',
+        labelInstructions: 'Instrucciones especiales (opcional)',
+        placeholderInstructions: 'ej. "Enfoque en la expresión facial" o "Sin emojis"...',
+        btnGenScript: 'Crear guion con IA',
+        genScriptLoading: 'La IA está formulando el guion...',
+        exportCapcut: 'Enviar a CapCut Studio',
+        errorArchive: 'Error al buscar en Internet Archive. Intente de nuevo.',
+        errorMixkit: 'Error al buscar en Mixkit. Intente de nuevo.',
+        btnBack: 'Volver'
+      },
+      fr: {
+        viralTitle: 'Trouvez des clips viraux directement à la source',
+        viralSub: 'Recherchez du contenu très actif sur YouTube ou TikTok, copiez le lien et collez-le ci-dessous.',
+        searchPlaceholder: 'Terme de recherche...',
+        ytShorts: '🌐 YouTube Shorts',
+        tiktok: '📱 TikTok',
+        importTitle: '🔗 Importer le lien vidéo',
+        labelUrl: '1. URL de la vidéo',
+        labelTopic: '2. De quoi s\'agit-il ? (Sujet)',
+        placeholderUrl: 'ex. https://www.youtube.com/shorts/...',
+        placeholderTopic: 'ex. Chien glissant sur une peau de banane...',
+        btnImport: 'Lier la vidéo & écrire le script',
+        archiveTitle: '🏛️ Internet Archive — Vidéos du Domaine Public',
+        archiveSub: 'Vidéos gratuites et légalement sûres. Tout le contenu est dans le Domaine Public ou Creative Commons.',
+        archiveTip: 'Conseil : La plupart des vidéos d\'archives sont au format paysage (16:9). Réglez sur 9:16 dans CapCut et zoomez.',
+        archiveLoading: 'Recherche dans Internet Archive...',
+        archiveEmpty: 'Aucune vidéo gratuite du Domaine Public trouvée pour ce terme de recherche. Veuillez essayer avec des mots-clés en anglais.',
+        archiveInfo: 'Rechercher des vidéos du Domaine Public.',
+        mixkitTitle: '📱 Mixkit — Vidéos Stock Gratuites',
+        mixkitSub: 'Vidéos gratuites de haute qualité. Beaucoup déjà au format vertical 9:16.',
+        mixkitLoading: 'Recherche dans Mixkit...',
+        mixkitEmpty: 'Aucune vidéo Mixkit trouvée pour ce terme de recherche. Veuillez essayer avec des mots-clés en anglais.',
+        mixkitInfo: 'Rechercher des vidéos stock gratuites.',
+        otherSources: '🔗 Autres sources légalement sûres',
+        detailsTitle: 'Détails de la vidéo & script',
+        openArchive: '🏛️ Voir sur Internet Archive',
+        openOriginal: '🌐 Ouvrir la vidéo d\'origine',
+        downloadVideo: 'Télécharger la vidéo',
+        downloadTip: '* Conseil : Si la vidéo se lance dans un nouvel onglet, cliquez sur les trois points (...) du lecteur et sélectionnez "Télécharger" ou faites un clic droit et choisissez "Enregistrer la vidéo sous".',
+        downloadManual: 'Téléchargement automatique impossible (sélectionner manuellement ici)',
+        labelTone: 'Tonalité du script',
+        labelInstructions: 'Instructions spéciales (optionnel)',
+        placeholderInstructions: 'ex. "Mettre l\'accent sur l\'expression du visage" ou "Pas d\'émojis"...',
+        btnGenScript: 'Créer le script avec l\'IA',
+        genScriptLoading: 'L\'A.I. formule le script...',
+        exportCapcut: 'Envoyer à CapCut Studio',
+        errorArchive: 'Erreur lors de la recherche dans Internet Archive. Veuillez réessayer.',
+        errorMixkit: 'Erreur lors de la recherche dans Mixkit. Veuillez réessayer.',
+        btnBack: 'Retour'
+      },
+      it: {
+        viralTitle: 'Trova clip virali direttamente alla fonte',
+        viralSub: 'Cerca contenuti altamente attivi su YouTube o TikTok, copia il link e incollalo di seguito.',
+        searchPlaceholder: 'Termine di ricerca...',
+        ytShorts: '🌐 YouTube Shorts',
+        tiktok: '📱 TikTok',
+        importTitle: '🔗 Importa link video',
+        labelUrl: '1. URL del video',
+        labelTopic: '2. Di cosa si tratta? (Argomento)',
+        placeholderUrl: 'es. https://www.youtube.com/shorts/...',
+        placeholderTopic: 'es. Cane che scivola su una buccia di banana...',
+        btnImport: 'Collega video e scrivi copione',
+        archiveTitle: '🏛️ Internet Archive — Video di Pubblico Dominio',
+        archiveSub: 'Video gratuiti e legalmente sicuri. Tutti i contenuti sono di Pubblico Dominio o Creative Commons.',
+        archiveTip: 'Consiglio: La maggior parte dei video d\'archivio è in formato orizzontale (16:9). Imposta su 9:16 in CapCut e ingrandisci.',
+        archiveLoading: 'Ricerca in Internet Archive...',
+        archiveEmpty: 'Nessun video gratuito di Pubblico Dominio trovato per questo termine di ricerca. Prova con parole chiave in inglese.',
+        archiveInfo: 'Cerca video di Pubblico Dominio.',
+        mixkitTitle: '📱 Mixkit — Video Stock Gratuiti',
+        mixkitSub: 'Video gratuiti di alta qualità. Molti già in formato verticale 9:16.',
+        mixkitLoading: 'Ricerca in Mixkit...',
+        mixkitEmpty: 'Nessun video Mixkit trovato per questo termine di ricerca. Prova con parole chiave in inglese.',
+        mixkitInfo: 'Cerca video stock gratuiti.',
+        otherSources: '🔗 Altre fonti legalmente sicure',
+        detailsTitle: 'Dettagli del video e copione',
+        openArchive: '🏛️ Visualizza su Internet Archive',
+        openOriginal: '🌐 Apri video originale',
+        downloadVideo: 'Scarica video',
+        downloadTip: '* Consiglio: Se il video viene riprodotto in una nuova scheda, fai clic sui tre punti (...) nel lettore e seleziona "Scarica" o fai clic con il pulsante destro del mouse e scegli "Salva video come".',
+        downloadManual: 'Download automatico non disponibile (seleziona manualmente qui)',
+        labelTone: 'Tonalità del copione',
+        labelInstructions: 'Istruzioni speciali (opzionale)',
+        placeholderInstructions: 'es. "Focus sull\'espressione facciale" o "Senza emoji"...',
+        btnGenScript: 'Crea copione con l\'AI',
+        genScriptLoading: 'L\'AI sta formulando il copione...',
+        exportCapcut: 'Invia a CapCut Studio',
+        errorArchive: 'Errore durante la ricerca in Internet Archive. Riprova.',
+        errorMixkit: 'Errore durante la ricerca in Mixkit. Riprova.',
+        btnBack: 'Indietro'
+      },
+      el: {
+        viralTitle: 'Βρείτε viral κλιπ απευθείας στην πηγή',
+        viralSub: 'Αναζητήστε εξαιρετικά ενεργό περιεχόμενο στο YouTube ή στο TikTok, αντιγράψτε το σύνδεσμο και επικολλήστε τον παρακάτω.',
+        searchPlaceholder: 'Όρος αναζήτησης...',
+        ytShorts: '🌐 YouTube Shorts',
+        tiktok: '📱 TikTok',
+        importTitle: '🔗 Εισαγωγή συνδέσμου βίντεο',
+        labelUrl: '1. URL βίντεο',
+        labelTopic: '2. Περί τίνος πρόκειται; (Θέμα)',
+        placeholderUrl: 'π.χ. https://www.youtube.com/shorts/...',
+        placeholderTopic: 'π.χ. Σκύλος γλιστράει σε φλούδα μπανάνας...',
+        btnImport: 'Σύνδεση βίντεο & συγγραφή σεναρίου',
+        archiveTitle: '🏛️ Internet Archive — Βίντεο Κοινού Κτήματος',
+        archiveSub: 'Δωρεάν, νομικά ασφαλή βίντεο. Όλο το περιεχόμενο είναι Κοινού Κτήματος (Public Domain) ή Creative Commons.',
+        archiveTip: 'Συμβουλή: Τα περισσότερα βίντεο αρχείου είναι οριζόντια (16:9). Ορίστε σε 9:16 στο CapCut και κάντε ζουμ.',
+        archiveLoading: 'Αναζήτηση στο Internet Archive...',
+        archiveEmpty: 'Δεν βρέθηκαν δωρεάν βίντεο Κοινού Κτήματος για αυτόν τον όρο αναζήτησης. Δοκιμάστε με αγγλικές λέξεις-κλειδιά.',
+        archiveInfo: 'Αναζήτηση για βίντεο Κοινού Κτήματος.',
+        mixkitTitle: '📱 Mixkit — Δωρεάν Stock Βίντεο',
+        mixkitSub: 'Υψηλής ποιότητας, δωρεάν βίντεο. Πολλά ήδη σε κατακόρυφη μορφή 9:16.',
+        mixkitLoading: 'Αναζήτηση στο Mixkit...',
+        mixkitEmpty: 'Δεν βρέθηκαν βίντεο Mixkit για αυτόν τον όρο αναζήτησης. Δοκιμάστε με αγγλικές λέξεις-κλειδιά.',
+        mixkitInfo: 'Αναζήτηση για δωρεάν stock βίντεο.',
+        otherSources: '🔗 Άλλες νομικά ασφαλή πηγές',
+        detailsTitle: 'Λεπτομέρειες βίντεο & σενάριο',
+        openArchive: '🏛️ Προβολή στο Internet Archive',
+        openOriginal: '🌐 Άνοιγμα αρχικού βίντεο',
+        downloadVideo: 'Λήψη βίντεο',
+        downloadTip: '* Συμβουλή: Εάν το βίντεο αναπαράγεται σε νέα καρτέλα, κάντε κλικ στις τρεις τελείες (...) στο πρόγραμμα αναπαραγωγής και επιλέξτε "Λήψη" ή κάντε δεξί κλικ και επιλέξτε "Αποθήκευση βίντεο ως".',
+        downloadManual: 'Η αυτόματη λήψη δεν είναι δυνατή (επιλέξτε μη αυτόματα εδώ)',
+        labelTone: 'Τόνος σεναρίου',
+        labelInstructions: 'Ειδικές οδηγίες (προαιρετικά)',
+        placeholderInstructions: 'π.χ. "Εστίαση στην έκφραση του προσώπου" ή "Χωρίς emoji"...',
+        btnGenScript: 'Δημιουργία σεναρίου με AI',
+        genScriptLoading: 'Το AI διαμορφώνει το σενάριο...',
+        exportCapcut: 'Αποστολή στο CapCut Studio',
+        errorArchive: 'Σφάλμα κατά την αναζήτηση στο Internet Archive. Δοκιμάστε ξανά.',
+        errorMixkit: 'Σφάλμα κατά την αναζήτηση στο Mixkit. Δοκιμάστε ξανά.',
+        btnBack: 'Επιστροφή'
+      }
+    }
+    return dict[lang]?.[key] || dict['en']?.[key] || key
+  }
+
+  const TONES = [
+    { value: 'funny', label: `😂 ${t('videoFinder.toneFunny')}` },
+    { value: 'facts', label: `🧠 ${t('videoFinder.toneFacts')}` },
+    { value: 'sarcastic', label: `😏 ${t('videoFinder.toneSarcastic')}` },
+    { value: 'hyped', label: `🔥 ${t('videoFinder.toneHyped')}` }
+  ]
   const {
     query, setQuery,
     videos, setVideos,
@@ -89,7 +377,7 @@ export default function VideoFinderPage() {
       }).catch(() => {})
     } catch (e) {
       console.error('[Video Search Error]', e)
-      setError('Fehler bei der Videosuche. Bitte versuche es noch einmal.')
+      setError(t('videoFinder.errorSearch'))
     } finally {
       setLoading(false)
     }
@@ -108,11 +396,11 @@ export default function VideoFinderPage() {
 
   const handleImportVideo = () => {
     if (!importedUrl.trim()) {
-      setError('Bitte füge eine Video-URL ein.')
+      setError(t('videoScript.errorUrlOrFile'))
       return
     }
     if (!topic.trim()) {
-      setError('Bitte gib an, worum es in dem Video geht (Thema).')
+      setError(t('videoScript.needsDescription'))
       return
     }
     setError('')
@@ -139,12 +427,23 @@ export default function VideoFinderPage() {
     const toneLabel = TONES.find(t => t.value === selectedTone)?.label || 'Unterhaltsam'
     const scriptTopic = activeSource === 'viral' ? topic : (query || 'Unterhaltung')
 
+    const languageNames = {
+      de: 'deutscher',
+      en: 'englischer',
+      es: 'spanischer',
+      fr: 'französischer',
+      it: 'italienischer',
+      nl: 'niederländischer',
+      el: 'griechischer'
+    }
+    const currentLanguageName = languageNames[lang] || 'deutscher'
+
     const systemPrompt = `Du bist H.I.T., ein weltklasse Retention-Coach und Skriptschreiber für TikTok- und Shorts-Videos.
 Deine Aufgabe ist es, für ein gegebenes Video (Thema: "${scriptTopic}") ein unterhaltsames, virales Videoskript zu schreiben.
 Der gewünschte Tonfall ist: "${toneLabel}".
 ${customInstructions ? `Zusätzliche Anweisungen des Users: "${customInstructions}"` : ''}
 
-Erstelle ein vollständiges Skript in deutscher Sprache.
+Erstelle ein vollständiges Skript in ${currentLanguageName} Sprache.
 
 Strukturiere deine Antwort zwingend als JSON mit folgender Struktur:
 {
@@ -213,7 +512,7 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
       }
     } catch (e) {
       console.error('[Script Generation Error]', e)
-      setError('Skript-Generierung fehlgeschlagen. Bitte versuche es noch einmal.')
+      setError(t('videoScript.errorGeneration'))
     } finally {
       setGeneratingScript(false)
     }
@@ -286,7 +585,7 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
       }).catch(() => {})
     } catch (e) {
       console.error('[Archive Search Error]', e)
-      setError('Fehler bei der Internet Archive Suche. Bitte versuche es noch einmal.')
+      setError(getTxt('errorArchive'))
     } finally {
       setArchiveLoading(false)
     }
@@ -325,7 +624,7 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
       }).catch(() => {})
     } catch (e) {
       console.error('[Mixkit Search Error]', e)
-      setError('Fehler bei der Mixkit Suche. Bitte versuche es noch einmal.')
+      setError(getTxt('errorMixkit'))
     } finally {
       setMixkitLoading(false)
     }
@@ -335,8 +634,8 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
     <div className="vf-container">
       <div className="vf-main-content">
         <div className="vf-header">
-          <h2>🔍 Video Finder & Skript-Generator</h2>
-          <p>Suche nach viralen Clip-Kategorien, lade sie herunter und generiere ein passendes Skript für deinen Kanal.</p>
+          <h2>🔍 {t('videoFinder.title')}</h2>
+          <p>{t('videoFinder.subtitle')}</p>
         </div>
 
         <div className="vf-tabs">
@@ -344,25 +643,25 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
             className={`vf-tab-btn-source ${activeSource === 'pexels' ? 'active' : ''}`}
             onClick={() => { setActiveSource('pexels'); setSelectedVideo(null); setGeneratedScript(null); setError('') }}
           >
-            📸 Pexels Stock-Archiv
+            📸 {t('videoFinder.tabPexels')}
           </button>
           <button
             className={`vf-tab-btn-source ${activeSource === 'viral' ? 'active' : ''}`}
             onClick={() => { setActiveSource('viral'); setSelectedVideo(null); setGeneratedScript(null); setError('') }}
           >
-            🚀 Viral-Finder (YouTube / TikTok)
+            🚀 {t('videoFinder.tabViral')}
           </button>
           <button
             className={`vf-tab-btn-source ${activeSource === 'archive' ? 'active' : ''}`}
             onClick={() => { setActiveSource('archive'); setSelectedVideo(null); setGeneratedScript(null); setError('') }}
           >
-            🏛️ Internet Archive
+            🏛️ {t('videoFinder.tabArchive')}
           </button>
           <button
             className={`vf-tab-btn-source ${activeSource === 'mixkit' ? 'active' : ''}`}
             onClick={() => { setActiveSource('mixkit'); setSelectedVideo(null); setGeneratedScript(null); setError('') }}
           >
-            📱 Mixkit
+            📱 {t('videoFinder.tabMixkit')}
           </button>
         </div>
 
@@ -373,13 +672,13 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
                 <Search size={18} className="vf-search-icon" />
                 <input
                   type="text"
-                  placeholder="Was suchst du? (DE oder EN funktioniert)"
+                  placeholder={t('videoFinder.placeholder')}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
                 <button className="vf-search-btn" onClick={() => handleSearch()}>
-                  Suchen
+                  {t('videoFinder.searchBtn')}
                 </button>
               </div>
 
@@ -390,7 +689,14 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
                     className="vf-tag-btn"
                     onClick={() => { setQuery(cat.query); handleSearch(cat.query) }}
                   >
-                    {cat.label}
+                    {cat.id === 'satisfying' ? '🌊 ' + t('videoFinder.satisfying') :
+                     cat.id === 'gaming' ? '🎮 ' + t('videoFinder.gaming') :
+                     cat.id === 'prank' ? '🎭 ' + t('videoFinder.prank') :
+                     cat.id === 'soccer' ? '⚽ ' + t('videoFinder.soccer') :
+                     cat.id === 'timelapse' ? '⏱️ ' + t('videoFinder.timelapse') :
+                     cat.id === 'sports' ? '🏂 ' + t('videoFinder.sports') :
+                     cat.id === 'comedy' ? '😂 ' + t('videoFinder.comedy') :
+                     '🤯 ' + t('videoFinder.kurios')}
                   </button>
                 ))}
               </div>
@@ -401,15 +707,15 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
             {loading ? (
               <div className="vf-loading-state">
                 <div className="vf-spinner"></div>
-                <p>Passende Clips werden gesucht...</p>
+                <p>{t('videoFinder.loading')}</p>
               </div>
             ) : videos.length === 0 ? (
               <div className="vf-empty-state">
                 <Film size={48} />
                 <p>
                   {pexelsSearched
-                    ? 'Keine Videos zu diesem Suchbegriff gefunden. Bitte versuche es mit anderen Begriffen.'
-                    : 'Gib einen Suchbegriff ein oder klicke auf eine Kategorie.'}
+                    ? t('videoFinder.errorSearch')
+                    : t('videoFinder.infoText')}
                 </p>
               </div>
             ) : (
@@ -425,30 +731,30 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
         {activeSource === 'viral' && (
           <div className="vf-viral-container">
             <div className="vf-viral-intro">
-              <h3>Finde virale Clips direkt an der Quelle</h3>
-              <p>Such auf YouTube oder TikTok nach hochaktiven Inhalten, kopiere den Link und füge ihn unten ein.</p>
+              <h3>{getTxt('viralTitle')}</h3>
+              <p>{getTxt('viralSub')}</p>
               <div className="vf-external-search-wrap">
                 <div className="vf-external-search-input-group">
-                  <input type="text" placeholder="Suchbegriff..." value={query} onChange={(e) => setQuery(e.target.value)} />
+                  <input type="text" placeholder={getTxt('searchPlaceholder')} value={query} onChange={(e) => setQuery(e.target.value)} />
                   <button className="vf-ext-btn yt" onClick={() => searchExternal('youtube')}>🌐 YouTube Shorts</button>
                   <button className="vf-ext-btn tt" onClick={() => searchExternal('tiktok')}>📱 TikTok</button>
                 </div>
               </div>
             </div>
             <div className="vf-importer-box">
-              <h4>🔗 Video-Link importieren</h4>
+              <h4>{getTxt('importTitle')}</h4>
               {error && <div className="vf-error-banner">{error}</div>}
               <div className="vf-importer-fields">
                 <div className="vf-importer-field">
-                  <label>1. Video-URL</label>
-                  <input type="text" placeholder="z. B. https://www.youtube.com/shorts/..." value={importedUrl} onChange={(e) => setImportedUrl(e.target.value)} />
+                  <label>{getTxt('labelUrl')}</label>
+                  <input type="text" placeholder={getTxt('placeholderUrl')} value={importedUrl} onChange={(e) => setImportedUrl(e.target.value)} />
                 </div>
                 <div className="vf-importer-field">
-                  <label>2. Worum geht es? (Thema)</label>
-                  <input type="text" placeholder="z. B. Hund rutscht auf Banane aus..." value={topic} onChange={(e) => setTopic(e.target.value)} />
+                  <label>{getTxt('labelTopic')}</label>
+                  <input type="text" placeholder={getTxt('placeholderTopic')} value={topic} onChange={(e) => setTopic(e.target.value)} />
                 </div>
               </div>
-              <button className="vf-import-btn" onClick={handleImportVideo}>Video verknüpfen & Skript schreiben</button>
+              <button className="vf-import-btn" onClick={handleImportVideo}>{getTxt('btnImport')}</button>
             </div>
           </div>
         )}
@@ -456,15 +762,15 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
         {activeSource === 'archive' && (
           <div className="vf-viral-container">
             <div className="vf-viral-intro">
-              <h3>🏛️ Internet Archive — Public Domain Videos</h3>
-              <p>Kostenlose, rechtlich sichere Videos. Alle Inhalte sind Public Domain oder Creative Commons.</p>
+              <h3>{getTxt('archiveTitle')}</h3>
+              <p>{getTxt('archiveSub')}</p>
               <div style={{ background: '#ecfdf5', border: '1px solid #10b981', borderRadius: '8px', padding: '10px 14px', fontSize: '0.85rem', marginTop: '0.75rem', color: '#065f46' }}>
-                <strong>Tipp:</strong> Die meisten Archiv-Videos sind Querformat (16:9). In CapCut auf 9:16 stellen und heranzoomen.
+                {getTxt('archiveTip')}
               </div>
               <div className="vf-search-bar" style={{ marginTop: '1rem' }}>
                 <Search size={18} className="vf-search-icon" />
                 <input type="text" placeholder="z. B. nature, space, vintage, cooking..." value={archiveQuery} onChange={(e) => setArchiveQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleArchiveSearch()} />
-                <button className="vf-search-btn" onClick={() => handleArchiveSearch()}>Durchsuchen</button>
+                <button className="vf-search-btn" onClick={() => handleArchiveSearch()}>{t('videoFinder.searchBtn')}</button>
               </div>
               <div className="vf-quick-tags" style={{ marginTop: '0.75rem' }}>
                 {[{ label: '🌍 Nature', query: 'nature' }, { label: '🚀 Space', query: 'space' }, { label: '🎬 Vintage', query: 'vintage' }, { label: '🍳 Cooking', query: 'cooking' }, { label: '🐾 Animals', query: 'animals' }, { label: '🏙️ City', query: 'city' }].map(cat => (
@@ -474,14 +780,14 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
             </div>
             {error && <div className="vf-error-banner">{error}</div>}
             {archiveLoading ? (
-              <div className="vf-loading-state"><div className="vf-spinner"></div><p>Internet Archive wird durchsucht...</p></div>
+              <div className="vf-loading-state"><div className="vf-spinner"></div><p>{getTxt('archiveLoading')}</p></div>
             ) : archiveVideos.length === 0 ? (
               <div className="vf-empty-state">
                 <Film size={48} />
                 <p>
                   {archiveSearched
-                    ? 'Keine freien Public Domain Videos zu diesem Suchbegriff gefunden. Bitte versuche es mit englischen Schlagwörtern.'
-                    : 'Suche nach Public Domain Videos.'}
+                    ? getTxt('archiveEmpty')
+                    : getTxt('archiveInfo')}
                 </p>
               </div>
             ) : (
@@ -497,12 +803,12 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
         {activeSource === 'mixkit' && (
           <div className="vf-viral-container">
             <div className="vf-viral-intro">
-              <h3>📱 Mixkit — Kostenlose Stock-Videos</h3>
-              <p>Hochwertige, kostenlose Videos. Viele bereits im vertikalen 9:16-Format.</p>
+              <h3>{getTxt('mixkitTitle')}</h3>
+              <p>{getTxt('mixkitSub')}</p>
               <div className="vf-search-bar" style={{ marginTop: '1rem' }}>
                 <Search size={18} className="vf-search-icon" />
                 <input type="text" placeholder="z. B. laptop, coffee, fitness, city..." value={mixkitQuery} onChange={(e) => setMixkitQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleMixkitSearch()} />
-                <button className="vf-search-btn" onClick={() => handleMixkitSearch()}>Suchen</button>
+                <button className="vf-search-btn" onClick={() => handleMixkitSearch()}>{t('videoFinder.searchBtn')}</button>
               </div>
               <div className="vf-quick-tags" style={{ marginTop: '0.75rem' }}>
                 {[{ label: '💻 Tech', query: 'laptop' }, { label: '☕ Lifestyle', query: 'coffee' }, { label: '💪 Fitness', query: 'fitness' }, { label: '🏙️ City', query: 'city' }, { label: '🌿 Nature', query: 'nature' }, { label: '🎨 Creative', query: 'creative' }].map(cat => (
@@ -512,14 +818,14 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
             </div>
             {error && <div className="vf-error-banner">{error}</div>}
             {mixkitLoading ? (
-              <div className="vf-loading-state"><div className="vf-spinner"></div><p>Mixkit wird durchsucht...</p></div>
+              <div className="vf-loading-state"><div className="vf-spinner"></div><p>{getTxt('mixkitLoading')}</p></div>
             ) : mixkitVideos.length === 0 ? (
               <div className="vf-empty-state">
                 <Film size={48} />
                 <p>
                   {mixkitSearched
-                    ? 'Keine Mixkit-Videos zu diesem Suchbegriff gefunden. Bitte versuche es mit englischen Schlagwörtern.'
-                    : 'Suche nach kostenlosen Stock-Videos.'}
+                    ? getTxt('mixkitEmpty')
+                    : getTxt('mixkitInfo')}
                 </p>
               </div>
             ) : (
@@ -530,7 +836,7 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
               </div>
             )}
             <div style={{ marginTop: '2rem', padding: '1.25rem', background: '#fff', borderRadius: '14px', border: '1px solid #e5e7eb' }}>
-              <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem' }}>🔗 Weitere rechtlich sichere Quellen</h4>
+              <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem' }}>{getTxt('otherSources')}</h4>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 <a href="https://coverr.co" target="_blank" rel="noreferrer" className="vf-tag-btn" style={{ textDecoration: 'none' }}>Coverr</a>
                 <a href="https://www.dareful.com" target="_blank" rel="noreferrer" className="vf-tag-btn" style={{ textDecoration: 'none' }}>Dareful (4K CC)</a>
@@ -543,7 +849,7 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
       {selectedVideo && (
         <div className="vf-sidebar-panel">
           <div className="vf-sidebar-header">
-            <h3>Videodetails & Skript</h3>
+            <h3>{getTxt('detailsTitle')}</h3>
             <button className="vf-close-sidebar" onClick={() => setSelectedVideo(null)}>×</button>
           </div>
           <div className="vf-sidebar-body">
@@ -555,7 +861,7 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
                   {selectedVideo.hasVideo ? (
                     <video key={selectedVideo.url} src={selectedVideo.url} controls playsInline className="vf-large-player" />
                   ) : (
-                    <a href={selectedVideo.detailsUrl} target="_blank" rel="noreferrer" className="vf-open-link-btn">🏛️ Im Internet Archive ansehen</a>
+                    <a href={selectedVideo.detailsUrl} target="_blank" rel="noreferrer" className="vf-open-link-btn">{getTxt('openArchive')}</a>
                   )}
                 </div>
               ) : selectedVideo.source === 'mixkit' ? (
@@ -564,7 +870,7 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
                 <div className="vf-import-placeholder">
                   <Film size={40} className="vf-placeholder-icon" />
                   <p className="vf-placeholder-title">{selectedVideo.title}</p>
-                  <a href={selectedVideo.url} target="_blank" rel="noreferrer" className="vf-open-link-btn">🌐 Original-Video öffnen</a>
+                  <a href={selectedVideo.url} target="_blank" rel="noreferrer" className="vf-open-link-btn">{getTxt('openOriginal')}</a>
                 </div>
               ) : (
                 <video key={selectedVideo.url} src={selectedVideo.url} controls playsInline className="vf-large-player" />
@@ -575,42 +881,42 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
               {selectedVideo.source === 'archive' ? (
                 selectedVideo.hasVideo ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
-                    <a href={selectedVideo.url} download={`archive_${selectedVideo.id}.mp4`} target="_blank" rel="noreferrer" className="vf-download-action-btn"><Download size={16} /> Video herunterladen</a>
+                    <a href={selectedVideo.url} download={`archive_${selectedVideo.id}.mp4`} target="_blank" rel="noreferrer" className="vf-download-action-btn"><Download size={16} /> {getTxt('downloadVideo')}</a>
                     <span style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '2px', lineHeight: '1.2' }}>
-                      * Tipp: Falls das Video im neuen Tab abspielt, klicke im Player auf die drei Punkte (...) und wähle "Herunterladen" oder nutze Rechtsklick &rarr; "Video speichern unter".
+                      {getTxt('downloadTip')}
                     </span>
                   </div>
                 ) : (
-                  <a href={selectedVideo.downloadUrl} target="_blank" rel="noreferrer" className="vf-download-action-btn"><Download size={16} /> Automatischer Download nicht möglich (hier manuell wählen)</a>
+                  <a href={selectedVideo.downloadUrl} target="_blank" rel="noreferrer" className="vf-download-action-btn"><Download size={16} /> {getTxt('downloadManual')}</a>
                 )
               ) : selectedVideo.source === 'mixkit' ? (
-                <a href={selectedVideo.url} download={`mixkit_${selectedVideo.id}.mp4`} target="_blank" rel="noreferrer" className="vf-download-action-btn"><Download size={16} /> Video herunterladen</a>
+                <a href={selectedVideo.url} download={`mixkit_${selectedVideo.id}.mp4`} target="_blank" rel="noreferrer" className="vf-download-action-btn"><Download size={16} /> {getTxt('downloadVideo')}</a>
               ) : selectedVideo.id !== 'viral-import' ? (
-                <a href={selectedVideo.url} download={`clip_${selectedVideo.id}.mp4`} target="_blank" rel="noreferrer" className="vf-download-action-btn"><Download size={16} /> Clip herunterladen</a>
+                <a href={selectedVideo.url} download={`clip_${selectedVideo.id}.mp4`} target="_blank" rel="noreferrer" className="vf-download-action-btn"><Download size={16} /> {getTxt('downloadVideo')}</a>
               ) : null}
             </div>
 
             <div className="vf-generator-setup">
-              <label>Tonalität des Skripts</label>
+              <label>{getTxt('labelTone')}</label>
               <select value={selectedTone} onChange={(e) => setSelectedTone(e.target.value)}>
                 {TONES.map(t => (<option key={t.value} value={t.value}>{t.label}</option>))}
               </select>
-              <label>Spezielle Anweisungen (optional)</label>
-              <textarea placeholder="z. B. 'Fokus auf Gesichtsausdruck' oder 'Keine Emojis'..." value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)} />
+              <label>{getTxt('labelInstructions')}</label>
+              <textarea placeholder={getTxt('placeholderInstructions')} value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)} />
               <button className="vf-generate-script-btn" onClick={generateScriptForVideo} disabled={generatingScript}>
                 <Sparkles size={16} />
-                {generatingScript ? 'Generiere Skript...' : 'KI-Skript erstellen'}
+                {generatingScript ? getTxt('genScriptLoading') : getTxt('btnGenScript')}
               </button>
             </div>
 
             {generatingScript && (
-              <div className="vf-script-loading"><div className="vf-script-shimmer"></div><p>KI formuliert das Skript...</p></div>
+              <div className="vf-script-loading"><div className="vf-script-shimmer"></div><p>{getTxt('genScriptLoading')}</p></div>
             )}
 
             {generatedScript && (
               <div className="vf-script-output-card">
                 <div className="vf-script-output-header">
-                  <h4>✍️ {generatedScript.video_title}</h4>
+                  <h4>✍️ {generatedRecipe?.video_title || generatedScript.video_title}</h4>
                   <button className="vf-copy-script-icon" onClick={handleCopyScript} title="Kopieren">
                     {copied ? <Check size={16} style={{ color: '#10b981' }} /> : <Copy size={16} />}
                   </button>
@@ -620,7 +926,7 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
                   <p className="vf-script-text">{generatedScript.voiceover_script}</p>
                 </div>
                 <button className="vf-export-capcut-btn" onClick={handleSendToCapCut}>
-                  An CapCut Studio senden <ArrowRight size={16} />
+                  {getTxt('exportCapcut')} <ArrowRight size={16} />
                 </button>
               </div>
             )}
@@ -634,6 +940,7 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
 function VideoCard({ video, onSelect, isSelected }) {
   const videoRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
+  const { lang } = useLanguage()
 
   const handleMouseEnter = () => {
     if (videoRef.current) videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {})
@@ -662,12 +969,16 @@ function VideoCard({ video, onSelect, isSelected }) {
 }
 
 function ArchiveVideoCard({ video, onSelect, isSelected }) {
+  const { lang } = useLanguage()
+  const hasVidTxt = lang === 'nl' ? '▶️ Video beschikbaar' : lang === 'de' ? '▶️ Video verfügbar' : '▶️ Video available'
+  const pubDomainTxt = lang === 'nl' ? '🏛️ Publiek domein' : lang === 'el' ? '🏛️ Κοινό κτήμα' : lang === 'de' ? '🏛️ Public Domain' : '🏛️ Public Domain'
+
   return (
     <div className={`vf-video-card ${isSelected ? 'selected' : ''}`} onClick={() => onSelect(video)} style={{ cursor: 'pointer' }}>
       <div className="vf-video-wrapper" style={{ background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center', padding: '1rem' }}>
           <Film size={32} style={{ color: '#10b981', marginBottom: '0.5rem' }} />
-          <p style={{ color: '#fff', fontSize: '0.8rem', margin: 0 }}>{video.hasVideo ? '▶️ Video verfügbar' : '🏛️ Public Domain'}</p>
+          <p style={{ color: '#fff', fontSize: '0.8rem', margin: 0 }}>{video.hasVideo ? hasVidTxt : pubDomainTxt}</p>
         </div>
       </div>
       <div className="vf-card-footer" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>

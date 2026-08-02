@@ -15,129 +15,149 @@ import { trackRecipeGenerated, trackPlatformViewed, trackCapCutTriggered } from 
 import { trackExportToTool, trackPublishConfirmed } from '../intelligence/analytics/custom'
 import { copyScriptToClipboard, downloadScenesZip, downloadCapCutDraft } from '../utils/capcut-export'
 import { uploadToCloudinary } from '../utils/cloudinary'
+import { useLanguage } from '../i18n/translations'
 import './CapCutStudio.css'
 
-const isDE = navigator.language.startsWith('de')
+const getT = (lang) => {
+  const isDE = lang === 'de'
+  const isNL = lang === 'nl'
 
-const t = {
-  header: isDE ? 'CapCut Content Studio' : 'CapCut Content Studio',
-  heroTitle: isDE ? 'Content-Generator' : 'Content Generator',
-  heroSub: isDE
-    ? 'Beschreib dein Thema — H.I.T. erstellt ein CapCut-Rezept mit Skript, Visual Prompts und Publishing-Texten für alle Plattformen.'
-    : 'Describe your topic — H.I.T. creates a CapCut recipe with script, visual prompts, and publishing texts for all platforms.',
-  howItWorks: isDE
-    ? "So geht's:"
-    : "How it works:",
-  howItWorksText: isDE
-    ? 'Beschreib dein Thema, drücke "Generieren" — und kopiere die fertigen Texte in CapCut oder direkt in deine sozialen Kanäle.'
-    : 'Describe your topic, click "Generate" — and copy the finished texts into CapCut or directly to your social channels.',
-  step1: isDE ? 'Thema beschreiben' : 'Describe your topic',
-  step2: isDE ? 'KI generiert Skript + Texte' : 'AI generates script + texts',
-  step3: isDE ? 'Kopieren & posten' : 'Copy & post',
-  textareaLabel: isDE ? 'Worum geht es in deinem Video?' : 'What is your video about?',
-  textareaPlaceholder: isDE
-    ? "z.B. '5 Tipps für ein glücklicheres Leben' oder 'Mein Produkt: Handgemachte Kerzen aus Sojawachs'"
-    : "e.g. '5 tips for a happier life' or 'My product: Handmade soy candles'",
-  durationLabel: isDE ? 'Videolänge' : 'Video length',
-  quotaText: isDE
-    ? (n) => `Dein H.I.T. Kontingent: ${n.videosLeft}/3 Videos | ${n.postsLeft}/5 Posts verfügbar`
-    : (n) => `Your H.I.T. quota: ${n.videosLeft}/3 videos | ${n.postsLeft}/5 posts available`,
-  paywallTitle: isDE ? 'H.I.T. Unlimited freischalten' : 'Unlock H.I.T. Unlimited',
-  paywallPrice: '4,99 € / ' + (isDE ? 'Monat' : 'month'),
-  paywallFeature1: isDE ? 'Unlimitierte Videos & Posts' : 'Unlimited videos & posts',
-  paywallFeature2: isDE ? 'Alle 6 Plattformen freigeschaltet' : 'All 6 platforms unlocked',
-  paywallFeature3: isDE ? 'H.I.T. Prioritäts-Server' : 'H.I.T. priority server',
-  paywallBtn: isDE ? 'Jetzt upgraden' : 'Upgrade now',
-  generateBtn: isDE ? 'Rezept generieren' : 'Generate recipe',
-  loadingText: isDE ? 'Rezept wird generiert...' : 'Generating recipe...',
-  loadingSub: isDE
-    ? 'H.I.T. schreibt dein Skript, Prompts & Publishing-Payloads'
-    : 'H.I.T. is writing your script, prompts & publishing payloads',
-  errorGeneric: isDE ? 'Rezept konnte nicht generiert werden. Bitte versuch es nochmal.' : 'Recipe could not be generated. Please try again.',
-  errorRateLimit: isDE ? 'Zu viele Anfragen. Bitte warte kurz und versuch es nochmal.' : 'Too many requests. Please wait a moment and try again.',
-  errorNetwork: isDE ? 'Keine Verbindung zum Server. Prüf dein Internet.' : 'No connection to server. Check your internet.',
-  // Success
-  successTitle: isDE ? 'Rezept fertig!' : 'Recipe ready!',
-  successSub: isDE
-    ? 'H.I.T. hat alles vorbereitet. Als Nächstes: In CapCut einfügen, Video exportieren und auf deinen Kanälen posten.'
-    : 'H.I.T. has prepared everything. Next step: Paste into CapCut, export video, and post on your channels.',
-  nextStep1: isDE ? 'Skript in CapCut einfügen' : 'Paste script into CapCut',
-  nextStep2: isDE ? 'Video exportieren' : 'Export video',
-  nextStep3: isDE ? 'Auf Kanälen posten' : 'Post on channels',
-  // Example
-  exampleBtn: isDE ? 'Beispiel ansehen' : 'View example',
-  exampleTitle: isDE ? 'So könnte ein CapCut-Rezept aussehen' : 'This is what a CapCut recipe looks like',
-  exampleUse: isDE ? 'Als Vorlage verwenden' : 'Use as template',
-  // Honest banner
-  honestBanner: isDE
-    ? 'H.I.T. bereitet alles vor — Skript, Prompts und Texte für alle Plattformen. Danach musst du nur noch in CapCut einfügen, exportieren und posten.'
-    : 'H.I.T. prepares everything — script, prompts, and texts for all platforms. Then just paste into CapCut, export, and post.',
-  // Result
-  scenesLabel: isDE ? 'Szenen' : 'Scenes',
-  videoLabel: isDE ? 'Video' : 'Video',
-  platformsLabel: isDE ? 'Plattformen' : 'Platforms',
-  masterScript: isDE ? 'Master Video Script' : 'Master Video Script',
-  copyFullScript: isDE ? 'Ganzes Skript kopieren' : 'Copy full script',
-  scenesPrompts: isDE ? 'Szenen & Visual Prompts' : 'Scenes & Visual Prompts',
-  scene: isDE ? 'Szene' : 'Scene',
-  spokenText: isDE ? 'Gesprochener Text' : 'Spoken text',
-  visualPrompt: isDE ? 'Visueller Prompt' : 'Visual prompt',
-  promptCopy: isDE ? 'Prompt kopieren' : 'Copy prompt',
-  actionHub: isDE ? 'H.I.T. Action Hub' : 'H.I.T. Action Hub',
-  capcutPrimary: isDE ? 'In CapCut öffnen & Video erstellen' : 'Open in CapCut & create video',
-  capcutSub: isDE
-    ? 'Skript + Prompts in CapCut einfügen → Video exportieren → Auf Kanälen posten'
-    : 'Paste script + prompts into CapCut → export video → post on channels',
-  freeTip: isDE
-    ? 'H.I.T. Free-Tipp: CapCut bietet oft ein günstiges oder kostenloses KI-Modell als Alternative an — schau im Editor, was gerade verfügbar ist.'
-    : 'H.I.T. Free Tip: CapCut often offers an affordable or free AI model as an alternative — check the editor to see what\'s currently available.',
-  capcutMobile: isDE ? 'In CapCut öffnen' : 'Open in CapCut',
-  capcutDesktop: isDE ? 'Im Browser öffnen' : 'Open in Browser',
-  capcutHint: isDE ? 'Tipp: Kopiere das Skript und füge es in CapCut ein.' : 'Tip: Copy the script and paste it into CapCut.',
-  guide: isDE ? "So geht's" : "How it works",
-  guideStep1: isDE ? 'Klick auf "Kopieren" und füge den Text in CapCut\'s Text-to-Speech ein.' : 'Click "Copy" and paste the text into CapCut\'s Text-to-Speech.',
-  guideStep2: isDE ? 'Kopiere jeden Prompt und generiere damit Bilder in Midjourney, DALL-E oder CapCut\'s KI-Generator.' : 'Copy each prompt and generate images in Midjourney, DALL-E, or CapCut\'s AI generator.',
-  guideStep3: isDE ? 'Füge Bilder, Voiceover und Musik zusammen und exportiere dein Video.' : 'Combine images, voiceover, and music and export your video.',
-  guideStep4: isDE ? 'Kopiere die plattformspezifischen Captions und poste dein Video auf allen Kanälen.' : 'Copy the platform-specific captions and post your video on all channels.',
-  newRecipe: isDE ? 'Neues Rezept generieren' : 'Generate new recipe',
-  hook: 'Hook (Text-Overlay)',
-  copyHook: isDE ? 'Hook kopieren' : 'Copy hook',
-  caption: 'Description / Caption',
-  copyCaption: isDE ? 'Caption kopieren' : 'Copy caption',
-  headline: 'Headline',
-  copyHeadline: isDE ? 'Headline kopieren' : 'Copy headline',
-  bodyText: isDE ? 'Beitragstext' : 'Post text',
-  copyText: isDE ? 'Text kopieren' : 'Copy text',
-  titleMax60: isDE ? 'Titel (max 60 Zeichen)' : 'Title (max 60 characters)',
-  copyTitle: isDE ? 'Titel kopieren' : 'Copy title',
-  description: isDE ? 'Beschreibung' : 'Description',
-  copyDescription: isDE ? 'Beschreibung kopieren' : 'Copy description',
-  postTitle: isDE ? 'Post-Titel' : 'Post title',
-  platformTexts: isDE ? 'Plattform-Texte' : 'Platform texts',
-  capcut: {
-    uploadPromptTitle: isDE
-      ? 'Möchtest du Fotos für CapCut hochladen?'
-      : 'Do you want to upload photos for CapCut?',
-    btnUploadYes: isDE ? 'Ja, Fotos hochladen' : 'Yes, upload photos',
-    btnUploadNo: isDE ? 'Nein, danke' : 'No, thanks',
-    exportPanelTitle: isDE ? 'Nach CapCut exportieren' : 'Export to CapCut',
-    btnCopyScript: isDE ? '📋 Skript in Zwischenablage' : '📋 Copy Script to Clipboard',
-    btnCopyScriptDesc: isDE ? 'Voiceover-Text wird kopiert' : 'Copies the voiceover text',
-    btnDownloadZip: isDE ? '📥 Fotos als Zip herunterladen' : '📥 Download Photos as ZIP',
-    btnDownloadZipDesc: isDE ? 'Alle hochgeladenen Fotos als .zip' : 'All uploaded photos as .zip',
-    btnDownloadDraft: isDE ? '📁 CapCut Projekt herunterladen' : '📁 Download CapCut Project',
-    btnDownloadDraftDesc: isDE ? 'draft_content.json für deine Timeline' : 'draft_content.json for your timeline',
-    zippingProgress: isDE ? 'Erstelle ZIP-Archiv...' : 'Creating ZIP archive...',
-    guideTitle: isDE ? "So funktioniert's:" : 'How it works:',
-    guideStep1: isDE ? '1. Klick auf "Skript kopieren".' : '1. Click "Copy Script".',
-    guideStep2: isDE ? '2. Lade die Fotos als ZIP herunter und entpacke sie.' : '2. Download photos as ZIP and extract.',
-    guideStep3: isDE ? '3. Lade das CapCut Projekt herunter (draft_content.json).' : '3. Download CapCut project (draft_content.json).',
-    guideStep4: isDE ? '4. Verschiebe JSON + Fotos in deinen CapCut-Entwurfsordner.' : '4. Move JSON + photos to your CapCut drafts folder.',
-    guideStep5: isDE ? '5. Öffne CapCut – das Projekt ist fertig!' : '5. Open CapCut – the project is ready!',
-    sceneTitle: isDE ? 'Szene' : 'Scene',
-    btnUploadPhoto: isDE ? 'Foto hochladen' : 'Upload photo',
-  },
+  return {
+    header: 'CapCut Content Studio',
+    heroTitle: isNL ? 'Content-generator' : isDE ? 'Content-Generator' : 'Content Generator',
+    heroSub: isNL
+      ? 'Beschrijf je onderwerp — H.I.T. maakt een CapCut-recept met script, visuele prompts en publicatieteksten voor alle platforms.'
+      : isDE
+      ? 'Beschreib dein Thema — H.I.T. erstellt ein CapCut-Rezept mit Skript, Visual Prompts und Publishing-Texten für alle Plattformen.'
+      : 'Describe your topic — H.I.T. creates a CapCut recipe with script, visual prompts, and publishing texts for all platforms.',
+    howItWorks: isNL ? 'Hoe het werkt:' : isDE ? "So geht's:" : "How it works:",
+    howItWorksText: isNL
+      ? 'Beschrijf je onderwerp, klik op "Genereren" — en kopieer de voltooide teksten in CapCut of direct naar je sociale kanalen.'
+      : isDE
+      ? 'Beschreib dein Thema, drücke "Generieren" — und kopiere die fertigen Texte in CapCut oder direkt in deine sozialen Kanäle.'
+      : 'Describe your topic, click "Generate" — and copy the finished texts into CapCut or directly to your social channels.',
+    step1: isNL ? 'Onderwerp beschrijven' : isDE ? 'Thema beschreiben' : 'Describe your topic',
+    step2: isNL ? 'AI genereert script + teksten' : isDE ? 'KI generiert Skript + Texte' : 'AI generates script + texts',
+    step3: isNL ? 'Kopiëren & posten' : isDE ? 'Kopieren & posten' : 'Copy & post',
+    textareaLabel: isNL ? 'Waar gaat je video over?' : isDE ? 'Worum geht es in deinem Video?' : 'What is your video about?',
+    textareaPlaceholder: isNL
+      ? "bijv. '5 tips voor een gelukkiger leven' of 'Mijn product: Handgemaakte sojakaarsen'"
+      : isDE
+      ? "z.B. '5 Tipps für ein glücklicheres Leben' oder 'Mein Produkt: Handgemachte Kerzen aus Sojawachs'"
+      : "e.g. '5 tips for a happier life' or 'My product: Handmade soy candles'",
+    durationLabel: isNL ? 'Videolengte' : isDE ? 'Videolänge' : 'Video length',
+    quotaText: isNL
+      ? (n) => `Je H.I.T.-tegoed: ${n.videosLeft}/3 video's | ${n.postsLeft}/5 posts beschikbaar`
+      : isDE
+      ? (n) => `Dein H.I.T. Kontingent: ${n.videosLeft}/3 Videos | ${n.postsLeft}/5 Posts verfügbar`
+      : (n) => `Your H.I.T. quota: ${n.videosLeft}/3 videos | ${n.postsLeft}/5 posts available`,
+    paywallTitle: isNL ? 'H.I.T. Unlimited ontgrendelen' : isDE ? 'H.I.T. Unlimited freischalten' : 'Unlock H.I.T. Unlimited',
+    paywallPrice: '4,99 € / ' + (isNL ? 'maand' : isDE ? 'Monat' : 'month'),
+    paywallFeature1: isNL ? 'Onbeperkte video\'s & posts' : isDE ? 'Unlimitierte Videos & Posts' : 'Unlimited videos & posts',
+    paywallFeature2: isNL ? 'Alle 6 platforms ontgrendeld' : isDE ? 'Alle 6 Plattformen freigeschaltet' : 'All 6 platforms unlocked',
+    paywallFeature3: isNL ? 'H.I.T. prioriteitsserver' : isDE ? 'H.I.T. Prioritäts-Server' : 'H.I.T. priority server',
+    paywallBtn: isNL ? 'Nu upgraden' : isDE ? 'Jetzt upgraden' : 'Upgrade now',
+    generateBtn: isNL ? 'Recept generieren' : isDE ? 'Rezept generieren' : 'Generate recipe',
+    loadingText: isNL ? 'Recept wordt gegenereerd...' : isDE ? 'Rezept wird generiert...' : 'Generating recipe...',
+    loadingSub: isNL
+      ? 'H.I.T. schrijft je script, prompts & publicatie-payloads'
+      : isDE
+      ? 'H.I.T. schreibt dein Skript, Prompts & Publishing-Payloads'
+      : 'H.I.T. is writing your script, prompts & publishing payloads',
+    errorGeneric: isNL ? 'Recept kon niet worden gegenereerd. Probeer het opnieuw.' : isDE ? 'Rezept konnte nicht generiert werden. Bitte versuch es nochmal.' : 'Recipe could not be generated. Please try again.',
+    errorRateLimit: isNL ? 'Te veel aanvragen. Wacht even en probeer het opnieuw.' : isDE ? 'Zu viele Anfragen. Bitte warte kurz und versuch es nochmal.' : 'Too many requests. Please wait a moment and try again.',
+    errorNetwork: isNL ? 'Geen verbinding met de server. Controleer je internet.' : isDE ? 'Keine Verbindung zum Server. Prüf dein Internet.' : 'No connection to server. Check your internet.',
+    // Success
+    successTitle: isNL ? 'Recept klaar!' : isDE ? 'Rezept fertig!' : 'Recipe ready!',
+    successSub: isNL
+      ? 'H.I.T. heeft alles voorbereid. Volgende stap: in CapCut plakken, video exporteren en op je kanalen plaatsen.'
+      : isDE
+      ? 'H.I.T. hat alles vorbereitet. Als Nächstes: In CapCut einfügen, Video exportieren und auf deinen Kanälen posten.'
+      : 'H.I.T. has prepared everything. Next step: Paste into CapCut, export video, and post on your channels.',
+    nextStep1: isNL ? 'Script in CapCut plakken' : isDE ? 'Skript in CapCut einfügen' : 'Paste script into CapCut',
+    nextStep2: isNL ? 'Video exporteren' : isDE ? 'Video exportieren' : 'Export video',
+    nextStep3: isNL ? 'Op kanalen plaatsen' : isDE ? 'Auf Kanälen posten' : 'Post on channels',
+    // Example
+    exampleBtn: isNL ? 'Voorbeeld bekijken' : isDE ? 'Beispiel ansehen' : 'View example',
+    exampleTitle: isNL ? 'Zo zou een CapCut-recept eruit kunnen zien' : isDE ? 'So könnte ein CapCut-Rezept aussehen' : 'This is what a CapCut recipe looks like',
+    exampleUse: isNL ? 'Als Vorlage gebruiken' : isDE ? 'Als Vorlage verwenden' : 'Use as template',
+    // Honest banner
+    honestBanner: isNL
+      ? 'H.I.T. bereidt alles voor — script, prompts en teksten voor alle platforms. Daarna hoef je het alleen nog maar in CapCut te plakken, te exporteren en te plaatsen.'
+      : isDE
+      ? 'H.I.T. bereidet alles vor — Skript, Prompts und Texte für alle Plattformen. Danach musst du nur noch in CapCut einfügen, exportieren und posten.'
+      : 'H.I.T. prepares everything — script, prompts, and texts for all platforms. Then just paste into CapCut, export, and post.',
+    // Result
+    scenesLabel: isNL ? 'Scènes' : isDE ? 'Szenen' : 'Scenes',
+    videoLabel: isNL ? 'Video' : isDE ? 'Video' : 'Video',
+    platformsLabel: isNL ? 'Platforms' : isDE ? 'Plattformen' : 'Platforms',
+    masterScript: isNL ? 'Master videoscript' : isDE ? 'Master Video Script' : 'Master Video Script',
+    copyFullScript: isNL ? 'Volledige script kopiëren' : isDE ? 'Ganzes Skript kopieren' : 'Copy full script',
+    scenesPrompts: isNL ? 'Scènes & visuele prompts' : isDE ? 'Szenen & Visual Prompts' : 'Scenes & Visual Prompts',
+    scene: isNL ? 'Scène' : isDE ? 'Szene' : 'Scene',
+    spokenText: isNL ? 'Gesproken tekst' : isDE ? 'Gesprochener Text' : 'Spoken text',
+    visualPrompt: isNL ? 'Visuele prompt' : isDE ? 'Visueller Prompt' : 'Visual prompt',
+    promptCopy: isNL ? 'Prompt kopiëren' : isDE ? 'Prompt kopieren' : 'Copy prompt',
+    actionHub: isNL ? 'H.I.T. Actiecentrum' : isDE ? 'H.I.T. Action Hub' : 'H.I.T. Action Hub',
+    capcutPrimary: isNL ? 'Openen in CapCut & video maken' : isDE ? 'In CapCut öffnen & Video erstellen' : 'Open in CapCut & create video',
+    capcutSub: isNL
+      ? 'Script + prompts in CapCut plakken → video exporteren → op kanalen plaatsen'
+      : isDE
+      ? 'Skript + Prompts in CapCut einfügen → Video exportieren → Auf Kanälen posten'
+      : 'Paste script + prompts into CapCut → export video → post on channels',
+    freeTip: isNL
+      ? 'H.I.T. Free Tip: CapCut biedt vaak een goedkoop of gratis AI-model aan als alternatief — bekijk in de editor wat momenteel beschikbaar is.'
+      : isDE
+      ? 'H.I.T. Free-Tipp: CapCut bietet oft ein günstiges oder kostenloses KI-Modell als Alternative an — schau im Editor, was gerade verfügbar ist.'
+      : 'H.I.T. Free Tip: CapCut often offers an affordable or free AI model as an alternative — check the editor to see what\'s currently available.',
+    capcutMobile: isNL ? 'Openen in CapCut' : isDE ? 'In CapCut öffnen' : 'Open in CapCut',
+    capcutDesktop: isNL ? 'Openen in browser' : isDE ? 'Im Browser öffnen' : 'Open in Browser',
+    capcutHint: isNL ? 'Tip: Kopieer het script en plak het in CapCut.' : isDE ? 'Tipp: Kopiere das Skript und füge es in CapCut ein.' : 'Tip: Copy the script and paste it into CapCut.',
+    guide: isNL ? 'Hoe het werkt' : isDE ? "So geht's" : "How it works",
+    guideStep1: isNL ? 'Klik op "Kopiëren" en plak de tekst in CapCut\'s Text-to-Speech.' : isDE ? 'Klick auf "Kopieren" und füge den Text in CapCut\'s Text-to-Speech ein.' : 'Click "Copy" and paste the text into CapCut\'s Text-to-Speech.',
+    guideStep2: isNL ? 'Kopieer elke prompt en genereer hiermee afbeeldingen in Midjourney, DALL-E of de AI-generator van CapCut.' : isDE ? 'Kopiere jeden Prompt und generiere damit Bilder in Midjourney, DALL-E oder CapCut\'s KI-Generator.' : 'Copy each prompt and generate images in Midjourney, DALL-E, or CapCut\'s AI generator.',
+    guideStep3: isNL ? 'Voeg afbeeldingen, voice-over en muziek samen en exporteer je video.' : isDE ? 'Füge Bilder, Voiceover und Musik zusammen und exportiere dein Video.' : 'Combine images, voiceover, and music and export your video.',
+    guideStep4: isNL ? 'Kopieer de platformspecifieke bijschriften en plaats je video op alle kanalen.' : isDE ? 'Kopiere die plattformspezifischen Captions und poste dein Video auf allen Kanälen.' : 'Copy the platform-specific captions and post your video on all channels.',
+    newRecipe: isNL ? 'Nieuw recept generieren' : isDE ? 'Neues Rezept generieren' : 'Generate new recipe',
+    hook: isNL ? 'Hook (Tekst-overlay)' : 'Hook (Text-Overlay)',
+    copyHook: isNL ? 'Hook kopiëren' : isDE ? 'Hook kopieren' : 'Copy hook',
+    caption: isNL ? 'Beschrijving / Bijschrift' : 'Description / Caption',
+    copyCaption: isNL ? 'Bijschrift kopiëren' : isDE ? 'Caption kopieren' : 'Copy caption',
+    headline: isNL ? 'Kop' : 'Headline',
+    copyHeadline: isNL ? 'Kop kopiëren' : isDE ? 'Headline kopieren' : 'Copy headline',
+    bodyText: isNL ? 'Berichttekst' : isDE ? 'Beitragstext' : 'Post text',
+    copyText: isNL ? 'Tekst kopiëren' : isDE ? 'Text kopieren' : 'Copy text',
+    titleMax60: isNL ? 'Titel (max. 60 tekens)' : isDE ? 'Titel (max 60 Zeichen)' : 'Title (max 60 characters)',
+    copyTitle: isNL ? 'Titel kopiëren' : isDE ? 'Titel kopieren' : 'Copy title',
+    description: isNL ? 'Beschrijving' : isDE ? 'Beschreibung' : 'Description',
+    copyDescription: isNL ? 'Beschrijving kopiëren' : isDE ? 'Beschreibung kopieren' : 'Copy description',
+    postTitle: isNL ? 'Berichttitel' : isDE ? 'Post-Titel' : 'Post title',
+    platformTexts: isNL ? 'Platformteksten' : isDE ? 'Plattform-Texte' : 'Platform texts',
+    toastScriptCopied: isNL ? 'Script gekopieerd naar klembord!' : isDE ? 'Skript in Zwischenablage kopiert!' : 'Script copied to clipboard!',
+    capcut: {
+      uploadPromptTitle: isNL ? 'Wil je foto\'s uploaden voor CapCut?' : isDE ? 'Möchtest du Fotos für CapCut hochladen?' : 'Do you want to upload photos for CapCut?',
+      btnUploadYes: isNL ? 'Ja, foto\'s uploaden' : isDE ? 'Ja, Fotos hochladen' : 'Yes, upload photos',
+      btnUploadNo: isNL ? 'Nee, bedankt' : isDE ? 'Nein, danke' : 'No, thanks',
+      exportPanelTitle: isNL ? 'Exporteren naar CapCut' : isDE ? 'Nach CapCut exportieren' : 'Export to CapCut',
+      btnCopyScript: isNL ? '📋 Script naar klembord' : isDE ? '📋 Skript in Zwischenablage' : '📋 Copy Script to Clipboard',
+      btnCopyScriptDesc: isNL ? 'Voice-overtekst wordt gekopieerd' : isDE ? 'Voiceover-Text wird kopiert' : 'Copies the voiceover text',
+      btnDownloadZip: isNL ? '📥 Foto\'s als ZIP downloaden' : isDE ? '📥 Fotos als Zip herunterladen' : '📥 Download Photos as ZIP',
+      btnDownloadZipDesc: isNL ? 'Alle geüploade foto\'s als .zip' : isDE ? 'Alle hochgeladenen Fotos als .zip' : 'All uploaded photos as .zip',
+      btnDownloadDraft: isNL ? '📁 CapCut-project downloaden' : isDE ? '📁 CapCut Projekt herunterladen' : '📁 Download CapCut Project',
+      btnDownloadDraftDesc: isNL ? 'draft_content.json voor je tijdlijn' : isDE ? 'draft_content.json für deine Timeline' : 'draft_content.json for your timeline',
+      zippingProgress: isNL ? 'ZIP-archief maken...' : isDE ? 'Erstelle ZIP-Archiv...' : 'Creating ZIP archive...',
+      guideTitle: isNL ? 'Hoe het werkt:' : isDE ? "So funktioniert's:" : 'How it works:',
+      guideStep1: isNL ? '1. Klik op "Script kopiëren".' : isDE ? '1. Klick auf "Skript kopieren".' : '1. Click "Copy Script".',
+      guideStep2: isNL ? '2. Download de foto\'s als ZIP en pak ze uit.' : isDE ? '2. Lade die Fotos als ZIP herunter und entpacke sie.' : '2. Download photos as ZIP and extract.',
+      guideStep3: isNL ? '3. Download het CapCut-project (draft_content.json).' : isDE ? '3. Lade das CapCut Projekt herunter (draft_content.json).' : '3. Download CapCut project (draft_content.json).',
+      guideStep4: isNL ? '4. Verplaats JSON + foto\'s naar je CapCut-conceptenmap.' : isDE ? '4. Verschiebe JSON + Fotos in deinen CapCut-Entwurfsordner.' : '4. Move JSON + photos to your CapCut drafts folder.',
+      guideStep5: isNL ? '5. Open CapCut – het project is klaar!' : isDE ? '5. Öffne CapCut – das Projekt ist fertig!' : '5. Open CapCut – the project is ready!',
+      sceneTitle: isNL ? 'Scène' : isDE ? 'Szene' : 'Scene',
+      btnUploadPhoto: isNL ? 'Foto uploaden' : isDE ? 'Foto hochladen' : 'Upload photo',
+    },
+  }
 }
+
 
 const PLATFORMS = [
   { id: 'tiktok_instagram', label: 'TikTok / Instagram', icon: Hash, color: '#E4405F' },
@@ -228,6 +248,9 @@ export default function TikTokVideoPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
+  const { lang } = useLanguage()
+  const t = getT(lang)
+  const isDE = lang === 'de'
 
   const {
     capcutTopic: topic, setCapcutTopic: setTopic,
