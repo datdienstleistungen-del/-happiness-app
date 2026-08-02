@@ -354,22 +354,20 @@ export default function CoachChatPage() {
                   <button type="button" onClick={clearAttachment} className="attachment-clear"><X size={14} /></button>
                 </div>
               )}
-              <div className="coach-input-inner">
-                <button type="button" className="coach-attach-btn" onClick={() => fileInputRef.current?.click()} title="Datei / Foto hochladen">
-                  <Paperclip size={20} />
-                </button>
-                <input
-                  type="text"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder={t('coach.placeholderWelcome')}
-                  disabled={loading}
-                  autoFocus
-                />
-                <button type="submit" disabled={loading || (!message.trim() && !attachment)} className="coach-send-circle">
-                  <ArrowRight size={22} />
-                </button>
-              </div>
+              <button type="button" className="coach-welcome-attach-btn" onClick={() => fileInputRef.current?.click()} title="Datei / Foto hochladen">
+                <Paperclip size={20} />
+              </button>
+              <input
+                type="text"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder={t('coach.placeholderWelcome')}
+                disabled={loading}
+                autoFocus
+              />
+              <button type="submit" disabled={loading || (!message.trim() && !attachment)} className="coach-send-circle">
+                <ArrowRight size={22} />
+              </button>
             </form>
             <div className="coach-safety-tag">
               <ShieldAlert size={14} />
@@ -433,21 +431,19 @@ export default function CoachChatPage() {
                 <button type="button" onClick={clearAttachment} className="attachment-clear"><X size={14} /></button>
               </div>
             )}
-            <div className="coach-input-inner">
-              <button type="button" className="coach-attach-btn" onClick={() => fileInputRef.current?.click()} title="Datei / Foto hochladen">
-                <Paperclip size={20} />
-              </button>
-              <input
-                type="text"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder={t('coach.placeholderInput')}
-                disabled={loading}
-              />
-              <button type="submit" disabled={loading || (!message.trim() && !attachment)} className="coach-send-button">
-                <Send size={18} />
-              </button>
-            </div>
+            <button type="button" className="coach-attach-btn" onClick={() => fileInputRef.current?.click()} title="Datei / Foto hochladen">
+              <Paperclip size={20} />
+            </button>
+            <input
+              type="text"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder={t('coach.placeholderInput')}
+              disabled={loading}
+            />
+            <button type="submit" disabled={loading || (!message.trim() && !attachment)} className="coach-send-button">
+              <ArrowUp size={20} />
+            </button>
           </form>
         </footer>
       )}

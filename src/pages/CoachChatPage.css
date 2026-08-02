@@ -140,7 +140,7 @@
 
 .coach-welcome-input-wrap input {
   width: 100%;
-  padding: 1.15rem 3.5rem 1.15rem 1.5rem;
+  padding: 1.15rem 3.5rem 1.15rem 3.2rem;
   border-radius: 30px;
   border: 1px solid var(--border);
   background: #ffffff;
@@ -450,12 +450,26 @@
   color: var(--text) !important;
 }
 
-/* Attachment & Input Inner Styles */
-.coach-input-inner {
+/* Attachment Styles */
+.coach-welcome-attach-btn {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 8px;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  width: 100%;
+  justify-content: center;
+  transition: color 0.2s;
+  z-index: 10;
+}
+
+.coach-welcome-attach-btn:hover {
+  color: var(--primary);
 }
 
 .coach-attach-btn {
