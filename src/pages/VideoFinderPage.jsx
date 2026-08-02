@@ -916,7 +916,7 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
             {generatedScript && (
               <div className="vf-script-output-card">
                 <div className="vf-script-output-header">
-                  <h4>✍️ {generatedRecipe?.video_title || generatedScript.video_title}</h4>
+                  <h4>✨ {generatedScript.video_title}</h4>
                   <button className="vf-copy-script-icon" onClick={handleCopyScript} title="Kopieren">
                     {copied ? <Check size={16} style={{ color: '#10b981' }} /> : <Copy size={16} />}
                   </button>
