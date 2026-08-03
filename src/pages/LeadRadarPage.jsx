@@ -340,6 +340,8 @@ export default function LeadRadarPage() {
   const [customNiche, setCustomNiche] = useState('')
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
+  const [isPremium, setIsPremium] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [generating, setGenerating] = useState({})
   const [responses, setResponses] = useState({})
   const [cooldowns, setCooldowns] = useState({})
@@ -362,6 +364,18 @@ export default function LeadRadarPage() {
   useEffect(() => {
     return () => { if (radarLoopRef.current) clearTimeout(radarLoopRef.current) }
   }, [])
+
+  useEffect(() => {
+    async function fetchAccess() {
+      if (!user) return
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+      if (profile?.role === 'admin') setIsAdmin(true)
+      
+      const { data: settings } = await supabase.from('ai_settings').select('is_premium').eq('user_id', user.id).single()
+      if (settings?.is_premium) setIsPremium(true)
+    }
+    fetchAccess()
+  }, [user])
 
   async function fetchLeads() {
     setLoading(true)
@@ -645,8 +659,12 @@ STRATEGIE-FOKUS FÜR DIESE QUELLE (${badge}): ${b2bStrategyMap[badge] || b2bStra
         </div>
       ) : (
         <div className="lr-grid">
-          {leads.map(lead => (
-            <div key={lead.id} className={`lr-card ${newLeadIdsRef.current.has(lead.id) ? 'lr-card-new' : ''}`}>
+          {leads.map((lead, idx) => {
+            const hasFullAccess = isAdmin || isPremium;
+            const isBlurred = !hasFullAccess && idx >= 3;
+
+            return (
+            <div key={lead.id} className={`lr-card ${newLeadIdsRef.current.has(lead.id) ? 'lr-card-new' : ''} ${isBlurred ? 'lr-card-blurred' : ''}`}>
               <div className="lr-card-top">
                 <span className="lr-platform-badge" style={{ background: (PLATFORM_BADGES[lead.platform] || PLATFORM_BADGES.reddit).color }}>
                   {(PLATFORM_BADGES[lead.platform] || PLATFORM_BADGES.reddit).label}
@@ -662,26 +680,40 @@ STRATEGIE-FOKUS FÜR DIESE QUELLE (${badge}): ${b2bStrategyMap[badge] || b2bStra
               </div>
               <p className="lr-card-text">{cleanText(lead.text)}</p>
               {lead.source_url && (
-                <a href={lead.source_url} target="_blank" rel="noopener noreferrer" className="lr-card-link">
+                <a href={isBlurred ? '#' : lead.source_url} target="_blank" rel="noopener noreferrer" className="lr-card-link">
                   <ExternalLink size={12} /> View original post
                 </a>
               )}
-              <button className="lr-generate-btn" onClick={() => generateResponse(lead)} disabled={generating[lead.id]}>
+              <button className="lr-generate-btn" onClick={() => isBlurred ? null : generateResponse(lead)} disabled={generating[lead.id] || isBlurred}>
                 {generating[lead.id] ? <><Loader size={14} className="lr-spinner" /> Generating...</> : <><Zap size={14} /> Generate Global Helper Response</>}
               </button>
-              {cooldowns[lead.platform] && (
+              {cooldowns[lead.platform] && !isBlurred && (
                 <div className="lr-pacing-warning">
                   Pacing Warning: To prevent platform blockages, please wait {Math.ceil((cooldowns[lead.platform] - Date.now()) / 1000)} seconds before pasting the next response to {lead.platform}.
                 </div>
               )}
-              {responses[lead.id] && (
+              {responses[lead.id] && !isBlurred && (
                 <div className="lr-response">
                   <div className="lr-response-text">{responses[lead.id]}</div>
                   <CopyButton text={responses[lead.id]} />
                 </div>
               )}
             </div>
-          ))}
+          )})}
+        </div>
+      )}
+
+      {/* PAYWALL OVERLAY */}
+      {leads.length > 3 && !isAdmin && !isPremium && (
+        <div className="lr-paywall-overlay">
+          <div className="lr-paywall-content">
+            <ShieldAlert size={48} className="lr-paywall-icon" />
+            <h3>{leads.length - 3} weitere, warme B2B-Leads gefunden.</h3>
+            <p>Deine Konkurrenz ruft diese Leads vielleicht genau in diesem Moment an. Upgrade auf NeXus Pro, um das Radar freizuschalten.</p>
+            <a href="https://buy.stripe.com/test" className="lr-paywall-btn" target="_blank" rel="noopener noreferrer">
+              NeXus Pro aktivieren (29,90€ / Monat) <ArrowRight size={18} />
+            </a>
+          </div>
         </div>
       )}
 
