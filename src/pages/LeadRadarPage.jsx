@@ -711,8 +711,9 @@ STRATEGIE-FOKUS FÜR DIESE QUELLE (${badge}): ${b2bStrategyMap[badge] || b2bStra
             <h3>{leads.length - 3} weitere, warme B2B-Leads gefunden.</h3>
             <p>Deine Konkurrenz ruft diese Leads vielleicht genau in diesem Moment an. Upgrade auf NeXus Pro, um das Radar freizuschalten.</p>
             <a href="https://buy.stripe.com/test" className="lr-paywall-btn" target="_blank" rel="noopener noreferrer">
-              NeXus Pro aktivieren (29,90€ / Monat) <ArrowRight size={18} />
+              NeXus Pro aktivieren (29,90€ / Monat)* <ArrowRight size={18} />
             </a>
+            <p style={{ marginTop: '12px', fontSize: '0.85rem', color: '#9CA3AF' }}>*Limitiertes Early-Bird-Angebot (Regulär 99,00€).</p>
           </div>
         </div>
       )}

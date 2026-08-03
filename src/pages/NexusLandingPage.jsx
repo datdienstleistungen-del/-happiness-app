@@ -43,9 +43,9 @@ export default function NexusLandingPage() {
         
         <div className="nexus-cta-group">
           <button className="nexus-btn-huge" onClick={() => navigate(user ? '/admin/lead-radar' : '/login')}>
-            Radar aktivieren (29,90€/M) <ArrowRight size={20} />
+            Radar aktivieren (29,90€/M)* <ArrowRight size={20} />
           </button>
-          <p className="nexus-guarantee"><ShieldAlert size={16} /> 100% DSGVO-konform. Kein Spam.</p>
+          <p className="nexus-guarantee"><ShieldAlert size={16} /> *Limitiertes Early-Bird-Angebot (Regulär 99,00€/M).</p>
         </div>
       </header>
 
