@@ -570,7 +570,11 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
 
       const resData = await res.json()
       let cleaned = resData.response || ''
-      cleaned = cleaned.replace(/^```json\n?/i, '').replace(/```\s*$/g, '').trim()
+      const firstBrace = cleaned.indexOf('{')
+      const lastBrace = cleaned.lastIndexOf('}')
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        cleaned = cleaned.substring(firstBrace, lastBrace + 1)
+      }
 
       const parsedRecipe = JSON.parse(cleaned)
       setGeneratedScript(parsedRecipe)
