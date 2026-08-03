@@ -54,6 +54,19 @@ const VideoScriptPage = lazy(() => import('./pages/VideoScriptPage'))
 const IdeenschmiedePage = lazy(() => import('./pages/IdeenschmiedePage'))
 const RatgeberNoOneToTalkTo = lazy(() => import('./pages/RatgeberNoOneToTalkTo'))
 
+export const guideRoutesMap = {
+  de: '/de/ratgeber/niemand-zum-reden',
+  en: '/en/guide/no-one-to-talk-to',
+  es: '/es/guia/nadie-con-quien-hablar',
+  fr: '/fr/guide/personne-a-qui-parler',
+  it: '/it/guida/nessuno-con-cui-parlare',
+  nl: '/nl/gids/niemand-om-mee-te-praten',
+  el: '/el/odigos/kaneis-gia-na-miliseis'
+};
+
+const isGuideRoute = (pathname) => {
+  return Object.values(guideRoutesMap).includes(pathname);
+};
 
 function Sidebar({ mobileOpen, setMobileOpen }) {
   const { user, profile, signOut } = useAuth()
@@ -212,7 +225,9 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
       <div className="sidebar-footer">
         {!collapsed && (
           <div className="sidebar-legal">
-            <Link to="/ratgeber/niemand-zum-reden" className="sidebar-legal-link" style={{ color: 'var(--color-koralle, #d85a30)' }}>Ratgeber: Einsamkeit</Link>
+            <Link to={guideRoutesMap[lang] || guideRoutesMap['en']} className="sidebar-legal-link" style={{ color: 'var(--color-koralle, #d85a30)' }}>
+              {lang === 'de' ? 'Ratgeber: Einsamkeit' : lang === 'es' ? 'Guía: Soledad' : lang === 'fr' ? 'Guide: Solitude' : lang === 'it' ? 'Guida: Solitudine' : lang === 'nl' ? 'Gids: Eenzaamheid' : lang === 'el' ? 'Οδηγός: Μοναξιά' : 'Guide: Loneliness'}
+            </Link>
             <Link to="/legal?tab=impressum" className="sidebar-legal-link">{t('legal.impressum')}</Link>
             <Link to="/legal?tab=datenschutz" className="sidebar-legal-link">{t('legal.privacy')}</Link>
             <Link to="/legal?tab=agb" className="sidebar-legal-link">{t('legal.terms')}</Link>
@@ -438,8 +453,8 @@ export default function App() {
           <LoadingScreen />
         ) : (
           <>
-            {((user && !['/onboarding', '/today-question'].includes(location.pathname) && !location.pathname.startsWith('/ratgeber')) || (!user && ['/', '/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) && <Sidebar mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />}
-            {(!user || location.pathname.startsWith('/ratgeber')) && !['/login', '/register', '/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname) && (
+            {((user && !['/onboarding', '/today-question'].includes(location.pathname) && !isGuideRoute(location.pathname)) || (!user && ['/', '/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) && <Sidebar mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />}
+            {(!user || isGuideRoute(location.pathname)) && !['/login', '/register', '/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname) && (
               <nav className="public-topbar">
                 <Link to="/" className="public-topbar-brand">
                   <img src="/favicon.svg" alt="H" style={{ width: '28px', height: '28px' }} />
@@ -460,8 +475,8 @@ export default function App() {
                 </div>
               </nav>
             )}
-              <main className={((user && !['/onboarding', '/today-question'].includes(location.pathname) && !location.pathname.startsWith('/ratgeber')) || (!user && ['/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) ? 'main-content with-sidebar' : 'main-content full'}>
-              {((user && !['/onboarding', '/today-question'].includes(location.pathname) && !location.pathname.startsWith('/ratgeber')) || (!user && ['/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) && (
+              <main className={((user && !['/onboarding', '/today-question'].includes(location.pathname) && !isGuideRoute(location.pathname)) || (!user && ['/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) ? 'main-content with-sidebar' : 'main-content full'}>
+              {((user && !['/onboarding', '/today-question'].includes(location.pathname) && !isGuideRoute(location.pathname)) || (!user && ['/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) && (
                 <button className="mobile-menu-btn" onClick={() => setMobileSidebarOpen(true)}>
                   <Menu size={22} />
                 </button>
@@ -496,7 +511,14 @@ export default function App() {
                 <Route path="/capcut-studio" element={<ProtectedRoute><TikTokVideoPage /></ProtectedRoute>} />
                 <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
                 <Route path="/tour" element={<TourPage />} />
-                <Route path="/ratgeber/niemand-zum-reden" element={<RatgeberNoOneToTalkTo />} />
+                <Route path="/ratgeber/niemand-zum-reden" element={<Navigate to="/de/ratgeber/niemand-zum-reden" replace />} />
+                <Route path="/de/ratgeber/niemand-zum-reden" element={<RatgeberNoOneToTalkTo locale="de" />} />
+                <Route path="/en/guide/no-one-to-talk-to" element={<RatgeberNoOneToTalkTo locale="en" />} />
+                <Route path="/es/guia/nadie-con-quien-hablar" element={<RatgeberNoOneToTalkTo locale="es" />} />
+                <Route path="/fr/guide/personne-a-qui-parler" element={<RatgeberNoOneToTalkTo locale="fr" />} />
+                <Route path="/it/guida/nessuno-con-cui-parlare" element={<RatgeberNoOneToTalkTo locale="it" />} />
+                <Route path="/nl/gids/niemand-om-mee-te-praten" element={<RatgeberNoOneToTalkTo locale="nl" />} />
+                <Route path="/el/odigos/kaneis-gia-na-miliseis" element={<RatgeberNoOneToTalkTo locale="el" />} />
                 <Route path="/video-finder" element={<VideoFinderPage />} />
                 <Route path="/video-script" element={<VideoScriptPage />} />
                 <Route path="/ideenschmiede" element={<ProtectedRoute><IdeenschmiedePage /></ProtectedRoute>} />
@@ -510,7 +532,7 @@ export default function App() {
               </Suspense>
               </ErrorBoundary>
              </main>
-             {((user && !['/onboarding', '/today-question'].includes(location.pathname) && !location.pathname.startsWith('/ratgeber')) || (!user && ['/', '/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) && <MobileBar />}
+             {((user && !['/onboarding', '/today-question'].includes(location.pathname) && !isGuideRoute(location.pathname)) || (!user && ['/', '/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) && <MobileBar />}
           </>
         )}
         </StudioProvider>
