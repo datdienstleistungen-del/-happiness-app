@@ -542,7 +542,14 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
 
       const res = await fetch('/api/chat', reqConfig)
 
-      if (!res.ok) throw new Error(`HTTP-Fehler ${res.status}`)
+      if (!res.ok) {
+        let backendErr = `HTTP-Fehler ${res.status}`
+        try {
+          const errData = await res.json()
+          if (errData.error) backendErr = errData.error
+        } catch(e) {}
+        throw new Error(backendErr)
+      }
 
       const resData = await res.json()
       let cleaned = resData.response || ''
@@ -560,7 +567,7 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
       }
     } catch (e) {
       console.error('[Script Generation Error]', e)
-      setError(t('videoScript.errorGeneration'))
+      setError(e.message || t('videoScript.errorGeneration'))
     } finally {
       setGeneratingScript(false)
     }
