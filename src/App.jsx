@@ -212,6 +212,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
       <div className="sidebar-footer">
         {!collapsed && (
           <div className="sidebar-legal">
+            <Link to="/ratgeber/niemand-zum-reden" className="sidebar-legal-link" style={{ color: 'var(--color-koralle, #d85a30)' }}>Ratgeber: Einsamkeit</Link>
             <Link to="/legal?tab=impressum" className="sidebar-legal-link">{t('legal.impressum')}</Link>
             <Link to="/legal?tab=datenschutz" className="sidebar-legal-link">{t('legal.privacy')}</Link>
             <Link to="/legal?tab=agb" className="sidebar-legal-link">{t('legal.terms')}</Link>
