@@ -256,7 +256,7 @@ export const handler = async (event) => {
     }
 
     const body = JSON.parse(event.body)
-    const { message, systemPrompt: originalPrompt, history, imageBase64, testVision, language, badge, mode, videoEditor } = body
+    const { message, systemPrompt: originalPrompt, history, imageBase64, imagesBase64, testVision, language, badge, mode, videoEditor } = body
 
     const LANG_NAMES = { de: 'German', en: 'English', es: 'Spanish', fr: 'French', it: 'Italian', nl: 'Dutch', el: 'Greek' }
 

@@ -942,7 +942,7 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
 
             <div className="vf-generator-setup" style={{ background: 'linear-gradient(to bottom right, #f8fafc, #f1f5f9)', padding: '24px', borderRadius: '16px', marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
               <label style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Sparkles size={20} style={{ color: 'var(--brand-purple)' }} /> 
+                <Sparkles size={20} style={{ color: '#7c3aed' }} /> 
                 Ideenschmiede
               </label>
               <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 8px 0', lineHeight: '1.4' }}>
@@ -966,7 +966,7 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
                   transition: 'border-color 0.2s',
                   boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)'
                 }}
-                onFocus={(e) => e.target.style.borderColor = 'var(--brand-purple)'}
+                onFocus={(e) => e.target.style.borderColor = '#7c3aed'}
                 onBlur={(e) => e.target.style.borderColor = '#cbd5e1'}
               />
               
@@ -977,7 +977,7 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
                 style={{ 
                   alignSelf: 'flex-end', 
                   marginTop: '12px', 
-                  background: 'var(--brand-purple)', 
+                  background: '#7c3aed', 
                   color: 'white', 
                   border: 'none', 
                   padding: '12px 24px', 
