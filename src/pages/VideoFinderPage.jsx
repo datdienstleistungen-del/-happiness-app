@@ -481,8 +481,15 @@ export default function VideoFinderPage() {
     const currentLanguageName = languageNames[lang] || 'deutscher'
 
     const systemPrompt = `Du bist die "Video-Ideenschmiede" (H.I.T. Regisseur).
-Deine Aufgabe: Der User gibt dir (falls möglich) Bilder aus einem gefundenen Video (Thema: "${scriptTopic}") und eine Idee: "${userPrompt}".
-Erstelle daraus einen exakten SCHRITT-FÜR-SCHRITT BAUPLAN (Schnittanweisung & Voiceover), damit der User das Video manuell in CapCut schneiden kann.
+Deine Aufgabe: Der User gibt dir (falls möglich) Bilder aus einem gefundenen Video.
+Hier sind die Metadaten des ausgewählten Videos:
+- Video-Titel: "${selectedVideo?.title || 'Unbekannt'}"
+- Suchbegriff / Kategorie: "${scriptTopic}"
+
+Der User hat folgende spezifische Idee / Anforderung formuliert: "${userPrompt}"
+
+WICHTIG: Erstelle das Skript passend zum ECHTEN Video-Titel oben. Kopiere NICHT das Pudding-Beispiel!
+Erstelle aus diesem Video einen exakten SCHRITT-FÜR-SCHRITT BAUPLAN (Schnittanweisung & Voiceover), damit der User das Video manuell in CapCut schneiden kann.
 Schreibe in ${currentLanguageName} Sprache.
 
 Strukturiere deine Antwort ZWINGEND als JSON:
