@@ -557,22 +557,22 @@ export default function LeadRadarPage() {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token || ''
       const badge = lead.badge || 'Creator'
-      const emotionMap = {
-        Milestone: 'This user is CELEBRATING a personal milestone. Start with enthusiastic congratulations.',
-        'Advice-Seeker': 'This user is a BEGINNER seeking advice. Provide a numbered 3-step guide first.',
-        'Privacy-First': 'This user cares about PRIVACY. Acknowledge their concern, then mention GDPR compliance.',
-        Builder: 'This user is a CREATIVE BUILDER. Acknowledge their technical work first.',
-        Trader: 'This user is a TRADER or CRYPTO ENTHUSIAST. Use high-energy, fast-paced language. Focus on FOMO, trends, and market momentum. Be sharp and decisive.',
-        'Real Estate': 'This user is in REAL ESTATE. Use trust-building, emotional storytelling. Focus on property value, dream homes, and high-ticket investment confidence.',
-        Gamer: 'This user is a GAMER or STREAMER. Be casual, empathetic, use gaming language.',
-        Creator: 'This user is a CONTENT CREATOR. Be professional but warm, growth-focused.',
-        Business: 'This user is a BUSINESS PROFESSIONAL. Be ROI-focused and practical.',
+      const b2bStrategyMap = {
+        'News Radar': 'Nutze das Trigger-Event (z.B. Eröffnungen/PR). Wecke leise den Zweifel, ob der konstante Lead-Flow dafür schon 100% gesichert ist.',
+        'Job Board': 'Dieser User hat Budget (sucht Leute). Pitche, wie NeXus (Lead Radar) manuellen Aufwand und teure Personalkosten bei der Akquise drastisch senkt.',
+        'Global Search': 'Spiegele den Kern des Posts. Deute subtil an, dass verpasste Markt-Chancen (FOMO) unweigerlich zur geschäftlichen Stagnation und Isolation führen, wenn man technologisch den Anschluss verliert.',
+        Business: 'Spiegele den Kern des Posts. Deute subtil an, dass verpasste Markt-Chancen (FOMO) unweigerlich zur geschäftlichen Stagnation und Isolation führen, wenn man technologisch den Anschluss verliert.',
       }
-      const systemPrompt = `Du bist ein Community-Outreach-Spezialist von Happiness.
+      const systemPrompt = `Du bist ein elitärer B2B-Sales-Psychologe für "NeXus" (ein hochmodernes Lead Radar System).
 SPRACHE: Antworte AUSSCHLIESSLICH auf ${lead.lang === 'de' ? 'Deutsch' : 'Englisch'}.
-BADGE: ${badge}
-STIL: Keine Floskeln. Max 3-4 Sätze. Happiness nur dezent erwähnen.
-EMOTION: ${emotionMap[badge] || emotionMap.Creator}`
+ZIELGRUPPE: B2B (Unternehmen, Händler, Agenturen, Selbstständige). 
+REGELN:
+- ABSOLUTES VERBOT: Erwähne NIEMALS Happiness, CapCut, Video-Schnitt oder Social Media Tutorials. Das ist strikt verboten!
+- Sei hochprofessionell, messerscharf und ROI-fokussiert.
+- Avocado Diaboli Strategie: Greife das Thema des Users subtil auf. Schüre psychologisches FOMO (Fear of Missing Out) und deute an, dass geschäftlicher Misserfolg oft in harter Isolation endet. 
+- Erlösung: Positioniere das "NeXus Lead Radar" beiläufig als das exklusive Werkzeug, das die smarte Konkurrenz längst nutzt, um massiv zu skalieren.
+- Max 3-4 Sätze. Kein verzweifelter Verkäufer-Slang, sondern ein souveränes "Du brauchst uns, wir nicht dich"-Mindset. Biete dezent ein Gespräch an.
+STRATEGIE-FOKUS FÜR DIESE QUELLE (${badge}): ${b2bStrategyMap[badge] || b2bStrategyMap['Global Search']}`
       const response = await fetch(getChatEndpoint(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
