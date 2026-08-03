@@ -384,8 +384,30 @@ export default function LeadRadarPage() {
     setRadarActive(true)
     setRadarStats({ fetched: 0, matched: 0, inserted: 0 })
 
-    const feedsForTab = LIVE_FEEDS.filter(f => f.continent === activeContinent)
-    console.log('[LeadRadar] Live scan started —', feedsForTab.length, 'feeds for', activeContinent)
+    const sq = encodeURIComponent(customNiche.trim() || 'business')
+    
+    let searchLang = 'en'
+    let searchGl = 'US'
+    let searchCeid = 'US:en'
+    if (activeContinent === 'eu') { searchLang = 'de'; searchGl = 'DE'; searchCeid = 'DE:de' }
+    else if (activeContinent === 'latam') { searchLang = 'pt'; searchGl = 'BR'; searchCeid = 'BR:pt-419' }
+    
+    const feedsForTab = [
+      {
+        url: `/.netlify/functions/rss-proxy?url=` + encodeURIComponent(`https://www.reddit.com/search.rss?q=${sq}&sort=new`),
+        continent: activeContinent, platform: 'reddit', lang: searchLang, badge: 'Global Search'
+      },
+      {
+        url: `/.netlify/functions/rss-proxy?url=` + encodeURIComponent(`https://news.google.com/rss/search?q=${sq}&hl=${searchLang}&gl=${searchGl}&ceid=${searchCeid}`),
+        continent: activeContinent, platform: 'forum', lang: searchLang, badge: 'News Radar'
+      },
+      {
+        url: `/.netlify/functions/rss-proxy?url=` + encodeURIComponent(`https://www.upwork.com/ab/feed/jobs/rss?q=${sq}`),
+        continent: activeContinent, platform: 'business', lang: searchLang, badge: 'Job Board'
+      }
+    ]
+
+    console.log('[LeadRadar] Live scan started —', feedsForTab.length, 'dynamic feeds for', activeContinent)
 
     let totalFetched = 0, totalMatched = 0, totalInserted = 0
     const matchedEntries = []
@@ -395,39 +417,22 @@ export default function LeadRadarPage() {
       try {
         if (i > 0) await new Promise(r => setTimeout(r, 1500))
 
-        const subreddit = feed.url.match(/\/r\/([^/]+)\//)?.[1] || 'unknown'
-        const directUrl = `https://www.reddit.com/r/${subreddit}/new/.rss`
-        const proxyUrl = feed.url
-
         let xml = null
 
-        // Try direct client-side fetch first (Reddit RSS sometimes allows CORS)
         try {
-          const c1 = new AbortController()
-          const t1 = setTimeout(() => c1.abort(), 6000)
-          const r1 = await fetch(directUrl, { signal: c1.signal, headers: { 'Accept': '*/*' } })
-          clearTimeout(t1)
-          if (r1.ok) {
-            xml = await r1.text()
-            console.log('[LeadRadar] Direct OK:', subreddit, xml.length, 'bytes')
+          const c = new AbortController()
+          const t = setTimeout(() => c.abort(), 8000)
+          const r = await fetch(feed.url, { signal: c.signal, headers: { 'Accept': '*/*' } })
+          clearTimeout(t)
+          if (r.ok) {
+            xml = await r.text()
+            console.log('[LeadRadar] Proxy OK:', feed.badge, xml.length, 'bytes')
           }
-        } catch (_) { /* direct failed, try proxy */ }
-
-        // Fallback to Netlify proxy
-        if (!xml) {
-          try {
-            const c2 = new AbortController()
-            const t2 = setTimeout(() => c2.abort(), 8000)
-            const r2 = await fetch(proxyUrl, { signal: c2.signal, headers: { 'Accept': '*/*' } })
-            clearTimeout(t2)
-            if (r2.ok) {
-              xml = await r2.text()
-              console.log('[LeadRadar] Proxy OK:', subreddit, xml.length, 'bytes')
-            }
-          } catch (_) { /* both failed */ }
+        } catch (err) {
+          console.warn('[LeadRadar] Proxy fetch failed:', err)
         }
 
-        if (!xml) { console.warn('[LeadRadar] Skip:', subreddit, 'both methods failed'); continue }
+        if (!xml) { console.warn('[LeadRadar] Skip:', feed.badge, 'fetch failed'); continue }
         const entries = extractEntries(xml)
         totalFetched += entries.length
 
