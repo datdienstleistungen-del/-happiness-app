@@ -62,16 +62,14 @@ const PLATFORM_BADGES = {
   twitter: { color: '#1DA1F2', label: 'X / Twitter' },
   twitch: { color: '#9146FF', label: 'Twitch' },
   facebook: { color: '#1877F2', label: 'Facebook' },
-  forum: { color: '#6B7280', label: 'Forum' },
-  business: { color: '#F59E0B', label: 'B2B Portal' },
+  forum: { color: '#6B7280', label: 'Google News' },
+  business: { color: '#F59E0B', label: 'Upwork / B2B' },
 }
 
 const CONTEXT_BADGES = {
   'Global Search': { color: '#0EA5E9', label: '🌍 Global Search' },
   'News Radar': { color: '#EF4444', label: '📰 News Radar' },
   'Job Board': { color: '#10B981', label: '💼 Job Board' },
-  Gamer: { color: '#8B5CF6', label: '🎮 Gamer' },
-  Creator: { color: '#F59E0B', label: '🎬 Creator' },
   Business: { color: '#10B981', label: '💼 Business' },
   Milestone: { color: '#EAB308', label: '⭐ Milestone' },
   'Advice-Seeker': { color: '#22C55E', label: '❓ Advice-Seeker' },
@@ -89,15 +87,14 @@ const LANG_BADGES = {
   pt: { color: '#EF4444', label: 'PT' },
 }
 
-const EMPTY_FORM = { platform: 'reddit', continent: 'na', lang: 'en', badge: 'Creator', source_url: '', text: '' }
+const EMPTY_FORM = { platform: 'reddit', continent: 'na', lang: 'en', badge: 'Business', source_url: '', text: '' }
 const BADGE_OPTIONS = [
   { value: 'Global Search', label: '🌍 Global Search' },
   { value: 'News Radar', label: '📰 News Radar' },
   { value: 'Job Board', label: '💼 Job Board' },
-  { value: 'Gamer', label: '🎮 Gamer' }, { value: 'Creator', label: '🎬 Creator' },
-  { value: 'Business', label: '💼 Business' }, { value: 'Milestone', label: '⭐ Milestone' },
-  { value: 'Advice-Seeker', label: '❓ Advice-Seeker' }, { value: 'Privacy-First', label: '🔒 Privacy-First' },
-  { value: 'Builder', label: '🛠️ Builder' }, { value: 'Trader', label: '📈 Trader' },
+  { value: 'Business', label: '💼 Business' },
+  { value: 'Privacy-First', label: '🔒 Privacy-First' },
+  { value: 'Trader', label: '📈 Trader' },
   { value: 'Real Estate', label: '🏠 Real Estate' },
 ]
 
