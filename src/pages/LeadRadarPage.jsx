@@ -422,7 +422,14 @@ export default function LeadRadarPage() {
         try {
           const c = new AbortController()
           const t = setTimeout(() => c.abort(), 8000)
-          const r = await fetch(feed.url, { signal: c.signal, headers: { 'Accept': '*/*' } })
+          let r = await fetch(feed.url, { signal: c.signal, headers: { 'Accept': '*/*' } })
+          
+          if (!r.ok) {
+             console.log('[LeadRadar] Primary proxy failed, trying fallback...')
+             const originalUrl = new URLSearchParams(feed.url.split('?')[1]).get('url')
+             r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(originalUrl)}`, { signal: c.signal })
+          }
+
           clearTimeout(t)
           if (r.ok) {
             xml = await r.text()
@@ -441,8 +448,9 @@ export default function LeadRadarPage() {
           const plainText = fullText.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 2000)
           if (plainText.length < 20) continue
           let isMatch = false
-          if (customNiche.trim().length > 2) {
-            isMatch = plainText.toLowerCase().includes(customNiche.trim().toLowerCase())
+          if (customNiche.trim().length > 0) {
+            // The RSS feed was already queried with this exact keyword, so we trust the source results
+            isMatch = true 
           } else {
             isMatch = matchesAny(plainText, KW_FRUSTRATION_EN, KW_FRUSTRATION_DE, KW_FRUSTRATION_PT, KW_MILESTONE_EN, KW_MILESTONE_DE, KW_MILESTONE_PT, KW_ADVICE_EN, KW_ADVICE_DE, KW_ADVICE_PT, KW_PRIVACY_EN, KW_PRIVACY_DE, KW_PRIVACY_PT, KW_BUILDER_EN, KW_BUILDER_DE, KW_BUILDER_PT, KW_TRADER_EN, KW_TRADER_DE, KW_TRADER_PT, KW_REALESTATE_EN, KW_REALESTATE_DE, KW_REALESTATE_PT)
           }
