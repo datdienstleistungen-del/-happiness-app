@@ -492,9 +492,17 @@ WICHTIG: Erstelle das Skript passend zum ECHTEN Video-Titel oben. Kopiere NICHT 
 Erstelle aus diesem Video einen exakten SCHRITT-FÜR-SCHRITT BAUPLAN (Schnittanweisung & Voiceover), damit der User das Video manuell in CapCut schneiden kann.
 Schreibe in ${currentLanguageName} Sprache.
 
+### 🚀 TIKTOK / GEN-Z STYLE REGELN:
+1. Sei NICHT langweilig. Das muss Gen-Z von den Socken hauen!
+2. Nutze schnelle Schnitte, absurde Soundeffekte, unvorhersehbare Hooks und modernen Internet-Slang (authentisch, ohne cringe zu wirken).
+3. Integriere aktuelle Trend-Musik (Phonk, Sped-up, Trap-Remixe, etc.) in die "music_suggestion".
+4. Der Hook muss absolut wahnsinnig sein und sofort die Aufmerksamkeit catchen (Brainrot-Elemente erlaubt, wenn es zum Vibe passt).
+
 Strukturiere deine Antwort ZWINGEND als JSON:
 {
   "video_title": "Titel der Video-Idee",
+  "voiceover_script": "Zusammenfassung",
+  "music_suggestion": "Empfehlung für einen TikTok-Sound/Musik (z.B. 'Phonk drift', 'Sped up R&B', 'SpongeBob trap remix')",
   "voiceover_script": "Zusammenfassung",
   "publishing_payload": {
     "tiktok_instagram": {
@@ -1018,7 +1026,14 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
                   </button>
                 </div>
                 <div className="vf-script-output-body">
-                  <div className="vf-meta-badge" style={{ marginBottom: '1rem' }}><strong>Hook (0-3s):</strong> {generatedScript.publishing_payload?.tiktok_instagram?.hook}</div>
+                  <div className="vf-meta-badge" style={{ marginBottom: '0.75rem', fontSize: '1rem', background: '#fef3c7', color: '#b45309', padding: '10px 14px', borderRadius: '8px' }}>
+                    <strong>🔥 Hook (0-3s):</strong> {generatedScript.publishing_payload?.tiktok_instagram?.hook}
+                  </div>
+                  {generatedScript.music_suggestion && (
+                    <div className="vf-meta-badge" style={{ marginBottom: '1.25rem', fontSize: '0.9rem', background: '#ede9fe', color: '#6d28d9', padding: '8px 12px', borderRadius: '6px' }}>
+                      <strong>🎵 Sound-Idee:</strong> {generatedScript.music_suggestion}
+                    </div>
+                  )}
                   
                   {generatedScript.blueprint ? (
                     <div className="vf-blueprint-steps" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
