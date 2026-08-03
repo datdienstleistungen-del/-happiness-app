@@ -328,6 +328,7 @@ export default function LeadRadarPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [activeContinent, setActiveContinent] = useState('na')
+  const [customNiche, setCustomNiche] = useState('')
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState({})
@@ -434,7 +435,13 @@ export default function LeadRadarPage() {
           const fullText = `${entry.title} ${entry.content}`.trim()
           const plainText = fullText.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 2000)
           if (plainText.length < 20) continue
-          if (!matchesAny(plainText, KW_FRUSTRATION_EN, KW_FRUSTRATION_DE, KW_FRUSTRATION_PT, KW_MILESTONE_EN, KW_MILESTONE_DE, KW_MILESTONE_PT, KW_ADVICE_EN, KW_ADVICE_DE, KW_ADVICE_PT, KW_PRIVACY_EN, KW_PRIVACY_DE, KW_PRIVACY_PT, KW_BUILDER_EN, KW_BUILDER_DE, KW_BUILDER_PT, KW_TRADER_EN, KW_TRADER_DE, KW_TRADER_PT, KW_REALESTATE_EN, KW_REALESTATE_DE, KW_REALESTATE_PT)) continue
+          let isMatch = false
+          if (customNiche.trim().length > 2) {
+            isMatch = plainText.toLowerCase().includes(customNiche.trim().toLowerCase())
+          } else {
+            isMatch = matchesAny(plainText, KW_FRUSTRATION_EN, KW_FRUSTRATION_DE, KW_FRUSTRATION_PT, KW_MILESTONE_EN, KW_MILESTONE_DE, KW_MILESTONE_PT, KW_ADVICE_EN, KW_ADVICE_DE, KW_ADVICE_PT, KW_PRIVACY_EN, KW_PRIVACY_DE, KW_PRIVACY_PT, KW_BUILDER_EN, KW_BUILDER_DE, KW_BUILDER_PT, KW_TRADER_EN, KW_TRADER_DE, KW_TRADER_PT, KW_REALESTATE_EN, KW_REALESTATE_DE, KW_REALESTATE_PT)
+          }
+          if (!isMatch) continue
 
           totalMatched++
           const sourceUrl = entry.link || feed.url
@@ -490,7 +497,7 @@ export default function LeadRadarPage() {
       setRadarActive(false)
       setTimeout(() => radarFnRef.current(), 500)
     }, 60000)
-  }, [radarActive, activeContinent])
+  }, [radarActive, activeContinent, customNiche])
 
   radarFnRef.current = runLiveRadar
 
@@ -574,6 +581,18 @@ EMOTION: ${emotionMap[badge] || emotionMap.Creator}`
         <button className="lr-add-btn" onClick={() => { setForm({ ...EMPTY_FORM, continent: activeContinent }); setSaveError(''); setModalOpen(true) }}>
           <Plus size={16} /> Add Live Lead
         </button>
+      </div>
+
+      <div className="lr-niche-search" style={{ padding: '0 20px', marginBottom: '15px' }}>
+        <input 
+          type="text" 
+          placeholder="🎯 Für welche Nische suchst du Leads? (z.B. Autohändler, Fotograf, Makler)" 
+          value={customNiche}
+          onChange={(e) => setCustomNiche(e.target.value)}
+          disabled={radarActive}
+          style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text)', fontSize: '15px' }}
+        />
+        {customNiche.trim().length > 0 && <p style={{ fontSize: '12px', color: 'var(--amber-500)', marginTop: '8px' }}>⚡ Live-Filter aktiviert: Radar sucht nur noch nach "{customNiche}".</p>}
       </div>
 
       {radarStats.inserted > 0 && (
