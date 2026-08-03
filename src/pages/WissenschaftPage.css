@@ -61,6 +61,33 @@
   font-family: 'Merriweather', 'Georgia', serif;
 }
 
+.science-body h3 {
+  font-size: 1.4rem;
+  color: var(--text);
+  margin: 2.5rem 0 1rem 0;
+  font-family: 'Merriweather', 'Georgia', serif;
+}
+
+.science-body ul {
+  margin-bottom: 1.5rem;
+  padding-left: 1.5rem;
+  color: var(--text-muted);
+  font-family: 'Merriweather', 'Georgia', serif;
+}
+
+.science-body li {
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.science-body hr {
+  border: 0;
+  height: 1px;
+  background: var(--border);
+  margin: 3rem 0;
+}
+
 /* THE FOG WALL */
 .science-body.is-blurred {
   filter: blur(5px);

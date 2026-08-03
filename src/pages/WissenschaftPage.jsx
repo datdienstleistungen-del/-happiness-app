@@ -3,6 +3,7 @@ import { BookOpen, Lock, Unlock, Mail, CheckCircle2, Loader2 } from 'lucide-reac
 import { useLanguage } from '../i18n/translations.jsx'
 import { getDailyScienceArticle } from '../content/wissenschaft'
 import { supabase } from '../lib/supabase'
+import ReactMarkdown from 'react-markdown'
 import './WissenschaftPage.css'
 
 export default function WissenschaftPage() {
@@ -16,7 +17,6 @@ export default function WissenschaftPage() {
   const article = getDailyScienceArticle()
 
   useEffect(() => {
-    // Check if user has already unlocked it previously
     const isUnlocked = localStorage.getItem('wissenschaft_unlocked') === 'true'
     if (isUnlocked) {
       setUnlocked(true)
@@ -34,23 +34,17 @@ export default function WissenschaftPage() {
     setError('')
 
     try {
-      // Speichere die E-Mail in Supabase
       const { error: dbError } = await supabase
         .from('email_leads')
         .insert([{ email: email.toLowerCase(), source: 'wissenschaft_paywall' }])
       
-      // Fehler ignorieren, wenn Tabelle nicht existiert (für die Demo), 
-      // aber in Produktion wollen wir ihn abfangen.
-      // Falls die E-Mail schon existiert (Unique Constraint), ist das auch in Ordnung, wir schalten trotzdem frei.
       if (dbError && dbError.code !== '23505') { 
         console.warn('Database Error:', dbError)
       }
 
-      // Freischalten!
       localStorage.setItem('wissenschaft_unlocked', 'true')
       setSuccess(true)
       
-      // Kurze Verzögerung für die Animation, dann den Nebel entfernen
       setTimeout(() => {
         setUnlocked(true)
       }, 1000)
@@ -81,14 +75,11 @@ export default function WissenschaftPage() {
           <p>{article.intro}</p>
         </div>
 
-        {/* Trennlinie */}
         <hr className="science-divider" />
 
         <div className="science-body-container">
-          <div className={`science-body ${unlocked ? '' : 'is-blurred'}`}>
-            {article.body.split('\n\n').map((paragraph, idx) => (
-              <p key={idx}>{paragraph}</p>
-            ))}
+          <div className={`science-body ${unlocked ? '' : 'is-blurred'} markdown-content`}>
+            <ReactMarkdown>{article.body}</ReactMarkdown>
           </div>
 
           {!unlocked && (
