@@ -58,6 +58,8 @@ async function extractFramesFromVideo(videoSrc, maxFrames = 5) {
 export default function VideoFinderPage() {
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
+  const [chatInput, setChatInput] = useState('')
+  const [analyzingFrames, setAnalyzingFrames] = useState(false)
 
   const getTxt = (key) => {
     const dict = {
@@ -355,8 +357,6 @@ export default function VideoFinderPage() {
     selectedTone, setSelectedTone,
     customInstructions, setCustomInstructions,
     generatingScript, setGeneratingScript,
-    chatInput, setChatInput,
-    analyzingFrames, setAnalyzingFrames,
     generatedScript, setGeneratedScript,
     copied, setCopied,
     error, setError,
@@ -933,22 +933,61 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
               ) : null}
             </div>
 
-            <div className="vf-generator-setup" style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151' }}>💡 Ideenschmiede</label>
+            <div className="vf-generator-setup" style={{ background: 'linear-gradient(to bottom right, #f8fafc, #f1f5f9)', padding: '24px', borderRadius: '16px', marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+              <label style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={20} style={{ color: 'var(--brand-purple)' }} /> 
+                Ideenschmiede
+              </label>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 8px 0', lineHeight: '1.4' }}>
+                Beschreibe deine Vision für dieses Video. H.I.T. erstellt dir daraus einen exakten Regie-Bauplan für CapCut.
+              </p>
+              
               <textarea 
-                placeholder='z. B. "Ich brauche das für ein witziges TikTok" oder "Mache daraus eine Schulpräsentation" (Optional)' 
-                value={chatInput || ''} 
+                placeholder='z. B. "Ich brauche das für ein witziges TikTok mit Retro-Vibe..." oder "Mache daraus eine Schulpräsentation" (Optional)' 
+                value={chatInput} 
                 onChange={(e) => setChatInput(e.target.value)} 
-                style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.9rem', resize: 'vertical' }}
+                style={{ 
+                  width: '100%', 
+                  minHeight: '120px', 
+                  padding: '16px', 
+                  borderRadius: '12px', 
+                  border: '2px solid #cbd5e1', 
+                  fontSize: '1rem', 
+                  resize: 'vertical',
+                  background: '#ffffff',
+                  color: '#1e293b',
+                  transition: 'border-color 0.2s',
+                  boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)'
+                }}
+                onFocus={(e) => e.target.style.borderColor = 'var(--brand-purple)'}
+                onBlur={(e) => e.target.style.borderColor = '#cbd5e1'}
               />
+              
               <button 
                 className="vf-generate-script-btn" 
                 onClick={generateScriptForVideo} 
                 disabled={generatingScript || analyzingFrames}
-                style={{ alignSelf: 'flex-end', marginTop: '4px', background: 'var(--brand-purple)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}
+                style={{ 
+                  alignSelf: 'flex-end', 
+                  marginTop: '12px', 
+                  background: 'var(--brand-purple)', 
+                  color: 'white', 
+                  border: 'none', 
+                  padding: '12px 24px', 
+                  borderRadius: '10px', 
+                  cursor: (generatingScript || analyzingFrames) ? 'not-allowed' : 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px', 
+                  fontWeight: 700,
+                  fontSize: '1rem',
+                  boxShadow: '0 4px 12px rgba(124, 58, 237, 0.25)',
+                  transition: 'all 0.2s',
+                  opacity: (generatingScript || analyzingFrames) ? 0.7 : 1
+                }}
               >
-                <Sparkles size={16} />
-                {analyzingFrames ? 'Video wird analysiert...' : generatingScript ? 'Bauplan wird erstellt...' : 'Idee absenden'}
+                <Sparkles size={18} />
+                {analyzingFrames ? 'Video wird analysiert...' : generatingScript ? 'Bauplan wird erstellt...' : 'Idee umsetzen'}
               </button>
             </div>
 
