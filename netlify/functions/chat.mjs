@@ -676,9 +676,41 @@ ${message}`
       const isScriptAudit = systemPrompt && (systemPrompt.includes('Retention-Coach') || systemPrompt.includes('REICHWEITEN-PROGNOSE'))
       let success = false
 
+      // Stage 0: OpenAI (Primary for JSON / complex reasoning)
+      const openAiKey = process.env.OPENAI_API_KEY
+      if (openAiKey) {
+        try {
+          const oaiRes = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${openAiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: buildMessages(historyLimit, true),
+              temperature: reqTemperature,
+              max_tokens: 2500,
+              ...(reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {})
+            })
+          }, 35000)
+          if (oaiRes.ok) {
+            const oaiData = await oaiRes.json()
+            console.log('Antwort von:', 'openai-gpt-4o-mini')
+            aiResponse = oaiData.choices?.[0]?.message?.content || ''
+            usage = oaiData.usage
+            provider = 'openai'
+            modelName = 'gpt-4o-mini'
+            success = true
+          } else {
+            const oaiData = await oaiRes.json().catch(() => ({}))
+            providerErrors.push(`OpenAI: ${oaiData?.error?.message || 'Unknown Error'} (HTTP ${oaiRes.status})`)
+          }
+        } catch (err) {
+          providerErrors.push(`OpenAI: ${err.message}`)
+        }
+      }
+
       // Stage 1: OpenRouter (kostenlos - primär, übersprungen bei Skript-Audit wegen Latenz)
       const orKey = process.env.OPENROUTER_API_KEY
-      if (orKey && !isScriptAudit) {
+      if (!success && orKey && !isScriptAudit) {
         try {
           const orRes = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
