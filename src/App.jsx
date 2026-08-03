@@ -30,7 +30,7 @@ const JobsPage = lazy(() => import('./pages/JobsPage'))
 const CoursesPage = lazy(() => import('./pages/CoursesPage'))
 const HousingPage = lazy(() => import('./pages/HousingPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
-const NotificationsPage = lazy(() => import('./pages/NotificationsPage'))
+const WissenschaftPage = lazy(() => import('./pages/WissenschaftPage'))
 const HistoryPage = lazy(() => import('./pages/HistoryPage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 const LegalPage = lazy(() => import('./pages/LegalPage'))
@@ -122,7 +122,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
   const discoverLinks = []
 
   const accountLinks = [
-    { to: '/notifications', icon: Bell, label: t('nav.notifications') },
+    { to: '/wissenschaft', icon: BookOpen, label: t('nav.wissenschaft') },
   ]
 
   if (profile?.role === 'admin') {
@@ -498,7 +498,7 @@ export default function App() {
                 <Route path="/courses" element={<CoursesPage />} />
                 <Route path="/housing" element={<HousingPage />} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-                <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+                <Route path="/wissenschaft" element={<WissenschaftPage />} />
                 <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
                 <Route path="/admin/creator-success" element={<ProtectedRoute><CreatorSuccessPage /></ProtectedRoute>} />
