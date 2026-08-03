@@ -342,6 +342,8 @@ export default function LeadRadarPage() {
   const [responses, setResponses] = useState({})
   const [cooldowns, setCooldowns] = useState({})
   const [modalOpen, setModalOpen] = useState(false)
+  const [configModalOpen, setConfigModalOpen] = useState(false)
+  const [scanSources, setScanSources] = useState({ upwork: true, news: true, reddit: true })
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -399,20 +401,26 @@ export default function LeadRadarPage() {
     if (activeContinent === 'eu') { searchLang = 'de'; searchGl = 'DE'; searchCeid = 'DE:de' }
     else if (activeContinent === 'latam') { searchLang = 'pt'; searchGl = 'BR'; searchCeid = 'BR:pt-419' }
     
-    const feedsForTab = [
-      {
+    const feedsForTab = []
+    
+    if (scanSources.reddit) {
+      feedsForTab.push({
         url: `/.netlify/functions/rss-proxy?url=` + encodeURIComponent(`https://www.reddit.com/search.rss?q=${sq}&sort=new`),
         continent: activeContinent, platform: 'reddit', lang: searchLang, badge: 'Global Search'
-      },
-      {
+      })
+    }
+    if (scanSources.news) {
+      feedsForTab.push({
         url: `/.netlify/functions/rss-proxy?url=` + encodeURIComponent(`https://news.google.com/rss/search?q=${sq}&hl=${searchLang}&gl=${searchGl}&ceid=${searchCeid}`),
         continent: activeContinent, platform: 'forum', lang: searchLang, badge: 'News Radar'
-      },
-      {
+      })
+    }
+    if (scanSources.upwork) {
+      feedsForTab.push({
         url: `/.netlify/functions/rss-proxy?url=` + encodeURIComponent(`https://www.upwork.com/ab/feed/jobs/rss?q=${sq}`),
         continent: activeContinent, platform: 'business', lang: searchLang, badge: 'Job Board'
-      }
-    ]
+      })
+    }
 
     console.log('[LeadRadar] Live scan started —', feedsForTab.length, 'dynamic feeds for', activeContinent)
 
@@ -594,25 +602,13 @@ EMOTION: ${emotionMap[badge] || emotionMap.Creator}`
         <span className="lr-badge">{leads.length} leads</span>
         <button
           className={`lr-radar-btn ${radarActive ? 'active' : ''}`}
-          onClick={radarActive ? stopRadar : runLiveRadar}
+          onClick={radarActive ? stopRadar : () => setConfigModalOpen(true)}
         >
           {radarActive ? <><Loader size={14} className="lr-spinner" /> Scanning... (Stop)</> : <><Radio size={14} /> Live Radar</>}
         </button>
         <button className="lr-add-btn" onClick={() => { setForm({ ...EMPTY_FORM, continent: activeContinent }); setSaveError(''); setModalOpen(true) }}>
           <Plus size={16} /> Add Live Lead
         </button>
-      </div>
-
-      <div className="lr-niche-search" style={{ padding: '0 20px', marginBottom: '15px' }}>
-        <input 
-          type="text" 
-          placeholder="🎯 Für welche Nische suchst du Leads? (z.B. Autohändler, Fotograf, Makler)" 
-          value={customNiche}
-          onChange={(e) => setCustomNiche(e.target.value)}
-          disabled={radarActive}
-          style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text)', fontSize: '15px' }}
-        />
-        {customNiche.trim().length > 0 && <p style={{ fontSize: '12px', color: 'var(--amber-500)', marginTop: '8px' }}>⚡ Live-Filter aktiviert: Radar sucht nur noch nach "{customNiche}".</p>}
       </div>
 
       {radarStats.inserted > 0 && (
@@ -728,6 +724,52 @@ EMOTION: ${emotionMap[badge] || emotionMap.Creator}`
                 {saving ? <><Loader size={14} className="lr-spinner" /> Saving...</> : <><Radar size={14} /> Save to Database</>}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+      {configModalOpen && (
+        <div className="lr-modal-overlay" onClick={() => setConfigModalOpen(false)}>
+          <div className="lr-modal" onClick={e => e.stopPropagation()}>
+            <div className="lr-modal-header">
+              <h3>Radar Scan Configuration</h3>
+              <button onClick={() => setConfigModalOpen(false)}><X size={16} /></button>
+            </div>
+            <div className="lr-form" style={{ gap: '20px' }}>
+              <label className="lr-form-full"><span>Target Niche / Keyword</span>
+                <input type="text" placeholder="e.g. Autohändler, Webdesign, Real Estate" value={customNiche} onChange={e => setCustomNiche(e.target.value)} />
+              </label>
+              
+              <div className="lr-form-row">
+                <label><span>Target Region (Continent)</span>
+                  <select value={activeContinent} onChange={e => setActiveContinent(e.target.value)}>
+                    <option value="na">North America (US/CA)</option>
+                    <option value="eu">Europe (DE/EU)</option>
+                    <option value="latam">Latin America (BR/PT)</option>
+                    <option value="apac">Asia-Pacific (AU)</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="lr-form-full">
+                <span style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', display: 'block' }}>Data Sources</span>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg)', padding: '10px', borderRadius: '6px', marginBottom: '8px', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={scanSources.upwork} onChange={e => setScanSources(p => ({ ...p, upwork: e.target.checked }))} />
+                  <span style={{ flex: 1 }}>💼 B2B Job Boards (Upwork)</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg)', padding: '10px', borderRadius: '6px', marginBottom: '8px', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={scanSources.news} onChange={e => setScanSources(p => ({ ...p, news: e.target.checked }))} />
+                  <span style={{ flex: 1 }}>📰 Trigger Events (Google News)</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg)', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={scanSources.reddit} onChange={e => setScanSources(p => ({ ...p, reddit: e.target.checked }))} />
+                  <span style={{ flex: 1 }}>🌍 Global Social Search (Reddit)</span>
+                </label>
+              </div>
+
+              <button className="lr-form-submit" onClick={() => { setConfigModalOpen(false); runLiveRadar(); }} style={{ marginTop: '10px', height: '48px', fontSize: '15px' }}>
+                🚀 Start Professional Scan
+              </button>
+            </div>
           </div>
         </div>
       )}
