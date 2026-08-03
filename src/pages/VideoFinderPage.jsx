@@ -474,6 +474,10 @@ export default function VideoFinderPage() {
 
     const scriptTopic = activeSource === 'viral' ? topic : (query || 'Unterhaltung')
     const userPrompt = chatInput ? chatInput.trim() : 'Ich brauche ein witziges, virales TikTok-Video daraus.'
+    
+    // Bereinige und kürze die Beschreibung (Archive.org Beschreibungen können HTML enthalten und sehr lang sein)
+    const rawDesc = selectedVideo?.description || 'Keine Beschreibung verfügbar'
+    const cleanDesc = rawDesc.replace(/<[^>]*>?/gm, '').substring(0, 800).trim()
 
     const languageNames = {
       de: 'deutscher', en: 'englischer', es: 'spanischer', fr: 'französischer', it: 'italienischer', nl: 'niederländischer', el: 'griechischer'
@@ -482,8 +486,9 @@ export default function VideoFinderPage() {
 
     const systemPrompt = `Du bist die "Video-Ideenschmiede" (H.I.T. Regisseur).
 Deine Aufgabe: Der User gibt dir (falls möglich) Bilder aus einem gefundenen Video.
-Hier sind die Metadaten des ausgewählten Videos:
+Hier sind die echten Metadaten des ausgewählten Videos:
 - Video-Titel: "${selectedVideo?.title || 'Unbekannt'}"
+- Beschreibung: "${cleanDesc}"
 - Suchbegriff / Kategorie: "${scriptTopic}"
 
 Der User hat folgende spezifische Idee / Anforderung formuliert: "${userPrompt}"
@@ -499,7 +504,7 @@ Schreibe in ${currentLanguageName} Sprache.
 4. Der Hook muss absolut wahnsinnig sein und sofort die Aufmerksamkeit catchen (Brainrot-Elemente erlaubt, wenn es zum Vibe passt).
 
 5. Sei extrem KONKRET! Schreibe NIEMALS generische Platzhalter wie "Schneide auf eine ungewöhnliche Szene" oder "Zoom auf ein Detail". 
-6. ERFINDE (halluziniere) stattdessen konkrete, absurde und spezifische Bild-Szenen, die exakt zum Titel passen könnten (z.B. "Zoom extrem nah auf das wütende Auge von Popeye" statt "Zeige eine Emotion"). Erschaffe eine richtige Story!
+6. WICHTIG: Nutze die "Beschreibung" und den "Video-Titel" aus den Metadaten oben, um zu verstehen, was in dem Video passiert. ERFINDE (halluziniere) basierend auf dieser Beschreibung konkrete, witzige und spezifische Bild-Szenen, die EXAKT in diesem Video vorkommen würden (z.B. "Zoom extrem nah auf das wütende Auge von Popeye"). Erschaffe eine richtige Story passend zur Beschreibung!
 
 Strukturiere deine Antwort ZWINGEND als JSON:
 {
