@@ -676,35 +676,35 @@ ${message}`
       const isScriptAudit = systemPrompt && (systemPrompt.includes('Retention-Coach') || systemPrompt.includes('REICHWEITEN-PROGNOSE'))
       let success = false
 
-      // Stage 0: OpenAI (Primary for JSON / complex reasoning)
-      const openAiKey = process.env.OPENAI_API_KEY
-      if (openAiKey) {
+      // Stage 0: Groq (Primary because it is extremely fast and avoids Netlify 10s timeout)
+      const groqKey = process.env.GROQ_API_KEY
+      if (groqKey) {
         try {
-          const oaiRes = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
+          const groqRes = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${openAiKey}`, 'Content-Type': 'application/json' },
+            headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              model: 'gpt-4o-mini',
+              model: 'llama-3.3-70b-versatile',
               messages: buildMessages(historyLimit, true),
               temperature: reqTemperature,
-              max_tokens: 2500,
+              max_tokens: 4096,
               ...(reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {})
             })
-          }, 35000)
-          if (oaiRes.ok) {
-            const oaiData = await oaiRes.json()
-            console.log('Antwort von:', 'openai-gpt-4o-mini')
-            aiResponse = oaiData.choices?.[0]?.message?.content || ''
-            usage = oaiData.usage
-            provider = 'openai'
-            modelName = 'gpt-4o-mini'
+          }, 8000)
+          if (groqRes.ok) {
+            const groqData = await groqRes.json()
+            console.log('Antwort von:', 'groq-llama-3.3')
+            aiResponse = groqData.choices?.[0]?.message?.content || ''
+            usage = groqData.usage
+            provider = 'groq'
+            modelName = 'llama-3.3-70b-versatile'
             success = true
           } else {
-            const oaiData = await oaiRes.json().catch(() => ({}))
-            providerErrors.push(`OpenAI: ${oaiData?.error?.message || 'Unknown Error'} (HTTP ${oaiRes.status})`)
+            const groqData = await groqRes.json().catch(() => ({}))
+            providerErrors.push(`Groq: ${groqData?.error?.message || 'Unknown Error'} (HTTP ${groqRes.status})`)
           }
         } catch (err) {
-          providerErrors.push(`OpenAI: ${err.message}`)
+          providerErrors.push(`Groq: ${err.message}`)
         }
       }
 
@@ -794,46 +794,43 @@ ${message}`
         }
       }
 
-      // Stage 3: Groq (schnell, aber oft rate-limited)
+      // Stage 3: OpenAI (Falls Groq und andere fehlschlagen)
       if (!success) {
-        const groqKey = process.env.GROQ_API_KEY
-        if (groqKey) {
+        const openAiKey = process.env.OPENAI_API_KEY
+        if (openAiKey) {
           try {
-            const groqRes = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+            const oaiRes = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${groqKey}`,
+                'Authorization': `Bearer ${openAiKey}`,
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile',
-                messages: buildMessages(historyLimit),
+                model: 'gpt-4o-mini',
+                messages: buildMessages(historyLimit, true),
                 temperature: reqTemperature,
-                max_tokens: 4096,
+                max_tokens: 2500,
                 ...(reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {})
               })
-            }, 45000)
-            if (groqRes.ok) {
-              const groqData = await groqRes.json()
-              console.log('Antwort von:', 'groq')
-              aiResponse = groqData.choices?.[0]?.message?.content || ''
-              usage = groqData.usage
-              provider = 'groq'
-              modelName = 'llama-3.3-70b-versatile'
+            }, 8000)
+            if (oaiRes.ok) {
+              const oaiData = await oaiRes.json()
+              console.log('Antwort von:', 'openai-gpt-4o-mini')
+              aiResponse = oaiData.choices?.[0]?.message?.content || ''
+              usage = oaiData.usage
+              provider = 'openai'
+              modelName = 'gpt-4o-mini'
               success = true
             } else {
-              const groqData = await groqRes.json().catch(() => ({}))
-              const errMsg = groqData?.error?.message || JSON.stringify(groqData)
-              providerErrors.push(`Groq: ${errMsg} (HTTP ${groqRes.status})`)
-              console.warn('Groq failed, status:', groqRes.status, 'message:', errMsg)
+              const oaiData = await oaiRes.json().catch(() => ({}))
+              const errMsg = oaiData?.error?.message || JSON.stringify(oaiData)
+              providerErrors.push(`OpenAI: ${errMsg} (HTTP ${oaiRes.status})`)
             }
           } catch (err) {
-            providerErrors.push(`Groq: ${err.message}`)
-            console.warn('Groq fetch failed:', err.message)
+            providerErrors.push(`OpenAI: ${err.message}`)
           }
         } else {
-          providerErrors.push('Groq: GROQ_API_KEY not configured')
-          console.warn('GROQ_API_KEY not configured, skipping to DeepSeek fallback')
+          providerErrors.push('OpenAI: OPENAI_API_KEY not configured')
         }
       }
 
