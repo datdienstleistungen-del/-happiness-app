@@ -498,12 +498,14 @@ Schreibe in ${currentLanguageName} Sprache.
 3. Integriere aktuelle Trend-Musik (Phonk, Sped-up, Trap-Remixe, etc.) in die "music_suggestion".
 4. Der Hook muss absolut wahnsinnig sein und sofort die Aufmerksamkeit catchen (Brainrot-Elemente erlaubt, wenn es zum Vibe passt).
 
+5. Sei extrem KONKRET! Schreibe NIEMALS generische Platzhalter wie "Schneide auf eine ungewöhnliche Szene" oder "Zoom auf ein Detail". 
+6. ERFINDE (halluziniere) stattdessen konkrete, absurde und spezifische Bild-Szenen, die exakt zum Titel passen könnten (z.B. "Zoom extrem nah auf das wütende Auge von Popeye" statt "Zeige eine Emotion"). Erschaffe eine richtige Story!
+
 Strukturiere deine Antwort ZWINGEND als JSON:
 {
   "video_title": "Titel der Video-Idee",
   "voiceover_script": "Zusammenfassung",
   "music_suggestion": "Empfehlung für einen TikTok-Sound/Musik (z.B. 'Phonk drift', 'Sped up R&B', 'SpongeBob trap remix')",
-  "voiceover_script": "Zusammenfassung",
   "publishing_payload": {
     "tiktok_instagram": {
       "hook": "Der Hook-Satz (die ersten 3 Sekunden)",
