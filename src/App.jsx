@@ -52,6 +52,7 @@ const CoachChatPage = lazy(() => import('./pages/CoachChatPage'))
 const KiVisibilityPage = lazy(() => import('./pages/KiVisibilityPage'))
 const VideoScriptPage = lazy(() => import('./pages/VideoScriptPage'))
 const IdeenschmiedePage = lazy(() => import('./pages/IdeenschmiedePage'))
+const RatgeberNoOneToTalkTo = lazy(() => import('./pages/RatgeberNoOneToTalkTo'))
 
 
 function Sidebar({ mobileOpen, setMobileOpen }) {
@@ -436,8 +437,8 @@ export default function App() {
           <LoadingScreen />
         ) : (
           <>
-            {((user && !['/onboarding', '/today-question'].includes(location.pathname)) || (!user && ['/', '/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) && <Sidebar mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />}
-            {!user && !['/login', '/register', '/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname) && (
+            {((user && !['/onboarding', '/today-question'].includes(location.pathname) && !location.pathname.startsWith('/ratgeber')) || (!user && ['/', '/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) && <Sidebar mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />}
+            {(!user || location.pathname.startsWith('/ratgeber')) && !['/login', '/register', '/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname) && (
               <nav className="public-topbar">
                 <Link to="/" className="public-topbar-brand">
                   <img src="/favicon.svg" alt="H" style={{ width: '28px', height: '28px' }} />
@@ -446,13 +447,20 @@ export default function App() {
                 <div className="public-topbar-links">
                 </div>
                 <div className="public-topbar-actions">
-                  <Link to="/login" className="btn btn-outline btn-sm">Anmelden</Link>
-                  <Link to="/register" className="btn btn-primary btn-sm">Registrieren</Link>
+                  {!user && (
+                    <>
+                      <Link to="/login" className="btn btn-outline btn-sm">Anmelden</Link>
+                      <Link to="/register" className="btn btn-primary btn-sm">Registrieren</Link>
+                    </>
+                  )}
+                  {user && (
+                    <Link to="/" className="btn btn-primary btn-sm">Zum Coach</Link>
+                  )}
                 </div>
               </nav>
             )}
-              <main className={((user && !['/onboarding', '/today-question'].includes(location.pathname)) || (!user && ['/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) ? 'main-content with-sidebar' : 'main-content full'}>
-              {((user && !['/onboarding', '/today-question'].includes(location.pathname)) || (!user && ['/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) && (
+              <main className={((user && !['/onboarding', '/today-question'].includes(location.pathname) && !location.pathname.startsWith('/ratgeber')) || (!user && ['/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) ? 'main-content with-sidebar' : 'main-content full'}>
+              {((user && !['/onboarding', '/today-question'].includes(location.pathname) && !location.pathname.startsWith('/ratgeber')) || (!user && ['/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) && (
                 <button className="mobile-menu-btn" onClick={() => setMobileSidebarOpen(true)}>
                   <Menu size={22} />
                 </button>
@@ -487,6 +495,7 @@ export default function App() {
                 <Route path="/capcut-studio" element={<ProtectedRoute><TikTokVideoPage /></ProtectedRoute>} />
                 <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
                 <Route path="/tour" element={<TourPage />} />
+                <Route path="/ratgeber/niemand-zum-reden" element={<RatgeberNoOneToTalkTo />} />
                 <Route path="/video-finder" element={<VideoFinderPage />} />
                 <Route path="/video-script" element={<VideoScriptPage />} />
                 <Route path="/ideenschmiede" element={<ProtectedRoute><IdeenschmiedePage /></ProtectedRoute>} />
@@ -500,7 +509,7 @@ export default function App() {
               </Suspense>
               </ErrorBoundary>
              </main>
-             {((user && !['/onboarding', '/today-question'].includes(location.pathname)) || (!user && ['/', '/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) && <MobileBar />}
+             {((user && !['/onboarding', '/today-question'].includes(location.pathname) && !location.pathname.startsWith('/ratgeber')) || (!user && ['/', '/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) && <MobileBar />}
           </>
         )}
         </StudioProvider>
