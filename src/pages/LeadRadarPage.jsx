@@ -98,6 +98,14 @@ const BADGE_OPTIONS = [
   { value: 'Real Estate', label: '🏠 Real Estate' },
 ]
 
+function cleanText(str) {
+  if (!str) return '';
+  let cleaned = str.replace(/<[^>]*>?/gm, '');
+  cleaned = cleaned.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
+                   .replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ');
+  return cleaned;
+}
+
 // ── 100+ Keywords (EN + DE) ──
 const KW_FRUSTRATION_EN = [
   'no viewers', 'zero viewers', '0 viewers', 'nobody watches', 'no one watches',
@@ -652,7 +660,7 @@ STRATEGIE-FOKUS FÜR DIESE QUELLE (${badge}): ${b2bStrategyMap[badge] || b2bStra
                   </span>
                 )}
               </div>
-              <p className="lr-card-text">{lead.text}</p>
+              <p className="lr-card-text">{cleanText(lead.text)}</p>
               {lead.source_url && (
                 <a href={lead.source_url} target="_blank" rel="noopener noreferrer" className="lr-card-link">
                   <ExternalLink size={12} /> View original post
