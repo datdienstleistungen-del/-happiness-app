@@ -53,11 +53,8 @@ export const handler = async (event) => {
     const data = await res.json()
     const docs = data.response?.docs || []
 
-    const videos = await Promise.all(docs.map(async (doc) => {
-      const bestFile = await getBestMp4(doc.identifier)
-      const videoUrl = bestFile 
-        ? `https://archive.org/download/${doc.identifier}/${bestFile}`
-        : `https://archive.org/details/${doc.identifier}`
+    const videos = docs.map((doc) => {
+      const videoUrl = `https://archive.org/details/${doc.identifier}`
       
       return {
         id: doc.identifier,
@@ -69,9 +66,9 @@ export const handler = async (event) => {
         date: doc.date || '',
         rating: doc.avg_rating || 0,
         source: 'archive',
-        hasVideo: !!bestFile
+        hasVideo: true // Assume true, fallback to details page if direct MP4 isn't known
       }
-    }))
+    })
 
     return {
       statusCode: 200,

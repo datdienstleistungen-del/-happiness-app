@@ -345,12 +345,7 @@ export default function VideoFinderPage() {
     return dict[lang]?.[key] || dict['en']?.[key] || key
   }
 
-  const TONES = [
-    { value: 'funny', label: `😂 ${t('videoFinder.toneFunny')}` },
-    { value: 'facts', label: `🧠 ${t('videoFinder.toneFacts')}` },
-    { value: 'sarcastic', label: `😏 ${t('videoFinder.toneSarcastic')}` },
-    { value: 'hyped', label: `🔥 ${t('videoFinder.toneHyped')}` }
-  ]
+
   const {
     query, setQuery,
     videos, setVideos,
@@ -687,8 +682,8 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
     <div className="vf-container">
       <div className="vf-main-content">
         <div className="vf-header">
-          <h2>🔍 {t('videoFinder.title')}</h2>
-          <p>{t('videoFinder.subtitle')}</p>
+          <h2>🔍 {getTxt('viralTitle')}</h2>
+          <p>{getTxt('viralSub')}</p>
         </div>
 
         <div className="vf-tabs">
@@ -696,25 +691,25 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
             className={`vf-tab-btn-source ${activeSource === 'pexels' ? 'active' : ''}`}
             onClick={() => { setActiveSource('pexels'); setSelectedVideo(null); setGeneratedScript(null); setError('') }}
           >
-            📸 {t('videoFinder.tabPexels')}
+            📸 Pexels
           </button>
           <button
             className={`vf-tab-btn-source ${activeSource === 'viral' ? 'active' : ''}`}
             onClick={() => { setActiveSource('viral'); setSelectedVideo(null); setGeneratedScript(null); setError('') }}
           >
-            🚀 {t('videoFinder.tabViral')}
+            🚀 Viral Links
           </button>
           <button
             className={`vf-tab-btn-source ${activeSource === 'archive' ? 'active' : ''}`}
             onClick={() => { setActiveSource('archive'); setSelectedVideo(null); setGeneratedScript(null); setError('') }}
           >
-            🏛️ {t('videoFinder.tabArchive')}
+            🏛️ Internet Archive
           </button>
           <button
             className={`vf-tab-btn-source ${activeSource === 'mixkit' ? 'active' : ''}`}
             onClick={() => { setActiveSource('mixkit'); setSelectedVideo(null); setGeneratedScript(null); setError('') }}
           >
-            📱 {t('videoFinder.tabMixkit')}
+            📱 Mixkit
           </button>
         </div>
 
@@ -725,13 +720,13 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
                 <Search size={18} className="vf-search-icon" />
                 <input
                   type="text"
-                  placeholder={t('videoFinder.placeholder')}
+                  placeholder={getTxt('searchPlaceholder')}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
                 <button className="vf-search-btn" onClick={() => handleSearch()}>
-                  {t('videoFinder.searchBtn')}
+                  Suchen
                 </button>
               </div>
 
@@ -742,14 +737,7 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
                     className="vf-tag-btn"
                     onClick={() => { setQuery(cat.query); handleSearch(cat.query) }}
                   >
-                    {cat.id === 'satisfying' ? '🌊 ' + t('videoFinder.satisfying') :
-                     cat.id === 'gaming' ? '🎮 ' + t('videoFinder.gaming') :
-                     cat.id === 'prank' ? '🎭 ' + t('videoFinder.prank') :
-                     cat.id === 'soccer' ? '⚽ ' + t('videoFinder.soccer') :
-                     cat.id === 'timelapse' ? '⏱️ ' + t('videoFinder.timelapse') :
-                     cat.id === 'sports' ? '🏂 ' + t('videoFinder.sports') :
-                     cat.id === 'comedy' ? '😂 ' + t('videoFinder.comedy') :
-                     '🤯 ' + t('videoFinder.kurios')}
+                    {cat.label}
                   </button>
                 ))}
               </div>
@@ -760,16 +748,15 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
             {loading ? (
               <div className="vf-loading-state">
                 <div className="vf-spinner"></div>
-                <p>{t('videoFinder.loading')}</p>
+                <p>Laden...</p>
               </div>
             ) : videos.length === 0 ? (
               <div className="vf-empty-state">
-                <Film size={48} />
-                <p>
-                  {pexelsSearched
-                    ? t('videoFinder.errorSearch')
-                    : t('videoFinder.infoText')}
-                </p>
+                  <p className={error ? 'vf-error-msg' : 'vf-info-msg'}>
+                    {error
+                    ? 'Fehler bei der Suche.'
+                    : 'Suche nach Videos...'}
+                  </p>
               </div>
             ) : (
               <div className="vf-grid">
@@ -823,7 +810,7 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
               <div className="vf-search-bar" style={{ marginTop: '1rem' }}>
                 <Search size={18} className="vf-search-icon" />
                 <input type="text" placeholder="z. B. nature, space, vintage, cooking..." value={archiveQuery} onChange={(e) => setArchiveQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleArchiveSearch()} />
-                <button className="vf-search-btn" onClick={() => handleArchiveSearch()}>{t('videoFinder.searchBtn')}</button>
+                <button className="vf-search-btn" onClick={() => handleArchiveSearch()}>Suchen</button>
               </div>
               <div className="vf-quick-tags" style={{ marginTop: '0.75rem' }}>
                 {[{ label: '🌍 Nature', query: 'nature' }, { label: '🚀 Space', query: 'space' }, { label: '🎬 Vintage', query: 'vintage' }, { label: '🍳 Cooking', query: 'cooking' }, { label: '🐾 Animals', query: 'animals' }, { label: '🏙️ City', query: 'city' }].map(cat => (
@@ -861,7 +848,7 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
               <div className="vf-search-bar" style={{ marginTop: '1rem' }}>
                 <Search size={18} className="vf-search-icon" />
                 <input type="text" placeholder="z. B. laptop, coffee, fitness, city..." value={mixkitQuery} onChange={(e) => setMixkitQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleMixkitSearch()} />
-                <button className="vf-search-btn" onClick={() => handleMixkitSearch()}>{t('videoFinder.searchBtn')}</button>
+                <button className="vf-search-btn" onClick={() => handleMixkitSearch()}>Suchen</button>
               </div>
               <div className="vf-quick-tags" style={{ marginTop: '0.75rem' }}>
                 {[{ label: '💻 Tech', query: 'laptop' }, { label: '☕ Lifestyle', query: 'coffee' }, { label: '💪 Fitness', query: 'fitness' }, { label: '🏙️ City', query: 'city' }, { label: '🌿 Nature', query: 'nature' }, { label: '🎨 Creative', query: 'creative' }].map(cat => (
