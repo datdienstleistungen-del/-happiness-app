@@ -37,11 +37,8 @@ const CONTINENTS = [
 
 const PLATFORMS = [
   { value: 'reddit', label: 'Reddit' },
-  { value: 'facebook', label: 'Facebook' },
-  { value: 'discord', label: 'Discord' },
-  { value: 'twitch', label: 'Twitch' },
-  { value: 'twitter', label: 'X / Twitter' },
-  { value: 'forum', label: 'Forum' },
+  { value: 'business', label: 'B2B Job Boards (z.B. Upwork)' },
+  { value: 'forum', label: 'Google News / PR' },
 ]
 
 const CONTINENT_OPTIONS = [
