@@ -66,9 +66,13 @@ const PLATFORM_BADGES = {
   twitch: { color: '#9146FF', label: 'Twitch' },
   facebook: { color: '#1877F2', label: 'Facebook' },
   forum: { color: '#6B7280', label: 'Forum' },
+  business: { color: '#F59E0B', label: 'B2B Portal' },
 }
 
 const CONTEXT_BADGES = {
+  'Global Search': { color: '#0EA5E9', label: '🌍 Global Search' },
+  'News Radar': { color: '#EF4444', label: '📰 News Radar' },
+  'Job Board': { color: '#10B981', label: '💼 Job Board' },
   Gamer: { color: '#8B5CF6', label: '🎮 Gamer' },
   Creator: { color: '#F59E0B', label: '🎬 Creator' },
   Business: { color: '#10B981', label: '💼 Business' },
@@ -90,6 +94,9 @@ const LANG_BADGES = {
 
 const EMPTY_FORM = { platform: 'reddit', continent: 'na', lang: 'en', badge: 'Creator', source_url: '', text: '' }
 const BADGE_OPTIONS = [
+  { value: 'Global Search', label: '🌍 Global Search' },
+  { value: 'News Radar', label: '📰 News Radar' },
+  { value: 'Job Board', label: '💼 Job Board' },
   { value: 'Gamer', label: '🎮 Gamer' }, { value: 'Creator', label: '🎬 Creator' },
   { value: 'Business', label: '💼 Business' }, { value: 'Milestone', label: '⭐ Milestone' },
   { value: 'Advice-Seeker', label: '❓ Advice-Seeker' }, { value: 'Privacy-First', label: '🔒 Privacy-First' },
