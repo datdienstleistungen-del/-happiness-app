@@ -8,7 +8,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/prerender.js",
     "preview": "vite preview",
     "test": "npx playwright test",
     "test:ui": "npx playwright test --ui"
@@ -33,6 +33,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",
+    "express": "^5.2.1",
     "playwright": "^1.61.1",
     "sharp": "^0.35.3",
     "vite": "^6.0.0"
