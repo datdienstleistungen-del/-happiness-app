@@ -1,0 +1,235 @@
+.nexus-page {
+  min-height: 100vh;
+  background-color: #0B0F19; /* Deep dark blue/black */
+  color: #F3F4F6;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.nexus-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 3rem;
+  background: rgba(11, 15, 25, 0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.nexus-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.nexus-accent {
+  color: #F59E0B; /* Amber/Orange */
+}
+
+.nexus-accent-text {
+  color: #F59E0B;
+  text-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+}
+
+.nexus-btn-primary {
+  background: #F59E0B;
+  color: #000;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.nexus-btn-primary:hover {
+  background: #D97706;
+  transform: translateY(-1px);
+}
+
+.nexus-hero {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 8rem 2rem 6rem;
+  text-align: center;
+}
+
+.nexus-badge {
+  display: inline-block;
+  background: rgba(239, 68, 68, 0.1);
+  color: #EF4444;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 2rem;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.nexus-hero h1 {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  letter-spacing: -1px;
+}
+
+.nexus-subtitle {
+  font-size: 1.25rem;
+  color: #9CA3AF;
+  line-height: 1.6;
+  max-width: 700px;
+  margin: 0 auto 3rem;
+}
+
+.nexus-cta-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nexus-btn-huge {
+  background: #F59E0B;
+  color: #000;
+  padding: 1.25rem 2.5rem;
+  border-radius: 8px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+}
+
+.nexus-btn-huge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 35px rgba(245, 158, 11, 0.4);
+}
+
+.nexus-guarantee {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6B7280;
+  font-size: 0.875rem;
+}
+
+.nexus-features {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.nexus-feature-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 2.5rem;
+  border-radius: 12px;
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.nexus-feature-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.nexus-icon {
+  color: #F59E0B;
+  margin-bottom: 1.5rem;
+}
+
+.nexus-feature-card h3 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.nexus-feature-card p {
+  color: #9CA3AF;
+  line-height: 1.6;
+}
+
+.nexus-social-proof {
+  background: linear-gradient(180deg, transparent, rgba(245, 158, 11, 0.05));
+  padding: 6rem 2rem;
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.nexus-social-proof h2 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+}
+
+.nexus-social-proof p {
+  color: #9CA3AF;
+  font-size: 1.125rem;
+  max-width: 600px;
+  margin: 0 auto 2.5rem;
+}
+
+.nexus-btn-secondary {
+  background: transparent;
+  color: #F59E0B;
+  border: 2px solid #F59E0B;
+  padding: 1rem 2rem;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 1.125rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nexus-btn-secondary:hover {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.nexus-footer {
+  padding: 3rem 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  color: #6B7280;
+  font-size: 0.875rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.nexus-footer-links {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.nexus-footer-links a {
+  color: #6B7280;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.nexus-footer-links a:hover {
+  color: #F3F4F6;
+}
+
+@media (max-width: 768px) {
+  .nexus-hero h1 {
+    font-size: 2.5rem;
+  }
+  .nexus-nav {
+    padding: 1rem;
+  }
+}

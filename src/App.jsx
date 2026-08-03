@@ -53,6 +53,7 @@ const KiVisibilityPage = lazy(() => import('./pages/KiVisibilityPage'))
 const VideoScriptPage = lazy(() => import('./pages/VideoScriptPage'))
 const IdeenschmiedePage = lazy(() => import('./pages/IdeenschmiedePage'))
 const RatgeberNoOneToTalkTo = lazy(() => import('./pages/RatgeberNoOneToTalkTo'))
+const NexusLandingPage = lazy(() => import('./pages/NexusLandingPage'))
 
 export const guideRoutesMap = {
   de: '/de/ratgeber/niemand-zum-reden',
@@ -454,7 +455,7 @@ export default function App() {
         ) : (
           <>
             {((user && !['/onboarding', '/today-question'].includes(location.pathname) && !isGuideRoute(location.pathname)) || (!user && ['/', '/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname))) && <Sidebar mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />}
-            {(!user || isGuideRoute(location.pathname)) && !['/login', '/register', '/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname) && (
+            {(!user || isGuideRoute(location.pathname)) && !['/login', '/register', '/video-finder', '/video-script', '/capcut-studio', '/tour', '/nexus'].includes(location.pathname) && (
               <nav className="public-topbar">
                 <Link to="/" className="public-topbar-brand">
                   <img src="/favicon.svg" alt="H" style={{ width: '28px', height: '28px' }} />
@@ -487,6 +488,7 @@ export default function App() {
                 <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
                 <Route path="/register" element={user ? <Navigate to="/" /> : <RegisterPage />} />
                 <Route path="/" element={<CoachChatPage />} />
+                <Route path="/nexus" element={<NexusLandingPage />} />
                 <Route path="/landing" element={<LandingPage />} />
                 <Route path="/dashboard" element={<ProtectedRoute><PlatformEngine /></ProtectedRoute>} />
                 <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
