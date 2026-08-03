@@ -1,40 +1,35 @@
-# H.I.T. (Happiness Intelligence Team)
+# Happiness Coach (H.I.T.)
 
-> AI Creator Operating System — Von der Idee zum fertigen Content in wenigen Minuten.
+> Dein KI-Gesprächspartner für Momente, in denen du reden möchtest oder dich einsam fühlst.
 
-## Was ist H.I.T.?
+## Was ist der Happiness Coach?
 
-H.I.T. ist eine webbasierte KI-Plattform, die angehenden und etablierten Content-Creators hilft, professionelle Social-Media-Inhalte zu erstellen. Der Nutzer gibt ein Ziel ein (z.B. "Mehr Reichweite auf TikTok"), und H.I.T. analysiert den Wunsch, empfiehlt passende Plattformen und generiert innerhalb von Minuten ein vollständiges Creator-Paket: Hook, Skript, Hashtags, beste Postings-Zeit und plattformspezifische Anpassungen.
+Der Happiness Coach (ehemals H.I.T. Studio) ist ein KI-gestützter Lebensbegleiter und Gesprächspartner. Er richtet sich primär an Menschen in Übergangsphasen, Isolation oder Momenten der Einsamkeit, die jemanden zum Reden brauchen. Die Plattform bietet einen sicheren, 100% vertraulichen, kostenlosen und registrierungsfreien Raum für offene Gespräche.
 
 ## Kernfunktionen
 
+- **Empathischer Co-Pilot Chat**: Natürlichsprachliche, verständnisvolle KI für echte Gespräche und mentale Unterstützung.
+- **Sprachausgabe (Text-to-Speech)**: Die Möglichkeit, sich Antworten der KI vorlesen zu lassen, um eine menschlichere Bindung aufzubauen.
+- **Anonym & Sicher**: Vollständige Nutzung im Gast-Modus möglich; keine Datenweitergabe, keine Accounts zwingend erforderlich.
+
+## Sekundäre Creator-Tools (Das H.I.T. Studio)
+
+Zusätzlich zur Rolle als Lebensbegleiter bietet die Plattform (für eingeloggte Nutzer) weiterhin mächtige Werkzeuge für Content-Creators:
 - **Zielanalyse**: KI-basierte Analyse des Creatorziels mit Plattform-Empfehlungen
-- **Content-Generierung**: Automatische Erstellung von Hooks, Skripten, CTAs und Hashtags
-- **Multi-Plattform**: Angepasste Inhalte für TikTok, Instagram, YouTube, LinkedIn, Facebook, Reddit, Pinterest, Blog, Newsletter, Google Business, Kleinanzeigen
-- **7-Sprachen-Support**: Deutsch, Englisch, Spanisch, Französisch, Italienisch, Niederländisch, Griechisch
-- **Co-Pilot Chat**: Natürlichsprachliche Verfeinerung generierter Inhalte
-- **Retention-Analyse**: Visuelle Zuschauerbindungs-Simulation mit KI-Optimierung
-- **Video Finder**: Suche nach Stock-Material (Pexels) und Import viraler Videos (YouTube/TikTok)
-- **CapCut Studio**: Generierung von CapCut-fähigen Videoskripten
+- **Content-Generierung**: Erstellung von Hooks, Skripten und CTAs für Plattformen wie TikTok, Instagram und LinkedIn.
+- **Video Finder & CapCut Studio**: Generierung von CapCut-fähigen Videoskripten aus viralen Videos oder Archivmaterial.
 
 ## Zielgruppe
 
-- Angehende Creator, die nicht wissen, wie sie starten sollen
-- Kleine Unternehmen und Freelancer, die regelmäßigen Social-Media-Content benötigen
-- Marketing-Teams, die Content-Workflows beschleunigen wollen
-
-## Was ist H.I.T. NICHT?
-
-- H.I.T. ist kein Video-Editor oder Renderer — es generiert Skripte und Konzepte, kein fertiges Video
-- H.I.T. ist kein Ersatz für menschliche Kreativität, sondern ein Werkzeug zur Beschleunigung
-- H.I.T. postet nicht automatisch auf Social-Media — der Nutzer kopiert und postet manuell
+- Menschen, die einen verständnisvollen Zuhörer in schwierigen Momenten oder bei Einsamkeit suchen.
+- Personen in Lebensübergängen, die Reflexion und Begleitung benötigen.
+- (Sekundär) Content-Creator, die Inspiration und Automatisierung für Social-Media-Inhalte suchen.
 
 ## Technische Details
 
 - Plattform: React + Vite (Single Page Application)
-- Backend: Netlify Functions (Serverless)
-- KI-Provider: Mistral AI, OpenRouter, Groq, DeepSeek
-- Datenbank: Supabase (PostgreSQL)
+- KI-Modelle: Optimiert für empathische, kontextbezogene Gesprächsführung
+- Datenschutz: Fokus auf "Privacy by Design" (kein Tracking im Coach-Bereich)
 - Hosting: Netlify
 
 ## URL
@@ -43,4 +38,5 @@ https://happiness-eu.netlify.app
 
 ## Kontakt
 
-https://happiness-eu.netlify.app — Über die App oder das Kontaktformular erreichbar.
+Über die App (Impressum/Kontakt) erreichbar.
+
