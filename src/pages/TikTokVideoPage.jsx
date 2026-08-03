@@ -166,7 +166,7 @@ const PLATFORMS = [
   { id: 'reddit', label: 'Reddit', icon: MessageSquare, color: '#FF4500' }
 ]
 
-const EXAMPLE_RECIPE = {
+const getExampleRecipe = (isDE) => ({
   video_title: isDE ? 'Creator-Strategie: So wirst du erfolgreich' : 'Creator Strategy: How to Succeed',
   voiceover_script: isDE
     ? 'Willst du ein erfolgreicher Creator werden? Es ist Zeit, deine Strategie zu ändern. Heute müssen Creators schnell, kreativ und authentisch sein. Ein guter Creator kennt sein Publikum und bietet ihnen Mehrwert. Wir bieten dir 3 Gratis-Videos, um deine Fähigkeiten zu verbessern. Danach nur 4,99 €. Besuche happiness-eu.netlify.app, um loszulegen!'
@@ -239,7 +239,7 @@ const EXAMPLE_RECIPE = {
         : 'Background: I wanted to find out what successful creators do differently.\n\nWhat I learned:\n- Strategy matters more than content volume\n- Authenticity beats perfection\n- Consistency beats intensity\n\nI created 3 free videos summarizing my findings.\n\nFeel free to ask.'
     }
   }
-}
+})
 
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
 
@@ -251,6 +251,7 @@ export default function TikTokVideoPage() {
   const { lang } = useLanguage()
   const t = getT(lang)
   const isDE = lang === 'de'
+  const exampleRecipe = getExampleRecipe(isDE)
 
   const {
     capcutTopic: topic, setCapcutTopic: setTopic,
@@ -393,7 +394,7 @@ export default function TikTokVideoPage() {
   }
 
   const useExampleAsTemplate = () => {
-    setTopic(EXAMPLE_RECIPE.video_title)
+    setTopic(exampleRecipe.video_title)
     setShowExample(false)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -700,10 +701,10 @@ export default function TikTokVideoPage() {
           </div>
 
           <div className="ccp-example-meta">
-            <span>🎬 {EXAMPLE_RECIPE.duration}s</span>
-            <span>📐 {EXAMPLE_RECIPE.ratio}</span>
-            <span>🎨 {EXAMPLE_RECIPE.style}</span>
-            <span>🎵 {EXAMPLE_RECIPE.bgm}</span>
+            <span>🎬 {exampleRecipe.duration}s</span>
+            <span>📐 {exampleRecipe.ratio}</span>
+            <span>🎨 {exampleRecipe.style}</span>
+            <span>🎵 {exampleRecipe.bgm}</span>
           </div>
 
           <div className="ccp-section">
@@ -712,7 +713,7 @@ export default function TikTokVideoPage() {
               <h3>{t.masterScript}</h3>
             </div>
             <div className="ccp-script-box">
-              <p className="ccp-script-text">{EXAMPLE_RECIPE.voiceover_script}</p>
+              <p className="ccp-script-text">{exampleRecipe.voiceover_script}</p>
             </div>
           </div>
 
@@ -722,7 +723,7 @@ export default function TikTokVideoPage() {
               <h3>{t.scenesPrompts}</h3>
             </div>
             <div className="ccp-scenes-list">
-              {EXAMPLE_RECIPE.scenes.map((scene, i) => (
+              {exampleRecipe.scenes.map((scene, i) => (
                 <div key={i} className="ccp-scene-card">
                   <div className="ccp-scene-header">
                     <div className="ccp-scene-left">
@@ -746,7 +747,7 @@ export default function TikTokVideoPage() {
             </div>
           </div>
 
-          {EXAMPLE_RECIPE.publishing_payload && (
+          {exampleRecipe.publishing_payload && (
             <div className="ccp-section ccp-social-tabs-section">
               <div className="ccp-section-header">
                 <Share2 size={18} />
@@ -769,7 +770,7 @@ export default function TikTokVideoPage() {
                 })}
               </div>
               <div className="ccp-platform-content">
-                {getPlatformContent(activePlatform, EXAMPLE_RECIPE.publishing_payload)}
+                {getPlatformContent(activePlatform, exampleRecipe.publishing_payload)}
               </div>
             </div>
           )}
