@@ -897,12 +897,9 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
               {selectedVideo.source === 'archive' ? (
                 <div className="vf-import-placeholder">
                   <Film size={40} className="vf-placeholder-icon" />
-                  <p className="vf-placeholder-title">{selectedVideo.title}</p>
-                  {selectedVideo.hasVideo ? (
-                    <video key={selectedVideo.url} src={selectedVideo.url} controls playsInline className="vf-large-player" />
-                  ) : (
-                    <a href={selectedVideo.detailsUrl} target="_blank" rel="noreferrer" className="vf-open-link-btn">{getTxt('openArchive')}</a>
-                  )}
+                  <p className="vf-placeholder-title" style={{ marginBottom: '12px' }}>{selectedVideo.title}</p>
+                  <iframe src={`https://archive.org/embed/${selectedVideo.id}`} width="100%" height="240" frameBorder="0" webkitallowfullscreen="true" mozallowfullscreen="true" allowFullScreen style={{ borderRadius: '8px', background: '#000' }}></iframe>
+                  <a href={selectedVideo.detailsUrl} target="_blank" rel="noreferrer" className="vf-open-link-btn" style={{ marginTop: '12px' }}>{getTxt('openArchive')}</a>
                 </div>
               ) : selectedVideo.source === 'mixkit' ? (
                 <video key={selectedVideo.url} src={selectedVideo.url} controls playsInline className="vf-large-player" />
@@ -1035,10 +1032,12 @@ function ArchiveVideoCard({ video, onSelect, isSelected }) {
 
   return (
     <div className={`vf-video-card ${isSelected ? 'selected' : ''}`} onClick={() => onSelect(video)} style={{ cursor: 'pointer' }}>
-      <div className="vf-video-wrapper" style={{ background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center', padding: '1rem' }}>
-          <Film size={32} style={{ color: '#10b981', marginBottom: '0.5rem' }} />
-          <p style={{ color: '#fff', fontSize: '0.8rem', margin: 0 }}>{video.hasVideo ? hasVidTxt : pubDomainTxt}</p>
+      <div className="vf-video-wrapper" style={{ background: '#1a1a2e', position: 'relative' }}>
+        <img src={`https://archive.org/services/img/${video.id}`} alt={video.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        <div style={{ position: 'absolute', bottom: '8px', left: '0', right: '0', textAlign: 'center' }}>
+          <span style={{ background: 'rgba(0,0,0,0.7)', color: '#10b981', fontSize: '0.7rem', padding: '2px 8px', borderRadius: '12px' }}>
+            {video.hasVideo ? hasVidTxt : pubDomainTxt}
+          </span>
         </div>
       </div>
       <div className="vf-card-footer" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
