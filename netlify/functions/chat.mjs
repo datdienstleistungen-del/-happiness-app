@@ -555,64 +555,64 @@ ${message}`
       let res = null
       let data = null
 
-      // Versuche zuerst OpenAI GPT-4o für Bilder (Beste Qualität für Video-Frames)
-      const openAiKey = process.env.OPENAI_API_KEY
-      if (openAiKey) {
+      // Versuche zuerst Groq Vision (Extrem schnell, verhindert Netlify 10s 504 Timeout)
+      const groqKey = process.env.GROQ_API_KEY
+      if (groqKey) {
         try {
-          res = await fetch('https://api.openai.com/v1/chat/completions', {
+          res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${openAiKey}`, 'Content-Type': 'application/json' },
+            headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              model: 'gpt-4o',
+              model: 'llama-3.2-90b-vision-instruct',
               messages: buildMessages(historyLimit),
-              temperature: 0.4,
-              max_tokens: 2500
+              temperature: 0.1,
+              max_tokens: 4096
             })
           })
           data = await res.json()
-        } catch (err) { console.error('OpenAI Vision fetch failed:', err.message) }
-        
+        } catch (err) { console.error('Groq Vision fetch failed:', err.message) }
+
         if (res && res.ok && data && data.choices) {
-          console.log('Antwort von:', 'openai-gpt-4o-vision')
+          console.log('Antwort von:', 'groq-vision')
           aiResponse = data.choices?.[0]?.message?.content || ''
           usage = data.usage
-          provider = 'openai'
-          modelName = 'gpt-4o'
+          provider = 'groq'
+          modelName = 'llama-3.2-90b-vision-instruct'
         }
       }
 
-      // Fallback zu Groq Vision
+      // Fallback zu OpenAI GPT-4o
       if (!aiResponse) {
-        const apiKey = process.env.GROQ_API_KEY
-        if (!apiKey && !openAiKey) {
+        const openAiKey = process.env.OPENAI_API_KEY
+        if (!groqKey && !openAiKey) {
           return {
             statusCode: 500,
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-            body: JSON.stringify({ error: 'Weder OPENAI_API_KEY noch GROQ_API_KEY konfiguriert für Vision' })
+            body: JSON.stringify({ error: 'Weder GROQ_API_KEY noch OPENAI_API_KEY konfiguriert für Vision' })
           }
         }
         
-        if (apiKey) {
+        if (openAiKey) {
           try {
-            res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            res = await fetch('https://api.openai.com/v1/chat/completions', {
               method: 'POST',
-              headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+              headers: { 'Authorization': `Bearer ${openAiKey}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                model: 'llama-3.2-90b-vision-instruct',
+                model: 'gpt-4o',
                 messages: buildMessages(historyLimit),
-                temperature: 0.1,
-                max_tokens: 4096
+                temperature: 0.4,
+                max_tokens: 2500
               })
             })
             data = await res.json()
-          } catch (err) { console.error('Groq Vision fetch failed:', err.message) }
-
+          } catch (err) { console.error('OpenAI Vision fetch failed:', err.message) }
+          
           if (res && res.ok && data && data.choices) {
-            console.log('Antwort von:', 'groq-vision')
+            console.log('Antwort von:', 'openai-gpt-4o-vision')
             aiResponse = data.choices?.[0]?.message?.content || 'Entschuldigung, ich konnte keine Antwort generieren.'
             usage = data.usage
-            provider = 'groq'
-            modelName = 'llama-3.2-90b-vision-instruct'
+            provider = 'openai'
+            modelName = 'gpt-4o'
           }
         }
       }
