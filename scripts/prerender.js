@@ -1,13 +1,11 @@
-import { chromium } from 'playwright';
-import express from 'express';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
 import { fileURLToPath } from 'url';
+import { guideContent } from '../src/content/guide-loneliness.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Die gleichen Routen aus App.jsx
 const guideRoutesMap = {
   de: '/de/ratgeber/niemand-zum-reden',
   en: '/en/guide/no-one-to-talk-to',
@@ -18,67 +16,67 @@ const guideRoutesMap = {
   el: '/el/odigos/kaneis-gia-na-miliseis'
 };
 
-const PORT = 8080;
+const LANGUAGES = Object.keys(guideRoutesMap);
+const DEFAULT_LANG = 'en';
+
 const DIST_DIR = path.resolve(__dirname, '../dist');
+const indexHtmlPath = path.resolve(DIST_DIR, 'index.html');
 
-async function prerender() {
-  console.log('🚀 Starte SSG Prerendering für SEO-Landingpages...');
+function prerender() {
+  console.log('🚀 Starte superschnelles SSG (ohne Headless Browser)...');
 
-  // 1. Lokalen Server starten, um die gebaute SPA auszuliefern
-  const app = express();
-  app.use(express.static(DIST_DIR));
-  
-  // SPA-Fallback für alle nicht gefundenen statischen Routen
-  app.use((req, res) => {
-    res.sendFile(path.resolve(DIST_DIR, 'index.html'));
-  });
+  if (!fs.existsSync(indexHtmlPath)) {
+    console.error('❌ dist/index.html nicht gefunden. Bitte zuerst bauen.');
+    process.exitCode = 1;
+    return;
+  }
 
-  const server = app.listen(PORT, async () => {
-    console.log(`🌍 Lokaler Server läuft auf http://localhost:${PORT}`);
+  const baseHtml = fs.readFileSync(indexHtmlPath, 'utf-8');
 
-    try {
-      // 2. Playwright starten (Headless Chrome)
-      const browser = await chromium.launch({ headless: true });
-      const context = await browser.newContext();
-      const page = await context.newPage();
+  for (const [lang, route] of Object.entries(guideRoutesMap)) {
+    console.log(`⏳ Generiere statisches HTML für: ${route}`);
+    
+    let html = baseHtml;
+    const content = guideContent[lang];
 
-      // 3. Jede SEO-Route besuchen und HTML abgreifen
-      for (const [lang, route] of Object.entries(guideRoutesMap)) {
-        const url = `http://localhost:${PORT}${route}`;
-        console.log(`\n⏳ Prerendering: ${route}`);
-
-        // Auf die Seite gehen und warten, bis keine Netzwerk-Aktivität mehr herrscht (React hat gerendert)
-        await page.goto(url, { waitUntil: 'networkidle' });
-        
-        // Extra Warten, um sicherzugehen, dass useEffect durch ist
-        await page.waitForTimeout(500);
-
-        // Den fertigen HTML-Code des Dokuments auslesen
-        const html = await page.content();
-
-        // 4. In die entsprechende Datei speichern
-        const routePath = path.resolve(DIST_DIR, route.substring(1)); // '/de/...' -> 'de/...'
-        const filePath = path.resolve(routePath, 'index.html');
-        
-        // Ordnerstruktur erstellen falls nicht vorhanden
-        fs.mkdirSync(routePath, { recursive: true });
-        
-        // Datei schreiben
-        fs.writeFileSync(filePath, html, 'utf-8');
-        
-        console.log(`✅ Gespeichert: dist${route}/index.html`);
-      }
-
-      await browser.close();
-      console.log('\n🎉 SSG Prerendering erfolgreich abgeschlossen!');
-    } catch (err) {
-      console.error('❌ Fehler beim Prerendering:', err);
-      process.exitCode = 1;
-    } finally {
-      // 5. Server beenden
-      server.close();
+    if (!content) {
+      console.error(`Kein Content für ${lang} gefunden!`);
+      continue;
     }
-  });
+
+    // 1. Title ersetzen (RegEx findet das bestehende Title-Tag)
+    html = html.replace(/<title>(.*?)<\/title>/i, `<title>${content.seo.title}</title>`);
+    
+    // 2. Meta-Description ersetzen
+    html = html.replace(/<meta\s+name="description"\s+content="[^"]*"\s*\/?>/i, `<meta name="description" content="${content.seo.description}">`);
+    
+    // 3. Hreflang Tags generieren und einfügen
+    const hreflangTags = LANGUAGES.map(l => {
+      const url = `https://happiness-eu.netlify.app${guideRoutesMap[l]}`;
+      return `<link rel="alternate" hreflang="${l}" href="${url}" />`;
+    });
+    
+    // x-default (Englisch)
+    const xDefaultUrl = `https://happiness-eu.netlify.app${guideRoutesMap[DEFAULT_LANG]}`;
+    hreflangTags.push(`<link rel="alternate" hreflang="x-default" href="${xDefaultUrl}" />`);
+    
+    // Füge die hreflang Tags kurz vor dem </head> ein
+    html = html.replace('</head>', `${hreflangTags.join('\n    ')}\n  </head>`);
+
+    // 4. In die entsprechende Datei speichern
+    const routePath = path.resolve(DIST_DIR, route.substring(1)); // '/de/...' -> 'de/...'
+    const filePath = path.resolve(routePath, 'index.html');
+    
+    // Ordnerstruktur erstellen falls nicht vorhanden
+    fs.mkdirSync(routePath, { recursive: true });
+    
+    // Datei schreiben
+    fs.writeFileSync(filePath, html, 'utf-8');
+    
+    console.log(`✅ Gespeichert: dist${route}/index.html`);
+  }
+
+  console.log('\n🎉 SSG Prerendering erfolgreich abgeschlossen!');
 }
 
 prerender();

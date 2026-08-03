@@ -8,7 +8,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && npx playwright install chromium --with-deps && node scripts/prerender.js",
+    "build": "vite build && node scripts/prerender.js",
     "preview": "vite preview",
     "test": "npx playwright test",
     "test:ui": "npx playwright test --ui"
