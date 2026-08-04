@@ -114,7 +114,7 @@
     <script>
       (function(){
         var ua = navigator.userAgent.toLowerCase();
-        var botPatterns = /bot|spider|crawl|headless|phantom|selenium|puppeteer|webdriver|curl|wget|python|go-http|java|ruby|scalability|load.?test|monitoring|uptime|pingdom|uptimerobot|statuscake|netlify.*health|google.*analytics.*bot|whatsapp|facebookexternalhit|facebot/i;
+        var botPatterns = /bot|spider|crawl|headless|phantom|selenium|puppeteer|webdriver|curl|wget|python|go-http|java|ruby|scalability|load.?test|monitoring|uptime|pingdom|uptimerobot|statuscake|netlify.*health|google.*analytics.*bot|whatsapp|facebookexternalhit|facebot|linkedin/i;
         if (navigator.webdriver || botPatterns.test(ua)) {
           window.gtag = function(){};
           window._isBot = true;
