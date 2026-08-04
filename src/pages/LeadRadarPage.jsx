@@ -100,9 +100,10 @@ const BADGE_OPTIONS = [
 
 function cleanText(str) {
   if (!str) return '';
-  let cleaned = str.replace(/<[^>]*>?/gm, '');
+  let cleaned = str;
   cleaned = cleaned.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
                    .replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ');
+  cleaned = cleaned.replace(/<[^>]*>?/gm, '');
   return cleaned;
 }
 
@@ -827,3 +828,4 @@ function CopyButton({ text }) {
     </button>
   )
 }
+
