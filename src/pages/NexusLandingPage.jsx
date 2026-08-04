@@ -67,6 +67,39 @@ export default function NexusLandingPage() {
         </div>
       </section>
 
+      <section className="nexus-manual">
+        <h2>Wie NeXus Kaltakquise zerstört (in 3 Schritten)</h2>
+        <div className="nexus-manual-steps">
+          <div className="nexus-step">
+            <div className="nexus-step-number">1</div>
+            <div className="nexus-step-content">
+              <h4>Der Globale Scan</h4>
+              <p>Du wählst deine Zielregion (z.B. Europa) und startest das Radar. Unsere KI durchforstet in Echtzeit über 100 News-Feeds, Fachforen und Reddit nach <strong>Trigger-Events</strong> (z.B. Management-Wechsel, Lieferengpässe).</p>
+            </div>
+          </div>
+          <div className="nexus-step">
+            <div className="nexus-step-number">2</div>
+            <div className="nexus-step-content">
+              <h4>Der warme B2B-Lead</h4>
+              <p>Das Radar serviert dir die relevanten Leads auf dem Silbertablett. Du siehst sofort den Schmerz des Kunden. Keine ratende Kaltakquise mehr – du rufst nur noch dort an, wo exakt jetzt Budget und Bedarf ist.</p>
+            </div>
+          </div>
+          <div className="nexus-step">
+            <div className="nexus-step-number">3</div>
+            <div className="nexus-step-content">
+              <h4>Der perfekte Eisbrecher</h4>
+              <p>Mit einem Klick auf den Blitz-Button formuliert unsere Sales-KI eine hochpsychologische Direktnachricht, die exakt auf das Trigger-Event des Leads zugeschnitten ist. Kopieren, senden, Deal closen.</p>
+            </div>
+          </div>
+        </div>
+        <div className="nexus-cta-group" style={{ marginTop: '40px' }}>
+          <button className="nexus-btn-huge" onClick={() => navigate(user ? '/admin/lead-radar' : '/login')}>
+            Jetzt einsteigen (29,90€/M)* <ArrowRight size={20} />
+          </button>
+          <p className="nexus-guarantee"><ShieldAlert size={16} /> *Limitiertes Early-Bird-Angebot (Regulär 99,00€/M).</p>
+        </div>
+      </section>
+
       <section className="nexus-social-proof">
         <h2>Die smarte Elite skaliert lautlos. Du auch?</h2>
         <p>Wer technologisch den Anschluss verliert, verliert den Markt. Verbinde dich mit dem Radar und hol dir die warmen Leads, die dir zustehen.</p>

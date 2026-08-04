@@ -233,3 +233,54 @@
     padding: 1rem;
   }
 }
+.nexus-manual {
+  padding: 60px 20px;
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: center;
+  border-top: 1px solid #1e293b;
+}
+.nexus-manual h2 {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #F3F4F6;
+  margin-bottom: 40px;
+}
+.nexus-manual-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  text-align: left;
+}
+.nexus-step {
+  display: flex;
+  gap: 20px;
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(245, 158, 11, 0.1);
+  padding: 24px;
+  border-radius: 12px;
+  align-items: flex-start;
+}
+.nexus-step-number {
+  background: #F59E0B;
+  color: #000;
+  font-weight: 900;
+  font-size: 1.5rem;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.nexus-step-content h4 {
+  font-size: 1.25rem;
+  color: #F3F4F6;
+  margin: 0 0 8px 0;
+}
+.nexus-step-content p {
+  color: #9CA3AF;
+  line-height: 1.6;
+  margin: 0;
+}
