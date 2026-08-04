@@ -73,8 +73,8 @@ export default function NexusLandingPage() {
           <div className="nexus-step">
             <div className="nexus-step-number">1</div>
             <div className="nexus-step-content">
-              <h4>Der Globale Scan</h4>
-              <p>Du wählst deine Zielregion (z.B. Europa) und startest das Radar. Unsere KI durchforstet in Echtzeit über 100 News-Feeds, Fachforen und Reddit nach <strong>Trigger-Events</strong> (z.B. Management-Wechsel, Lieferengpässe).</p>
+              <h4>Dein Angebot & Der Globale Scan</h4>
+              <p>Du sagst der KI in den Einstellungen, was du verkaufst (z.B. "Logistik", "Software"). Dann startest du das Radar. Unsere KI durchforstet in Echtzeit über 100 News-Feeds, Fachforen und Reddit nach <strong>Trigger-Events</strong> (z.B. Management-Wechsel, Lieferengpässe).</p>
             </div>
           </div>
           <div className="nexus-step">
@@ -88,7 +88,7 @@ export default function NexusLandingPage() {
             <div className="nexus-step-number">3</div>
             <div className="nexus-step-content">
               <h4>Der perfekte Eisbrecher</h4>
-              <p>Mit einem Klick auf den Blitz-Button formuliert unsere Sales-KI eine hochpsychologische Direktnachricht, die exakt auf das Trigger-Event des Leads zugeschnitten ist. Kopieren, senden, Deal closen.</p>
+              <p>Mit einem Klick auf den Blitz-Button formuliert unsere Sales-KI eine hochpsychologische Direktnachricht, die exakt auf das Trigger-Event des Leads <strong>und dein eigenes Angebot</strong> zugeschnitten ist. Kopieren, senden, Deal closen.</p>
             </div>
           </div>
         </div>
