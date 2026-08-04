@@ -68,33 +68,57 @@ export default function NexusLandingPage() {
       </section>
 
       <section className="nexus-manual">
-        <h2>Wie NeXus Kaltakquise zerstört (in 3 Schritten)</h2>
+        <h2>NeXus Quickstart-Guide: B2B-Elite-Vertrieb</h2>
+        <p style={{ color: '#9CA3AF', maxWidth: '700px', margin: '0 auto 40px auto', lineHeight: '1.6' }}>
+          Vergiss klassische Kaltakquise. Ab sofort kontaktierst du niemanden mehr auf gut Glück. 
+          Du nutzt <strong>Trigger-Events</strong>. Hier ist die genaue Anleitung, wie du mit NeXus täglich warme Leads generierst und abschließt.
+        </p>
+
         <div className="nexus-manual-steps">
+          <div className="nexus-step">
+            <div className="nexus-step-number"><Target size={24} color="#000" /></div>
+            <div className="nexus-step-content">
+              <h4>Grundregel: Was ist ein "Trigger-Event"?</h4>
+              <p>Ein Trigger-Event ist ein Auslöser im Netz, der anzeigt, dass ein Unternehmen <em>genau jetzt</em> Bedarf an einer Lösung hat. NeXus sucht nicht nach Leuten, die rufen: "Ich brauche Produkt X!" (da ist die Konkurrenz bereits riesig). NeXus sucht nach Signalen: Ein neuer Manager wird eingestellt, in einem Forum wird über ein technisches Problem geklagt, oder ein Unternehmen expandiert.</p>
+            </div>
+          </div>
+          
           <div className="nexus-step">
             <div className="nexus-step-number">1</div>
             <div className="nexus-step-content">
-              <h4>Dein Angebot & Der Globale Scan</h4>
-              <p>Du sagst der KI in den Einstellungen, was du verkaufst (z.B. "Logistik", "Software"). Dann startest du das Radar. Unsere KI durchforstet in Echtzeit über 100 News-Feeds, Fachforen und Reddit nach <strong>Trigger-Events</strong> (z.B. Management-Wechsel, Lieferengpässe).</p>
+              <h4>Radar & KI konfigurieren (Der Setup-Scan)</h4>
+              <p>Du sagst der KI in den Einstellungen exakt, was du verkaufst (z.B. "Logistik", "Software"). Dann wählst du deine Zielregion und dein Keyword. Unsere KI durchforstet ab sofort in Echtzeit über 100 globale News-Feeds, Fachforen und PR-Mitteilungen nach passenden Trigger-Events für dein Angebot.</p>
             </div>
           </div>
+
           <div className="nexus-step">
             <div className="nexus-step-number">2</div>
             <div className="nexus-step-content">
-              <h4>Der warme B2B-Lead</h4>
-              <p>Das Radar serviert dir die relevanten Leads auf dem Silbertablett. Du siehst sofort den Schmerz des Kunden. Keine ratende Kaltakquise mehr – du rufst nur noch dort an, wo exakt jetzt Budget und Bedarf ist.</p>
+              <h4>Leads richtig lesen (Die Badges)</h4>
+              <p>Das Radar spuckt dir die Leads als Karten aus. <strong>News Radar:</strong> Perfekt für Glückwünsche zur Expansion. <strong>Forum:</strong> Eine direkte Frustration eines Nutzers – extrem wertvoll. <strong>Job Board:</strong> Zeigt an, dass ein Unternehmen umstrukturiert. Du siehst den Schmerz des Kunden auf den ersten Blick.</p>
             </div>
           </div>
+
           <div className="nexus-step">
             <div className="nexus-step-number">3</div>
             <div className="nexus-step-content">
-              <h4>Der perfekte Eisbrecher</h4>
-              <p>Mit einem Klick auf den Blitz-Button formuliert unsere Sales-KI eine hochpsychologische Direktnachricht, die exakt auf das Trigger-Event des Leads <strong>und dein eigenes Angebot</strong> zugeschnitten ist. Kopieren, senden, Deal closen.</p>
+              <h4>Den KI-Pitch generieren (Der magische Button)</h4>
+              <p>Schreibe keine Standard-Nachrichten mehr! Mit einem Klick auf den ⚡ Blitz-Button analysiert unsere Sales-KI den exakten Kontext des Leads und schreibt dir in Sekunden eine maßgeschneiderte, hochpsychologische Vertriebsnachricht, die den Lead lobt und unaufdringlich exakt dein Produkt als Lösung anbietet.</p>
+            </div>
+          </div>
+
+          <div className="nexus-step">
+            <div className="nexus-step-number">4</div>
+            <div className="nexus-step-content">
+              <h4>Akquise durchführen (Copy, Paste, Close)</h4>
+              <p>Klicke auf den Link zur Originalquelle, recherchiere den Namen des erwähnten Managers oder Autors, suche ihn auf LinkedIn und schicke ihm exakt den Text, den NeXus für dich generiert hat. Du nutzt Gratulationen und Schmerzpunkte als Hebel, um ein Gespräch anzufangen. Ganz ohne Konkurrenz.</p>
             </div>
           </div>
         </div>
-        <div className="nexus-cta-group" style={{ marginTop: '40px' }}>
+        
+        <div className="nexus-cta-group" style={{ marginTop: '50px' }}>
           <button className="nexus-btn-huge" onClick={() => navigate(user ? '/admin/lead-radar' : '/login')}>
-            Jetzt einsteigen (29,90€/M)* <ArrowRight size={20} />
+            Radar jetzt aktivieren (29,90€/M)* <ArrowRight size={20} />
           </button>
           <p className="nexus-guarantee"><ShieldAlert size={16} /> *Limitiertes Early-Bird-Angebot (Regulär 99,00€/M).</p>
         </div>
