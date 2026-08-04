@@ -349,6 +349,7 @@ export default function LeadRadarPage() {
   const [cooldowns, setCooldowns] = useState({})
   const [modalOpen, setModalOpen] = useState(false)
   const [configModalOpen, setConfigModalOpen] = useState(false)
+  const [guideModalOpen, setGuideModalOpen] = useState(false)
   const [scanSources, setScanSources] = useState({ upwork: true, news: true, reddit: true })
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
@@ -643,6 +644,11 @@ STRATEGIE-FOKUS FÜR DIESE QUELLE (${badge}): ${b2bStrategyMap[badge] || b2bStra
             <span className="lr-tab-platforms">{c.platforms}</span>
           </button>
         ))}
+        <button className="lr-tab" style={{ border: '1px solid #10B981', background: 'rgba(16, 185, 129, 0.05)' }} onClick={() => setGuideModalOpen(true)}>
+          <span className="lr-tab-flag">📖</span>
+          <span className="lr-tab-label">Gebrauchsanweisung</span>
+          <span className="lr-tab-platforms">NeXus Quickstart</span>
+        </button>
       </div>
 
       {loading ? (
@@ -809,6 +815,38 @@ STRATEGIE-FOKUS FÜR DIESE QUELLE (${badge}): ${b2bStrategyMap[badge] || b2bStra
               <button className="lr-form-submit" onClick={() => { setConfigModalOpen(false); runLiveRadar(); }} style={{ marginTop: '10px', height: '48px', fontSize: '15px' }}>
                 🚀 Start Professional Scan
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {guideModalOpen && (
+        <div className="lr-modal-overlay">
+          <div className="lr-modal" style={{ maxWidth: '800px', maxHeight: '85vh', overflowY: 'auto' }}>
+            <div className="lr-modal-header">
+              <h3>NeXus Quickstart-Guide</h3>
+              <button onClick={() => setGuideModalOpen(false)}><X size={16} /></button>
+            </div>
+            <div className="lr-modal-body" style={{ lineHeight: '1.6', color: '#E5E7EB', padding: '20px' }}>
+              <p>Vergiss klassische Kaltakquise. Ab sofort kontaktierst du niemanden mehr auf gut Glück. Du nutzt <strong>Trigger-Events</strong>. Hier ist die genaue Anleitung, wie du mit NeXus täglich warme Leads generierst und abschließt.</p>
+              
+              <h4 style={{ color: '#F3F4F6', marginTop: '20px', borderBottom: '1px solid #374151', paddingBottom: '8px' }}>Grundregel: Was ist ein "Trigger-Event"?</h4>
+              <p>Ein Trigger-Event ist ein Auslöser im Netz, der anzeigt, dass ein Unternehmen genau jetzt Bedarf an einer Lösung hat. NeXus sucht nicht nach Leuten, die rufen: "Ich brauche Produkt X!" (da ist die Konkurrenz bereits riesig). NeXus sucht nach Signalen: Ein neuer Manager wird eingestellt, in einem Forum wird über ein technisches Problem geklagt, oder ein Unternehmen expandiert.</p>
+              
+              <h4 style={{ color: '#F3F4F6', marginTop: '20px', borderBottom: '1px solid #374151', paddingBottom: '8px' }}>1. Radar & KI konfigurieren (Der Setup-Scan)</h4>
+              <p>Klicke oben rechts auf das kleine Zahnrad ⚙️ (Einstellungen). Trage bei "Was verkaufst du?" dein eigenes Angebot ein (z.B. "B2B Software", "Logistik"). Die KI nutzt dieses Feld, um später deine Pitches zu schreiben! Dann wählst du deine Zielregion und klickst auf "Start Live Radar".</p>
+
+              <h4 style={{ color: '#F3F4F6', marginTop: '20px', borderBottom: '1px solid #374151', paddingBottom: '8px' }}>2. Leads richtig lesen (Die Badges)</h4>
+              <p>Das Radar spuckt dir Leads aus. <strong>News Radar:</strong> PR-Artikel, perfekt für Glückwünsche zur Expansion. <strong>Forum:</strong> Direkte Frustration eines Nutzers – extrem wertvoll, du kennst den Schmerzpunkt.</p>
+
+              <h4 style={{ color: '#F3F4F6', marginTop: '20px', borderBottom: '1px solid #374151', paddingBottom: '8px' }}>3. Den KI-Pitch generieren (Der magische Button)</h4>
+              <p>Schreibe keine Standard-Nachricht! Klicke auf den Button ⚡ "Generate Global Helper Response". Die KI analysiert den Kontext des Leads und schreibt dir eine hochpsychologische Vertriebsnachricht, die exakt dein Produkt als Lösung positioniert.</p>
+
+              <h4 style={{ color: '#F3F4F6', marginTop: '20px', borderBottom: '1px solid #374151', paddingBottom: '8px' }}>4. Akquise durchführen</h4>
+              <p>Klicke auf "View original post", recherchiere den Namen des Autors oder Managers, suche ihn auf LinkedIn und schicke ihm exakt den Text, den NeXus für dich generiert hat. Du nutzt Gratulationen und Schmerzpunkte als Hebel, um ein Gespräch anzufangen.</p>
+            </div>
+            <div className="lr-modal-footer">
+              <button className="lr-btn-cancel" onClick={() => setGuideModalOpen(false)}>Verstanden</button>
             </div>
           </div>
         </div>
