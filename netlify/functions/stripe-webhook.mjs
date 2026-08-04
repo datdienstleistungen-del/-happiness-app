@@ -29,7 +29,7 @@ export const handler = async (event) => {
 
   if (stripeEvent.type === 'checkout.session.completed') {
     const session = stripeEvent.data.object;
-    const userId = session.metadata.userId;
+    const userId = session.client_reference_id || session.metadata?.userId;
 
     if (userId) {
       await supabase
