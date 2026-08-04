@@ -290,7 +290,8 @@ function extractEntries(xml) {
     const title = t('title')
     const content = t('content') || t('summary') || t('description')
     const link = t('link') || (b.match(/<link[^>]*href="([^"]+)"/i) || [])[1] || ''
-    if (title || content) entries.push({ title, content, link })
+    const pubDate = t('pubDate') || t('published') || t('updated') || ''
+    if (title || content) entries.push({ title, content, link, pubDate })
   }
   return entries
 }
@@ -340,6 +341,7 @@ export default function LeadRadarPage() {
   const [activeContinent, setActiveContinent] = useState('na')
   const [customNiche, setCustomNiche] = useState('')
   const [userProduct, setUserProduct] = useState('')
+  const [maxAgeDays, setMaxAgeDays] = useState('7')
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
   const [isPremium, setIsPremium] = useState(false)
@@ -490,6 +492,18 @@ export default function LeadRadarPage() {
           }
           if (!isMatch) continue
 
+          let parsedDate = null
+          if (entry.pubDate) {
+            const pd = new Date(entry.pubDate)
+            if (!isNaN(pd.getTime())) {
+              parsedDate = pd
+              if (maxAgeDays !== 'all') {
+                const ageDays = (Date.now() - pd.getTime()) / (1000 * 60 * 60 * 24)
+                if (ageDays > parseInt(maxAgeDays)) { console.log('[LeadRadar] Too old skip:', ageDays); continue }
+              }
+            }
+          }
+
           totalMatched++
           const sourceUrl = entry.link || feed.url
           if (existingUrlsRef.current.has(sourceUrl)) { console.log('[LeadRadar] Dedup skip:', sourceUrl.slice(0, 80)); continue }
@@ -501,6 +515,7 @@ export default function LeadRadarPage() {
             badge: detectBadge(plainText, feed.badge),
             source_url: sourceUrl,
             text: plainText,
+            pubDate: parsedDate ? parsedDate.toISOString() : null,
             status: 'new',
           })
         }
@@ -544,7 +559,7 @@ export default function LeadRadarPage() {
       setRadarActive(false)
       setTimeout(() => radarFnRef.current(), 500)
     }, 60000)
-  }, [radarActive, activeContinent, customNiche])
+  }, [radarActive, activeContinent, customNiche, maxAgeDays, scanSources, userProduct])
 
   radarFnRef.current = runLiveRadar
 
@@ -692,6 +707,7 @@ STRATEGIE-FOKUS FÜR DIESE QUELLE (${badge}): ${b2bStrategyMap[badge] || b2bStra
                   <ExternalLink size={12} /> View original post
                 </a>
               )}
+              {lead.pubDate && <div className="lr-date" style={{ fontSize: '0.75rem', color: '#9CA3AF', marginTop: '6px' }}>Gefunden: {new Date(lead.pubDate).toLocaleDateString()}</div>}
               <button className="lr-generate-btn" onClick={() => isBlurred ? null : generateResponse(lead)} disabled={generating[lead.id] || isBlurred}>
                 {generating[lead.id] ? <><Loader size={14} className="lr-spinner" /> Generating...</> : <><Zap size={14} /> Generate Global Helper Response</>}
               </button>
@@ -703,7 +719,13 @@ STRATEGIE-FOKUS FÜR DIESE QUELLE (${badge}): ${b2bStrategyMap[badge] || b2bStra
               {responses[lead.id] && !isBlurred && (
                 <div className="lr-response">
                   <div className="lr-response-text">{responses[lead.id]}</div>
-                  <CopyButton text={responses[lead.id]} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
+                    <CopyButton text={responses[lead.id]} />
+                    <a href={`mailto:?subject=Kooperationsanfrage&body=${encodeURIComponent(responses[lead.id])}`} className="lr-btn-email" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'rgba(59, 130, 246, 0.2)', border: '1px solid #3B82F6', color: '#3B82F6', borderRadius: '4px', textDecoration: 'none', fontSize: '0.85rem', cursor: 'pointer' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                      Per E-Mail senden
+                    </a>
+                  </div>
                 </div>
               )}
             </div>
@@ -792,6 +814,14 @@ STRATEGIE-FOKUS FÜR DIESE QUELLE (${badge}): ${b2bStrategyMap[badge] || b2bStra
                     <option value="eu">Europe (DE/EU)</option>
                     <option value="latam">Latin America (BR/PT)</option>
                     <option value="apac">Asia-Pacific (AU)</option>
+                  </select>
+                </label>
+                <label><span>Erscheinungseingrenzung (Zeitfilter)</span>
+                  <select value={maxAgeDays} onChange={e => setMaxAgeDays(e.target.value)}>
+                    <option value="1">Letzte 24 Stunden</option>
+                    <option value="7">Letzte 7 Tage</option>
+                    <option value="30">Letzte 30 Tage</option>
+                    <option value="all">Alle (Kein Filter)</option>
                   </select>
                 </label>
               </div>
