@@ -339,6 +339,7 @@ export default function LeadRadarPage() {
   const navigate = useNavigate()
   const [activeContinent, setActiveContinent] = useState('na')
   const [customNiche, setCustomNiche] = useState('')
+  const [userProduct, setUserProduct] = useState('')
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
   const [isPremium, setIsPremium] = useState(false)
@@ -583,14 +584,14 @@ export default function LeadRadarPage() {
         'Global Search': 'Spiegele den Kern des Posts. Deute subtil an, dass verpasste Markt-Chancen (FOMO) unweigerlich zur geschäftlichen Stagnation und Isolation führen, wenn man technologisch den Anschluss verliert.',
         Business: 'Spiegele den Kern des Posts. Deute subtil an, dass verpasste Markt-Chancen (FOMO) unweigerlich zur geschäftlichen Stagnation und Isolation führen, wenn man technologisch den Anschluss verliert.',
       }
-      const systemPrompt = `Du bist ein elitärer B2B-Sales-Psychologe für "NeXus" (ein hochmodernes Lead Radar System).
+      const systemPrompt = `Du bist ein elitärer B2B-Sales-Psychologe. Dein Ziel ist es, folgendes Produkt / Angebot zu verkaufen: "${userProduct || 'NeXus Lead Radar'}".
 SPRACHE: Antworte AUSSCHLIESSLICH auf ${lead.lang === 'de' ? 'Deutsch' : 'Englisch'}.
 ZIELGRUPPE: B2B (Unternehmen, Händler, Agenturen, Selbstständige). 
 REGELN:
 - ABSOLUTES VERBOT: Erwähne NIEMALS Happiness, CapCut, Video-Schnitt oder Social Media Tutorials. Das ist strikt verboten!
 - Sei hochprofessionell, messerscharf und ROI-fokussiert.
 - Avocado Diaboli Strategie: Greife das Thema des Users subtil auf. Schüre psychologisches FOMO (Fear of Missing Out) und deute an, dass geschäftlicher Misserfolg oft in harter Isolation endet. 
-- Erlösung: Positioniere das "NeXus Lead Radar" beiläufig als das exklusive Werkzeug, das die smarte Konkurrenz längst nutzt, um massiv zu skalieren.
+- Erlösung: Positioniere das Angebot ("${userProduct || 'NeXus Lead Radar'}") beiläufig als das exklusive Werkzeug oder die perfekte Lösung, die den Schmerz des Leads sofort beseitigt.
 - Max 3-4 Sätze. Kein verzweifelter Verkäufer-Slang, sondern ein souveränes "Du brauchst uns, wir nicht dich"-Mindset. Biete dezent ein Gespräch an.
 STRATEGIE-FOKUS FÜR DIESE QUELLE (${badge}): ${b2bStrategyMap[badge] || b2bStrategyMap['Global Search']}`
       const response = await fetch(getChatEndpoint(), {
@@ -771,7 +772,10 @@ STRATEGIE-FOKUS FÜR DIESE QUELLE (${badge}): ${b2bStrategyMap[badge] || b2bStra
               <button onClick={() => setConfigModalOpen(false)}><X size={16} /></button>
             </div>
             <div className="lr-form" style={{ gap: '20px' }}>
-              <label className="lr-form-full"><span>Target Niche / Keyword</span>
+              <label className="lr-form-full"><span>Was verkaufst du? (Dein Angebot für die KI)</span>
+                <input type="text" placeholder="z.B. B2B Logistik in 85 Länder..." value={userProduct} onChange={e => setUserProduct(e.target.value)} />
+              </label>
+              <label className="lr-form-full"><span>Such-Keyword / Nische</span>
                 <input type="text" placeholder="e.g. Autohändler, Webdesign, Real Estate" value={customNiche} onChange={e => setCustomNiche(e.target.value)} />
               </label>
               
