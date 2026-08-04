@@ -799,53 +799,58 @@ STRATEGIE-FOKUS FÜR DIESE QUELLE (${badge}): ${b2bStrategyMap[badge] || b2bStra
               <h3>Radar Scan Configuration</h3>
               <button onClick={() => setConfigModalOpen(false)}><X size={16} /></button>
             </div>
-            <div className="lr-form" style={{ gap: '20px' }}>
-              <label className="lr-form-full"><span>Was verkaufst du? (Dein Angebot für die KI)</span>
-                <input type="text" placeholder="z.B. B2B Logistik in 85 Länder..." value={userProduct} onChange={e => setUserProduct(e.target.value)} />
-              </label>
-              <label className="lr-form-full"><span>Such-Keyword / Nische</span>
-                <input type="text" placeholder="e.g. Autohändler, Webdesign, Real Estate" value={customNiche} onChange={e => setCustomNiche(e.target.value)} />
-              </label>
-              
-              <div className="lr-form-row">
-                <label><span>Target Region (Continent)</span>
-                  <select value={activeContinent} onChange={e => setActiveContinent(e.target.value)}>
-                    <option value="na">North America (US/CA)</option>
-                    <option value="eu">Europe (DE/EU)</option>
-                    <option value="latam">Latin America (BR/PT)</option>
-                    <option value="apac">Asia-Pacific (AU)</option>
-                  </select>
+            <div className="lr-modal-form" style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '20px' }}>
+                <label className="lr-form-full" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span style={{ fontSize: '0.9rem', color: '#E5E7EB', fontWeight: '500' }}>Was verkaufst du? (Dein Angebot für die KI)</span>
+                  <input type="text" placeholder="z.B. B2B Logistik in 85 Länder..." value={userProduct} onChange={e => setUserProduct(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: '10px 14px', fontSize: '1rem', background: '#1E293B', border: '1px solid #334155', color: '#F8FAFC', borderRadius: '6px' }} />
                 </label>
-                <label><span>Erscheinungseingrenzung (Zeitfilter)</span>
-                  <select value={maxAgeDays} onChange={e => setMaxAgeDays(e.target.value)}>
-                    <option value="1">Letzte 24 Stunden</option>
-                    <option value="7">Letzte 7 Tage</option>
-                    <option value="30">Letzte 30 Tage</option>
-                    <option value="all">Alle (Kein Filter)</option>
-                  </select>
+                
+                <label className="lr-form-full" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span style={{ fontSize: '0.9rem', color: '#E5E7EB', fontWeight: '500' }}>Such-Keyword / Nische</span>
+                  <input type="text" placeholder="e.g. Autohändler, Webdesign, Real Estate" value={customNiche} onChange={e => setCustomNiche(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: '10px 14px', fontSize: '1rem', background: '#1E293B', border: '1px solid #334155', color: '#F8FAFC', borderRadius: '6px' }} />
                 </label>
-              </div>
+                
+                <div className="lr-form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <span style={{ fontSize: '0.9rem', color: '#E5E7EB', fontWeight: '500' }}>Zielregion (Continent)</span>
+                    <select value={activeContinent} onChange={e => setActiveContinent(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: '10px 14px', fontSize: '1rem', background: '#1E293B', border: '1px solid #334155', color: '#F8FAFC', borderRadius: '6px' }}>
+                      <option value="na">North America (US/CA)</option>
+                      <option value="eu">Europe (DE/EU)</option>
+                      <option value="latam">Latin America (BR/PT)</option>
+                      <option value="apac">Asia-Pacific (AU)</option>
+                    </select>
+                  </label>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <span style={{ fontSize: '0.9rem', color: '#E5E7EB', fontWeight: '500' }}>Erscheinungseingrenzung (Zeitfilter)</span>
+                    <select value={maxAgeDays} onChange={e => setMaxAgeDays(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: '10px 14px', fontSize: '1rem', background: '#1E293B', border: '1px solid #334155', color: '#F8FAFC', borderRadius: '6px' }}>
+                      <option value="1">Letzte 24 Stunden</option>
+                      <option value="7">Letzte 7 Tage</option>
+                      <option value="30">Letzte 30 Tage</option>
+                      <option value="all">Alle (Kein Filter)</option>
+                    </select>
+                  </label>
+                </div>
 
-              <div className="lr-form-full">
-                <span style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', display: 'block' }}>Data Sources</span>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg)', padding: '10px', borderRadius: '6px', marginBottom: '8px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={scanSources.upwork} onChange={e => setScanSources(p => ({ ...p, upwork: e.target.checked }))} />
-                  <span style={{ flex: 1 }}>💼 B2B Job Boards (Upwork)</span>
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg)', padding: '10px', borderRadius: '6px', marginBottom: '8px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={scanSources.news} onChange={e => setScanSources(p => ({ ...p, news: e.target.checked }))} />
-                  <span style={{ flex: 1 }}>📰 Trigger Events (Google News)</span>
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg)', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={scanSources.reddit} onChange={e => setScanSources(p => ({ ...p, reddit: e.target.checked }))} />
-                  <span style={{ flex: 1 }}>🌍 Global Social Search (Reddit)</span>
-                </label>
-              </div>
+                <div className="lr-form-full" style={{ marginTop: '10px' }}>
+                  <span style={{ fontSize: '0.9rem', color: '#9CA3AF', marginBottom: '10px', display: 'block' }}>Datenquellen:</span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: '#0F172A', padding: '12px', borderRadius: '8px', border: '1px solid #1E293B', marginBottom: '8px' }}>
+                    <input type="checkbox" checked={scanSources.upwork} onChange={e => setScanSources(prev => ({...prev, upwork: e.target.checked}))} />
+                    <span style={{ color: '#E5E7EB' }}>💼 B2B Job Boards (Upwork)</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: '#0F172A', padding: '12px', borderRadius: '8px', border: '1px solid #1E293B', marginBottom: '8px' }}>
+                    <input type="checkbox" checked={scanSources.news} onChange={e => setScanSources(prev => ({...prev, news: e.target.checked}))} />
+                    <span style={{ color: '#E5E7EB' }}>📰 Trigger Events (Google News)</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: '#0F172A', padding: '12px', borderRadius: '8px', border: '1px solid #1E293B' }}>
+                    <input type="checkbox" checked={scanSources.reddit} onChange={e => setScanSources(prev => ({...prev, reddit: e.target.checked}))} />
+                    <span style={{ color: '#E5E7EB' }}>🌍 Global Social Search (Reddit)</span>
+                  </label>
+                </div>
 
-              <button className="lr-form-submit" onClick={() => { setConfigModalOpen(false); runLiveRadar(); }} style={{ marginTop: '10px', height: '48px', fontSize: '15px' }}>
-                🚀 Start Professional Scan
-              </button>
-            </div>
+                <button className="lr-form-submit" onClick={() => { setConfigModalOpen(false); runLiveRadar(); }} style={{ marginTop: '10px', height: '52px', fontSize: '16px', fontWeight: 'bold' }}>
+                  🚀 Speichern & Radar Starten
+                </button>
+              </div>
           </div>
         </div>
       )}
