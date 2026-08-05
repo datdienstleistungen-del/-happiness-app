@@ -1,161 +1,102 @@
 import { useState } from 'react'
-import { X, ArrowRight, Check, Sparkles, Target, Globe, Zap, Search, TrendingUp } from 'lucide-react'
+import { X, Check, Sparkles, Zap, TrendingUp, AlertCircle, Clock, ArrowRight } from 'lucide-react'
 
-const PREVIEW_LEADS = {
-  default: [
-    { source: 'Upwork', title: 'Looking for custom dog collar manufacturer', budget: '$500-1000', signal: 'Buyer Intent' },
-    { source: 'Reddit r/dogs', title: 'Best durable collars for large breeds?', budget: 'Organic', signal: 'Product Research' },
-    { source: 'Google News', title: 'Pet industry growth: Collar market expanding 12% annually', budget: 'Market Data', signal: 'Trend Alert' },
-  ],
-  saas: [
-    { source: 'Reddit r/SaaS', title: 'Need CRM for small team, budget under $50/mo', budget: 'Monthly', signal: 'Buyer Intent' },
-    { source: 'IndieHackers', title: 'Looking for project management tool', budget: 'Open', signal: 'Product Research' },
-    { source: 'Google Alerts', title: 'Company X raises Series A - hiring engineers', budget: 'Growth Signal', signal: 'Expansion' },
-  ],
-  services: [
-    { source: 'LinkedIn', title: 'Marketing Manager seeking agency partner', budget: '$5k-10k/mo', signal: 'Buyer Intent' },
-    { source: 'Reddit r/entrepreneur', title: 'Need help with brand strategy', budget: 'Open', signal: 'Product Research' },
-    { source: 'Google News', title: 'Startup launches new product line', budget: 'Growth Signal', signal: 'Expansion' },
-  ],
-}
+const TRIGGER_EXAMPLES = [
+  {
+    icon: '🐕',
+    product: 'Hundehalsbänder',
+    triggers: [
+      { event: 'Neuer Welpe im Haushalt', signal: 'Reddit: "Unser Welpe kommt nächste Woche"', type: 'Lebensereignis' },
+      { event: 'Hund wächst aus dem Halsband', signal: 'Forum: "Welche Größe für 6-Monats-Hund?"', type: 'Schmerzpunkt' },
+      { event: 'Regelung für Halsbänder', signal: 'News: "Pflichtkennzeichnung für Hunde wird Pflicht"', type: 'Deadline' },
+    ],
+  },
+  {
+    icon: '💻',
+    product: 'Webdesign',
+    triggers: [
+      { event: 'Firma gründet sich', signal: 'LinkedIn: "Wir starten ein neues Projekt!"', type: 'Lebensereignis' },
+      { event: 'Website ist veraltet', signal: 'Google: "Website wirkt unprofessionell"', type: 'Schmerzpunkt' },
+      { event: 'Kampagne startet', signal: 'Upwork: "Need landing page ASAP"', type: 'Deadline' },
+    ],
+  },
+  {
+    icon: '📦',
+    product: 'Büromöbel',
+    triggers: [
+      { event: 'Team wächst', signal: 'News: "Startup X stellt 20 neue Leute ein"', type: 'Lebensereignis' },
+      { event: 'Alte Möbel kaputt', signal: 'Reddit: "Bürostuhl nach 5 Jahren durch"', type: 'Schmerzpunkt' },
+      { event: 'Neues Büro', signal: 'News: "Firma zieht in größere Räume um"', type: 'Deadline' },
+    ],
+  },
+]
 
 export default function SetupWizard({ onComplete, onClose }) {
-  const [step, setStep] = useState('intro') // intro, context, preview, done
+  const [step, setStep] = useState('input') // input, triggers, done
   const [whatSelling, setWhatSelling] = useState('')
   const [region, setRegion] = useState('de')
-  const [audience, setAudience] = useState('')
 
   const handleStart = () => {
     if (whatSelling.trim().length < 2) return
-    setStep('context')
-  }
-
-  const handleContextDone = () => {
-    setStep('preview')
+    setStep('triggers')
   }
 
   const handleFinish = () => {
-    const config = {
+    onComplete({
       userProduct: whatSelling,
       customNiche: whatSelling,
       region,
-      audienceProfile: audience,
-    }
-    onComplete(config)
+    })
   }
 
-  const getPreviewCategory = () => {
-    const lower = whatSelling.toLowerCase()
-    if (lower.includes('saas') || lower.includes('software') || lower.includes('app') || lower.includes('plattform')) return 'saas'
-    if (lower.includes('beratung') || lower.includes('agentur') || lower.includes('dienstleistung') || lower.includes('marketing')) return 'services'
-    return 'default'
-  }
+  const matchedExample = TRIGGER_EXAMPLES.find(ex =>
+    whatSelling.toLowerCase().includes(ex.product.toLowerCase().split(' ')[0])
+  )
 
-  if (step === 'intro') {
+  if (step === 'input') {
     return (
       <div className="wiz-overlay" onClick={onClose}>
-        <div className="wiz-modal wiz-modal--intro" onClick={e => e.stopPropagation()}>
+        <div className="wiz-modal wiz-modal--input" onClick={e => e.stopPropagation()}>
           <button className="wiz-close" onClick={onClose}><X size={18} /></button>
 
-          <div className="wiz-intro">
-            <div className="wiz-intro-icon">
-              <Search size={32} />
-            </div>
-            <h2>Wir finden für dich</h2>
-            <p className="wiz-intro-sub">
-              Leute die <strong>gerade</strong> nach dem suchen was du verkaufst.
-              Kein Raten. Keine Kaltschnapp-Leads. Nur warme Ansprechpartner.
-            </p>
-
-            <div className="wiz-intro-examples">
-              <div className="wiz-intro-example">
-                <span className="wiz-intro-emoji">🐕</span>
-                <span>Du verkaufst <strong>Hundehalsbänder</strong>?</span>
-                <span className="wiz-intro-result">→ Wir finden Reddit-Posts, Upwork-Jobs & News von Leuten die gerade suchen</span>
+          <div className="wiz-input-view">
+            <div className="wiz-input-header">
+              <div className="wiz-input-icon">
+                <Zap size={28} />
               </div>
-              <div className="wiz-intro-example">
-                <span className="wiz-intro-emoji">💻</span>
-                <span>Du bietest <strong>Webdesign</strong> an?</span>
-                <span className="wiz-intro-result">→ Wir finden "need website" Posts, Job-Angebote & Firmen die gerade wachsen</span>
-              </div>
-              <div className="wiz-intro-example">
-                <span className="wiz-intro-emoji">📦</span>
-                <span>Du verkaufst <strong>Büromöbel</strong>?</span>
-                <span className="wiz-intro-result">→ Wir finden "new office" Posts, Unternehmensgründungen & Umzugs-News</span>
-              </div>
+              <h2>Lead Radar</h2>
+              <p>Wir finden für dich Leute die <strong>gerade</strong> das kaufen wollen was du verkaufst.</p>
             </div>
 
-            <div className="wiz-intro-input">
-              <label>Was verkaufst du genau?</label>
+            <div className="wiz-input-field">
+              <label>Was verkaufst du?</label>
               <input
                 type="text"
                 value={whatSelling}
                 onChange={e => setWhatSelling(e.target.value)}
-                placeholder="z.B. Hundehalsbänder, Webdesign, Beratung..."
+                placeholder="z.B. Hundehalsbänder, Webdesign, Büromöbel..."
                 autoFocus
                 onKeyDown={e => e.key === 'Enter' && handleStart()}
               />
             </div>
 
-            <button className="wiz-btn wiz-btn-primary wiz-btn-full" onClick={handleStart} disabled={whatSelling.trim().length < 2}>
-              <Sparkles size={16} /> Zeig mir meine Leads
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (step === 'context') {
-    return (
-      <div className="wiz-overlay" onClick={onClose}>
-        <div className="wiz-modal" onClick={e => e.stopPropagation()}>
-          <button className="wiz-close" onClick={onClose}><X size={18} /></button>
-
-          <div className="wiz-step">
-            <h3>Einsatzkontext</h3>
-            <p>Damit wir die <strong>richtigen</strong> Leads für dich finden:</p>
-
-            <div className="wiz-options">
+            <div className="wiz-input-region">
               <button
-                className={`wiz-option ${region === 'de' ? 'active' : ''}`}
+                className={`wiz-region-btn ${region === 'de' ? 'active' : ''}`}
                 onClick={() => setRegion('de')}
-              >
-                <strong>🇩🇪 Deutschland / Österreich</strong>
-                <span>Deutschsprachige Quellen, DACH-Markt</span>
-              </button>
+              >🇩🇪 DE/AT</button>
               <button
-                className={`wiz-option ${region === 'us' ? 'active' : ''}`}
+                className={`wiz-region-btn ${region === 'us' ? 'active' : ''}`}
                 onClick={() => setRegion('us')}
-              >
-                <strong>🇺🇸 USA / Global</strong>
-                <span>Englischsprachige Quellen, Weltmarkt</span>
-              </button>
+              >🇺🇸 USA</button>
               <button
-                className={`wiz-option ${region === 'eu' ? 'active' : ''}`}
+                className={`wiz-region-btn ${region === 'eu' ? 'active' : ''}`}
                 onClick={() => setRegion('eu')}
-              >
-                <strong>🇪🇺 Westeuropa</strong>
-                <span>EN/FR/ES, EU-Regulierung</span>
-              </button>
+              >🇪🇺 EU</button>
             </div>
 
-            <div className="wiz-field">
-              <label>Wer sind deine idealen Kunden? (optional)</label>
-              <input
-                type="text"
-                value={audience}
-                onChange={e => setAudience(e.target.value)}
-                placeholder="z.B. Hundebesitzer, Startups, Firmen 10-50 MA..."
-              />
-            </div>
-          </div>
-
-          <div className="wiz-footer">
-            <button className="wiz-btn wiz-btn-secondary" onClick={() => setStep('intro')}>Zurück</button>
-            <div style={{ flex: 1 }} />
-            <button className="wiz-btn wiz-btn-primary" onClick={handleContextDone}>
-              <Check size={16} /> Leads anzeigen
+            <button className="wiz-btn wiz-btn-primary wiz-btn-full" onClick={handleStart} disabled={whatSelling.trim().length < 2}>
+              <ArrowRight size={16} /> Weiter
             </button>
           </div>
         </div>
@@ -163,45 +104,53 @@ export default function SetupWizard({ onComplete, onClose }) {
     )
   }
 
-  if (step === 'preview') {
-    const category = getPreviewCategory()
-    const leads = PREVIEW_LEADS[category] || PREVIEW_LEADS.default
+  if (step === 'triggers') {
+    const example = matchedExample || TRIGGER_EXAMPLES[0]
 
     return (
       <div className="wiz-overlay" onClick={onClose}>
-        <div className="wiz-modal wiz-modal--preview" onClick={e => e.stopPropagation()}>
+        <div className="wiz-modal wiz-modal--triggers" onClick={e => e.stopPropagation()}>
           <button className="wiz-close" onClick={onClose}><X size={18} /></button>
 
-          <div className="wiz-preview">
-            <div className="wiz-preview-header">
-              <TrendingUp size={24} />
-              <h3>So sehen deine Leads aus</h3>
-              <p>Für: <strong>{whatSelling}</strong></p>
+          <div className="wiz-triggers-view">
+            <div className="wiz-triggers-header">
+              <AlertCircle size={20} />
+              <h3>Das sind die Trigger Events für "{whatSelling}"</h3>
+              <p>Das Radar sucht genau nach diesen Momenten:</p>
             </div>
 
-            <div className="wiz-preview-list">
-              {leads.map((lead, i) => (
-                <div key={i} className="wiz-preview-lead">
-                  <div className="wiz-preview-lead-top">
-                    <span className="wiz-preview-source">{lead.source}</span>
-                    <span className="wiz-preview-signal">{lead.signal}</span>
+            <div className="wiz-triggers-list">
+              {example.triggers.map((trigger, i) => (
+                <div key={i} className="wiz-trigger-card" style={{ animationDelay: `${i * 0.1}s` }}>
+                  <div className="wiz-trigger-top">
+                    <span className="wiz-trigger-type">{trigger.type}</span>
                   </div>
-                  <p className="wiz-preview-title">{lead.title}</p>
-                  <div className="wiz-preview-bottom">
-                    <span className="wiz-preview-budget">{lead.budget}</span>
-                    <span className="wiz-preview-time">gerade eben</span>
-                  </div>
+                  <h4 className="wiz-trigger-event">{trigger.event}</h4>
+                  <p className="wiz-trigger-signal">{trigger.signal}</p>
                 </div>
               ))}
             </div>
 
-            <div className="wiz-preview-note">
-              <Zap size={16} />
-              <span>Dies ist eine Vorschau. Der echte Radar scannt ständig neue Quellen.</span>
+            <div className="wiz-triggers-explain">
+              <h4>So funktioniert es:</h4>
+              <div className="wiz-triggers-flow">
+                <div className="wiz-flow-step">
+                  <span className="wiz-flow-num">1</span>
+                  <span>Wir scannen Reddit, Upwork, News & Foren</span>
+                </div>
+                <div className="wiz-flow-step">
+                  <span className="wiz-flow-num">2</span>
+                  <span>Wir erkennen wenn jemand ein Trigger-Event erlebt</span>
+                </div>
+                <div className="wiz-flow-step">
+                  <span className="wiz-flow-num">3</span>
+                  <span>Du bekommst den Lead mit Kontext & Ansprechpartner</span>
+                </div>
+              </div>
             </div>
 
             <button className="wiz-btn wiz-btn-primary wiz-btn-full" onClick={handleFinish}>
-              <Sparkles size={16} /> Radar aktivieren
+              <Sparkles size={16} /> Radar starten
             </button>
           </div>
         </div>
