@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Radar, Zap, Copy, Check, Globe, ArrowLeft, Loader, Plus, X, ExternalLink, Radio, RotateCw } from 'lucide-react'
+import { Radar, Zap, Copy, Check, Globe, ArrowLeft, Loader, Plus, X, ExternalLink, Radio, RotateCw, Wand2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { getChatEndpoint } from '../lib/hit'
+import SetupWizard from '../components/SetupWizard'
 import './LeadRadarPage.css'
+import '../components/SetupWizard.css'
 
 const LIVE_FEEDS = [
   // 🇺🇸 North America
@@ -441,8 +443,22 @@ export default function LeadRadarPage() {
   const [cooldowns, setCooldowns] = useState({})
   const [modalOpen, setModalOpen] = useState(false)
   const [configModalOpen, setConfigModalOpen] = useState(false)
+  const [wizardOpen, setWizardOpen] = useState(false)
   const [guideModalOpen, setGuideModalOpen] = useState(false)
   const [scanSources, setScanSources] = useState({ upwork: true, news: true, reddit: true })
+
+  const handleWizardComplete = (wizardConfig) => {
+    // Apply wizard configuration
+    if (wizardConfig.userProduct) setUserProduct(wizardConfig.userProduct)
+    if (wizardConfig.customNiche) setCustomNiche(wizardConfig.customNiche)
+    if (wizardConfig.region) {
+      const regionMap = { 'us': 'na', 'eu_de': 'eu', 'eu_west': 'eu', 'latam': 'latam', 'apac': 'apac' }
+      setActiveContinent(regionMap[wizardConfig.region] || 'eu')
+    }
+    setWizardOpen(false)
+    // Auto-start radar with new config
+    setTimeout(() => runLiveRadar(), 500)
+  }
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -744,9 +760,9 @@ STRATEGIE-FOKUS FÜR DIESE QUELLE (${badge}): ${b2bStrategyMap[badge] || b2bStra
         <span className="lr-badge">{leads.length} leads</span>
         <button
           className={`lr-radar-btn ${radarActive ? 'active' : ''}`}
-          onClick={radarActive ? stopRadar : () => setConfigModalOpen(true)}
+          onClick={radarActive ? stopRadar : () => setWizardOpen(true)}
         >
-          {radarActive ? <><Loader size={14} className="lr-spinner" /> Scanning... (Stop)</> : <><Radio size={14} /> Live Radar</>}
+          {radarActive ? <><Loader size={14} className="lr-spinner" /> Scanning... (Stop)</> : <><Wand2 size={14} /> Setup-Assistent</>}
         </button>
         <button className="lr-add-btn" onClick={() => { setForm({ ...EMPTY_FORM, continent: activeContinent }); setSaveError(''); setModalOpen(true) }}>
           <Plus size={16} /> Add Live Lead
@@ -991,8 +1007,15 @@ STRATEGIE-FOKUS FÜR DIESE QUELLE (${badge}): ${b2bStrategyMap[badge] || b2bStra
             <div className="lr-modal-footer">
               <button className="lr-btn-cancel" onClick={() => setGuideModalOpen(false)}>Verstanden</button>
             </div>
-          </div>
+           </div>
         </div>
+      )}
+
+      {wizardOpen && (
+        <SetupWizard
+          onComplete={handleWizardComplete}
+          onClose={() => setWizardOpen(false)}
+        />
       )}
     </div>
   )

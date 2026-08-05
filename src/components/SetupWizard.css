@@ -1,0 +1,308 @@
+.wiz-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.wiz-modal {
+  background: #0F172A;
+  border: 1px solid #1E293B;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.wiz-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #1E293B;
+  position: relative;
+}
+
+.wiz-header h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #F8FAFC;
+  margin: 0 0 4px 0;
+}
+
+.wiz-header p {
+  font-size: 0.85rem;
+  color: #94A3B8;
+  margin: 0;
+}
+
+.wiz-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: #94A3B8;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.wiz-close:hover {
+  color: #F8FAFC;
+}
+
+.wiz-progress {
+  display: flex;
+  gap: 2px;
+  padding: 16px 24px;
+  background: #0F172A;
+  border-bottom: 1px solid #1E293B;
+}
+
+.wiz-progress-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.wiz-progress-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #1E293B;
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+.wiz-progress-step.active .wiz-progress-icon {
+  background: #6366F1;
+  color: #fff;
+}
+
+.wiz-progress-step.done .wiz-progress-icon {
+  background: #10B981;
+  color: #fff;
+}
+
+.wiz-progress-label {
+  font-size: 0.65rem;
+  color: #64748B;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.wiz-progress-step.active .wiz-progress-label {
+  color: #F8FAFC;
+  font-weight: 600;
+}
+
+.wiz-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.wiz-step h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #F8FAFC;
+  margin: 0 0 8px 0;
+}
+
+.wiz-step > p {
+  font-size: 0.9rem;
+  color: #94A3B8;
+  margin: 0 0 20px 0;
+  line-height: 1.5;
+}
+
+.wiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wiz-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px 16px;
+  background: #1E293B;
+  border: 2px solid #334155;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+}
+
+.wiz-option:hover {
+  border-color: #6366F1;
+  background: #1E293B;
+}
+
+.wiz-option.active {
+  border-color: #6366F1;
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.wiz-option strong {
+  font-size: 0.95rem;
+  color: #F8FAFC;
+}
+
+.wiz-option span {
+  font-size: 0.8rem;
+  color: #94A3B8;
+}
+
+.wiz-field {
+  margin-top: 16px;
+}
+
+.wiz-field label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #E5E7EB;
+  margin-bottom: 6px;
+}
+
+.wiz-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  font-size: 1rem;
+  background: #1E293B;
+  border: 1px solid #334155;
+  color: #F8FAFC;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.wiz-field input:focus {
+  border-color: #6366F1;
+}
+
+.wiz-field input::placeholder {
+  color: #64748B;
+}
+
+.wiz-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wiz-trigger-group {
+  background: #1E293B;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.wiz-checkbox-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.wiz-checkbox-header input {
+  width: 16px;
+  height: 16px;
+  accent-color: #6366F1;
+}
+
+.wiz-checkbox-header strong {
+  font-size: 0.9rem;
+  color: #F8FAFC;
+}
+
+.wiz-trigger-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  padding-left: 24px;
+}
+
+.wiz-trigger-tag {
+  font-size: 0.75rem;
+  color: #94A3B8;
+  background: #0F172A;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.wiz-footer {
+  display: flex;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid #1E293B;
+}
+
+.wiz-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+}
+
+.wiz-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wiz-btn-primary {
+  background: #6366F1;
+  color: #fff;
+}
+
+.wiz-btn-primary:hover:not(:disabled) {
+  background: #4F46E5;
+}
+
+.wiz-btn-secondary {
+  background: #334155;
+  color: #E5E7EB;
+}
+
+.wiz-btn-secondary:hover {
+  background: #475569;
+}
+
+@media (max-width: 640px) {
+  .wiz-modal {
+    max-height: 95vh;
+  }
+
+  .wiz-progress {
+    flex-wrap: wrap;
+  }
+
+  .wiz-progress-label {
+    display: none;
+  }
+
+  .wiz-body {
+    padding: 16px;
+  }
+}
