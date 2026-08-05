@@ -14,44 +14,33 @@
   border: 1px solid #1E293B;
   border-radius: 16px;
   width: 100%;
-  max-width: 520px;
-  max-height: 85vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  max-width: 440px;
+  position: relative;
 }
 
 .wiz-close {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 14px;
+  right: 14px;
   background: none;
   border: none;
-  color: #94A3B8;
+  color: #64748B;
   cursor: pointer;
   padding: 4px;
   z-index: 10;
 }
 
-.wiz-close:hover {
-  color: #F8FAFC;
-}
+.wiz-close:hover { color: #F8FAFC; }
 
-/* ── INPUT VIEW ── */
-.wiz-input-view {
-  padding: 32px 28px;
-  position: relative;
-}
-
-.wiz-input-header {
+.wiz-content {
+  padding: 36px 32px;
   text-align: center;
-  margin-bottom: 28px;
 }
 
-.wiz-input-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
+.wiz-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
   background: linear-gradient(135deg, #6366F1, #8B5CF6);
   display: flex;
   align-items: center;
@@ -60,60 +49,43 @@
   margin: 0 auto 16px;
 }
 
-.wiz-input-header h2 {
-  font-size: 1.5rem;
+.wiz-content h2 {
+  font-size: 1.4rem;
   font-weight: 800;
   color: #F8FAFC;
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
 }
 
-.wiz-input-header p {
-  font-size: 0.95rem;
+.wiz-content p {
+  font-size: 0.9rem;
   color: #94A3B8;
-  margin: 0;
-  line-height: 1.5;
+  margin: 0 0 24px 0;
 }
 
-.wiz-input-field {
-  margin-bottom: 16px;
-}
-
-.wiz-input-field label {
-  display: block;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #E5E7EB;
-  margin-bottom: 6px;
-}
-
-.wiz-input-field input {
+.wiz-content input {
   width: 100%;
   box-sizing: border-box;
   padding: 14px 16px;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   background: #1E293B;
   border: 2px solid #334155;
   color: #F8FAFC;
   border-radius: 10px;
   outline: none;
+  margin-bottom: 14px;
   transition: border-color 0.15s;
 }
 
-.wiz-input-field input:focus {
-  border-color: #6366F1;
-}
+.wiz-content input:focus { border-color: #6366F1; }
+.wiz-content input::placeholder { color: #64748B; }
 
-.wiz-input-field input::placeholder {
-  color: #64748B;
-}
-
-.wiz-input-region {
+.wiz-regions {
   display: flex;
   gap: 8px;
   margin-bottom: 20px;
 }
 
-.wiz-region-btn {
+.wiz-reg {
   flex: 1;
   padding: 10px;
   background: #1E293B;
@@ -126,168 +98,34 @@
   transition: all 0.15s;
 }
 
-.wiz-region-btn:hover {
-  border-color: #6366F1;
-}
+.wiz-reg:hover { border-color: #6366F1; }
 
-.wiz-region-btn.active {
+.wiz-reg.on {
   border-color: #6366F1;
   background: rgba(99, 102, 241, 0.1);
   color: #F8FAFC;
 }
 
-/* ── TRIGGERS VIEW ── */
-.wiz-triggers-view {
-  padding: 28px;
-}
-
-.wiz-triggers-header {
-  margin-bottom: 20px;
-  color: #F59E0B;
-}
-
-.wiz-triggers-header h3 {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #F8FAFC;
-  margin: 8px 0 4px 0;
-}
-
-.wiz-triggers-header p {
-  font-size: 0.85rem;
-  color: #94A3B8;
-  margin: 0;
-}
-
-.wiz-triggers-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 24px;
-}
-
-.wiz-trigger-card {
-  padding: 14px;
-  background: #1E293B;
-  border: 1px solid #334155;
-  border-radius: 10px;
-  animation: wiz-trigger-in 0.3s ease-out backwards;
-}
-
-@keyframes wiz-trigger-in {
-  from { opacity: 0; transform: translateX(-8px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-.wiz-trigger-top {
-  margin-bottom: 6px;
-}
-
-.wiz-trigger-type {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #F59E0B;
-  background: rgba(245, 158, 11, 0.15);
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-.wiz-trigger-event {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #F8FAFC;
-  margin: 0 0 4px 0;
-}
-
-.wiz-trigger-signal {
-  font-size: 0.8rem;
-  color: #94A3B8;
-  margin: 0;
-  font-style: italic;
-}
-
-.wiz-triggers-explain {
-  background: rgba(99, 102, 241, 0.08);
-  border-radius: 10px;
-  padding: 16px;
-  margin-bottom: 20px;
-}
-
-.wiz-triggers-explain h4 {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #F8FAFC;
-  margin: 0 0 12px 0;
-}
-
-.wiz-triggers-flow {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.wiz-flow-step {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.85rem;
-  color: #CBD5E1;
-}
-
-.wiz-flow-num {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #6366F1;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-/* ── BUTTONS ── */
-.wiz-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  transition: all 0.15s;
-}
-
-.wiz-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.wiz-btn-full {
+.wiz-go {
   width: 100%;
-  justify-content: center;
-  padding: 12px 20px;
-}
-
-.wiz-btn-primary {
+  padding: 13px;
   background: #6366F1;
   color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.15s;
 }
 
-.wiz-btn-primary:hover:not(:disabled) {
-  background: #4F46E5;
-}
+.wiz-go:hover:not(:disabled) { background: #4F46E5; }
+.wiz-go:disabled { opacity: 0.5; cursor: not-allowed; }
 
-@media (max-width: 640px) {
-  .wiz-modal {
-    max-height: 95vh;
-  }
-
-  .wiz-input-view, .wiz-triggers-view {
-    padding: 24px 20px;
-  }
+@media (max-width: 480px) {
+  .wiz-content { padding: 28px 20px; }
 }
