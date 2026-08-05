@@ -1,285 +1,213 @@
 import { useState } from 'react'
-import { X, ArrowRight, ArrowLeft, Check, Globe, Building2, Target, Users, Zap } from 'lucide-react'
+import { X, ArrowRight, Check, Sparkles, Target, Globe, Zap, Search, TrendingUp } from 'lucide-react'
 
-const STEPS = [
-  { id: 'context', label: 'Einsatzkontext', icon: Building2 },
-  { id: 'region', label: 'Zielregion', icon: Globe },
-  { id: 'product', label: 'Produkt / Dienstleistung', icon: Target },
-  { id: 'audience', label: 'Zielgruppe', icon: Users },
-  { id: 'triggers', label: 'Trigger-Events', icon: Zap },
-]
-
-const DEPLOYMENT_CONTEXTS = [
-  { id: 'own_sales', label: 'Eigenvertrieb', desc: 'Ich verkaufe eigene Produkte/Dienstleistungen direkt an Kunden' },
-  { id: 'service_platform', label: 'Service-Plattform', desc: 'Ich biete eine Plattform/Dienstleistung für andere Unternehmen an' },
-  { id: 'agency', label: 'Agentur', desc: 'Ich betreue Kunden und suche Leads für deren Geschäft' },
-]
-
-const REGIONS = [
-  { id: 'us', label: '🇺🇸 USA', desc: 'Nordamerikanischer Markt, englischsprachig, B2B-fokussiert' },
-  { id: 'eu_de', label: '🇩🇪 Deutschland/Österreich', desc: 'DACH-Raum, deutschsprachig, regulatorsche Besonderheiten' },
-  { id: 'eu_west', label: '🇪🇺 Westeuropa', desc: 'EN/FR/ES, multilingual, EU-Regulierung' },
-  { id: 'latam', label: '🇧🇷 Lateinamerika', desc: 'PT/ES, wachsender Markt, lokale Besonderheiten' },
-  { id: 'apac', label: '🇦🇺 Asien-Pazifik', desc: 'EN, diverse Märkte, Zeitzonen-berücksichtigen' },
-]
-
-const PRODUCT_TYPES = [
-  { id: 'saas', label: 'SaaS / Software', desc: 'Cloud-Lösungen, Apps, Plattformen' },
-  { id: 'services', label: 'Dienstleistungen', desc: 'Beratung, Entwicklung, Marketing' },
-  { id: 'physical', label: 'Physische Produkte', desc: 'Hardware, Materialien, Ausrüstung' },
-  { id: 'education', label: 'Bildung / Training', desc: 'Kurse, Workshops, Zertifizierungen' },
-  { id: 'logistics', label: 'Logistik / Supply Chain', desc: 'Transport, Lagerung, Versand' },
-]
-
-const TRIGGER_CATEGORIES = [
-  { id: 'growth', label: '📈 Wachstum', examples: ['Neuer Standort', 'Team-Erweiterung', 'Investitionsrunde', 'Markteintritt'] },
-  { id: 'pain', label: '🔥 Schmerzpunkte', examples: ['Technische Probleme', 'Compliance-Verstöße', 'Kundenbeschwerden', 'Systemausfälle'] },
-  { id: 'change', label: '🔄 Veränderung', examples: ['Neuer CEO', 'Restrukturierung', 'Fusion/Übernahme', 'Strategiewechsel'] },
-  { id: 'deadline', label: '⏰ Fristen', examples: ['Regulierung', 'Vertragsende', 'Budget-Zyklus', 'Zertifizierung'] },
-]
+const PREVIEW_LEADS = {
+  default: [
+    { source: 'Upwork', title: 'Looking for custom dog collar manufacturer', budget: '$500-1000', signal: 'Buyer Intent' },
+    { source: 'Reddit r/dogs', title: 'Best durable collars for large breeds?', budget: 'Organic', signal: 'Product Research' },
+    { source: 'Google News', title: 'Pet industry growth: Collar market expanding 12% annually', budget: 'Market Data', signal: 'Trend Alert' },
+  ],
+  saas: [
+    { source: 'Reddit r/SaaS', title: 'Need CRM for small team, budget under $50/mo', budget: 'Monthly', signal: 'Buyer Intent' },
+    { source: 'IndieHackers', title: 'Looking for project management tool', budget: 'Open', signal: 'Product Research' },
+    { source: 'Google Alerts', title: 'Company X raises Series A - hiring engineers', budget: 'Growth Signal', signal: 'Expansion' },
+  ],
+  services: [
+    { source: 'LinkedIn', title: 'Marketing Manager seeking agency partner', budget: '$5k-10k/mo', signal: 'Buyer Intent' },
+    { source: 'Reddit r/entrepreneur', title: 'Need help with brand strategy', budget: 'Open', signal: 'Product Research' },
+    { source: 'Google News', title: 'Startup launches new product line', budget: 'Growth Signal', signal: 'Expansion' },
+  ],
+}
 
 export default function SetupWizard({ onComplete, onClose }) {
-  const [step, setStep] = useState(0)
-  const [config, setConfig] = useState({
-    deploymentContext: '',
-    region: '',
-    regionLabel: '',
-    productType: '',
-    productTypeLabel: '',
-    customProduct: '',
-    industry: '',
-    audienceProfile: '',
-    targetCompanies: '',
-    triggerEvents: [],
-    customTriggers: '',
-  })
+  const [step, setStep] = useState('intro') // intro, context, preview, done
+  const [whatSelling, setWhatSelling] = useState('')
+  const [region, setRegion] = useState('de')
+  const [audience, setAudience] = useState('')
 
-  const updateConfig = (key, value) => {
-    setConfig(prev => ({ ...prev, [key]: value }))
+  const handleStart = () => {
+    if (whatSelling.trim().length < 2) return
+    setStep('context')
   }
 
-  const handleComplete = () => {
-    // Build the final configuration
-    const finalConfig = {
-      userProduct: `${config.productTypeLabel || config.customProduct} — ${config.industry}`,
-      customNiche: config.industry,
-      deploymentContext: config.deploymentContext,
-      region: config.region,
-      regionLabel: config.regionLabel,
-      productType: config.productType,
-      audienceProfile: config.audienceProfile,
-      targetCompanies: config.targetCompanies,
-      triggerEvents: config.triggerEvents,
-      customTriggers: config.customTriggers,
+  const handleContextDone = () => {
+    setStep('preview')
+  }
+
+  const handleFinish = () => {
+    const config = {
+      userProduct: whatSelling,
+      customNiche: whatSelling,
+      region,
+      audienceProfile: audience,
     }
-    onComplete(finalConfig)
+    onComplete(config)
   }
 
-  const canProceed = () => {
-    switch (step) {
-      case 0: return config.deploymentContext !== ''
-      case 1: return config.region !== ''
-      case 2: return config.productType !== '' || config.customProduct.trim() !== ''
-      case 3: return config.audienceProfile.trim() !== ''
-      case 4: return config.triggerEvents.length > 0 || config.customTriggers.trim() !== ''
-      default: return false
-    }
+  const getPreviewCategory = () => {
+    const lower = whatSelling.toLowerCase()
+    if (lower.includes('saas') || lower.includes('software') || lower.includes('app') || lower.includes('plattform')) return 'saas'
+    if (lower.includes('beratung') || lower.includes('agentur') || lower.includes('dienstleistung') || lower.includes('marketing')) return 'services'
+    return 'default'
   }
 
-  const renderStep = () => {
-    switch (step) {
-      case 0:
-        return (
-          <div className="wiz-step">
-            <h3>1. Einsatzkontext</h3>
-            <p>Wie nutzt du das Radar? Dies bestimmt welche Leads für dich relevant sind.</p>
-            <div className="wiz-options">
-              {DEPLOYMENT_CONTEXTS.map(ctx => (
-                <button
-                  key={ctx.id}
-                  className={`wiz-option ${config.deploymentContext === ctx.id ? 'active' : ''}`}
-                  onClick={() => updateConfig('deploymentContext', ctx.id)}
-                >
-                  <strong>{ctx.label}</strong>
-                  <span>{ctx.desc}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )
+  if (step === 'intro') {
+    return (
+      <div className="wiz-overlay" onClick={onClose}>
+        <div className="wiz-modal wiz-modal--intro" onClick={e => e.stopPropagation()}>
+          <button className="wiz-close" onClick={onClose}><X size={18} /></button>
 
-      case 1:
-        return (
-          <div className="wiz-step">
-            <h3>2. Zielregion</h3>
-            <p>Wo sind deine Kunden? Regionale Marktbedingungen beeinflussen die Suche.</p>
-            <div className="wiz-options">
-              {REGIONS.map(reg => (
-                <button
-                  key={reg.id}
-                  className={`wiz-option ${config.region === reg.id ? 'active' : ''}`}
-                  onClick={() => { updateConfig('region', reg.id); updateConfig('regionLabel', reg.label) }}
-                >
-                  <strong>{reg.label}</strong>
-                  <span>{reg.desc}</span>
-                </button>
-              ))}
+          <div className="wiz-intro">
+            <div className="wiz-intro-icon">
+              <Search size={32} />
             </div>
-          </div>
-        )
+            <h2>Wir finden für dich</h2>
+            <p className="wiz-intro-sub">
+              Leute die <strong>gerade</strong> nach dem suchen was du verkaufst.
+              Kein Raten. Keine Kaltschnapp-Leads. Nur warme Ansprechpartner.
+            </p>
 
-      case 2:
-        return (
-          <div className="wiz-step">
-            <h3>3. Produkt / Dienstleistung</h3>
-            <p>Was bietest du an? Wähle eine Kategorie oder beschreibe es selbst.</p>
-            <div className="wiz-options">
-              {PRODUCT_TYPES.map(pt => (
-                <button
-                  key={pt.id}
-                  className={`wiz-option ${config.productType === pt.id ? 'active' : ''}`}
-                  onClick={() => { updateConfig('productType', pt.id); updateConfig('productTypeLabel', pt.label) }}
-                >
-                  <strong>{pt.label}</strong>
-                  <span>{pt.desc}</span>
-                </button>
-              ))}
+            <div className="wiz-intro-examples">
+              <div className="wiz-intro-example">
+                <span className="wiz-intro-emoji">🐕</span>
+                <span>Du verkaufst <strong>Hundehalsbänder</strong>?</span>
+                <span className="wiz-intro-result">→ Wir finden Reddit-Posts, Upwork-Jobs & News von Leuten die gerade suchen</span>
+              </div>
+              <div className="wiz-intro-example">
+                <span className="wiz-intro-emoji">💻</span>
+                <span>Du bietest <strong>Webdesign</strong> an?</span>
+                <span className="wiz-intro-result">→ Wir finden "need website" Posts, Job-Angebote & Firmen die gerade wachsen</span>
+              </div>
+              <div className="wiz-intro-example">
+                <span className="wiz-intro-emoji">📦</span>
+                <span>Du verkaufst <strong>Büromöbel</strong>?</span>
+                <span className="wiz-intro-result">→ Wir finden "new office" Posts, Unternehmensgründungen & Umzugs-News</span>
+              </div>
             </div>
-            <div className="wiz-field">
-              <label>Branchenbezeichnung (z.B. "Autohändler", "Webdesign", "Logistik")</label>
+
+            <div className="wiz-intro-input">
+              <label>Was verkaufst du genau?</label>
               <input
                 type="text"
-                value={config.industry}
-                onChange={e => updateConfig('industry', e.target.value)}
-                placeholder="z.B. Immobilien, E-Commerce, Gesundheitswesen..."
+                value={whatSelling}
+                onChange={e => setWhatSelling(e.target.value)}
+                placeholder="z.B. Hundehalsbänder, Webdesign, Beratung..."
+                autoFocus
+                onKeyDown={e => e.key === 'Enter' && handleStart()}
+              />
+            </div>
+
+            <button className="wiz-btn wiz-btn-primary wiz-btn-full" onClick={handleStart} disabled={whatSelling.trim().length < 2}>
+              <Sparkles size={16} /> Zeig mir meine Leads
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (step === 'context') {
+    return (
+      <div className="wiz-overlay" onClick={onClose}>
+        <div className="wiz-modal" onClick={e => e.stopPropagation()}>
+          <button className="wiz-close" onClick={onClose}><X size={18} /></button>
+
+          <div className="wiz-step">
+            <h3>Einsatzkontext</h3>
+            <p>Damit wir die <strong>richtigen</strong> Leads für dich finden:</p>
+
+            <div className="wiz-options">
+              <button
+                className={`wiz-option ${region === 'de' ? 'active' : ''}`}
+                onClick={() => setRegion('de')}
+              >
+                <strong>🇩🇪 Deutschland / Österreich</strong>
+                <span>Deutschsprachige Quellen, DACH-Markt</span>
+              </button>
+              <button
+                className={`wiz-option ${region === 'us' ? 'active' : ''}`}
+                onClick={() => setRegion('us')}
+              >
+                <strong>🇺🇸 USA / Global</strong>
+                <span>Englischsprachige Quellen, Weltmarkt</span>
+              </button>
+              <button
+                className={`wiz-option ${region === 'eu' ? 'active' : ''}`}
+                onClick={() => setRegion('eu')}
+              >
+                <strong>🇪🇺 Westeuropa</strong>
+                <span>EN/FR/ES, EU-Regulierung</span>
+              </button>
+            </div>
+
+            <div className="wiz-field">
+              <label>Wer sind deine idealen Kunden? (optional)</label>
+              <input
+                type="text"
+                value={audience}
+                onChange={e => setAudience(e.target.value)}
+                placeholder="z.B. Hundebesitzer, Startups, Firmen 10-50 MA..."
               />
             </div>
           </div>
-        )
 
-      case 3:
-        return (
-          <div className="wiz-step">
-            <h3>4. Zielgruppenprofil</h3>
-            <p>Wer sind deine idealen Kunden? Beschreibe sie so genau wie möglich.</p>
-            <div className="wiz-field">
-              <label>Unternehmensgröße / -typ</label>
-              <input
-                type="text"
-                value={config.targetCompanies}
-                onChange={e => updateConfig('targetCompanies', e.target.value)}
-                placeholder="z.B. KMU 10-50 Mitarbeiter, Startups, Konzerne..."
-              />
-            </div>
-            <div className="wiz-field">
-              <label>Entscheider / Ansprechpartner</label>
-              <input
-                type="text"
-                value={config.audienceProfile}
-                onChange={e => updateConfig('audienceProfile', e.target.value)}
-                placeholder="z.B. Geschäftsführer, Einkaufsleiter, IT-Chef..."
-              />
-            </div>
+          <div className="wiz-footer">
+            <button className="wiz-btn wiz-btn-secondary" onClick={() => setStep('intro')}>Zurück</button>
+            <div style={{ flex: 1 }} />
+            <button className="wiz-btn wiz-btn-primary" onClick={handleContextDone}>
+              <Check size={16} /> Leads anzeigen
+            </button>
           </div>
-        )
+        </div>
+      </div>
+    )
+  }
 
-      case 4:
-        return (
-          <div className="wiz-step">
-            <h3>5. Trigger-Events</h3>
-            <p>Welche Ereignisse signalisieren, dass ein Unternehmen gerade Bedarf hat?</p>
-            <div className="wiz-checkboxes">
-              {TRIGGER_CATEGORIES.map(cat => (
-                <div key={cat.id} className="wiz-trigger-group">
-                  <label className="wiz-checkbox-header">
-                    <input
-                      type="checkbox"
-                      checked={config.triggerEvents.includes(cat.id)}
-                      onChange={e => {
-                        if (e.target.checked) {
-                          updateConfig('triggerEvents', [...config.triggerEvents, cat.id])
-                        } else {
-                          updateConfig('triggerEvents', config.triggerEvents.filter(t => t !== cat.id))
-                        }
-                      }}
-                    />
-                    <strong>{cat.label}</strong>
-                  </label>
-                  <div className="wiz-trigger-examples">
-                    {cat.examples.map(ex => (
-                      <span key={ex} className="wiz-trigger-tag">{ex}</span>
-                    ))}
+  if (step === 'preview') {
+    const category = getPreviewCategory()
+    const leads = PREVIEW_LEADS[category] || PREVIEW_LEADS.default
+
+    return (
+      <div className="wiz-overlay" onClick={onClose}>
+        <div className="wiz-modal wiz-modal--preview" onClick={e => e.stopPropagation()}>
+          <button className="wiz-close" onClick={onClose}><X size={18} /></button>
+
+          <div className="wiz-preview">
+            <div className="wiz-preview-header">
+              <TrendingUp size={24} />
+              <h3>So sehen deine Leads aus</h3>
+              <p>Für: <strong>{whatSelling}</strong></p>
+            </div>
+
+            <div className="wiz-preview-list">
+              {leads.map((lead, i) => (
+                <div key={i} className="wiz-preview-lead">
+                  <div className="wiz-preview-lead-top">
+                    <span className="wiz-preview-source">{lead.source}</span>
+                    <span className="wiz-preview-signal">{lead.signal}</span>
+                  </div>
+                  <p className="wiz-preview-title">{lead.title}</p>
+                  <div className="wiz-preview-bottom">
+                    <span className="wiz-preview-budget">{lead.budget}</span>
+                    <span className="wiz-preview-time">gerade eben</span>
                   </div>
                 </div>
               ))}
             </div>
-            <div className="wiz-field">
-              <label>Eigene Trigger-Events (optional)</label>
-              <input
-                type="text"
-                value={config.customTriggers}
-                onChange={e => updateConfig('customTriggers', e.target.value)}
-                placeholder="z.B. Betriebsschließung, Konkurs, Produktlaunch..."
-              />
+
+            <div className="wiz-preview-note">
+              <Zap size={16} />
+              <span>Dies ist eine Vorschau. Der echte Radar scannt ständig neue Quellen.</span>
             </div>
+
+            <button className="wiz-btn wiz-btn-primary wiz-btn-full" onClick={handleFinish}>
+              <Sparkles size={16} /> Radar aktivieren
+            </button>
           </div>
-        )
-    }
-  }
-
-  return (
-    <div className="wiz-overlay" onClick={onClose}>
-      <div className="wiz-modal" onClick={e => e.stopPropagation()}>
-        <div className="wiz-header">
-          <h2>NeXus Setup-Assistent</h2>
-          <p>Schritt {step + 1} von {STEPS.length}: {STEPS[step].label}</p>
-          <button className="wiz-close" onClick={onClose}><X size={18} /></button>
-        </div>
-
-        <div className="wiz-progress">
-          {STEPS.map((s, i) => {
-            const Icon = s.icon
-            return (
-              <div key={s.id} className={`wiz-progress-step ${i <= step ? 'active' : ''} ${i < step ? 'done' : ''}`}>
-                <div className="wiz-progress-icon">
-                  {i < step ? <Check size={14} /> : <Icon size={14} />}
-                </div>
-                <span className="wiz-progress-label">{s.label}</span>
-              </div>
-            )
-          })}
-        </div>
-
-        <div className="wiz-body">
-          {renderStep()}
-        </div>
-
-        <div className="wiz-footer">
-          {step > 0 && (
-            <button className="wiz-btn wiz-btn-secondary" onClick={() => setStep(step - 1)}>
-              <ArrowLeft size={16} /> Zurück
-            </button>
-          )}
-          <div style={{ flex: 1 }} />
-          {step < STEPS.length - 1 ? (
-            <button
-              className="wiz-btn wiz-btn-primary"
-              onClick={() => setStep(step + 1)}
-              disabled={!canProceed()}
-            >
-              Weiter <ArrowRight size={16} />
-            </button>
-          ) : (
-            <button
-              className="wiz-btn wiz-btn-primary"
-              onClick={handleComplete}
-              disabled={!canProceed()}
-            >
-              <Check size={16} /> Konfiguration übernehmen
-            </button>
-          )}
         </div>
       </div>
-    </div>
-  )
+    )
+  }
+
+  return null
 }

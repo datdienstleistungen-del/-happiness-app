@@ -14,30 +14,11 @@
   border: 1px solid #1E293B;
   border-radius: 16px;
   width: 100%;
-  max-width: 640px;
+  max-width: 560px;
   max-height: 85vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-.wiz-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid #1E293B;
-  position: relative;
-}
-
-.wiz-header h2 {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #F8FAFC;
-  margin: 0 0 4px 0;
-}
-
-.wiz-header p {
-  font-size: 0.85rem;
-  color: #94A3B8;
-  margin: 0;
 }
 
 .wiz-close {
@@ -49,72 +30,119 @@
   color: #94A3B8;
   cursor: pointer;
   padding: 4px;
+  z-index: 10;
 }
 
 .wiz-close:hover {
   color: #F8FAFC;
 }
 
-.wiz-progress {
-  display: flex;
-  gap: 2px;
-  padding: 16px 24px;
-  background: #0F172A;
-  border-bottom: 1px solid #1E293B;
+/* ── INTRO ── */
+.wiz-intro {
+  padding: 32px 28px;
+  position: relative;
 }
 
-.wiz-progress-step {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.wiz-progress-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #1E293B;
-  color: #64748B;
+.wiz-intro-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #6366F1, #8B5CF6);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 700;
-  transition: all 0.2s;
-}
-
-.wiz-progress-step.active .wiz-progress-icon {
-  background: #6366F1;
   color: #fff;
+  margin-bottom: 16px;
 }
 
-.wiz-progress-step.done .wiz-progress-icon {
-  background: #10B981;
-  color: #fff;
-}
-
-.wiz-progress-label {
-  font-size: 0.65rem;
-  color: #64748B;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.wiz-progress-step.active .wiz-progress-label {
+.wiz-intro h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
   color: #F8FAFC;
-  font-weight: 600;
+  margin: 0 0 8px 0;
 }
 
-.wiz-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 24px;
+.wiz-intro-sub {
+  font-size: 1rem;
+  color: #94A3B8;
+  margin: 0 0 24px 0;
+  line-height: 1.5;
+}
+
+.wiz-intro-examples {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.wiz-intro-example {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #1E293B;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: #CBD5E1;
+  flex-wrap: wrap;
+}
+
+.wiz-intro-example strong {
+  color: #F8FAFC;
+}
+
+.wiz-intro-emoji {
+  font-size: 1.2rem;
+}
+
+.wiz-intro-result {
+  width: 100%;
+  font-size: 0.8rem;
+  color: #10B981;
+  margin-left: 30px;
+}
+
+.wiz-intro-input {
+  margin-bottom: 16px;
+}
+
+.wiz-intro-input label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #E5E7EB;
+  margin-bottom: 6px;
+}
+
+.wiz-intro-input input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  font-size: 1rem;
+  background: #1E293B;
+  border: 2px solid #334155;
+  color: #F8FAFC;
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.wiz-intro-input input:focus {
+  border-color: #6366F1;
+}
+
+.wiz-intro-input input::placeholder {
+  color: #64748B;
+}
+
+/* ── STEPS ── */
+.wiz-step {
+  padding: 28px;
 }
 
 .wiz-step h3 {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: #F8FAFC;
   margin: 0 0 8px 0;
@@ -131,6 +159,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin-bottom: 20px;
 }
 
 .wiz-option {
@@ -149,7 +178,6 @@
 
 .wiz-option:hover {
   border-color: #6366F1;
-  background: #1E293B;
 }
 
 .wiz-option.active {
@@ -200,56 +228,120 @@
   color: #64748B;
 }
 
-.wiz-checkboxes {
+/* ── PREVIEW ── */
+.wiz-modal--preview {
+  max-width: 600px;
+}
+
+.wiz-preview {
+  padding: 28px;
+}
+
+.wiz-preview-header {
+  text-align: center;
+  margin-bottom: 24px;
+  color: #6366F1;
+}
+
+.wiz-preview-header h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #F8FAFC;
+  margin: 8px 0 4px 0;
+}
+
+.wiz-preview-header p {
+  font-size: 0.9rem;
+  color: #94A3B8;
+  margin: 0;
+}
+
+.wiz-preview-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  margin-bottom: 20px;
 }
 
-.wiz-trigger-group {
+.wiz-preview-lead {
+  padding: 14px;
   background: #1E293B;
-  border-radius: 8px;
-  padding: 12px;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  animation: wiz-lead-in 0.3s ease-out backwards;
 }
 
-.wiz-checkbox-header {
+.wiz-preview-lead:nth-child(1) { animation-delay: 0.1s; }
+.wiz-preview-lead:nth-child(2) { animation-delay: 0.2s; }
+.wiz-preview-lead:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes wiz-lead-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.wiz-preview-lead-top {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  cursor: pointer;
+  margin-bottom: 6px;
 }
 
-.wiz-checkbox-header input {
-  width: 16px;
-  height: 16px;
-  accent-color: #6366F1;
-}
-
-.wiz-checkbox-header strong {
-  font-size: 0.9rem;
-  color: #F8FAFC;
-}
-
-.wiz-trigger-examples {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-  padding-left: 24px;
-}
-
-.wiz-trigger-tag {
+.wiz-preview-source {
   font-size: 0.75rem;
-  color: #94A3B8;
-  background: #0F172A;
-  padding: 3px 8px;
+  font-weight: 600;
+  color: #6366F1;
+  background: rgba(99, 102, 241, 0.15);
+  padding: 2px 8px;
   border-radius: 4px;
 }
 
+.wiz-preview-signal {
+  font-size: 0.7rem;
+  color: #10B981;
+}
+
+.wiz-preview-title {
+  font-size: 0.9rem;
+  color: #F8FAFC;
+  margin: 0 0 6px 0;
+  line-height: 1.4;
+}
+
+.wiz-preview-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wiz-preview-budget {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #F59E0B;
+}
+
+.wiz-preview-time {
+  font-size: 0.75rem;
+  color: #64748B;
+}
+
+.wiz-preview-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(99, 102, 241, 0.08);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #94A3B8;
+  margin-bottom: 20px;
+}
+
+/* ── BUTTONS ── */
 .wiz-footer {
   display: flex;
   gap: 10px;
-  padding: 16px 24px;
+  padding: 16px 28px;
   border-top: 1px solid #1E293B;
 }
 
@@ -269,6 +361,12 @@
 .wiz-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.wiz-btn-full {
+  width: 100%;
+  justify-content: center;
+  padding: 12px 20px;
 }
 
 .wiz-btn-primary {
@@ -294,15 +392,20 @@
     max-height: 95vh;
   }
 
-  .wiz-progress {
-    flex-wrap: wrap;
+  .wiz-intro {
+    padding: 24px 20px;
   }
 
-  .wiz-progress-label {
-    display: none;
+  .wiz-intro-example {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
-  .wiz-body {
-    padding: 16px;
+  .wiz-intro-result {
+    margin-left: 0;
+  }
+
+  .wiz-step, .wiz-preview {
+    padding: 20px;
   }
 }

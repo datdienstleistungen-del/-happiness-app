@@ -432,6 +432,7 @@ export default function LeadRadarPage() {
   const navigate = useNavigate()
   const [activeContinent, setActiveContinent] = useState('na')
   const [customNiche, setCustomNiche] = useState('')
+  const [audienceProfile, setAudienceProfile] = useState('')
   const [userProduct, setUserProduct] = useState('')
   const [maxAgeDays, setMaxAgeDays] = useState('7')
   const [leads, setLeads] = useState([])
@@ -448,15 +449,14 @@ export default function LeadRadarPage() {
   const [scanSources, setScanSources] = useState({ upwork: true, news: true, reddit: true })
 
   const handleWizardComplete = (wizardConfig) => {
-    // Apply wizard configuration
     if (wizardConfig.userProduct) setUserProduct(wizardConfig.userProduct)
     if (wizardConfig.customNiche) setCustomNiche(wizardConfig.customNiche)
+    if (wizardConfig.audienceProfile) setAudienceProfile(wizardConfig.audienceProfile)
     if (wizardConfig.region) {
-      const regionMap = { 'us': 'na', 'eu_de': 'eu', 'eu_west': 'eu', 'latam': 'latam', 'apac': 'apac' }
+      const regionMap = { 'de': 'eu', 'us': 'na', 'eu': 'eu' }
       setActiveContinent(regionMap[wizardConfig.region] || 'eu')
     }
     setWizardOpen(false)
-    // Auto-start radar with new config
     setTimeout(() => runLiveRadar(), 500)
   }
   const [form, setForm] = useState(EMPTY_FORM)
