@@ -123,6 +123,56 @@ const KW_FRUSTRATION_EN = [
   'no orders', 'no revenue', 'no profit', 'not making money', 'wasted money',
   'failed launch', 'low reach', 'no impressions',
 ]
+
+// ── BLACKLIST: Subreddits/Themen die NIEMALS als Lead gelten ──
+const SUBREDDIT_BLACKLIST = [
+  // Gesundheit / Medizin
+  'askdocs', 'medical', 'health', 'healthcare', 'doctor', 'nurses',
+  'pharmacy', 'medicine', 'diabetes', 'cancer', 'mentalhealth',
+  'anxiety', 'depression', 'ptsd', 'bipolar', 'adhd', 'autism',
+  'chronicpain', 'chronicillness', 'fibromyalgia', 'endometriosis',
+  'prediabetes', 'bloodpressure', 'heart', 'stroke', 'covid19',
+  // Persönliche Hilfe / Verletzliche Inhalte
+  'relationship_advice', 'relationships', 'dating', 'dating_advice',
+  'marriage', 'divorce', 'custody', 'parenting',
+  'suicidewatch', 'depression_help', 'anxiety_help', 'selfharm',
+  'ptsd', 'survivor', 'abuse', 'domesticviolence',
+  'addiction', 'stopdrinking', 'leaves', 'quitweed', 'nosurf',
+  // Recht / Klagen (persönlich)
+  'legaladvice', 'legal', 'law', 'lawsuit',
+  // Subreddits die persönliche Hilfe suchen
+  'assistance', 'randomkindness', 'gofundme', 'donationrequest',
+  'borrow', 'randomactsofpizza',
+]
+
+// ── POSITIVLISTE: Kommerzielle Indikatoren ──
+const COMMERCIAL_SIGNALS_EN = [
+  'looking for', 'need a', 'hiring', 'job opening', 'position available',
+  'freelancer needed', 'contractor', 'budget', 'pricing', 'quote',
+  'business proposal', 'partnership', 'collaboration', 'sponsor',
+  'advertising', 'marketing budget', 'campaign', 'roi', 'conversion',
+  'b2b', 'saas', 'startup', 'founding', 'investor', 'funding',
+  'revenue', 'profit', 'sales funnel', 'lead generation',
+  'service provider', 'agency', 'consultant', 'freelance',
+  'product launch', 'market research', 'competitor analysis',
+  'client', 'customer acquisition', 'retention',
+  'api', 'integration', 'platform', 'tool', 'software',
+  'e-commerce', 'shopify', 'amazon seller', 'dropshipping',
+  'brand deal', 'sponsorship', 'influencer marketing',
+]
+const COMMERCIAL_SIGNALS_DE = [
+  'suche', 'brauche', 'stelle', 'einstellung', 'jobangebot',
+  'freelancer', 'auftragnehmer', 'budget', 'preis', 'kostenvoranschlag',
+  'geschäftsangebot', 'partnerschaft', 'zusammenarbeit', 'sponsoring',
+  'werbung', 'marketing', 'kampagne', 'gewinn', 'umsatz',
+  'b2b', 'saas', 'startup', 'investor', 'finanzierung',
+  'dienstleister', 'berater', 'freelancer',
+  'produktlaunch', 'marktforschung', 'wettbewerbsanalyse',
+  'kunde', 'kundengewinnung', 'bindung',
+  'api', 'integration', 'plattform', 'tool', 'software',
+  'e-commerce', 'shopify', 'amazon', 'dropshipping',
+  'markenpartnerschaft', 'sponsoring', 'influencer',
+]
 const KW_FRUSTRATION_DE = [
   'keine viewer', 'keine Zuschauer', 'niemand schaut', 'kein Wachstum',
   'verliere subscriber', 'nicht gewachsen', 'shadowbanned', 'Algorithmus hasst',
@@ -267,6 +317,46 @@ function matchesAny(text, ...arrays) {
     }
   }
   return false
+}
+
+// ── Blacklist-Check: Ist der Post aus einer gesperrten Quelle? ──
+function isBlacklisted(text, sourceUrl) {
+  const lowerText = text.toLowerCase()
+  const lowerUrl = (sourceUrl || '').toLowerCase()
+
+  // Subreddit-Blacklist prüfen
+  for (const sub of SUBREDDIT_BLACKLIST) {
+    if (lowerUrl.includes(`r/${sub}`) || lowerUrl.includes(`reddit.com/${sub}`)) {
+      return true
+    }
+  }
+
+  // Persönliche/medizinische Keywords im Text
+  const personalKeywords = [
+    'diagnose', 'diagnosis', 'symptoms', 'doctor said', 'arzt said',
+    'cancer', 'tumor', 'blood test', 'bluttest', 'biopsy',
+    'my relationship', 'mein partner', 'my husband', 'my wife',
+    'my boyfriend', 'my girlfriend', 'mein freund', 'meine freundin',
+    'i want to die', 'ich will sterben', 'suicidal', 'selbstmord',
+    'self harm', 'selbstverletzung', 'overdose', 'überdosis',
+    'addicted', 'süchtig', 'withdrawal', 'entzug',
+    'abusive', 'misshandlung', 'domestic violence', 'häusliche gewalt',
+    'please help me', 'hilf mir bitte', 'desperate', 'verzweifelt',
+    'my child', 'mein kind', 'my baby', 'mein baby',
+    'pregnancy', 'schwangerschaft', 'miscarriage', 'fehlgeburt',
+    'sue', 'klage', 'lawsuit', 'gericht', 'court',
+  ]
+
+  for (const kw of personalKeywords) {
+    if (lowerText.includes(kw)) return true
+  }
+
+  return false
+}
+
+// ── Positiv-Check: Enthält der Post kommerzielle Signale? ──
+function hasCommercialSignal(text) {
+  return matchesAny(text, COMMERCIAL_SIGNALS_EN, COMMERCIAL_SIGNALS_DE)
 }
 
 function detectBadge(text, feedBadge) {
@@ -483,10 +573,29 @@ export default function LeadRadarPage() {
           const fullText = `${entry.title} ${entry.content}`.trim()
           const plainText = fullText.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 2000)
           if (plainText.length < 20) continue
+
+          // ── BLACKLIST: Gesperrte Quellen/Inhalte ──
+          const sourceUrl = entry.link || feed.url
+          if (isBlacklisted(plainText, sourceUrl)) {
+            console.log('[LeadRadar] Blacklisted:', sourceUrl?.slice(0, 80))
+            continue
+          }
+
           let isMatch = false
           if (customNiche.trim().length > 0) {
-            // The RSS feed was already queried with this exact keyword, so we trust the source results
-            isMatch = true 
+            // Keyword-MATCH: Text muss das Keyword enthalten ODER kommerzielle Signale haben
+            const lowerText = plainText.toLowerCase()
+            const keyword = customNiche.trim().toLowerCase()
+            const keywordInText = lowerText.includes(keyword)
+            const hasCommercial = hasCommercialSignal(plainText)
+
+            // Nur akzeptieren wenn: Keyword im Text ODER kommerzieller Kontext
+            if (keywordInText || hasCommercial) {
+              isMatch = true
+            } else {
+              console.log('[LeadRadar] No match:', keyword, 'not in text, no commercial signal')
+              continue
+            }
           } else {
             isMatch = matchesAny(plainText, KW_FRUSTRATION_EN, KW_FRUSTRATION_DE, KW_FRUSTRATION_PT, KW_MILESTONE_EN, KW_MILESTONE_DE, KW_MILESTONE_PT, KW_ADVICE_EN, KW_ADVICE_DE, KW_ADVICE_PT, KW_PRIVACY_EN, KW_PRIVACY_DE, KW_PRIVACY_PT, KW_BUILDER_EN, KW_BUILDER_DE, KW_BUILDER_PT, KW_TRADER_EN, KW_TRADER_DE, KW_TRADER_PT, KW_REALESTATE_EN, KW_REALESTATE_DE, KW_REALESTATE_PT)
           }
@@ -505,7 +614,6 @@ export default function LeadRadarPage() {
           }
 
           totalMatched++
-          const sourceUrl = entry.link || feed.url
           if (existingUrlsRef.current.has(sourceUrl)) { console.log('[LeadRadar] Dedup skip:', sourceUrl.slice(0, 80)); continue }
 
           matchedEntries.push({
