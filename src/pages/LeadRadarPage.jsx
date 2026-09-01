@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Radar, Zap, Copy, Check, Globe, ArrowLeft, Loader, Plus, X, ExternalLink, Radio, RotateCw, Wand2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../i18n/translations.jsx'
 import { supabase } from '../lib/supabase'
 import { getChatEndpoint } from '../lib/hit'
 import SetupWizard from '../components/SetupWizard'
@@ -428,8 +429,9 @@ function interleaveByPlatform(entries) {
 }
 
 export default function LeadRadarPage() {
-  const { user } = useAuth()
-  const navigate = useNavigate()
+  const { user } = useAuth();
+  const { t, lang } = useLanguage();
+  const navigate = useNavigate();
   const [activeContinent, setActiveContinent] = useState('na')
   const [customNiche, setCustomNiche] = useState('')
   const [audienceProfile, setAudienceProfile] = useState('')

@@ -1,0 +1,35 @@
+import { schedule } from '@netlify/functions';
+
+const cronHandler = async (event) => {
+  console.log("[Radar Cron] Start running Phase A Stub...");
+
+  try {
+    const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+    const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl) {
+      console.error("[Radar Cron] Supabase URL missing");
+      return { statusCode: 500 };
+    }
+
+    // Stub: Check connection by fetching 1 offering
+    const res = await fetch(`${supabaseUrl}/rest/v1/nexus_offerings?select=id&limit=1`, {
+      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+    });
+
+    if (res.ok) {
+      console.log("[Radar Cron] Connection OK");
+    } else {
+      console.error("[Radar Cron] Connection Failed", await res.text());
+    }
+
+    return { statusCode: 200 };
+  } catch (err) {
+    console.error("[Radar Cron] Error:", err);
+    return { statusCode: 500 };
+  }
+};
+
+// Für Phase A kein echter Cron, sondern nur Test-Setup.
+// In Phase B kann hier z.B. "@daily" oder "0 2 * * *" eingesetzt werden.
+export const handler = schedule("@hourly", cronHandler);

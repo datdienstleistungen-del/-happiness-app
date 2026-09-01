@@ -1,46 +1,66 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Heart, Send, ShieldAlert, Sparkles, Trash2, ArrowRight, ArrowUp, Check, RefreshCw, Paperclip, X, Image as ImageIcon, FileText, Volume2 } from 'lucide-react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { Target, Send, ShieldAlert, Sparkles, Trash2, ArrowRight, ArrowUp, Check, RefreshCw, Paperclip, X, FileText, TrendingUp, Users, AlertCircle, MessageSquare, ArrowLeft } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { useLead } from '../context/LeadContext'
 import { useLanguage } from '../i18n/translations'
+import { callNexusAI } from '../lib/nexus-ai'
+import UpgradeModal from '../components/UpgradeModal'
 import './CoachChatPage.css'
 
 function getOrCreateVisitorId() {
-  let vid = localStorage.getItem('hit_visitor_id')
+  let vid = localStorage.getItem('nexus_visitor_id')
   if (!vid) {
     vid = 'guest_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
-    localStorage.setItem('hit_visitor_id', vid)
+    localStorage.setItem('nexus_visitor_id', vid)
   }
   return vid
 }
 
-export default function CoachChatPage() {
+const SALES_QUICK_ACTIONS = [
+  { id: 'pitch', label: 'Sales Pitch erstellen', icon: MessageSquare, placeholder: 'Beschreibe dein Angebot und deine Zielgruppe...' },
+  { id: 'einwand', label: 'Einwand behandeln', icon: AlertCircle, placeholder: 'Was sagt der Kunde? z.B. "Ist zu teuer"...' },
+  { id: 'followup', label: 'Follow-Up Vorschlag', icon: TrendingUp, placeholder: 'Was war die letzte Aktion mit diesem Lead?' },
+  { id: 'analyse', label: 'Lead analysieren', icon: Users, placeholder: 'Firmenname, Branche, was weißt du über das Unternehmen?' },
+]
+
+export default function CoachChatPage({ embeddedLeadId, onClose }) {
   const { user } = useAuth()
+  const { leadId: paramLeadId } = useParams()
+  const leadId = embeddedLeadId || paramLeadId
+  const navigate = useNavigate()
+  
+  // Hole alle Daten aus dem Context
+  const { activeOffering, opportunities, triggers } = useLead()
   const { t, lang } = useLanguage()
+  
   const [message, setMessage] = useState('')
   const [chatHistory, setChatHistory] = useState([])
   const [loading, setLoading] = useState(false)
-  const [loadingHistory, setLoadingHistory] = useState(false)
-  const [showConsentModal, setShowConsentModal] = useState(false)
-  const [pendingMessage, setPendingMessage] = useState('')
   const [error, setError] = useState('')
+  const [activeQuickAction, setActiveQuickAction] = useState(null)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   
-  const [attachment, setAttachment] = useState(null)
-  const [attachmentPreview, setAttachmentPreview] = useState(null)
-  const [playingAudio, setPlayingAudio] = useState(null)
-  const fileInputRef = useRef(null)
-  const audioRef = useRef(null)
+  // Finde den spezifischen Lead (Opportunity) und seine Trigger
+  const currentLead = opportunities?.find(o => o.id === leadId)
+  const leadTriggers = currentLead ? (triggers?.filter(t => t.company_id === currentLead.company_id) || []) : []
   
-  // Track client-side consent state
-  const [consentGranted, setConsentGranted] = useState(() => {
-    return localStorage.getItem('coach_consent_active') === 'true'
-  })
-
   const messagesEndRef = useRef(null)
-  const sessionMessageCount = useRef(0)
 
-  // Scroll to bottom helper
+  const getStorageKey = () => leadId ? `nexus_coach_history_${leadId}` : 'nexus_coach_history'
+
+  // Lade History beim Mounten oder wenn sich der Lead ändert
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(getStorageKey())
+      setChatHistory(saved ? JSON.parse(saved) : [])
+    } catch (e) {
+      setChatHistory([])
+    }
+  }, [leadId])
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
@@ -49,451 +69,257 @@ export default function CoachChatPage() {
     scrollToBottom()
   }, [chatHistory, loading])
 
-  // Dynamically set localized page title
   useEffect(() => {
-    document.title = `${t('coach.title')} - ${t('coach.subtitle')}`
-  }, [t])
+    localStorage.setItem(getStorageKey(), JSON.stringify(chatHistory))
+  }, [chatHistory, leadId])
 
-  // Fetch chat history from server on mount (only if consent was previously granted)
   useEffect(() => {
-    const fetchHistory = async () => {
-      if (!consentGranted) return
-      setLoadingHistory(true)
-      try {
-        const token = (await supabase.auth.getSession()).data.session?.access_token
-        const visitorId = getOrCreateVisitorId()
-        
-        const headers = {}
-        if (token) headers['Authorization'] = `Bearer ${token}`
-        
-        const res = await fetch(`/api/coach-chat?visitor_id=${visitorId}`, {
-          method: 'GET',
-          headers
-        })
-        if (res.ok) {
-          const data = await res.json()
-          if (data.history) {
-            setChatHistory(data.history)
-            if (data.history.length > 0) {
-              if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
-                window.gtag('event', 'coach_return_visit')
-              }
-            }
-          }
-        }
-      } catch (err) {
-        console.error('[CoachPage] Failed to load chat history:', err)
-      } finally {
-        setLoadingHistory(false)
+    document.title = currentLead 
+      ? `Coach: ${currentLead.nexus_companies?.name || 'Lead'}` 
+      : 'NeXus Coach - Sales Intelligence'
+  }, [currentLead])
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      if (message.trim() && !loading) {
+        handleSend(e)
       }
-    }
-    fetchHistory()
-  }, [consentGranted, user])
-
-  // Handle attachments
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader()
-      reader.onload = (ev) => {
-        setAttachment(ev.target.result)
-        setAttachmentPreview({ type: 'image', url: ev.target.result, name: file.name })
-      }
-      reader.readAsDataURL(file)
-    } else {
-      const reader = new FileReader()
-      reader.onload = (ev) => {
-        const textContent = `[Inhalt der angehängten Datei "${file.name}"]\n\n${ev.target.result}`
-        setAttachment(textContent)
-        setAttachmentPreview({ type: 'text', name: file.name })
-      }
-      reader.readAsText(file)
-    }
-    e.target.value = ''
-  }
-
-  const clearAttachment = () => {
-    setAttachment(null)
-    setAttachmentPreview(null)
-  }
-
-  // TTS playback
-  const handlePlayVoice = async (text, index) => {
-    if (playingAudio === index) {
-      if (audioRef.current) audioRef.current.pause()
-      setPlayingAudio(null)
-      return
-    }
-    setPlayingAudio(index)
-    try {
-      const res = await fetch('/api/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voice: 'nova' })
-      })
-      if (!res.ok) throw new Error('TTS failed')
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      if (audioRef.current) audioRef.current.pause()
-      audioRef.current = new Audio(url)
-      audioRef.current.onended = () => setPlayingAudio(null)
-      audioRef.current.play()
-    } catch (e) {
-      console.error(e)
-      setPlayingAudio(null)
     }
   }
 
-  // Triggered when user clicks Send
-  const handleSendAttempt = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault()
-    if ((!message.trim() && !attachment) || loading) return
+    if (!message.trim() || loading) return
 
     setError('')
-    // If consent hasn't been set, show the consent dialogue first
-    const consentSet = localStorage.getItem('coach_consent_choice_made') === 'true'
-    if (!consentSet) {
-      setPendingMessage(message)
-      setShowConsentModal(true)
-      return
-    }
-
-    executeSendMessage(message)
-  }
-
-  // Handle actual API call to send message
-  const executeSendMessage = async (msgText) => {
-    const currentAttachment = attachment
-    const currentAttachmentPreview = attachmentPreview
-    
-    setMessage('')
-    setPendingMessage('')
-    clearAttachment()
-
-    sessionMessageCount.current += 1
-    if (sessionMessageCount.current === 1) {
-      if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
-        window.gtag('event', 'coach_message_sent', {
-          message_count: 1
-        })
-      }
-    }
-    
-    // Optimistic user message rendering
-    const displayMsg = currentAttachmentPreview 
-      ? `[Anhang: ${currentAttachmentPreview.name}]\n\n${msgText}` 
-      : msgText
-    const userMsg = { role: 'user', content: displayMsg }
+    const userMsg = { role: 'user', content: message }
     setChatHistory(prev => [...prev, userMsg])
+    setMessage('')
+    setActiveQuickAction(null)
     setLoading(true)
 
     try {
-      const token = (await supabase.auth.getSession()).data.session?.access_token
-      const visitorId = getOrCreateVisitorId()
-      
-      const headers = { 'Content-Type': 'application/json' }
-      if (token) headers['Authorization'] = `Bearer ${token}`
+      // --- KONTEXT INJECTION: Schritt 3 ---
+      let systemContext = 'Du bist der NeXus Sales Coach und ein hochkarätiger, menschlicher B2B-Vertriebsexperte. Dein Ziel ist es, dem Nutzer (Verkäufer) zu helfen, seinen Lead in einen Abschluss zu verwandeln. Antworte IMMER auf Deutsch und schreibe wie ein ECHTER MENSCH in einem Chat. Nutze ausschließlich Fließtext, natürliche Sätze und weiche Übergänge. VERBOTEN: Antworte NIEMALS mit JSON, Key-Value-Paaren oder starren Datenstrukturen (wie "Firma: X", "Score: Y"). Wenn der Nutzer dir rohe, unstrukturierte Daten (wie kopierte Lead-Listen) gibt, lies sie, aber antworte in einem natürlichen, zusammenhängenden Text (z.B. "Ich sehe, du hast hier Porsche als Prio 1 Lead. Das ist extrem spannend, weil...").\n\n'
+      systemContext += 'WICHTIGE REGELN ZU WISSEN:\n- Du hast Zugriff auf Live-Daten, da dir Suchergebnisse unsichtbar vom System injiziert werden.\n- Wenn der Nutzer nach Namen oder Firmen fragt und du im internen Such-Kontext Daten findest, nenne diese Namen ZWINGEND direkt. Sage NIEMALS, dass du keinen Zugriff auf solche Datenbanken hast!\n\n'
+      systemContext += 'WICHTIGE TECHNISCHE REGEL: Fasse dich EXTREM KURZ! Antworte in maximal 3 bis 4 prägnanten Sätzen. Wenn deine Antwort zu lang ist, stürzt das System aufgrund eines 10-Sekunden-Timeouts ab. Beschränke dich auf die wichtigste Kernaussage.\n\n'
 
-      const payloadMsg = currentAttachmentPreview && currentAttachmentPreview.type === 'text' 
-        ? `${currentAttachment}\n\n${msgText}` 
-        : msgText
-
-      const res = await fetch('/api/coach-chat', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          message: payloadMsg,
-          image_url: currentAttachmentPreview && currentAttachmentPreview.type === 'image' ? currentAttachment : undefined,
-          visitor_id: visitorId,
-          language: lang
-        })
-      })
-
-      if (!res.ok) {
-        if (res.status === 429) {
-          const errData = await res.json().catch(() => ({}))
-          throw new Error(errData.error || 'Upload-Limit erreicht')
-        }
-        throw new Error('Server returned an error')
+      if (activeOffering) {
+        systemContext += `\n--- DEIN PRODUKT (ANGEBOT) ---\n`
+        systemContext += `Produktname: "${activeOffering.offering_name}"\n`
+        systemContext += `Value Proposition: "${activeOffering.positioning}"\n`
+        systemContext += `Zielgruppe: "${activeOffering.target_audience}"\n`
+        systemContext += `=> Beziehe dich bei Pitches oder Argumenten IMMER auf diesen Wert für den Kunden.\n\n`
       }
 
-      const data = await res.json()
-      if (data.response) {
-        setChatHistory(prev => [...prev, { role: 'assistant', content: data.response }])
+      if (currentLead) {
+        const companyName = currentLead.nexus_companies?.name || 'Unbekannte Firma'
+        const industry = currentLead.nexus_companies?.industry || 'Unbekannt'
+        systemContext += `\n--- AKTUELLER LEAD (ZIELKUNDE) ---\n`
+        systemContext += `Firma: ${companyName}\nBranche: ${industry}\n`
+        
+        if (leadTriggers.length > 0) {
+          systemContext += `Kaufsignale (Trigger Events):\n`
+          leadTriggers.forEach(t => {
+            systemContext += `- [Quelle: ${t.source}] ${t.content}\n`
+          })
+          systemContext += `=> Verknüpfe das Kaufsignal intelligent mit dem "Value Proposition" des Produkts.\n\n`
+        }
+      }
+
+      if (activeQuickAction) {
+        const action = SALES_QUICK_ACTIONS.find(a => a.id === activeQuickAction)
+        if (action) {
+          systemContext += `\n\nACHTUNG: Der Nutzer hat den Modus "${action.label}" gewählt. Konzentriere dich genau darauf und liefere ein sofort einsetzbares Ergebnis.`
+        }
+      }
+
+      const recentHistory = chatHistory.slice(-4);
+      const response = await callNexusAI('chat', message, { system: systemContext, history: recentHistory }, 0.5)
+      
+      if (response) {
+        let textContent = ''
+        if (typeof response === 'string') {
+          textContent = response
+        } else if (typeof response === 'object') {
+          textContent = response.response || response.message || response.answer || response.content || JSON.stringify(response)
+        }
+        setChatHistory(prev => [...prev, { role: 'assistant', content: textContent }])
       } else {
-        throw new Error('Empty response')
+        throw new Error('Leere Antwort vom Server')
       }
     } catch (err) {
-      console.error('[CoachPage] Send error:', err)
-      const isRateLimit = err.message && err.message.includes('Upload-Limit')
-      setError(isRateLimit ? 'Du hast dein tägliches Limit für kostenlose Bild-Uploads (3/3) erreicht. Bitte logge dich ein oder versuche es morgen wieder.' : t('coach.sendError'))
-      // Remove the last optimistic user message if sending failed
+      console.error('[NeXusCoach] Send error:', err)
+      if (err.name === 'RateLimitError') {
+        setShowUpgradeModal(true)
+      } else {
+        // Falls ein Timeout oder API-Absturz passiert, Text zurück ins Eingabefeld retten!
+        setError(`Fehler beim Senden: ${err.message || 'Timeout'}. Dein Text wurde zur Sicherheit wiederhergestellt.`)
+        setMessage(userMsg.content)
+      }
       setChatHistory(prev => prev.slice(0, -1))
     } finally {
       setLoading(false)
     }
   }
 
-  // Handle User giving consent
-  const handleAcceptConsent = async () => {
-    setShowConsentModal(false)
-    setConsentGranted(true)
-    localStorage.setItem('coach_consent_active', 'true')
-    localStorage.setItem('coach_consent_choice_made', 'true')
-
-    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
-      window.gtag('event', 'coach_consent_given')
-    }
-
-    try {
-      const token = (await supabase.auth.getSession()).data.session?.access_token
-      const visitorId = getOrCreateVisitorId()
-      const headers = { 'Content-Type': 'application/json' }
-      if (token) headers['Authorization'] = `Bearer ${token}`
-
-      // Fire and forget consent call
-      await fetch('/api/coach-consent', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ visitor_id: visitorId })
-      })
-    } catch (err) {
-      console.error('[CoachPage] Failed to save consent on server:', err)
-    }
-
-    if (pendingMessage) {
-      executeSendMessage(pendingMessage)
-    }
-  }
-
-  // Handle User declining consent (chat without saving)
-  const handleDeclineConsent = () => {
-    setShowConsentModal(false)
-    setConsentGranted(false)
-    localStorage.setItem('coach_consent_active', 'false')
-    localStorage.setItem('coach_consent_choice_made', 'true')
-
-    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
-      window.gtag('event', 'coach_consent_declined')
-    }
-
-    if (pendingMessage) {
-      executeSendMessage(pendingMessage)
-    }
-  }
-
-  // Reset chat, generate a new anonymous visitor_id, and delete consent
-  const handleClearHistory = async () => {
-    if (window.confirm(t('coach.clearConfirm'))) {
-      const visitorId = localStorage.getItem('hit_visitor_id')
-
-      try {
-        const token = (await supabase.auth.getSession()).data.session?.access_token
-        const headers = {}
-        if (token) headers['Authorization'] = `Bearer ${token}`
-
-        await fetch(`/api/coach-consent?visitor_id=${visitorId}`, {
-          method: 'DELETE',
-          headers
-        })
-      } catch (err) {
-        console.error('[CoachPage] Failed to delete conversation from server:', err)
-      }
-
-      // Detach visitor session
-      localStorage.removeItem('hit_visitor_id')
-      localStorage.removeItem('coach_consent_active')
-      localStorage.removeItem('coach_consent_choice_made')
-      setConsentGranted(false)
-      setChatHistory([])
-      setError('')
-      setMessage('')
-      setPendingMessage('')
-    }
+  const handleQuickAction = (actionId) => {
+    setActiveQuickAction(activeQuickAction === actionId ? null : actionId)
+    setMessage('')
   }
 
   return (
-    <div className="coach-chat-container">
-      {/* Header Bar */}
-      <header className="coach-chat-header">
-        <div className="coach-brand">
-          <div className="coach-heart-icon">
-            <Heart size={20} fill="var(--primary)" color="var(--primary)" />
-          </div>
-          <div className="coach-header-info">
-            <h1>{t('coach.title')}</h1>
-            <span className="coach-header-subtitle">{t('coach.subtitle')}</span>
+    <div className="nexus-coach-container" style={onClose ? { height: '100%', borderLeft: '1px solid var(--border-light)' } : {}}>
+      <header className="nexus-coach-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {!onClose ? (
+            <button 
+              className="btn-secondary" 
+              onClick={() => navigate('/nexus/sales-workspace')}
+              style={{ padding: '6px 12px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <ArrowLeft size={16} /> Zurück
+            </button>
+          ) : (
+            <button
+              className="btn-secondary"
+              onClick={onClose}
+              style={{ padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <X size={18} />
+            </button>
+          )}
+          <div className="nexus-coach-brand">
+            <div className="nexus-coach-icon">
+              <Target size={22} />
+            </div>
+            <div className="nexus-coach-info">
+              <h1>{currentLead ? `Coach: ${currentLead.nexus_companies?.name}` : 'NeXus Sales Coach'}</h1>
+              <span className="nexus-coach-subtitle">
+                {currentLead ? `Lead Intelligence für ${currentLead.nexus_companies?.industry || 'Unbekannte Branche'}` : 'Dein Vertriebsassistent'}
+              </span>
+            </div>
           </div>
         </div>
         {chatHistory.length > 0 && (
           <button 
-            className="coach-clear-btn" 
-            onClick={handleClearHistory} 
-            title={t('coach.clearBtn')}
+            className="nexus-coach-clear-btn" 
+            onClick={() => {
+              if (window.confirm('Gesprächsverlauf löschen?')) {
+                setChatHistory([])
+              }
+            }}
           >
             <Trash2 size={16} />
-            <span className="clear-btn-text">{t('coach.clearBtn')}</span>
           </button>
         )}
       </header>
 
-      {/* Main Panel */}
-      <main className="coach-chat-main">
-        {chatHistory.length === 0 && !loadingHistory ? (
-          // Welcome screen if no history exists
-          <div className="coach-welcome-card">
-            <div className="coach-icon-ring">
-              <Heart size={48} className="pulse-heart" />
+      <main className="nexus-coach-main">
+        {chatHistory.length === 0 ? (
+          <div className="nexus-coach-welcome">
+            <div className="nexus-coach-welcome-icon">
+              <Target size={48} />
             </div>
-            <h2>{t('coach.welcomeTitle')}</h2>
-            <p>
-              {t('coach.welcomeDesc')}
-            </p>
-            <form onSubmit={handleSendAttempt} className="coach-welcome-input-wrap">
-              {attachmentPreview && (
-                <div className="coach-attachment-preview">
-                  {attachmentPreview.type === 'image' ? <ImageIcon size={16} /> : <FileText size={16} />}
-                  <span className="attachment-name">{attachmentPreview.name}</span>
-                  <button type="button" onClick={clearAttachment} className="attachment-clear"><X size={14} /></button>
-                </div>
-              )}
-              <button type="button" className="coach-welcome-attach-btn" onClick={() => fileInputRef.current?.click()} title="Datei / Foto hochladen">
-                <Paperclip size={20} />
-              </button>
-              <input
-                type="text"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder={t('coach.placeholderWelcome')}
-                disabled={loading}
-                autoFocus
-              />
-              <button type="submit" disabled={loading || (!message.trim() && !attachment)} className="coach-send-circle">
-                <ArrowRight size={22} />
-              </button>
-            </form>
-            <div className="coach-safety-tag">
-              <ShieldAlert size={14} />
-              <span>{t('coach.safetyText')}</span>
+            <h2>Willkommen beim NeXus Sales Coach</h2>
+            <p>Ich helfe dir bei der Vertriebsoptimierung. Wähle eine Aktion oder stelle mir eine Frage.</p>
+            
+            <div className="nexus-coach-quick-actions">
+              {SALES_QUICK_ACTIONS.map(action => (
+                <button
+                  key={action.id}
+                  className={`nexus-quick-action-btn ${activeQuickAction === action.id ? 'active' : ''}`}
+                  onClick={() => handleQuickAction(action.id)}
+                >
+                  <action.icon size={18} />
+                  <span>{action.label}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="nexus-coach-input-area" style={{ marginTop: '32px' }}>
+              <form onSubmit={handleSend} className="nexus-coach-form">
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={activeQuickAction ? SALES_QUICK_ACTIONS.find(a => a.id === activeQuickAction)?.placeholder : 'Füge hier deine Firmen-Analysen, Recherchen oder Fragen ein... (Shift+Enter für neue Zeile)'}
+                  disabled={loading}
+                  autoFocus
+                  rows={4}
+                  style={{ resize: 'vertical', minHeight: '80px', width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-light)', background: 'var(--bg-card)', color: 'var(--text-primary)', fontSize: '0.95rem' }}
+                />
+                <button type="submit" disabled={loading || !message.trim()} style={{ alignSelf: 'flex-end', marginBottom: '4px' }}>
+                  <ArrowRight size={20} />
+                </button>
+              </form>
             </div>
           </div>
         ) : (
-          // Scrollable Chat area
-          <div className="coach-history-wrapper">
-            {loadingHistory && (
-              <div className="coach-history-loading">
-                <RefreshCw className="spin-icon" size={20} />
-                <span>{t('coach.loadingHistory')}</span>
+          <div className="nexus-coach-messages">
+            {chatHistory.map((msg, index) => (
+              <div key={index} className={`nexus-msg ${msg.role}`}>
+                <div className="nexus-msg-content">
+                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                </div>
+              </div>
+            ))}
+            {loading && (
+              <div className="nexus-msg assistant">
+                <div className="nexus-msg-content nexus-typing">
+                  <span></span><span></span><span></span>
+                </div>
               </div>
             )}
-            <div className="coach-messages-list">
-              {chatHistory.map((msg, index) => (
-                <div key={index} className={`coach-msg-bubble-container ${msg.role}`}>
-                  <div className="coach-msg-bubble">
-                    {msg.role === 'assistant' ? (
-                      <>
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
-                        <button 
-                          className="coach-tts-btn"
-                          onClick={() => handlePlayVoice(msg.content, index)}
-                          title="Vorlesen"
-                        >
-                          {playingAudio === index ? <RefreshCw className="spin-icon" size={14} /> : <Volume2 size={14} />}
-                        </button>
-                      </>
-                    ) : (
-                      <p>{msg.content}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-              
-              {loading && (
-                <div className="coach-msg-bubble-container assistant">
-                  <div className="coach-msg-bubble coach-typing-indicator">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
+            <div ref={messagesEndRef} />
           </div>
         )}
       </main>
 
-      {chatHistory.length > 0 && (
-        <footer className="coach-chat-footer">
-          {error && <div className="coach-error-banner">{error}</div>}
-          <form onSubmit={handleSendAttempt} className="coach-bottom-input-bar">
-            {attachmentPreview && (
-              <div className="coach-attachment-preview">
-                {attachmentPreview.type === 'image' ? <ImageIcon size={16} /> : <FileText size={16} />}
-                <span className="attachment-name">{attachmentPreview.name}</span>
-                <button type="button" onClick={clearAttachment} className="attachment-clear"><X size={14} /></button>
-              </div>
-            )}
-            <button type="button" className="coach-attach-btn" onClick={() => fileInputRef.current?.click()} title="Datei / Foto hochladen">
-              <Paperclip size={20} />
-            </button>
-            <input
-              type="text"
+      {error && <div className="nexus-coach-error" style={{ margin: '0 20px', padding: '12px', background: '#EF444420', color: '#EF4444', borderRadius: '8px', border: '1px solid #EF4444' }}>{error}</div>}
+      
+      {(chatHistory.length > 0 || true) && (
+        <footer className="nexus-coach-footer">
+          <div className="nexus-coach-quick-actions-row">
+            {SALES_QUICK_ACTIONS.map(action => (
+              <button
+                key={action.id}
+                className={`nexus-quick-action-sm ${activeQuickAction === action.id ? 'active' : ''}`}
+                onClick={() => handleQuickAction(action.id)}
+                title={action.label}
+              >
+                <action.icon size={16} />
+              </button>
+            ))}
+          </div>
+          <form onSubmit={handleSend} className="nexus-coach-input-bar" style={{ alignItems: 'flex-end' }}>
+            <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder={t('coach.placeholderInput')}
+              onKeyDown={handleKeyDown}
+              placeholder={activeQuickAction 
+                ? SALES_QUICK_ACTIONS.find(a => a.id === activeQuickAction)?.placeholder
+                : 'Stelle eine Vertriebsfrage... (Shift+Enter für neue Zeile)'}
               disabled={loading}
+              rows={2}
+              style={{ flex: 1, resize: 'vertical', minHeight: '44px', maxHeight: '150px', padding: '10px 14px', borderRadius: '8px', border: 'none', background: 'transparent', color: 'var(--text-primary)', fontSize: '0.95rem', outline: 'none' }}
             />
-            <button type="submit" disabled={loading || (!message.trim() && !attachment)} className="coach-send-button">
+            <button type="submit" disabled={loading || !message.trim()} style={{ marginBottom: '6px' }}>
               <ArrowUp size={20} />
             </button>
           </form>
         </footer>
       )}
-
-      {/* GDPR Consent Dialog */}
-      {showConsentModal && (
-        <div className="coach-consent-overlay">
-          <div className="coach-consent-modal">
-            <div className="consent-header">
-              <ShieldAlert size={28} className="consent-alert-icon" />
-              <h3>{t('coach.consentTitle')}</h3>
-            </div>
-            <div className="consent-body">
-              <p>
-                {t('coach.consentText1')}
-              </p>
-              <p className="consent-highlight">
-                {t('coach.consentText2')}
-              </p>
-              <p className="consent-highlight" style={{ marginTop: '0.5rem', fontWeight: 'bold' }}>
-                {t('coach.consentText3')}
-              </p>
-            </div>
-            <div className="consent-actions">
-              <button 
-                type="button" 
-                className="btn btn-secondary consent-decline-btn" 
-                onClick={handleDeclineConsent}
-              >
-                {t('coach.consentDecline')}
-              </button>
-              <button 
-                type="button" 
-                className="btn btn-primary consent-accept-btn" 
-                onClick={handleAcceptConsent}
-              >
-                <Check size={16} /> {t('coach.consentAccept')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Hidden File Input */}
-      <input type="file" ref={fileInputRef} className="hidden-file-input" onChange={handleFileSelect} accept="image/*,.pdf,.txt,.doc,.docx,.csv" style={{ display: 'none' }} />
+      
+      <UpgradeModal 
+        isOpen={showUpgradeModal} 
+        onClose={() => setShowUpgradeModal(false)} 
+        onBypass={() => {
+          // Dev-Bypass: Fehler zurücksetzen und Modal schließen
+          setError('');
+        }}
+      />
     </div>
   )
 }

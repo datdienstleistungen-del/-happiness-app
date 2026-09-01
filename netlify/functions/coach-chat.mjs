@@ -23,7 +23,43 @@ WICHTIGE GRENZEN & FÄHIGKEITEN:
 - ERFÜLLE AUFGABEN: Wenn der Nutzer dich um eine konkrete Aufgabe bittet, erfülle sie kompetent, präzise und hilfreich. Verweigere keine sachlichen Aufgaben mit dem Hinweis auf deine Rolle als "Coach".
 - BEWAHRE DIE FASSADE: Auch wenn du wie ein hochintelligenter Assistent arbeitest, klingst du nie so. Liefere die Lösung (die Mathe-Antwort, die Bildanalyse, den Text) stets im warmen, nahbaren und menschlichen Tonfall deines Coach-Charakters. Vermeide KI-Floskeln ("Als KI...", "Hier ist die Lösung:").
 - ECHTE GRENZEN: Du bist kein Arzt oder Therapeut. Bei Suizidgedanken bleibst du ruhig und verweist warmherzig an die Telefonseelsorge (0800 111 0 111). Bei heiklen Rechts- oder Finanzfragen (inklusive Trading-Charts) gibst du dein Wissen preis, ergänzt aber menschlich, dass dies keine professionelle Beratung ersetzt.
-- Du erinnerst dich an frühere Gespräche (Verlauf wird dir mitgegeben) und kannst behutsam daran anknüpfen.`
+- Du erinnerst dich an frühere Gespräche (Verlauf wird dir mitgegeben) und kannst behutsam daran anknüpfen.
+
+WEB-RECHERCHE (PFLICHT BEI PERSONEN & FAKTEN):
+BEHAUPTE NIEMALS, dass du keinen Zugriff auf das Internet oder aktuelle Datenbanken hast! DU HAST DIESEN ZUGRIFF!
+Wenn der Nutzer nach Personen (z.B. "Wer ist Head of Media bei Havas?"), Firmen-Entscheidern, aktuellen News oder spezifischen Fakten fragt, MUSST du eine Suche auslösen.
+Um zu suchen, antworte AUSSCHLIESSLICH mit folgendem Befehl:
+##SEARCH##(Suchbegriff)
+Beispiel: ##SEARCH##(Head of Media Havas Media Deutschland)
+Regel 1: Gib absolut KEINEN Text vor oder nach dem Befehl aus.
+Regel 2: Der Suchbegriff in der Klammer sollte Rolle und Firmenname enthalten.`
+
+// Tavily Search Helper
+async function performTavilySearch(query) {
+  const key = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY
+  if (!key) return "Tavily API Key fehlt im Backend."
+  try {
+    const res = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        api_key: key,
+        query: query,
+        search_depth: "advanced",
+        include_answer: false,
+        max_results: 5,
+        topic: "general",
+        days: 14
+      })
+    })
+    if (!res.ok) return `Tavily API Error: ${res.statusText}`
+    const data = await res.json()
+    if (!data.results || data.results.length === 0) return "Keine aktuellen Suchergebnisse gefunden."
+    return data.results.map(r => `Titel: ${r.title}\nInhalt: ${r.content}\nURL: ${r.url}`).join('\n\n')
+  } catch (e) {
+    return `Fehler bei der Suche: ${e.message}`
+  }
+}
 
 // LLM Fallback Callers
 async function tryOpenAIGpt4o(messages) {
@@ -354,9 +390,22 @@ export const handler = async (event) => {
       const langName = LANG_NAMES[language] || 'Deutsch'
       const languageDirective = `SPRACHREGEL (hoechste Prioritaet, nicht verhandelbar): Antworte AUSSCHLIESSLICH auf ${langName}. Ignoriere alle anderen Sprachanweisungen in früheren Nachrichten oder im Kontext.\n\n`
 
+      // --- PRE-PROCESSING AUTO-SEARCH ---
+      const searchKeywords = ['wer ist', 'head of', 'name', 'ansprechpartner', 'ceo', 'geschäftsführer', 'marketingleiter', 'person', 'recherchier', 'suche nach'];
+      const userMessageLower = (message || '').toLowerCase();
+      let searchContext = '';
+
+      if (!image_url && searchKeywords.some(kw => userMessageLower.includes(kw))) {
+        console.log('[coach-chat] User message triggered auto-search for:', message);
+        const searchResults = await performTavilySearch(message);
+        if (searchResults && !searchResults.includes("Fehlt im Backend") && !searchResults.includes("Keine aktuellen")) {
+          searchContext = `\n\n[SYSTEM-INTERN: Ich habe im Hintergrund automatisch das Internet nach Informationen durchsucht, die zur Frage des Nutzers passen. Hier sind die gefundenen Echtzeit-Ergebnisse aus dem Web:\n\n${searchResults}\n\nNutze diese Informationen zwingend, um die Frage des Nutzers so präzise und hilfreich wie möglich zu beantworten, ohne zu erwähnen, dass du keinen Zugriff auf das Internet hättest (denn du hast diese Infos ja jetzt!). Du darfst die gefundenen Namen direkt nennen.]\n\n`;
+        }
+      }
+
       // Construct messages array for LLM
       const llmMessages = [
-        { role: 'system', content: languageDirective + SYSTEM_PROMPT },
+        { role: 'system', content: languageDirective + SYSTEM_PROMPT + searchContext },
         ...history,
         { role: 'user', content: image_url ? [
           { type: 'text', text: message || 'Bitte analysiere dieses Bild.' },
@@ -374,44 +423,63 @@ export const handler = async (event) => {
       let responseText = null
       let providerUsed = ''
 
-      if (image_url) {
-        console.log('[coach-chat] Image detected, routing to OpenAI GPT-4o Vision')
-        responseText = await tryOpenAIGpt4o(llmMessages)
-        if (responseText) {
-          providerUsed = 'OpenAI (GPT-4o Vision)'
+      const executeChain = async () => {
+        responseText = null
+        if (image_url) {
+          console.log('[coach-chat] Image detected, routing to OpenAI GPT-4o Vision')
+          responseText = await tryOpenAIGpt4o(llmMessages)
+          if (responseText) providerUsed = 'OpenAI (GPT-4o Vision)'
         }
-      }
 
-      if (!responseText) {
-        responseText = await tryGroq(llmMessages)
-      if (responseText) {
-        providerUsed = 'Groq (Llama 3.3 70B)'
-      } else {
-        console.log('[LLM-Fallback] Groq failed, trying OpenRouter Gemma 4')
-        responseText = await tryOpenRouterGemma(llmMessages)
-        if (responseText) {
-          providerUsed = 'OpenRouter (Gemma 4 26B Free)'
-        } else {
-          console.log('[LLM-Fallback] OpenRouter Gemma 4 failed, trying Mistral')
-          responseText = await tryMistral(llmMessages)
+        if (!responseText) {
+          responseText = await tryGroq(llmMessages)
           if (responseText) {
-            providerUsed = 'Mistral API (Mistral Small)'
+            providerUsed = 'Groq (Llama 3.3 70B)'
           } else {
-            console.log('[LLM-Fallback] Mistral failed, trying DeepSeek')
-            responseText = await tryDeepSeek(llmMessages)
+            console.log('[LLM-Fallback] Groq failed, trying OpenRouter Gemma 4')
+            responseText = await tryOpenRouterGemma(llmMessages)
             if (responseText) {
-              providerUsed = 'DeepSeek API (V4 Flash)'
+              providerUsed = 'OpenRouter (Gemma 4 26B Free)'
             } else {
-              console.log('[LLM-Fallback] DeepSeek API failed, trying OpenRouter DeepSeek V4 Flash')
-              responseText = await tryOpenRouterDeepSeek(llmMessages)
+              console.log('[LLM-Fallback] OpenRouter Gemma 4 failed, trying Mistral')
+              responseText = await tryMistral(llmMessages)
               if (responseText) {
-                providerUsed = 'OpenRouter (DeepSeek V4 Flash)'
+                providerUsed = 'Mistral API (Mistral Small)'
+              } else {
+                console.log('[LLM-Fallback] Mistral failed, trying DeepSeek')
+                responseText = await tryDeepSeek(llmMessages)
+                if (responseText) {
+                  providerUsed = 'DeepSeek API (V4 Flash)'
+                } else {
+                  console.log('[LLM-Fallback] DeepSeek API failed, trying OpenRouter DeepSeek V4 Flash')
+                  responseText = await tryOpenRouterDeepSeek(llmMessages)
+                  if (responseText) {
+                    providerUsed = 'OpenRouter (DeepSeek V4 Flash)'
+                  }
+                }
               }
             }
           }
         }
       }
-    }
+
+      await executeChain()
+
+      // --- SEARCH INTERCEPTOR ---
+      if (responseText && responseText.includes('##SEARCH##')) {
+        const match = responseText.match(/##SEARCH##\s*\((.*?)\)/)
+        if (match && match[1]) {
+          const query = match[1]
+          console.log(`[coach-chat] AI requested web search for: ${query}`)
+          const searchResults = await performTavilySearch(query)
+          llmMessages.push({ role: 'assistant', content: responseText })
+          llmMessages.push({ role: 'user', content: `[SYSTEM-INTERN: Web-Recherche Ergebnisse für "${query}"]\n\n${searchResults}\n\nBitte beantworte nun meine ursprüngliche Frage basierend auf diesen Fakten.` })
+          await executeChain() // Run LLM again with the new context
+        } else {
+          // Fallback if regex failed but ##SEARCH## was there
+          responseText = "Ich versuche gerade, im Internet zu recherchieren, aber es gab ein technisches Problem mit meiner Suchanfrage."
+        }
+      }
 
       if (!responseText) {
         return {

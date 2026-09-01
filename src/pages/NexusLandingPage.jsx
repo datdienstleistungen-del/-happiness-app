@@ -1,144 +1,270 @@
-import React, { useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Radar, Target, TrendingUp, ShieldAlert, ArrowRight, Zap, Activity } from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
+import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { 
+  Target, Zap, Users, ArrowRight, CheckCircle, Sparkles,
+  Building2, TrendingUp, BarChart3, Shield, Clock
+} from 'lucide-react'
+import { callNexusAI } from '../lib/nexus-ai'
+import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import './NexusLandingPage.css'
+
+const BRANCHEN = [
+  "Bauwesen & Handwerk",
+  "IT & Digitalisierung",
+  "Marketing & Werbung",
+  "Beratung & Coaching",
+  "Immobilien",
+  "Gastronomie & Tourismus",
+  "Gesundheit & Pflege",
+  "Bildung & Training",
+  "Handel & E-Commerce",
+  "Sonstiges"
+]
 
 export default function NexusLandingPage() {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const [step, setStep] = useState('landing') // landing | input | analyzing | result
+  const [angebot, setAngebot] = useState('')
+  const [branche, setBranche] = useState('')
+  const [analyse, setAnalyse] = useState(null)
+  const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    document.title = "NeXus Lead Radar | B2B Akquise der nächsten Generation"
-    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
-      window.gtag('event', 'page_view', { page_path: '/nexus', page_title: 'NeXus B2B Landing' })
+  const handleStartAnalysis = () => {
+    setStep('input')
+  }
+
+  const handleSubmitOffer = async (e) => {
+    e.preventDefault()
+    if (!angebot.trim() || !branche) {
+      setError('Bitte beschreibe dein Angebot und wähle eine Branche.')
+      return
     }
-  }, [])
+    
+    setStep('analyzing')
+    setError(null)
+    setLoading(true)
+    
+    try {
+      const result = await callNexusAI({
+        mode: 'angebotsanalyse',
+        angebot: angebot,
+        branche: branche
+      })
+      
+      setAnalyse(result)
+      setStep('result')
+    } catch (err) {
+      console.error('Analyse Fehler:', err)
+      setError('Es ist ein Fehler aufgetreten. Bitte versuche es erneut.')
+      setStep('input')
+    } finally {
+      setLoading(false)
+    }
+  }
 
-  return (
-    <div className="nexus-page">
-      <nav className="nexus-nav">
-        <div className="nexus-logo">
-          <Radar size={28} className="nexus-accent" />
-          <span>NeXus</span>
-        </div>
-        <div className="nexus-nav-links">
-          {user ? (
-            <Link to="/admin/lead-radar" className="nexus-btn-primary">Zum Dashboard</Link>
-          ) : (
-            <Link to="/login" className="nexus-btn-primary">Jetzt starten</Link>
-          )}
-        </div>
-      </nav>
+  const handleRegisterForMore = () => {
+    // Save analysis to sessionStorage for after registration
+    sessionStorage.setItem('nexus_pending_analysis', JSON.stringify({
+      angebot,
+      branche,
+      analyse
+    }))
+    navigate('/register')
+  }
 
-      <header className="nexus-hero">
-        <div className="nexus-badge">Kaltakquise ist tot.</div>
-        <h1>
-          Deine Konkurrenz nutzt <span className="nexus-accent-text">KI-Radar</span>,<br/>
-          während du noch Copy-Paste machst.
-        </h1>
-        <p className="nexus-subtitle">
-          98% der generischen LinkedIn-Pitches werden ignoriert. NeXus scannt das globale Netz in Echtzeit nach B2B-Kunden, <strong>die genau jetzt nach deiner Lösung suchen</strong>. 
-        </p>
-        
-        <div className="nexus-cta-group">
-          <button className="nexus-btn-huge" onClick={() => navigate(user ? '/admin/lead-radar' : '/login')}>
-            Radar aktivieren (29,90€/M)* <ArrowRight size={20} />
-          </button>
-          <p className="nexus-guarantee"><ShieldAlert size={16} /> *Limitiertes Early-Bird-Angebot (Regulär 99,00€/M).</p>
-        </div>
-      </header>
-
-      <section className="nexus-features">
-        <div className="nexus-feature-card">
-          <Target size={32} className="nexus-icon" />
-          <h3>Laser-Fokus</h3>
-          <p>Finde Vorstände, Architekten oder Händler exakt in der Sekunde, in der sie auf Upwork oder in PR-Mitteilungen Bedarf signalisieren.</p>
-        </div>
-        <div className="nexus-feature-card">
-          <Activity size={32} className="nexus-icon" />
-          <h3>Echtzeit-Trigger</h3>
-          <p>Warum Wochen warten? NeXus alarmiert dich bei Trigger-Events (z.B. Neueröffnungen), bevor deine Konkurrenz überhaupt davon erfährt.</p>
-        </div>
-        <div className="nexus-feature-card">
-          <Zap size={32} className="nexus-icon" />
-          <h3>KI-Sales-Psychologie</h3>
-          <p>Lass unsere elitäre Sales-KI den perfekten Eisbrecher formulieren. Subtil, extrem konvertierend und psychologisch optimiert.</p>
-        </div>
-      </section>
-
-      <section className="nexus-manual">
-        <h2>NeXus Quickstart-Guide: B2B-Elite-Vertrieb</h2>
-        <p style={{ color: '#9CA3AF', maxWidth: '700px', margin: '0 auto 40px auto', lineHeight: '1.6' }}>
-          Vergiss klassische Kaltakquise. Ab sofort kontaktierst du niemanden mehr auf gut Glück. 
-          Du nutzt <strong>Trigger-Events</strong>. Hier ist die genaue Anleitung, wie du mit NeXus täglich warme Leads generierst und abschließt.
-        </p>
-
-        <div className="nexus-manual-steps">
-          <div className="nexus-step">
-            <div className="nexus-step-number"><Target size={24} color="#000" /></div>
-            <div className="nexus-step-content">
-              <h4>Grundregel: Was ist ein "Trigger-Event"?</h4>
-              <p>Ein Trigger-Event ist ein Auslöser im Netz, der anzeigt, dass ein Unternehmen <em>genau jetzt</em> Bedarf an einer Lösung hat. NeXus sucht nicht nach Leuten, die rufen: "Ich brauche Produkt X!" (da ist die Konkurrenz bereits riesig). NeXus sucht nach Signalen: Ein neuer Manager wird eingestellt, in einem Forum wird über ein technisches Problem geklagt, oder ein Unternehmen expandiert.</p>
+  if (step === 'landing') {
+    return (
+      <div className="nexus-landing">
+        <section className="nexus-hero">
+          <div className="nexus-hero-content">
+            <span className="nexus-badge">Sales Intelligence Platform</span>
+            <h1>Verstehe deine Kunden.<br/>Schliesse mehr deals.</h1>
+            <p className="nexus-hero-subtitle">
+              NeXus analysiert deinen Markt, findet Kaufsignale und zeigt dir genau, 
+              wann und wie du potenzielle Kunden ansprichst.
+            </p>
+            <button className="nexus-hero-cta" onClick={handleStartAnalysis}>
+              <Sparkles size={20} />
+              Kostenlose Angebotsanalyse starten
+            </button>
+            <p className="nexus-hero-hint">
+              Kein Login nötig · Ergebnis in 30 Sekunden
+            </p>
+          </div>
+          <div className="nexus-hero-visual">
+            <div className="nexus-hero-card nexus-card-1">
+              <Target size={24} color="#10B981" />
+              <span>Lead Radar</span>
             </div>
+            <div className="nexus-hero-card nexus-card-2">
+              <Users size={24} color="#3B82F6" />
+              <span>Kontakte</span>
+            </div>
+            <div className="nexus-hero-card nexus-card-3">
+              <TrendingUp size={24} color="#8B5CF6" />
+              <span>Chancen</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="nexus-features">
+          <div className="nexus-feature">
+            <div className="nexus-feature-icon" style={{ background: '#10B98120', color: '#10B981' }}>
+              <Target size={24} />
+            </div>
+            <h3>Triggererkennung</h3>
+            <p>Finde heraus, wann Unternehmen bereit sind zu kaufen</p>
+          </div>
+          <div className="nexus-feature">
+            <div className="nexus-feature-icon" style={{ background: '#3B82F620', color: '#3B82F6' }}>
+              <BarChart3 size={24} />
+            </div>
+            <h3>Lead Intelligence</h3>
+            <p>Detaillierte Analyse deiner Zielkunden</p>
+          </div>
+          <div className="nexus-feature">
+            <div className="nexus-feature-icon" style={{ background: '#8B5CF620', color: '#8B5CF6' }}>
+              <Zap size={24} />
+            </div>
+            <h3>Sales Workspace</h3>
+            <p>Generiere personalisierte Nachrichten und Nachfass-Aktionen</p>
+          </div>
+        </section>
+
+        <section className="nexus-social-proof">
+          <div className="nexus-proof-item">
+            <CheckCircle size={20} color="#10B981" />
+            <span>Für jede Branche nutzbar</span>
+          </div>
+          <div className="nexus-proof-item">
+            <CheckCircle size={20} color="#10B981" />
+            <span>KI-gestützte Verkaufsstrategie</span>
+          </div>
+          <div className="nexus-proof-item">
+            <CheckCircle size={20} color="#10B981" />
+            <span>Ergebnis sofort anwendbar</span>
+          </div>
+        </section>
+      </div>
+    )
+  }
+
+  if (step === 'input') {
+    return (
+      <div className="nexus-input-page">
+        <button className="nexus-back-btn" onClick={() => setStep('landing')}>
+          ← Zurück
+        </button>
+        
+        <div className="nexus-input-container">
+          <div className="nexus-input-header">
+            <Target size={32} color="var(--color-koralle)" />
+            <h1>Was bietest du an?</h1>
+            <p>Beschreibe dein Angebot und erhalte eine kostenlose KI-Analyse</p>
           </div>
           
-          <div className="nexus-step">
-            <div className="nexus-step-number">1</div>
-            <div className="nexus-step-content">
-              <h4>Radar & KI konfigurieren (Der Setup-Scan)</h4>
-              <p>Du sagst der KI in den Einstellungen exakt, was du verkaufst (z.B. "Logistik", "Software"). Dann wählst du deine Zielregion und dein Keyword. Unsere KI durchforstet ab sofort in Echtzeit über 100 globale News-Feeds, Fachforen und PR-Mitteilungen nach passenden Trigger-Events für dein Angebot.</p>
+          <form onSubmit={handleSubmitOffer} className="nexus-input-form">
+            <div className="nexus-form-group">
+              <label htmlFor="branche">Branche</label>
+              <select 
+                id="branche"
+                value={branche}
+                onChange={(e) => setBranche(e.target.value)}
+                required
+              >
+                <option value="">Wähle deine Branche</option>
+                {BRANCHEN.map(b => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
             </div>
-          </div>
+            
+            <div className="nexus-form-group">
+              <label htmlFor="angebot">Dein Angebot</label>
+              <textarea 
+                id="angebot"
+                value={angebot}
+                onChange={(e) => setAngebot(e.target.value)}
+                placeholder="Beschreibe kurz und klar, was du anbietest, für wen und was es kostet. Je genauer, desto besser wird die Analyse."
+                rows={6}
+                required
+              />
+              <span className="nexus-form-hint">
+                Beispiel: "Wir entwickeln individuelle Softwarelösungen für mittelständische Unternehmen. 
+                Projektstart ab 15.000€. Unsere Kunden sind meist Firmen mit 50-200 Mitarbeitenden."
+              </span>
+            </div>
+            
+            {error && <div className="nexus-error">{error}</div>}
+            
+            <button type="submit" className="nexus-submit-btn">
+              <Sparkles size={18} />
+              Kostenlose Analyse starten
+            </button>
+          </form>
+        </div>
+      </div>
+    )
+  }
 
-          <div className="nexus-step">
-            <div className="nexus-step-number">2</div>
-            <div className="nexus-step-content">
-              <h4>Leads richtig lesen (Die Badges)</h4>
-              <p>Das Radar spuckt dir die Leads als Karten aus. <strong>News Radar:</strong> Perfekt für Glückwünsche zur Expansion. <strong>Forum:</strong> Eine direkte Frustration eines Nutzers – extrem wertvoll. <strong>Job Board:</strong> Zeigt an, dass ein Unternehmen umstrukturiert. Du siehst den Schmerz des Kunden auf den ersten Blick.</p>
+  if (step === 'analyzing') {
+    return (
+      <div className="nexus-analyzing">
+        <div className="nexus-analyzing-content">
+          <div className="nexus-analyzing-spinner"></div>
+          <h2>Dein Angebot wird analysiert...</h2>
+          <p>Die KI analysiert Markt, Wettbewerb und Verkaufschancen</p>
+          <div className="nexus-analyzing-steps">
+            <div className="nexus-step active">
+              <div className="nexus-step-dot"></div>
+              <span>Vertriebsmodell wird ermittelt</span>
+            </div>
+            <div className="nexus-step active">
+              <div className="nexus-step-dot"></div>
+              <span>Zielgruppen werden segmentiert</span>
+            </div>
+            <div className="nexus-step">
+              <div className="nexus-step-dot"></div>
+              <span>Trigger Events werden gesucht</span>
             </div>
           </div>
+        </div>
+      </div>
+    )
+  }
 
-          <div className="nexus-step">
-            <div className="nexus-step-number">3</div>
-            <div className="nexus-step-content">
-              <h4>Den KI-Pitch generieren (Der magische Button)</h4>
-              <p>Schreibe keine Standard-Nachrichten mehr! Mit einem Klick auf den ⚡ Blitz-Button analysiert unsere Sales-KI den exakten Kontext des Leads und schreibt dir in Sekunden eine maßgeschneiderte, hochpsychologische Vertriebsnachricht, die den Lead lobt und unaufdringlich exakt dein Produkt als Lösung anbietet.</p>
-            </div>
-          </div>
-
-          <div className="nexus-step">
-            <div className="nexus-step-number">4</div>
-            <div className="nexus-step-content">
-              <h4>Akquise durchführen (Copy, Paste, Close)</h4>
-              <p>Klicke auf den Link zur Originalquelle, recherchiere den Namen des erwähnten Managers oder Autors, suche ihn auf LinkedIn und schicke ihm exakt den Text, den NeXus für dich generiert hat. Du nutzt Gratulationen und Schmerzpunkte als Hebel, um ein Gespräch anzufangen. Ganz ohne Konkurrenz.</p>
-            </div>
-          </div>
+  if (step === 'result' && analyse) {
+    return (
+      <div className="nexus-result-page">
+        <div className="nexus-result-header">
+          <CheckCircle size={32} color="#10B981" />
+          <h1>Deine kostenlose Angebotsanalyse</h1>
+          <p>Hier ist dein erstes Ergebnis von NeXus</p>
         </div>
         
-        <div className="nexus-cta-group" style={{ marginTop: '50px' }}>
-          <button className="nexus-btn-huge" onClick={() => navigate(user ? '/admin/lead-radar' : '/login')}>
-            Radar jetzt aktivieren (29,90€/M)* <ArrowRight size={20} />
-          </button>
-          <p className="nexus-guarantee"><ShieldAlert size={16} /> *Limitiertes Early-Bird-Angebot (Regulär 99,00€/M).</p>
+        <NexusAnalysisResult data={analyse} mode="angebotsanalyse" />
+        
+        <div className="nexus-result-cta">
+          <div className="nexus-cta-card">
+            <h3>Möchtest du mehr erfahren?</h3>
+            <p>Registriere dich kostenlos und erhalte:</p>
+            <ul>
+              <li>Vollständige Lead Intelligence</li>
+              <li>Persönliche Sales Workspace</li>
+              <li>Automatische Trigger Benachrichtigungen</li>
+              <li>Zugang zum Coach für Strategieberatung</li>
+            </ul>
+            <button className="nexus-register-btn" onClick={handleRegisterForMore}>
+              <ArrowRight size={18} />
+              Kostenlos registrieren
+            </button>
+            <p className="nexus-cta-hint">Keine Kreditkarte nötig · Sofortiger Zugang</p>
+          </div>
         </div>
-      </section>
+      </div>
+    )
+  }
 
-      <section className="nexus-social-proof">
-        <h2>Die smarte Elite skaliert lautlos. Du auch?</h2>
-        <p>Wer technologisch den Anschluss verliert, verliert den Markt. Verbinde dich mit dem Radar und hol dir die warmen Leads, die dir zustehen.</p>
-        <button className="nexus-btn-secondary" onClick={() => navigate(user ? '/admin/lead-radar' : '/login')}>
-          System-Zugang anfordern
-        </button>
-      </section>
-      
-      <footer className="nexus-footer">
-        <p>&copy; {new Date().getFullYear()} NeXus Intelligence. Ein Produkt der Happiness App.</p>
-        <div className="nexus-footer-links">
-          <Link to="/impressum">Impressum</Link>
-          <Link to="/datenschutz">Datenschutz</Link>
-        </div>
-      </footer>
-    </div>
-  )
+  return null
 }

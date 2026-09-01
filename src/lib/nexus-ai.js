@@ -5,34 +5,249 @@
  * Nutzt die bestehende Multi-Provider Infrastruktur von Happiness.
  */
 
-const NEXUS_AI_URL = '/.netlify/functions/nexus-ai'
+import { supabase } from './supabase'
 
 /**
  * Ruft die NeXus AI Function auf
- * @param {string} mode - Der Modus (angebotsanalyse, trigger_detection, etc.)
- * @param {string} message - Die Nutzereingabe
- * @param {object} context - Optionale Zusatzinfos
- * @param {number} temperature - Optionale Temperatur (0-1)
+ * Akzeptiert entweder (mode, message, context, temperature) oder ein Objekt
+ * @param {string|object} modeOrParams - Der Modus oder ein Objekt mit allen Parametern
+ * @param {string} message - Die Nutzereingabe (optional bei Objekt-Aufruf)
+ * @param {object} context - Optionale Zusatzinfos (optional)
+ * @param {number} temperature - Optionale Temperatur (0-1) (optional)
+ * @param {string} lang - Die Sprache des Browsers (optional)
  * @returns {Promise<{response: string, provider: string, model: string}>}
  */
-export async function callNexusAI(mode, message, context = null, temperature = 0.3) {
-  const token = localStorage.getItem('supabase_token') || ''
+export async function callNexusAI(modeOrParams, message = null, context = null, temperature = 0.3, lang = 'de') {
+  let mode, params
   
-  const res = await fetch(NEXUS_AI_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({ mode, message, context, temperature })
-  })
+  // Handle both object and parameter-based calls
+  if (typeof modeOrParams === 'object' && modeOrParams !== null) {
+    // Object call: callNexusAI({ mode, angebot, branche, ... })
+    mode = modeOrParams.mode
+    const { mode: _, ...rest } = modeOrParams
+    
+    // Build message from available params
+    if (rest.message) {
+      message = rest.message
+    } else if (mode === 'angebotsanalyse') {
+      message = `Analysiere folgendes Angebot:\n\nAngebot: ${rest.angebot || ''}\nBranche: ${rest.branche || ''}`
+    } else if (mode === 'trigger_detection') {
+      message = rest.query || ''
+    } else if (mode === 'lead_intelligence') {
+      message = `Unternehmen: ${rest.company || ''}\nAngebot des Verkäufers: ${rest.angebot || ''}`
+    } else if (mode === 'sales_pitch' || mode === 'follow_up' || mode === 'einwandbehandlung' || mode === 'forum_response') {
+      if (rest.full_context) {
+         message = `[NEXUS FULL CONTEXT]\n${JSON.stringify(rest.full_context, null, 2)}\n\n[USER INPUT]\nEinwand: ${rest.einwand || '-'}`;
+      } else {
+         message = `Firma: ${rest.company || ''}\nAnsprechpartner: ${rest.ansprechpartner || ''}\nBranche: ${rest.branche || ''}\nSituation: ${rest.situation || ''}\nEinwand: ${rest.einwand || ''}`;
+      }
+    } else if (mode === 'trigger_hypotheses') {
+      message = `Kontext: ${rest.context || ''}\nRegion: ${rest.region || ''}\nKategorie: ${rest.category || ''}\nAngebot: ${rest.product || ''}\nZielgruppe: ${rest.audience || ''}`
+    } else {
+      message = JSON.stringify(rest)
+    }
+    
+    context = rest.context || null
+    temperature = rest.temperature || 0.3
+    lang = rest.lang || 'de'
+  }
+  // else: normal parameter call (mode, message, context, temperature, lang)
 
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: 'Unbekannter Fehler' }))
-    throw new Error(error.error || `HTTP ${res.status}`)
+  // =========================================================================
+  // SYSTEM PROMPT GENERATION
+  // =========================================================================
+  
+  let systemPrompt = "Du bist NeXus, ein B2B Sales Intelligence System."
+  if (mode !== 'chat') {
+    systemPrompt += " Antworte IMMER in validem JSON ohne Markdown-Blöcke (kein ```json)."
+  }
+  if (mode === 'angebotsanalyse' || mode === 'lead_intelligence') {
+    const taskDescription = mode === 'angebotsanalyse' 
+      ? 'Analysiere das folgende Angebot und erstelle ein generelles B2B Vertriebsmodell.'
+      : 'Analysiere das angegebene Zielunternehmen im Kontext unseres Angebots und erstelle ein hochspezifisches Vertriebsmodell exakt für diesen einen Kunden.';
+      
+    systemPrompt += ` ${taskDescription} Du musst ein JSON-Objekt mit EXAKT folgender Struktur zurückgeben:
+      {
+        "zielgruppe": { 
+          "beschreibung": "...", 
+          "kaufzyklus": "kurz|mittel|lang", 
+          "budget_typ": "Capex|Opex|...",
+          "entscheider": ["Rolle 1", "Rolle 2"]
+        },
+        "schmerzpunkte": [
+          { "problem": "...", "auswirkung": "...", "dringlichkeit": "hoch|mittel|niedrig" }
+        ],
+        "trigger_events": [
+          { "event": "...", "signifikanz": "hoch|mittel|niedrig" }
+        ],
+        "vertriebsstrategie": { 
+          "empfohlener_kanal": "...", 
+          "ansprache_typ": "...",
+          "timing": "...",
+          "conversion_rate_typisch": "...",
+          "sequentielles_vorgehen": ["Schritt 1", "Schritt 2"]
+        },
+        "pitch_grundlage": { 
+          "value_proposition": "...",
+          "differenzierung": "...",
+          "social_proof": "...",
+          "call_to_action": "..."
+        }
+      }`
+  } else if (mode === 'trigger_detection') {
+    systemPrompt += ` Du bist ein Radar für Kaufsignale im Markt. Erfinde 4-6 REALISTISCHE, aber fiktive B2B Firmennamen passend zur Zielgruppe, die aktuell ein absolut konkretes Trigger-Event aufweisen.
+      
+      WICHTIG: Erfinde ECHTE, konkrete Ereignisse (z.B. "Ein Hotelneubau wurde gestern genehmigt", "Baugenehmigung für neue Produktionshalle erteilt", "Stellenanzeige für Konstrukteur veröffentlicht"). KEINE generischen Beschreibungen wie "Die Firma baut Treppen".
+      
+      Du musst ein JSON-Objekt mit EXAKT folgender Struktur zurückgeben:
+      {
+        "trigger_events": [
+          {
+            "firmenname": "...",
+            "signal": "Was ist exakt passiert? (z.B. Baugenehmigung, Ausschreibung, Stellenanzeige)",
+            "insight": "Warum ist dieses Signal relevant für unser Angebot?",
+            "opportunity": "Welche konkrete Chance ergibt sich daraus?",
+            "action": "Welche Aktion ist jetzt sinnvoll (z.B. Anruf beim Projektleiter)?",
+            "signifikanz": "hoch|mittel|niedrig",
+            "kaufwahrscheinlichkeit": 85
+          }
+        ]
+      }`
+  } else if (['sales_pitch', 'follow_up', 'einwandbehandlung', 'forum_response'].includes(mode)) {
+    systemPrompt += ` Du bist ein Elite B2B-Sales-Copywriter. Deine Aufgabe ist es, eine hochpersonalisierte Vertriebsnachricht zu verfassen. 
+
+      WICHTIGSTE REGEL: Der PITCH basiert ZWINGEND auf dem übergebenen TRIGGER EVENT.
+      Verwende nicht einfach nur "Firmenname + Kontaktname", sondern entwickle eine plausible Verkaufsargumentation aus dem Trigger heraus.
+
+      DATENFLUSS & STRUKTUR DER NACHRICHT:
+      1. Trigger (Aufhänger): Beziehe dich im ersten Absatz auf das spezifische Ereignis/Signal.
+      2. Möglicher Bedarf: Welches konkrete Problem oder welcher Bedarf entsteht durch dieses Ereignis?
+      3. Verbindung zum Offering: Warum passt das übergebene Offering (inkl. Positioning) exakt zu diesem entstandenen Bedarf?
+      4. Konkreter Nutzen: Welchen echten Mehrwert bieten wir in dieser Situation?
+      5. Gesprächseinstieg / Call to Action: Eine weiche, handlungsorientierte Frage für den nächsten sinnvollen Schritt.
+
+      TONALITÄT: 
+      - Keine "Gelbe Seiten Kaltakquise".
+      - Keine übertriebene KI-Sprache (vermeide "Maßstäbe setzen", "innovative Lösungen", "Ihre Expertise").
+      - Keine erfundenen Tatsachen. Unsichere Informationen nur als Annahme formulieren.
+      - Professionell, menschlich und auf Augenhöhe.
+
+      WICHTIG: Du musst ein JSON-Objekt mit EXAKT folgender Struktur zurückgeben:
+      {
+        "thought_trigger": "Analyse: Was ist der Trigger und welcher Bedarf entsteht?",
+        "thought_offering": "Analyse: Wie passt das Offering genau zu diesem Bedarf?",
+        "response": "Hier kommt die fertige, hochpersonalisierte Nachricht (mit Absätzen als \\n\\n formatiert)."
+      }`
+  } else if (mode === 'chat') {
+    systemPrompt += ` Antworte professionell und hilfsbereit. WICHTIG: Antworte NIEMALS im JSON-Format! Nutze ausschließlich menschenlesbares Markdown (Fließtext, Absätze, Listen) für deine Antworten, egal wie strukturiert die Frage des Nutzers ist.`
+  } else if (mode === 'assistant') {
+    systemPrompt += ` Du bist der NeXus Assistant, der KI-Produktbegleiter für das 'NeXus Sales Operating System'.
+    Deine Aufgabe: Erkläre dem Nutzer das NeXus-System, die Bedienung und die zugrunde liegende Vertriebs-Methodik.
+    
+    WISSENSGRUNDLAGE (NeXus Product Bible):
+    - NeXus beobachtet den Markt anhand eines definierten "Offerings" (Angebot & Zielgruppe).
+    - Signal ≠ Trigger. Ein Signal ist ein reiner Fakt (z.B. "Firma X baut neue Halle"). Ein Trigger ist die Interpretation dieses Fakts ("Firma X hat deshalb vermutlich Bedarf an unseren Klimaanlagen").
+    - Fakt ≠ Interpretation. NeXus behauptet nie, dass ein Kunde kaufen MUSS, sondern liefert nur eine plausible Begründung (Relevanz), warum man ihn JETZT ansprechen sollte.
+    - Die Architektur: Angebotsanalyse -> Lead Radar (findet Signale) -> Opportunity (Lead-Akte) -> Sales Workspace.
+    
+    REGELN GEGEN HALLUZINATION:
+    - Erfinde NIEMALS Funktionen, die NeXus nicht hat! NeXus hat KEINE Integrationen zu HubSpot, Salesforce, Hunter.io oder ähnlichen Tools. NeXus ist ein eigenständiges Sales Operating System.
+    - Erfinde keine "automatische Validierung" oder ähnliche Features. Halte dich exakt an die oben genannte Architektur.
+
+    WICHTIGE ABGRENZUNG ZUM 'SALES COACH':
+    Du bist NICHT der Sales Coach! Du erklärst das Werkzeug "NeXus". Für JEDE Frage, die in Richtung konkreter Vertriebsarbeit geht (Kontaktdaten recherchieren, E-Mail-Adressen finden, Pitches schreiben, Einwände behandeln), bist du NICHT zuständig!
+    Versuche NIEMALS, vertriebliche Ratschläge für externe Tools (wie "nutze LinkedIn") zu geben oder selbst zu recherchieren.
+    
+    WENN DER NUTZER NACH KONKRETER VERTRIEBSARBEIT ODER KONTAKTEN FRAGT:
+    Lehne freundlich ab und verweise auf den Coach. Beispiel für eine Kontaktsuche:
+    "Das ist eine konkrete Vertriebsaufgabe. Um E-Mails oder Ansprechpartner zu recherchieren, ist der Sales Coach zuständig. [Öffne die Lead-Akte der Firma](/nexus/workspace) und starte dort den Coach – er verfügt über eine Live-Recherche-Funktion (Intelligence), um Entscheiderdaten zu finden."
+    Nutze immer diesen Markdown-Link \\[Sales Workspace\\](/nexus/workspace), wenn du den Nutzer an den Coach verweist!
+    
+    Antworte in normalem, menschenlesbaren Markdown-Fließtext (KEIN JSON). Sei prägnant, kompetent und hilfreich.`
+  } else if (mode === 'find_contact') {
+    systemPrompt += ` Du bist ein Recherche-Agent. Deine EINZIGE Aufgabe ist es, aus dem dir übergebenen Such-Kontext (Tavily) den Namen des gesuchten Ansprechpartners / Entscheiders zu extrahieren.
+    Gib ausschließlich ein JSON-Objekt zurück, ohne jeglichen Markdown-Text außen herum. 
+    Format: { "name": "Gefundener Name oder leer lassen, falls unbekannt", "role": "Gefundene Position oder leer" }`
+  } else if (mode === 'trigger_hypotheses') {
+    systemPrompt += ` Du bist ein brillanter B2B-Vertriebsstratege. Deine Aufgabe ist es, für ein gegebenes Produkt und eine Zielgruppe 3-5 hochspezifische, realistische Trigger-Events (Kaufsignale) abzuleiten. 
+    
+    WICHTIG: Vermeide generische Suchbegriffe (wie "Treppenbau"). Finde konkrete Ereignisse, die auf JETZIGEN Bedarf hindeuten (z.B. "Neubau einer Produktionsstätte").
+    Bedenke die angegebene Region und deren Eigenheiten.
+    
+    Du musst ein JSON-Objekt mit EXAKT folgender Struktur zurückgeben:
+    {
+      "hypotheses": [
+        {
+          "title": "Kurzer, knackiger Titel des Triggers (z.B. Neubau einer Produktionsstätte)",
+          "reason": "Warum relevant: Erkläre in einem Satz, warum dieses Event einen hohen Bedarf am Produkt erzeugt.",
+          "keywords": ["Suchbegriff 1", "Suchbegriff 2", "Suchbegriff 3"],
+          "priority": 95
+        }
+      ]
+    }`
   }
 
-  return res.json()
+  const { data: { session } } = await supabase.auth.getSession()
+  const token = session?.access_token || ''
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 Sekunden Timeout
+
+  let res;
+  try {
+    res = await fetch('/.netlify/functions/nexus-llm', {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        systemPrompt: systemPrompt,
+        userMessage: message,
+        context: context,
+        temperature: temperature,
+        lang: lang
+      }),
+      signal: controller.signal
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      if (res.status === 429 || err.error?.includes('Rate limit')) {
+        const errorObj = new Error("Rate limit exceeded");
+        errorObj.name = 'RateLimitError';
+        throw errorObj;
+      }
+      throw new Error(`NeXus AI Error: ${err.error || res.statusText}`)
+    }
+
+    const data = await res.json();
+
+    // Im Chat-Modus wollen wir IMMER einen String. Wenn das Backend 
+    // zufällig JSON geparst hat (weil die KI halluziniert hat), machen 
+    // wir es wieder rückgängig, falls es kein bekanntes Format ist.
+    if (mode === 'chat' && typeof data === 'object' && data !== null) {
+      // Wenn die KI z.B. einen sales_pitch im Chat ausgibt
+      if (data.response) return data.response;
+      if (data.message) return data.message;
+      if (data.content) return data.content;
+      // Ansonsten (wie beim risiko_einschätzung-Fehler) machen wir einen String draus
+      // Wir ignorieren die technischen "Keys" komplett und fügen nur die Text-Werte als Fließtext zusammen,
+      // um den "Lochkarten/Software-Text" Look zu vermeiden!
+      return Object.values(data)
+        .filter(v => typeof v === 'string' || typeof v === 'number')
+        .join('\n\n');
+    }
+
+    return data
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error("Zeitüberschreitung: Die KI hat zu lange gebraucht, um zu antworten (Timeout nach 30s).");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 /**
@@ -112,10 +327,40 @@ export async function schlageFollowUp(lead, letzteAktion) {
 
   return callNexusAI(
     'follow_up',
-    `Schlage die beste nächste Follow-up-Aktion für ${lead.firmenname} vor.`,
+    `Schlage eine sinnvolle nächste Aktion für ${lead.firmenname} vor.`,
     context,
-    0.5
+    0.4
   )
+}
+
+/**
+ * NeXus Research Pipeline (Modularer Datenbeschaffungs- & Bewertungs-Prozess)
+ * Langfristig können hier neben Tavily weitere Adapter (NewsAPI, LinkedIn etc.) integriert werden.
+ */
+export async function runResearchPipeline(searchQuery, branche = '', lang = 'de', offeringId = null) {
+  const { data: { session } } = await supabase.auth.getSession()
+  const token = session?.access_token || ''
+
+  const res = await fetch("/.netlify/functions/nexus-research", {
+    method: "POST",
+    headers: { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify({ searchQuery, branche, lang, offeringId })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    if (res.status === 429 || err.error?.includes('Rate limit')) {
+      const errorObj = new Error("Rate limit exceeded");
+      errorObj.name = 'RateLimitError';
+      throw errorObj;
+    }
+    throw new Error(`NeXus Research Backend Error: ${err.error || res.statusText}`);
+  }
+
+  return await res.json();
 }
 
 /**

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { useStudio } from '../context/StudioContext'
+import { useCapCut } from '../context/CapCutContext'
 import { supabase } from '../lib/supabase'
 import {
   Sparkles, ArrowLeft, Film, Check, AlertTriangle, ExternalLink,
@@ -261,7 +261,7 @@ export default function TikTokVideoPage() {
     capcutShowSuccess: showSuccess, setCapcutShowSuccess: setShowSuccess,
     capcutPublished: published, setCapcutPublished: setPublished,
     capcutScenesWithMedia: scenesWithMedia, setCapcutScenesWithMedia: setScenesWithMedia
-  } = useStudio()
+  } = useCapCut()
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')

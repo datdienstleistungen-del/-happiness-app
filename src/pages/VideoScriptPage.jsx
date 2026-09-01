@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Upload, Film, Copy, Check, ArrowRight, Loader, AlertCircle, FileVideo, Link as LinkIcon, Sparkles } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { useStudio } from '../context/StudioContext'
+import { useVideoScript } from '../context/VideoScriptContext'
 import AuthModal from '../components/AuthModal'
 import { useLanguage } from '../i18n/translations'
 import './VideoScriptPage.css'
@@ -388,7 +388,7 @@ export default function VideoScriptPage() {
     scriptId, setScriptId,
     scriptHooks: hooks, setScriptHooks: setHooks,
     scriptSelectedHook: selectedHook, setScriptSelectedHook: setSelectedHook
-  } = useStudio()
+  } = useVideoScript()
 
   const [copied, setCopied] = useState(false)
   const [copiedHookIndex, setCopiedHookIndex] = useState(null)

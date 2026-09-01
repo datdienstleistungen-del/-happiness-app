@@ -45,6 +45,10 @@ Als Diensteanbieter sind wir gemäß § 7 Abs. 1 TMG für eigene Inhalte auf die
 
 ## Haftung für Links
 Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich.
+
+## Urheberrecht & Geistiges Eigentum
+**Alleiniger Urheber der Software "NeXus", inklusive des dahinterstehenden Konzepts (Signal vs. Trigger, Offering-Analyse), der Methodik und der Systemarchitektur ist Harro Goerndt.**
+Die durch den Seitenbetreiber erstellten Inhalte, Quellcodes und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung bedürfen der ausdrücklichen schriftlichen Zustimmung von Harro Goerndt.
         `
       },
       en: {
@@ -250,101 +254,39 @@ You have the right at any time:
         content: `
 ## 1. Geltungsbereich
 
-Diese Allgemeinen Geschäftsbedingungen (nachfolgend „AGB") gelten für alle Verträge über die Lieferung von Waren und die Erbringung von Dienstleistungen zwischen
+Diese Allgemeinen Geschäftsbedingungen (nachfolgend „AGB") gelten für alle Verträge über die Nutzung der Software "NeXus" (Sales Operating System) sowie damit verbundene Dienstleistungen zwischen
 
 Harro Goerndt
-D.A.T Dienstleistungen
 Weserstraße 16
 26382 Wilhelmshaven
 E-Mail: datdienstleistungen@gmail.com
 
 und ihren Kunden. Die AGB gelten in der jeweils zum Zeitpunkt des Vertragsschlusses gültigen Fassung.
 
-## 2. Vertragsschluss
+## 2. Urheberschaft und Geistiges Eigentum
 
-Der Vertrag kommt durch die Annahme des Angebots des Anbieters durch den Kunden zustande. Der Kunde nimmt das Angebot durch Registrierung auf der Website und Nutzung der angebotenen Dienstleistungen an.
+**Alleiniger Urheber der Software "NeXus", inklusive des Konzepts, der Methodik (Signal vs. Trigger, Offering-Analyse) und der Systemarchitektur ist Harro Goerndt (Weserstraße 16, 26382 Wilhelmshaven).** 
+Die durch den Anbieter erstellten Inhalte, Quellcodes, Benutzeroberflächen und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der ausdrücklichen schriftlichen Zustimmung von Harro Goerndt.
 
 ## 3. Leistungen
 
-### AI Chat (Künstliche Intelligenz)
-Der Happiness AI Chat bietet eine künstliche Intelligenz, die Nutzern bei alltäglichen Fragen helfen kann. Die Antworten der KI stellen keine rechtliche, medizinische oder finanzielle Beratung dar.
+### NeXus Sales Operating System
+NeXus bietet eine künstliche Intelligenz und Datenanalyse zur Identifikation von vertrieblichen Kaufsignalen (Triggern) im Internet. Die KI-gestützten Auswertungen und generierten Vertriebstexte dienen als Hilfsmittel und stellen keine Garantie für vertrieblichen Erfolg oder Abschlüsse dar.
 
-### Preisgestaltung
-Die Nutzung des AI Chat ist bis zu 20 Fragen kostenlos. Danach ist eine Bezahlung von 4,99 EUR pro Monat erforderlich, um weiterhin unbegrenzt Fragen stellen zu können.
+### Preisgestaltung & Zahlungsarten
+Die Nutzung von NeXus unterliegt den auf der Website kommunizierten Abo-Modellen. Die Zahlung erfolgt über den Zahlungsdienstleister Stripe (SEPA-Lastschrift, Kreditkarte).
 
-### Zahlungsarten
-Folgende Zahlungsarten werden akzeptiert:
-- SEPA-Lastschrift (Sofortüberweisung)
-- Kreditkarte (Visa, Mastercard)
+## 4. Kündigungsrecht
 
-Die Zahlung erfolgt über den Zahlungsdienstleister Stripe.
+Der Kunde kann sein Abonnement jederzeit mit einer Frist von 30 Tagen zum Monatsende kündigen. Die Kündigung erfolgt über die Einstellungen im Account oder per E-Mail.
 
-## 4. Preise und Zahlung
+## 5. Haftung
 
-### Preise
-Alle Preise verstehen sich inklusive der gesetzlichen Mehrwertsteuer. Der Preis wird dem Kunden vor Abschluss des Kaufvorgangs angezeigt.
+Der Anbieter haftet für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen. Die Ergebnisse der NeXus-KI basieren auf Wahrscheinlichkeiten und öffentlich zugänglichen Daten. Der Anbieter übernimmt keine Haftung für die Richtigkeit der KI-Begründungen oder daraus resultierende geschäftliche Entscheidungen des Nutzers.
 
-### Zahlungsabwicklung
-Die Zahlung erfolgt über Stripe. Der Kunde willigt ein, dass seine Zahlungsdaten an Stripe zur Abwicklung der Zahlung übermittelt werden.
+## 6. Schlussbestimmungen
 
-### Wiederkehrende Zahlungen
-Bei Abonnements wird der Betrag automatisch zum Beginn eines jeden Monats von dem vom Kunden angegebenen Zahlungsmittel abgebucht.
-
-## 5. Kündigungsrecht
-
-### Kündigung durch den Kunden
-Der Kunde kann sein Abonnement jederzeit mit einer Frist von 30 Tagen zum Monatsende kündigen. Die Kündigung erfolgt über die Einstellungen in seinem Account oder per E-Mail an datdienstleistungen@gmail.com.
-
-### Kündigung durch den Anbieter
-Der Anbieter kann das Abonnement mit einer Frist von 30 Tagen kündigen, wenn der Kunde gegen wesentliche Bestimmungen dieser AGB verstößt.
-
-## 6. Widerrufsrecht
-
-### Verbraucher
-Verbraucher haben ein 14-tägiges Widerrufsrecht. Ein Verbraucher ist jede natürliche Person, die ein Rechtsgeschäft zu Zwecken abstießt, die überwiegend weder ihrer gewerblichen noch ihrer selbständigen beruflichen Tätigkeit zugerechnet werden können.
-
-### Widerrufsbelehrung
-Das Widerrufsrecht erlischt vorzeitig, wenn der Verbraucher ausdrücklich zugestimmt hat, dass der Anbieter mit der Ausführung der Dienstleistung vor Ablauf der Widerrufsfrist beginnt. Der Verbraucher bestätigt mit seiner Zustimmung, dass er von seinem Widerrufsrecht weiß, wenn er die Dienstleistung vor Ablauf der Widerrufsfrist in Anspruch nimmt.
-
-## 7. Haftung
-
-### Haftung für eigene Inhalte
-Der Anbieter haftet für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen.
-
-### Haftung für Nutzerinhalte (Haftungsausschluss)
-Der Anbieter ist **nicht** verantwortlich für Inhalte, die von Nutzern auf der Plattform erstellt, gepostet oder geteilt werden. Dies betrifft insbesondere:
-- Beiträge in Communitys und Kommentaren
-- Nachrichten an andere Nutzer
-- Inhalte in Kursen, Gruppen oder Foren
-- Inhalte im Marktplatz oder bei Stellenanzeigen
-
-Der Anbieter haftet **nicht** für:
-- Beleidigungen, rassistische, rechtsextreme oder anderweitig rechtswidrige Äußerungen von Nutzern
-- Falsche oder irreführende Inhalte von Nutzern
-- Schäden die durch Nutzerinhalte entstehen
-- Rechtsstreitigkeiten zwischen Nutzern
-
-Der Anbieter verpflichtet sich, auf Hinweis hin rechtswidrige Inhalte **zeitnah zu entfernen** (§ 7 Abs. 1 TMG). Eine proaktive Überwachung von Nutzerinhalten erfolgt **nicht**.
-
-Jeder Nutzer ist selbst verantwortlich für die Inhalte die er erstellt und teilt.
-
-### Haftung für KI-Inhalte
-Die Antworten des Happiness AI basieren auf künstlicher Intelligenz und können Fehler enthalten. Der Anbieter haftet nicht für Schäden, die durch die Nutzung der KI-Antworten entstehen.
-
-### Haftung für verlinkte Seiten
-Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter verantwortlich.
-
-## 8. Urheberrecht
-
-Die durch den Anbieter erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers.
-
-## 9. Datenschutz
-
-Die Erhebung und Verwendung personenbezogener Daten des Kunden erfolgt unter Beachtung der geltenden datenschutzrechtlichen Bestimmungen, insbesondere der DSGVO. Nähere Informationen finden Sie in unserer Datenschutzerklärung.
-
-## 10. Schlussbestimmungen
-
-Es gilt das Recht der Bundesrepublik Deutschland. Ausgeschlossen ist die Anwendung des UN-Kaufrechts (CISG). Sollten einzelne Bestimmungen dieser AGB unwirksam sein oder werden, so wird die Wirksamkeit der übrigen Bestimmungen hiervon nicht berührt.
+Es gilt das Recht der Bundesrepublik Deutschland. Sollten einzelne Bestimmungen dieser AGB unwirksam sein oder werden, so wird die Wirksamkeit der übrigen Bestimmungen hiervon nicht berührt.
         `
       },
       en: {

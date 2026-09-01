@@ -20,8 +20,17 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      '/api/mistral': {
+        target: 'https://api.mistral.ai/v1',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/mistral/, ''),
+      },
       '/api': {
         target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+      '/.netlify/functions': {
+        target: 'http://localhost:8888',
         changeOrigin: true,
       }
     },

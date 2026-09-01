@@ -1,0 +1,441 @@
+import { supabase } from './supabase'
+
+/**
+ * NeXus Database Helper V2 (Sales Operating System Architecture)
+ * 
+ * Speichert und lädt NeXus-Daten aus Supabase.
+ * Soft-Deletes: Alle GET-Abfragen ignorieren Sätze mit deleted_at != null.
+ */
+
+// -----------------------------------------------------------------------------
+// 1. ANALYSEN (Legacy / Core AI Brain)
+// -----------------------------------------------------------------------------
+
+export async function saveAnalysis({ angbot, branche, analyseResult, userId }) {
+  const { data, error } = await supabase
+    .from('nexus_analyses')
+    .insert({
+      user_id: userId,
+      angebot: angbot,
+      branche: branche,
+      analyse_result: analyseResult,
+      zielgruppe: analyseResult?.zielgruppe || null,
+      schmerzpunkte: analyseResult?.schmerzpunkte || null,
+      trigger_events: analyseResult?.trigger_events || null,
+      vertriebsstrategie: analyseResult?.vertriebsstrategie || null,
+      pitch_grundlage: analyseResult?.pitch_grundlage || null,
+      updated_at: new Date().toISOString()
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('[NeXus DB] Save analysis error:', error.message)
+    return null
+  }
+  return data
+}
+
+export async function getAnalyses(userId, limit = 20) {
+  const { data, error } = await supabase
+    .from('nexus_analyses')
+    .select('*')
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error('[NeXus DB] Get analyses error:', error.message)
+    return []
+  }
+  return data
+}
+
+export async function getAnalysisById(analysisId) {
+  const { data, error } = await supabase
+    .from('nexus_analyses')
+    .select('*')
+    .eq('id', analysisId)
+    .is('deleted_at', null)
+    .single()
+
+  if (error) {
+    console.error('[NeXus DB] Get analysis by id error:', error.message)
+    return null
+  }
+  return data
+}
+
+export async function getAnalysisCount(userId) {
+  const { count, error } = await supabase
+    .from('nexus_analyses')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+
+  if (error) {
+    console.error('[NeXus DB] Count analyses error:', error.message)
+    return 0
+  }
+  return count || 0
+}
+
+// -----------------------------------------------------------------------------
+// 2. OFFERINGS (Angebote)
+// -----------------------------------------------------------------------------
+
+export async function createOffering(userId, data) {
+  const { data: result, error } = await supabase
+    .from('nexus_offerings')
+    .insert({ user_id: userId, ...data, updated_at: new Date().toISOString() })
+    .select()
+    .single()
+  
+  if (error) { console.error('[NeXus DB] Create offering error:', error.message); return null; }
+  return result;
+}
+
+export async function getOfferings(userId) {
+  const { data, error } = await supabase
+    .from('nexus_offerings')
+    .select('*')
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false });
+  return error ? [] : data;
+}
+
+export async function getOfferingById(id) {
+  const { data, error } = await supabase.from('nexus_offerings').select('*').eq('id', id).single();
+  return error ? null : data;
+}
+
+// -----------------------------------------------------------------------------
+// 3. COMPANIES (Firmen)
+// -----------------------------------------------------------------------------
+
+export async function createCompany(userId, data) {
+  const { data: result, error } = await supabase
+    .from('nexus_companies')
+    .insert({ user_id: userId, ...data, updated_at: new Date().toISOString() })
+    .select()
+    .single()
+  
+  if (error) { 
+    console.error('[NeXus DB] Create company error:', error.message); 
+    throw new Error(`Company DB Error: ${error.message}`); 
+  }
+  return result;
+}
+
+export async function updateCompany(id, updates) {
+  const { data, error } = await supabase
+    .from('nexus_companies')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+  
+  if (error) { console.error('[NeXus DB] Update company error:', error.message); return null; }
+  return data;
+}
+
+export async function getCompanyByDomain(userId, domain) {
+  if (!domain || domain.trim() === '') return null;
+  const { data, error } = await supabase
+    .from('nexus_companies')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('domain', domain)
+    .is('deleted_at', null)
+    .single()
+  return error ? null : data;
+}
+
+export async function linkCompanyOffering(companyId, offeringId) {
+  const { error } = await supabase
+    .from('nexus_company_offerings')
+    .upsert({ company_id: companyId, offering_id: offeringId }, { onConflict: 'company_id, offering_id' })
+  if (error) console.error('[NeXus DB] Link company offering error:', error.message);
+  return !error;
+}
+
+// -----------------------------------------------------------------------------
+// 4. CONTACTS (Entscheider)
+// -----------------------------------------------------------------------------
+
+export async function createContact(userId, companyId, data) {
+  const { data: result, error } = await supabase
+    .from('nexus_contacts')
+    .insert({ user_id: userId, company_id: companyId, ...data, updated_at: new Date().toISOString() })
+    .select()
+    .single()
+  if (error) { console.error('[NeXus DB] Create contact error:', error.message); return null; }
+  return result;
+}
+
+export async function getContactsByCompany(companyId) {
+  const { data, error } = await supabase
+    .from('nexus_contacts')
+    .select('*')
+    .eq('company_id', companyId)
+    .is('deleted_at', null)
+  return error ? [] : data;
+}
+
+// -----------------------------------------------------------------------------
+// 5. TRIGGERS & RESEARCH (Signale)
+// -----------------------------------------------------------------------------
+
+export async function createTriggerEvent(userId, data) {
+  const { data: result, error } = await supabase
+    .from('nexus_trigger_events')
+    .insert({ user_id: userId, ...data, updated_at: new Date().toISOString() })
+    .select()
+    .single()
+  if (error) { 
+    console.error('[NeXus DB] Create trigger error:', error.message); 
+    throw new Error(error.message); 
+  }
+  return result;
+}
+
+export async function updateTriggerEvent(id, updates) {
+  const { data, error } = await supabase
+    .from('nexus_trigger_events')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+  return error ? null : data;
+}
+
+export async function getTriggerEvents(userId, status = null, limit = 50) {
+  let query = supabase.from('nexus_trigger_events').select('*').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false }).limit(limit);
+  if (status) query = query.eq('status', status);
+  const { data, error } = await query;
+  return error ? [] : data;
+}
+
+export async function getRadarHits(userId, offeringId = null, limit = 50) {
+  let query = supabase.from('nexus_radar_hits')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('status', 'relevant')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  
+  if (offeringId) {
+    query = query.eq('offering_id', offeringId);
+  }
+  
+  const { data, error } = await query;
+  if (error) {
+    console.error('[NeXus DB] Get radar hits error:', error.message);
+    return [];
+  }
+  return data;
+}
+
+export async function createResearch(userId, triggerId, data) {
+  const { data: result, error } = await supabase
+    .from('nexus_research')
+    .insert({ user_id: userId, trigger_id: triggerId, ...data, updated_at: new Date().toISOString() })
+    .select()
+    .single()
+  if (error) { console.error('[NeXus DB] Create research error:', error.message); return null; }
+  return result;
+}
+
+// -----------------------------------------------------------------------------
+// 6. OPPORTUNITIES (CRM)
+// -----------------------------------------------------------------------------
+
+export async function createOpportunity(userId, companyId, data) {
+  const { data: result, error } = await supabase
+    .from('nexus_opportunities')
+    .insert({ user_id: userId, company_id: companyId, ...data, updated_at: new Date().toISOString() })
+    .select()
+    .single()
+  
+  if (error) { 
+    console.error('[NeXus DB] Create opportunity error:', error.message); 
+    throw new Error(`Opportunity DB Error: ${error.message}`); 
+  }
+  return result;
+}
+
+export async function updateOpportunity(id, updates) {
+  const { data, error } = await supabase
+    .from('nexus_opportunities')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+  return error ? null : data;
+}
+
+export async function getOpportunities(userId, pipelineStage = null) {
+  let query = supabase.from('nexus_opportunities').select('*, nexus_companies(*)').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false });
+  if (pipelineStage) query = query.eq('pipeline_stage', pipelineStage);
+  const { data, error } = await query;
+  return error ? [] : data;
+}
+
+export async function getOpportunityById(id) {
+  const { data, error } = await supabase.from('nexus_opportunities').select('*, nexus_companies(*)').eq('id', id).is('deleted_at', null).single();
+  return error ? null : data;
+}
+
+export async function getOpportunityContext(id) {
+  // Fetch everything needed for the Lead-Akte except activities (because of polymorphic relation)
+  const { data, error } = await supabase
+    .from('nexus_opportunities')
+    .select(`
+      *,
+      company:nexus_companies(*),
+      offering:nexus_offerings(*),
+      contacts:nexus_opportunity_contacts(nexus_contacts(*)),
+      triggers:nexus_opportunity_triggers(nexus_trigger_events(*)),
+      generated_content:nexus_generated_content(*)
+    `)
+    .eq('id', id)
+    .single();
+
+  if (error || !data) return null;
+
+  // Fetch activities separately since they use a polymorphic entity_id
+  const { data: acts } = await supabase
+    .from('nexus_activities')
+    .select('*')
+    .eq('entity_type', 'opportunity')
+    .eq('entity_id', id);
+
+  data.activities = acts || [];
+  return data;
+}
+
+export async function saveOpportunityContact(userId, companyId, opportunityId, contactName, contactRole, source = 'tavily', confidence = 0) {
+  // 1. Insert into nexus_contacts
+  const { data: contact, error: err1 } = await supabase
+    .from('nexus_contacts')
+    .insert({ user_id: userId, company_id: companyId, name: contactName, role: contactRole })
+    .select()
+    .single();
+  
+  if (err1) return null;
+
+  // 2. Link to opportunity
+  const { error: err2 } = await supabase
+    .from('nexus_opportunity_contacts')
+    .insert({ opportunity_id: opportunityId, contact_id: contact.id, is_primary: true });
+    
+  if (err2) return null;
+  
+  // 3. Log Activity
+  await logActivity(userId, 'opportunity', opportunityId, 'contact', contact.id, 'contact_added', `Ansprechpartner ${contactName} gefunden (Quelle: ${source}).`);
+
+  return contact;
+}
+
+export async function deleteOpportunity(id) {
+  // Soft delete
+  const { error } = await supabase
+    .from('nexus_opportunities')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) { console.error('[NeXus DB] Delete opportunity error:', error.message); return false; }
+  return true;
+}
+
+export async function linkContactToOpportunity(opportunityId, contactId, role = 'Decision Maker', isPrimary = false) {
+  const { error } = await supabase
+    .from('nexus_opportunity_contacts')
+    .upsert({ opportunity_id: opportunityId, contact_id: contactId, role_in_opportunity: role, is_primary: isPrimary }, { onConflict: 'opportunity_id, contact_id' })
+  return !error;
+}
+
+export async function linkTriggerToOpportunity(opportunityId, triggerId) {
+  const { error } = await supabase
+    .from('nexus_opportunity_triggers')
+    .upsert({ opportunity_id: opportunityId, trigger_id: triggerId }, { onConflict: 'opportunity_id, trigger_id' })
+  return !error;
+}
+
+// -----------------------------------------------------------------------------
+// 7. CONTENT & ACTIVITY (Execution & Auditing)
+// -----------------------------------------------------------------------------
+
+export async function saveGeneratedContent(userId, opportunityId, type, content, metadata = {}) {
+  const { data, error } = await supabase
+    .from('nexus_generated_content')
+    .insert({ 
+      user_id: userId, 
+      opportunity_id: opportunityId, 
+      type: type, 
+      content: content, 
+      ...metadata,
+      updated_at: new Date().toISOString() 
+    })
+    .select()
+    .single()
+  if (error) { console.error('[NeXus DB] Save content error:', error.message); return null; }
+  return data;
+}
+
+export async function logActivity(userId, entityType, entityId, actorType, actorName, activityType, description, metadata = {}) {
+  const { data, error } = await supabase
+    .from('nexus_activities')
+    .insert({
+      user_id: userId,
+      entity_type: entityType,
+      entity_id: entityId,
+      actor_type: actorType,
+      actor_name: actorName,
+      activity_type: activityType,
+      description: description,
+      metadata: metadata
+    })
+    .select()
+    .single()
+  if (error) { console.error('[NeXus DB] Log activity error:', error.message); return null; }
+  return data;
+}
+
+export async function getActivitiesForEntity(entityType, entityId) {
+  const { data, error } = await supabase
+    .from('nexus_activities')
+    .select('*')
+    .eq('entity_type', entityType)
+    .eq('entity_id', entityId)
+    .order('created_at', { ascending: false })
+  return error ? [] : data;
+}
+
+// -----------------------------------------------------------------------------
+// 8. DASHBOARD STATS
+// -----------------------------------------------------------------------------
+
+export async function getDashboardStats(userId) {
+  const { count: totalOpps } = await supabase.from('nexus_opportunities').select('*', { count: 'exact', head: true }).eq('user_id', userId).is('deleted_at', null)
+  const { count: newTriggers } = await supabase.from('nexus_radar_hits').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'relevant')
+  const analyses = await getAnalysisCount(userId)
+  
+  return {
+    totalOpps: totalOpps || 0,
+    newTriggers: newTriggers || 0, // Now counts the background radar hits!
+    totalAnalyses: analyses || 0,
+    winRate: 0,
+    pipelineValue: 0
+  }
+}
+
+export async function wipeAllUserData(userId) {
+  const now = new Date().toISOString();
+  await supabase.from('nexus_analyses').update({ deleted_at: now }).eq('user_id', userId).is('deleted_at', null);
+  await supabase.from('nexus_offerings').update({ deleted_at: now }).eq('user_id', userId).is('deleted_at', null);
+  await supabase.from('nexus_opportunities').update({ deleted_at: now }).eq('user_id', userId).is('deleted_at', null);
+  await supabase.from('nexus_trigger_events').update({ deleted_at: now }).eq('user_id', userId).is('deleted_at', null);
+  return true;
+}

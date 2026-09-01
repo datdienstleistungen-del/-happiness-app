@@ -1,0 +1,361 @@
+/* Guide Context Styles */
+
+.nexus-guide-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.nexus-guide-modal {
+  background: var(--bg-card);
+  width: 90%;
+  max-width: 450px;
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.guide-modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-elevated);
+}
+
+.guide-modal-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--primary-color);
+}
+
+.guide-modal-header .close-btn {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  border-radius: 4px;
+}
+
+.guide-modal-header .close-btn:hover {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.guide-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.guide-section h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.guide-section p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.guide-section.highlight {
+  background: rgba(16, 185, 129, 0.05);
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 3px solid #10B981;
+}
+
+.guide-section.highlight h4 {
+  color: #10B981;
+}
+
+.guide-modal-footer {
+  padding: 16px 20px;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ask-assistant-btn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.ask-assistant-btn:hover {
+  opacity: 0.9;
+}
+
+/* Floating Assistant Button */
+.nexus-floating-assistant-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+  cursor: pointer;
+  z-index: 900;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.nexus-floating-assistant-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+}
+
+/* Assistant Slide-Out */
+.nexus-assistant-slideout {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 400px;
+  background: var(--bg-card);
+  box-shadow: -5px 0 25px rgba(0,0,0,0.2);
+  z-index: 950;
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border-left: 1px solid var(--border-light);
+}
+
+.slideout-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--primary-color);
+  color: white;
+}
+
+.slideout-header h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.slideout-header .close-btn {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  padding: 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+}
+
+.slideout-header .close-btn:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.slideout-body {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background: var(--bg-body);
+}
+
+.chat-placeholder {
+  background: var(--bg-card);
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px dashed var(--border-light);
+  text-align: center;
+}
+
+.context-hint {
+  display: inline-block;
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--primary-color);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  margin: 12px 0;
+}
+
+.context-hint .hint-label {
+  font-weight: bold;
+}
+
+.slideout-footer {
+  padding: 16px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  gap: 8px;
+}
+
+.slideout-footer input {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-body);
+  color: var(--text-primary);
+}
+
+.slideout-footer button {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.nexus-context-help-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  margin-left: 6px;
+  transition: all 0.2s ease;
+  /* Touch target size */
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.nexus-context-help-btn:hover {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--primary-color);
+}
+
+/* Chat Messages in Slide-Out */
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+
+.chat-message {
+  display: flex;
+  flex-direction: column;
+  max-width: 90%;
+}
+
+.chat-message.user {
+  align-self: flex-end;
+}
+
+.chat-message.user .msg-content {
+  background: var(--primary-color);
+  color: white;
+  border-radius: 12px 12px 0 12px;
+  padding: 10px 14px;
+}
+
+.chat-message.assistant {
+  align-self: flex-start;
+}
+
+.chat-message.assistant .msg-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
+  border-radius: 12px 12px 12px 0;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+
+.chat-message.assistant .msg-content p:first-child {
+  margin-top: 0;
+}
+.chat-message.assistant .msg-content p:last-child {
+  margin-bottom: 0;
+}
+
+.chat-message.assistant .msg-content a {
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
+.chat-message.assistant .msg-content strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.chat-message.typing .msg-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}

@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ContextHelpButton } from '../context/GuideContext'
 import { Search, Film, Download, Sparkles, Check, Copy, ArrowRight, Play, Pause } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { useStudio } from '../context/StudioContext'
+import { useVideoFinder } from '../context/VideoFinderContext'
 import { useLanguage } from '../i18n/translations'
 import './VideoFinderPage.css'
 
@@ -371,7 +372,7 @@ export default function VideoFinderPage() {
     mixkitLoading, setMixkitLoading,
     mixkitQuery, setMixkitQuery,
     mixkitSearched, setMixkitSearched
-  } = useStudio()
+  } = useVideoFinder()
 
   async function handleSearch(searchQuery) {
     const term = searchQuery || query
@@ -450,10 +451,12 @@ export default function VideoFinderPage() {
     }
 
     setSelectedVideo(mockVideo)
+    generateScriptForVideo(mockVideo)
   }
 
-  async function generateScriptForVideo() {
-    if (!selectedVideo || generatingScript) return
+  async function generateScriptForVideo(videoObj = null) {
+    const targetVideo = videoObj || selectedVideo
+    if (!targetVideo || generatingScript) return
 
     setGeneratingScript(true)
     setError('')
@@ -462,10 +465,10 @@ export default function VideoFinderPage() {
 
     // Versuche, Frames für GPT-4o Vision zu extrahieren (falls CORS es erlaubt)
     let frames = []
-    if (selectedVideo.hasVideo !== false && selectedVideo.id !== 'viral-import') {
+    if (targetVideo.hasVideo !== false && targetVideo.id !== 'viral-import') {
       setAnalyzingFrames(true)
       try {
-        frames = await extractFramesFromVideo(selectedVideo.url, 4)
+        frames = await extractFramesFromVideo(targetVideo.url, 4)
       } catch (err) {
         console.warn('Daumenkino gescheitert (CORS). Sende nur Text-Metadaten.', err)
       }
@@ -476,7 +479,7 @@ export default function VideoFinderPage() {
     const userPrompt = chatInput ? chatInput.trim() : 'Ich brauche ein witziges, virales TikTok-Video daraus.'
     
     // Bereinige und kürze die Beschreibung (Archive.org Beschreibungen können HTML enthalten und sehr lang sein)
-    const rawDesc = selectedVideo?.description || 'Keine Beschreibung verfügbar'
+    const rawDesc = targetVideo?.description || 'Keine Beschreibung verfügbar'
     const cleanDesc = rawDesc.replace(/<[^>]*>?/gm, '').substring(0, 800).trim()
 
     const languageNames = {
@@ -487,7 +490,7 @@ export default function VideoFinderPage() {
     const systemPrompt = `Du bist die "Video-Ideenschmiede" (H.I.T. Regisseur).
 Deine Aufgabe: Der User gibt dir (falls möglich) Bilder aus einem gefundenen Video.
 Hier sind die echten Metadaten des ausgewählten Videos:
-- Video-Titel: "${selectedVideo?.title || 'Unbekannt'}"
+- Video-Titel: "${targetVideo?.title || 'Unbekannt'}"
 - Beschreibung: "${cleanDesc}"
 - Suchbegriff / Kategorie: "${scriptTopic}"
 
@@ -715,7 +718,9 @@ Antworte AUSSCHLIESSLICH mit dem validen JSON-Objekt. Schreibe keinen anderen Te
     <div className="vf-container">
       <div className="vf-main-content">
         <div className="vf-header">
-          <h2>🔍 {getTxt('viralTitle')}</h2>
+          <h2 style={{ display: 'flex', alignItems: 'center' }}>
+            🔍 {getTxt('viralTitle')} <ContextHelpButton helpKey="video.finder" />
+          </h2>
           <p>{getTxt('viralSub')}</p>
         </div>
 
