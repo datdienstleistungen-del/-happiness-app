@@ -25,7 +25,8 @@
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.1.0",
-    "stripe": "^22.3.0"
+    "stripe": "^22.3.0",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.110.0",

@@ -299,6 +299,7 @@ export async function getOpportunityContext(id) {
       contacts:nexus_opportunity_contacts(nexus_contacts(*)),
       triggers:nexus_opportunity_triggers(nexus_trigger_events(*)),
       generated_content:nexus_generated_content(*)
+      
     `)
     .eq('id', id)
     .single();
@@ -313,6 +314,24 @@ export async function getOpportunityContext(id) {
     .eq('entity_id', id);
 
   data.activities = acts || [];
+
+  // Fetch research based on the triggers associated with this opportunity
+  const triggerIds = data.triggers ? data.triggers.map(t => t.nexus_trigger_events?.id).filter(Boolean) : [];
+  if (triggerIds.length > 0) {
+    const { data: researchData, error: researchErr } = await supabase
+      .from('nexus_research')
+      .select('*')
+      .in('trigger_id', triggerIds);
+      
+    if (researchErr) {
+      console.error('[NeXus DB] Error fetching research for triggers:', researchErr);
+      data.research = [];
+    } else {
+      data.research = researchData || [];
+    }
+  } else {
+    data.research = [];
+  }
   return data;
 }
 
@@ -334,7 +353,7 @@ export async function saveOpportunityContact(userId, companyId, opportunityId, c
   if (err2) return null;
   
   // 3. Log Activity
-  await logActivity(userId, 'opportunity', opportunityId, 'contact', contact.id, 'contact_added', `Ansprechpartner ${contactName} gefunden (Quelle: ${source}).`);
+  await logActivity(userId, 'opportunity', opportunityId, 'SYSTEM', 'NeXus AI', 'contact_added', `Ansprechpartner ${contactName} gefunden (Quelle: ${source}).`);
 
   return contact;
 }

@@ -36,7 +36,7 @@ Regel 2: Der Suchbegriff in der Klammer sollte Rolle und Firmenname enthalten.`
 
 // Tavily Search Helper
 async function performTavilySearch(query) {
-  const key = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY
+  const key = process.env.TAVILY_API_KEY
   if (!key) return "Tavily API Key fehlt im Backend."
   try {
     const res = await fetch("https://api.tavily.com/search", {
