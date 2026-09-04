@@ -693,15 +693,6 @@ export default function SalesWorkspacePage() {
                 </div>
                 <main className="sales-workspace-main" style={{ width: '100%' }}>
                   
-                  <div style={{ padding: '10px', background: 'var(--bg)', border: '1px solid var(--border-light)', borderRadius: '4px', marginBottom: '16px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    <strong>DEBUG SYSTEM:</strong><br/>
-                    ActiveOppId: {activeOppId || 'null'}<br/>
-                    Error: {error || 'null'}<br/>
-                    FormData Company: {formData.company ? `"${formData.company}"` : 'EMPTY'}<br/>
-                    FullContext Loaded: {fullContext ? 'YES' : 'NO'}<br/>
-                    Contact Searching: {findingContact ? 'YES' : 'NO'}
-                  </div>
-
                   <form onSubmit={handleGenerate} className="sales-form">
                     {renderFormFields()}
                     
