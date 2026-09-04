@@ -165,17 +165,30 @@ export default function SalesWorkspacePage() {
     setFindingContact(true);
     setFoundContact(null);
     try {
-      const res = await callNexusAI({
-        mode: 'find_contact',
-        lang: lang,
-        userMessage: `Finde den Entscheider bei ${companyName}`,
-        company: companyName
-      });
-      
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token || '';
+
+        const coachRes = await fetch('/.netlify/functions/coach-chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            message: `[SYSTEM-BEFEHL] Finde den wichtigsten Ansprechpartner (Entscheider/CEO/CMO) bei der Firma ${companyName}. Durchsuche zwingend das Internet. Antworte EXAKT in diesem JSON-Format: {"name": "...", "role": "...", "phone": "..."}. Wenn du absolut nichts findest, schreibe überall "unbekannt" rein. Schreibe KEINE weiteren Sätze, nur das reine JSON!`,
+            visitor_id: 'auto-finder-bridge',
+            language: lang
+          })
+        });
+
+        if (!coachRes.ok) throw new Error("Coach API fehlgeschlagen");
+        const data = await coachRes.json();
+        
+        let parsed = null;
         try {
-          const textToParse = res?.response || res || "";
-          const cleanedText = typeof textToParse === 'string' ? textToParse.replace(/```(?:json)?/g, '').replace(/```/g, '').trim() : "";
-          parsed = typeof textToParse === 'string' ? JSON.parse(cleanedText) : textToParse;
+          const textToParse = data.response || "";
+          const cleanedText = textToParse.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
+          parsed = JSON.parse(cleanedText);
         } catch(e) {
           console.error("Fehler beim Parsen der Kontakt-JSON:", e);
         }
