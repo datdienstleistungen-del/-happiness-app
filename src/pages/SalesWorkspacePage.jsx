@@ -824,34 +824,7 @@ export default function SalesWorkspacePage() {
                         </div>
                       </div>
                     )}
-
-                    {/* 4. Research / Intelligence */}
-                      <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
-                        <h4 style={{ marginTop: 0, color: 'var(--color-koralle)' }}>Research / Intelligence</h4>
-                        {(!fullContext.research || fullContext.research.length === 0) ? (
-                          isResearching ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
-                              <div className="spinner" style={{ width: '16px', height: '16px', border: '2px solid var(--text-secondary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-                              Deep Research läuft im Hintergrund...
-                            </div>
-                          ) : (
-                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                              <p style={{ marginBottom: '8px' }}>Noch keine Deep Research Daten vorhanden.</p>
-                              <button 
-                                onClick={handleRunResearch}
-                                style={{ background: 'var(--color-koralle)', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}
-                              >
-                                Deep Research starten
-                              </button>
-                            </div>
-                          )
-                        ) : (
-                          <div style={{ fontSize: '0.9rem', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
-                            {fullContext.research[0].summary}
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                  </div>
                   ) : (
                   <p>Lade Intelligence-Daten...</p>
                 )}
