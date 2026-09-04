@@ -88,18 +88,18 @@ export const handler = async (event) => {
       return { statusCode: 500, body: JSON.stringify({ error: "Mistral API Key fehlt im Backend" }) };
     }
 
-    // --- STUFE 1: Auto-Korrektur (Tippfehler) durch Mistral ---
+    // --- STUFE 1: Auto-Korrektur (Tippfehler) durch Groq ---
     // Da Tavily sehr anfällig für Tippfehler ist (z.B. "markting argenturen"),
-    // lassen wir Mistral den Suchstring blitzschnell korrigieren, bevor wir suchen.
+    // lassen wir Groq den Suchstring blitzschnell korrigieren, bevor wir suchen.
     let correctedQuery = searchQuery;
     let correctedBranche = branche || '';
     
     try {
-      const spellcheckRes = await fetch("https://api.mistral.ai/v1/chat/completions", {
+      const spellcheckRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${mistralKey}` },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.GROQ_API_KEY}` },
         body: JSON.stringify({
-          model: "mistral-small-latest", // Small model für maximale Geschwindigkeit
+          model: "groq/compound", // Small model für maximale Geschwindigkeit
           messages: [{ 
             role: "system", 
             content: "Du bist eine Rechtschreibkorrektur-Engine. Der User übergibt dir Suchbegriffe. Deine EINZIGE Aufgabe ist es, Tippfehler zu korrigieren. Gib NUR die korrigierten Begriffe zurück, exakt so wie sie sind, ohne Erklärungen, ohne Anführungszeichen und ohne zusätzliche Wörter. Wenn keine Fehler drin sind, gib sie 1:1 zurück."
@@ -270,28 +270,33 @@ export const handler = async (event) => {
       ]
     }`;
 
-    const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
+    const groqKey = process.env.GROQ_API_KEY;
+    if (!groqKey) {
+      return { statusCode: 500, body: JSON.stringify({ error: "Groq API Key fehlt im Backend" }) };
+    }
+    
+    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${mistralKey}`
+        "Authorization": `Bearer ${groqKey}`
       },
       body: JSON.stringify({
-        model: "mistral-small-latest",
+        model: "groq/compound",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Web-Recherche Ergebnisse:\n\n${webContext}` }
         ],
-        temperature: 0.1
+        temperature: 0.3
       })
     });
-
-    if (!res.ok) {
-      throw new Error(`Mistral API Error beim Extrahieren der Live-Trigger: ${res.statusText}`);
+    
+    if (!groqRes.ok) {
+      throw new Error(`Groq API Error beim Extrahieren der Live-Trigger: ${groqRes.statusText}`);
     }
 
-    const data = await res.json();
-    let content = data.choices[0].message.content;
+    const groqData = await groqRes.json();
+    let content = groqData.choices[0].message.content;
     
     // Markdown JSON-Blöcke bereinigen, falls Mistral sie hinzufügt
     content = content.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();

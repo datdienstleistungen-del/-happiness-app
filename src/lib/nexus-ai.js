@@ -19,12 +19,14 @@ import { supabase } from './supabase'
  */
 export async function callNexusAI(modeOrParams, message = null, context = null, temperature = 0.3, lang = 'de') {
   let mode, params
+  let targetLang = 'auto'
   
   // Handle both object and parameter-based calls
   if (typeof modeOrParams === 'object' && modeOrParams !== null) {
     // Object call: callNexusAI({ mode, angebot, branche, ... })
     mode = modeOrParams.mode
-    const { mode: _, ...rest } = modeOrParams
+    if (modeOrParams.targetLang) targetLang = modeOrParams.targetLang;
+    const { mode: _, targetLang: __, ...rest } = modeOrParams
     
     // Build message from available params
     if (rest.message) {
@@ -116,11 +118,11 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
   } else if (['sales_pitch', 'follow_up', 'einwandbehandlung', 'forum_response'].includes(mode)) {
     systemPrompt += ` Du bist ein Elite B2B-Sales-Copywriter. Deine Aufgabe ist es, eine hochpersonalisierte Vertriebsnachricht zu verfassen. 
 
-      WICHTIGSTE REGEL: Der PITCH basiert ZWINGEND auf dem übergebenen TRIGGER EVENT.
-      Verwende nicht einfach nur "Firmenname + Kontaktname", sondern entwickle eine plausible Verkaufsargumentation aus dem Trigger heraus.
+      WICHTIGSTE REGEL: Der PITCH basiert ZWINGEND auf den übergebenen TRIGGER EVENTS (Feld "triggers" im Kontext).
+      Verwende nicht einfach nur "Firmenname + Kontaktname", sondern entwickle eine plausible Verkaufsargumentation aus den Triggern heraus. Falls mehrere Trigger vorhanden sind, beziehe dich auf den wichtigsten oder verknüpfe sie logisch.
 
       DATENFLUSS & STRUKTUR DER NACHRICHT:
-      1. Trigger (Aufhänger): Beziehe dich im ersten Absatz auf das spezifische Ereignis/Signal.
+      1. Aufhänger: Beziehe dich im ersten Absatz auf das spezifische Ereignis/Signal aus den Triggern.
       2. Möglicher Bedarf: Welches konkrete Problem oder welcher Bedarf entsteht durch dieses Ereignis?
       3. Verbindung zum Offering: Warum passt das übergebene Offering (inkl. Positioning) exakt zu diesem entstandenen Bedarf?
       4. Konkreter Nutzen: Welchen echten Mehrwert bieten wir in dieser Situation?
@@ -165,10 +167,14 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
     
     Antworte in normalem, menschenlesbaren Markdown-Fließtext (KEIN JSON). Sei prägnant, kompetent und hilfreich.`
   } else if (mode === 'find_contact') {
-    systemPrompt += ` Du bist ein Recherche-Agent. Deine EINZIGE Aufgabe ist es, aus dem dir übergebenen Such-Kontext (Tavily) den Namen des gesuchten Ansprechpartners / Entscheiders zu extrahieren.
-    Gib ausschließlich ein JSON-Objekt zurück, ohne jeglichen Markdown-Text außen herum. 
-    Format: { "name": "Gefundener Name oder leer lassen, falls unbekannt", "role": "Gefundene Position oder leer" }`
-  } else if (mode === 'trigger_hypotheses') {
+      systemPrompt += ` Du bist ein Recherche-Agent. Deine EINZIGE Aufgabe ist es, aus dem dir übergebenen Such-Kontext (Tavily) den exakten Namen des gesuchten Ansprechpartners (z.B. Geschäftsführer, CEO, Marketingleiter) zu extrahieren.
+      
+      WICHTIGSTE REGEL: ERFINDE UNTER KEINEN UMSTÄNDEN NAMEN! 
+      Wenn in den bereitgestellten Suchergebnissen kein eindeutiger, echter Name für die gesuchte Firma steht, MUSST du zwingend "unbekannt" als Name zurückgeben. Rate niemals.
+      
+      Gib ausschließlich ein JSON-Objekt zurück, ohne jeglichen Markdown-Text außen herum. 
+      Format: { "name": "Gefundener Name oder 'unbekannt'", "role": "Gefundene Position oder 'unbekannt'", "phone": "Gefundene Telefonnummer oder 'unbekannt'" }`
+    } else if (mode === 'trigger_hypotheses') {
     systemPrompt += ` Du bist ein brillanter B2B-Vertriebsstratege. Deine Aufgabe ist es, für ein gegebenes Produkt und eine Zielgruppe 3-5 hochspezifische, realistische Trigger-Events (Kaufsignale) abzuleiten. 
     
     WICHTIG: Vermeide generische Suchbegriffe (wie "Treppenbau"). Finde konkrete Ereignisse, die auf JETZIGEN Bedarf hindeuten (z.B. "Neubau einer Produktionsstätte").
@@ -206,7 +212,8 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
         userMessage: message,
         context: context,
         temperature: temperature,
-        lang: lang
+        lang: lang,
+        targetLang: targetLang
       }),
       signal: controller.signal
     });
@@ -242,7 +249,7 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
     return data
   } catch (err) {
     if (err.name === 'AbortError') {
-      throw new Error("Zeitüberschreitung: Die KI hat zu lange gebraucht, um zu antworten (Timeout nach 30s).");
+      throw new Error("Zeitüberschreitung: Die KI hat zu lange gebraucht, um zu antworten (Timeout nach 60s).");
     }
     throw err;
   } finally {
@@ -391,3 +398,21 @@ export async function generiereForumAntwortbeitrag(post, quelle) {
     0.6
   )
 }
+
+export async function runDeepResearch(opportunityContext) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token || '';
+
+  const res = await fetch('/.netlify/functions/nexus-research', {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ opportunityContext })
+  });
+
+  if (!res.ok) throw new Error('Deep Research API failed');
+  return res.json();
+}
+

@@ -28,17 +28,23 @@ async function tryGroq(messages, temperature = 0.3) {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'groq/compound',
         messages,
         temperature,
         max_tokens: 4096
       })
-    }, 5000) // 5 seconds max for Groq
-    if (!res.ok) { await res.text().catch(e => {}); clearTimeout(abortId); clearTimeout(raceId); return null; }
+    }, 15000)
+    if (!res.ok) { 
+      const errText = await res.text().catch(e => {}); 
+      clearTimeout(abortId); clearTimeout(raceId); 
+      throw new Error(`Groq API Error (${res.status}): ${errText}`);
+    }
     const data = await res.json()
     clearTimeout(abortId); clearTimeout(raceId);
-    return { text: data.choices?.[0]?.message?.content || null, provider: 'groq', model: 'llama-3.3-70b-versatile' }
-  } catch { return null }
+    return { text: data.choices?.[0]?.message?.content || null, provider: 'groq', model: 'groq/compound' }
+  } catch (e) {
+    throw new Error(`Groq Fehler: ${e.message}`);
+  }
 }
 
 async function tryOpenRouter(messages, temperature = 0.3) {
@@ -157,6 +163,7 @@ async function callAI(messages, temperature = 0.3) {
     () => tryOpenAI(messages, temperature),
     () => tryDeepSeek(messages, temperature)
   ]
+  let lastError = null;
   for (const tryProvider of providers) {
     try {
       console.log(`[NEXUS] Trying provider loop step`);
@@ -167,10 +174,11 @@ async function callAI(messages, temperature = 0.3) {
       }
     } catch (e) {
       console.warn('Provider failed with exception:', e.message);
+      lastError = e;
       // continue to next provider
     }
   }
-  return null
+  throw lastError || new Error("KI antwortet nicht rechtzeitig (Rate Limit oder Überlastung). Bitte warte kurz und versuche es erneut.");
 }
 
 export const handler = async (event) => {
@@ -274,11 +282,20 @@ export const handler = async (event) => {
 
 
     console.log("[NEXUS] Starting handler");
-    const { systemPrompt, userMessage, context, temperature, lang } = JSON.parse(event.body);
+    const { systemPrompt, userMessage, context, temperature, lang, targetLang } = JSON.parse(event.body);
 
-    const languageNames = { de: 'Deutsch (German)', en: 'Englisch (English)', es: 'Spanisch (Spanish)', fr: 'Französisch (French)', it: 'Italienisch (Italian)', nl: 'Niederländisch (Dutch)' };
-    const langName = languageNames[lang] || 'Deutsch (German)';
-    const langInstruction = `\n\nCRITICAL REQUIREMENT: The user's language is ${langName}. All generated content MUST be written in ${langName}.`;
+    const languageNames = { de: 'Deutsch', en: 'Englisch', es: 'Spanisch', fr: 'Französisch', it: 'Italienisch', nl: 'Niederländisch' };
+    
+    let finalLang = lang || 'de';
+    if (targetLang && targetLang !== 'auto') {
+      finalLang = targetLang;
+    }
+    const langName = languageNames[finalLang] || languageNames['de'];
+    
+    let langInstruction = `\n\nCRITICAL REQUIREMENT: Du musst die Nachricht zwingend auf ${langName} verfassen!`;
+    if (targetLang === 'auto') {
+      langInstruction = `\n\nCRITICAL REQUIREMENT: Passe die Sprache der Nachricht automatisch an das Land des Ziel-Unternehmens an. (z.B. Englisch für internationale Firmen, Deutsch für DACH).`;
+    }
 
     const contextSystem = (context && context.system) ? `\n\n${context.system}` : '';
     const finalSystemPrompt = systemPrompt + contextSystem + langInstruction;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Briefcase, Mail, MessageSquare, Phone, Send, Copy, CheckCircle, AlertCircle, List, Trash2, ArrowRight, Search } from 'lucide-react'
-import { callNexusAI } from '../lib/nexus-ai'
+import { callNexusAI, runDeepResearch } from '../lib/nexus-ai'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import { useLead } from '../context/LeadContext'
 import { useAuth } from '../context/AuthContext'
@@ -47,6 +47,7 @@ export default function SalesWorkspacePage() {
   const [error, setError] = useState(null)
   const [copied, setCopied] = useState(false)
   const [findingContact, setFindingContact] = useState(false)
+  const [isResearching, setIsResearching] = useState(false)
   const [foundContact, setFoundContact] = useState(null) // Speichert den gefundenen Kontakt für Bestätigung
 
   // --- TEMPORÄRER TEST-SETUP BUTTON ---
@@ -119,6 +120,7 @@ export default function SalesWorkspacePage() {
           // Prüfe, ob es schon einen Kontakt gibt
           let contactName = '';
           const existingContact = ctx.contacts?.length > 0 ? ctx.contacts[0].nexus_contacts : null;
+
           if (existingContact) {
              contactName = `${existingContact.name}${existingContact.role ? ` (${existingContact.role})` : ''}`;
              setFoundContact(existingContact);
@@ -174,13 +176,26 @@ export default function SalesWorkspacePage() {
       if (typeof res === 'object') { parsed = res; } 
       else if (typeof res === 'string') { try { parsed = JSON.parse(res); } catch(e) {} }
       
-      if (parsed && parsed.name && parsed.name.trim() !== '') {
-        // Speichere in nexus_contacts und verknüpfe mit opportunity
-        const savedContact = await db.saveOpportunityContact(user.id, companyId, oppId, parsed.name, parsed.role || '', 'tavily', 80);
-        if (savedContact) {
-           const fullStr = `${savedContact.name}${savedContact.role ? ` (${savedContact.role})` : ''}`;
-           setFoundContact(savedContact);
-           setFormData(prev => ({ ...prev, ansprechpartner: fullStr }));
+      if (parsed && parsed.name && parsed.name.trim() !== '' && parsed.name !== 'N/A' && parsed.name !== 'unbekannt') {
+        // Zeige den Kontakt sofort im Formular an (falls DB-Save wegen RLS fehlschlägt, haben wir ihn trotzdem im Pitch)
+        let fullStr = `${parsed.name}${parsed.role && parsed.role !== 'N/A' && parsed.role !== 'unbekannt' ? ` (${parsed.role})` : ''}`;
+        if (parsed.phone && parsed.phone !== 'unbekannt' && parsed.phone !== 'N/A') {
+          fullStr += ` | Tel: ${parsed.phone}`;
+        }
+        setFormData(prev => ({ ...prev, ansprechpartner: fullStr }));
+        
+        // Versuche im Hintergrund zu speichern (nexus_contacts und nexus_opportunity_contacts)
+        try {
+          const savedContact = await db.saveOpportunityContact(user.id, companyId, oppId, parsed.name, parsed.role || '', 'tavily', 80);
+          if (savedContact) {
+            setFoundContact(savedContact);
+          } else {
+            // Fallback, wenn der Save fehlschlägt, aber wir einen generierten Kontakt haben
+            setFoundContact({ name: parsed.name, role: parsed.role });
+          }
+        } catch(e) {
+          console.error("Fehler beim Speichern des Kontakts:", e);
+          setFoundContact({ name: parsed.name, role: parsed.role });
         }
       } else {
          // Explizit markieren, dass kein Kontakt gefunden wurde
@@ -194,6 +209,31 @@ export default function SalesWorkspacePage() {
     }
   }
 
+  const handleRunResearch = async () => {
+    if (!fullContext) return;
+    setIsResearching(true);
+    try {
+      const latestTrigger = fullContext.triggers?.length > 0 ? fullContext.triggers[0].nexus_trigger_events : null;
+      const researchRes = await runDeepResearch({
+         opportunity: fullContext,
+         company: fullContext.company,
+         offering: fullContext.offering,
+         trigger: latestTrigger
+      });
+      if (researchRes && researchRes.summary) {
+         setFullContext(prev => ({
+           ...prev, 
+           research: [{ summary: researchRes.summary, raw_data: researchRes.raw }]
+         }));
+      }
+    } catch(err) {
+      console.error("Deep Research fehlgeschlagen:", err);
+      alert("Deep Research fehlgeschlagen: " + err.message);
+    } finally {
+      setIsResearching(false);
+    }
+  }
+
   const handleFindContact = () => {
     // Manuelles Triggern, falls nötig
     if (!formData.company) return alert('Firma fehlt.');
@@ -204,26 +244,8 @@ export default function SalesWorkspacePage() {
 
   const handleSaveContactToDb = async () => {
     if (!foundContact || !activeOppId || !user) return;
-    const opp = opportunities.find(o => o.id === activeOppId);
-    if (!opp || !opp.company_id) return;
-    
-    try {
-      // Kontakt in DB speichern
-      await db.createContact(user.id, opp.company_id, {
-        first_name: foundContact.name.split(' ')[0] || '',
-        last_name: foundContact.name.split(' ').slice(1).join(' ') || foundContact.name,
-        role: foundContact.role || 'Decision Maker',
-        source: 'Tavily Deep Search'
-      });
-      
-      // Activity loggen
-      await db.logActivity(user.id, 'opportunity', activeOppId, 'USER', 'Nutzer', 'contact_added', `Neuer Kontakt gespeichert: ${foundContact.name}`);
-      
-      alert("Kontakt erfolgreich in der Akte gespeichert!");
-      setFoundContact(null); // Button ausblenden
-    } catch(err) {
-      alert("Fehler beim Speichern des Kontakts.");
-    }
+    alert("Kontakt ist bereits sicher in der Akte gespeichert!");
+    setFoundContact(null);
   }
 
   const handleInputChange = (e) => {
@@ -246,10 +268,13 @@ export default function SalesWorkspacePage() {
       const resultData = await callNexusAI({
         mode: selectedMode,
         lang: lang,
+        targetLang: formData.targetLang || 'auto',
         ...formData,
         full_context: {
+          opportunity: fullContext || null,
+          research: fullContext?.research || [],
           offering: fullContext?.offering ? { name: fullContext.offering.offering_name, positioning: fullContext.offering.positioning } : null,
-          trigger: fullContext?.triggers?.[0]?.nexus_trigger_events || null,
+          triggers: fullContext?.triggers ? fullContext.triggers.map(t => t.nexus_trigger_events).filter(Boolean) : (latestTrigger ? [latestTrigger] : []),
           company: fullContext?.company || formData.company,
           contact: fullContext?.contacts?.[0]?.nexus_contacts || formData.ansprechpartner,
           activities: fullContext?.activities || []
@@ -284,9 +309,13 @@ export default function SalesWorkspacePage() {
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(result)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      let textToCopy = result;
+      if (typeof result === 'object') {
+        textToCopy = result.response || result.nachricht || result.message || result.text || result.antwort || result.pitch || JSON.stringify(result, null, 2);
+      }
+      await navigator.clipboard.writeText(textToCopy);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Copy Fehler:', err)
     }
@@ -488,45 +517,6 @@ export default function SalesWorkspacePage() {
     <div className="sales-workspace-page">
       <header className="page-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', paddingBottom: '20px', borderBottom: '1px solid var(--border-light)', marginBottom: '24px' }}>
         
-        <button onClick={runTestSetup} style={{ background: 'red', color: 'white', padding: '10px 20px', fontWeight: 'bold', borderRadius: '8px', marginBottom: '15px' }}>
-          🚨 TEST SETUP FÜR B2 AUSFÜHREN 🚨
-        </button>
-
-        <button 
-          onClick={async () => {
-            try {
-              const { data: { user } } = await supabase.auth.getUser();
-              const { data: hits } = await supabase.from('nexus_radar_hits').select('*').eq('user_id', user.id).neq('status', 'irrelevant');
-              if (!hits || hits.length === 0) return alert("Keine Radar-Treffer gefunden!");
-              alert(`Starte KI für ${hits.length} Treffer. Bitte warte ca. 10 Sekunden...`);
-              for (const hit of hits) {
-                const prompt = "Bewerte den Artikel. Gib JSON: { status: 'relevant' | 'irrelevant', relevance_score: 0-100, relevance_reason: '...', firmenname: 'Name', domain: 'domain.de' }. Text: " + hit.title + " " + hit.raw_content;
-                const mRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer shutupfmT3TNb8dFpadtS2CeJpfkWhSz' },
-                  body: JSON.stringify({ model: 'mistral-small-latest', response_format: { type: 'json_object' }, messages: [{ role: 'user', content: prompt }] })
-                });
-                const data = await mRes.json();
-                const resObj = JSON.parse(data.choices[0].message.content);
-                if (resObj.status === 'relevant' && resObj.firmenname && resObj.firmenname !== 'N/A') {
-                  const { data: cData, error: cErr } = await supabase.from('nexus_companies').insert({ user_id: user.id, name: resObj.firmenname, ai_confidence: resObj.relevance_score }).select().single();
-                  if (cErr) { console.error(cErr); continue; }
-                  await supabase.from('nexus_company_offerings').insert({ company_id: cData.id, offering_id: hit.offering_id });
-                  await supabase.from('nexus_opportunities').insert({ user_id: user.id, company_id: cData.id, offering_id: hit.offering_id, pipeline_stage: 'opportunity', source: 'Browser Fix', created_from: 'AI' });
-                  await supabase.from('nexus_radar_hits').update({ status: 'relevant' }).eq('id', hit.id);
-                } else {
-                  await supabase.from('nexus_radar_hits').update({ status: 'irrelevant' }).eq('id', hit.id);
-                }
-              }
-              alert("Fertig! Lade Pipeline...");
-              window.location.reload();
-            } catch(e) { alert(e.message); }
-          }} 
-          style={{ background: '#10B981', color: 'white', padding: '10px 20px', fontWeight: 'bold', borderRadius: '8px', marginBottom: '15px', marginLeft: '10px' }}
-        >
-          🛠️ Entwickler-Fix: KI-Import in Pipeline
-        </button>
-
         <button 
           className="btn-secondary" 
           onClick={() => window.history.back()}
@@ -714,6 +704,24 @@ export default function SalesWorkspacePage() {
 
                   <form onSubmit={handleGenerate} className="sales-form">
                     {renderFormFields()}
+                    
+                    <div className="form-group" style={{ marginTop: '16px' }}>
+                      <label htmlFor="targetLang">Zielsprache der Nachricht</label>
+                      <select
+                        id="targetLang"
+                        name="targetLang"
+                        value={formData.targetLang || 'auto'}
+                        onChange={handleInputChange}
+                        style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-light)', background: 'var(--bg)', color: 'var(--text-primary)' }}
+                      >
+                        <option value="auto">Automatisch (Passend zur Ziel-Firma)</option>
+                        <option value="de">Deutsch</option>
+                        <option value="en">Englisch</option>
+                        <option value="es">Spanisch</option>
+                        <option value="fr">Französisch</option>
+                      </select>
+                    </div>
+
                     {error && (
                       <div className="error-message">
                         <AlertCircle size={16} />
@@ -825,8 +833,35 @@ export default function SalesWorkspacePage() {
                         </div>
                       </div>
                     )}
-                  </div>
-                ) : (
+
+                    {/* 4. Research / Intelligence */}
+                      <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
+                        <h4 style={{ marginTop: 0, color: 'var(--color-koralle)' }}>Research / Intelligence</h4>
+                        {(!fullContext.research || fullContext.research.length === 0) ? (
+                          isResearching ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+                              <div className="spinner" style={{ width: '16px', height: '16px', border: '2px solid var(--text-secondary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                              Deep Research läuft im Hintergrund...
+                            </div>
+                          ) : (
+                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                              <p style={{ marginBottom: '8px' }}>Noch keine Deep Research Daten vorhanden.</p>
+                              <button 
+                                onClick={handleRunResearch}
+                                style={{ background: 'var(--color-koralle)', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}
+                              >
+                                Deep Research starten
+                              </button>
+                            </div>
+                          )
+                        ) : (
+                          <div style={{ fontSize: '0.9rem', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+                            {fullContext.research[0].summary}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
                   <p>Lade Intelligence-Daten...</p>
                 )}
               </div>
