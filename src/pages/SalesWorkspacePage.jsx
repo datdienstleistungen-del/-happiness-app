@@ -180,7 +180,7 @@ export default function SalesWorkspacePage() {
           console.error("Fehler beim Parsen der Kontakt-JSON:", e);
         }
       
-      if (parsed && parsed.name && parsed.name.trim() !== '' && parsed.name !== 'N/A' && parsed.name !== 'unbekannt') {
+      if (parsed && parsed.name && parsed.name.trim() !== '' && parsed.name.toLowerCase() !== 'n/a' && parsed.name.toLowerCase() !== 'unbekannt' && parsed.name.length < 50) {
         // Zeige den Kontakt sofort im Formular an (falls DB-Save wegen RLS fehlschlägt, haben wir ihn trotzdem im Pitch)
         let fullStr = `${parsed.name}${parsed.role && parsed.role !== 'N/A' && parsed.role !== 'unbekannt' ? ` (${parsed.role})` : ''}`;
         if (parsed.phone && parsed.phone !== 'unbekannt' && parsed.phone !== 'N/A') {
