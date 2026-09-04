@@ -172,9 +172,13 @@ export default function SalesWorkspacePage() {
         company: companyName
       });
       
-      let parsed = null;
-      if (typeof res === 'object') { parsed = res; } 
-      else if (typeof res === 'string') { try { parsed = JSON.parse(res); } catch(e) {} }
+        try {
+          const textToParse = res?.response || res || "";
+          const cleanedText = typeof textToParse === 'string' ? textToParse.replace(/```(?:json)?/g, '').replace(/```/g, '').trim() : "";
+          parsed = typeof textToParse === 'string' ? JSON.parse(cleanedText) : textToParse;
+        } catch(e) {
+          console.error("Fehler beim Parsen der Kontakt-JSON:", e);
+        }
       
       if (parsed && parsed.name && parsed.name.trim() !== '' && parsed.name !== 'N/A' && parsed.name !== 'unbekannt') {
         // Zeige den Kontakt sofort im Formular an (falls DB-Save wegen RLS fehlschlägt, haben wir ihn trotzdem im Pitch)
