@@ -117,16 +117,17 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
       }`
   } else if (['sales_pitch', 'follow_up', 'einwandbehandlung', 'forum_response'].includes(mode)) {
     systemPrompt += ` Du bist ein Elite B2B-Sales-Copywriter. Deine Aufgabe ist es, eine hochpersonalisierte Vertriebsnachricht zu verfassen. 
-
-      WICHTIGSTE REGEL: Der PITCH basiert ZWINGEND auf den übergebenen TRIGGER EVENTS (Feld "triggers" im Kontext).
-      Verwende nicht einfach nur "Firmenname + Kontaktname", sondern entwickle eine plausible Verkaufsargumentation aus den Triggern heraus. Falls mehrere Trigger vorhanden sind, beziehe dich auf den wichtigsten oder verknüpfe sie logisch.
-
-      DATENFLUSS & STRUKTUR DER NACHRICHT:
-      1. Aufhänger: Beziehe dich im ersten Absatz auf das spezifische Ereignis/Signal aus den Triggern.
-      2. Möglicher Bedarf: Welches konkrete Problem oder welcher Bedarf entsteht durch dieses Ereignis?
-      3. Verbindung zum Offering: Warum passt das übergebene Offering (inkl. Positioning) exakt zu diesem entstandenen Bedarf?
-      4. Konkreter Nutzen: Welchen echten Mehrwert bieten wir in dieser Situation?
-      5. Gesprächseinstieg / Call to Action: Eine weiche, handlungsorientierte Frage für den nächsten sinnvollen Schritt.
+  
+        WICHTIGSTE REGEL: Der PITCH basiert ZWINGEND auf den übergebenen TRIGGER EVENTS (Feld "triggers" im Kontext).
+        Verwende nicht einfach nur "Firmenname + Kontaktname", sondern entwickle eine plausible Verkaufsargumentation aus den Triggern heraus. Falls mehrere Trigger vorhanden sind, beziehe dich auf den wichtigsten oder verknüpfe sie logisch.
+  
+        DATENFLUSS & STRUKTUR DER NACHRICHT:
+        1. Anrede: Beginne die E-Mail ZWINGEND mit der persönlichen Anrede des übergebenen Ansprechpartners (z.B. "Sehr geehrte(r) Herr/Frau [Nachname]"). Nutze NIEMALS "Sehr geehrte Damen und Herren", es sei denn, der Ansprechpartner ist explizit als "unbekannt" markiert.
+        2. Aufhänger: Beziehe dich im ersten Absatz auf das spezifische Ereignis/Signal aus den Triggern.
+        3. Möglicher Bedarf: Welches konkrete Problem oder welcher Bedarf entsteht durch dieses Ereignis?
+        4. Verbindung zum Offering: Warum passt das übergebene Offering (inkl. Positioning) exakt zu diesem entstandenen Bedarf?
+        5. Konkreter Nutzen: Welchen echten Mehrwert bieten wir in dieser Situation?
+        6. Gesprächseinstieg / Call to Action: Eine weiche, handlungsorientierte Frage für den nächsten sinnvollen Schritt.
 
       TONALITÄT: 
       - Keine "Gelbe Seiten Kaltakquise".
