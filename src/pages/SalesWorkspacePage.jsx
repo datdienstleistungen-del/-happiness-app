@@ -298,10 +298,7 @@ export default function SalesWorkspacePage() {
       
       // Auto-Save: In die Historie wegspeichern
       if (activeOppId && user) {
-        const saved = await db.saveGeneratedContent(user.id, activeOppId, selectedMode, resultData, {
-          company: formData.company,
-          ansprechpartner: formData.ansprechpartner
-        })
+        const saved = await db.saveGeneratedContent(user.id, activeOppId, selectedMode, resultData)
         if (saved) {
           // Füge es direkt der Historie hinzu (ohne kompletten Reload)
           setHistoryItems(prev => [{ ...saved, _type: 'content' }, ...prev])
