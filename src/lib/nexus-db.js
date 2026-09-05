@@ -388,12 +388,18 @@ export async function linkTriggerToOpportunity(opportunityId, triggerId) {
 
 export async function saveGeneratedContent(userId, opportunityId, type, content, metadata = {}) {
   const contentStr = typeof content === 'object' ? JSON.stringify(content) : content;
+  
+  // Map internal frontend types to strict database enum values
+  let dbType = 'email';
+  if (type === 'sales_pitch') dbType = 'pitch';
+  else if (type === 'forum_response') dbType = 'linkedin';
+  
   const { data, error } = await supabase
     .from('nexus_generated_content')
     .insert({ 
       user_id: userId, 
       opportunity_id: opportunityId, 
-      type: type, 
+      type: dbType, 
       content: contentStr, 
       ...metadata,
       updated_at: new Date().toISOString() 
