@@ -324,7 +324,7 @@ export const handler = async (event) => {
       let cleanQuery = "";
       cleanQuery = userMessage.replace(/wer ist|wie heißt|kennst du|kannst du|bitte|nach|der|die|das|bei/gi, "").trim();
       
-      const searchQuery = `${cleanQuery} CEO Entscheider Geschäftsführer aktuell 2026 Deutschland`;
+      const searchQuery = `${cleanQuery} CEO Zentrale Hauptverwaltung Entscheider Geschäftsführer aktuell 2026 Deutschland`;
       const tavilyKey = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY;
       
       if (tavilyKey) {
@@ -353,7 +353,7 @@ export const handler = async (event) => {
             console.log("[NEXUS] Tavily json done");
             if (tavilyData.results && tavilyData.results.length > 0) {
               const searchContext = tavilyData.results.map(r => `Quelle: ${r.title}\nInhalt: ${r.content}`).join("\n\n");
-              messages[messages.length - 1].content = `[SYSTEM-INTERN: Ich habe im Hintergrund für dich recherchiert. Hier sind die Echtzeit-Ergebnisse aus dem Web:\n\n${searchContext}\n\nBEFEHL: Nutze diese Daten zwingend, um meine gleich folgende Frage präzise zu beantworten. Nenne Namen und Positionen direkt. \n\nEXTREM WICHTIG: Achte kritisch auf Aktualität! Wenn mehrere Namen genannt werden, wähle immer den aktuellsten (achte auf Jahreszahlen wie 2025/2026). Schließe ehemalige Mitarbeiter aus!]\n\nMeine Frage: ${userMessage}`;
+              messages[messages.length - 1].content = `[SYSTEM-INTERN: Ich habe im Hintergrund für dich recherchiert. Hier sind die Echtzeit-Ergebnisse aus dem Web:\n\n${searchContext}\n\nBEFEHL: Nutze diese Daten zwingend, um meine gleich folgende Frage präzise zu beantworten. Nenne Namen und Positionen direkt. \n\nEXTREM WICHTIG: Achte kritisch auf Aktualität! Wenn mehrere Namen genannt werden, wähle immer den aktuellsten (achte auf Jahreszahlen wie 2025/2026). 2. Bei Filialisten/Ketten: Ignoriere zwingend lokale Filialleiter (z.B. Gesch�ftsf�hrer einer Stadt) und nenne AUSSCHLIESSLICH den C-Level der Hauptverwaltung / Zentrale! Schließe ehemalige Mitarbeiter aus!]\n\nMeine Frage: ${userMessage}`;
             }
           } else {
             clearTimeout(abortId); clearTimeout(raceId);
@@ -397,3 +397,6 @@ export const handler = async (event) => {
     };
   }
 };
+
+
+
