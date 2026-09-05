@@ -1,4 +1,4 @@
-// ── Multi-Provider Fallback Chain ──
+// â”€â”€ Multi-Provider Fallback Chain â”€â”€
 
 async function fetchWithTimeout(url, options, timeoutMs = 4000) {
   const controller = new AbortController();
@@ -94,7 +94,7 @@ async function tryMistral(messages, temperature = 0.3) {
       clearTimeout(abortId); clearTimeout(raceId);
       console.error(`Mistral API Error (${res.status}):`, errText)
       if (res.status === 429) {
-        throw new Error('Mistral Rate Limit erreicht (Zu großer Text oder zu viele Anfragen).')
+        throw new Error('Mistral Rate Limit erreicht (Zu groÃŸer Text oder zu viele Anfragen).')
       }
       return null
     }
@@ -178,7 +178,7 @@ async function callAI(messages, temperature = 0.3) {
       // continue to next provider
     }
   }
-  throw lastError || new Error("KI antwortet nicht rechtzeitig (Rate Limit oder Überlastung). Bitte warte kurz und versuche es erneut.");
+  throw lastError || new Error("KI antwortet nicht rechtzeitig (Rate Limit oder Ãœberlastung). Bitte warte kurz und versuche es erneut.");
 }
 
 export const handler = async (event) => {
@@ -207,7 +207,7 @@ export const handler = async (event) => {
     }
     
     if (!userRes.ok) {
-      await userRes.text().catch(e => {}); // Konsumiere Body, um Socket zu schließen!
+      await userRes.text().catch(e => {}); // Konsumiere Body, um Socket zu schlieÃŸen!
       clearTimeout(abortId); clearTimeout(raceId);
       return { statusCode: 401, body: JSON.stringify({ error: "Invalid token" }) };
     }
@@ -284,7 +284,7 @@ export const handler = async (event) => {
     console.log("[NEXUS] Starting handler");
     const { systemPrompt, userMessage, context, temperature, lang, targetLang } = JSON.parse(event.body);
 
-    const languageNames = { de: 'Deutsch', en: 'Englisch', es: 'Spanisch', fr: 'Französisch', it: 'Italienisch', nl: 'Niederländisch' };
+    const languageNames = { de: 'Deutsch', en: 'Englisch', es: 'Spanisch', fr: 'FranzÃ¶sisch', it: 'Italienisch', nl: 'NiederlÃ¤ndisch' };
     
     let finalLang = lang || 'de';
     if (targetLang && targetLang !== 'auto') {
@@ -294,7 +294,7 @@ export const handler = async (event) => {
     
     let langInstruction = `\n\nCRITICAL REQUIREMENT: Du musst die Nachricht zwingend auf ${langName} verfassen!`;
     if (targetLang === 'auto') {
-      langInstruction = `\n\nCRITICAL REQUIREMENT: Passe die Sprache der Nachricht automatisch an das Land des Ziel-Unternehmens an. (z.B. Englisch für internationale Firmen, Deutsch für DACH).`;
+      langInstruction = `\n\nCRITICAL REQUIREMENT: Passe die Sprache der Nachricht automatisch an das Land des Ziel-Unternehmens an. (z.B. Englisch fÃ¼r internationale Firmen, Deutsch fÃ¼r DACH).`;
     }
 
     const contextSystem = (context && context.system) ? `\n\n${context.system}` : '';
@@ -316,15 +316,15 @@ export const handler = async (event) => {
                         lowerMsg.includes("ansprechpartner") || 
                         lowerMsg.includes("entscheider") || 
                         lowerMsg.includes("cmo") || 
-                        lowerMsg.includes("geschäftsführer") || 
+                        lowerMsg.includes("geschÃ¤ftsfÃ¼hrer") || 
                         lowerMsg.includes("head of") ||
-                        lowerMsg.includes("wie heißt");
+                        lowerMsg.includes("wie heiÃŸt");
                         
     if (needsSearch) {
       let cleanQuery = "";
-      cleanQuery = userMessage.replace(/wer ist|wie heißt|kennst du|kannst du|bitte|nach|der|die|das|bei/gi, "").trim();
+      cleanQuery = userMessage.replace(/wer ist|wie heiÃŸt|kennst du|kannst du|bitte|nach|der|die|das|bei/gi, "").trim();
       
-      const searchQuery = `${cleanQuery} CEO Zentrale Hauptverwaltung Entscheider Geschäftsführer aktuell 2026 Deutschland`;
+      const searchQuery = `${cleanQuery} (CEO OR Geschäftsführer OR Head OR Director OR Zentrale) Deutschland`;
       const tavilyKey = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY;
       
       if (tavilyKey) {
@@ -338,10 +338,9 @@ export const handler = async (event) => {
               query: searchQuery,
               search_depth: "advanced",
               max_results: 5,
-              topic: "news",
-              days: 365
+              include_domains: ["linkedin.com"]
             })
-          }, 8000); // 8 Sekunden Max für die Websuche
+          }, 8000); // 8 Sekunden Max fÃ¼r die Websuche
           console.log("[NEXUS] Tavily fetch done, reading json");
           if (res.ok) {
             let streamTimer;
@@ -352,8 +351,8 @@ export const handler = async (event) => {
             clearTimeout(abortId); clearTimeout(raceId); clearTimeout(streamTimer);
             console.log("[NEXUS] Tavily json done");
             if (tavilyData.results && tavilyData.results.length > 0) {
-              const searchContext = tavilyData.results.map(r => `Quelle: ${r.title}\nInhalt: ${r.content}`).join("\n\n");
-              messages[messages.length - 1].content = `[SYSTEM-INTERN: Ich habe im Hintergrund für dich recherchiert. Hier sind die Echtzeit-Ergebnisse aus dem Web:\n\n${searchContext}\n\nBEFEHL: Nutze diese Daten zwingend, um meine gleich folgende Frage präzise zu beantworten. Nenne Namen und Positionen direkt. \n\nEXTREM WICHTIG: Achte kritisch auf Aktualität! Wenn mehrere Namen genannt werden, wähle immer den aktuellsten (achte auf Jahreszahlen wie 2025/2026). 2. Bei Filialisten/Ketten: Ignoriere zwingend lokale Filialleiter (z.B. Gesch�ftsf�hrer einer Stadt) und nenne AUSSCHLIESSLICH den C-Level der Hauptverwaltung / Zentrale! Schließe ehemalige Mitarbeiter aus!]\n\nMeine Frage: ${userMessage}`;
+              const searchContext = tavilyData.results.map(r => `Profil: ${r.title}\nInfo: ${r.content}`).join("\n\n");
+              messages[messages.length - 1].content = `[SYSTEM-INTERN: Ich habe einen LinkedIn X-Ray Scan für dich durchgeführt. Hier sind die gefundenen LinkedIn-Profile:\n\n${searchContext}\n\nBEFEHL: Du agierst als B2B-Headhunter. Analysiere diese LinkedIn-Profile. Nenne Namen und Position direkt.\nEXTREM WICHTIG:\n1. Ignoriere Filialleiter und suche AUSSCHLIESSLICH C-Level oder Bereichsleiter der Hauptverwaltung!\n2. Falls kein Profil zu 100% passt, gib exakt aus: "Kein verlässlicher Ansprechpartner gefunden."]\n\nMeine Frage: ${userMessage}`;
             }
           } else {
             clearTimeout(abortId); clearTimeout(raceId);
@@ -371,7 +370,7 @@ export const handler = async (event) => {
     console.log("[NEXUS] callAI loop done");
 
     if (!result || !result.text) {
-      throw new Error("Mistral KI antwortet nicht rechtzeitig (Rate Limit oder Überlastung). Bitte warte kurz und versuche es erneut.");
+      throw new Error("Mistral KI antwortet nicht rechtzeitig (Rate Limit oder Ãœberlastung). Bitte warte kurz und versuche es erneut.");
     }
 
     const content = result.text;
@@ -397,6 +396,8 @@ export const handler = async (event) => {
     };
   }
 };
+
+
 
 
 
