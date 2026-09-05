@@ -287,6 +287,15 @@ export default function SalesWorkspacePage() {
 
       setResult(resultData)
       
+      // Auto-Save Contact if manually typed and not in DB
+      if (formData.ansprechpartner && formData.ansprechpartner !== 'Kein verlässlicher Ansprechpartner gefunden' && formData.ansprechpartner !== 'Fehler bei der Kontaktrecherche') {
+        if (!fullContext?.contacts || fullContext.contacts.length === 0) {
+            try {
+              await db.saveOpportunityContact(user.id, fullContext.company_id, activeOppId, formData.ansprechpartner, '', 'manual', 100);
+            } catch(e) { console.error("Auto-save contact error", e) }
+        }
+      }
+      
       // Auto-Save: In die Historie wegspeichern
       if (activeOppId && user) {
         const saved = await db.saveGeneratedContent(user.id, activeOppId, selectedMode, resultData, {
