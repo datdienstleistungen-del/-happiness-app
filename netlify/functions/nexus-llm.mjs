@@ -324,7 +324,7 @@ export const handler = async (event) => {
       let cleanQuery = "";
       cleanQuery = userMessage.replace(/wer ist|wie heißt|kennst du|kannst du|bitte|nach|der|die|das|bei/gi, "").trim();
       
-      const searchQuery = `${cleanQuery} LinkedIn Ansprechpartner Deutschland`;
+      const searchQuery = `${cleanQuery} CEO Entscheider Geschäftsführer aktuell 2026 Deutschland`;
       const tavilyKey = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY;
       
       if (tavilyKey) {
@@ -336,8 +336,10 @@ export const handler = async (event) => {
             body: JSON.stringify({
               api_key: tavilyKey,
               query: searchQuery,
-              search_depth: "basic",
-              max_results: 5
+              search_depth: "advanced",
+              max_results: 5,
+              topic: "news",
+              days: 365
             })
           }, 8000); // 8 Sekunden Max für die Websuche
           console.log("[NEXUS] Tavily fetch done, reading json");
@@ -351,7 +353,7 @@ export const handler = async (event) => {
             console.log("[NEXUS] Tavily json done");
             if (tavilyData.results && tavilyData.results.length > 0) {
               const searchContext = tavilyData.results.map(r => `Quelle: ${r.title}\nInhalt: ${r.content}`).join("\n\n");
-              messages[messages.length - 1].content = `[SYSTEM-INTERN: Ich habe im Hintergrund für dich recherchiert. Hier sind die Echtzeit-Ergebnisse aus dem Web:\n\n${searchContext}\n\nBEFEHL: Nutze diese Daten zwingend, um meine gleich folgende Frage präzise zu beantworten. Nenne Namen und Positionen direkt. Behaupte ab sofort NIEMALS mehr, dass du keinen Zugriff auf Live-Datenbanken hast, denn du hast diese Infos hiermit bekommen!]\n\nMeine Frage: ${userMessage}`;
+              messages[messages.length - 1].content = `[SYSTEM-INTERN: Ich habe im Hintergrund für dich recherchiert. Hier sind die Echtzeit-Ergebnisse aus dem Web:\n\n${searchContext}\n\nBEFEHL: Nutze diese Daten zwingend, um meine gleich folgende Frage präzise zu beantworten. Nenne Namen und Positionen direkt. \n\nEXTREM WICHTIG: Achte kritisch auf Aktualität! Wenn mehrere Namen genannt werden, wähle immer den aktuellsten (achte auf Jahreszahlen wie 2025/2026). Schließe ehemalige Mitarbeiter aus!]\n\nMeine Frage: ${userMessage}`;
             }
           } else {
             clearTimeout(abortId); clearTimeout(raceId);
