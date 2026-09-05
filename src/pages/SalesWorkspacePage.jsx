@@ -668,7 +668,21 @@ export default function SalesWorkspacePage() {
                       </div>
                       {item._type === 'content' ? (
                         <div style={{ fontSize: '0.9rem', whiteSpace: 'pre-wrap', color: 'var(--text-primary)' }}>
-                          {typeof item.content === 'object' ? item.content.response : item.content}
+                          {(() => {
+                             let contentToRender = item.content;
+                             if (typeof contentToRender === 'string') {
+                                try {
+                                   const parsed = JSON.parse(contentToRender);
+                                   if (typeof parsed === 'object' && parsed !== null) {
+                                      contentToRender = parsed;
+                                   }
+                                } catch (e) { /* ignore, just use string */ }
+                             }
+                             if (typeof contentToRender === 'object' && contentToRender !== null) {
+                                return contentToRender.response || contentToRender.nachricht || contentToRender.message || contentToRender.text || contentToRender.pitch || Object.values(contentToRender).join('\n\n');
+                             }
+                             return contentToRender;
+                          })()}
                         </div>
                       ) : (
                         <div style={{ fontSize: '0.9rem' }}>{item.description}</div>
