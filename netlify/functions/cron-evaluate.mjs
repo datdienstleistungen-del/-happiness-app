@@ -1,9 +1,9 @@
 export async function handler(event, context) {
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
   let authToken = supabaseKey;
-  if (!process.env.SUPABASE_SERVICE_KEY && process.env.TEST_USER_EMAIL && process.env.TEST_USER_PASSWORD) {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY && !process.env.SUPABASE_SERVICE_KEY && process.env.TEST_USER_EMAIL && process.env.TEST_USER_PASSWORD) {
     const authRes = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: { 'apikey': supabaseKey, 'Content-Type': 'application/json' },
