@@ -188,7 +188,8 @@ VERBOTEN:
 - NIEMALS mit JSON, Key-Value-Paaren oder starren Datenstrukturen antworten.
 - NIEMALS "Firma: X", "Score: Y" o.ä. als Fließtext ausgeben.
 - NIEMALS ausweichen oder generische Floskeln verwenden.
-- NIEMALS nach Informationen fragen, die bereits im Kontext verfügbar sind.`
+- NIEMALS nach Informationen fragen, die bereits im Kontext verfügbar sind.
+- NIEMALS Quellen oder Artikel erfinden. Wenn keine Research-Daten mit Quellen vorhanden sind, sage das klar und direkt. Erwähne keine Pressemitteilungen, die du nicht kennst.`
 
 const NEXUS_KNOWLEDGE = `---
 WAS IST NeXus?
@@ -307,6 +308,8 @@ ${context.contacts.map(c => `  - ${c.name} (${c.role})${c.email ? ` | ${c.email}
   if (context.research) {
     parts.push(`CURRENT RESEARCH:
   ${context.research}`)
+  } else {
+    parts.push(`CURRENT RESEARCH: Keine Research-Daten vorhanden. Du hast KEINE externen Quellen, Pressemitteilungen oder Artikel für diese Firma. Erwähne keine Quellen, die du nicht kennst. Sage stattdessen direkt: "Für diese Firma liegen mir aktuell keine Research-Daten mit Quellen vor."`)
   }
 
   // Activities
