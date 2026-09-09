@@ -117,9 +117,15 @@ export async function handler(event, context) {
           });
           
           if (!insertRes.ok) {
-            throw new Error(`DB Insert Fehler: ${await insertRes.text()}`);
+            const errBody = await insertRes.text();
+            if (insertRes.status === 409) {
+              console.log(`B1 Cron: ${rowsToInsert.length} Hits für Offering ${offering.id} gesucht, ${rowsToInsert.length} Duplikate übersprungen.`);
+            } else {
+              throw new Error(`DB Insert Fehler: ${errBody}`);
+            }
+          } else {
+            console.log(`B1 Cron: ${rowsToInsert.length} Hits für Offering ${offering.id} eingefügt.`);
           }
-          console.log(`B1 Cron: ${rowsToInsert.length} Hits (inkl. Ignored Duplicates) für Offering ${offering.id} verarbeitet.`);
         }
 
         // 7. Erfolg: Offering entsperren UND last_scanned_at updaten
