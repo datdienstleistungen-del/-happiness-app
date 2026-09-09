@@ -45,7 +45,10 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   
   // Finde den spezifischen Lead (Opportunity) und seine Trigger
-  const currentLead = opportunities?.find(o => o.id === leadId)
+  // Wenn keine leadId: Nimm die letzte Opportunity aus der Pipeline
+  const currentLead = leadId 
+    ? opportunities?.find(o => o.id === leadId)
+    : opportunities?.[0] || null
   const leadTriggers = currentLead ? (triggers?.filter(t => t.company_id === currentLead.company_id) || []) : []
   
   const messagesEndRef = useRef(null)
