@@ -224,7 +224,7 @@ async function createOpportunityFromHit(hit, offering, aiResult, supabaseUrl, su
         content: `Radar Hit: ${hit.title}\nGrund: ${aiResult.relevance_reason}`,
         source: 'Cron Radar B2',
         confidence_score: (aiResult.relevance_score || 80) / 100.0,
-        status: 'new'
+        status: 'neu'
       })
     });
     if (postT.ok) {
