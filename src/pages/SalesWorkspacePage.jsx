@@ -49,6 +49,7 @@ export default function SalesWorkspacePage() {
   const [findingContact, setFindingContact] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
   const [foundContact, setFoundContact] = useState(null) // Speichert den gefundenen Kontakt für Bestätigung
+  const [contactPersisted, setContactPersisted] = useState(false) // true nur wenn DB-Save erfolgreich war
 
   // --- TEMPORÄRER TEST-SETUP BUTTON ---
   const runTestSetup = async () => {
@@ -98,6 +99,10 @@ export default function SalesWorkspacePage() {
   }
 
   useEffect(() => {
+    // Reset Kontakt-State beim Opportunity-Wechsel
+    setFoundContact(null);
+    setContactPersisted(false);
+
     if (activeOppId && user) {
       const loadFullContext = async () => {
         try {
@@ -191,15 +196,18 @@ export default function SalesWorkspacePage() {
         // Versuche im Hintergrund zu speichern (nexus_contacts und nexus_opportunity_contacts)
         try {
           const savedContact = await db.saveOpportunityContact(user.id, companyId, oppId, parsed.name, parsed.role || '', 'tavily', 80);
-          if (savedContact) {
+          if (savedContact && savedContact.id) {
             setFoundContact(savedContact);
+            setContactPersisted(true);
           } else {
             // Fallback, wenn der Save fehlschlägt, aber wir einen generierten Kontakt haben
             setFoundContact({ name: parsed.name, role: parsed.role });
+            setContactPersisted(false);
           }
         } catch(e) {
           console.error("Fehler beim Speichern des Kontakts:", e);
           setFoundContact({ name: parsed.name, role: parsed.role });
+          setContactPersisted(false);
         }
       } else {
          // Explizit markieren, dass kein Kontakt gefunden wurde
@@ -248,8 +256,30 @@ export default function SalesWorkspacePage() {
 
   const handleSaveContactToDb = async () => {
     if (!foundContact || !activeOppId || !user) return;
-    alert("Kontakt ist bereits sicher in der Akte gespeichert!");
-    setFoundContact(null);
+    if (contactPersisted) {
+      alert("Kontakt ist bereits in der Datenbank gespeichert.");
+      setFoundContact(null);
+      setContactPersisted(false);
+      return;
+    }
+    // Retry: echter DB-Save
+    try {
+      const saved = await db.saveOpportunityContact(
+        user.id, fullContext?.company_id, activeOppId,
+        foundContact.name, foundContact.role || '',
+        'manual', 100
+      );
+      if (saved && saved.id) {
+        setContactPersisted(true);
+        alert("Kontakt erfolgreich gespeichert!");
+        setFoundContact(saved);
+      } else {
+        alert("Speichern fehlgeschlagen. Kontakt bleibt nur für diese Sitzung verfügbar.");
+      }
+    } catch(e) {
+      console.error("Retry save failed:", e);
+      alert("Speichern fehlgeschlagen: " + e.message);
+    }
   }
 
   const handleInputChange = (e) => {
@@ -743,7 +773,7 @@ export default function SalesWorkspacePage() {
                         {error}
                       </div>
                     )}
-                    <button type="submit" className="generate-btn" disabled={loading}>
+                    <button type="submit" className="generate-btn" disabled={loading || !fullContext}>
                       {loading ? (
                         <>
                           <div className="btn-spinner"></div>
