@@ -1,9 +1,5 @@
 import crypto from 'crypto';
 
-export const config = {
-  schedule: "*/15 * * * *"
-};
-
 export async function handler(event, context) {
   // 1. Setup & Environment
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;

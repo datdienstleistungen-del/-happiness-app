@@ -6,6 +6,12 @@
 [functions]
   node_bundler = "esbuild"
 
+[functions."cron-search"]
+  schedule = "*/15 * * * *"
+
+[functions."cron-evaluate"]
+  schedule = "*/15 * * * *"
+
 [build.environment]
   NODE_VERSION = "22"
 
