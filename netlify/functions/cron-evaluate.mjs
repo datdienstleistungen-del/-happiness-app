@@ -220,6 +220,7 @@ async function createOpportunityFromHit(hit, offering, aiResult, supabaseUrl, su
       body: JSON.stringify({
         user_id: hit.user_id,
         company_id: company.id,
+        radar_hit_id: hit.id,
         signal_type: aiResult.trigger_type || 'KI_DETECTED',
         content: `Radar Hit: ${hit.title}\nGrund: ${aiResult.relevance_reason}`,
         source: 'Cron Radar B2',
