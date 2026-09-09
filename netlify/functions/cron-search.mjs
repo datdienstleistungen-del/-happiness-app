@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 
 export const config = {
-  schedule: "@every 15m"
+  schedule: "*/15 * * * *"
 };
 
 export async function handler(event, context) {
