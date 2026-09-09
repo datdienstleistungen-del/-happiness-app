@@ -24,44 +24,70 @@ import { getOpportunityContext } from './nexus-db'
 export async function buildCoachContext({ opportunity, offering, triggers }) {
   if (!opportunity) return null
 
-  const company = opportunity.nexus_companies || {}
-  
-  // Lade vollen Kontext aus der DB (Kontakte, Research, Activities)
-  let dbContext = {}
+  // Lade vollen Kontext aus der DB — autoritative Quelle
+  let dbContext = null
   try {
-    dbContext = await getOpportunityContext(opportunity.id) || {}
+    dbContext = await getOpportunityContext(opportunity.id)
   } catch (err) {
     console.warn('[CoachContext] Could not load opportunity context:', err.message)
   }
 
-  // Kontakte aufbereiten
-  const contacts = (dbContext.contacts || []).map(c => ({
-    name: [c.first_name, c.last_name].filter(Boolean).join(' ') || 'Unbekannt',
-    role: c.role || 'Unbekannt',
-    email: c.email || null,
-    phone: c.phone || null,
-    linkedin: c.linkedin_url || null,
-    is_primary: c.is_primary || false,
-  }))
+  // Company: Primär aus DB, Fallback aus Hook
+  const companyFromDb = dbContext?.company || {}
+  const companyFromHook = opportunity.nexus_companies || {}
+  const company = companyFromDb.name ? companyFromDb : companyFromHook
 
-  // Research aufbereiten
-  const research = dbContext.research || null
-  const researchSummary = research?.result_json ? summarizeResearch(research.result_json) : null
+  // Offering: Primär aus DB (über offering_id der Opportunity), Fallback aus Hook
+  const offeringFromDb = dbContext?.offering || null
+  const offeringFromHook = offering || null
+  const activeOffering = offeringFromDb || offeringFromHook
 
-  // Activities aufbereiten (letzte 5)
-  const activities = (dbContext.activities || []).slice(-5).map(a => ({
+  // Kontakte: Aus DB-JOIN (nexus_opportunity_contacts → nexus_contacts)
+  // Struktur: [ { nexus_contacts: { first_name, last_name, role, ... } } ]
+  const contacts = (dbContext?.contacts || []).map(c => {
+    const contact = c.nexus_contacts || c
+    const name = [contact.first_name, contact.last_name, contact.name].filter(Boolean).join(' ') || 'Unbekannt'
+    return {
+      name,
+      role: contact.role || 'Unbekannt',
+      email: contact.email || null,
+      phone: contact.phone || null,
+      linkedin: contact.linkedin_url || null,
+      is_primary: c.is_primary || false,
+    }
+  })
+
+  // Research: Aus DB (Array von nexus_research-Einträgen)
+  const researchList = dbContext?.research || []
+  const researchSummary = researchList.length > 0
+    ? researchList.map(r => summarizeResearch(r.result_json || r.analysis || r.content)).filter(Boolean).join('\n\n')
+    : null
+
+  // Activities: Aus DB (letzte 5)
+  const activities = (dbContext?.activities || []).slice(-5).map(a => ({
     type: a.activity_type || a.type,
     description: a.description || a.content,
     date: a.created_at || a.timestamp,
   }))
 
-  // Trigger Events aufbereiten
-  const triggerList = (triggers || []).map(t => ({
+  // Trigger Events: Primär aus DB-JOIN, Fallback aus Hook
+  // DB-Struktur: [ { nexus_trigger_events: { content, source, ... } } ]
+  const triggersFromDb = (dbContext?.triggers || []).map(t => {
+    const trigger = t.nexus_trigger_events || t
+    return {
+      content: trigger.content,
+      source: trigger.source || 'Unbekannt',
+      confidence: trigger.confidence_score,
+      date: trigger.created_at,
+    }
+  })
+  const triggersFromHook = (triggers || []).map(t => ({
     content: t.content,
     source: t.source || 'Unbekannt',
     confidence: t.confidence_score,
     date: t.created_at,
   }))
+  const triggerList = triggersFromDb.length > 0 ? triggersFromDb : triggersFromHook
 
   return {
     company: {
@@ -71,11 +97,11 @@ export async function buildCoachContext({ opportunity, offering, triggers }) {
       size: company.size || null,
       website: company.website || null,
     },
-    offering: offering ? {
-      name: offering.offering_name || offering.name,
-      positioning: offering.positioning,
-      target_audience: offering.target_audience,
-      usps: offering.usps || [],
+    offering: activeOffering ? {
+      name: activeOffering.offering_name || activeOffering.name,
+      positioning: activeOffering.positioning,
+      target_audience: activeOffering.target_audience,
+      usps: activeOffering.usps || [],
     } : null,
     triggers: triggerList,
     contacts,
@@ -150,10 +176,19 @@ DEIN VERHALTEN:
 - Fasse dich KNAPP: Maximal 3-5 prägnante Sätze pro Antwort.
 - Wenn du mehr Platz brauchst, nutze strukturierte Listen.
 
+WICHTIGSTE REGEL — KONTEXT IST ARBITRÄR:
+Dir wird unten im Abschnitt "AKTUELLER KONTEXT" die verbindliche Arbeitsgrundlage für diese Coaching-Sitzung übergeben.
+Diese Daten sind DEIN WISSEN über den aktuellen Lead. Du kennst das Offering, die Firma, die Trigger, die Kontakte.
+- Verwende diese Daten ALS DEIN WISSEN. Frage NICHT nach Dingen, die im Kontext stehen.
+- Wenn Offering, Trigger oder Kontakte im Kontext angegeben sind, sind diese TATSÄCHLICH VORHANDEN.
+- Sage NIEMALS "Details habe ich nicht vorliegen" oder "Was ist Ihr Offering?", wenn das Offering im Kontext steht.
+- Bei Fragen zum Lead: Beziehe dich IMMER auf den bereitgestellten Kontext als autoritative Quelle.
+
 VERBOTEN:
 - NIEMALS mit JSON, Key-Value-Paaren oder starren Datenstrukturen antworten.
 - NIEMALS "Firma: X", "Score: Y" o.ä. als Fließtext ausgeben.
-- NIEMALS ausweichen oder generische Floskeln verwenden.`
+- NIEMALS ausweichen oder generische Floskeln verwenden.
+- NIEMALS nach Informationen fragen, die bereits im Kontext verfügbar sind.`
 
 const NEXUS_KNOWLEDGE = `---
 WAS IST NeXus?
@@ -223,20 +258,22 @@ Erfinde KEINE Fakten. Wenn du etwas nicht weißt, sage es direkt.
 function buildContextLayer(context) {
   if (!context) return ''
 
-  const parts = ['--- AKTUELLER KONTEXT:']
+  const parts = ['--- AKTUELLER KONTEXT (Verbindliche Arbeitsgrundlage für diese Sitzung):']
 
   // Offering
   if (context.offering) {
-    parts.push(`PRODUKT/ANGEBOT:
+    parts.push(`CURRENT OFFERING:
   Name: "${context.offering.name}"
   Value Proposition: "${context.offering.positioning}"
   Zielgruppe: "${context.offering.target_audience}"
-  => Beziehe dich bei Pitches IMMER auf diesen Wert.`)
+  => Dies ist DEIN Angebot. Beziehe dich bei Pitches und Argumenten IMMER darauf.`)
+  } else {
+    parts.push(`CURRENT OFFERING: Kein Offering hinterlegt.`)
   }
 
   // Company
   if (context.company) {
-    parts.push(`ZIELUNTERNEHMEN:
+    parts.push(`CURRENT COMPANY:
   Firma: ${context.company.name}
   Branche: ${context.company.industry || 'Unbekannt'}
   ${context.company.size ? `Größe: ${context.company.size}` : ''}
@@ -245,34 +282,36 @@ function buildContextLayer(context) {
 
   // Trigger
   if (context.triggers?.length > 0) {
-    parts.push(`KAUFSIGNALE (Trigger Events):
+    parts.push(`CURRENT TRIGGER EVENTS:
 ${context.triggers.map(t => `  - [${t.source}] ${t.content}${t.confidence ? ` (Konfidenz: ${Math.round(t.confidence * 100)}%)` : ''}`).join('\n')}
   => Verknüpfe die Signale intelligent mit der Value Proposition.`)
+  } else {
+    parts.push(`CURRENT TRIGGER EVENTS: Keine Trigger vorhanden.`)
   }
 
   // Contacts
   if (context.contacts?.length > 0) {
-    parts.push(`KONTAKTE:
+    parts.push(`CURRENT CONTACTS:
 ${context.contacts.map(c => `  - ${c.name} (${c.role})${c.email ? ` | ${c.email}` : ''}${c.phone ? ` | ${c.phone}` : ''}`).join('\n')}`)
   } else {
-    parts.push(`KONTAKTE: Noch keine Kontakte hinterlegt.`)
+    parts.push(`CURRENT CONTACTS: Noch keine Kontakte hinterlegt.`)
   }
 
   // Research
   if (context.research) {
-    parts.push(`RESEARCH-ERGEBNISSE:
+    parts.push(`CURRENT RESEARCH:
   ${context.research}`)
   }
 
   // Activities
   if (context.activities?.length > 0) {
-    parts.push(`BISHERIGE AKTIONEN:
+    parts.push(`CURRENT ACTIVITIES:
 ${context.activities.map(a => `  - [${a.date ? new Date(a.date).toLocaleDateString('de-DE') : '?'}] ${a.type}: ${a.description}`).join('\n')}`)
   }
 
   // Opportunity
   if (context.opportunity) {
-    parts.push(`OPPORTUNITY-STATUS:
+    parts.push(`CURRENT OPPORTUNITY:
   Stage: ${context.opportunity.stage || 'Unbekannt'}
   Score: ${context.opportunity.score || 'N/A'}
   Erstellt: ${context.opportunity.created ? new Date(context.opportunity.created).toLocaleDateString('de-DE') : 'Unbekannt'}`)
