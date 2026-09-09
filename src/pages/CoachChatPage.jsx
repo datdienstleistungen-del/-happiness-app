@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { useLead } from '../context/LeadContext'
 import { useLanguage } from '../i18n/translations'
 import { callNexusAI } from '../lib/nexus-ai'
+import { buildCoachContext, buildCoachSystemPrompt, getContextSummary } from '../lib/nexus-coach'
 import UpgradeModal from '../components/UpgradeModal'
 import './CoachChatPage.css'
 
@@ -100,40 +101,15 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
     setLoading(true)
 
     try {
-      // --- KONTEXT INJECTION: Schritt 3 ---
-      let systemContext = 'Du bist der NeXus Sales Coach und ein hochkarätiger, menschlicher B2B-Vertriebsexperte. Dein Ziel ist es, dem Nutzer (Verkäufer) zu helfen, seinen Lead in einen Abschluss zu verwandeln. Antworte IMMER auf Deutsch und schreibe wie ein ECHTER MENSCH in einem Chat. Nutze ausschließlich Fließtext, natürliche Sätze und weiche Übergänge. VERBOTEN: Antworte NIEMALS mit JSON, Key-Value-Paaren oder starren Datenstrukturen (wie "Firma: X", "Score: Y"). Wenn der Nutzer dir rohe, unstrukturierte Daten (wie kopierte Lead-Listen) gibt, lies sie, aber antworte in einem natürlichen, zusammenhängenden Text (z.B. "Ich sehe, du hast hier Porsche als Prio 1 Lead. Das ist extrem spannend, weil...").\n\n'
-      systemContext += 'WICHTIGE REGELN ZU WISSEN:\n- Du hast Zugriff auf Live-Daten, da dir Suchergebnisse unsichtbar vom System injiziert werden.\n- Wenn der Nutzer nach Namen oder Firmen fragt und du im internen Such-Kontext Daten findest, nenne diese Namen ZWINGEND direkt. Sage NIEMALS, dass du keinen Zugriff auf solche Datenbanken hast!\n\n'
-      systemContext += 'WICHTIGE TECHNISCHE REGEL: Fasse dich EXTREM KURZ! Antworte in maximal 3 bis 4 prägnanten Sätzen. Wenn deine Antwort zu lang ist, stürzt das System aufgrund eines 10-Sekunden-Timeouts ab. Beschränke dich auf die wichtigste Kernaussage.\n\n'
+      // --- KONTEXT BUILDER: Nur relevante Daten ---
+      const context = await buildCoachContext({
+        opportunity: currentLead,
+        offering: activeOffering,
+        triggers: leadTriggers,
+      })
 
-      if (activeOffering) {
-        systemContext += `\n--- DEIN PRODUKT (ANGEBOT) ---\n`
-        systemContext += `Produktname: "${activeOffering.offering_name}"\n`
-        systemContext += `Value Proposition: "${activeOffering.positioning}"\n`
-        systemContext += `Zielgruppe: "${activeOffering.target_audience}"\n`
-        systemContext += `=> Beziehe dich bei Pitches oder Argumenten IMMER auf diesen Wert für den Kunden.\n\n`
-      }
-
-      if (currentLead) {
-        const companyName = currentLead.nexus_companies?.name || 'Unbekannte Firma'
-        const industry = currentLead.nexus_companies?.industry || 'Unbekannt'
-        systemContext += `\n--- AKTUELLER LEAD (ZIELKUNDE) ---\n`
-        systemContext += `Firma: ${companyName}\nBranche: ${industry}\n`
-        
-        if (leadTriggers.length > 0) {
-          systemContext += `Kaufsignale (Trigger Events):\n`
-          leadTriggers.forEach(t => {
-            systemContext += `- [Quelle: ${t.source}] ${t.content}\n`
-          })
-          systemContext += `=> Verknüpfe das Kaufsignal intelligent mit dem "Value Proposition" des Produkts.\n\n`
-        }
-      }
-
-      if (activeQuickAction) {
-        const action = SALES_QUICK_ACTIONS.find(a => a.id === activeQuickAction)
-        if (action) {
-          systemContext += `\n\nACHTUNG: Der Nutzer hat den Modus "${action.label}" gewählt. Konzentriere dich genau darauf und liefere ein sofort einsetzbares Ergebnis.`
-        }
-      }
+      // --- SYSTEM-PROMPT: Saubere Trennung ---
+      const systemContext = buildCoachSystemPrompt(context, activeQuickAction)
 
       const recentHistory = chatHistory.slice(-4);
       const response = await callNexusAI('chat', message, { system: systemContext, history: recentHistory }, 0.5)
@@ -222,8 +198,26 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
             <div className="nexus-coach-welcome-icon">
               <Target size={48} />
             </div>
-            <h2>Willkommen beim NeXus Sales Coach</h2>
-            <p>Ich helfe dir bei der Vertriebsoptimierung. Wähle eine Aktion oder stelle mir eine Frage.</p>
+            <h2>{currentLead ? `Coach: ${currentLead.nexus_companies?.name || 'Lead'}` : 'Willkommen beim NeXus Sales Coach'}</h2>
+            <p>{currentLead 
+              ? `Ich helfe dir beim Verkauf an ${currentLead.nexus_companies?.name || 'diesen Lead'}. Wähle eine Aktion oder stelle mir eine Frage.`
+              : 'Ich helfe dir bei der Vertriebsoptimierung. Wähle eine Aktion oder stelle mir eine Frage.'
+            }</p>
+            
+            {currentLead && (
+              <div className="nexus-coach-context-hint" style={{ 
+                padding: '12px 16px', 
+                background: 'var(--bg-secondary, #f8f9fa)', 
+                borderRadius: '8px', 
+                marginBottom: '20px',
+                fontSize: '0.85rem',
+                color: 'var(--text-secondary, #666)',
+                border: '1px solid var(--border-light, #e0e0e0)'
+              }}>
+                <strong>Kontext:</strong> {currentLead.nexus_companies?.name || '?'} · {activeOffering?.offering_name || '?'}
+                {leadTriggers.length > 0 && ` · ${leadTriggers.length} Trigger`}
+              </div>
+            )}
             
             <div className="nexus-coach-quick-actions">
               {SALES_QUICK_ACTIONS.map(action => (
