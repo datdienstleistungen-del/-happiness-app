@@ -108,8 +108,26 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
         triggers: leadTriggers,
       })
 
+      // --- DEBUG: Was landet tatsächlich im Context? ---
+      console.log('[NeXusCoach] Context Debug:', {
+        hasContext: !!context,
+        companyName: context?.company?.name,
+        hasOffering: !!context?.offering,
+        offeringName: context?.offering?.name,
+        triggerCount: context?.triggers?.length,
+        contactCount: context?.contacts?.length,
+        hasResearch: !!context?.research,
+        activityCount: context?.activities?.length,
+        opportunityStage: context?.opportunity?.stage,
+      })
+
       // --- SYSTEM-PROMPT: Saubere Trennung ---
       const systemContext = buildCoachSystemPrompt(context, activeQuickAction)
+
+      // --- DEBUG: Was steht im Prompt? ---
+      const contextSection = systemContext.split('--- AKTUELLER KONTEXT')[1]?.split('---')[0] || 'KEIN KONTEXT GEFUNDEN'
+      console.log('[NeXusCoach] Prompt-Kontext:', contextSection.substring(0, 500))
+      console.log('[NeXusCoach] System-Prompt Länge:', systemContext.length, 'Zeichen')
 
       const recentHistory = chatHistory.slice(-4);
       const response = await callNexusAI('chat', message, { system: systemContext, history: recentHistory }, 0.5)
