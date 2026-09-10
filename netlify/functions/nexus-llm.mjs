@@ -429,13 +429,14 @@ export const handler = async (event) => {
 
     // --- WEB SEARCH: Auto-Suche bei Bedarf ---
     const lowerMsg = userMessage.toLowerCase();
+    const isContactMode = systemPrompt.includes('Recherche-Agent');
     const searchTriggers = ['website', 'url', 'homepage', 'link', 'ansprechpartner', 'ceo', 
       'geschäftsführer', 'head of', 'wer ist', 'kontakt', 'linkedin', 'firmensitz', 'adresse'];
-    const needsSearch = searchTriggers.some(t => lowerMsg.includes(t));
+    const needsSearch = isContactMode || searchTriggers.some(t => lowerMsg.includes(t));
     
     if (needsSearch) {
       // Firma aus Context oder Nachricht extrahieren
-      const companyName = context?.company || userMessage.replace(/website|url|homepage|link|ansprechpartner|ceo|geschäftsführer|head of|wer ist|kontakt|linkedin|firmensitz|adresse|von|für|die|der|das/gi, '').trim().split(/\s+/).slice(0, 3).join(' ');
+      const companyName = context?.company || userMessage.replace(/finde den entscheider|find contact|website|url|homepage|link|ansprechpartner|ceo|geschäftsführer|head of|wer ist|kontakt|linkedin|firmensitz|adresse|von|für|die|der|das/gi, '').trim().split(/\s+/).slice(0, 3).join(' ');
       
       if (companyName && companyName.length > 1) {
         console.log(`[NEXUS] Auto-Search for: ${companyName}`);
@@ -443,7 +444,7 @@ export const handler = async (event) => {
         // Parallele Suchen: Website + Ansprechpartner
         const [websiteResults, contactResults] = await Promise.all([
           webSearch(`${companyName} website homepage`),
-          webSearch(`${companyName} CEO Geschäftsführer LinkedIn`)
+          webSearch(`${companyName} CEO Geschäftsführer Geschäftsführung Ansprechpartner Leiter`)
         ]);
         
         const allResults = [...(websiteResults || []), ...(contactResults || [])];
