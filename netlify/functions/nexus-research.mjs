@@ -35,7 +35,18 @@ export const handler = async (event) => {
     }
 
     // 2. Rate Limiting Check (via PostgREST)
-    const MAX_REQUESTS = 1000;
+    let isPremium = false;
+    try {
+      const settingsRes = await fetch(`${supabaseUrl}/rest/v1/ai_settings?user_id=eq.${user.id}&select=is_premium`, {
+        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` }
+      });
+      if (settingsRes.ok) {
+        const settingsData = await settingsRes.json();
+        isPremium = settingsData[0]?.is_premium === true;
+      }
+    } catch(e) {}
+
+    const MAX_REQUESTS = isPremium ? Infinity : 1000;
     const today = new Date().toISOString().split('T')[0];
     
     const usageRes = await fetch(`${supabaseUrl}/rest/v1/nexus_api_usage?user_id=eq.${user.id}&select=*`, {

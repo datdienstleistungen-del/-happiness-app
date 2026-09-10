@@ -1,9 +1,20 @@
 import React from 'react';
 import { Sparkles, X, Check, ArrowRight } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import './UpgradeModal.css';
 
+const STRIPE_CHECKOUT_URL = import.meta.env.VITE_STRIPE_CHECKOUT_URL || 'https://buy.stripe.com/4gM28kaPN05Mac45F1gUM00';
+
 export default function UpgradeModal({ isOpen, onClose }) {
+  const { user } = useAuth();
+
   if (!isOpen) return null;
+
+  const handleUpgrade = () => {
+    const checkoutUrl = `${STRIPE_CHECKOUT_URL}?client_reference_id=${user?.id || ''}`;
+    window.open(checkoutUrl, '_blank');
+    onClose();
+  };
 
   return (
     <div className="upgrade-modal-overlay">
@@ -38,7 +49,7 @@ export default function UpgradeModal({ isOpen, onClose }) {
         </div>
 
         <div className="upgrade-modal-actions">
-          <button className="btn-primary upgrade-btn" onClick={onClose}>
+          <button className="btn-primary upgrade-btn" onClick={handleUpgrade}>
             Upgrade anfragen <ArrowRight size={18} />
           </button>
           

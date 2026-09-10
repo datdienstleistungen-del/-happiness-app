@@ -226,9 +226,21 @@ export const handler = async (event) => {
     const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'harro@happiness.de').split(',');
     const isAdmin = user.email && ADMIN_EMAILS.includes(user.email);
 
+    // Premium-Check: is_premium → unbegrenzt
+    let isPremium = false;
+    try {
+      const { res: settingsRes } = await fetchWithTimeout(`${supabaseUrl}/rest/v1/ai_settings?user_id=eq.${user.id}&select=is_premium`, {
+        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` }
+      }, 10000);
+      if (settingsRes.ok) {
+        const settingsData = await settingsRes.json();
+        isPremium = settingsData[0]?.is_premium === true;
+      }
+    } catch(e) {}
+
     // 2. Rate Limiting Check
     console.log("[NEXUS] Fetching API usage");
-    const MAX_REQUESTS = 1000;
+    const MAX_REQUESTS = (isAdmin || isPremium) ? Infinity : 1000;
     const today = new Date().toISOString().split('T')[0];
     
     // SELECT: User-JWT (RLS erlaubt SELECT auf eigene Zeile)
