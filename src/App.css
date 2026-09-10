@@ -605,7 +605,8 @@
 .sidebar-section-title {
   padding: 8px 12px 4px;
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: #6b7280;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }

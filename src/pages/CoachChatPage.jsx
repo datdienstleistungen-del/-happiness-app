@@ -170,23 +170,13 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
     <div className="nexus-coach-container" style={onClose ? { height: '100%', borderLeft: '1px solid var(--border-light)' } : {}}>
       <header className="nexus-coach-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {!onClose ? (
-            <button 
-              className="btn-secondary" 
-              onClick={() => navigate('/nexus/sales-workspace')}
-              style={{ padding: '6px 12px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <ArrowLeft size={16} /> Zurück
-            </button>
-          ) : (
-            <button
-              className="btn-secondary"
-              onClick={onClose}
-              style={{ padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <X size={18} />
-            </button>
-          )}
+          <button
+            className="nexus-coach-clear-btn"
+            onClick={onClose || (() => navigate(-1))}
+            title="Schließen"
+          >
+            <X size={18} />
+          </button>
           <div className="nexus-coach-brand">
             <div className="nexus-coach-icon">
               <Target size={22} />
