@@ -328,10 +328,6 @@ export default function NexusLeadRadarPage() {
       <UpgradeModal 
         isOpen={showUpgradeModal} 
         onClose={() => setShowUpgradeModal(false)} 
-        onBypass={() => {
-          // Dev-Bypass: Fehler zurücksetzen und Modal schließen, damit weiter getestet werden kann
-          setError(null);
-        }}
       />
 
       {/* Error state */}

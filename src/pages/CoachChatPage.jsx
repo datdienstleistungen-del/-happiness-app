@@ -330,10 +330,6 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
       <UpgradeModal 
         isOpen={showUpgradeModal} 
         onClose={() => setShowUpgradeModal(false)} 
-        onBypass={() => {
-          // Dev-Bypass: Fehler zurücksetzen und Modal schließen
-          setError('');
-        }}
       />
     </div>
   )

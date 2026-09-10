@@ -1,33 +1,9 @@
-import React, { useState } from 'react';
-import { Sparkles, X, Check, Zap, Shield, ArrowRight } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
+import React from 'react';
+import { Sparkles, X, Check, ArrowRight } from 'lucide-react';
 import './UpgradeModal.css';
 
-export default function UpgradeModal({ isOpen, onClose, onBypass }) {
-  const { user } = useAuth();
-  const [resetting, setResetting] = useState(false);
-
+export default function UpgradeModal({ isOpen, onClose }) {
   if (!isOpen) return null;
-
-  const handleDevReset = async () => {
-    if (!user) return;
-    setResetting(true);
-    try {
-      // Temporärer Dev-Bypass: Setzt die Nutzung für heute auf 0 zurück
-      await supabase
-        .from('nexus_api_usage')
-        .update({ requests_today: 0 })
-        .eq('user_id', user.id);
-      
-      if (onBypass) onBypass();
-      onClose();
-    } catch (err) {
-      console.error("Fehler beim Zurücksetzen:", err);
-    } finally {
-      setResetting(false);
-    }
-  };
 
   return (
     <div className="upgrade-modal-overlay">
@@ -68,21 +44,6 @@ export default function UpgradeModal({ isOpen, onClose, onBypass }) {
           
           <button className="btn-secondary waitlist-btn" onClick={onClose}>
             Vielleicht später
-          </button>
-        </div>
-
-        {/* Temporärer Entwickler-Button - Wird vor Live-Gang entfernt */}
-        <div className="upgrade-modal-dev-section">
-          <div className="dev-divider">
-            <span>Developer Tools (Nur im Testlauf sichtbar)</span>
-          </div>
-          <button 
-            className="dev-bypass-btn" 
-            onClick={handleDevReset}
-            disabled={resetting}
-          >
-            <Shield size={14} />
-            {resetting ? 'Setze Limit zurück...' : 'Limit für heute zurücksetzen (Bypass)'}
           </button>
         </div>
       </div>
