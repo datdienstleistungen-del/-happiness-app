@@ -192,6 +192,12 @@ export default function SalesWorkspacePage() {
           fullStr += ` | Tel: ${parsed.phone}`;
         }
         setFormData(prev => ({ ...prev, ansprechpartner: fullStr }));
+
+        // Intelligence-Tab aktualisieren
+        setFullContext(prev => prev ? {
+          ...prev,
+          contacts: [{ nexus_contacts: { name: parsed.name, role: parsed.role || '' } }]
+        } : prev);
         
         // Versuche im Hintergrund zu speichern (nexus_contacts und nexus_opportunity_contacts)
         try {
@@ -825,8 +831,10 @@ export default function SalesWorkspacePage() {
                               {fullContext.contacts[0].nexus_contacts.name} 
                               {fullContext.contacts[0].nexus_contacts.role && ` (${fullContext.contacts[0].nexus_contacts.role})`}
                             </span>
+                          ) : findingContact ? (
+                            <span style={{ color: 'var(--text-secondary)' }}>🔍 Suche läuft...</span>
                           ) : (
-                            <span style={{ color: 'var(--text-secondary)' }}>Wird gesucht...</span>
+                            <span style={{ color: 'var(--text-secondary)' }}>Kein Ansprechpartner gefunden</span>
                           )}
                         </div>
                       </div>
