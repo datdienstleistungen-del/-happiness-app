@@ -180,6 +180,98 @@ async function callAI(messages, temperature = 0.3) {
   throw lastError || new Error("KI antwortet nicht rechtzeitig (Rate Limit oder Ãœberlastung). Bitte warte kurz und versuche es erneut.");
 }
 
+// â"€â"€ Web Search mit Fallback-Kette: DuckDuckGo -> SearXNG -> Brave â"€â"€
+
+async function tryDuckDuckGo(query) {
+  try {
+    const { res, abortId, raceId } = await fetchWithTimeout(
+      `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
+      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NeXusBot/1.0)' } },
+      8000
+    );
+    if (!res.ok) { clearTimeout(abortId); clearTimeout(raceId); return null; }
+    const html = await res.text();
+    clearTimeout(abortId); clearTimeout(raceId);
+    
+    const results = [];
+    const regex = /<a[^>]+class="result__a"[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
+    let match;
+    while ((match = regex.exec(html)) !== null && results.length < 5) {
+      const url = match[1].replace(/.*uddg=/, '').replace(/&.*/, '');
+      const title = match[2].replace(/<[^>]*>/g, '').trim();
+      const snippet = match[3].replace(/<[^>]*>/g, '').trim();
+      if (url && title) results.push({ url, title, snippet });
+    }
+    return results.length > 0 ? results : null;
+  } catch (e) {
+    console.warn("[Search] DuckDuckGo failed:", e.message);
+    return null;
+  }
+}
+
+async function trySearXNG(query) {
+  const instances = ['https://searx.be', 'https://search.bus-hit.me', 'https://searxng.site'];
+  for (const base of instances) {
+    try {
+      const { res, abortId, raceId } = await fetchWithTimeout(
+        `${base}/search?q=${encodeURIComponent(query)}&format=json&categories=general`,
+        { headers: { 'Accept': 'application/json' } },
+        8000
+      );
+      if (!res.ok) { clearTimeout(abortId); clearTimeout(raceId); continue; }
+      const data = await res.json();
+      clearTimeout(abortId); clearTimeout(raceId);
+      if (data.results && data.results.length > 0) {
+        return data.results.slice(0, 5).map(r => ({ url: r.url, title: r.title, snippet: r.content || '' }));
+      }
+    } catch (e) {
+      console.warn(`[Search] SearXNG ${base} failed:`, e.message);
+    }
+  }
+  return null;
+}
+
+async function tryBraveSearch(query) {
+  const key = process.env.BRAVE_API_KEY;
+  if (!key) return null;
+  try {
+    const { res, abortId, raceId } = await fetchWithTimeout(
+      `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=5`,
+      { headers: { 'Accept': 'application/json', 'Accept-Encoding': 'gzip', 'X-Subscription-Token': key } },
+      8000
+    );
+    if (!res.ok) { clearTimeout(abortId); clearTimeout(raceId); return null; }
+    const data = await res.json();
+    clearTimeout(abortId); clearTimeout(raceId);
+    if (data.web && data.web.results && data.web.results.length > 0) {
+      return data.web.results.slice(0, 5).map(r => ({ url: r.url, title: r.title, snippet: r.description || '' }));
+    }
+    return null;
+  } catch (e) {
+    console.warn("[Search] Brave failed:", e.message);
+    return null;
+  }
+}
+
+async function webSearch(query) {
+  console.log(`[Search] Searching: "${query}"`);
+  
+  // 1. DuckDuckGo
+  const ddgResults = await tryDuckDuckGo(query);
+  if (ddgResults) { console.log(`[Search] DuckDuckGo: ${ddgResults.length} results`); return ddgResults; }
+  
+  // 2. SearXNG
+  const searxResults = await trySearXNG(query);
+  if (searxResults) { console.log(`[Search] SearXNG: ${searxResults.length} results`); return searxResults; }
+  
+  // 3. Brave
+  const braveResults = await tryBraveSearch(query);
+  if (braveResults) { console.log(`[Search] Brave: ${braveResults.length} results`); return braveResults; }
+  
+  console.log("[Search] All providers failed");
+  return [];
+}
+
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
@@ -335,60 +427,33 @@ export const handler = async (event) => {
     
     messages.push({ role: "user", content: userMessage });
 
-    // --- RAG INJECTION: Auto-Tavily Search ---
+    // --- WEB SEARCH: Auto-Suche bei Bedarf ---
     const lowerMsg = userMessage.toLowerCase();
-    const needsSearch = lowerMsg.includes("wer ist") || 
-                        lowerMsg.includes("ansprechpartner") || 
-                        lowerMsg.includes("entscheider") || 
-                        lowerMsg.includes("cmo") || 
-                        lowerMsg.includes("geschÃ¤ftsfÃ¼hrer") || 
-                        lowerMsg.includes("head of") ||
-                        lowerMsg.includes("wie heiÃŸt");
-                        
+    const searchTriggers = ['website', 'url', 'homepage', 'link', 'ansprechpartner', 'ceo', 
+      'geschäftsführer', 'head of', 'wer ist', 'kontakt', 'linkedin', 'firmensitz', 'adresse'];
+    const needsSearch = searchTriggers.some(t => lowerMsg.includes(t));
+    
     if (needsSearch) {
-      let cleanQuery = "";
-      cleanQuery = userMessage.replace(/wer ist|wie heiÃŸt|kennst du|kannst du|bitte|nach|der|die|das|bei/gi, "").trim();
+      // Firma aus Context oder Nachricht extrahieren
+      const companyName = context?.company || userMessage.replace(/website|url|homepage|link|ansprechpartner|ceo|geschäftsführer|head of|wer ist|kontakt|linkedin|firmensitz|adresse|von|für|die|der|das/gi, '').trim().split(/\s+/).slice(0, 3).join(' ');
       
-      const searchQuery = `${cleanQuery} (CEO OR Geschäftsführer OR Head OR Director OR Zentrale) Deutschland`;
-      const tavilyKey = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY;
-      
-      if (tavilyKey) {
-        console.log("[NEXUS] Starting Tavily search");
-        try {
-          const { res, abortId, raceId } = await fetchWithTimeout("https://api.tavily.com/search", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              api_key: tavilyKey,
-              query: searchQuery,
-              search_depth: "advanced",
-              max_results: 5,
-              include_domains: ["linkedin.com"]
-            })
-          }, 8000); // 8 Sekunden Max fÃ¼r die Websuche
-          console.log("[NEXUS] Tavily fetch done, reading json");
-          if (res.ok) {
-            let streamTimer;
-            const tavilyData = await Promise.race([
-              res.json(),
-              new Promise((_, reject) => { streamTimer = setTimeout(() => reject(new Error('Tavily stream timeout')), 8000); })
-            ]);
-            clearTimeout(abortId); clearTimeout(raceId); clearTimeout(streamTimer);
-            console.log("[NEXUS] Tavily json done");
-            if (tavilyData.results && tavilyData.results.length > 0) {
-              const searchContext = tavilyData.results.map(r => `Profil: ${r.title}\nInfo: ${r.content}`).join("\n\n");
-              messages[messages.length - 1].content = `[SYSTEM-INTERN: Ich habe einen LinkedIn X-Ray Scan für dich durchgeführt. Hier sind die gefundenen LinkedIn-Profile:\n\n${searchContext}\n\nBEFEHL: Du agierst als B2B-Headhunter. Analysiere diese LinkedIn-Profile. Nenne Namen und Position direkt.\nEXTREM WICHTIG:\n1. Ignoriere Filialleiter und suche AUSSCHLIESSLICH C-Level oder Bereichsleiter der Hauptverwaltung!\n2. Falls kein Profil zu 100% passt, gib exakt aus: "Kein verlässlicher Ansprechpartner gefunden."]\n\nMeine Frage: ${userMessage}`;
-            }
-          } else {
-            clearTimeout(abortId); clearTimeout(raceId);
-            console.log("[NEXUS] Tavily error status:", res.status);
-          }
-        } catch (e) {
-          console.error("Tavily RAG Error:", e);
+      if (companyName && companyName.length > 1) {
+        console.log(`[NEXUS] Auto-Search for: ${companyName}`);
+        
+        // Parallele Suchen: Website + Ansprechpartner
+        const [websiteResults, contactResults] = await Promise.all([
+          webSearch(`${companyName} website homepage`),
+          webSearch(`${companyName} CEO Geschäftsführer LinkedIn`)
+        ]);
+        
+        const allResults = [...(websiteResults || []), ...(contactResults || [])];
+        if (allResults.length > 0) {
+          const searchContext = allResults.map(r => `Quelle: ${r.title}\nURL: ${r.url}\nInfo: ${r.snippet}`).join("\n\n");
+          messages[messages.length - 1].content = `[SYSTEM-INTERN: Web-Suche durchgeführt für "${companyName}". Gefundene Ergebnisse:\n\n${searchContext}\n\nBEFEHL: Nutze diese Informationen um die Frage des Nutzers präzise zu beantworten. Nenne konkrete URLs und Namen. Falls die Suche nichts Relevantes ergibt, sage das ehrlich.]\n\nMeine Frage: ${userMessage}`;
         }
       }
     }
-    // --- END RAG INJECTION ---
+    // --- END WEB SEARCH ---
 
     console.log("[NEXUS] Starting callAI loop");
     const result = await callAI(messages, temperature || 0.3);

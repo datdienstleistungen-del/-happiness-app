@@ -192,6 +192,7 @@ export function buildCoachSystemPrompt(context, quickAction = null) {
     SALES_KNOWLEDGE,
     buildContextLayer(context),
     GROUNDING_RULES,
+    WEB_SEARCH_RULES,
     quickAction ? getQuickActionInstruction(quickAction) : '',
   ]
 
@@ -292,6 +293,28 @@ Sobald du eine konkrete externe Quelle erwähnst oder eine Aussage daraus ableit
 Format: [Quellenname](URL)
 Das gilt für: Pressemitteilungen, Unternehmensmeldungen, Fachartikel, Stellenausschreibungen, LinkedIn/ Social-Media, Investoren-Informationen.
 Wenn keine belastbare Quelle bzw. URL vorliegt, suggeriere KEINE Quelle. Nenne die Quelle nur als Text (z.B. "laut Handelsregister"), ohne Link.
+---`
+
+const WEB_SEARCH_RULES = `
+---
+WEB-SUCHE (Automatisch aktiviert):
+Du hast Zugriff auf eine automatische Web-Suche. Wenn der Nutzer nach Dingen fragt, die nicht im Kontext stehen, werden automatisch Suchergebnisse geliefert.
+
+WANN SUCHE AUTOMATISCH LÄUFT:
+- Website, URL, Homepage, Link der Firma
+- Ansprechpartner, CEO, Geschäftsführer, Head of
+- Kontakt, LinkedIn, Firmensitz, Adresse
+
+WIE DU SUCHERGEBNISSE VERWENDEST:
+- Die Suchergebnisse werden als [SYSTEM-INTERN] am Ende deiner Nachricht angezeigt
+- Nutze diese Daten um präzise zu antworten
+- Nenne konkrete URLs und Namen direkt
+- Formatiere Links als [Name](URL) damit sie klickbar sind
+
+WENN KEINE ERGEBNISSE:
+- Sage ehrlich: "Ich konnte keine Website/Ansprechpartner für diese Firma finden"
+- Schlage vor: "Du kannst die Firmen-Website über LinkedIn oder die Handelsregister-Datenbank finden"
+- Erfinde KEINE URLs oder Namen
 ---`
 
 // ============================================================================
