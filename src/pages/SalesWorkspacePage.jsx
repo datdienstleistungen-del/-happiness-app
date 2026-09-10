@@ -692,7 +692,7 @@ export default function SalesWorkspacePage() {
                     <div key={idx} style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                         <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                          {item._type === 'content' ? `KI Generiert: ${item.type}` : item.activity_type}
+                          {item._type === 'content' ? `KI Generiert: ${item.type}` : item.description}
                         </span>
                         <span>{new Date(item.created_at).toLocaleString()}</span>
                       </div>
@@ -714,9 +714,7 @@ export default function SalesWorkspacePage() {
                              return contentToRender;
                           })()}
                         </div>
-                      ) : (
-                        <div style={{ fontSize: '0.9rem' }}>{item.description}</div>
-                      )}
+                      ) : null}
                     </div>
                   ))
                 )}
