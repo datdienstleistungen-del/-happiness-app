@@ -60,7 +60,7 @@ export async function buildCoachContext({ opportunity, offering, triggers }) {
   // Research: Aus DB (Array von nexus_research-Einträgen)
   const researchList = dbContext?.research || []
   const researchSummary = researchList.length > 0
-    ? researchList.map(r => summarizeResearch(r.result_json || r.analysis || r.content)).filter(Boolean).join('\n\n')
+    ? researchList.map(r => formatResearchEntry(r)).filter(Boolean).join('\n\n')
     : null
 
   // Activities: Aus DB (letzte 5)
@@ -117,7 +117,43 @@ export async function buildCoachContext({ opportunity, offering, triggers }) {
 }
 
 /**
- * Fasst Research-Ergebnisse in ein paar Sätzen zusammen
+ * Formatiert einen Research-Eintrag mit Quellen-Link
+ */
+function formatResearchEntry(research) {
+  if (!research) return null
+
+  const parts = []
+
+  // Text-Inhalt extrahieren (preferiert: summary, dann raw_data, dann legacy-Felder)
+  let text = null
+  if (research.summary) {
+    text = research.summary
+  } else if (research.raw_data) {
+    const rd = typeof research.raw_data === 'string' ? JSON.parse(research.raw_data) : research.raw_data
+    text = rd.title || rd.relevance_reason || null
+  } else {
+    text = summarizeResearch(research.result_json || research.analysis || research.content)
+  }
+
+  if (!text) return null
+
+  // Quellen-Link aus provenance
+  const provenance = research.provenance
+    ? (typeof research.provenance === 'string' ? JSON.parse(research.provenance) : research.provenance)
+    : null
+  const sourceUrl = provenance?.source_url
+
+  if (sourceUrl) {
+    parts.push(`${text} [Quelle](${sourceUrl})`)
+  } else {
+    parts.push(text)
+  }
+
+  return parts.join(' ')
+}
+
+/**
+ * Fasst Research-Ergebnisse in ein paar Sätzen zusammen (Legacy-Fallback)
  */
 function summarizeResearch(resultJson) {
   if (typeof resultJson === 'string') {

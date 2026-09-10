@@ -235,6 +235,57 @@ async function createOpportunityFromHit(hit, offering, aiResult, supabaseUrl, su
 
     if (!triggerEvent || !triggerEvent.id) return;
 
+    // 3.5 Research erstellen (Quellen aus Radar-Hit übernehmen)
+    try {
+      // Dedup: Prüfe ob bereits Research für diesen Trigger existiert
+      const dupCheck = await fetch(`${supabaseUrl}/rest/v1/nexus_research?trigger_id=eq.${triggerEvent.id}&select=id`, {
+        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${authToken}` }
+      });
+      const existingResearch = dupCheck.ok ? await dupCheck.json() : [];
+
+      if (existingResearch.length === 0) {
+        const researchPayload = {
+          user_id: hit.user_id,
+          trigger_id: triggerEvent.id,
+          summary: hit.title || 'Radar-Hit Research',
+          raw_data: {
+            url: hit.url,
+            title: hit.title,
+            source: hit.source,
+            published_at: hit.published_at,
+            raw_content: hit.raw_content ? hit.raw_content.substring(0, 3000) : null,
+            relevance_reason: aiResult.relevance_reason,
+            relevance_score: aiResult.relevance_score,
+            trigger_type: aiResult.trigger_type,
+            firmenname: aiResult.firmenname
+          },
+          provenance: {
+            source_url: hit.url,
+            source_type: 'radar_hit',
+            radar_hit_id: hit.id,
+            crawled_at: new Date().toISOString()
+          },
+          evidence_gate_passed: true,
+          company_fit_score: aiResult.relevance_score || null,
+          trigger_fit_score: aiResult.relevance_score || null,
+          nexus_fit_score: Math.round((aiResult.relevance_score || 0) * 0.9)
+        };
+
+        const postR = await fetch(`${supabaseUrl}/rest/v1/nexus_research`, {
+          method: 'POST',
+          headers: { ...headers, 'Prefer': 'return=minimal' },
+          body: JSON.stringify(researchPayload)
+        });
+        if (!postR.ok) {
+          console.error(`B2 Cron: Research-Insert fehlgeschlagen für Trigger ${triggerEvent.id}:`, await postR.text());
+        } else {
+          console.log(`B2 Cron: Research für Trigger ${triggerEvent.id} erstellt (URL: ${hit.url})`);
+        }
+      }
+    } catch (researchErr) {
+      console.error(`B2 Cron: Research-Fehler für Hit ${hit.id}:`, researchErr.message);
+    }
+
     // 4. Opportunity Dedup
     let opp = null;
     const getOpp = await fetch(`${supabaseUrl}/rest/v1/nexus_opportunities?user_id=eq.${hit.user_id}&company_id=eq.${company.id}&offering_id=eq.${offering.id}&select=*`, { headers });
