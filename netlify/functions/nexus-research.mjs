@@ -36,17 +36,20 @@ export const handler = async (event) => {
 
     // 2. Rate Limiting Check (via PostgREST)
     let isPremium = false;
+    let premiumTier = 'free';
     try {
-      const settingsRes = await fetch(`${supabaseUrl}/rest/v1/ai_settings?user_id=eq.${user.id}&select=is_premium`, {
+      const settingsRes = await fetch(`${supabaseUrl}/rest/v1/ai_settings?user_id=eq.${user.id}&select=is_premium,premium_tier`, {
         headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` }
       });
       if (settingsRes.ok) {
         const settingsData = await settingsRes.json();
         isPremium = settingsData[0]?.is_premium === true;
+        premiumTier = settingsData[0]?.premium_tier || 'free';
       }
     } catch(e) {}
 
-    const MAX_REQUESTS = isPremium ? Infinity : 1000;
+    const TIER_LIMITS = { free: 5, pro: 100, enterprise: 500 };
+    const MAX_REQUESTS = TIER_LIMITS[premiumTier] || 5;
     const today = new Date().toISOString().split('T')[0];
     
     const usageRes = await fetch(`${supabaseUrl}/rest/v1/nexus_api_usage?user_id=eq.${user.id}&select=*`, {
