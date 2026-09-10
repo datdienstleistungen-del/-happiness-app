@@ -15,6 +15,7 @@ export const handler = async (event) => {
     
     const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
     const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+    const serviceKey = process.env.SUPABASE_SERVICE_KEY;
     
     if (!supabaseUrl || !supabaseKey) {
       return { statusCode: 500, body: JSON.stringify({ error: "Supabase config missing in backend" }) };
@@ -52,7 +53,7 @@ export const handler = async (event) => {
     if (!usage) {
       const insertRes = await fetch(`${supabaseUrl}/rest/v1/nexus_api_usage`, {
         method: 'POST',
-        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
         body: JSON.stringify({ user_id: user.id, requests_today: 1, last_request_date: today })
       });
       if (!insertRes.ok) console.error("Rate limit insert error:", await insertRes.text());
@@ -70,7 +71,7 @@ export const handler = async (event) => {
       
       const updateRes = await fetch(`${supabaseUrl}/rest/v1/nexus_api_usage?user_id=eq.${user.id}`, {
         method: 'PATCH',
-        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
         body: JSON.stringify({ requests_today: newCount, last_request_date: today })
       });
       if (!updateRes.ok) console.error("Rate limit update error:", await updateRes.text());
