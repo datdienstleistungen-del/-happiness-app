@@ -103,18 +103,20 @@ export const handler = async (event) => {
       return { statusCode: 500, body: JSON.stringify({ error: "Mistral API Key fehlt im Backend" }) };
     }
 
-    // --- STUFE 1: Auto-Korrektur (Tippfehler) durch Groq ---
-    // Da Tavily sehr anfällig für Tippfehler ist (z.B. "markting argenturen"),
-    // lassen wir Groq den Suchstring blitzschnell korrigieren, bevor wir suchen.
+    // --- STUFE 1: Auto-Korrektur (Tippfehler) ---
     let correctedQuery = searchQuery;
     let correctedBranche = branche || '';
+    const deepseekKey = process.env.DEEPSEEK_API_KEY;
+    const llmUrl = 'https://api.deepseek.com/chat/completions';
+    const llmKey = deepseekKey || mistralKey;
+    const llmModel = deepseekKey ? 'deepseek-chat' : 'mistral-small-latest';
     
     try {
-      const spellcheckRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      const spellcheckRes = await fetch(llmUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${process.env.GROQ_API_KEY}` },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${llmKey}` },
         body: JSON.stringify({
-          model: "groq/compound", // Small model für maximale Geschwindigkeit
+          model: llmModel,
           messages: [{ 
             role: "system", 
             content: "Du bist eine Rechtschreibkorrektur-Engine. Der User übergibt dir Suchbegriffe. Deine EINZIGE Aufgabe ist es, Tippfehler zu korrigieren. Gib NUR die korrigierten Begriffe zurück, exakt so wie sie sind, ohne Erklärungen, ohne Anführungszeichen und ohne zusätzliche Wörter. Wenn keine Fehler drin sind, gib sie 1:1 zurück."
@@ -132,7 +134,7 @@ export const handler = async (event) => {
         const cleaned = spellData.choices[0]?.message?.content?.trim();
         if (cleaned) {
           correctedQuery = cleaned;
-          correctedBranche = ''; // Branche ist in der korrigierten Query bereits enthalten
+          correctedBranche = '';
           console.log(`[Auto-Correct] Original: "${searchQuery} ${branche || ''}" -> Korrigiert: "${correctedQuery}"`);
         }
       }
@@ -285,19 +287,18 @@ export const handler = async (event) => {
       ]
     }`;
 
-    const groqKey = process.env.GROQ_API_KEY;
-    if (!groqKey) {
-      return { statusCode: 500, body: JSON.stringify({ error: "Groq API Key fehlt im Backend" }) };
-    }
+    const triggerLlmUrl = 'https://api.deepseek.com/chat/completions';
+    const triggerLlmKey = deepseekKey || mistralKey;
+    const triggerLlmModel = deepseekKey ? 'deepseek-chat' : 'mistral-small-latest';
     
-    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const triggerRes = await fetch(triggerLlmUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${groqKey}`
+        "Authorization": `Bearer ${triggerLlmKey}`
       },
       body: JSON.stringify({
-        model: "groq/compound",
+        model: triggerLlmModel,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Web-Recherche Ergebnisse:\n\n${webContext}` }
@@ -306,12 +307,12 @@ export const handler = async (event) => {
       })
     });
     
-    if (!groqRes.ok) {
-      throw new Error(`Groq API Error beim Extrahieren der Live-Trigger: ${groqRes.statusText}`);
+    if (!triggerRes.ok) {
+      throw new Error(`LLM API Error beim Extrahieren der Live-Trigger: ${triggerRes.statusText}`);
     }
 
-    const groqData = await groqRes.json();
-    let content = groqData.choices[0].message.content;
+    const triggerData = await triggerRes.json();
+    let content = triggerData.choices[0].message.content;
     
     // Markdown JSON-Blöcke bereinigen, falls Mistral sie hinzufügt
     content = content.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();

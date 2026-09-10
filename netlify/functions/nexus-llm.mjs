@@ -157,11 +157,10 @@ async function tryDeepSeek(messages, temperature = 0.3) {
 
 async function callAI(messages, temperature = 0.3) {
   const providers = [
-    () => tryGroq(messages, temperature),
-    () => tryOpenRouter(messages, temperature),
+    () => tryDeepSeek(messages, temperature),
     () => tryMistral(messages, temperature),
+    () => tryOpenRouter(messages, temperature),
     () => tryOpenAI(messages, temperature),
-    () => tryDeepSeek(messages, temperature)
   ]
   let lastError = null;
   for (const tryProvider of providers) {
