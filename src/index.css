@@ -1,13 +1,20 @@
 :root {
   --primary: #1b6e6e;
+  --primary-color: #1b6e6e;
   --primary-light: #2a8c8c;
   --primary-dark: #0f4f4f;
   --bg: #ffffff;
+  --bg-body: #ffffff;
   --bg-card: #F2F1ED;
+  --bg-elevated: #F2F1ED;
   --bg-input: #f0f2f5;
   --text: #050505;
+  --text-primary: #050505;
   --text-muted: #65676b;
+  --text-secondary: #65676b;
+  --text-tertiary: #9ca3af;
   --border: #ced0d4;
+  --border-light: #e5e7eb;
   --success: #1d8a5e;
   --danger: #d33f3f;
   --warning: #c98a1a;
