@@ -467,3 +467,27 @@ export async function callMessageGeneration({ contact, offering, company, trigge
   return res.json();
 }
 
+/**
+ * Ruft die Email Verify Function auf (SMTP-Check)
+ */
+export async function callEmailVerify({ contactId, email, domain }) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token || '';
+
+  const res = await fetch('/.netlify/functions/nexus-email-verify', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ contactId, email, domain })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(`Email Verify Error: ${err.error || res.statusText}`);
+  }
+
+  return res.json();
+}
+
