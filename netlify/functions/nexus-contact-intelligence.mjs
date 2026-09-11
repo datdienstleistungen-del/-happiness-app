@@ -144,42 +144,6 @@ async function fetchPageText(url, maxChars = 8000) {
   }
 }
 
-function extractLinks(html, baseUrl) {
-  const links = [];
-  const regex = /href="([^"]*)"/gi;
-  let match;
-  while ((match = regex.exec(html)) !== null) {
-    let href = match[1];
-    if (href.startsWith('/')) {
-      try { href = new URL(href, baseUrl).href; } catch(e) { continue; }
-    }
-    if (href.startsWith('http')) links.push(href);
-  }
-  return [...new Set(links)];
-}
-
-function prioritizeUrls(urls, companyDomain) {
-  const priorityPatterns = [
-    /team/i, /management/i, /about/i, /ueber-?uns/i, /ueber/i,
-    /leadership/i, /people/i, /staff/i, /mitarbeiter/i,
-    /geschaeftsfuehrung/i, /founder/i, /CEO/i,
-    /contact/i, /kontakt/i, /impressum/i,
-    /sales/i, /hr/i, /karriere/i, /jobs/i, /career/i
-  ];
-  
-  return urls.sort((a, b) => {
-    const aDomain = new URL(a).hostname;
-    const bDomain = new URL(b).hostname;
-    const aOnSite = aDomain.includes(companyDomain) ? 0 : 1;
-    const bOnSite = bDomain.includes(companyDomain) ? 0 : 1;
-    if (aOnSite !== bOnSite) return aOnSite - bOnSite;
-    
-    const aScore = priorityPatterns.findIndex(p => p.test(a));
-    const bScore = priorityPatterns.findIndex(p => p.test(b));
-    return (aScore === -1 ? 99 : aScore) - (bScore === -1 ? 99 : bScore);
-  });
-}
-
 // ============================================================================
 // PHASE 2: ROLE INFERENCE
 // ============================================================================
@@ -222,239 +186,281 @@ Gib ein JSON zurück:
 }
 
 // ============================================================================
-// PHASE 3: TARGETED CRAWLER
+// PHASE 3: TARGETED CRAWLER — Direct Domain First
 // ============================================================================
 
-const JOB_URL_PATTERNS = [
-  /linkedin\.com\/jobs/i,
-  /indeed\.com/i,
-  /glassdoor\.com/i,
-  /stepstone\.de/i,
-  /monster\.de/i,
-  /jobs\.ch/i,
-  /karriere\.at/i,
-  /absolventa\.de/i,
-  /kununu\.com/i,
-  /glassdoor\./i,
-  /linkedin\.com\/pulse/i,
-  /linkedin\.com\/feed/i
+const TEAM_PAGE_PATTERNS = [
+  /team/i, /about/i, /ueber-?uns/i, /ueber/i,
+  /management/i, /leadership/i, /people/i, /staff/i,
+  /geschaeftsfuehrung/i, /founder/i, /kontakt/i, /contact/i,
+  /impressum/i, /unternehmen/i
 ];
 
-function isJobUrl(url) {
-  return JOB_URL_PATTERNS.some(p => p.test(url));
+const EXCLUDE_PAGE_PATTERNS = [
+  /blog/i, /news/i, /presse/i, /press/i, /download/i,
+  /faq/i, /hilfe/i, /help/i, /login/i, /register/i,
+  /datenschutz/i, /privacy/i, /agb/i, /terms/i,
+  /cookie/i, /sitemap/i, /rss/i
+];
+
+function isRelevantTeamPage(url) {
+  const u = url.toLowerCase();
+  const hasRelevant = TEAM_PAGE_PATTERNS.some(p => p.test(u));
+  const hasExcluded = EXCLUDE_PAGE_PATTERNS.some(p => p.test(u));
+  return hasRelevant && !hasExcluded;
 }
 
 async function crawlForContacts(companyName, companyDomain, targetRole, alternativeRoles) {
   const allCandidates = [];
+  const pagesCrawled = [];
   
-  // 1. Gezielte Suche nach Team/Management-Seiten (KEINE Job-Suchen)
-  const searchQueries = [
-    `${companyName} team management`,
-    `${companyName} Geschäftsführung leadership`,
-    `${companyName} about us team`,
-    `${companyName} ansprechpartner kontakt`
-  ];
-  
-  // Wenn Domain bekannt: Direkt auf die eigene Seite suchen
-  if (companyDomain) {
-    searchQueries.unshift(`site:${companyDomain} team OR management OR about OR leadership`);
+  if (!companyDomain) {
+    console.log('[Crawler] No domain provided, using DuckDuckGo fallback');
+    return await crawlViaSearch(companyName, targetRole);
   }
   
-  const searchResults = [];
-  for (const query of searchQueries) {
-    const results = await webSearch(query);
-    console.log(`[Crawler] Query "${query}": ${results?.length || 0} raw results`);
-    if (results) {
-      for (const r of results) {
-        console.log(`  - ${r.url.substring(0, 80)}... | job=${isJobUrl(r.url)}`);
-      }
-      // Job-Links sofort rausfiltern
-      const filtered = results.filter(r => !isJobUrl(r.url));
-      searchResults.push(...filtered);
+  // ========== PHASE A: Direct Domain Crawl ==========
+  console.log(`[Crawler] Phase A: Direct crawl of ${companyDomain}`);
+  
+  // 1. Load homepage and extract internal links
+  const baseUrl = `https://${companyDomain}`;
+  const homepageText = await fetchPageText(baseUrl, 8000);
+  
+  if (!homepageText) {
+    console.log(`[Crawler] Homepage not reachable: ${baseUrl}`);
+    return await crawlViaSearch(companyName, targetRole);
+  }
+  
+  console.log(`[Crawler] Homepage loaded: ${homepageText.length} chars`);
+  
+  // Extract all internal links from homepage
+  const homepageHtml = await fetchRawHtml(baseUrl);
+  const internalLinks = extractInternalLinks(homepageHtml, baseUrl);
+  console.log(`[Crawler] Found ${internalLinks.length} internal links`);
+  
+  // 2. Identify relevant team/about pages
+  const teamUrls = internalLinks
+    .filter(url => {
+      const u = url.toLowerCase();
+      const isOnDomain = u.includes(companyDomain);
+      const isRelevant = isRelevantTeamPage(url);
+      const isExcluded = EXCLUDE_PAGE_PATTERNS.some(p => p.test(u));
+      return isOnDomain && isRelevant && !isExcluded;
+    });
+  
+  // Deduplicate and prioritize
+  const uniqueTeamUrls = [...new Set(teamUrls)];
+  console.log(`[Crawler] Found ${uniqueTeamUrls.length} team/about pages: ${uniqueTeamUrls.map(u => u.replace(baseUrl, '')).join(', ')}`);
+  
+  // Also try common paths if not found via links
+  const commonPaths = ['/team', '/ueber-uns', '/about', '/management', '/geschaeftsfuehrung', '/kontakt', '/impressum'];
+  for (const path of commonPaths) {
+    const url = baseUrl + path;
+    if (!uniqueTeamUrls.some(u => u.toLowerCase() === url.toLowerCase())) {
+      // Quick check if page exists
+      try {
+        const { res } = await fetchWithTimeout(url, { method: 'HEAD' }, 5000);
+        if (res.ok) {
+          uniqueTeamUrls.push(url);
+          console.log(`[Crawler] Found via common path: ${path}`);
+        }
+      } catch (e) { /* ignore */ }
     }
   }
   
-  console.log(`[Crawler] ${searchResults.length} results after job-filter`);
+  // 3. Crawl team pages and extract persons via LLM
+  const pagesToCrawl = uniqueTeamUrls.slice(0, 5);
   
-  // 2. Sammle relevante URLs (Team/About/Management-Seiten)
-  const relevantUrls = [];
-  for (const r of searchResults) {
-    const urlLower = r.url.toLowerCase();
-    // Bevorzuge: team, about, management, leadership, impressum, kontakt
-    // Vermeide: jobs, karriere, stellenangebote, blog, news
-    if ((urlLower.includes('team') || urlLower.includes('about') || 
-         urlLower.includes('management') || urlLower.includes('leadership') ||
-         urlLower.includes('ueber') || urlLower.includes('impressum') ||
-         urlLower.includes('kontakt') || urlLower.includes('contact')) &&
-        !urlLower.includes('job') && !urlLower.includes('karriere') &&
-        !urlLower.includes('stelle') && !urlLower.includes('blog')) {
-      relevantUrls.push(r.url);
-    }
-  }
-  
-  // 3. LLM-basierte Person-Extraktion aus Snippets (nur bei eindeutigen Namen)
-  // Nur wenn der Snippet explizit eine Person + Rolle nennt
-  for (const r of searchResults) {
-    // Prüfe ob Snippet eine echte Person mit Rolle enthält
-    // Pattern: "Max Mustermann, CEO" oder "CEO Max Mustermann"
-    const explicitPersonMatch = r.snippet.match(
-      /([A-ZÄÖÜ][a-zäöüß]+ [A-ZÄÖÜ][a-zäöüß\-]+)[,\s]+((?:CEO|CTO|CFO|COO|CMO|CRO|VP|Head of|Geschäftsführer|Managing Director|Founder|Co-Founder|Director|Leiter|Vorstand)[^\.,]{0,40})/i
-    );
-    if (explicitPersonMatch) {
-      const name = explicitPersonMatch[1].trim();
-      const role = explicitPersonMatch[2].trim();
-      if (name.length > 4 && name.length < 40 && !isJobUrl(r.url)) {
-        allCandidates.push({
-          name,
-          role,
-          source: r.url,
-          snippet: r.snippet.substring(0, 200),
-          confidence: 70
-        });
-      }
-    }
-  }
-  
-  console.log(`[Crawler] ${allCandidates.length} candidates from snippets`);
-  
-  // 4. Crawle die wichtigsten Team/About-Seiten
-  const urlsToCrawl = companyDomain 
-    ? prioritizeUrls(relevantUrls, companyDomain).slice(0, 5)
-    : relevantUrls.slice(0, 3);
-  
-  for (const url of urlsToCrawl) {
-    if (isJobUrl(url)) continue;
-    
+  for (const url of pagesToCrawl) {
+    console.log(`[Crawler] Crawling: ${url}`);
     const text = await fetchPageText(url, 6000);
-    if (!text) continue;
+    if (!text || text.length < 200) {
+      console.log(`  (skipped: too short or empty)`);
+      continue;
+    }
     
-    // LLM-basierte Person-Extraktion
-    const persons = await extractPersonsViaLLM(text, companyName, targetRole);
+    pagesCrawled.push(url);
+    
+    // LLM extraction with company validation
+    const persons = await extractPersonsViaLLM(text, companyName, targetRole, url);
     for (const p of persons) {
-      p.source = url;
+      p.source_url = url;
+      p.company_validated = true; // We know it's from the company's own website
       allCandidates.push(p);
+      console.log(`  Found: ${p.name} (${p.role})`);
     }
   }
   
-  console.log(`[Crawler] Total candidates: ${allCandidates.length}`);
+  console.log(`[Crawler] Phase A complete: ${allCandidates.length} candidates from ${pagesCrawled.length} pages`);
   
-  // 5. Deduplizierung
-  return deduplicateCandidates(allCandidates);
+  // ========== PHASE B: DuckDuckGo Fallback ==========
+  if (allCandidates.length === 0) {
+    console.log('[Crawler] Phase B: DuckDuckGo fallback (no candidates from direct crawl)');
+    const fallbackCandidates = await crawlViaSearch(companyName, targetRole);
+    allCandidates.push(...fallbackCandidates);
+  }
+  
+  console.log(`[Crawler] Total: ${allCandidates.length} validated candidates`);
+  
+  return {
+    candidates: allCandidates,
+    pagesCrawled,
+    method: pagesCrawled.length > 0 ? 'direct_crawl' : 'search_fallback'
+  };
 }
 
-async function extractPersonsViaLLM(pageText, companyName, targetRole) {
-  // Text bereinigen: Navigation, Footer, Cookie-Banner entfernen
+async function crawlViaSearch(companyName, targetRole) {
+  const candidates = [];
+  
+  const queries = [
+    `${companyName} Geschäftsführer team`,
+    `${companyName} ${targetRole}`
+  ];
+  
+  for (const query of queries) {
+    const results = await webSearch(query);
+    if (!results) continue;
+    
+    for (const r of results) {
+      if (isJobUrl(r.url)) continue;
+      
+      // Only use if URL belongs to the company's own domain
+      // OR if snippet explicitly mentions the company name with a person
+      const urlLower = r.url.toLowerCase();
+      const isCompanyUrl = urlLower.includes(companyName.toLowerCase().replace(/\s+/g, ''));
+      
+      if (!isCompanyUrl) continue; // Skip external sources in fallback
+      
+      const text = await fetchPageText(r.url, 6000);
+      if (!text) continue;
+      
+      const persons = await extractPersonsViaLLM(text, companyName, targetRole, r.url);
+      for (const p of persons) {
+        p.source_url = r.url;
+        p.company_validated = true;
+        candidates.push(p);
+      }
+    }
+  }
+  
+  return candidates;
+}
+
+async function fetchRawHtml(url) {
+  try {
+    const { res } = await fetchWithTimeout(url, {
+      headers: { 
+        'User-Agent': 'Mozilla/5.0 (compatible; NeXusBot/1.0)',
+        'Accept': 'text/html,application/xhtml+xml'
+      },
+    }, 8000);
+    if (!res.ok) return '';
+    return await res.text();
+  } catch (e) {
+    return '';
+  }
+}
+
+function extractInternalLinks(html, baseUrl) {
+  const links = [];
+  const urlObj = new URL(baseUrl);
+  const domain = urlObj.hostname;
+  
+  const regex = /href="([^"]*)"/gi;
+  let match;
+  while ((match = regex.exec(html)) !== null) {
+    let href = match[1];
+    if (href.startsWith('/')) {
+      href = baseUrl + href;
+    } else if (!href.startsWith('http')) {
+      continue;
+    }
+    // Only keep internal links
+    try {
+      const linkUrl = new URL(href);
+      if (linkUrl.hostname.includes(domain.replace('www.', ''))) {
+        // Remove hash and trailing slash
+        const clean = linkUrl.origin + linkUrl.pathname.replace(/\/$/, '');
+        links.push(clean);
+      }
+    } catch (e) { /* skip invalid URLs */ }
+  }
+  
+  return [...new Set(links)];
+}
+
+async function extractPersonsViaLLM(pageText, companyName, targetRole, sourceUrl) {
+  // Text bereinigen
   const cleanText = pageText
     .replace(/Newsletter/gi, '')
-    .replace(/News[- ]letter/gi, '')
     .replace(/Cookie[- ]Einstellungen/gi, '')
     .replace(/Privatsphäre/gi, '')
     .replace(/Datenschutz/gi, '')
-    .replace(/Anmelden/gi, '')
     .replace(/Zum Inhalt springen/gi, '')
     .replace(/© \d{4}[^\.]*/gi, '')
     .replace(/Linkedin|Youtube|Spotify/gi, '')
-    .replace(/Rückruf|Anfragen/gi, '')
-    .replace(/\d{2}\.\d{2}\.\d{4}/g, '')  // dates
-    .replace(/\+\d{1,3}[\s\d\-()]+/g, '')  // phone numbers
-    .replace(/Mo - Do[^\.]*\./gi, '')  // office hours
+    .replace(/\+\d{1,3}[\s\d\-()]+/g, '')
     .replace(/\s+/g, ' ')
     .trim();
   
-  // Nur den relevanten Teil senden (erste 3000 Zeichen)
-  const relevantText = cleanText.substring(0, 3000);
+  if (cleanText.length < 100) return [];
   
-  const prompt = `Du bist ein personnelcher Researcher. Finde alle PERSONEN auf dieser Firmenwebsite.
+  const prompt = `Du bist ein personnelcher Researcher. Extrahiere PERSONEN von der Firmenwebsite.
 
-Firma: ${companyName}
-Gesuchte Zielrolle: ${targetRole}
+FIRMA: ${companyName}
+GESUCHTE ROLLE: ${targetRole}
+QUELLE: ${sourceUrl}
 
 TEXT DER WEBSEITE:
-${relevantText}
+${cleanText.substring(0, 4000)}
 
-WICHTIG: 
-- Lies den Text genau durch und finde alle Personennamen (Vor- + Nachname)
-- Finde die zugehörige Position/Rolle jeder Person
-- Schau besonders nach: Gründer, Geschäftsführer, CEO, Head of, Leiter, Director
-- NUR echte Personen, KEINE Firma oder Produkte
+STRENGE REGELN:
+1. NUR vollständige plausible Personennamen (Vor- + Nachname)
+2. KEINE Textfragmente ("Officer and", "be the", "GmbH staff")
+3. KEINE Firmennamen oder Produktnamen
+4. KEINE Satzfragmente als Namen
+5. Jede Person MUSS eine klare Position/Rolle haben
+6. Die Person MUSS zur Firma ${companyName} gehören (nicht zu einer anderen Firma)
+7. Quelle ist die angegebene URL
 
 Gib ein JSON Array zurück:
-[{"name": "Vorname Nachname", "role": "Position"}]
+[{"name": "Vorname Nachname", "role": "Position", "evidence": "Zitat aus dem Text das die Person belegt"}]
 
-Wenn du Personen findest, gib sie alle zurück. Sonst ein leeres Array: []`;
+Wenn du KEINE klaren Personen findest, gib ein leeres Array zurück: []`;
 
   const result = await callLLM(prompt, 0.1);
   if (!result) return [];
   
-  // Handle different response formats
-  if (Array.isArray(result)) return result.filter(p => p.name && p.role);
-  if (result.persons && Array.isArray(result.persons)) return result.persons.filter(p => p.name && p.role);
-  if (result.raw) {
-    try {
-      const parsed = JSON.parse(result.raw);
-      if (Array.isArray(parsed)) return parsed.filter(p => p.name && p.role);
+  let persons = [];
+  if (Array.isArray(result)) persons = result;
+  else if (result.persons && Array.isArray(result.persons)) persons = result.persons;
+  else if (result.raw) {
+    try { 
+      const parsed = JSON.parse(result.raw); 
+      if (Array.isArray(parsed)) persons = parsed; 
     } catch(e) {}
   }
-  return [];
-}
-
-function extractRoleFromText(text, name) {
-  const rolePatterns = [
-    new RegExp(`${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s,–\\-]+([A-ZÄÖÜ][A-Za-zäöüß\\s,–\\-]{2,40})`, 'i'),
-    new RegExp(`([A-ZÄÖÜ][A-Za-zäöüß\\s,–\\-]{2,30})[\\s,–\\-]+${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i')
-  ];
   
-  for (const pattern of rolePatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      const role = match[1].trim();
-      if (role.length > 3 && role.length < 50 && 
-          !role.match(/^(der|die|das|den|dem|des|ein|eine|einem|einen|einer|und|oder|mit|von|bei|für|in|an|auf|ist|sind|war|hat|wird|kann|uns|Ihre|Ihr|our|the|and|or|for|at|in|is|are|was|has|will|can)$/i)) {
-        return role;
-      }
-    }
-  }
-  return null;
-}
-
-function calculateRoleRelevance(foundRole, targetRoles) {
-  if (!foundRole || !targetRoles?.length) return 50;
-  
-  const found = foundRole.toLowerCase();
-  for (const target of targetRoles) {
-    if (!target) continue;
-    const t = target.toLowerCase();
-    if (found === t) return 95;
-    if (found.includes(t) || t.includes(found)) return 85;
-    // Ähnliche Rollen
-    const synonyms = {
-      'head of sales': ['vp sales', 'sales director', 'vertriebsleiter', 'leiter vertrieb'],
-      'ceo': ['geschäftsführer', 'founder', 'managing director', 'inhaber'],
-      'cmo': ['vp marketing', 'marketing director', 'leiter marketing'],
-      'chro': ['vp hr', 'hr director', 'leiter personal']
-    };
-    for (const [key, syns] of Object.entries(synonyms)) {
-      if ((found.includes(key) || syns.some(s => found.includes(s))) &&
-          (t.includes(key) || syns.some(s => t.includes(s)))) {
-        return 80;
-      }
-    }
-  }
-  return 40;
-}
-
-function deduplicateCandidates(candidates) {
-  const seen = new Map();
-  for (const c of candidates) {
-    const key = c.name.toLowerCase().replace(/[^a-zäöüß]/g, '');
-    if (seen.has(key)) {
-      const existing = seen.get(key);
-      if (c.confidence > existing.confidence) seen.set(key, c);
-    } else {
-      seen.set(key, c);
-    }
-  }
-  return [...seen.values()];
+  // Validate: must have name (2+ words), role, and evidence
+  return persons.filter(p => {
+    if (!p.name || !p.role || !p.evidence) return false;
+    const name = p.name.trim();
+    const role = p.role.trim();
+    // Name must be 2+ words, each 2+ chars
+    const nameParts = name.split(/\s+/);
+    if (nameParts.length < 2) return false;
+    if (nameParts.some(part => part.length < 2)) return false;
+    // Role must be meaningful (not a sentence fragment)
+    if (role.length < 3 || role.length > 80) return false;
+    // Evidence must be meaningful
+    if (!p.evidence || p.evidence.length < 10) return false;
+    return true;
+  }).map(p => ({
+    name: p.name.trim(),
+    role: p.role.trim(),
+    evidence: p.evidence.trim(),
+    confidence: 80
+  }));
 }
 
 // ============================================================================
@@ -474,13 +480,15 @@ KONTEXT:
 - Firma: ${context.company?.name || 'Unbekannt'}
 
 KANDIDATEN:
-${candidates.map((c, i) => `${i + 1}. ${c.name} — ${c.role || 'Rolle unbekannt'} (Quelle: ${c.source || 'direkt'})`).join('\n')}
+${candidates.map((c, i) => `${i + 1}. ${c.name} — ${c.role || 'Rolle unbekannt'} (Quelle: ${c.source_url || 'direkt'}, company_validated: ${c.company_validated ? 'ja' : 'nein'})`).join('\n')}
 
-BEWERTUNGSKRITERIEN:
-1. Role Fit (passt die Rolle zur Zielrolle?)
-2. Opportunity Fit (passt die Rolle zum Angebot?)
-3. Trigger Fit (ist die Rolle bei diesem Trigger relevant?)
-4. Source Confidence (ist die Quelle verlässlich?)
+BEWERTUNGSKRITERIEN (in Reihenfolge):
+1. Company Validated (stammt die Person von der eigenen Firmenseite?)
+2. Role Fit (passt die Rolle zur Zielrolle?)
+3. Evidence Quality (ist die Evidenz überzeugend?)
+4. Opportunity Fit (passt die Person zum Angebot?)
+
+WICHTIG: Nur validierte Personen (company_validated=true) bewerten. Externe Quellen ablehnen.
 
 Gib ein JSON Array zurück, sortiert nach Score (höchster zuerst):
 [
@@ -503,16 +511,22 @@ Nur relevante Kandidaten (Score > 40).`;
 }
 
 // ============================================================================
-// PHASE 6: EMAIL DISCOVERY
+// PHASE 6: EMAIL DISCOVERY — No Construction, Only Found or Unknown
 // ============================================================================
 
 async function discoverEmails(rankedContacts, companyName, companyDomain) {
   for (const contact of rankedContacts) {
-    // 1. Suche nach公开 angegebener E-Mail
+    contact.email_status = 'UNKNOWN';
+    contact.email = null;
+    contact.email_source = null;
+    
+    // Only search on the company's own domain and public sources
+    if (!companyDomain) continue;
+    
+    // Search for publicly listed email on company pages
     const searchQueries = [
-      `"${contact.name}" email ${companyName}`,
-      `"${contact.name}" @${companyDomain || companyName}`,
-      `"${contact.name}" Kontakt E-Mail`
+      `"${contact.name}" site:${companyDomain}`,
+      `"${contact.name}" "${companyName}" email`
     ];
     
     for (const query of searchQueries) {
@@ -520,48 +534,29 @@ async function discoverEmails(rankedContacts, companyName, companyDomain) {
       if (!results) continue;
       
       for (const r of results) {
+        // Only accept emails from the company's own domain
+        const urlLower = r.url.toLowerCase();
+        const isOnCompanySite = urlLower.includes(companyDomain);
+        
         const emailMatch = (r.snippet + ' ' + r.title).match(
           /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g
         );
+        
         if (emailMatch?.length > 0) {
-          // Finde die wahrscheinlichste E-Mail für diese Person
-          const nameParts = contact.name.toLowerCase().split(/\s+/);
-          const bestEmail = emailMatch.find(e => {
-            const local = e.split('@')[0];
-            return nameParts.some(p => local.includes(p)) || 
-                   local.match(/^[a-z]\.?([a-z]+\.?){1,3}$/);
-          }) || emailMatch[0];
-          
-          contact.email = bestEmail;
-          contact.email_source = 'found';
-          contact.email_status = 'FOUND';
-          break;
+          for (const email of emailMatch) {
+            const emailDomain = email.split('@')[1]?.toLowerCase();
+            // Only accept if from company domain
+            if (emailDomain && emailDomain.includes(companyDomain.replace('www.', ''))) {
+              contact.email = email;
+              contact.email_status = 'FOUND';
+              contact.email_source = r.url;
+              break;
+            }
+          }
+          if (contact.email_status === 'FOUND') break;
         }
       }
-      if (contact.email) break;
-    }
-    
-    // 2. Inferiere E-Mail wenn nicht gefunden
-    if (!contact.email && companyDomain) {
-      const nameParts = contact.name.toLowerCase().split(/\s+/);
-      const first = nameParts[0] || '';
-      const last = nameParts[nameParts.length - 1] || '';
-      
-      // Häufige Patterns
-      const patterns = [
-        `${first}.${last}@${companyDomain}`,
-        `${first[0]}${last}@${companyDomain}`,
-        `${first}@${companyDomain}`,
-        `${first}.${last[0]}@${companyDomain}`
-      ];
-      
-      contact.email = patterns[0];
-      contact.email_source = 'inferred';
-      contact.email_status = 'INFERRED';
-    }
-    
-    if (!contact.email) {
-      contact.email_status = 'UNKNOWN';
+      if (contact.email_status === 'FOUND') break;
     }
   }
   
@@ -673,14 +668,18 @@ export const handler = async (event) => {
     // Phase 3: Targeted Crawl
     console.log('[ContactIntel] Phase 3: Targeted Crawl');
     const companyDomain = company?.domain || null;
-    const candidates = await crawlForContacts(
+    const crawlResult = await crawlForContacts(
       company?.name || 'Unbekannt', 
       companyDomain, 
       targetRole, 
       alternativeRoles
     );
     
-    console.log(`[ContactIntel] Found ${candidates.length} candidates`);
+    const candidates = crawlResult.candidates || [];
+    const pagesCrawled = crawlResult.pagesCrawled || [];
+    const crawlMethod = crawlResult.method || 'unknown';
+    
+    console.log(`[ContactIntel] Found ${candidates.length} candidates via ${crawlMethod} (${pagesCrawled.length} pages crawled)`);
     
     if (candidates.length === 0) {
       return {
@@ -689,6 +688,8 @@ export const handler = async (event) => {
           status: 'no_candidates',
           targetRole,
           roleReason,
+          pagesCrawled,
+          crawlMethod,
           message: 'Keine passenden Ansprechpartner gefunden'
         })
       };
