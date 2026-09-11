@@ -417,3 +417,28 @@ export async function runDeepResearch(opportunityContext) {
   return res.json();
 }
 
+/**
+ * Ruft die Contact Intelligence Pipeline auf
+ * Findet automatisch den passenden Ansprechpartner für eine Opportunity.
+ */
+export async function callContactIntelligence({ companyId, opportunityId, offering, company, trigger, research }) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token || '';
+
+  const res = await fetch('/.netlify/functions/nexus-contact-intelligence', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ companyId, opportunityId, offering, company, trigger, research })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(`Contact Intelligence Error: ${err.error || res.statusText}`);
+  }
+
+  return res.json();
+}
+

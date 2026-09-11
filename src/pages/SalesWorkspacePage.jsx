@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Briefcase, Mail, MessageSquare, Phone, Send, Copy, CheckCircle, AlertCircle, List, Trash2, ArrowRight, Search } from 'lucide-react'
-import { callNexusAI, runDeepResearch } from '../lib/nexus-ai'
+import { callNexusAI, runDeepResearch, callContactIntelligence } from '../lib/nexus-ai'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import { useLead } from '../context/LeadContext'
 import { useAuth } from '../context/AuthContext'
@@ -169,56 +169,75 @@ export default function SalesWorkspacePage() {
     if (findingContact) return;
     setFindingContact(true);
        try {
-        const res = await callNexusAI({
-          mode: 'find_contact',
-          lang: lang,
-          userMessage: `Finde den Entscheider bei ${companyName}`,
-          company: companyName
+        // Nutze die neue Contact Intelligence Pipeline
+        const res = await callContactIntelligence({
+          companyId,
+          opportunityId: oppId,
+          offering: fullContext?.offering || null,
+          company: fullContext?.company || { name: companyName },
+          trigger: activeTrigger || null,
+          research: fullContext?.research || null
         });
         
-        let parsed = null;
-        try {
-          const textToParse = res?.response || res || "";
-          const cleanedText = typeof textToParse === 'string' ? textToParse.replace(/```(?:json)?/g, '').replace(/```/g, '').trim() : "";
-          parsed = typeof textToParse === 'string' ? JSON.parse(cleanedText) : textToParse;
-        } catch(e) {
-          console.error("Fehler beim Parsen der Kontakt-JSON:", e);
+        if (res.status === 'already_exists') {
+          // Kontakt existiert bereits
+          if (res.contact) {
+            let fullStr = `${res.contact.name}${res.contact.role ? ` (${res.contact.role})` : ''}`;
+            setFormData(prev => ({ ...prev, ansprechpartner: fullStr }));
+            setFullContext(prev => prev ? {
+              ...prev,
+              contacts: [{ nexus_contacts: res.contact }]
+            } : prev);
+            setFoundContact(res.contact);
+            setContactPersisted(true);
+          }
+          return;
         }
-      
-      if (parsed && parsed.name && parsed.name.trim() !== '' && parsed.name.toLowerCase() !== 'n/a' && parsed.name.toLowerCase() !== 'unbekannt' && parsed.name.length < 50) {
-        // Zeige den Kontakt sofort im Formular an (falls DB-Save wegen RLS fehlschlägt, haben wir ihn trotzdem im Pitch)
-        let fullStr = `${parsed.name}${parsed.role && parsed.role !== 'N/A' && parsed.role !== 'unbekannt' ? ` (${parsed.role})` : ''}`;
-        if (parsed.phone && parsed.phone !== 'unbekannt' && parsed.phone !== 'N/A') {
-          fullStr += ` | Tel: ${parsed.phone}`;
-        }
-        setFormData(prev => ({ ...prev, ansprechpartner: fullStr }));
-
-        // Intelligence-Tab aktualisieren
-        setFullContext(prev => prev ? {
-          ...prev,
-          contacts: [{ nexus_contacts: { name: parsed.name, role: parsed.role || '' } }]
-        } : prev);
         
-        // Versuche im Hintergrund zu speichern (nexus_contacts und nexus_opportunity_contacts)
-        try {
-          const savedContact = await db.saveOpportunityContact(user.id, companyId, oppId, parsed.name, parsed.role || '', 'tavily', 80);
-          if (savedContact && savedContact.id) {
-            setFoundContact(savedContact);
+        if (res.status === 'no_candidates') {
+          setFormData(prev => ({ ...prev, ansprechpartner: 'Kein passender Ansprechpartner gefunden' }));
+          return;
+        }
+        
+        if (res.status === 'found' && res.primary) {
+          const contact = res.primary;
+          // Zeige den Kontakt im Formular an
+          let fullStr = `${contact.name}${contact.role ? ` (${contact.role})` : ''}`;
+          if (contact.email && contact.email_status !== 'UNKNOWN') {
+            fullStr += ` | ${contact.email}`;
+          }
+          setFormData(prev => ({ ...prev, ansprechpartner: fullStr }));
+
+          // Intelligence-Tab aktualisieren
+          setFullContext(prev => prev ? {
+            ...prev,
+            contacts: [{ nexus_contacts: { name: contact.name, role: contact.role || '', email: contact.email || null } }]
+          } : prev);
+          
+          // Kontakt ist bereits in der Pipeline gespeichert
+          if (contact.id) {
+            setFoundContact(contact);
             setContactPersisted(true);
           } else {
-            // Fallback, wenn der Save fehlschlägt, aber wir einen generierten Kontakt haben
-            setFoundContact({ name: parsed.name, role: parsed.role });
-            setContactPersisted(false);
+            // Fallback: Manuell speichern
+            try {
+              const savedContact = await db.saveOpportunityContact(user.id, companyId, oppId, contact.name, contact.role || '', 'contact_intelligence', contact.rank_score || 80);
+              if (savedContact && savedContact.id) {
+                setFoundContact(savedContact);
+                setContactPersisted(true);
+              } else {
+                setFoundContact({ name: contact.name, role: contact.role });
+                setContactPersisted(false);
+              }
+            } catch(e) {
+              console.error("Fehler beim Speichern des Kontakts:", e);
+              setFoundContact({ name: contact.name, role: contact.role });
+              setContactPersisted(false);
+            }
           }
-        } catch(e) {
-          console.error("Fehler beim Speichern des Kontakts:", e);
-          setFoundContact({ name: parsed.name, role: parsed.role });
-          setContactPersisted(false);
+        } else {
+           setFormData(prev => ({ ...prev, ansprechpartner: 'Kein verlässlicher Ansprechpartner gefunden' }));
         }
-      } else {
-         // Explizit markieren, dass kein Kontakt gefunden wurde
-         setFormData(prev => ({ ...prev, ansprechpartner: 'Kein verlässlicher Ansprechpartner gefunden' }));
-      }
     } catch (e) {
       console.error(e);
       setFormData(prev => ({ ...prev, ansprechpartner: 'Fehler bei der Kontaktrecherche' }));
