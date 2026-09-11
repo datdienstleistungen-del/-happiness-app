@@ -32,29 +32,53 @@ async function discoverDomain(companyName) {
     return null;
   }
   
+  const skipDomains = /linkedin|facebook|twitter|x\.com|instagram|youtube|glassdoor|indeed|xing|munich|crunchbase|bloomberg|reuters|wallstreet|google|bing|yahoo|tavily|wikipedia|mondaq|sunzinet|handelsblatt|tagesschau|cas\.de|launchdiagnostics/i;
+  
+  const candidates = [];
+  
   for (const r of results) {
-    const url = r.url;
     try {
-      const urlObj = new URL(url);
+      const urlObj = new URL(r.url);
       const hostname = urlObj.hostname.replace(/^www\./, '');
       
-      // Skip aggregators, social media, job boards
-      if (/linkedin|facebook|twitter|x\.com|instagram|youtube|glassdoor|indeed|xing|munich|crunchbase|bloomberg|reuters|wallstreet/i.test(hostname)) continue;
+      if (skipDomains.test(hostname)) continue;
       
-      // Extract base domain (e.g. "corporate-happiness.de" from "corporate-happiness.de/page")
       const parts = hostname.split('.');
       if (parts.length < 2) continue;
       const baseDomain = parts.slice(-2).join('.');
       
-      // Skip generic domains
-      if (/google|bing|yahoo|tavily|duckduckgo|wikipedia|mondaq|sunzinet|handelsblatt|tagesschau/i.test(baseDomain)) continue;
+      if (skipDomains.test(baseDomain)) continue;
       
-      console.log(`[DomainDiscovery] Found: ${baseDomain} from ${url}`);
-      return baseDomain;
+      // Score: does domain contain company name?
+      const companyLower = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const domainLower = hostname.replace(/[^a-z0-9]/g, '');
+      
+      let score = 0;
+      if (domainLower.includes(companyLower)) score += 10; // domain contains company name
+      if (r.title.toLowerCase().includes(companyName.toLowerCase())) score += 5; // title mentions company
+      if (r.url.includes('/impressum') || r.url.includes('/contact') || r.url.includes('/about')) score += 3; // is a company page
+      if (parts.length === 2) score += 2; // shorter domain = likely company
+      
+      candidates.push({ domain: baseDomain, score, url: r.url, title: r.title });
     } catch (e) { continue; }
   }
   
-  console.log('[DomainDiscovery] No valid domain found');
+  if (candidates.length === 0) {
+    console.log('[DomainDiscovery] No valid domain found');
+    return null;
+  }
+  
+  // Sort by score, take best
+  candidates.sort((a, b) => b.score - a.score);
+  const best = candidates[0];
+  console.log(`[DomainDiscovery] Best: ${best.domain} (score ${best.score}) from ${best.url}`);
+  
+  // Only accept if score is reasonable (at least some signal that it's the right company)
+  if (best.score >= 2) {
+    return best.domain;
+  }
+  
+  console.log('[DomainDiscovery] Best candidate not confident enough');
   return null;
 }
 
