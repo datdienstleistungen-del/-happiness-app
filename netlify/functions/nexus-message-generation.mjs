@@ -194,14 +194,21 @@ export const handler = async (event) => {
     const interpretations = result.interpretations || [];
     const sources = result.sources || [];
     
-    console.log(`[MessageGen] Generated message: ${message.length} chars`);
+    // DSGVO: Fester Widerspruchshinweis (nicht vom LLM veränderbar)
+    const WIDERSPRUCHSHINWEIS = '\n\nFalls Sie keine weiteren Nachrichten dieser Art wünschen, lassen Sie es mich bitte kurz wissen.';
+    
+    // Hinweis an Nachricht anhängen
+    const fullMessage = message + WIDERSPRUCHSHINWEIS;
+    
+    console.log(`[MessageGen] Generated message: ${fullMessage.length} chars (incl. Widerspruchshinweis)`);
     
     return {
       statusCode: 200,
       body: JSON.stringify({
         status: 'generated',
         subject,
-        message,
+        message: fullMessage,
+        message_without_disclaimer: message,
         used_facts: usedFacts,
         interpretations,
         sources,

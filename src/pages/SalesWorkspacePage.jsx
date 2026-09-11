@@ -969,11 +969,16 @@ export default function SalesWorkspacePage() {
                               <button
                                 type="button"
                                 onClick={async () => {
-                                  // Bestätigen: Status setzen
+                                  // Bestätigen: Status setzen + Rechtsgrundlage (DSGVO)
                                   try {
+                                    const triggerContent = activeTrigger?.content || 'Kein Trigger';
                                     await supabase
                                       .from('nexus_contacts')
-                                      .update({ status: 'verified' })
+                                      .update({ 
+                                        status: 'verified',
+                                        contacted_at: new Date().toISOString(),
+                                        trigger_ref: triggerContent
+                                      })
                                       .eq('id', foundContact.id);
                                     setContactPersisted(true);
                                     alert('E-Mail bestätigt!');
@@ -1051,7 +1056,14 @@ export default function SalesWorkspacePage() {
                                   try {
                                     await supabase
                                       .from('nexus_contacts')
-                                      .update({ email, email_confidence: 100, email_source: 'manual', status: 'verified' })
+                                      .update({ 
+                                        email, 
+                                        email_confidence: 100, 
+                                        email_source: 'manual', 
+                                        status: 'verified',
+                                        contacted_at: new Date().toISOString(),
+                                        trigger_ref: activeTrigger?.content || 'Manuelle Eingabe'
+                                      })
                                       .eq('id', foundContact.id);
                                     setFoundContact(prev => ({ ...prev, email, email_confidence: 100, email_source: 'manual' }));
                                     setContactPersisted(true);
