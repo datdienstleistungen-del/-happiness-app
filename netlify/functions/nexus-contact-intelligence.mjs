@@ -572,6 +572,46 @@ async function discoverEmails(rankedContacts, companyName, companyDomain) {
 }
 
 // ============================================================================
+// EMAIL PATTERN-GUESSING
+// ============================================================================
+
+function generateEmailPatterns(name, domain) {
+  if (!name || !domain) return [];
+  
+  const parts = name.trim().split(/\s+/);
+  if (parts.length < 2) return [];
+  
+  const vorname = parts[0].toLowerCase();
+  const nachname = parts[parts.length - 1].toLowerCase();
+  
+  const normalize = (str) => str
+    .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]/g, '');
+  
+  const v = normalize(vorname);
+  const n = normalize(nachname);
+  
+  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].toLowerCase();
+  
+  const patterns = [
+    { pattern: '{vorname}.{nachname}', email: `${v}.${n}@${cleanDomain}`, confidence: 90 },
+    { pattern: '{v}.{nachname}', email: `${v[0]}.${n}@${cleanDomain}`, confidence: 80 },
+    { pattern: '{vorname}{nachname}', email: `${v}${n}@${cleanDomain}`, confidence: 70 },
+    { pattern: '{vorname}_{nachname}', email: `${v}_${n}@${cleanDomain}`, confidence: 65 },
+    { pattern: '{nachname}.{vorname}', email: `${n}.${v}@${cleanDomain}`, confidence: 60 },
+    { pattern: '{nachname}{vorname}', email: `${n}${v}@${cleanDomain}`, confidence: 50 },
+    { pattern: '{vorname}', email: `${v}@${cleanDomain}`, confidence: 40 },
+  ];
+  
+  return patterns.map(p => ({
+    email: p.email,
+    pattern: p.pattern,
+    confidence: p.confidence,
+    method: 'pattern_guessing'
+  }));
+}
+
+// ============================================================================
 // LLM CALL
 // ============================================================================
 
@@ -762,6 +802,7 @@ export const handler = async (event) => {
           name: best.name,
           role: best.role || targetRole,
           email: best.email || null,
+          email_confidence: best.email ? (best.email_status === 'FOUND' ? 'verified' : 'guessed') : 'unknown',
           linkedin_url: null
         })
         .select()
@@ -779,6 +820,33 @@ export const handler = async (event) => {
           }, { onConflict: 'opportunity_id,contact_id' });
         
         best.id = savedContact.id;
+        
+        // Phase 8: Email Research (Pattern-Guessing) wenn keine E-Mail vorhanden
+        if (!best.email && companyDomain) {
+          console.log('[ContactIntel] Phase 8: Email Research (Pattern-Guessing)');
+          try {
+            const emailCandidates = generateEmailPatterns(best.name, companyDomain);
+            if (emailCandidates.length > 0) {
+              best.email = emailCandidates[0].email;
+              best.email_confidence = 'guessed';
+              best.email_source = 'pattern_guessing';
+              
+              // Update contact with guessed email
+              await serviceClient
+                .from('nexus_contacts')
+                .update({
+                  email: best.email,
+                  email_confidence: 'guessed',
+                  email_source: 'pattern_guessing'
+                })
+                .eq('id', savedContact.id);
+              
+              console.log(`[ContactIntel] Email guessed: ${best.email}`);
+            }
+          } catch (e) {
+            console.log('[ContactIntel] Email research failed:', e.message);
+          }
+        }
       }
     }
     
