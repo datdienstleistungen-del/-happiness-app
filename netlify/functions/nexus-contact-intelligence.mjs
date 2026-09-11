@@ -371,14 +371,24 @@ async function crawlViaSearch(companyName, targetRole) {
   const query = `"${companyName}" ${targetRole} site`;
   console.log(`  [Search] Query: ${query}`);
   const results = await webSearch(query);
-  if (!results || results.length === 0) return candidates;
+  if (!results || results.length === 0) {
+    console.log('  [Search] No results from webSearch');
+    return candidates;
+  }
+  console.log(`  [Search] Got ${results.length} results`);
   
   // Take only first 3 non-job URLs, fetch in PARALLEL
   const urls = results.filter(r => !isJobUrl(r.url)).slice(0, 3);
+  console.log(`  [Search] ${urls.length} URLs after job-filter`);
   
   const pagePromises = urls.map(async (r) => {
+    console.log(`  [Search] Fetching: ${r.url}`);
     const text = await fetchPageText(r.url, 3000);
-    if (!text || text.length < 200) return [];
+    if (!text || text.length < 200) {
+      console.log(`  [Search] Skipped ${r.url} (text=${text?.length || 0})`);
+      return [];
+    }
+    console.log(`  [Search] Extracting persons from ${r.url} (${text.length} chars)`);
     const persons = await extractPersonsViaLLM(text, companyName, targetRole, r.url);
     return persons.map(p => {
       p.source_url = r.url;
@@ -396,6 +406,7 @@ async function crawlViaSearch(companyName, targetRole) {
     if (candidates.length >= 3) break;
   }
   
+  console.log(`  [Search] Final candidates: ${candidates.length}`);
   return candidates;
 }
 
