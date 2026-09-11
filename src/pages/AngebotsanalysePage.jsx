@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Target, Save, ArrowRight, CheckCircle, AlertCircle, Radar, Edit3 } from 'lucide-react'
 import { createOffering } from '../lib/nexus-db'
+import SignalStrategiesManager from '../components/nexus/SignalStrategiesManager'
 import { useLead } from '../context/LeadContext'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations.jsx'
@@ -191,6 +192,8 @@ export default function AngebotsanalysePage() {
               <div>{activeOffering.value_proposition}</div>
             </div>
           </div>
+          
+          <SignalStrategiesManager offering={activeOffering} />
           
           <div className="nexus-action-pipeline">
             <h3>{t('nexus.nextSteps') || 'N�chste Schritte'}</h3>

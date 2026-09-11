@@ -52,9 +52,33 @@ export async function handler(event, context) {
 
     // 3. Iteration über die geclaimten Offerings
     for (const offering of offerings) {
-      const searchQuery = offering.target_audience; // Die Zielgruppe ist unser primärer Radar-Suchvektor
-      if (!searchQuery) {
-        // Fallback: Entsperren, wenn keine Zielgruppe definiert ist
+      // Signal-Strategien laden (preferiert) oder Fallback auf target_audience
+      let searchQueries = [];
+      try {
+        const stratRes = await fetch(`${supabaseUrl}/rest/v1/nexus_signal_strategies?offering_id=eq.${offering.id}&select=search_queries`, {
+          headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${authToken}` }
+        });
+        if (stratRes.ok) {
+          const strats = await stratRes.json();
+          for (const s of strats) {
+            if (Array.isArray(s.search_queries)) {
+              for (const sq of s.search_queries) {
+                if (sq.query) searchQueries.push(sq.query);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn(`B1 Cron: Fehler beim Laden der Signal-Strategien für Offering ${offering.id}:`, e.message);
+      }
+
+      // Fallback: target_audience wenn keine Signal-Strategien vorhanden
+      if (searchQueries.length === 0 && offering.target_audience) {
+        searchQueries = [offering.target_audience];
+      }
+
+      if (searchQueries.length === 0) {
+        // Fallback: Entsperren, wenn weder Strategien noch Zielgruppe definiert ist
         await fetch(`${supabaseUrl}/rest/v1/nexus_offerings?id=eq.${offering.id}`, {
           method: 'PATCH',
           headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
@@ -63,32 +87,32 @@ export async function handler(event, context) {
         continue;
       }
 
-      console.log(`B1 Cron: Starte Tavily Search für Offering ${offering.id} (Query: ${searchQuery})`);
+      console.log(`B1 Cron: Starte Tavily Search für Offering ${offering.id} (${searchQueries.length} Queries)`);
 
       try {
-        // 4. Tavily Deep Search (Datengewinnung)
-        const tavilyRes = await fetch('https://api.tavily.com/search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            api_key: tavilyApiKey,
-            query: searchQuery,
-            search_depth: "advanced",
-            include_raw_content: true,
-            max_results: 15,
-            days_back: 7
-          })
-        });
-
-        if (!tavilyRes.ok) {
-          throw new Error(`Tavily API Fehler: ${tavilyRes.statusText}`);
+        // 4. Tavily Deep Search (Datengewinnung) — eine Suche pro Query
+        const allResults = [];
+        for (const query of searchQueries.slice(0, 5)) { // Max 5 Queries pro Offering (Netlify Timeout)
+          const tavilyRes = await fetch('https://api.tavily.com/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              api_key: tavilyApiKey,
+              query: query,
+              search_depth: "advanced",
+              include_raw_content: true,
+              max_results: 5,
+              days_back: 7
+            })
+          });
+          if (tavilyRes.ok) {
+            const data = await tavilyRes.json();
+            allResults.push(...(data.results || []));
+          }
         }
 
-        const tavilyData = await tavilyRes.json();
-        const results = tavilyData.results || [];
-
         // 5. Ergebnisse normalisieren & hashen
-        const rowsToInsert = results.map(r => {
+        const rowsToInsert = allResults.map(r => {
           const hash = crypto.createHash('md5').update(r.url || '').digest('hex');
           return {
             user_id: offering.user_id,

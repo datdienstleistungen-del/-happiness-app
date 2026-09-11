@@ -112,6 +112,41 @@ export async function getOfferingById(id) {
 }
 
 // -----------------------------------------------------------------------------
+// 2b. SIGNAL STRATEGIES (Suchstrategien pro Offering)
+// -----------------------------------------------------------------------------
+
+export async function getSignalStrategies(offeringId) {
+  const { data, error } = await supabase
+    .from('nexus_signal_strategies')
+    .select('*')
+    .eq('offering_id', offeringId)
+    .order('created_at', { ascending: false });
+  return error ? [] : data;
+}
+
+export async function generateSignalStrategies(offeringId, aiUnderstanding, targetMarkets, uiLanguage = 'de') {
+  const { data: { session } } = await supabase.auth.getSession()
+  const token = session?.access_token || ''
+
+  const res = await fetch('/.netlify/functions/nexus-generate-strategies', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ offeringId, aiUnderstanding, targetMarkets, uiLanguage })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Strategy generation failed: ${res.statusText}`);
+  }
+
+  const result = await res.json();
+  return result.strategies || [];
+}
+
+// -----------------------------------------------------------------------------
 // 3. COMPANIES (Firmen)
 // -----------------------------------------------------------------------------
 

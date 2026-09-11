@@ -91,7 +91,37 @@ export const handler = async (event) => {
       if (!updateRes.ok) console.error("Rate limit update error:", await updateRes.text());
     }
 
-    const { searchQuery, branche, lang, offeringId } = JSON.parse(event.body);
+    const { searchQuery: rawSearchQuery, branche, lang, offeringId } = JSON.parse(event.body);
+
+    // Signal-Strategien laden (wenn Offering-ID vorhanden)
+    let searchQuery = rawSearchQuery;
+    if (offeringId) {
+      try {
+        const stratRes = await fetch(`${supabaseUrl}/rest/v1/nexus_signal_strategies?offering_id=eq.${offeringId}&select=search_queries`, {
+          headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` }
+        });
+        if (stratRes.ok) {
+          const strats = await stratRes.json();
+          const queries = [];
+          for (const s of strats) {
+            if (Array.isArray(s.search_queries)) {
+              for (const sq of s.search_queries) {
+                if (sq.query) queries.push(sq.query);
+              }
+            }
+          }
+          if (queries.length > 0) {
+            // Beste Query auswählen (erste, oder nach Branche gefiltert)
+            searchQuery = branche
+              ? queries.find(q => q.toLowerCase().includes(branche.toLowerCase())) || queries[0]
+              : queries[0];
+            console.log(`[Signal Strategy] Using query: "${searchQuery}" (from ${queries.length} strategies)`);
+          }
+        }
+      } catch (e) {
+        console.warn(`[Signal Strategy] Fehler beim Laden, nutze Fallback-Query:`, e.message);
+      }
+    }
 
     const tavilyKey = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY;
     const mistralKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;

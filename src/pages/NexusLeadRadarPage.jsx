@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Radar, Search, ArrowRight, Building2, AlertCircle, RefreshCw, Briefcase, Globe, CheckCircle } from 'lucide-react'
 import { callNexusAI, runResearchPipeline } from '../lib/nexus-ai'
+import { supabase } from '../lib/supabase'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import SetupWizard from '../components/SetupWizard'
 import UpgradeModal from '../components/UpgradeModal'
@@ -81,14 +82,32 @@ export default function NexusLeadRadarPage() {
       const icpData = offering.icp_data || {}
       const branche = (icpData.branchen && icpData.branchen.length > 0) ? icpData.branchen[0] : ''
 
+      // Bevorzugt: Signal-Strategien aus DB (generiert von nexus-generate-strategies)
       let query = ''
-      if (triggerModel && triggerModel.length > 0) {
-        query = triggerModel.map(te => te.event).join(' OR ')
-      } else {
-        // Fallback: If no triggers exist, don't send the full sentence to Tavily (it will return 0 results).
-        // Send a cleaned up, short version instead.
-        const cleaned = offering.offering_name.replace(/ich möchte|ein neues|verkaufen/gi, '').trim()
-        query = cleaned || offering.offering_name.split(' ').slice(0, 3).join(' ')
+      try {
+        const { data: strats } = await supabase
+          .from('nexus_signal_strategies')
+          .select('search_queries')
+          .eq('offering_id', offering.id)
+        
+        if (strats && strats.length > 0) {
+          const allQueries = strats.flatMap(s => (s.search_queries || []).map(sq => sq.query).filter(Boolean))
+          if (allQueries.length > 0) {
+            query = allQueries[0] // Beste Query nehmen
+          }
+        }
+      } catch (e) {
+        console.warn('Signal-Strategien konnten nicht geladen werden:', e)
+      }
+
+      // Fallback: trigger_model oder bereinigter Offering-Name
+      if (!query) {
+        if (triggerModel && triggerModel.length > 0) {
+          query = triggerModel.map(te => te.event).join(' OR ')
+        } else {
+          const cleaned = offering.offering_name.replace(/ich möchte|ein neues|verkaufen/gi, '').trim()
+          query = cleaned || offering.offering_name.split(' ').slice(0, 3).join(' ')
+        }
       }
 
       // Always use the live research pipeline now ("Fenster zur Welt")
