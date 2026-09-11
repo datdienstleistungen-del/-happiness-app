@@ -36,6 +36,23 @@ function getCompanyNameVariants(companyName) {
   variants.add(lower.replace(/[^a-z0-9]/g, ''));
   variants.add(withoutUmlauts.replace(/[^a-z0-9]/g, ''));
   
+  // Strip legal entity suffixes: GmbH, AG, SE, KG, etc.
+  const stripped = lower
+    .replace(/\b(gmbh|ag|se|kg|ohg|ug|gbr|partg|llc|inc|corp|ltd|sas|sarl|bv|ab|oy|as)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (stripped.length >= 3 && stripped !== lower) {
+    variants.add(stripped);
+    variants.add(stripped.replace(/[^a-z0-9]/g, ''));
+    // Also umlaut variants of stripped
+    let strippedUmlauts = stripped;
+    for (const [umlaut, replacement] of Object.entries(umlautMap)) {
+      strippedUmlauts = strippedUmlauts.replace(new RegExp(umlaut, 'g'), replacement);
+    }
+    variants.add(strippedUmlauts);
+    variants.add(strippedUmlauts.replace(/[^a-z0-9]/g, ''));
+  }
+  
   return [...variants].filter(v => v.length >= 3);
 }
 
@@ -563,29 +580,68 @@ Gib ein JSON zurück:
 // ============================================================================
 
 // ============================================================================
-// SEMANTIC WEBSITE NAVIGATION
+// DEEP SEMANTIC CRAWL v4 — Category Classification
 // ============================================================================
 
-// HIGH VALUE: Person/Führung — Anker-Text mit diesen Keywords → sehr wahrscheinlich Entscheider-Seite
-// WICHTIG: \b (Word Boundary) verhindert False Positives wie "s team" in "steam"
-const PERSON_KEYWORDS_HIGH = [
-  /\bgeschäftsführer\b/i, /\bvorstand\b/i, /\bmanagement\b/i, /\bleadership\b/i, /\bexecutive\b/i,
+// LEADERSHIP: Direkte Personen-/Führungs-Seiten — Diese Seiten sind Endziel
+const LEADERSHIP_KEYWORDS = [
+  /\bmanagement\b/i, /\bleadership\b/i, /\bexecutive\b/i, /\bboard\b/i,
+  /\bvorstand\b/i, /\bgeschäftsführung\b/i, /\bgeschäftsführer\b/i,
+  /\bunternehmensleitung\b/i, /\bfirmenleitung\b/i,
+  /\bceo\b/i, /\bcto\b/i, /\bcfo\b/i, /\bcoo\b/i, /\bcmo\b/i,
+  /\bfounder\b/i, /\bowner\b/i, /\bpartner\b/i,
+  /\bhead\b/i, /\bvp\b/i, /\bvice\b/i, /\bchief\b/i, /\bpresident\b/i,
+  /\bmanagement board\b/i, /\bexecutive board\b/i, /\bexecutive team\b/i,
+  /\bour people\b/i, /\bunser team\b/i, /\bunsere menschen\b/i,
+  /\bmitarbeiter\b/i, /\bteam\b/i, /\bpeople\b/i, /\bstaff\b/i,
+];
+
+// CORPORATE HUB: Übersichts-Seiten — Einstiegspunkte, NICHT Endziel
+const CORP_HUB_KEYWORDS = [
+  /\bunternehmen\b/i, /\bcompany\b/i, /\babout\b/i, /\bcorporate\b/i,
+  /\büber uns\b/i, /\babout us\b/i, /\büber mich\b/i,
+  /\profil\b/i, /\bfirma\b/i, /\bgeschichte\b/i, /\bhistory\b/i,
+  /\bwerte\b/i, /\bvalues\b/i, /\bmission\b/i, /\bvision\b/i,
+  /\bimpressum\b/i, /\blegal\b/i,
+];
+
+// PERSON SEARCH: Person-bezogene Keywords in Link-Text (für Hub-Suche)
+const PERSON_SEARCH_KEYWORDS = [
+  /\bgeschäftsführer\b/i, /\bvorstand\b/i, /\bmanagement\b/i, /\bleadership\b/i,
   /\bteam\b/i, /\bmitarbeiter\b/i, /\bansprechpartner\b/i, /\bkontakt\b/i,
   /\bfounder\b/i, /\bowner\b/i, /\bpartner\b/i,
   /\bceo\b/i, /\bcto\b/i, /\bcfo\b/i, /\bcoo\b/i, /\bcmo\b/i,
-  /\bdirektor\b/i, /\bhead\b/i, /\bleiter\b/i, /\bchef\b/i, /\bpresident\b/i, /\bvp\b/i, /\bvice\b/i,
+  /\bdirektor\b/i, /\bhead\b/i, /\bleiter\b/i, /\bchef\b/i,
+  /\bpresident\b/i, /\bvp\b/i, /\bvice\b/i, /\bchief\b/i,
   /\bperson\b/i, /\bpeople\b/i, /\bstaff\b/i,
-  // Role signals in anchor: "Vertrieb", "Sales", etc. indicate the person page of a role
-  /\bsales\b/i, /\bvertrieb\b/i, /\bmarketing\b/i, /\bfinance\b/i, /\beinkauf\b/i, /\bprocurement\b/i,
-  /\bpersonal\b/i, /\bhr\b/i, /\bentwicklung\b/i, /\btechnik\b/i, /\bit\b/i,
+  /\bsales\b/i, /\bvertrieb\b/i, /\bmarketing\b/i, /\bfinance\b/i,
+  /\beinkauf\b/i, /\bprocurement\b/i, /\bpersonal\b/i, /\bhr\b/i,
+  /\bentwicklung\b/i, /\btechnik\b/i, /\bit\b/i,
 ];
 
-// MEDIUM VALUE: Unternehmen/Über-uns — kann Leadership-Infos enthalten
-const COMPANY_KEYWORDS = [
-  /\büber uns\b/i, /\babout\b/i, /\bunternehmen\b/i, /\bprofil\b/i, /\bfirma\b/i,
-  /\bgeschichte\b/i, /\bhistory\b/i, /\bwerte\b/i, /\bvalues\b/i, /\bmission\b/i,
-  /\bimpressum\b/i, // Enthält oft Geschäftsführer
-];
+function categorizeLinkSemantic(url, anchorText) {
+  const urlLower = url.toLowerCase();
+  const anchorLower = (anchorText || '').toLowerCase();
+  
+  // Exclude news/press articles from leadership category
+  const isNewsArticle = /\/media-information\/|\/news\//i.test(urlLower) ||
+    /\bhat veröffentlicht\b/i.test(anchorLower) ||
+    /\bhas published\b/i.test(anchorLower) ||
+    /\bregistered a revenue\b/i.test(anchorLower) ||
+    /\bim jahr \d{4}\b/i.test(anchorLower) ||
+    /\bin \d{4},?\s/i.test(anchorLower) ||
+    /\bstellt .+ vor\b/i.test(anchorLower) ||
+    /\bpublished its\b/i.test(anchorLower);
+  
+  const isLeadership = !isNewsArticle && (
+    LEADERSHIP_KEYWORDS.some(p => p.test(anchorLower)) || LEADERSHIP_KEYWORDS.some(p => p.test(urlLower))
+  );
+  const isCorpHub = CORP_HUB_KEYWORDS.some(p => p.test(anchorLower)) || CORP_HUB_KEYWORDS.some(p => p.test(urlLower));
+  
+  if (isLeadership) return 'leadership';
+  if (isCorpHub) return 'corp_hub';
+  return 'other';
+}
 
 // LOW VALUE: Produkt, Blog, News — selten Personen-Infos
 const LOW_VALUE_KEYWORDS = [
@@ -598,7 +654,7 @@ const LOW_VALUE_KEYWORDS = [
   /\breferenz\b/i, /\bcase\b/i, /\bportfolio\b/i, /\bprojekt\b/i,
 ];
 
-function scoreLinkBySemantics(url, anchorText, companyName) {
+function scoreLinkBySemantics(url, anchorText, companyName, parentContext = null) {
   const urlLower = url.toLowerCase();
   const anchorLower = (anchorText || '').toLowerCase();
   const companyLower = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -607,46 +663,77 @@ function scoreLinkBySemantics(url, anchorText, companyName) {
   
   let score = 0;
   
-  // Step 1: Check for LOW VALUE → immediate rejection for most pages
+  // Step 1: Check for LOW VALUE → immediate rejection
   if (LOW_VALUE_KEYWORDS.some(p => p.test(urlLower))) return -10;
   if (LOW_VALUE_KEYWORDS.some(p => p.test(anchorLower))) return -10;
   
-  // Step 2: HIGH VALUE PERSON/LEADERSHIP keywords — strongest signal
-  // Anchor text with leadership keywords = very likely to be a person/management page
-  const personHitsAnchor = PERSON_KEYWORDS_HIGH.filter(p => p.test(anchorLower)).length;
-  const personHitsUrl = PERSON_KEYWORDS_HIGH.filter(p => p.test(urlLower)).length;
+  // Step 2: LEADERSHIP keywords — strongest signal (Endziel)
+  const leadershipHitsAnchor = LEADERSHIP_KEYWORDS.filter(p => p.test(anchorLower)).length;
+  const leadershipHitsUrl = LEADERSHIP_KEYWORDS.filter(p => p.test(urlLower)).length;
+  if (leadershipHitsAnchor >= 2) score += 20;
+  else if (leadershipHitsAnchor === 1) score += 15;
+  if (leadershipHitsUrl >= 2) score += 10;
+  else if (leadershipHitsUrl === 1) score += 7;
   
-  if (personHitsAnchor >= 2) score += 15; // "Geschäftsführer Team" = very strong
-  else if (personHitsAnchor === 1) score += 10; // "Management" = strong
+  // Step 3: CORPORATE HUB keywords — medium signal (Einstiegspunkt)
+  const hubHitsAnchor = CORP_HUB_KEYWORDS.filter(p => p.test(anchorLower)).length;
+  const hubHitsUrl = CORP_HUB_KEYWORDS.filter(p => p.test(urlLower)).length;
+  if (hubHitsAnchor >= 1) score += 8;
+  if (hubHitsUrl >= 1) score += 5;
   
-  if (personHitsUrl >= 2) score += 8;
-  else if (personHitsUrl === 1) score += 5;
+  // Step 4: PERSON SEARCH keywords (for finding hubs from homepage)
+  const personHits = PERSON_SEARCH_KEYWORDS.filter(p => p.test(anchorLower)).length;
+  if (personHits >= 2) score += 12;
+  else if (personHits === 1) score += 8;
   
-  // Step 3: MEDIUM VALUE COMPANY/ABOUT keywords
-  const companyHitsAnchor = COMPANY_KEYWORDS.filter(p => p.test(anchorLower)).length;
-  const companyHitsUrl = COMPANY_KEYWORDS.filter(p => p.test(urlLower)).length;
+  // Step 5: PARENT CONTEXT —如果 parent ist ein Corporate Hub, boost child significantly
+  if (parentContext) {
+    const parentCategory = parentContext.category;
+    const parentTitle = (parentContext.pageTitle || '').toLowerCase();
+    const parentAnchor = (parentContext.anchorText || '').toLowerCase();
+    
+    // If parent is a Corporate Hub, child links are more likely to contain leadership info
+    if (parentCategory === 'corp_hub') {
+      score += 8;
+      console.log(`  [Score] +8 parent-is-corp-hub`);
+    }
+    
+    // If parent title contains leadership keywords, even stronger boost
+    if (LEADERSHIP_KEYWORDS.some(p => p.test(parentTitle))) {
+      score += 5;
+      console.log(`  [Score] +5 parent-title-leadership`);
+    }
+    
+    // If parent anchor text was a person-search keyword
+    if (PERSON_SEARCH_KEYWORDS.some(p => p.test(parentAnchor))) {
+      score += 3;
+      console.log(`  [Score] +3 parent-anchor-person`);
+    }
+    
+    // If parent already identified as leadership category, strong boost
+    if (parentCategory === 'leadership') {
+      score += 12;
+      console.log(`  [Score] +12 parent-is-leadership`);
+    }
+  }
   
-  if (companyHitsAnchor >= 1) score += 6; // "Über uns" = medium
-  if (companyHitsUrl >= 1) score += 4;
-  
-  // Step 4: URL structure bonuses
+  // Step 6: URL structure bonuses
   try {
     const path = new URL(url).pathname;
     const pathDepth = path.split('/').filter(p => p).length;
-    // Short paths are more likely main navigation pages
-    if (pathDepth <= 1) score += 3; // "/" or "/team" = very likely important
+    if (pathDepth <= 1) score += 3;
     else if (pathDepth <= 2) score += 1;
   } catch {}
   
-  // Step 5: Anchor text quality
+  // Step 7: Anchor text quality
   if (anchorLower.length > 2 && anchorLower.length < 30) score += 1;
   
-  // Step 6: Internal link bonus
+  // Step 8: Internal link bonus
   if (domainLower === companyLower || domainLower.endsWith('.' + companyLower)) {
     score += 2;
   }
   
-  // Step 7: Company name in anchor (rare but very strong signal)
+  // Step 9: Company name in anchor
   if (anchorLower.includes(companyLower)) score += 5;
   
   return score;
@@ -656,6 +743,7 @@ function extractLinksWithAnchorText(html, baseUrl) {
   const links = [];
   const urlObj = new URL(baseUrl);
   const domain = urlObj.hostname;
+  const origin = urlObj.origin; // scheme + host only, no path
   
   // Match both href and anchor text
   const linkRegex = /<a[^>]+href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
@@ -670,11 +758,18 @@ function extractLinksWithAnchorText(html, baseUrl) {
     // Skip empty anchor text
     if (!anchorText || anchorText.length < 2) continue;
     
-    // Resolve relative URLs
+    // Skip anchors, javascript, mailto
+    if (href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:')) continue;
+    
+    // Resolve relative URLs — use origin (not full baseUrl) for absolute paths
     if (href.startsWith('/')) {
-      href = baseUrl + href;
+      href = origin + href;
     } else if (!href.startsWith('http')) {
-      continue;
+      // Relative path like "about.html" — resolve against current page directory
+      try {
+        const basePath = urlObj.pathname.substring(0, urlObj.pathname.lastIndexOf('/') + 1);
+        href = origin + basePath + href;
+      } catch { continue; }
     }
     
     // Only keep internal links
@@ -701,6 +796,7 @@ function extractLinksWithAnchorText(html, baseUrl) {
 async function crawlForContacts(companyName, companyDomain, targetRole, alternativeRoles, startTime) {
   const allCandidates = [];
   const pagesCrawled = [];
+  const crawlLog = []; // For detailed reporting
   
   if (!companyDomain) {
     console.log('[Crawler] No domain provided, using search fallback');
@@ -708,12 +804,13 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
     return {
       candidates: searchCandidates,
       pagesCrawled: [],
-      method: 'search_fallback'
+      method: 'search_fallback',
+      crawlLog: []
     };
   }
   
-  // ========== PHASE A: Semantic Website Navigation ==========
-  console.log(`[Crawler] Phase A: Semantic crawl of ${companyDomain}`);
+  // ========== PHASE A: Deep Semantic Website Navigation ==========
+  console.log(`[Crawler] Phase A: Deep semantic crawl of ${companyDomain}`);
   
   const baseUrl = `https://${companyDomain}`;
   const homepageHtml = await fetchRawHtml(baseUrl);
@@ -723,6 +820,9 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
     return await crawlViaSearch(companyName, targetRole);
   }
   
+  // ========== LEVEL 0: Homepage ==========
+  console.log(`\n[Crawler] === LEVEL 0: Homepage ===`);
+  
   const homepageText = homepageHtml
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
@@ -731,63 +831,173 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
     .replace(/\s+/g, ' ').trim();
   
   console.log(`[Crawler] Homepage loaded: ${homepageText.length} chars`);
+  pagesCrawled.push(baseUrl);
+  crawlLog.push({ url: baseUrl, level: 0, category: 'homepage', score: 0, parentAnchor: null, parentTitle: null });
   
   // Extract all internal links with anchor text
   const linksWithAnchor = extractLinksWithAnchorText(homepageHtml, baseUrl);
-  console.log(`[Crawler] Found ${linksWithAnchor.length} internal links`);
+  console.log(`[Crawler] Found ${linksWithAnchor.length} internal links on homepage`);
   
-  // Score each link by semantic relevance
+  // Score each link by semantic relevance (no parent context for level 0)
   const scoredLinks = linksWithAnchor
-    .map(l => ({
-      ...l,
-      score: scoreLinkBySemantics(l.url, l.anchorText, companyName)
-    }))
+    .map(l => {
+      const category = categorizeLinkSemantic(l.url, l.anchorText);
+      const score = scoreLinkBySemantics(l.url, l.anchorText, companyName);
+      return { ...l, score, category };
+    })
     .filter(l => l.score > 0)
     .sort((a, b) => b.score - a.score);
   
-  console.log(`[Crawler] Top semantic links:`);
-  scoredLinks.slice(0, 5).forEach(l => {
+  console.log(`[Crawler] Scored links (top 10):`);
+  scoredLinks.slice(0, 10).forEach(l => {
     const path = new URL(l.url).pathname || '/';
-    console.log(`  [${l.score}] ${l.anchorText.substring(0, 40)} → ${path}`);
+    console.log(`  [${l.score}] [${l.category}] ${l.anchorText.substring(0, 40)} → ${path}`);
   });
   
-  // Crawl top 3 most relevant pages (PARALLEL)
-  const pagesToCrawl = scoredLinks.slice(0, 3).map(l => l.url);
+  // ========== LEVEL 1: Hub Pages (3-5 most relevant) ==========
+  console.log(`\n[Crawler] === LEVEL 1: Hub Pages ===`);
   
-  // Always include homepage as fallback
-  if (!pagesToCrawl.includes(baseUrl)) {
-    pagesToCrawl.push(baseUrl);
+  const hubLinks = scoredLinks
+    .filter(l => l.category === 'corp_hub' || l.category === 'leadership')
+    .slice(0, 5); // Max 5 hubs
+  
+  if (hubLinks.length === 0) {
+    // Fallback: take top 3 any-category links
+    hubLinks.push(...scoredLinks.slice(0, 3));
   }
   
-  const crawlPromises = pagesToCrawl.map(async (url) => {
-    if (startTime && Date.now() - startTime > 18000) {
-      console.log(`[Crawler] Timeout approaching, skipping: ${url}`);
-      return { url, persons: [] };
-    }
-    console.log(`[Crawler] Crawling: ${url}`);
-    const text = await fetchPageText(url, 3000);
-    if (!text || text.length < 200) {
-      console.log(`  (skipped: too short or empty)`);
-      return { url, persons: [] };
+  console.log(`[Crawler] Selected ${hubLinks.length} hub pages`);
+  
+  // Crawl hub pages sequentially (not parallel) to stay within time budget
+  const childLinks = [];
+  
+  for (const hub of hubLinks) {
+    if (startTime && Date.now() - startTime > 16000) {
+      console.log(`[Crawler] Timeout approaching, skipping hub: ${hub.url}`);
+      break;
     }
     
-    const persons = await extractPersonsViaLLM(text, companyName, targetRole, url);
-    return { url, persons };
-  });
-  
-  const results = await Promise.all(crawlPromises);
-  
-  for (const { url, persons } of results) {
-    pagesCrawled.push(url);
-    for (const p of persons) {
-      p.source_url = url;
-      p.company_validated = true;
-      allCandidates.push(p);
-      console.log(`  Found: ${p.name} (${p.role})`);
+    console.log(`\n[Crawler] Crawling hub: [${hub.score}] ${hub.anchorText} → ${new URL(hub.url).pathname}`);
+    
+    const hubHtml = await fetchRawHtml(hub.url);
+    if (!hubHtml) {
+      console.log(`  (hub not reachable)`);
+      continue;
     }
+    
+    pagesCrawled.push(hub.url);
+    crawlLog.push({ 
+      url: hub.url, level: 1, category: hub.category, score: hub.score,
+      parentAnchor: null, parentTitle: null 
+    });
+    
+    // Extract links from hub page
+    const hubLinksInner = extractLinksWithAnchorText(hubHtml, hub.url);
+    console.log(`  Found ${hubLinksInner.length} links on hub page`);
+    
+    // Get hub page title for parent context
+    let hubTitle = '';
+    try {
+      const titleMatch = hubHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+      hubTitle = titleMatch ? titleMatch[1].replace(/\s+/g, ' ').trim() : '';
+    } catch {}
+    
+    // Score child links with parent context
+    const parentContext = {
+      category: hub.category,
+      pageTitle: hubTitle,
+      anchorText: hub.anchorText
+    };
+    
+    const scoredChildren = hubLinksInner
+      .map(l => {
+        const category = categorizeLinkSemantic(l.url, l.anchorText);
+        const score = scoreLinkBySemantics(l.url, l.anchorText, companyName, parentContext);
+        return { ...l, score, category, parentUrl: hub.url, parentAnchor: hub.anchorText, parentTitle: hubTitle, parentCategory: hub.category };
+      })
+      .filter(l => l.score > 0 && !pagesCrawled.includes(l.url)) // Skip already-crawled
+      .sort((a, b) => b.score - a.score);
+    
+    console.log(`  Top child links:`);
+    scoredChildren.slice(0, 5).forEach(l => {
+      const path = new URL(l.url).pathname || '/';
+      console.log(`    [${l.score}] [${l.category}] ${l.anchorText.substring(0, 40)} → ${path} (parent: ${l.parentCategory})`);
+    });
+    
+    // Add top children to crawl queue (max 8 total across all hubs)
+    childLinks.push(...scoredChildren.slice(0, 8 - childLinks.length));
   }
   
-  console.log(`[Crawler] Phase A complete: ${allCandidates.length} candidates from ${pagesCrawled.length} pages`);
+  // ========== LEVEL 2: Child Pages (Leadership/Person Detail Pages) ==========
+  console.log(`\n[Crawler] === LEVEL 2: Detail Pages (${childLinks.length} candidates) ===`);
+  
+  // Sort children by score, take top ones
+  childLinks.sort((a, b) => b.score - a.score);
+  const topChildren = childLinks.slice(0, 8);
+  
+  // Extract persons from each child page
+  for (const child of topChildren) {
+    if (startTime && Date.now() - startTime > 18000) {
+      console.log(`[Crawler] Timeout approaching, skipping: ${child.url}`);
+      break;
+    }
+    
+    // Skip if already crawled
+    if (pagesCrawled.includes(child.url)) continue;
+    
+    console.log(`\n[Crawler] Crawling child: [${child.score}] ${child.anchorText} → ${new URL(child.url).pathname}`);
+    console.log(`  Parent: [${child.parentCategory}] ${child.parentAnchor}`);
+    
+    const childHtml = await fetchRawHtml(child.url);
+    if (!childHtml) {
+      console.log(`  (child not reachable)`);
+      continue;
+    }
+    
+    pagesCrawled.push(child.url);
+    crawlLog.push({ 
+      url: child.url, level: 2, category: child.category, score: child.score,
+      parentAnchor: child.parentAnchor, parentTitle: child.parentTitle, parentCategory: child.parentCategory 
+    });
+    
+    // Extract text and try to find persons
+    const childText = childHtml
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+      .replace(/\s+/g, ' ').trim();
+    
+    if (childText.length < 200) {
+      console.log(`  (skipped: too short, ${childText.length} chars)`);
+      continue;
+    }
+    
+    console.log(`  Page text: ${childText.length} chars`);
+    
+    // Try to extract persons
+    const persons = await extractPersonsViaLLM(childText, companyName, targetRole, child.url);
+    
+    if (persons.length > 0) {
+      console.log(`  ✓ Found ${persons.length} persons:`);
+      for (const p of persons) {
+        p.source_url = child.url;
+        p.company_validated = true;
+        allCandidates.push(p);
+        console.log(`    ${p.name} (${p.role})`);
+      }
+    } else {
+      console.log(`  ✗ No persons found on this page`);
+      // Log page content for debugging
+      console.log(`  Page title: "${childText.substring(0, 100)}..."`);
+    }
+    
+    // If we have enough candidates, stop
+    if (allCandidates.length >= 3) break;
+  }
+  
+  console.log(`\n[Crawler] Phase A complete: ${allCandidates.length} candidates from ${pagesCrawled.length} pages`);
+  console.log(`[Crawler] Crawl path: ${crawlLog.map(l => `${l.category}(${new URL(l.url).pathname})`).join(' → ')}`);
   
   // ========== PHASE B: Search Fallback ==========
   if (allCandidates.length === 0) {
@@ -801,7 +1011,8 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
   return {
     candidates: allCandidates,
     pagesCrawled,
-    method: pagesCrawled.length > 0 ? 'semantic_crawl' : 'search_fallback'
+    method: pagesCrawled.length > 0 ? 'deep_semantic_crawl' : 'search_fallback',
+    crawlLog
   };
 }
 
