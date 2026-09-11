@@ -117,7 +117,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
       <aside ref={sidebarRef} className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-header">
           <Link to="/" className="sidebar-brand" onClick={() => setMobileOpen(false)}>
-            <img src="/favicon.svg" alt="H" style={{ width: '32px', height: '32px' }} />
+            <img src="/favicon.svg" alt="NeXus" style={{ width: '32px', height: '32px' }} />
             {!collapsed && <Logo />}
           </Link>
           <button className="sidebar-toggle" onClick={() => {
@@ -276,7 +276,7 @@ export default function AppLayout({ children }) {
       {shouldShowPublicTopbar && (
         <nav className="public-topbar">
           <Link to="/" className="public-topbar-brand">
-            <img src="/favicon.svg" alt="H" style={{ width: '28px', height: '28px' }} />
+                   <img src="/favicon.svg" alt="NeXus" style={{ width: '28px', height: '28px' }} />
             <Logo />
           </Link>
           <div className="public-topbar-links">
