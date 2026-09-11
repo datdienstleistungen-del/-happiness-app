@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Briefcase, Mail, MessageSquare, Phone, Send, Copy, CheckCircle, AlertCircle, List, Trash2, ArrowRight, Search } from 'lucide-react'
-import { callNexusAI, runDeepResearch, callContactIntelligence } from '../lib/nexus-ai'
+import { callNexusAI, runDeepResearch, callContactIntelligence, callMessageGeneration } from '../lib/nexus-ai'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import { useLead } from '../context/LeadContext'
 import { useAuth } from '../context/AuthContext'
@@ -50,6 +50,9 @@ export default function SalesWorkspacePage() {
   const [isResearching, setIsResearching] = useState(false)
   const [foundContact, setFoundContact] = useState(null) // Speichert den gefundenen Kontakt für Bestätigung
   const [contactPersisted, setContactPersisted] = useState(false) // true nur wenn DB-Save erfolgreich war
+  const [generatedMessage, setGeneratedMessage] = useState(null) // Generierte Nachricht
+  const [isGeneratingMessage, setIsGeneratingMessage] = useState(false) // Nachricht wird generiert
+  const [editedMessage, setEditedMessage] = useState('') // Vom Benutzer bearbeitete Nachricht
 
   // --- TEMPORÄRER TEST-SETUP BUTTON ---
   const runTestSetup = async () => {
@@ -244,6 +247,42 @@ export default function SalesWorkspacePage() {
       setFindingContact(false);
     }
   }
+
+  const handleGenerateMessage = async () => {
+    if (!foundContact || !fullContext) return;
+    setIsGeneratingMessage(true);
+    setGeneratedMessage(null);
+    setEditedMessage('');
+    
+    try {
+      const latestTrigger = fullContext.triggers?.length > 0 ? fullContext.triggers[0].nexus_trigger_events : null;
+      
+      const res = await callMessageGeneration({
+        contact: foundContact,
+        offering: fullContext.offering,
+        company: fullContext.company,
+        trigger: latestTrigger,
+        research: fullContext.research
+      });
+      
+      if (res.status === 'generated') {
+        setGeneratedMessage(res);
+        setEditedMessage(res.message);
+      }
+    } catch (e) {
+      console.error('Message Generation failed:', e);
+      setGeneratedMessage({ status: 'error', error: e.message });
+    } finally {
+      setIsGeneratingMessage(false);
+    }
+  };
+
+  const handleCopyMessage = () => {
+    const text = editedMessage || generatedMessage?.message || '';
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleRunResearch = async () => {
     if (!fullContext) return;
@@ -953,6 +992,174 @@ export default function SalesWorkspacePage() {
                             {activeTrigger.confidence_score ? `${activeTrigger.confidence_score}%` : 'N/A'}
                           </div>
                         </div>
+                      </div>
+                    )}
+
+                    {/* 4. Message Generation */}
+                    {foundContact && (
+                      <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
+                        <h4 style={{ marginTop: 0, color: 'var(--color-koralle)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Send size={18} /> Nachricht vorbereiten
+                        </h4>
+                        
+                        {/* Contact Summary */}
+                        <div style={{ marginBottom: '12px', fontSize: '0.9rem', padding: '8px', background: 'var(--bg-secondary)', borderRadius: '4px' }}>
+                          <strong>An:</strong> {foundContact.name}{' '}
+                          {foundContact.role && <span>({foundContact.role})</span>}
+                          <br/>
+                          <strong>Firma:</strong> {fullContext.company?.name || '-'}
+                          <br/>
+                          <strong>E-Mail:</strong>{' '}
+                          {foundContact.email && foundContact.email_status !== 'UNKNOWN' ? (
+                            <span style={{ color: '#22c55e' }}>{foundContact.email}</span>
+                          ) : (
+                            <span style={{ color: 'var(--text-secondary)' }}>Nicht öffentlich verfügbar</span>
+                          )}
+                        </div>
+
+                        {/* Generate Button */}
+                        {!generatedMessage && !isGeneratingMessage && (
+                          <button
+                            type="button"
+                            onClick={handleGenerateMessage}
+                            style={{
+                              background: 'var(--color-koralle)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              padding: '10px 16px',
+                              cursor: 'pointer',
+                              fontSize: '0.9rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px'
+                            }}
+                          >
+                            <Send size={14} /> Nachricht generieren
+                          </button>
+                        )}
+
+                        {/* Loading */}
+                        {isGeneratingMessage && (
+                          <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', padding: '12px 0' }}>
+                            Nachricht wird generiert...
+                          </div>
+                        )}
+
+                        {/* Generated Message */}
+                        {generatedMessage && generatedMessage.status === 'generated' && (
+                          <div>
+                            {/* Subject */}
+                            {generatedMessage.subject && (
+                              <div style={{ marginBottom: '8px', fontSize: '0.85rem' }}>
+                                <strong>Betreff:</strong> {generatedMessage.subject}
+                              </div>
+                            )}
+                            
+                            {/* Message (editable) */}
+                            <div style={{ marginBottom: '12px' }}>
+                              <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.85rem', fontWeight: 600 }}>
+                                Nachricht:
+                              </label>
+                              <textarea
+                                value={editedMessage}
+                                onChange={(e) => setEditedMessage(e.target.value)}
+                                rows={8}
+                                style={{
+                                  width: '100%',
+                                  padding: '8px',
+                                  border: '1px solid var(--border-light)',
+                                  borderRadius: '4px',
+                                  fontSize: '0.9rem',
+                                  lineHeight: '1.5',
+                                  resize: 'vertical',
+                                  fontFamily: 'inherit'
+                                }}
+                              />
+                            </div>
+                            
+                            {/* Used Facts */}
+                            {generatedMessage.used_facts?.length > 0 && (
+                              <div style={{ marginBottom: '8px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                <strong>Verwendete Fakten:</strong>
+                                <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
+                                  {generatedMessage.used_facts.map((fact, i) => (
+                                    <li key={i}>{fact}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            {/* Interpretations */}
+                            {generatedMessage.interpretations?.length > 0 && (
+                              <div style={{ marginBottom: '8px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                <strong>Interpretationen:</strong>
+                                <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
+                                  {generatedMessage.interpretations.map((interp, i) => (
+                                    <li key={i}>{interp}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            {/* Sources */}
+                            {generatedMessage.sources?.length > 0 && (
+                              <div style={{ marginBottom: '12px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                <strong>Quellen:</strong>
+                                <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
+                                  {generatedMessage.sources.map((src, i) => (
+                                    <li key={i}>{src}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            {/* Action Buttons */}
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                type="button"
+                                onClick={handleCopyMessage}
+                                style={{
+                                  background: copied ? '#22c55e' : 'var(--color-koralle)',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  padding: '8px 12px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.85rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                              >
+                                {copied ? <CheckCircle size={14} /> : <Copy size={14} />}
+                                {copied ? 'Kopiert!' : 'Kopieren'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setGeneratedMessage(null); setEditedMessage(''); }}
+                                style={{
+                                  background: 'transparent',
+                                  color: 'var(--text-secondary)',
+                                  border: '1px solid var(--border-light)',
+                                  borderRadius: '4px',
+                                  padding: '8px 12px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.85rem'
+                                }}
+                              >
+                                Neu generieren
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Error */}
+                        {generatedMessage?.status === 'error' && (
+                          <div style={{ color: '#ef4444', fontSize: '0.9rem' }}>
+                            Fehler: {generatedMessage.error}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

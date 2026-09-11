@@ -442,3 +442,28 @@ export async function callContactIntelligence({ companyId, opportunityId, offeri
   return res.json();
 }
 
+/**
+ * Ruft die Message Generation Pipeline auf
+ * Erzeugt eine individuelle Erstansprache basierend auf Contact Intelligence + Context.
+ */
+export async function callMessageGeneration({ contact, offering, company, trigger, research }) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token || '';
+
+  const res = await fetch('/.netlify/functions/nexus-message-generation', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ contact, offering, company, trigger, research })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(`Message Generation Error: ${err.error || res.statusText}`);
+  }
+
+  return res.json();
+}
+
