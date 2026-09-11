@@ -699,7 +699,7 @@ export const handler = async (event) => {
       .select('contact_id, nexus_contacts(*)')
       .eq('opportunity_id', opportunityId);
     
-    if (existingContacts?.length > 0 && existingContacts[0].nexus_contacts?.name) {
+    if (existingContacts?.length > 0 && existingContacts[0].nexus_contacts?.first_name) {
       return { 
         statusCode: 200, 
         body: JSON.stringify({ 
@@ -793,16 +793,21 @@ export const handler = async (event) => {
     const best = withEmails[0];
     
     if (best && best.name && best.name !== 'unbekannt') {
+      // Name aufteilen in first_name + last_name
+      const nameParts = best.name.trim().split(/\s+/);
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
       // Contact in DB speichern
       const { data: savedContact, error: saveError } = await serviceClient
         .from('nexus_contacts')
         .insert({
           user_id: user.id,
           company_id: companyId,
-          name: best.name,
+          first_name: firstName,
+          last_name: lastName,
           role: best.role || targetRole,
           email: best.email || null,
-          email_confidence: best.email ? (best.email_status === 'FOUND' ? 'verified' : 'guessed') : 'unknown',
           linkedin_url: null
         })
         .select()
@@ -836,8 +841,7 @@ export const handler = async (event) => {
                 .from('nexus_contacts')
                 .update({
                   email: best.email,
-                  email_confidence: 'guessed',
-                  email_source: 'pattern_guessing'
+                  ai_confidence: 70
                 })
                 .eq('id', savedContact.id);
               
