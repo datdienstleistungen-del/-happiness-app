@@ -16,7 +16,7 @@ const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
 // ============================================================================
-// WEB SEARCH (DuckDuckGo → SearXNG, kein Tavily)
+// WEB SEARCH (Tavily → DuckDuckGo → SearXNG)
 // ============================================================================
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
@@ -32,6 +32,34 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
   }
 }
 
+async function searchTavily(query) {
+  const apiKey = process.env.TAVILY_API_KEY;
+  if (!apiKey) return null;
+  try {
+    const { res } = await fetchWithTimeout('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: apiKey,
+        query,
+        max_results: 5,
+        search_depth: 'basic'
+      })
+    }, 8000);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.results?.length) return null;
+    return data.results.map(r => ({
+      url: r.url,
+      title: r.title || '',
+      snippet: r.content || ''
+    }));
+  } catch (e) {
+    console.log('[Search] Tavily failed:', e.message);
+    return null;
+  }
+}
+
 async function searchDuckDuckGo(query) {
   try {
     const { res } = await fetchWithTimeout(
@@ -43,7 +71,6 @@ async function searchDuckDuckGo(query) {
     const html = await res.text();
     const results = [];
     
-    // Find all result links (result__a)
     const linkRegex = /<a[^>]+class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
     let match;
     
@@ -51,7 +78,6 @@ async function searchDuckDuckGo(query) {
       const href = match[1];
       const title = match[2].replace(/<[^>]*>/g, '').trim();
       
-      // Extract actual URL from DuckDuckGo redirect
       let url = null;
       if (href.includes('uddg=')) {
         const uddgMatch = href.match(/uddg=([^&]*)/);
@@ -62,7 +88,6 @@ async function searchDuckDuckGo(query) {
         url = href;
       }
       
-      // Find the next snippet (result__snippet) after this link
       const snippetRegex = /<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
       snippetRegex.lastIndex = match.index + match[0].length;
       const snippetMatch = snippetRegex.exec(html);
@@ -101,8 +126,13 @@ async function searchSearXNG(query) {
 }
 
 async function webSearch(query) {
+  // Tavily first (most reliable from cloud servers)
+  const tavily = await searchTavily(query);
+  if (tavily?.length > 0) return tavily;
+  
   const ddg = await searchDuckDuckGo(query);
   if (ddg?.length > 0) return ddg;
+  
   return await searchSearXNG(query);
 }
 
@@ -334,8 +364,8 @@ async function crawlViaSearch(companyName, targetRole) {
   const candidates = [];
   
   const queries = [
-    `${companyName} Geschäftsführer team`,
-    `${companyName} ${targetRole}`
+    `"${companyName}" team leadership`,
+    `"${companyName}" Geschäftsführer kontakt`
   ];
   
   for (const query of queries) {
@@ -345,23 +375,24 @@ async function crawlViaSearch(companyName, targetRole) {
     for (const r of results) {
       if (isJobUrl(r.url)) continue;
       
-      // Only use if URL belongs to the company's own domain
-      // OR if snippet explicitly mentions the company name with a person
-      const urlLower = r.url.toLowerCase();
-      const isCompanyUrl = urlLower.includes(companyName.toLowerCase().replace(/\s+/g, ''));
-      
-      if (!isCompanyUrl) continue; // Skip external sources in fallback
-      
-      const text = await fetchPageText(r.url, 6000);
-      if (!text) continue;
+      // Fetch page and extract persons via LLM
+      const text = await fetchPageText(r.url, 3000);
+      if (!text || text.length < 200) continue;
       
       const persons = await extractPersonsViaLLM(text, companyName, targetRole, r.url);
       for (const p of persons) {
         p.source_url = r.url;
-        p.company_validated = true;
+        // Check if URL belongs to company domain
+        const urlLower = r.url.toLowerCase();
+        const nameWords = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
+        p.company_validated = urlLower.includes(nameWords) || urlLower.includes(companyName.toLowerCase().replace(/\s+/g, ''));
         candidates.push(p);
+        console.log(`  [Search] Found: ${p.name} (${p.role}) validated=${p.company_validated}`);
       }
+      
+      if (candidates.length >= 3) break;
     }
+    if (candidates.length >= 3) break;
   }
   
   return candidates;
