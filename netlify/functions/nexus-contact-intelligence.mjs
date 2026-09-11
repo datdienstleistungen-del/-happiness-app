@@ -3,10 +3,13 @@
  * 
  * Findet automatisch den passenden Ansprechpartner für eine Opportunity.
  * 
- * Pipeline: Role Inference → Targeted Crawl → Person Discovery → 
- *           Contact Ranking → Email Discovery → Save
+ * Pipeline: Domain Discovery → Targeted Crawl → Person Discovery → Email Discovery → Save
  * 
- * Pipeline: Targeted Crawl → Tavily Search → Person Discovery → Save
+ * Email-Status:
+ *   FOUND   = öffentlich auf Website/Quelle gefunden
+ *   UNKNOWN = nicht öffentlich auffindbar
+ * 
+ * Kein Pattern-Guessing als echte Adresse. Kein SMTP-Probing.
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -14,6 +17,123 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+
+// ============================================================================
+// DOMAIN DISCOVERY
+// ============================================================================
+
+async function discoverDomain(companyName) {
+  console.log(`[DomainDiscovery] Searching domain for: ${companyName}`);
+  
+  const query = `"${companyName}" official website`;
+  const results = await webSearch(query);
+  if (!results || results.length === 0) {
+    console.log('[DomainDiscovery] No search results');
+    return null;
+  }
+  
+  for (const r of results) {
+    const url = r.url;
+    try {
+      const urlObj = new URL(url);
+      const hostname = urlObj.hostname.replace(/^www\./, '');
+      
+      // Skip aggregators, social media, job boards
+      if (/linkedin|facebook|twitter|x\.com|instagram|youtube|glassdoor|indeed|xing|munich|crunchbase|bloomberg|reuters|wallstreet/i.test(hostname)) continue;
+      
+      // Extract base domain (e.g. "corporate-happiness.de" from "corporate-happiness.de/page")
+      const parts = hostname.split('.');
+      if (parts.length < 2) continue;
+      const baseDomain = parts.slice(-2).join('.');
+      
+      // Skip generic domains
+      if (/google|bing|yahoo|tavily|duckduckgo|wikipedia|mondaq|sunzinet|handelsblatt|tagesschau/i.test(baseDomain)) continue;
+      
+      console.log(`[DomainDiscovery] Found: ${baseDomain} from ${url}`);
+      return baseDomain;
+    } catch (e) { continue; }
+  }
+  
+  console.log('[DomainDiscovery] No valid domain found');
+  return null;
+}
+
+// ============================================================================
+// EMAIL DISCOVERY (from company website)
+// ============================================================================
+
+async function discoverEmailFromWebsite(domain, personFirstName, personLastName) {
+  console.log(`[EmailDiscovery] Crawling ${domain} for emails of ${personFirstName} ${personLastName}`);
+  
+  const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+  const personEmails = [];
+  const allEmails = [];
+  
+  // Pages to check: imprint, contact, team, about
+  const pagesToCheck = [
+    `https://${domain}/impressum`,
+    `https://${domain}/kontakt`,
+    `https://${domain}/contact`,
+    `https://${domain}/team`,
+    `https://${domain}/ueber-uns`,
+    `https://${domain}/about`,
+    `https://${domain}/management`,
+  ];
+  
+  // Also try homepage
+  pagesToCheck.unshift(`https://${domain}`);
+  
+  for (const url of pagesToCheck) {
+    if (personEmails.length > 0) break; // Found enough
+    
+    try {
+      const text = await fetchPageText(url, 5000);
+      if (!text || text.length < 100) continue;
+      
+      // Extract ALL emails from page
+      const emails = text.match(emailRegex) || [];
+      
+      // Filter: must look like a real business email (not image/noise)
+      const validEmails = emails.filter(e => {
+        const lower = e.toLowerCase();
+        // Skip image placeholders, test addresses
+        if (/\.(png|jpg|gif|svg|webp|jpeg)/i.test(lower)) return false;
+        if (/test@|example@|email@|mail@|noreply|no-reply|donotreply/i.test(lower)) return false;
+        if (lower.length > 50) return false;
+        return true;
+      });
+      
+      // Check if any email matches the person
+      for (const email of validEmails) {
+        const emailLower = email.toLowerCase();
+        const firstNameLower = personFirstName.toLowerCase().replace(/[^a-z]/g, '');
+        const lastNameLower = personLastName.toLowerCase().replace(/[^a-z]/g, '');
+        
+        // Direct match: first.last@, firstlast@, f.last@, first.l@, etc.
+        if (emailLower.includes(firstNameLower) && emailLower.includes(lastNameLower)) {
+          personEmails.push({ email, source: url, confidence: 95 });
+          console.log(`[EmailDiscovery] MATCH: ${email} on ${url}`);
+          break;
+        }
+        
+        allEmails.push({ email, source: url });
+      }
+    } catch (e) { continue; }
+  }
+  
+  // If person-specific email found, return it
+  if (personEmails.length > 0) {
+    return { email: personEmails[0].email, status: 'FOUND', source: personEmails[0].source, confidence: personEmails[0].confidence };
+  }
+  
+  // If we found ANY business email on the site, that confirms the domain has email infrastructure
+  // but we still can't construct the person's email
+  if (allEmails.length > 0) {
+    console.log(`[EmailDiscovery] Found ${allEmails.length} emails on site, none matching person`);
+  }
+  
+  return { email: null, status: 'UNKNOWN', source: null, confidence: null };
+}
 
 // ============================================================================
 // WEB SEARCH (Tavily → DuckDuckGo → SearXNG)
@@ -631,41 +751,7 @@ async function discoverEmails(rankedContacts, companyName, companyDomain) {
 // EMAIL PATTERN-GUESSING
 // ============================================================================
 
-function generateEmailPatterns(name, domain) {
-  if (!name || !domain) return [];
-  
-  const parts = name.trim().split(/\s+/);
-  if (parts.length < 2) return [];
-  
-  const vorname = parts[0].toLowerCase();
-  const nachname = parts[parts.length - 1].toLowerCase();
-  
-  const normalize = (str) => str
-    .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
-    .replace(/[^a-z0-9]/g, '');
-  
-  const v = normalize(vorname);
-  const n = normalize(nachname);
-  
-  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].toLowerCase();
-  
-  const patterns = [
-    { pattern: '{vorname}.{nachname}', email: `${v}.${n}@${cleanDomain}`, confidence: 90 },
-    { pattern: '{v}.{nachname}', email: `${v[0]}.${n}@${cleanDomain}`, confidence: 80 },
-    { pattern: '{vorname}{nachname}', email: `${v}${n}@${cleanDomain}`, confidence: 70 },
-    { pattern: '{vorname}_{nachname}', email: `${v}_${n}@${cleanDomain}`, confidence: 65 },
-    { pattern: '{nachname}.{vorname}', email: `${n}.${v}@${cleanDomain}`, confidence: 60 },
-    { pattern: '{nachname}{vorname}', email: `${n}${v}@${cleanDomain}`, confidence: 50 },
-    { pattern: '{vorname}', email: `${v}@${cleanDomain}`, confidence: 40 },
-  ];
-  
-  return patterns.map(p => ({
-    email: p.email,
-    pattern: p.pattern,
-    confidence: p.confidence,
-    method: 'pattern_guessing'
-  }));
-}
+// Email patterns removed — only FOUND/UNKNOWN, no guessing
 
 // ============================================================================
 // LLM CALL
@@ -795,7 +881,26 @@ export const handler = async (event) => {
     }
     
     console.log('[ContactIntel] Phase 3: Targeted Crawl');
-    const companyDomain = company?.domain || null;
+    let companyDomain = company?.domain || null;
+    
+    // Phase 2.5: Domain Discovery — if no domain, try to find it
+    if (!companyDomain) {
+      console.log('[ContactIntel] Phase 2.5: Domain Discovery');
+      try {
+        const discoveredDomain = await discoverDomain(company?.name || 'Unbekannt');
+        if (discoveredDomain) {
+          companyDomain = discoveredDomain;
+          // Save domain back to company
+          await serviceClient
+            .from('nexus_companies')
+            .update({ domain: discoveredDomain })
+            .eq('id', companyId);
+          console.log(`[ContactIntel] Domain discovered and saved: ${discoveredDomain}`);
+        }
+      } catch (e) {
+        console.log('[ContactIntel] Domain discovery failed:', e.message);
+      }
+    }
     const crawlResult = await crawlForContacts(
       company?.name || 'Unbekannt', 
       companyDomain, 
@@ -871,30 +976,33 @@ export const handler = async (event) => {
         
         best.id = savedContact.id;
         
-        // Phase 8: Email Research (Pattern-Guessing) wenn keine E-Mail vorhanden
+        // Phase 8: Email Discovery — crawl company website for public emails
         if (!best.email && companyDomain) {
-          console.log('[ContactIntel] Phase 8: Email Research (Pattern-Guessing)');
+          console.log('[ContactIntel] Phase 8: Email Discovery');
           try {
-            const emailCandidates = generateEmailPatterns(best.name, companyDomain);
-            if (emailCandidates.length > 0) {
-              best.email = emailCandidates[0].email;
-              best.email_confidence = 'guessed';
-              best.email_source = 'pattern_guessing';
+            const emailResult = await discoverEmailFromWebsite(companyDomain, firstName, lastName);
+            if (emailResult.email && emailResult.status === 'FOUND') {
+              best.email = emailResult.email;
+              best.email_status = 'FOUND';
+              best.email_source = 'website';
               
-              // Update contact with guessed email
+              // Update contact with found email
               await serviceClient
                 .from('nexus_contacts')
                 .update({
-                  email: best.email,
-                  email_confidence: emailCandidates[0].confidence,
-                  email_source: 'pattern_guessing'
+                  email: emailResult.email,
+                  email_confidence: emailResult.confidence,
+                  email_source: 'website',
+                  email_verified_at: new Date().toISOString()
                 })
                 .eq('id', savedContact.id);
               
-              console.log(`[ContactIntel] Email guessed: ${best.email}`);
+              console.log(`[ContactIntel] Email found: ${emailResult.email} (source: ${emailResult.source})`);
+            } else {
+              console.log('[ContactIntel] No public email found for this person');
             }
           } catch (e) {
-            console.log('[ContactIntel] Email research failed:', e.message);
+            console.log('[ContactIntel] Email discovery failed:', e.message);
           }
         }
       }

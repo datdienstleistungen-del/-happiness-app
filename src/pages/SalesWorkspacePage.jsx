@@ -928,35 +928,24 @@ export default function SalesWorkspacePage() {
                           {/* E-Mail Status */}
                           <div style={{ marginBottom: '8px' }}>
                             <strong style={{ color: 'var(--text-primary)' }}>E-Mail:</strong>{' '}
-                            {foundContact.email && foundContact.email_confidence ? (
-                              // Fall 1: Email da + Confidence (Pattern-Guess)
+                            {foundContact.email && foundContact.email_source === 'website' ? (
+                              // Fall 1: Email von Website gefunden (FOUND)
                               <span>
-                                <input
-                                  type="email"
-                                  value={foundContact.email}
-                                  onChange={(e) => setFoundContact(prev => ({ ...prev, email: e.target.value }))}
-                                  style={{
-                                    padding: '4px 8px',
-                                    border: '1px solid var(--border-light)',
-                                    borderRadius: '4px',
-                                    fontSize: '0.85rem',
-                                    width: '220px',
-                                    marginRight: '8px'
-                                  }}
-                                />
+                                <span style={{ color: '#22c55e', fontWeight: 600 }}>{foundContact.email}</span>
                                 <span style={{
                                   padding: '2px 6px',
                                   borderRadius: '4px',
                                   fontSize: '0.75rem',
                                   fontWeight: 600,
-                                  backgroundColor: foundContact.email_confidence >= 80 ? '#dcfce7' : foundContact.email_confidence >= 60 ? '#fef3c7' : '#ffedd5',
-                                  color: foundContact.email_confidence >= 80 ? '#166534' : foundContact.email_confidence >= 60 ? '#92400e' : '#9a3412'
+                                  backgroundColor: '#dcfce7',
+                                  color: '#166534',
+                                  marginLeft: '8px'
                                 }}>
-                                  {foundContact.email_confidence}% Geraten – nicht verifiziert
+                                  FOUND – öffentlich
                                 </span>
                               </span>
-                            ) : foundContact.email ? (
-                              // Fall 2: Email da, ohne Confidence (manuell eingegeben oder Website)
+                            ) : foundContact.email && foundContact.email_source === 'manual' ? (
+                              // Fall 2: Manuellet Eingabe
                               <span style={{ color: '#22c55e' }}>{foundContact.email}</span>
                             ) : (
                               // Fall 3: Keine Email (UNKNOWN)
