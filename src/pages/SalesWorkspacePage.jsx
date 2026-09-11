@@ -927,12 +927,154 @@ export default function SalesWorkspacePage() {
                           {/* E-Mail Status */}
                           <div style={{ marginBottom: '8px' }}>
                             <strong style={{ color: 'var(--text-primary)' }}>E-Mail:</strong>{' '}
-                            {foundContact.email && foundContact.email_status !== 'UNKNOWN' ? (
+                            {foundContact.email && foundContact.email_confidence ? (
+                              // Fall 1: Email da + Confidence (Pattern-Guess)
+                              <span>
+                                <input
+                                  type="email"
+                                  value={foundContact.email}
+                                  onChange={(e) => setFoundContact(prev => ({ ...prev, email: e.target.value }))}
+                                  style={{
+                                    padding: '4px 8px',
+                                    border: '1px solid var(--border-light)',
+                                    borderRadius: '4px',
+                                    fontSize: '0.85rem',
+                                    width: '220px',
+                                    marginRight: '8px'
+                                  }}
+                                />
+                                <span style={{
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 600,
+                                  backgroundColor: foundContact.email_confidence >= 80 ? '#dcfce7' : foundContact.email_confidence >= 60 ? '#fef3c7' : '#ffedd5',
+                                  color: foundContact.email_confidence >= 80 ? '#166534' : foundContact.email_confidence >= 60 ? '#92400e' : '#9a3412'
+                                }}>
+                                  {foundContact.email_confidence}% Geraten – nicht verifiziert
+                                </span>
+                              </span>
+                            ) : foundContact.email ? (
+                              // Fall 2: Email da, ohne Confidence (manuell eingegeben oder Website)
                               <span style={{ color: '#22c55e' }}>{foundContact.email}</span>
                             ) : (
-                              <span style={{ color: 'var(--text-secondary)' }}>Nicht öffentlich verfügbar</span>
+                              // Fall 3: Keine Email (UNKNOWN)
+                              <span style={{ color: 'var(--text-secondary)' }}>Keine E-Mail gefunden</span>
                             )}
                           </div>
+                          
+                          {/* Email Actions */}
+                          {foundContact.email && foundContact.email_confidence && (
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  // Bestätigen: Status setzen
+                                  try {
+                                    await supabase
+                                      .from('nexus_contacts')
+                                      .update({ status: 'confirmed' })
+                                      .eq('id', foundContact.id);
+                                    setContactPersisted(true);
+                                    alert('E-Mail bestätigt!');
+                                  } catch(e) {
+                                    console.error(e);
+                                    alert('Fehler: ' + e.message);
+                                  }
+                                }}
+                                style={{
+                                  background: '#22c55e',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  padding: '6px 10px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.8rem'
+                                }}
+                              >
+                                Bestätigen
+                              </button>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  // Verwerfen: Email löschen, Status setzen
+                                  try {
+                                    await supabase
+                                      .from('nexus_contacts')
+                                      .update({ email: null, email_confidence: null, email_source: null, status: 'rejected' })
+                                      .eq('id', foundContact.id);
+                                    setFoundContact(prev => ({ ...prev, email: null, email_confidence: null, email_source: null }));
+                                    setContactPersisted(false);
+                                  } catch(e) {
+                                    console.error(e);
+                                  }
+                                }}
+                                style={{
+                                  background: 'transparent',
+                                  color: 'var(--text-secondary)',
+                                  border: '1px solid var(--border-light)',
+                                  borderRadius: '4px',
+                                  padding: '6px 10px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.8rem'
+                                }}
+                              >
+                                Verwerfen
+                              </button>
+                            </div>
+                          )}
+                          
+                          {/* UNKNOWN: Manuelle Eingabe */}
+                          {!foundContact.email && (
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+                              <input
+                                type="email"
+                                placeholder="E-Mail manuell eingeben"
+                                id="manualEmailInput"
+                                style={{
+                                  padding: '4px 8px',
+                                  border: '1px solid var(--border-light)',
+                                  borderRadius: '4px',
+                                  fontSize: '0.85rem',
+                                  width: '220px'
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  const input = document.getElementById('manualEmailInput');
+                                  const email = input?.value?.trim();
+                                  if (!email || !email.includes('@')) {
+                                    alert('Bitte gültige E-Mail-Adresse eingeben');
+                                    return;
+                                  }
+                                  try {
+                                    await supabase
+                                      .from('nexus_contacts')
+                                      .update({ email, email_confidence: 100, email_source: 'manual', status: 'confirmed' })
+                                      .eq('id', foundContact.id);
+                                    setFoundContact(prev => ({ ...prev, email, email_confidence: 100, email_source: 'manual' }));
+                                    setContactPersisted(true);
+                                    alert('E-Mail gespeichert und bestätigt!');
+                                  } catch(e) {
+                                    console.error(e);
+                                    alert('Fehler: ' + e.message);
+                                  }
+                                }}
+                                style={{
+                                  background: 'var(--color-koralle)',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  padding: '6px 10px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.8rem'
+                                }}
+                              >
+                                Speichern
+                              </button>
+                            </div>
+                          )}
                           
                           {/* Confidence Score */}
                           {foundContact.rank_score && (
@@ -1119,13 +1261,14 @@ export default function SalesWorkspacePage() {
                               <button
                                 type="button"
                                 onClick={handleCopyMessage}
+                                disabled={!contactPersisted}
                                 style={{
-                                  background: copied ? '#22c55e' : 'var(--color-koralle)',
-                                  color: 'white',
+                                  background: !contactPersisted ? 'var(--border-light)' : copied ? '#22c55e' : 'var(--color-koralle)',
+                                  color: !contactPersisted ? 'var(--text-secondary)' : 'white',
                                   border: 'none',
                                   borderRadius: '4px',
                                   padding: '8px 12px',
-                                  cursor: 'pointer',
+                                  cursor: !contactPersisted ? 'not-allowed' : 'pointer',
                                   fontSize: '0.85rem',
                                   display: 'flex',
                                   alignItems: 'center',
@@ -1133,7 +1276,7 @@ export default function SalesWorkspacePage() {
                                 }}
                               >
                                 {copied ? <CheckCircle size={14} /> : <Copy size={14} />}
-                                {copied ? 'Kopiert!' : 'Kopieren'}
+                                {copied ? 'Kopiert!' : !contactPersisted ? 'Erst E-Mail bestätigen' : 'Kopieren'}
                               </button>
                               <button
                                 type="button"
