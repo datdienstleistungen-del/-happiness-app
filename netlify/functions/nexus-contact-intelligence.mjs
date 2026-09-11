@@ -339,25 +339,45 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
 }
 
 async function extractPersonsViaLLM(pageText, companyName, targetRole) {
-  // LLM fragen, welche Personen auf dieser Seite stehen
-  const prompt = `Extrahiere alle Personennamen und deren Rollen aus folgender Textausschnitt einer Firmenwebsite.
+  // Text bereinigen: Navigation, Footer, Cookie-Banner entfernen
+  const cleanText = pageText
+    .replace(/Newsletter/gi, '')
+    .replace(/News[- ]letter/gi, '')
+    .replace(/Cookie[- ]Einstellungen/gi, '')
+    .replace(/Privatsphäre/gi, '')
+    .replace(/Datenschutz/gi, '')
+    .replace(/Anmelden/gi, '')
+    .replace(/Zum Inhalt springen/gi, '')
+    .replace(/© \d{4}[^\.]*/gi, '')
+    .replace(/Linkedin|Youtube|Spotify/gi, '')
+    .replace(/Rückruf|Anfragen/gi, '')
+    .replace(/\d{2}\.\d{2}\.\d{4}/g, '')  // dates
+    .replace(/\+\d{1,3}[\s\d\-()]+/g, '')  // phone numbers
+    .replace(/Mo - Do[^\.]*\./gi, '')  // office hours
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  // Nur den relevanten Teil senden (erste 3000 Zeichen)
+  const relevantText = cleanText.substring(0, 3000);
+  
+  const prompt = `Du bist ein personnelcher Researcher. Finde alle PERSONEN auf dieser Firmenwebsite.
 
 Firma: ${companyName}
 Gesuchte Zielrolle: ${targetRole}
 
-TEXT:
-${pageText.substring(0, 4000)}
+TEXT DER WEBSEITE:
+${relevantText}
 
-REGELN:
-1. NUR echte Personen extrahieren (keine Firmennamen, keine Produkte)
-2. Name muss aus Vor- und Nachname bestehen
-3. Rolle muss eine echte Position sein (CEO, Head of Sales, etc.)
-4. KEINE erfundenen Namen oder Rollen
+WICHTIG: 
+- Lies den Text genau durch und finde alle Personennamen (Vor- + Nachname)
+- Finde die zugehörige Position/Rolle jeder Person
+- Schau besonders nach: Gründer, Geschäftsführer, CEO, Head of, Leiter, Director
+- NUR echte Personen, KEINE Firma oder Produkte
 
 Gib ein JSON Array zurück:
 [{"name": "Vorname Nachname", "role": "Position"}]
 
-Nur wenn du konkrete Personen findest. Sonst ein leeres Array: []`;
+Wenn du Personen findest, gib sie alle zurück. Sonst ein leeres Array: []`;
 
   const result = await callLLM(prompt, 0.1);
   if (!result) return [];
