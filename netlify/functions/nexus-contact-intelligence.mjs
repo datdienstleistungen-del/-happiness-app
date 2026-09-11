@@ -6,7 +6,7 @@
  * Pipeline: Role Inference → Targeted Crawl → Person Discovery → 
  *           Contact Ranking → Email Discovery → Save
  * 
- * WICHTIG: Keine Tavily-Aufrufe. Eigener Crawler mit DuckDuckGo/SearXNG.
+ * Pipeline: Targeted Crawl → Tavily Search → Person Discovery → Save
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -45,7 +45,7 @@ async function searchTavily(query) {
         max_results: 5,
         search_depth: 'basic'
       })
-    }, 8000);
+    }, 5000);
     if (!res.ok) return null;
     const data = await res.json();
     if (!data.results?.length) return null;
@@ -147,7 +147,7 @@ async function fetchPageText(url, maxChars = 3000) {
         'User-Agent': 'Mozilla/5.0 (compatible; NeXusBot/1.0)',
         'Accept': 'text/html,application/xhtml+xml'
       },
-    }, 3000);
+    }, 2000);
     if (!res.ok) return null;
     const html = await res.text();
     
@@ -368,35 +368,31 @@ function isJobUrl(url) {
 async function crawlViaSearch(companyName, targetRole) {
   const candidates = [];
   
-  const queries = [
-    `"${companyName}" team leadership`,
-    `"${companyName}" Geschäftsführer kontakt`
-  ];
+  const query = `"${companyName}" ${targetRole} site`;
+  console.log(`  [Search] Query: ${query}`);
+  const results = await webSearch(query);
+  if (!results || results.length === 0) return candidates;
   
-  for (const query of queries) {
-    const results = await webSearch(query);
-    if (!results) continue;
-    
-    for (const r of results) {
-      if (isJobUrl(r.url)) continue;
-      
-      // Fetch page and extract persons via LLM
-      const text = await fetchPageText(r.url, 3000);
-      if (!text || text.length < 200) continue;
-      
-      const persons = await extractPersonsViaLLM(text, companyName, targetRole, r.url);
-      for (const p of persons) {
-        p.source_url = r.url;
-        // Check if URL belongs to company domain
-        const urlLower = r.url.toLowerCase();
-        const nameWords = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
-        p.company_validated = urlLower.includes(nameWords) || urlLower.includes(companyName.toLowerCase().replace(/\s+/g, ''));
-        candidates.push(p);
-        console.log(`  [Search] Found: ${p.name} (${p.role}) validated=${p.company_validated}`);
-      }
-      
-      if (candidates.length >= 3) break;
-    }
+  // Take only first 3 non-job URLs, fetch in PARALLEL
+  const urls = results.filter(r => !isJobUrl(r.url)).slice(0, 3);
+  
+  const pagePromises = urls.map(async (r) => {
+    const text = await fetchPageText(r.url, 3000);
+    if (!text || text.length < 200) return [];
+    const persons = await extractPersonsViaLLM(text, companyName, targetRole, r.url);
+    return persons.map(p => {
+      p.source_url = r.url;
+      const urlLower = r.url.toLowerCase();
+      const nameWords = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
+      p.company_validated = urlLower.includes(nameWords) || urlLower.includes(companyName.toLowerCase().replace(/\s+/g, ''));
+      console.log(`  [Search] Found: ${p.name} (${p.role}) validated=${p.company_validated}`);
+      return p;
+    });
+  });
+  
+  const results2 = await Promise.all(pagePromises);
+  for (const persons of results2) {
+    candidates.push(...persons);
     if (candidates.length >= 3) break;
   }
   
@@ -469,7 +465,7 @@ GESUCHTE ROLLE: ${targetRole}
 QUELLE: ${sourceUrl}
 
 TEXT DER WEBSEITE:
-${cleanText.substring(0, 4000)}
+${cleanText.substring(0, 2000)}
 
 STRENGE REGELN:
 1. NUR vollständige plausible Personennamen (Vor- + Nachname)
