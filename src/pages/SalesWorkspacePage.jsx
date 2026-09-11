@@ -973,7 +973,7 @@ export default function SalesWorkspacePage() {
                                   try {
                                     await supabase
                                       .from('nexus_contacts')
-                                      .update({ status: 'confirmed' })
+                                      .update({ status: 'verified' })
                                       .eq('id', foundContact.id);
                                     setContactPersisted(true);
                                     alert('E-Mail bestätigt!');
@@ -1001,7 +1001,7 @@ export default function SalesWorkspacePage() {
                                   try {
                                     await supabase
                                       .from('nexus_contacts')
-                                      .update({ email: null, email_confidence: null, email_source: null, status: 'rejected' })
+                                      .update({ email: null, email_confidence: null, email_source: null, status: 'new' })
                                       .eq('id', foundContact.id);
                                     setFoundContact(prev => ({ ...prev, email: null, email_confidence: null, email_source: null }));
                                     setContactPersisted(false);
@@ -1051,7 +1051,7 @@ export default function SalesWorkspacePage() {
                                   try {
                                     await supabase
                                       .from('nexus_contacts')
-                                      .update({ email, email_confidence: 100, email_source: 'manual', status: 'confirmed' })
+                                      .update({ email, email_confidence: 100, email_source: 'manual', status: 'verified' })
                                       .eq('id', foundContact.id);
                                     setFoundContact(prev => ({ ...prev, email, email_confidence: 100, email_source: 'manual' }));
                                     setContactPersisted(true);
