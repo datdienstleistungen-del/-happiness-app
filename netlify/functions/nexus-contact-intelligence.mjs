@@ -244,8 +244,13 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
   const pagesCrawled = [];
   
   if (!companyDomain) {
-    console.log('[Crawler] No domain provided, using DuckDuckGo fallback');
-    return await crawlViaSearch(companyName, targetRole);
+    console.log('[Crawler] No domain provided, using search fallback');
+    const searchCandidates = await crawlViaSearch(companyName, targetRole);
+    return {
+      candidates: searchCandidates,
+      pagesCrawled: [],
+      method: 'search_fallback'
+    };
   }
   
   // ========== PHASE A: Direct Domain Crawl ==========
