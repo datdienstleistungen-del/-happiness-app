@@ -67,20 +67,6 @@ export async function getAnalysisById(analysisId) {
   return data
 }
 
-export async function getAnalysisCount(userId) {
-  const { count, error } = await supabase
-    .from('nexus_analyses')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .is('deleted_at', null)
-
-  if (error) {
-    console.error('[NeXus DB] Count analyses error:', error.message)
-    return 0
-  }
-  return count || 0
-}
-
 // -----------------------------------------------------------------------------
 // 2. OFFERINGS (Angebote)
 // -----------------------------------------------------------------------------
@@ -481,12 +467,11 @@ export async function getActivitiesForEntity(entityType, entityId) {
 export async function getDashboardStats(userId) {
   const { count: totalOpps } = await supabase.from('nexus_opportunities').select('*', { count: 'exact', head: true }).eq('user_id', userId).is('deleted_at', null)
   const { count: newTriggers } = await supabase.from('nexus_radar_hits').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'relevant')
-  const analyses = await getAnalysisCount(userId)
   
   return {
     totalOpps: totalOpps || 0,
-    newTriggers: newTriggers || 0, // Now counts the background radar hits!
-    totalAnalyses: analyses || 0,
+    newTriggers: newTriggers || 0,
+    totalAnalyses: totalOpps || 0, // Legacy key kept for UI compatibility, now counts opportunities
     winRate: 0,
     pipelineValue: 0
   }
@@ -494,9 +479,14 @@ export async function getDashboardStats(userId) {
 
 export async function wipeAllUserData(userId) {
   const now = new Date().toISOString();
-  await supabase.from('nexus_analyses').update({ deleted_at: now }).eq('user_id', userId).is('deleted_at', null);
+  // Soft-delete all user data across all tables
   await supabase.from('nexus_offerings').update({ deleted_at: now }).eq('user_id', userId).is('deleted_at', null);
   await supabase.from('nexus_opportunities').update({ deleted_at: now }).eq('user_id', userId).is('deleted_at', null);
   await supabase.from('nexus_trigger_events').update({ deleted_at: now }).eq('user_id', userId).is('deleted_at', null);
+  await supabase.from('nexus_radar_hits').delete().eq('user_id', userId);
+  await supabase.from('nexus_signal_strategies').delete().eq('user_id', userId);
+  await supabase.from('nexus_contacts').delete().eq('user_id', userId);
+  await supabase.from('nexus_generated_content').delete().eq('user_id', userId);
+  await supabase.from('nexus_activities').delete().eq('user_id', userId);
   return true;
 }
