@@ -808,6 +808,8 @@ export const handler = async (event) => {
           last_name: lastName,
           role: best.role || targetRole,
           email: best.email || null,
+          email_confidence: best.email ? (best.email_status === 'FOUND' ? 95 : null) : null,
+          email_source: best.email ? (best.email_status === 'FOUND' ? 'website' : null) : null,
           linkedin_url: null
         })
         .select()
@@ -841,7 +843,8 @@ export const handler = async (event) => {
                 .from('nexus_contacts')
                 .update({
                   email: best.email,
-                  ai_confidence: 70
+                  email_confidence: emailCandidates[0].confidence,
+                  email_source: 'pattern_guessing'
                 })
                 .eq('id', savedContact.id);
               
