@@ -37,7 +37,7 @@ export default function LoginPage() {
     <div className="auth-page">
       <div className="auth-card">
         <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
-          <img src="/favicon.svg" alt="Happiness" style={{ width: '40px', height: '40px' }} />
+          <img src="/favicon.svg" alt="NeXus" style={{ width: '40px', height: '40px' }} />
         </div>
         <h1 style={{ textAlign: 'center', fontSize: '1.5rem', marginBottom: '5px' }}>NeXus Intelligence</h1>
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>

@@ -1,8 +1,8 @@
 {
-  "name": "H.I.T. Studio",
-  "short_name": "H.I.T.",
-  "description": "Happiness Intelligence Team Studio für Creator",
-  "id": "hit-studio",
+  "name": "NeXus Sales Intelligence",
+  "short_name": "NeXus",
+  "description": "Das KI-gestützte B2B Sales Operating System. Automatische Lead-Generierung, intelligente Kontaktrecherche und personalisierte Erstansprache.",
+  "id": "nexus-sales-intelligence",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

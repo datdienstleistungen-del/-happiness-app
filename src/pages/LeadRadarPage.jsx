@@ -730,7 +730,7 @@ export default function LeadRadarPage() {
 SPRACHE: Antworte AUSSCHLIESSLICH auf ${lead.lang === 'de' ? 'Deutsch' : 'Englisch'}.
 ZIELGRUPPE: B2B (Unternehmen, Händler, Agenturen, Selbstständige). 
 REGELN:
-- ABSOLUTES VERBOT: Erwähne NIEMALS Happiness, CapCut, Video-Schnitt oder Social Media Tutorials. Das ist strikt verboten!
+- ABSOLUTES VERBOT: Erwähne NIEMALS alte Marken, CapCut, Video-Schnitt oder Social Media Tutorials. Das ist strikt verboten!
 - Sei hochprofessionell, messerscharf und ROI-fokussiert.
 - Avocado Diaboli Strategie: Greife das Thema des Users subtil auf. Schüre psychologisches FOMO (Fear of Missing Out) und deute an, dass geschäftlicher Misserfolg oft in harter Isolation endet. 
 - Erlösung: Positioniere das Angebot ("${userProduct || 'NeXus Lead Radar'}") beiläufig als das exklusive Werkzeug oder die perfekte Lösung, die den Schmerz des Leads sofort beseitigt.

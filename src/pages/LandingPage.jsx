@@ -61,7 +61,7 @@ export default function LandingPage() {
   }
 
   useEffect(() => {
-    document.title = 'Happiness — Creator Operating System'
+    document.title = 'NeXus — B2B Sales Operating System'
     trackLandingFunnel('opened')
 
     const randomIndex = Math.floor(Math.random() * PRE_FILL_EXAMPLES.length)

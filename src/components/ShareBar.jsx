@@ -36,7 +36,7 @@ export default function ShareBar({ text, title, downloadBlob, downloadFilename, 
   const cleanText = stripMarkdown(text)
   const shareText = encodeURIComponent(cleanText)
   const shareWithUrl = encodeURIComponent(cleanText + '\n\nMehr dazu: ' + window.location.href)
-  const shareTitle = encodeURIComponent(title || 'Content von Happiness')
+  const shareTitle = encodeURIComponent(title || 'Content von NeXus')
   const pageUrl = encodeURIComponent(window.location.href)
 
   const handleCopy = async () => {

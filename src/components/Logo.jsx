@@ -19,13 +19,15 @@ export function BrandWord({ fontSize = 'inherit', fontWeight = 'inherit' }) {
 }
 
 export function renderBrandText(text) {
-  const parts = text.split('Happiness');
+  // Support both old "Happiness" and new "NeXus" brand references
+  let parts = text.split('NeXus');
+  if (parts.length === 1) parts = text.split('Happiness');
   if (parts.length === 1) return text;
   return (
     <>
       {parts[0]}
       <BrandWord />
-      {parts.slice(1).join('Happiness')}
+      {parts.slice(1).join('NeXus')}
     </>
   );
 }

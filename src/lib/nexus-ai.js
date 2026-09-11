@@ -2,7 +2,7 @@
  * NeXus AI Client
  * 
  * Frontend-Client für die NeXus AI Function.
- * Nutzt die bestehende Multi-Provider Infrastruktur von Happiness.
+ * Nutzt die bestehende Multi-Provider Infrastruktur (DeepSeek, Mistral, OpenRouter, OpenAI).
  */
 
 import { supabase } from './supabase'
