@@ -22,13 +22,33 @@ const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABA
 // DOMAIN DISCOVERY + VERIFICATION
 // ============================================================================
 
-async function verifyDomain(domain, companyName) {
-  console.log(`[DomainVerify] Checking: ${domain}`);
+function getCompanyNameVariants(companyName) {
+  const lower = companyName.toLowerCase();
+  const variants = new Set([lower]);
   
-  // Step 1: Check if domain is reachable
+  // Umlaut variants: Kärcher → kaercher, karcher
+  const umlautMap = { 'ä': 'ae', 'ö': 'oe', 'ü': 'ue', 'ß': 'ss' };
+  let withoutUmlauts = lower;
+  for (const [umlaut, replacement] of Object.entries(umlautMap)) {
+    withoutUmlauts = withoutUmlauts.replace(new RegExp(umlaut, 'g'), replacement);
+  }
+  variants.add(withoutUmlauts);
+  variants.add(lower.replace(/[^a-z0-9]/g, ''));
+  variants.add(withoutUmlauts.replace(/[^a-z0-9]/g, ''));
+  
+  return [...variants].filter(v => v.length >= 3);
+}
+
+async function verifyDomain(domain, companyName) {
+  console.log(`[DomainVerify] Checking: ${domain} for "${companyName}"`);
+  
+  const companyVariants = getCompanyNameVariants(companyName);
+  
+  // Step 1: Check if domain is reachable (try https then http)
   let finalUrl = null;
   let pageTitle = '';
   let pageText = '';
+  let httpStatus = 0;
   
   for (const scheme of ['https', 'http']) {
     try {
@@ -38,6 +58,7 @@ async function verifyDomain(domain, companyName) {
         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Accept': 'text/html' }
       }, 5000);
       
+      httpStatus = res.status;
       if (res.ok) {
         finalUrl = res.url;
         const html = await res.text();
@@ -46,6 +67,10 @@ async function verifyDomain(domain, companyName) {
         const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
         pageTitle = titleMatch ? titleMatch[1].replace(/\s+/g, ' ').trim() : '';
         
+        // Extract meta description
+        const metaMatch = html.match(/<meta[^>]*name="description"[^>]*content="([^"]*)"/i);
+        const metaDesc = metaMatch ? metaMatch[1].toLowerCase() : '';
+        
         // Extract text for company name check
         pageText = html
           .replace(/<script[\s\S]*?<\/script>/gi, '')
@@ -53,9 +78,10 @@ async function verifyDomain(domain, companyName) {
           .replace(/<[^>]+>/g, ' ')
           .replace(/\s+/g, ' ')
           .trim()
-          .substring(0, 3000);
+          .substring(0, 5000);
         
-        console.log(`[DomainVerify] ${scheme}://${domain} reachable (title: ${pageTitle.substring(0, 60)})`);
+        console.log(`[DomainVerify] ${scheme}://${domain} → HTTP ${httpStatus} (final: ${finalUrl})`);
+        console.log(`[DomainVerify] Title: "${pageTitle.substring(0, 80)}"`);
         break;
       }
     } catch (e) { continue; }
@@ -63,120 +89,176 @@ async function verifyDomain(domain, companyName) {
   
   if (!finalUrl) {
     console.log(`[DomainVerify] ${domain} NOT reachable`);
-    return { verified: false, confidence: 0, reason: 'not reachable' };
+    return { verified: false, confidence: 0, reason: 'not reachable', status: 'discovery' };
   }
   
-  // Step 2: Check if company name appears on page
-  const companyLower = companyName.toLowerCase();
-  const nameVariants = [
-    companyLower,
-    companyLower.replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss'),
-    companyLower.replace(/[^a-z0-9]/g, '')
-  ];
+  // Step 2: Check if redirected to different domain
+  let redirectedToDifferentDomain = false;
+  try {
+    const finalHostname = new URL(finalUrl).hostname.replace(/^www\./, '');
+    const checkHostname = domain.replace(/^www\./, '');
+    if (finalHostname !== checkHostname && !finalHostname.endsWith('.' + checkHostname) && !checkHostname.endsWith('.' + finalHostname)) {
+      redirectedToDifferentDomain = true;
+      console.log(`[DomainVerify] Redirected to different domain: ${finalHostname}`);
+    }
+  } catch {}
   
+  // Step 3: Check if company name appears on page
   const titleLower = pageTitle.toLowerCase();
   const textLower = pageText.toLowerCase();
   
   let companyMentionScore = 0;
-  for (const variant of nameVariants) {
-    if (variant.length < 3) continue;
-    if (titleLower.includes(variant)) companyMentionScore += 5;
-    if (textLower.includes(variant)) companyMentionScore += 2;
+  let companyFoundIn = [];
+  
+  for (const variant of companyVariants) {
+    if (titleLower.includes(variant)) {
+      companyMentionScore += 10;
+      companyFoundIn.push(`title(${variant})`);
+    }
+    // Check first 1000 chars of text (header area) more heavily
+    if (textLower.substring(0, 1000).includes(variant)) {
+      companyMentionScore += 5;
+      companyFoundIn.push(`header(${variant})`);
+    }
+    // Check full text
+    if (textLower.includes(variant)) {
+      companyMentionScore += 2;
+      companyFoundIn.push(`text(${variant})`);
+    }
   }
   
-  // Step 3: Check for official signals
+  // Step 4: Check for official company signals
   const officialSignals = [
-    /impressum/i, /kontakt/i, /contact/i, /about/i, /unternehmen/i,
-    /geschäftsführer/i, /management/i, /team/i, /leadership/i
+    /impressum/i, /geschäftsführer/i, /management/i, /leadership/i,
+    /vorstand/i, /team/i, /über uns/i, /about us/i, /unternehmen/i
   ];
   const hasOfficialSignal = officialSignals.some(p => p.test(pageText));
   
-  // Step 4: Check for non-official signals (aggregator, news, etc.)
+  // Step 5: Check for non-official signals (aggregator, news, etc.)
   const nonOfficialPatterns = [
-    /linkedin\.com/i, /facebook\.com/i, /twitter\.com/i,
+    /linkedin\.com/i, /facebook\.com/i, /twitter\.com/i, /x\.com/i,
     /glassdoor/i, /indeed/i, /xing\.com/i,
-    /news/i, /blog/i, /presse/i, /press/i
+    /wikipedia/i, /mondaq/i, /bloomberg/i, /reuters/i
   ];
   const isNonOfficial = nonOfficialPatterns.some(p => p.test(finalUrl));
   
   // Calculate final confidence
   let confidence = 0;
-  if (companyMentionScore >= 5) confidence += 40; // Company name in title = strong signal
-  else if (companyMentionScore >= 2) confidence += 20; // Company name in text = medium signal
   
-  if (hasOfficialSignal) confidence += 20;
-  if (!isNonOfficial) confidence += 20;
-  if (finalUrl.includes(`://${domain}`) || finalUrl.includes(`://www.${domain}`)) confidence += 20; // No redirect to different domain
+  // Company name matching (strongest signal)
+  if (companyMentionScore >= 10) confidence += 40; // In title
+  else if (companyMentionScore >= 5) confidence += 25; // In header
+  else if (companyMentionScore >= 2) confidence += 10; // In text
   
-  console.log(`[DomainVerify] Score: ${confidence} (name:${companyMentionScore} official:${hasOfficialSignal} !nonofficial:${!isNonOfficial})`);
+  // Official signals
+  if (hasOfficialSignal) confidence += 15;
+  
+  // Not a non-official source
+  if (!isNonOfficial) confidence += 15;
+  
+  // No redirect to different domain
+  if (!redirectedToDifferentDomain) confidence += 15;
+  
+  // HTTP status OK
+  if (httpStatus === 200) confidence += 5;
+  
+  const verified = confidence >= 50;
+  console.log(`[DomainVerify] Score: ${confidence} (${verified ? 'VERIFIED' : 'FAILED'})`);
+  console.log(`[DomainVerify] Company mentions: ${companyFoundIn.join(', ') || 'none'}`);
   
   return {
-    verified: confidence >= 50,
+    verified,
     confidence,
-    reason: confidence >= 50 ? 'verified' : 'low confidence',
+    reason: verified ? 'verified' : `low confidence (${confidence})`,
+    status: verified ? 'verified' : 'discovery',
     finalUrl,
-    pageTitle
+    pageTitle,
+    companyMentionScore,
+    companyFoundIn
   };
 }
 
 async function discoverDomain(companyName) {
-  console.log(`[DomainDiscovery] Searching domain for: ${companyName}`);
+  console.log(`[DomainDiscovery] Searching domain for: "${companyName}"`);
   
-  const query = `"${companyName}" official website`;
-  const results = await webSearch(query);
-  if (!results || results.length === 0) {
-    console.log('[DomainDiscovery] No search results');
+  // Try multiple query variants for better coverage
+  const queries = [
+    `"${companyName}" official website`,
+    `"${companyName}" homepage`,
+  ];
+  
+  const allCandidates = [];
+  
+  for (const query of queries) {
+    const results = await webSearch(query);
+    if (!results) {
+      console.log(`[DomainDiscovery] No results for: ${query}`);
+      continue;
+    }
+    
+    console.log(`[DomainDiscovery] Query "${query}" → ${results.length} results`);
+    
+    const skipDomains = /linkedin|facebook|twitter|x\.com|instagram|youtube|glassdoor|indeed|xing|crunchbase|bloomberg|reuters|wallstreet|google|bing|yahoo|tavily|wikipedia|mondaq|sunzinet|handelsblatt|tagesschau/i;
+    
+    for (const r of results) {
+      try {
+        const urlObj = new URL(r.url);
+        const hostname = urlObj.hostname.replace(/^www\./, '');
+        
+        if (skipDomains.test(hostname)) {
+          console.log(`[DomainDiscovery] SKIP (aggregator): ${hostname}`);
+          continue;
+        }
+        
+        const parts = hostname.split('.');
+        if (parts.length < 2) continue;
+        const baseDomain = parts.slice(-2).join('.');
+        
+        if (skipDomains.test(baseDomain)) continue;
+        
+        // Score candidate
+        const companyLower = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const domainLower = hostname.replace(/[^a-z0-9]/g, '');
+        
+        let score = 0;
+        if (domainLower.includes(companyLower)) score += 10;
+        if (r.title.toLowerCase().includes(companyName.toLowerCase())) score += 5;
+        if (parts.length === 2) score += 2;
+        
+        // Check for duplicates
+        if (!allCandidates.some(c => c.domain === baseDomain)) {
+          allCandidates.push({ domain: baseDomain, score, url: r.url, title: r.title });
+          console.log(`[DomainDiscovery] Candidate: ${baseDomain} (score ${score}) from ${r.url}`);
+        }
+      } catch (e) { continue; }
+    }
+  }
+  
+  if (allCandidates.length === 0) {
+    console.log('[DomainDiscovery] No candidates found');
     return null;
   }
   
-  const skipDomains = /linkedin|facebook|twitter|x\.com|instagram|youtube|glassdoor|indeed|xing|munich|crunchbase|bloomberg|reuters|wallstreet|google|bing|yahoo|tavily|wikipedia|mondaq|sunzinet|handelsblatt|tagesschau|cas\.de|launchdiagnostics/i;
-  
-  const candidates = [];
-  
-  for (const r of results) {
-    try {
-      const urlObj = new URL(r.url);
-      const hostname = urlObj.hostname.replace(/^www\./, '');
-      
-      if (skipDomains.test(hostname)) continue;
-      
-      const parts = hostname.split('.');
-      if (parts.length < 2) continue;
-      const baseDomain = parts.slice(-2).join('.');
-      
-      if (skipDomains.test(baseDomain)) continue;
-      
-      // Score: does domain contain company name?
-      const companyLower = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const domainLower = hostname.replace(/[^a-z0-9]/g, '');
-      
-      let score = 0;
-      if (domainLower.includes(companyLower)) score += 10;
-      if (r.title.toLowerCase().includes(companyName.toLowerCase())) score += 5;
-      if (r.url.includes('/impressum') || r.url.includes('/contact') || r.url.includes('/about')) score += 3;
-      if (parts.length === 2) score += 2;
-      
-      candidates.push({ domain: baseDomain, score, url: r.url, title: r.title });
-    } catch (e) { continue; }
-  }
-  
-  if (candidates.length === 0) {
-    console.log('[DomainDiscovery] No valid domain found');
-    return null;
-  }
-  
-  // Sort by score, take top 3 for verification
-  candidates.sort((a, b) => b.score - a.score);
-  const topCandidates = candidates.slice(0, 3);
-  
-  console.log(`[DomainDiscovery] Top candidates: ${topCandidates.map(c => `${c.domain}(${c.score})`).join(', ')}`);
+  // Sort by score
+  allCandidates.sort((a, b) => b.score - a.score);
+  console.log(`[DomainDiscovery] ${allCandidates.length} candidates, verifying top 3...`);
   
   // Verify each candidate until one passes
-  for (const c of topCandidates) {
+  for (const c of allCandidates.slice(0, 3)) {
+    console.log(`[DomainDiscovery] Verifying: ${c.domain}`);
     const verification = await verifyDomain(c.domain, companyName);
+    
     if (verification.verified) {
       console.log(`[DomainDiscovery] VERIFIED: ${c.domain} (confidence ${verification.confidence})`);
-      return { domain: c.domain, confidence: verification.confidence, source: verification.finalUrl };
+      return {
+        domain: c.domain,
+        confidence: verification.confidence,
+        status: 'verified',
+        source: verification.finalUrl,
+        pageTitle: verification.pageTitle
+      };
+    } else {
+      console.log(`[DomainDiscovery] NOT verified: ${c.domain} — ${verification.reason}`);
     }
   }
   
@@ -468,28 +550,35 @@ Gib ein JSON zurück:
 // SEMANTIC WEBSITE NAVIGATION
 // ============================================================================
 
-const PERSON_KEYWORDS = [
-  // German
-  /geschäftsführer/i, /vorstand/i, /chef/i, /leiter/i, /direktor/i,
-  /manager/i, /team/i, /mitarbeiter/i, /ansprechpartner/i, /kontakt/i,
-  /unternehmen/i, /über/i, /about/i, /profil/i, /persönlichkeit/i,
-  // English
-  /ceo/i, /cto/i, /cfo/i, /coo/i, /founder/i, /owner/i,
-  /management/i, /leadership/i, /executive/i, /board/i, /director/i,
-  /head/i, /president/i, /vp/i, /vice/i, /chief/i,
-  /about/i, /company/i, /team/i, /people/i, /staff/i, /contact/i,
-  // Role signals
-  /sales/i, /vertrieb/i, /marketing/i, /finance/i, /personal/i, /hr/i,
-  /einkauf/i, /procurement/i, /it/i, /technik/i, /entwicklung/i
+// HIGH VALUE: Person/Führung — Anker-Text mit diesen Keywords → sehr wahrscheinlich Entscheider-Seite
+const PERSON_KEYWORDS_HIGH = [
+  /geschäftsführer/i, /vorstand/i, /management/i, /leadership/i, /executive/i,
+  /team/i, /mitarbeiter/i, /ansprechpartner/i, /kontakt/i,
+  /founder/i, /owner/i, /partner/i,
+  /ceo/i, /cto/i, /cfo/i, /coo/i, /cmo/i,
+  /direktor/i, /head/i, /leiter/i, /chef/i, /president/i, /vp/i, /vice/i,
+  /person/i, /people/i, /staff/i,
+  // Role signals in anchor: "Vertrieb", "Sales", etc. indicate the person page of a role
+  /sales/i, /vertrieb/i, /marketing/i, /finance/i, /einkauf/i, /procurement/i,
+  /personal/i, /hr/i, /entwicklung/i, /technik/i, /it/i,
 ];
 
+// MEDIUM VALUE: Unternehmen/Über-uns — kann Leadership-Infos enthalten
+const COMPANY_KEYWORDS = [
+  /über uns/i, /about/i, /unternehmen/i, /profil/i, /firma/i,
+  /geschichte/i, /history/i, /werte/i, /values/i, /mission/i,
+  /impressum/i, // Enthält oft Geschäftsführer
+];
+
+// LOW VALUE: Produkt, Blog, News — selten Personen-Infos
 const LOW_VALUE_KEYWORDS = [
-  /blog/i, /news/i, /presse/i, /press/i, /download/i,
+  /blog/i, /news/i, /presse/i, /press/i, /download/i, /mediathek/i,
   /faq/i, /hilfe/i, /help/i, /login/i, /register/i, /anmelden/i,
-  /datenschutz/i, /privacy/i, /agb/i, /terms/i, /impressum/i,
+  /datenschutz/i, /privacy/i, /agb/i, /terms/i,
   /cookie/i, /sitemap/i, /rss/i, /karriere/i, /jobs/i, /stellenangebote/i,
   /produkt/i, /product/i, /lösung/i, /solution/i, /preis/i, /price/i,
-  /warenkorb/i, /cart/i, /bestellung/i, /order/i
+  /warenkorb/i, /cart/i, /bestellung/i, /order/i,
+  /referenz/i, /case/i, /portfolio/i, /projekt/i,
 ];
 
 function scoreLinkBySemantics(url, anchorText, companyName) {
@@ -501,31 +590,47 @@ function scoreLinkBySemantics(url, anchorText, companyName) {
   
   let score = 0;
   
-  // Penalize low-value pages
+  // Step 1: Check for LOW VALUE → immediate rejection for most pages
   if (LOW_VALUE_KEYWORDS.some(p => p.test(urlLower))) return -10;
   if (LOW_VALUE_KEYWORDS.some(p => p.test(anchorLower))) return -10;
   
-  // Boost: anchor text mentions person-related keywords
-  if (PERSON_KEYWORDS.some(p => p.test(anchorLower))) score += 5;
+  // Step 2: HIGH VALUE PERSON/LEADERSHIP keywords — strongest signal
+  // Anchor text with leadership keywords = very likely to be a person/management page
+  const personHitsAnchor = PERSON_KEYWORDS_HIGH.filter(p => p.test(anchorLower)).length;
+  const personHitsUrl = PERSON_KEYWORDS_HIGH.filter(p => p.test(urlLower)).length;
   
-  // Boost: URL contains person-related keywords
-  if (PERSON_KEYWORDS.some(p => p.test(urlLower))) score += 3;
+  if (personHitsAnchor >= 2) score += 15; // "Geschäftsführer Team" = very strong
+  else if (personHitsAnchor === 1) score += 10; // "Management" = strong
   
-  // Boost: URL path is short (likely main pages, not deep nested)
+  if (personHitsUrl >= 2) score += 8;
+  else if (personHitsUrl === 1) score += 5;
+  
+  // Step 3: MEDIUM VALUE COMPANY/ABOUT keywords
+  const companyHitsAnchor = COMPANY_KEYWORDS.filter(p => p.test(anchorLower)).length;
+  const companyHitsUrl = COMPANY_KEYWORDS.filter(p => p.test(urlLower)).length;
+  
+  if (companyHitsAnchor >= 1) score += 6; // "Über uns" = medium
+  if (companyHitsUrl >= 1) score += 4;
+  
+  // Step 4: URL structure bonuses
   try {
     const path = new URL(url).pathname;
     const pathDepth = path.split('/').filter(p => p).length;
-    if (pathDepth <= 1) score += 2;
-    if (pathDepth <= 2) score += 1;
+    // Short paths are more likely main navigation pages
+    if (pathDepth <= 1) score += 3; // "/" or "/team" = very likely important
+    else if (pathDepth <= 2) score += 1;
   } catch {}
   
-  // Boost: anchor text is short and descriptive (likely navigation link)
+  // Step 5: Anchor text quality
   if (anchorLower.length > 2 && anchorLower.length < 30) score += 1;
   
-  // Boost: internal link (same domain)
+  // Step 6: Internal link bonus
   if (domainLower === companyLower || domainLower.endsWith('.' + companyLower)) {
     score += 2;
   }
+  
+  // Step 7: Company name in anchor (rare but very strong signal)
+  if (anchorLower.includes(companyLower)) score += 5;
   
   return score;
 }
@@ -544,6 +649,9 @@ function extractLinksWithAnchorText(html, baseUrl) {
     
     // Clean anchor text (strip HTML tags)
     const anchorText = anchorHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    
+    // Skip empty anchor text
+    if (!anchorText || anchorText.length < 2) continue;
     
     // Resolve relative URLs
     if (href.startsWith('/')) {
@@ -1058,6 +1166,7 @@ export const handler = async (event) => {
     
     console.log('[ContactIntel] Phase 3: Targeted Crawl');
     let companyDomain = company?.domain || null;
+    let domainStatus = company?.domain_status || null;
     
     // Phase 2.5: Domain Discovery — if no domain, try to find it
     if (!companyDomain) {
@@ -1066,15 +1175,59 @@ export const handler = async (event) => {
         const discovery = await discoverDomain(company?.name || 'Unbekannt');
         if (discovery && discovery.domain) {
           companyDomain = discovery.domain;
+          domainStatus = discovery.status || 'verified';
           // Save verified domain back to company
           await serviceClient
             .from('nexus_companies')
-            .update({ domain: discovery.domain })
+            .update({ 
+              domain: discovery.domain,
+              domain_status: domainStatus 
+            })
             .eq('id', companyId);
-          console.log(`[ContactIntel] Domain verified and saved: ${discovery.domain} (confidence: ${discovery.confidence})`);
+          console.log(`[ContactIntel] Domain verified and saved: ${discovery.domain} (confidence: ${discovery.confidence}, status: ${domainStatus})`);
         }
       } catch (e) {
         console.log('[ContactIntel] Domain discovery failed:', e.message);
+      }
+    } else if (!domainStatus || domainStatus === 'discovery') {
+      // Domain exists but from pre-verification era or still discovery → re-verify
+      console.log(`[ContactIntel] Re-verifying existing domain: ${companyDomain} (status: ${domainStatus || 'unknown'})`);
+      try {
+        const verification = await verifyDomain(companyDomain, company?.name || '');
+        if (verification.verified) {
+          domainStatus = 'verified';
+          await serviceClient
+            .from('nexus_companies')
+            .update({ domain_status: 'verified' })
+            .eq('id', companyId);
+          console.log(`[ContactIntel] Existing domain verified: ${companyDomain} (confidence: ${verification.confidence})`);
+        } else {
+          // Domain failed verification → clear it, try discovery
+          console.log(`[ContactIntel] Existing domain FAILED verification (${verification.reason}), clearing and re-discovering`);
+          companyDomain = null;
+          domainStatus = null;
+          await serviceClient
+            .from('nexus_companies')
+            .update({ domain: null, domain_status: null })
+            .eq('id', companyId);
+          // Re-run discovery
+          try {
+            const discovery = await discoverDomain(company?.name || 'Unbekannt');
+            if (discovery && discovery.domain) {
+              companyDomain = discovery.domain;
+              domainStatus = discovery.status || 'verified';
+              await serviceClient
+                .from('nexus_companies')
+                .update({ domain: discovery.domain, domain_status: domainStatus })
+                .eq('id', companyId);
+              console.log(`[ContactIntel] New domain found: ${discovery.domain}`);
+            }
+          } catch (e2) {
+            console.log('[ContactIntel] Re-discovery failed:', e2.message);
+          }
+        }
+      } catch (e) {
+        console.log('[ContactIntel] Re-verification failed:', e.message);
       }
     }
     const crawlResult = await crawlForContacts(
