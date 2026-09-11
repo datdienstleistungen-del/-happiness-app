@@ -674,6 +674,7 @@ export const handler = async (event) => {
     let targetRole = 'Geschäftsführer';
     let alternativeRoles = [];
     let roleReason = '';
+    let roleConfidence = 70;
     
     if (Date.now() - startTime < HARD_LIMIT_MS - 12000) {
       console.log('[ContactIntel] Phase 2: Role Inference');
@@ -682,6 +683,7 @@ export const handler = async (event) => {
         targetRole = roleResult?.primary_role || 'Geschäftsführer';
         alternativeRoles = roleResult?.alternative_roles || [];
         roleReason = roleResult?.role_reason || '';
+        roleConfidence = roleResult?.confidence || 70;
       } catch(e) {
         console.log('[ContactIntel] Role inference failed, using default:', e.message);
       }
@@ -788,7 +790,7 @@ export const handler = async (event) => {
         alternatives: withEmails.slice(1, 4),
         targetRole,
         roleReason,
-        roleConfidence: roleResult?.confidence || 70
+        roleConfidence
       })
     };
     
