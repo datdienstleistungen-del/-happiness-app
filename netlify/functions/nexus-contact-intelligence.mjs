@@ -19,16 +19,15 @@ const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABA
 // WEB SEARCH (DuckDuckGo → SearXNG, kein Tavily)
 // ============================================================================
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
   const controller = new AbortController();
   const abortId = setTimeout(() => controller.abort(), timeoutMs);
-  const raceId = setTimeout(() => controller.abort(), timeoutMs + 2000);
   try {
     const res = await fetch(url, { ...options, signal: controller.signal });
-    clearTimeout(abortId); clearTimeout(raceId);
-    return { res, abortId, raceId };
+    clearTimeout(abortId);
+    return { res, abortId };
   } catch (e) {
-    clearTimeout(abortId); clearTimeout(raceId);
+    clearTimeout(abortId);
     throw e;
   }
 }
@@ -38,7 +37,7 @@ async function searchDuckDuckGo(query) {
     const { res } = await fetchWithTimeout(
       `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
       { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } },
-      8000
+      5000
     );
     if (!res.ok) return null;
     const html = await res.text();
@@ -87,7 +86,7 @@ async function searchSearXNG(query) {
       const { res } = await fetchWithTimeout(
         `${base}/search?q=${encodeURIComponent(query)}&format=json&categories=general`,
         {},
-        8000
+        5000
       );
       if (!res.ok) continue;
       const data = await res.json();
@@ -111,14 +110,14 @@ async function webSearch(query) {
 // HTML PAGE FETCHING & PARSING
 // ============================================================================
 
-async function fetchPageText(url, maxChars = 8000) {
+async function fetchPageText(url, maxChars = 5000) {
   try {
     const { res } = await fetchWithTimeout(url, {
       headers: { 
         'User-Agent': 'Mozilla/5.0 (compatible; NeXusBot/1.0)',
         'Accept': 'text/html,application/xhtml+xml'
       },
-    }, 10000);
+    }, 5000);
     if (!res.ok) return null;
     const html = await res.text();
     
@@ -222,19 +221,25 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
   // ========== PHASE A: Direct Domain Crawl ==========
   console.log(`[Crawler] Phase A: Direct crawl of ${companyDomain}`);
   
-  // 1. Load homepage and extract internal links
+  // 1. Load homepage and extract internal links (single request!)
   const baseUrl = `https://${companyDomain}`;
-  const homepageText = await fetchPageText(baseUrl, 8000);
+  const homepageHtml = await fetchRawHtml(baseUrl);
   
-  if (!homepageText) {
+  if (!homepageHtml) {
     console.log(`[Crawler] Homepage not reachable: ${baseUrl}`);
     return await crawlViaSearch(companyName, targetRole);
   }
   
+  const homepageText = homepageHtml
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ').trim();
+  
   console.log(`[Crawler] Homepage loaded: ${homepageText.length} chars`);
   
   // Extract all internal links from homepage
-  const homepageHtml = await fetchRawHtml(baseUrl);
   const internalLinks = extractInternalLinks(homepageHtml, baseUrl);
   console.log(`[Crawler] Found ${internalLinks.length} internal links`);
   
@@ -252,14 +257,13 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
   const uniqueTeamUrls = [...new Set(teamUrls)];
   console.log(`[Crawler] Found ${uniqueTeamUrls.length} team/about pages: ${uniqueTeamUrls.map(u => u.replace(baseUrl, '')).join(', ')}`);
   
-  // Also try common paths if not found via links
-  const commonPaths = ['/team', '/ueber-uns', '/about', '/management', '/geschaeftsfuehrung', '/kontakt', '/impressum'];
+  // Also try 3 most common paths if not found via links
+  const commonPaths = ['/team', '/ueber-uns', '/about'];
   for (const path of commonPaths) {
     const url = baseUrl + path;
     if (!uniqueTeamUrls.some(u => u.toLowerCase() === url.toLowerCase())) {
-      // Quick check if page exists
       try {
-        const { res } = await fetchWithTimeout(url, { method: 'HEAD' }, 5000);
+        const { res } = await fetchWithTimeout(url, { method: 'HEAD' }, 2000);
         if (res.ok) {
           uniqueTeamUrls.push(url);
           console.log(`[Crawler] Found via common path: ${path}`);
@@ -268,24 +272,28 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
     }
   }
   
-  // 3. Crawl team pages and extract persons via LLM
-  const pagesToCrawl = uniqueTeamUrls.slice(0, 5);
+  // 3. Crawl team pages (max 3) and extract persons via LLM (PARALLEL!)
+  const pagesToCrawl = uniqueTeamUrls.slice(0, 3);
   
-  for (const url of pagesToCrawl) {
+  const crawlPromises = pagesToCrawl.map(async (url) => {
     console.log(`[Crawler] Crawling: ${url}`);
-    const text = await fetchPageText(url, 6000);
+    const text = await fetchPageText(url, 5000);
     if (!text || text.length < 200) {
       console.log(`  (skipped: too short or empty)`);
-      continue;
+      return { url, persons: [] };
     }
     
-    pagesCrawled.push(url);
-    
-    // LLM extraction with company validation
     const persons = await extractPersonsViaLLM(text, companyName, targetRole, url);
+    return { url, persons };
+  });
+  
+  const results = await Promise.all(crawlPromises);
+  
+  for (const { url, persons } of results) {
+    pagesCrawled.push(url);
     for (const p of persons) {
       p.source_url = url;
-      p.company_validated = true; // We know it's from the company's own website
+      p.company_validated = true;
       allCandidates.push(p);
       console.log(`  Found: ${p.name} (${p.role})`);
     }
@@ -353,7 +361,7 @@ async function fetchRawHtml(url) {
         'User-Agent': 'Mozilla/5.0 (compatible; NeXusBot/1.0)',
         'Accept': 'text/html,application/xhtml+xml'
       },
-    }, 8000);
+    }, 5000);
     if (!res.ok) return '';
     return await res.text();
   } catch (e) {
@@ -588,9 +596,9 @@ async function callLLM(prompt, temperature = 0.3) {
             { role: 'user', content: prompt }
           ],
           temperature,
-          max_tokens: 2000
+          max_tokens: 1500
         })
-      }, 30000);
+      }, 8000);
       
       if (!res.ok) continue;
       const data = await res.json();
@@ -616,6 +624,10 @@ export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
+  
+  // 20s hard limit for Netlify Free-Tier (26s max)
+  const startTime = Date.now();
+  const HARD_LIMIT_MS = 20000;
   
   try {
     const { companyId, opportunityId, offering, company, trigger, research } = JSON.parse(event.body);
@@ -658,14 +670,39 @@ export const handler = async (event) => {
       };
     }
     
-    // Phase 2: Role Inference
-    console.log('[ContactIntel] Phase 2: Role Inference');
-    const roleResult = await inferTargetRole({ offering, company, trigger, research });
-    const targetRole = roleResult?.primary_role || 'Geschäftsführer';
-    const alternativeRoles = roleResult?.alternative_roles || [];
-    const roleReason = roleResult?.role_reason || '';
+    // Phase 2: Role Inference (skip if timeout approaching)
+    let targetRole = 'Geschäftsführer';
+    let alternativeRoles = [];
+    let roleReason = '';
+    
+    if (Date.now() - startTime < HARD_LIMIT_MS - 12000) {
+      console.log('[ContactIntel] Phase 2: Role Inference');
+      try {
+        const roleResult = await inferTargetRole({ offering, company, trigger, research });
+        targetRole = roleResult?.primary_role || 'Geschäftsführer';
+        alternativeRoles = roleResult?.alternative_roles || [];
+        roleReason = roleResult?.role_reason || '';
+      } catch(e) {
+        console.log('[ContactIntel] Role inference failed, using default:', e.message);
+      }
+    } else {
+      console.log('[ContactIntel] Skipping role inference (timeout approaching)');
+    }
     
     // Phase 3: Targeted Crawl
+    if (Date.now() - startTime >= HARD_LIMIT_MS - 8000) {
+      console.log('[ContactIntel] Timeout approaching, returning early');
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          status: 'timeout',
+          targetRole,
+          roleReason,
+          message: 'Zeitlimit erreicht - bitte Control Flow neu starten'
+        })
+      };
+    }
+    
     console.log('[ContactIntel] Phase 3: Targeted Crawl');
     const companyDomain = company?.domain || null;
     const crawlResult = await crawlForContacts(
@@ -695,13 +732,19 @@ export const handler = async (event) => {
       };
     }
     
-    // Phase 5: Contact Ranking
-    console.log('[ContactIntel] Phase 5: Contact Ranking');
-    const ranked = await rankContacts(candidates, { offering, company, trigger, targetRole });
+    // Phase 5: Contact Ranking (skip if timeout approaching)
+    let ranked = candidates;
+    if (Date.now() - startTime < HARD_LIMIT_MS - 5000) {
+      console.log('[ContactIntel] Phase 5: Contact Ranking');
+      ranked = await rankContacts(candidates, { offering, company, trigger, targetRole });
+    }
     
-    // Phase 6: Email Discovery
-    console.log('[ContactIntel] Phase 6: Email Discovery');
-    const withEmails = await discoverEmails(ranked.slice(0, 5), company?.name, companyDomain);
+    // Phase 6: Email Discovery (skip if timeout approaching)
+    let withEmails = ranked;
+    if (Date.now() - startTime < HARD_LIMIT_MS - 3000) {
+      console.log('[ContactIntel] Phase 6: Email Discovery');
+      withEmails = await discoverEmails(ranked.slice(0, 5), company?.name, companyDomain);
+    }
     
     // Phase 7: Save
     console.log('[ContactIntel] Phase 7: Save');
