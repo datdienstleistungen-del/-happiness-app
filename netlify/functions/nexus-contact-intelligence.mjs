@@ -321,6 +321,15 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
   };
 }
 
+function isJobUrl(url) {
+  const u = url.toLowerCase();
+  return /jobs?\.(linkedin|indeed|xing|glassdoor)/i.test(u) ||
+    /\/jobs?\//i.test(u) ||
+    /\/stellenangebote/i.test(u) ||
+    /\/karriere/i.test(u) ||
+    /\/bewerbung/i.test(u);
+}
+
 async function crawlViaSearch(companyName, targetRole) {
   const candidates = [];
   
