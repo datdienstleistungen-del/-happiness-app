@@ -19,8 +19,105 @@ const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
 // ============================================================================
-// DOMAIN DISCOVERY
+// DOMAIN DISCOVERY + VERIFICATION
 // ============================================================================
+
+async function verifyDomain(domain, companyName) {
+  console.log(`[DomainVerify] Checking: ${domain}`);
+  
+  // Step 1: Check if domain is reachable
+  let finalUrl = null;
+  let pageTitle = '';
+  let pageText = '';
+  
+  for (const scheme of ['https', 'http']) {
+    try {
+      const { res } = await fetchWithTimeout(`${scheme}://${domain}`, {
+        method: 'GET',
+        redirect: 'follow',
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Accept': 'text/html' }
+      }, 5000);
+      
+      if (res.ok) {
+        finalUrl = res.url;
+        const html = await res.text();
+        
+        // Extract title
+        const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+        pageTitle = titleMatch ? titleMatch[1].replace(/\s+/g, ' ').trim() : '';
+        
+        // Extract text for company name check
+        pageText = html
+          .replace(/<script[\s\S]*?<\/script>/gi, '')
+          .replace(/<style[\s\S]*?<\/style>/gi, '')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .substring(0, 3000);
+        
+        console.log(`[DomainVerify] ${scheme}://${domain} reachable (title: ${pageTitle.substring(0, 60)})`);
+        break;
+      }
+    } catch (e) { continue; }
+  }
+  
+  if (!finalUrl) {
+    console.log(`[DomainVerify] ${domain} NOT reachable`);
+    return { verified: false, confidence: 0, reason: 'not reachable' };
+  }
+  
+  // Step 2: Check if company name appears on page
+  const companyLower = companyName.toLowerCase();
+  const nameVariants = [
+    companyLower,
+    companyLower.replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss'),
+    companyLower.replace(/[^a-z0-9]/g, '')
+  ];
+  
+  const titleLower = pageTitle.toLowerCase();
+  const textLower = pageText.toLowerCase();
+  
+  let companyMentionScore = 0;
+  for (const variant of nameVariants) {
+    if (variant.length < 3) continue;
+    if (titleLower.includes(variant)) companyMentionScore += 5;
+    if (textLower.includes(variant)) companyMentionScore += 2;
+  }
+  
+  // Step 3: Check for official signals
+  const officialSignals = [
+    /impressum/i, /kontakt/i, /contact/i, /about/i, /unternehmen/i,
+    /geschäftsführer/i, /management/i, /team/i, /leadership/i
+  ];
+  const hasOfficialSignal = officialSignals.some(p => p.test(pageText));
+  
+  // Step 4: Check for non-official signals (aggregator, news, etc.)
+  const nonOfficialPatterns = [
+    /linkedin\.com/i, /facebook\.com/i, /twitter\.com/i,
+    /glassdoor/i, /indeed/i, /xing\.com/i,
+    /news/i, /blog/i, /presse/i, /press/i
+  ];
+  const isNonOfficial = nonOfficialPatterns.some(p => p.test(finalUrl));
+  
+  // Calculate final confidence
+  let confidence = 0;
+  if (companyMentionScore >= 5) confidence += 40; // Company name in title = strong signal
+  else if (companyMentionScore >= 2) confidence += 20; // Company name in text = medium signal
+  
+  if (hasOfficialSignal) confidence += 20;
+  if (!isNonOfficial) confidence += 20;
+  if (finalUrl.includes(`://${domain}`) || finalUrl.includes(`://www.${domain}`)) confidence += 20; // No redirect to different domain
+  
+  console.log(`[DomainVerify] Score: ${confidence} (name:${companyMentionScore} official:${hasOfficialSignal} !nonofficial:${!isNonOfficial})`);
+  
+  return {
+    verified: confidence >= 50,
+    confidence,
+    reason: confidence >= 50 ? 'verified' : 'low confidence',
+    finalUrl,
+    pageTitle
+  };
+}
 
 async function discoverDomain(companyName) {
   console.log(`[DomainDiscovery] Searching domain for: ${companyName}`);
@@ -54,10 +151,10 @@ async function discoverDomain(companyName) {
       const domainLower = hostname.replace(/[^a-z0-9]/g, '');
       
       let score = 0;
-      if (domainLower.includes(companyLower)) score += 10; // domain contains company name
-      if (r.title.toLowerCase().includes(companyName.toLowerCase())) score += 5; // title mentions company
-      if (r.url.includes('/impressum') || r.url.includes('/contact') || r.url.includes('/about')) score += 3; // is a company page
-      if (parts.length === 2) score += 2; // shorter domain = likely company
+      if (domainLower.includes(companyLower)) score += 10;
+      if (r.title.toLowerCase().includes(companyName.toLowerCase())) score += 5;
+      if (r.url.includes('/impressum') || r.url.includes('/contact') || r.url.includes('/about')) score += 3;
+      if (parts.length === 2) score += 2;
       
       candidates.push({ domain: baseDomain, score, url: r.url, title: r.title });
     } catch (e) { continue; }
@@ -68,17 +165,22 @@ async function discoverDomain(companyName) {
     return null;
   }
   
-  // Sort by score, take best
+  // Sort by score, take top 3 for verification
   candidates.sort((a, b) => b.score - a.score);
-  const best = candidates[0];
-  console.log(`[DomainDiscovery] Best: ${best.domain} (score ${best.score}) from ${best.url}`);
+  const topCandidates = candidates.slice(0, 3);
   
-  // Only accept if score is reasonable (at least some signal that it's the right company)
-  if (best.score >= 2) {
-    return best.domain;
+  console.log(`[DomainDiscovery] Top candidates: ${topCandidates.map(c => `${c.domain}(${c.score})`).join(', ')}`);
+  
+  // Verify each candidate until one passes
+  for (const c of topCandidates) {
+    const verification = await verifyDomain(c.domain, companyName);
+    if (verification.verified) {
+      console.log(`[DomainDiscovery] VERIFIED: ${c.domain} (confidence ${verification.confidence})`);
+      return { domain: c.domain, confidence: verification.confidence, source: verification.finalUrl };
+    }
   }
   
-  console.log('[DomainDiscovery] Best candidate not confident enough');
+  console.log('[DomainDiscovery] No domain passed verification');
   return null;
 }
 
@@ -362,25 +464,113 @@ Gib ein JSON zurück:
 // PHASE 3: TARGETED CRAWLER — Direct Domain First
 // ============================================================================
 
-const TEAM_PAGE_PATTERNS = [
-  /team/i, /about/i, /ueber-?uns/i, /ueber/i,
-  /management/i, /leadership/i, /people/i, /staff/i,
-  /geschaeftsfuehrung/i, /founder/i, /kontakt/i, /contact/i,
-  /impressum/i, /unternehmen/i
+// ============================================================================
+// SEMANTIC WEBSITE NAVIGATION
+// ============================================================================
+
+const PERSON_KEYWORDS = [
+  // German
+  /geschäftsführer/i, /vorstand/i, /chef/i, /leiter/i, /direktor/i,
+  /manager/i, /team/i, /mitarbeiter/i, /ansprechpartner/i, /kontakt/i,
+  /unternehmen/i, /über/i, /about/i, /profil/i, /persönlichkeit/i,
+  // English
+  /ceo/i, /cto/i, /cfo/i, /coo/i, /founder/i, /owner/i,
+  /management/i, /leadership/i, /executive/i, /board/i, /director/i,
+  /head/i, /president/i, /vp/i, /vice/i, /chief/i,
+  /about/i, /company/i, /team/i, /people/i, /staff/i, /contact/i,
+  // Role signals
+  /sales/i, /vertrieb/i, /marketing/i, /finance/i, /personal/i, /hr/i,
+  /einkauf/i, /procurement/i, /it/i, /technik/i, /entwicklung/i
 ];
 
-const EXCLUDE_PAGE_PATTERNS = [
+const LOW_VALUE_KEYWORDS = [
   /blog/i, /news/i, /presse/i, /press/i, /download/i,
-  /faq/i, /hilfe/i, /help/i, /login/i, /register/i,
-  /datenschutz/i, /privacy/i, /agb/i, /terms/i,
-  /cookie/i, /sitemap/i, /rss/i
+  /faq/i, /hilfe/i, /help/i, /login/i, /register/i, /anmelden/i,
+  /datenschutz/i, /privacy/i, /agb/i, /terms/i, /impressum/i,
+  /cookie/i, /sitemap/i, /rss/i, /karriere/i, /jobs/i, /stellenangebote/i,
+  /produkt/i, /product/i, /lösung/i, /solution/i, /preis/i, /price/i,
+  /warenkorb/i, /cart/i, /bestellung/i, /order/i
 ];
 
-function isRelevantTeamPage(url) {
-  const u = url.toLowerCase();
-  const hasRelevant = TEAM_PAGE_PATTERNS.some(p => p.test(u));
-  const hasExcluded = EXCLUDE_PAGE_PATTERNS.some(p => p.test(u));
-  return hasRelevant && !hasExcluded;
+function scoreLinkBySemantics(url, anchorText, companyName) {
+  const urlLower = url.toLowerCase();
+  const anchorLower = (anchorText || '').toLowerCase();
+  const companyLower = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const domainFromUrl = (() => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; } })();
+  const domainLower = domainFromUrl.replace(/[^a-z0-9]/g, '');
+  
+  let score = 0;
+  
+  // Penalize low-value pages
+  if (LOW_VALUE_KEYWORDS.some(p => p.test(urlLower))) return -10;
+  if (LOW_VALUE_KEYWORDS.some(p => p.test(anchorLower))) return -10;
+  
+  // Boost: anchor text mentions person-related keywords
+  if (PERSON_KEYWORDS.some(p => p.test(anchorLower))) score += 5;
+  
+  // Boost: URL contains person-related keywords
+  if (PERSON_KEYWORDS.some(p => p.test(urlLower))) score += 3;
+  
+  // Boost: URL path is short (likely main pages, not deep nested)
+  try {
+    const path = new URL(url).pathname;
+    const pathDepth = path.split('/').filter(p => p).length;
+    if (pathDepth <= 1) score += 2;
+    if (pathDepth <= 2) score += 1;
+  } catch {}
+  
+  // Boost: anchor text is short and descriptive (likely navigation link)
+  if (anchorLower.length > 2 && anchorLower.length < 30) score += 1;
+  
+  // Boost: internal link (same domain)
+  if (domainLower === companyLower || domainLower.endsWith('.' + companyLower)) {
+    score += 2;
+  }
+  
+  return score;
+}
+
+function extractLinksWithAnchorText(html, baseUrl) {
+  const links = [];
+  const urlObj = new URL(baseUrl);
+  const domain = urlObj.hostname;
+  
+  // Match both href and anchor text
+  const linkRegex = /<a[^>]+href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+  while ((match = linkRegex.exec(html)) !== null) {
+    let href = match[1];
+    const anchorHtml = match[2];
+    
+    // Clean anchor text (strip HTML tags)
+    const anchorText = anchorHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    
+    // Resolve relative URLs
+    if (href.startsWith('/')) {
+      href = baseUrl + href;
+    } else if (!href.startsWith('http')) {
+      continue;
+    }
+    
+    // Only keep internal links
+    try {
+      const linkUrl = new URL(href);
+      if (linkUrl.hostname.includes(domain.replace('www.', ''))) {
+        const clean = linkUrl.origin + linkUrl.pathname.replace(/\/$/, '');
+        links.push({ url: clean, anchorText });
+      }
+    } catch (e) { /* skip invalid URLs */ }
+  }
+  
+  // Deduplicate by URL, keep best anchor text
+  const seen = new Map();
+  for (const l of links) {
+    if (!seen.has(l.url) || l.anchorText.length > seen.get(l.url).anchorText.length) {
+      seen.set(l.url, l);
+    }
+  }
+  
+  return [...seen.values()];
 }
 
 async function crawlForContacts(companyName, companyDomain, targetRole, alternativeRoles, startTime) {
@@ -397,10 +587,9 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
     };
   }
   
-  // ========== PHASE A: Direct Domain Crawl ==========
-  console.log(`[Crawler] Phase A: Direct crawl of ${companyDomain}`);
+  // ========== PHASE A: Semantic Website Navigation ==========
+  console.log(`[Crawler] Phase A: Semantic crawl of ${companyDomain}`);
   
-  // 1. Load homepage and extract internal links (single request!)
   const baseUrl = `https://${companyDomain}`;
   const homepageHtml = await fetchRawHtml(baseUrl);
   
@@ -418,41 +607,32 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
   
   console.log(`[Crawler] Homepage loaded: ${homepageText.length} chars`);
   
-  // Extract all internal links from homepage
-  const internalLinks = extractInternalLinks(homepageHtml, baseUrl);
-  console.log(`[Crawler] Found ${internalLinks.length} internal links`);
+  // Extract all internal links with anchor text
+  const linksWithAnchor = extractLinksWithAnchorText(homepageHtml, baseUrl);
+  console.log(`[Crawler] Found ${linksWithAnchor.length} internal links`);
   
-  // 2. Identify relevant team/about pages
-  const teamUrls = internalLinks
-    .filter(url => {
-      const u = url.toLowerCase();
-      const isOnDomain = u.includes(companyDomain);
-      const isRelevant = isRelevantTeamPage(url);
-      const isExcluded = EXCLUDE_PAGE_PATTERNS.some(p => p.test(u));
-      return isOnDomain && isRelevant && !isExcluded;
-    });
+  // Score each link by semantic relevance
+  const scoredLinks = linksWithAnchor
+    .map(l => ({
+      ...l,
+      score: scoreLinkBySemantics(l.url, l.anchorText, companyName)
+    }))
+    .filter(l => l.score > 0)
+    .sort((a, b) => b.score - a.score);
   
-  // Deduplicate and prioritize
-  const uniqueTeamUrls = [...new Set(teamUrls)];
-  console.log(`[Crawler] Found ${uniqueTeamUrls.length} team/about pages: ${uniqueTeamUrls.map(u => u.replace(baseUrl, '')).join(', ')}`);
+  console.log(`[Crawler] Top semantic links:`);
+  scoredLinks.slice(0, 5).forEach(l => {
+    const path = new URL(l.url).pathname || '/';
+    console.log(`  [${l.score}] ${l.anchorText.substring(0, 40)} → ${path}`);
+  });
   
-  // Also try 2 most common paths if not found via links
-  const commonPaths = ['/team', '/ueber-uns'];
-  for (const path of commonPaths) {
-    const url = baseUrl + path;
-    if (!uniqueTeamUrls.some(u => u.toLowerCase() === url.toLowerCase())) {
-      try {
-        const { res } = await fetchWithTimeout(url, { method: 'HEAD' }, 2000);
-        if (res.ok) {
-          uniqueTeamUrls.push(url);
-          console.log(`[Crawler] Found via common path: ${path}`);
-        }
-      } catch (e) { /* ignore */ }
-    }
+  // Crawl top 3 most relevant pages (PARALLEL)
+  const pagesToCrawl = scoredLinks.slice(0, 3).map(l => l.url);
+  
+  // Always include homepage as fallback
+  if (!pagesToCrawl.includes(baseUrl)) {
+    pagesToCrawl.push(baseUrl);
   }
-  
-  // 3. Crawl team pages (max 1) and extract persons via LLM (PARALLEL!)
-  const pagesToCrawl = uniqueTeamUrls.slice(0, 1);
   
   const crawlPromises = pagesToCrawl.map(async (url) => {
     if (startTime && Date.now() - startTime > 18000) {
@@ -484,9 +664,9 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
   
   console.log(`[Crawler] Phase A complete: ${allCandidates.length} candidates from ${pagesCrawled.length} pages`);
   
-  // ========== PHASE B: DuckDuckGo Fallback ==========
+  // ========== PHASE B: Search Fallback ==========
   if (allCandidates.length === 0) {
-    console.log('[Crawler] Phase B: DuckDuckGo fallback (no candidates from direct crawl)');
+    console.log('[Crawler] Phase B: Search fallback (no candidates from direct crawl)');
     const fallbackCandidates = await crawlViaSearch(companyName, targetRole);
     allCandidates.push(...fallbackCandidates);
   }
@@ -496,7 +676,7 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
   return {
     candidates: allCandidates,
     pagesCrawled,
-    method: pagesCrawled.length > 0 ? 'direct_crawl' : 'search_fallback'
+    method: pagesCrawled.length > 0 ? 'semantic_crawl' : 'search_fallback'
   };
 }
 
@@ -567,34 +747,6 @@ async function fetchRawHtml(url) {
   } catch (e) {
     return '';
   }
-}
-
-function extractInternalLinks(html, baseUrl) {
-  const links = [];
-  const urlObj = new URL(baseUrl);
-  const domain = urlObj.hostname;
-  
-  const regex = /href="([^"]*)"/gi;
-  let match;
-  while ((match = regex.exec(html)) !== null) {
-    let href = match[1];
-    if (href.startsWith('/')) {
-      href = baseUrl + href;
-    } else if (!href.startsWith('http')) {
-      continue;
-    }
-    // Only keep internal links
-    try {
-      const linkUrl = new URL(href);
-      if (linkUrl.hostname.includes(domain.replace('www.', ''))) {
-        // Remove hash and trailing slash
-        const clean = linkUrl.origin + linkUrl.pathname.replace(/\/$/, '');
-        links.push(clean);
-      }
-    } catch (e) { /* skip invalid URLs */ }
-  }
-  
-  return [...new Set(links)];
 }
 
 async function extractPersonsViaLLM(pageText, companyName, targetRole, sourceUrl) {
@@ -909,17 +1061,17 @@ export const handler = async (event) => {
     
     // Phase 2.5: Domain Discovery — if no domain, try to find it
     if (!companyDomain) {
-      console.log('[ContactIntel] Phase 2.5: Domain Discovery');
+      console.log('[ContactIntel] Phase 2.5: Domain Discovery + Verification');
       try {
-        const discoveredDomain = await discoverDomain(company?.name || 'Unbekannt');
-        if (discoveredDomain) {
-          companyDomain = discoveredDomain;
-          // Save domain back to company
+        const discovery = await discoverDomain(company?.name || 'Unbekannt');
+        if (discovery && discovery.domain) {
+          companyDomain = discovery.domain;
+          // Save verified domain back to company
           await serviceClient
             .from('nexus_companies')
-            .update({ domain: discoveredDomain })
+            .update({ domain: discovery.domain })
             .eq('id', companyId);
-          console.log(`[ContactIntel] Domain discovered and saved: ${discoveredDomain}`);
+          console.log(`[ContactIntel] Domain verified and saved: ${discovery.domain} (confidence: ${discovery.confidence})`);
         }
       } catch (e) {
         console.log('[ContactIntel] Domain discovery failed:', e.message);
