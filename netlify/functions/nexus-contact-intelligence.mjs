@@ -145,6 +145,22 @@ async function verifyDomain(domain, companyName) {
   // Calculate final confidence
   let confidence = 0;
   
+  // CRITICAL: If company name NOT found on page at all, cap confidence
+  // A domain without ANY company mention cannot be the official company site
+  if (companyMentionScore === 0) {
+    console.log(`[DomainVerify] REJECTED: Company name "${companyName}" not found on page at all`);
+    return {
+      verified: false,
+      confidence: 0,
+      reason: `company name "${companyName}" not found on page`,
+      status: 'discovery',
+      finalUrl,
+      pageTitle,
+      companyMentionScore: 0,
+      companyFoundIn: []
+    };
+  }
+  
   // Company name matching (strongest signal)
   if (companyMentionScore >= 10) confidence += 40; // In title
   else if (companyMentionScore >= 5) confidence += 25; // In header
@@ -551,34 +567,35 @@ Gib ein JSON zurück:
 // ============================================================================
 
 // HIGH VALUE: Person/Führung — Anker-Text mit diesen Keywords → sehr wahrscheinlich Entscheider-Seite
+// WICHTIG: \b (Word Boundary) verhindert False Positives wie "s team" in "steam"
 const PERSON_KEYWORDS_HIGH = [
-  /geschäftsführer/i, /vorstand/i, /management/i, /leadership/i, /executive/i,
-  /team/i, /mitarbeiter/i, /ansprechpartner/i, /kontakt/i,
-  /founder/i, /owner/i, /partner/i,
-  /ceo/i, /cto/i, /cfo/i, /coo/i, /cmo/i,
-  /direktor/i, /head/i, /leiter/i, /chef/i, /president/i, /vp/i, /vice/i,
-  /person/i, /people/i, /staff/i,
+  /\bgeschäftsführer\b/i, /\bvorstand\b/i, /\bmanagement\b/i, /\bleadership\b/i, /\bexecutive\b/i,
+  /\bteam\b/i, /\bmitarbeiter\b/i, /\bansprechpartner\b/i, /\bkontakt\b/i,
+  /\bfounder\b/i, /\bowner\b/i, /\bpartner\b/i,
+  /\bceo\b/i, /\bcto\b/i, /\bcfo\b/i, /\bcoo\b/i, /\bcmo\b/i,
+  /\bdirektor\b/i, /\bhead\b/i, /\bleiter\b/i, /\bchef\b/i, /\bpresident\b/i, /\bvp\b/i, /\bvice\b/i,
+  /\bperson\b/i, /\bpeople\b/i, /\bstaff\b/i,
   // Role signals in anchor: "Vertrieb", "Sales", etc. indicate the person page of a role
-  /sales/i, /vertrieb/i, /marketing/i, /finance/i, /einkauf/i, /procurement/i,
-  /personal/i, /hr/i, /entwicklung/i, /technik/i, /it/i,
+  /\bsales\b/i, /\bvertrieb\b/i, /\bmarketing\b/i, /\bfinance\b/i, /\beinkauf\b/i, /\bprocurement\b/i,
+  /\bpersonal\b/i, /\bhr\b/i, /\bentwicklung\b/i, /\btechnik\b/i, /\bit\b/i,
 ];
 
 // MEDIUM VALUE: Unternehmen/Über-uns — kann Leadership-Infos enthalten
 const COMPANY_KEYWORDS = [
-  /über uns/i, /about/i, /unternehmen/i, /profil/i, /firma/i,
-  /geschichte/i, /history/i, /werte/i, /values/i, /mission/i,
-  /impressum/i, // Enthält oft Geschäftsführer
+  /\büber uns\b/i, /\babout\b/i, /\bunternehmen\b/i, /\bprofil\b/i, /\bfirma\b/i,
+  /\bgeschichte\b/i, /\bhistory\b/i, /\bwerte\b/i, /\bvalues\b/i, /\bmission\b/i,
+  /\bimpressum\b/i, // Enthält oft Geschäftsführer
 ];
 
 // LOW VALUE: Produkt, Blog, News — selten Personen-Infos
 const LOW_VALUE_KEYWORDS = [
-  /blog/i, /news/i, /presse/i, /press/i, /download/i, /mediathek/i,
-  /faq/i, /hilfe/i, /help/i, /login/i, /register/i, /anmelden/i,
-  /datenschutz/i, /privacy/i, /agb/i, /terms/i,
-  /cookie/i, /sitemap/i, /rss/i, /karriere/i, /jobs/i, /stellenangebote/i,
-  /produkt/i, /product/i, /lösung/i, /solution/i, /preis/i, /price/i,
-  /warenkorb/i, /cart/i, /bestellung/i, /order/i,
-  /referenz/i, /case/i, /portfolio/i, /projekt/i,
+  /\bblog\b/i, /\bnews\b/i, /\bpresse\b/i, /\bpress\b/i, /\bdownload\b/i, /\bmediathek\b/i,
+  /\bfaq\b/i, /\bhilfe\b/i, /\bhelp\b/i, /\blogin\b/i, /\bregister\b/i, /\banmelden\b/i,
+  /\bdatenschutz\b/i, /\bprivacy\b/i, /\bagb\b/i, /\bterms\b/i,
+  /\bcookie\b/i, /\bsitemap\b/i, /\brss\b/i, /\bkarriere\b/i, /\bjobs\b/i, /\bstellenangebote\b/i,
+  /\bprodukt\b/i, /\bproduct\b/i, /\blösung\b/i, /\bsolution\b/i, /\bpreis\b/i, /\bprice\b/i,
+  /\bwarenkorb\b/i, /\bcart\b/i, /\bbestellung\b/i, /\border\b/i,
+  /\breferenz\b/i, /\bcase\b/i, /\bportfolio\b/i, /\bprojekt\b/i,
 ];
 
 function scoreLinkBySemantics(url, anchorText, companyName) {
