@@ -37,20 +37,43 @@ async function searchDuckDuckGo(query) {
   try {
     const { res } = await fetchWithTimeout(
       `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
-      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NeXusBot/1.0)' } },
+      { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } },
       8000
     );
     if (!res.ok) return null;
     const html = await res.text();
     const results = [];
-    const regex = /<a[^>]+class="result__a"[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
+    
+    // Find all result links (result__a)
+    const linkRegex = /<a[^>]+class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
     let match;
-    while ((match = regex.exec(html)) !== null && results.length < 5) {
-      const url = match[1].replace(/.*uddg=/, '').replace(/&.*/, '');
+    
+    while ((match = linkRegex.exec(html)) !== null && results.length < 5) {
+      const href = match[1];
       const title = match[2].replace(/<[^>]*>/g, '').trim();
-      const snippet = match[3].replace(/<[^>]*>/g, '').trim();
-      if (url && title) results.push({ url, title, snippet });
+      
+      // Extract actual URL from DuckDuckGo redirect
+      let url = null;
+      if (href.includes('uddg=')) {
+        const uddgMatch = href.match(/uddg=([^&]*)/);
+        if (uddgMatch) {
+          url = decodeURIComponent(uddgMatch[1]);
+        }
+      } else if (href.startsWith('http')) {
+        url = href;
+      }
+      
+      // Find the next snippet (result__snippet) after this link
+      const snippetRegex = /<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
+      snippetRegex.lastIndex = match.index + match[0].length;
+      const snippetMatch = snippetRegex.exec(html);
+      const snippet = snippetMatch ? snippetMatch[1].replace(/<[^>]*>/g, '').trim() : '';
+      
+      if (url && title) {
+        results.push({ url, title, snippet });
+      }
     }
+    
     return results.length > 0 ? results : null;
   } catch (e) {
     return null;
@@ -182,6 +205,10 @@ REGELN:
 3. Bei kleinen Firmen (<50 MA): CEO/Founder kann relevant sein
 4. Bei großen Firmen: Spezialisierte Rolle bevorzugen
 5. Der Trigger bestimmt die Rolle, nicht die Branche
+6. Die Rolle MUSS so spezifisch sein, dass man bei LinkedIn danach suchen kann
+
+WICHTIG: Gib NUR eine konkrete Rolle zurück (z.B. "VP Sales DACH" oder "Head of Marketing Midmarket"). 
+KEINE generischen Rollen wie "Verantwortlicher" oder "Ansprechpartner".
 
 Gib ein JSON zurück:
 {
@@ -198,69 +225,153 @@ Gib ein JSON zurück:
 // PHASE 3: TARGETED CRAWLER
 // ============================================================================
 
+const JOB_URL_PATTERNS = [
+  /linkedin\.com\/jobs/i,
+  /indeed\.com/i,
+  /glassdoor\.com/i,
+  /stepstone\.de/i,
+  /monster\.de/i,
+  /jobs\.ch/i,
+  /karriere\.at/i,
+  /absolventa\.de/i,
+  /kununu\.com/i,
+  /glassdoor\./i,
+  /linkedin\.com\/pulse/i,
+  /linkedin\.com\/feed/i
+];
+
+function isJobUrl(url) {
+  return JOB_URL_PATTERNS.some(p => p.test(url));
+}
+
 async function crawlForContacts(companyName, companyDomain, targetRole, alternativeRoles) {
   const allCandidates = [];
   
-  // 1. Suche nach Team/Management-Seiten
+  // 1. Gezielte Suche nach Team/Management-Seiten (KEINE Job-Suchen)
   const searchQueries = [
-    `${companyName} team management ${targetRole}`,
-    `${companyName} ${targetRole} LinkedIn`,
-    `${companyName} Geschäftsführung team`,
-    `site:${companyDomain || companyName} team OR management OR about`
+    `${companyName} team management`,
+    `${companyName} Geschäftsführung leadership`,
+    `${companyName} about us team`,
+    `${companyName} ansprechpartner kontakt`
   ];
+  
+  // Wenn Domain bekannt: Direkt auf die eigene Seite suchen
+  if (companyDomain) {
+    searchQueries.unshift(`site:${companyDomain} team OR management OR about OR leadership`);
+  }
   
   const searchResults = [];
   for (const query of searchQueries) {
     const results = await webSearch(query);
-    if (results) searchResults.push(...results);
+    if (results) {
+      // Job-Links sofort rausfiltern
+      const filtered = results.filter(r => !isJobUrl(r.url));
+      searchResults.push(...filtered);
+    }
   }
   
-  // 2. Sammle relevante URLs
+  console.log(`[Crawler] ${searchResults.length} results after job-filter`);
+  
+  // 2. Sammle relevante URLs (Team/About/Management-Seiten)
   const relevantUrls = [];
   for (const r of searchResults) {
     const urlLower = r.url.toLowerCase();
-    if (urlLower.includes('team') || urlLower.includes('about') || 
-        urlLower.includes('management') || urlLower.includes('leadership') ||
-        urlLower.includes('ueber') || urlLower.includes('kontakt') ||
-        urlLower.includes('impressum') || urlLower.includes('contact')) {
+    // Bevorzuge: team, about, management, leadership, impressum, kontakt
+    // Vermeide: jobs, karriere, stellenangebote, blog, news
+    if ((urlLower.includes('team') || urlLower.includes('about') || 
+         urlLower.includes('management') || urlLower.includes('leadership') ||
+         urlLower.includes('ueber') || urlLower.includes('impressum') ||
+         urlLower.includes('kontakt') || urlLower.includes('contact')) &&
+        !urlLower.includes('job') && !urlLower.includes('karriere') &&
+        !urlLower.includes('stelle') && !urlLower.includes('blog')) {
       relevantUrls.push(r.url);
     }
-    // Auch Snippets mit Personennamen checken
-    const nameMatch = r.snippet.match(/([A-ZÄÖÜ][a-zäöüß]+ [A-ZÄÖÜ][a-zäöüß]+)/g);
-    if (nameMatch) {
-      for (const name of nameMatch) {
-        if (name.length > 4 && name.length < 40 && !name.includes('http')) {
-          allCandidates.push({
-            name: name.trim(),
-            role: extractRoleFromText(r.snippet, name),
-            source: r.url,
-            snippet: r.snippet,
-            confidence: 60
-          });
-        }
+  }
+  
+  // 3. LLM-basierte Person-Extraktion aus Snippets (nur bei eindeutigen Namen)
+  // Nur wenn der Snippet explizit eine Person + Rolle nennt
+  for (const r of searchResults) {
+    // Prüfe ob Snippet eine echte Person mit Rolle enthält
+    // Pattern: "Max Mustermann, CEO" oder "CEO Max Mustermann"
+    const explicitPersonMatch = r.snippet.match(
+      /([A-ZÄÖÜ][a-zäöüß]+ [A-ZÄÖÜ][a-zäöüß\-]+)[,\s]+((?:CEO|CTO|CFO|COO|CMO|CRO|VP|Head of|Geschäftsführer|Managing Director|Founder|Co-Founder|Director|Leiter|Vorstand)[^\.,]{0,40})/i
+    );
+    if (explicitPersonMatch) {
+      const name = explicitPersonMatch[1].trim();
+      const role = explicitPersonMatch[2].trim();
+      if (name.length > 4 && name.length < 40 && !isJobUrl(r.url)) {
+        allCandidates.push({
+          name,
+          role,
+          source: r.url,
+          snippet: r.snippet.substring(0, 200),
+          confidence: 70
+        });
       }
     }
   }
   
-  // 3. Crawle die wichtigsten Seiten
+  console.log(`[Crawler] ${allCandidates.length} candidates from snippets`);
+  
+  // 4. Crawle die wichtigsten Team/About-Seiten
   const urlsToCrawl = companyDomain 
     ? prioritizeUrls(relevantUrls, companyDomain).slice(0, 5)
     : relevantUrls.slice(0, 3);
   
   for (const url of urlsToCrawl) {
+    if (isJobUrl(url)) continue;
+    
     const text = await fetchPageText(url, 6000);
     if (!text) continue;
     
-    // Suche nach Personennamen und Rollen
-    const persons = extractPersonsFromText(text, targetRole, alternativeRoles);
+    // LLM-basierte Person-Extraktion
+    const persons = await extractPersonsViaLLM(text, companyName, targetRole);
     for (const p of persons) {
       p.source = url;
       allCandidates.push(p);
     }
   }
   
-  // 4. Deduplizierung
+  console.log(`[Crawler] Total candidates: ${allCandidates.length}`);
+  
+  // 5. Deduplizierung
   return deduplicateCandidates(allCandidates);
+}
+
+async function extractPersonsViaLLM(pageText, companyName, targetRole) {
+  // LLM fragen, welche Personen auf dieser Seite stehen
+  const prompt = `Extrahiere alle Personennamen und deren Rollen aus folgender Textausschnitt einer Firmenwebsite.
+
+Firma: ${companyName}
+Gesuchte Zielrolle: ${targetRole}
+
+TEXT:
+${pageText.substring(0, 4000)}
+
+REGELN:
+1. NUR echte Personen extrahieren (keine Firmennamen, keine Produkte)
+2. Name muss aus Vor- und Nachname bestehen
+3. Rolle muss eine echte Position sein (CEO, Head of Sales, etc.)
+4. KEINE erfundenen Namen oder Rollen
+
+Gib ein JSON Array zurück:
+[{"name": "Vorname Nachname", "role": "Position"}]
+
+Nur wenn du konkrete Personen findest. Sonst ein leeres Array: []`;
+
+  const result = await callLLM(prompt, 0.1);
+  if (!result) return [];
+  
+  // Handle different response formats
+  if (Array.isArray(result)) return result.filter(p => p.name && p.role);
+  if (result.persons && Array.isArray(result.persons)) return result.persons.filter(p => p.name && p.role);
+  if (result.raw) {
+    try {
+      const parsed = JSON.parse(result.raw);
+      if (Array.isArray(parsed)) return parsed.filter(p => p.name && p.role);
+    } catch(e) {}
+  }
+  return [];
 }
 
 function extractRoleFromText(text, name) {
@@ -280,44 +391,6 @@ function extractRoleFromText(text, name) {
     }
   }
   return null;
-}
-
-function extractPersonsFromText(text, targetRole, alternativeRoles) {
-  const candidates = [];
-  const allRoles = [targetRole, ...(alternativeRoles || [])].filter(Boolean);
-  
-  // Pattern: Name + Rolle in der Nähe
-  const nameRolePatterns = [
-    // "Max Mustermann, CEO"
-    /([A-ZÄÖÜ][a-zäöüß]+ [A-ZÄÖÜ][a-zäöüß\-]+)[,\s]+([A-ZÄÖÜ][A-Za-zäöüß\s\-]{2,40})/g,
-    // "CEO Max Mustermann"
-    /(CEO|CTO|CFO|COO|CMO|CRO|VP [A-ZÄÖÜ][a-zäöüß]+|Head of [A-ZÄÖÜ][A-Za-zäöüß\s]+|Director [A-ZÄÖÜ][A-Za-zäöüß\s]+|Geschäftsführer|Managing Director|Founder|Co-Founder)[\s:]+([A-ZÄÖÜ][a-zäöüß]+ [A-ZÄÖÜ][a-zäöüß\-]+)/gi
-  ];
-  
-  for (const pattern of nameRolePatterns) {
-    let match;
-    while ((match = pattern.exec(text)) !== null) {
-      let name, role;
-      if (allRoles.some(r => match[1]?.toLowerCase().includes(r?.toLowerCase()))) {
-        name = match[2]; role = match[1];
-      } else {
-        name = match[1]; role = match[2];
-      }
-      
-      if (name && name.length > 4 && name.length < 40) {
-        const relevance = calculateRoleRelevance(role, allRoles);
-        candidates.push({
-          name: name.trim(),
-          role: role?.trim() || null,
-          source: null,
-          snippet: text.substring(Math.max(0, match.index - 100), match.index + match[0].length + 100),
-          confidence: relevance
-        });
-      }
-    }
-  }
-  
-  return candidates;
 }
 
 function calculateRoleRelevance(foundRole, targetRoles) {
