@@ -434,12 +434,24 @@ export async function callContactIntelligence({ companyId, opportunityId, offeri
     body: JSON.stringify({ companyId, opportunityId, offering, company, trigger, research })
   });
 
+  const text = await res.text();
+  
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(`Contact Intelligence Error: ${err.error || res.statusText}`);
+    let errMsg = `HTTP ${res.status}`;
+    try {
+      const err = JSON.parse(text);
+      errMsg += `: ${err.error || JSON.stringify(err)}`;
+    } catch(e) {
+      errMsg += `: ${text.substring(0, 200)}`;
+    }
+    throw new Error(errMsg);
   }
 
-  return res.json();
+  try {
+    return JSON.parse(text);
+  } catch(e) {
+    throw new Error(`Ungültige Antwort vom Server: ${text.substring(0, 200)}`);
+  }
 }
 
 /**

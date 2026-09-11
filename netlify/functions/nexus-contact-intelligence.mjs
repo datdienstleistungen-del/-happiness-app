@@ -272,8 +272,8 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
     }
   }
   
-  // 3. Crawl team pages (max 2) and extract persons via LLM (PARALLEL!)
-  const pagesToCrawl = uniqueTeamUrls.slice(0, 2);
+  // 3. Crawl team pages (max 1) and extract persons via LLM (PARALLEL!)
+  const pagesToCrawl = uniqueTeamUrls.slice(0, 1);
   
   const crawlPromises = pagesToCrawl.map(async (url) => {
     if (startTime && Date.now() - startTime > 18000) {
@@ -721,28 +721,24 @@ export const handler = async (event) => {
       };
     }
     
-    // Phase 2: Role Inference (skip if timeout approaching)
+    // Phase 2: Role — simple heuristic, NO LLM call (saves 5-8s)
     let targetRole = 'Geschäftsführer';
-    let alternativeRoles = [];
-    let roleReason = '';
-    let roleConfidence = 70;
-    
-    if (Date.now() - startTime < HARD_LIMIT_MS - 12000) {
-      console.log('[ContactIntel] Phase 2: Role Inference');
-      try {
-        const roleResult = await inferTargetRole({ offering, company, trigger, research });
-        targetRole = roleResult?.primary_role || 'Geschäftsführer';
-        alternativeRoles = roleResult?.alternative_roles || [];
-        roleReason = roleResult?.role_reason || '';
-        roleConfidence = roleResult?.confidence || 70;
-      } catch(e) {
-        console.log('[ContactIntel] Role inference failed, using default:', e.message);
-      }
-    } else {
-      console.log('[ContactIntel] Skipping role inference (timeout approaching)');
+    const companyName = company?.name || '';
+    const offeringName = offering?.offering_name || '';
+    const targetAudience = offering?.target_audience || '';
+    // Simple heuristic: if target_audience mentions specific roles, use them
+    if (targetAudience.toLowerCase().includes('einkauf') || targetAudience.toLowerCase().includes('procurement')) {
+      targetRole = 'Einkaufsleiter';
+    } else if (targetAudience.toLowerCase().includes('marketing')) {
+      targetRole = 'Marketing Director';
+    } else if (targetAudience.toLowerCase().includes('it') || targetAudience.toLowerCase().includes('technik')) {
+      targetRole = 'IT-Leiter';
+    } else if (targetAudience.toLowerCase().includes('hr') || targetAudience.toLowerCase().includes('personal')) {
+      targetRole = 'Personalleitung';
     }
+    console.log(`[ContactIntel] Target role (heuristic): ${targetRole}`);
     
-    // Phase 3: Targeted Crawl
+    // Phase 3: Targeted Crawl — max 1 page, fast
     if (Date.now() - startTime >= HARD_LIMIT_MS - 8000) {
       console.log('[ContactIntel] Timeout approaching, returning early');
       return {
@@ -750,8 +746,7 @@ export const handler = async (event) => {
         body: JSON.stringify({
           status: 'timeout',
           targetRole,
-          roleReason,
-          message: 'Zeitlimit erreicht - bitte Control Flow neu starten'
+          message: 'Zeitlimit erreicht - bitte erneut versuchen'
         })
       };
     }
@@ -762,7 +757,7 @@ export const handler = async (event) => {
       company?.name || 'Unbekannt', 
       companyDomain, 
       targetRole, 
-      alternativeRoles,
+      [],
       startTime
     );
     
@@ -778,7 +773,6 @@ export const handler = async (event) => {
         body: JSON.stringify({
           status: 'no_candidates',
           targetRole,
-          roleReason,
           pagesCrawled,
           crawlMethod,
           message: 'Keine passenden Ansprechpartner gefunden'
@@ -786,23 +780,14 @@ export const handler = async (event) => {
       };
     }
     
-    // Phase 5: Contact Ranking (skip if timeout approaching)
-    let ranked = candidates;
-    if (Date.now() - startTime < HARD_LIMIT_MS - 5000) {
-      console.log('[ContactIntel] Phase 5: Contact Ranking');
-      ranked = await rankContacts(candidates, { offering, company, trigger, targetRole });
-    }
+    // Skip ranking LLM — just use first candidate (saves 5-8s)
+    const best = candidates[0];
+    console.log(`[ContactIntel] Best candidate: ${best.name} (${best.role})`);
     
-    // Phase 6: Email Discovery (skip if timeout approaching)
-    let withEmails = ranked;
-    if (Date.now() - startTime < HARD_LIMIT_MS - 3000) {
-      console.log('[ContactIntel] Phase 6: Email Discovery');
-      withEmails = await discoverEmails(ranked.slice(0, 5), company?.name, companyDomain);
-    }
+    // Skip email web search — use pattern guessing only (saves 3-5s)
     
     // Phase 7: Save
     console.log('[ContactIntel] Phase 7: Save');
-    const best = withEmails[0];
     
     if (best && best.name && best.name !== 'unbekannt') {
       // Name aufteilen in first_name + last_name
@@ -877,10 +862,10 @@ export const handler = async (event) => {
       body: JSON.stringify({
         status: 'found',
         primary: best,
-        alternatives: withEmails.slice(1, 4),
+        alternatives: candidates.slice(1, 4),
         targetRole,
-        roleReason,
-        roleConfidence
+        roleReason: '',
+        roleConfidence: 70
       })
     };
     
