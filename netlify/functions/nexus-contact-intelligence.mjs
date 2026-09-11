@@ -263,7 +263,11 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
   const searchResults = [];
   for (const query of searchQueries) {
     const results = await webSearch(query);
+    console.log(`[Crawler] Query "${query}": ${results?.length || 0} raw results`);
     if (results) {
+      for (const r of results) {
+        console.log(`  - ${r.url.substring(0, 80)}... | job=${isJobUrl(r.url)}`);
+      }
       // Job-Links sofort rausfiltern
       const filtered = results.filter(r => !isJobUrl(r.url));
       searchResults.push(...filtered);
