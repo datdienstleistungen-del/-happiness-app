@@ -19,7 +19,7 @@ const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABA
 // WEB SEARCH (DuckDuckGo → SearXNG, kein Tavily)
 // ============================================================================
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
   const controller = new AbortController();
   const abortId = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -110,14 +110,14 @@ async function webSearch(query) {
 // HTML PAGE FETCHING & PARSING
 // ============================================================================
 
-async function fetchPageText(url, maxChars = 5000) {
+async function fetchPageText(url, maxChars = 3000) {
   try {
     const { res } = await fetchWithTimeout(url, {
       headers: { 
         'User-Agent': 'Mozilla/5.0 (compatible; NeXusBot/1.0)',
         'Accept': 'text/html,application/xhtml+xml'
       },
-    }, 5000);
+    }, 3000);
     if (!res.ok) return null;
     const html = await res.text();
     
@@ -209,7 +209,7 @@ function isRelevantTeamPage(url) {
   return hasRelevant && !hasExcluded;
 }
 
-async function crawlForContacts(companyName, companyDomain, targetRole, alternativeRoles) {
+async function crawlForContacts(companyName, companyDomain, targetRole, alternativeRoles, startTime) {
   const allCandidates = [];
   const pagesCrawled = [];
   
@@ -257,8 +257,8 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
   const uniqueTeamUrls = [...new Set(teamUrls)];
   console.log(`[Crawler] Found ${uniqueTeamUrls.length} team/about pages: ${uniqueTeamUrls.map(u => u.replace(baseUrl, '')).join(', ')}`);
   
-  // Also try 3 most common paths if not found via links
-  const commonPaths = ['/team', '/ueber-uns', '/about'];
+  // Also try 2 most common paths if not found via links
+  const commonPaths = ['/team', '/ueber-uns'];
   for (const path of commonPaths) {
     const url = baseUrl + path;
     if (!uniqueTeamUrls.some(u => u.toLowerCase() === url.toLowerCase())) {
@@ -272,12 +272,16 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
     }
   }
   
-  // 3. Crawl team pages (max 3) and extract persons via LLM (PARALLEL!)
-  const pagesToCrawl = uniqueTeamUrls.slice(0, 3);
+  // 3. Crawl team pages (max 2) and extract persons via LLM (PARALLEL!)
+  const pagesToCrawl = uniqueTeamUrls.slice(0, 2);
   
   const crawlPromises = pagesToCrawl.map(async (url) => {
+    if (startTime && Date.now() - startTime > 18000) {
+      console.log(`[Crawler] Timeout approaching, skipping: ${url}`);
+      return { url, persons: [] };
+    }
     console.log(`[Crawler] Crawling: ${url}`);
-    const text = await fetchPageText(url, 5000);
+    const text = await fetchPageText(url, 3000);
     if (!text || text.length < 200) {
       console.log(`  (skipped: too short or empty)`);
       return { url, persons: [] };
@@ -361,7 +365,7 @@ async function fetchRawHtml(url) {
         'User-Agent': 'Mozilla/5.0 (compatible; NeXusBot/1.0)',
         'Accept': 'text/html,application/xhtml+xml'
       },
-    }, 5000);
+    }, 3000);
     if (!res.ok) return '';
     return await res.text();
   } catch (e) {
@@ -618,9 +622,7 @@ function generateEmailPatterns(name, domain) {
 async function callLLM(prompt, temperature = 0.3) {
   const providers = [
     { url: 'https://api.deepseek.com/chat/completions', key: process.env.DEEPSEEK_API_KEY, model: 'deepseek-v4-flash' },
-    { url: 'https://api.mistral.ai/v1/chat/completions', key: process.env.MISTRAL_API_KEY, model: 'mistral-small-latest' },
-    { url: 'https://openrouter.ai/api/v1/chat/completions', key: process.env.OPENROUTER_API_KEY, model: 'google/gemma-4-26b-a4b-it:free' },
-    { url: 'https://api.openai.com/v1/chat/completions', key: process.env.OPENAI_API_KEY, model: 'gpt-4o-mini' }
+    { url: 'https://api.mistral.ai/v1/chat/completions', key: process.env.MISTRAL_API_KEY, model: 'mistral-small-latest' }
   ];
   
   for (const p of providers) {
@@ -638,7 +640,7 @@ async function callLLM(prompt, temperature = 0.3) {
           temperature,
           max_tokens: 1500
         })
-      }, 8000);
+      }, 5000);
       
       if (!res.ok) continue;
       const data = await res.json();
@@ -751,7 +753,8 @@ export const handler = async (event) => {
       company?.name || 'Unbekannt', 
       companyDomain, 
       targetRole, 
-      alternativeRoles
+      alternativeRoles,
+      startTime
     );
     
     const candidates = crawlResult.candidates || [];
@@ -807,6 +810,7 @@ export const handler = async (event) => {
           first_name: firstName,
           last_name: lastName,
           role: best.role || targetRole,
+          status: 'new',
           email: best.email || null,
           email_confidence: best.email ? (best.email_status === 'FOUND' ? 95 : null) : null,
           email_source: best.email ? (best.email_status === 'FOUND' ? 'website' : null) : null,
@@ -817,7 +821,7 @@ export const handler = async (event) => {
       
       if (!saveError && savedContact) {
         // Link to opportunity
-        await serviceClient
+        const { error: linkError } = await serviceClient
           .from('nexus_opportunity_contacts')
           .upsert({
             opportunity_id: opportunityId,
@@ -825,6 +829,8 @@ export const handler = async (event) => {
             role_in_opportunity: targetRole,
             is_primary: true
           }, { onConflict: 'opportunity_id,contact_id' });
+        
+        if (linkError) console.error('[ContactIntel] Link error:', linkError.message);
         
         best.id = savedContact.id;
         

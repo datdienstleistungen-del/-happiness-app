@@ -130,7 +130,8 @@ export default function SalesWorkspacePage() {
           const existingContact = ctx.contacts?.length > 0 ? ctx.contacts[0].nexus_contacts : null;
 
           if (existingContact) {
-             contactName = `${existingContact.name}${existingContact.role ? ` (${existingContact.role})` : ''}`;
+             const fullName = `${existingContact.first_name || ''} ${existingContact.last_name || ''}`.trim();
+             contactName = `${fullName}${existingContact.role ? ` (${existingContact.role})` : ''}`;
              setFoundContact(existingContact);
           }
 
@@ -237,11 +238,11 @@ export default function SalesWorkspacePage() {
            setFormData(prev => ({ ...prev, ansprechpartner: 'Kein verlässlicher Ansprechpartner gefunden' }));
         }
     } catch (e) {
-      console.error(e);
-      if (e.message?.includes('timeout') || e.message?.includes('504')) {
+      console.error('Contact Intelligence error:', e.message, e);
+      if (e.message?.includes('timeout') || e.message?.includes('504') || e.message?.includes('502') || e.message?.includes('Gateway')) {
         setFormData(prev => ({ ...prev, ansprechpartner: 'Zeitlimit erreicht - bitte erneut versuchen' }));
       } else {
-        setFormData(prev => ({ ...prev, ansprechpartner: 'Fehler bei der Kontaktrecherche' }));
+        setFormData(prev => ({ ...prev, ansprechpartner: 'Fehler bei der Kontaktrecherche: ' + (e.message || 'Unbekannter Fehler').substring(0, 80) }));
       }
     } finally {
       setFindingContact(false);
@@ -885,7 +886,7 @@ export default function SalesWorkspacePage() {
                           <strong>Ansprechpartner:</strong> <br/>
                           {fullContext.contacts?.length > 0 ? (
                             <span>
-                              {fullContext.contacts[0].nexus_contacts.name} 
+                              {`${fullContext.contacts[0].nexus_contacts.first_name || ''} ${fullContext.contacts[0].nexus_contacts.last_name || ''}`.trim()} 
                               {fullContext.contacts[0].nexus_contacts.role && ` (${fullContext.contacts[0].nexus_contacts.role})`}
                             </span>
                           ) : findingContact ? (

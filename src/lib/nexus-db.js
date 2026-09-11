@@ -357,21 +357,26 @@ export async function getOpportunityContext(id) {
 }
 
 export async function saveOpportunityContact(userId, companyId, opportunityId, contactName, contactRole, source = 'tavily', confidence = 0) {
+  // Split name into first_name + last_name
+  const nameParts = (contactName || '').trim().split(/\s+/);
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.slice(1).join(' ') || '';
+
   // 1. Insert into nexus_contacts
   const { data: contact, error: err1 } = await supabase
     .from('nexus_contacts')
-    .insert({ user_id: userId, company_id: companyId, name: contactName, role: contactRole })
+    .insert({ user_id: userId, company_id: companyId, first_name: firstName, last_name: lastName, role: contactRole })
     .select()
     .single();
   
-  if (err1) return null;
+  if (err1) { console.error('[NeXus DB] saveOpportunityContact insert error:', err1); return null; }
 
   // 2. Link to opportunity
   const { error: err2 } = await supabase
     .from('nexus_opportunity_contacts')
     .insert({ opportunity_id: opportunityId, contact_id: contact.id, is_primary: true });
     
-  if (err2) return null;
+  if (err2) { console.error('[NeXus DB] saveOpportunityContact link error:', err2); return null; }
   
   // 3. Log Activity
   await logActivity(userId, 'opportunity', opportunityId, 'SYSTEM', 'NeXus AI', 'contact_added', `Ansprechpartner ${contactName} gefunden (Quelle: ${source}).`);
