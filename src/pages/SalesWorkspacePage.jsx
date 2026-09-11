@@ -199,6 +199,11 @@ export default function SalesWorkspacePage() {
           return;
         }
         
+        if (res.status === 'timeout') {
+          setFormData(prev => ({ ...prev, ansprechpartner: 'Zeitlimit erreicht - bitte erneut versuchen' }));
+          return;
+        }
+        
         if (res.status === 'found' && res.primary) {
           const contact = res.primary;
           // Zeige den Kontakt im Formular an
@@ -214,33 +219,27 @@ export default function SalesWorkspacePage() {
             contacts: [{ nexus_contacts: { name: contact.name, role: contact.role || '', email: contact.email || null } }]
           } : prev);
           
-          // Kontakt ist bereits in der Pipeline gespeichert
-          if (contact.id) {
-            setFoundContact(contact);
-            setContactPersisted(true);
-          } else {
-            // Fallback: Manuell speichern
-            try {
-              const savedContact = await db.saveOpportunityContact(user.id, companyId, oppId, contact.name, contact.role || '', 'contact_intelligence', contact.rank_score || 80);
-              if (savedContact && savedContact.id) {
-                setFoundContact(savedContact);
-                setContactPersisted(true);
-              } else {
-                setFoundContact({ name: contact.name, role: contact.role });
-                setContactPersisted(false);
-              }
-            } catch(e) {
-              console.error("Fehler beim Speichern des Kontakts:", e);
-              setFoundContact({ name: contact.name, role: contact.role });
-              setContactPersisted(false);
-            }
-          }
+          // Kontakt mit vollständigen Daten speichern (evidence, source_url, email_status)
+          setFoundContact({
+            name: contact.name,
+            role: contact.role,
+            email: contact.email,
+            email_status: contact.email_status || 'UNKNOWN',
+            evidence: contact.evidence || null,
+            source_url: contact.source_url || null,
+            rank_score: contact.rank_score,
+            company_validated: contact.company_validated || false
+          });
         } else {
            setFormData(prev => ({ ...prev, ansprechpartner: 'Kein verlässlicher Ansprechpartner gefunden' }));
         }
     } catch (e) {
       console.error(e);
-      setFormData(prev => ({ ...prev, ansprechpartner: 'Fehler bei der Kontaktrecherche' }));
+      if (e.message?.includes('timeout') || e.message?.includes('504')) {
+        setFormData(prev => ({ ...prev, ansprechpartner: 'Zeitlimit erreicht - bitte erneut versuchen' }));
+      } else {
+        setFormData(prev => ({ ...prev, ansprechpartner: 'Fehler bei der Kontaktrecherche' }));
+      }
     } finally {
       setFindingContact(false);
     }
@@ -851,12 +850,65 @@ export default function SalesWorkspacePage() {
                               {fullContext.contacts[0].nexus_contacts.role && ` (${fullContext.contacts[0].nexus_contacts.role})`}
                             </span>
                           ) : findingContact ? (
-                            <span style={{ color: 'var(--text-secondary)' }}>🔍 Suche läuft...</span>
+                            <span style={{ color: 'var(--text-secondary)' }}>Suche laeuft...</span>
                           ) : (
                             <span style={{ color: 'var(--text-secondary)' }}>Kein Ansprechpartner gefunden</span>
                           )}
                         </div>
                       </div>
+                      
+                      {/* Contact Intelligence Details */}
+                      {foundContact && (
+                        <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', fontSize: '0.85rem' }}>
+                          {/* Evidenz */}
+                          {foundContact.evidence && (
+                            <div style={{ marginBottom: '8px' }}>
+                              <strong style={{ color: 'var(--text-primary)' }}>Evidenz:</strong><br/>
+                              <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                                "{foundContact.evidence}"
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* Quelle */}
+                          {foundContact.source_url && (
+                            <div style={{ marginBottom: '8px' }}>
+                              <strong style={{ color: 'var(--text-primary)' }}>Quelle:</strong>{' '}
+                              <a 
+                                href={foundContact.source_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                style={{ color: 'var(--color-koralle)', textDecoration: 'none' }}
+                              >
+                                {foundContact.source_url.replace(/^https?:\/\//, '').split('/')[0]} ↗
+                              </a>
+                            </div>
+                          )}
+                          
+                          {/* E-Mail Status */}
+                          <div style={{ marginBottom: '8px' }}>
+                            <strong style={{ color: 'var(--text-primary)' }}>E-Mail:</strong>{' '}
+                            {foundContact.email && foundContact.email_status !== 'UNKNOWN' ? (
+                              <span style={{ color: '#22c55e' }}>{foundContact.email}</span>
+                            ) : (
+                              <span style={{ color: 'var(--text-secondary)' }}>Nicht öffentlich verfügbar</span>
+                            )}
+                          </div>
+                          
+                          {/* Confidence Score */}
+                          {foundContact.rank_score && (
+                            <div>
+                              <strong style={{ color: 'var(--text-primary)' }}>Confidence:</strong>{' '}
+                              <span style={{ color: foundContact.rank_score >= 80 ? '#22c55e' : foundContact.rank_score >= 60 ? '#f59e0b' : 'var(--text-secondary)' }}>
+                                {foundContact.rank_score}%
+                              </span>
+                              {foundContact.company_validated && (
+                                <span style={{ marginLeft: '8px', color: '#22c55e', fontSize: '0.8rem' }}>✓ Firmenwebsite</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* 2. Offering */}
