@@ -558,10 +558,10 @@ export function matchPersonFromWebsite(extractedPersons, targetRoleOrName) {
   for (const p of extractedPersons) {
     const roleLower = p.role.toLowerCase();
     if (roleLower === targetLower || 
-        (targetLower === 'ceo' && (roleLower === 'ceo' || roleLower.startsWith('ceo ') || roleLower.endsWith(' ceo') || roleLower.includes('chief executive officer'))) ||
-        (targetLower === 'cto' && (roleLower === 'cto' || roleLower.includes('chief technology officer'))) ||
-        (targetLower === 'cfo' && (roleLower === 'cfo' || roleLower.includes('chief financial officer'))) ||
-        (targetLower === 'coo' && (roleLower === 'coo' || roleLower.includes('chief operating officer'))) ||
+        (targetLower === 'ceo' && (/\bceo\b/i.test(p.role) || roleLower.includes('chief executive officer'))) ||
+        (targetLower === 'cto' && (/\bcto\b/i.test(p.role) || roleLower.includes('chief technology officer'))) ||
+        (targetLower === 'cfo' && (/\bcfo\b/i.test(p.role) || roleLower.includes('chief financial officer'))) ||
+        (targetLower === 'coo' && (/\bcoo\b/i.test(p.role) || roleLower.includes('chief operating officer'))) ||
         (targetLower === 'managing director' && roleLower.includes('managing director')) ||
         (roleLower.replace(/[^a-z0-9]/g, '') === targetLower.replace(/[^a-z0-9]/g, ''))) {
       return {
@@ -578,32 +578,32 @@ export function matchPersonFromWebsite(extractedPersons, targetRoleOrName) {
   const families = [
     {
       keywords: ['sales', 'vertrieb', 'business development', 'cro', 'revenue', 'account', 'vertriebsleiter', 'head of sales', 'vp sales', 'director of sales'],
-      matches: (role) => /sales|vertrieb|business development|cro|revenue|account/i.test(role)
+      matches: (role) => /\b(sales|vertrieb|business development|cro|revenue|account)\b/i.test(role)
     },
     {
-      keywords: ['ceo', 'geschäftsführer', 'geschäftsführung', 'managing director', 'founder', 'gründer', 'vorstand', 'inhaber', 'president', 'leitung'],
-      matches: (role) => /ceo|chief executive|geschäftsführer|geschäftsführung|managing director|founder|gründer|vorstand|inhaber|president/i.test(role)
+      keywords: ['ceo', 'geschäftsführer', 'geschäftsführung', 'managing director', 'founder', 'gründer', 'vorstand', 'inhaber', 'president'],
+      matches: (role) => /\b(ceo|chief executive|geschäftsführer|geschäftsführung|managing director|founder|gründer|vorstand|inhaber|president)\b/i.test(role)
     },
     {
       keywords: ['engineering', 'cto', 'tech', 'technology', 'it', 'software', 'entwicklungsleiter'],
-      matches: (role) => /engineering|cto|technology|tech|chief technology|software/i.test(role)
+      matches: (role) => /\b(engineering|cto|technology|tech|chief technology|software)\b/i.test(role)
     },
     {
       keywords: ['marketing', 'cmo', 'marketingleiter', 'growth', 'brand'],
-      matches: (role) => /marketing|cmo|growth|brand|chief marketing/i.test(role)
+      matches: (role) => /\b(marketing|cmo|growth|brand|chief marketing)\b/i.test(role)
     },
     {
       keywords: ['people', 'hr', 'human resources', 'talent', 'operations', 'coo', 'personal'],
-      matches: (role) => /people|hr|talent|human resources|operations|coo|chief operating/i.test(role)
+      matches: (role) => /\b(people|hr|talent|human resources|operations|coo|chief operating)\b/i.test(role)
     },
     {
       keywords: ['finance', 'cfo', 'finanzen', 'kaufmännisch'],
-      matches: (role) => /finance|cfo|finanzen|chief financial/i.test(role)
+      matches: (role) => /\b(finance|cfo|finanzen|chief financial)\b/i.test(role)
     }
   ];
 
   for (const fam of families) {
-    if (fam.keywords.some(k => targetLower.includes(k))) {
+    if (fam.keywords.some(k => targetLower === k || (k.length > 3 && targetLower.includes(k)))) {
       for (const p of extractedPersons) {
         if (fam.matches(p.role)) {
           return {
@@ -614,6 +614,83 @@ export function matchPersonFromWebsite(extractedPersons, targetRoleOrName) {
             role_match: 'approximate'
           };
         }
+      }
+    }
+  }
+
+  return null;
+}
+
+export function isValidExternalRole(roleText, companyName) {
+  if (!roleText) return false;
+  const clean = roleText.trim();
+
+  // 1. Ablehnen, wenn Hashtag (#) enthalten ist
+  if (clean.includes('#')) return false;
+
+  // 2. Ablehnen, wenn URL, @-Handle oder Satzzeichen wie ! / ? enthalten sind
+  if (/@|https?:\/\/|www\.|\?|!/i.test(clean)) return false;
+
+  // 3. Ablehnen, wenn länger als 6 Wörter
+  const words = clean.split(/\s+/).filter(Boolean);
+  if (words.length > 6 || words.length === 0) return false;
+
+  // 4. Ablehnen, wenn nur aus Firmennamen oder generischen Begriffen besteht
+  const cleanComp = (companyName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const cleanRoleStr = clean.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (cleanRoleStr === cleanComp || cleanRoleStr === 'linkedin' || cleanRoleStr === 'profile' || cleanRoleStr.length < 2) return false;
+
+  // 5. Ablehnen bei Post-/Activity-Fragmenten und Directory/Club/Website-Namen
+  if (/\b(?:activity|shared|likes|post|posts|repost|reposted|comment|comments|join to view|see photos|investclub|club|directory|database|wiki|magazine|news)\b/i.test(clean)) return false;
+
+  // 6. Typische Rollen-Signalwörter prüfen
+  const hasRoleIndicator = /\b(?:ceo|cto|cfo|coo|cro|cmo|cio|head|director|lead|vp|president|manager|leiter|leiterin|vorstand|geschäftsführer|geschäftsführung|founder|gründer|partner|inhaber|executive|officer|consultant|developer|engineer|specialist|architect|analyst|associate|sales|vertrieb|marketing)\b/i.test(clean);
+  if (!hasRoleIndicator) return false;
+
+  return true;
+}
+
+export function matchRoleQuery(extractedRole, targetRoleQuery) {
+  if (!extractedRole || !targetRoleQuery) return null;
+  const roleLower = extractedRole.toLowerCase();
+  const targetLower = targetRoleQuery.toLowerCase();
+
+  // Exact or contains with word boundaries for short acronyms
+  if (targetLower.length <= 4) {
+    const rx = new RegExp(`\\b${targetLower}\\b`, 'i');
+    if (rx.test(extractedRole)) return 'exact';
+  } else if (roleLower.includes(targetLower) || targetLower.includes(roleLower)) {
+    return 'exact';
+  }
+
+  // Check role families with exact word boundary keywords
+  const families = [
+    {
+      keywords: ['sales', 'vertrieb', 'business development', 'cro', 'revenue', 'account', 'vertriebsleiter', 'head of sales', 'vp sales', 'director of sales'],
+      matches: (r) => /\b(sales|vertrieb|business development|cro|revenue|account)\b/i.test(r)
+    },
+    {
+      keywords: ['ceo', 'geschäftsführer', 'geschäftsführung', 'managing director', 'founder', 'gründer', 'vorstand', 'inhaber', 'president'],
+      matches: (r) => /\b(ceo|chief executive|geschäftsführer|geschäftsführung|managing director|founder|gründer|vorstand|inhaber|president)\b/i.test(r)
+    },
+    {
+      keywords: ['engineering', 'cto', 'tech', 'technology', 'it', 'software', 'entwicklungsleiter'],
+      matches: (r) => /\b(engineering|cto|technology|tech|chief technology|software)\b/i.test(r)
+    },
+    {
+      keywords: ['marketing', 'cmo', 'marketingleiter', 'growth', 'brand'],
+      matches: (r) => /\b(marketing|cmo|growth|brand|chief marketing)\b/i.test(r)
+    },
+    {
+      keywords: ['finance', 'cfo', 'finanzen', 'kaufmännisch'],
+      matches: (r) => /\b(finance|cfo|finanzen|chief financial)\b/i.test(r)
+    }
+  ];
+
+  for (const fam of families) {
+    if (fam.keywords.some(k => targetLower === k || (k.length > 3 && targetLower.includes(k)))) {
+      if (fam.matches(extractedRole)) {
+        return 'approximate';
       }
     }
   }
@@ -696,18 +773,50 @@ export async function findTargetPerson(companyName, domain, targetRoleOrName, ex
               // VERIFIKATION 2: Tauchen Name UND Firma im selben Treffer gemeinsam auf?
               const nameInResult = fullText.includes(candidate.toLowerCase());
               if (nameInResult) {
-                let extractedRole = targetRoleOrName || 'Geschäftsführung';
                 const parts = title.split(/\s*[-–—|]\s*/);
-                if (parts[1] && !parts[1].toLowerCase().includes('linkedin')) extractedRole = parts[1].trim();
-                
-                console.log(`[EmailCrawler] Verifizierte Person via externer Suche gefunden: ${candidate} (${extractedRole}) bei ${companyName}`);
-                return {
-                  name: candidate,
-                  role: extractedRole,
-                  source: url,
-                  person_source: 'external_search',
-                  role_match: isDirectName ? 'exact' : (extractedRole.toLowerCase().includes(targetRoleOrName.toLowerCase()) ? 'exact' : 'approximate')
-                };
+                let extractedValidRole = null;
+
+                for (let i = 1; i < parts.length; i++) {
+                  const chunk = parts[i].trim();
+                  if (chunk.toLowerCase().includes('linkedin')) continue;
+                  if (isValidExternalRole(chunk, companyName)) {
+                    extractedValidRole = chunk;
+                    break;
+                  }
+                }
+
+                if (isDirectName) {
+                  // Bei konkretem Personennamen: Treffer wird akzeptiert
+                  let finalRole = 'Entscheider / Ansprechpartner';
+                  let roleMatch = 'unverified';
+                  if (extractedValidRole) {
+                    finalRole = extractedValidRole;
+                    roleMatch = 'exact';
+                  }
+                  console.log(`[EmailCrawler] Verifizierte Person via externer Suche gefunden: ${candidate} (${finalRole}, match: ${roleMatch}) bei ${companyName}`);
+                  return {
+                    name: candidate,
+                    role: finalRole,
+                    source: url,
+                    person_source: 'external_search',
+                    role_match: roleMatch
+                  };
+                } else {
+                  // Bei Rollenanfrage: Rolle muss mit angefragter Rolle übereinstimmen
+                  if (extractedValidRole) {
+                    const matchedRoleType = matchRoleQuery(extractedValidRole, targetRoleOrName);
+                    if (matchedRoleType) {
+                      console.log(`[EmailCrawler] Verifizierte Person via externer Suche gefunden: ${candidate} (${extractedValidRole}, match: ${matchedRoleType}) bei ${companyName}`);
+                      return {
+                        name: candidate,
+                        role: extractedValidRole,
+                        source: url,
+                        person_source: 'external_search',
+                        role_match: matchedRoleType
+                      };
+                    }
+                  }
+                }
               }
             }
           }
@@ -718,13 +827,15 @@ export async function findTargetPerson(companyName, domain, targetRoleOrName, ex
             const candidate = snippetMatch[1].trim();
             if (!NON_PERSON_WORDS.has(candidate.toLowerCase()) && !candidate.toLowerCase().includes(companyClean)) {
               if (fullText.includes(candidate.toLowerCase()) && companyInResult) {
-                console.log(`[EmailCrawler] Verifizierte Person via Snippet gefunden: ${candidate} bei ${companyName}`);
+                const finalRole = targetRoleOrName || 'CEO & Founder';
+                const roleMatch = isDirectName ? 'exact' : 'approximate';
+                console.log(`[EmailCrawler] Verifizierte Person via Snippet gefunden: ${candidate} (${finalRole}) bei ${companyName}`);
                 return {
                   name: candidate,
-                  role: targetRoleOrName || 'CEO & Founder',
+                  role: finalRole,
                   source: url,
                   person_source: 'external_search',
-                  role_match: isDirectName ? 'exact' : 'approximate'
+                  role_match: roleMatch
                 };
               }
             }
@@ -863,17 +974,19 @@ export async function runEmailPatternCrawler({ companyName, domain: rawDomain, t
       pattern: patternInfo.patternLabel
     };
 
+    const unverifiedNote = person.role_match === 'unverified' ? ' (Rolle aus Suchtreffer konnte nicht sicher bestätigt werden)' : '';
+
     if (domainBlocked || isFallbackUsed) {
       if (patternInfo.isGuess) {
-        coachText = `Zieldomain **${cleanDomain}** blockiert Zugriffe (Status 429), stattdessen wurde **${fallbackSource || 'Fallback-Quelle'}** geprüft — Ergebnis daher weniger belastbar. Das angenommene Standard-Muster lautet: \`\`\`${generatedEmail}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, ungeprüfte Standard-Vermutung).`;
+        coachText = `Zieldomain **${cleanDomain}** blockiert Zugriffe (Status 429), stattdessen wurde **${fallbackSource || 'Fallback-Quelle'}** geprüft — Ergebnis daher weniger belastbar${unverifiedNote}. Das angenommene Standard-Muster lautet: \`\`\`${generatedEmail}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, ungeprüfte Standard-Vermutung).`;
       } else {
-        coachText = `Zieldomain **${cleanDomain}** blockiert Zugriffe (Status 429), stattdessen wurde **${fallbackSource || 'Fallback-Quelle'}** geprüft (Ergebnis weniger belastbar). Basierend darauf lautet das vermutete Muster: \`\`\`${generatedEmail}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, Fallback-Quelle).`;
+        coachText = `Zieldomain **${cleanDomain}** blockiert Zugriffe (Status 429), stattdessen wurde **${fallbackSource || 'Fallback-Quelle'}** geprüft (Ergebnis weniger belastbar${unverifiedNote}). Basierend darauf lautet das vermutete Muster: \`\`\`${generatedEmail}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, Fallback-Quelle).`;
       }
     } else {
       if (patternInfo.isGuess) {
-        coachText = `Basierend auf der Domain **${cleanDomain}** (gecrawlt: ${reachablePages.length} Seiten, keine Personenadressen gefunden) lautet das angenommene Standard-Muster: \`\`\`${generatedEmail}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, ungeprüfte Standard-Vermutung).`;
+        coachText = `Basierend auf der Domain **${cleanDomain}** (gecrawlt: ${reachablePages.length} Seiten, keine Personenadressen gefunden) lautet das angenommene Standard-Muster: \`\`\`${generatedEmail}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, ungeprüfte Standard-Vermutung)${unverifiedNote}.`;
       } else {
-        coachText = `Basierend auf dem E-Mail-Muster von **${cleanDomain}** (abgeleitet aus ${personal.length} gefundenen Adressen auf der Website) lautet die wahrscheinliche Adresse: \`\`\`${generatedEmail}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, ungeprüft).`;
+        coachText = `Basierend auf dem E-Mail-Muster von **${cleanDomain}** (abgeleitet aus ${personal.length} gefundenen Adressen auf der Website) lautet die wahrscheinliche Adresse: \`\`\`${generatedEmail}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, ungeprüft)${unverifiedNote}.`;
       }
     }
   } else {
