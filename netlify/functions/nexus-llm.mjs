@@ -398,7 +398,6 @@ export const handler = async (event) => {
 
 
     console.log("[NEXUS] Starting handler");
-    const { systemPrompt, userMessage, context, temperature, lang, targetLang } = JSON.parse(event.body);
 
     const languageNames = { de: 'Deutsch', en: 'Englisch', es: 'Spanisch', fr: 'FranzÃ¶sisch', it: 'Italienisch', nl: 'NiederlÃ¤ndisch' };
     
