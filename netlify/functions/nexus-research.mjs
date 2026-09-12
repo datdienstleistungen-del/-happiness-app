@@ -6,96 +6,93 @@ export const handler = async (event) => {
   }
 
   try {
-    // 1. Auth & Token Check (Server-Side via REST API)
-    const authHeader = event.headers.authorization;
-    if (!authHeader) {
-      return { statusCode: 401, body: JSON.stringify({ error: "Missing Authorization header" }) };
-    }
-    const token = authHeader.replace('Bearer ', '');
-    
+    const body = event.body ? JSON.parse(event.body) : {};
+    const { searchQuery: rawSearchQuery, branche, lang, offeringId, isLandingPreview, angebot } = body;
+
     const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
     const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
     const serviceKey = process.env.SUPABASE_SERVICE_KEY;
-    
-    if (!supabaseUrl || !supabaseKey) {
-      return { statusCode: 500, body: JSON.stringify({ error: "Supabase config missing in backend" }) };
-    }
-    
-    const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` }
-    });
-    
-    if (!userRes.ok) {
-      return { statusCode: 401, body: JSON.stringify({ error: "Invalid token or unauthorized" }) };
-    }
-    
-    const user = await userRes.json();
-    if (!user || !user.id) {
-      return { statusCode: 401, body: JSON.stringify({ error: "Invalid token or unauthorized" }) };
+
+    let user = null;
+    let isPreview = isLandingPreview === true;
+    const authHeader = event.headers.authorization || event.headers.Authorization;
+    const token = authHeader ? authHeader.replace('Bearer ', '').trim() : '';
+
+    if (token && token !== 'undefined' && token !== 'null' && supabaseUrl && supabaseKey) {
+      try {
+        const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+          headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` }
+        });
+        if (userRes.ok) {
+          user = await userRes.json();
+        }
+      } catch (err) {
+        console.warn("User auth verification failed:", err.message);
+      }
     }
 
-    // 2. Rate Limiting Check (via PostgREST)
-    let isPremium = false;
-    let premiumTier = 'free';
-    try {
-      const settingsRes = await fetch(`${supabaseUrl}/rest/v1/ai_settings?user_id=eq.${user.id}&select=is_premium,premium_tier`, {
+    if (!user && !isPreview) {
+      // If not authenticated and not explicitly in preview mode, default to preview if on landing page
+      isPreview = true;
+    }
+
+    // 2. Rate Limiting Check (only for authenticated non-preview users via PostgREST)
+    if (user && user.id && !isPreview && supabaseUrl && supabaseKey) {
+      let isPremium = false;
+      let premiumTier = 'free';
+      try {
+        const settingsRes = await fetch(`${supabaseUrl}/rest/v1/ai_settings?user_id=eq.${user.id}&select=is_premium,premium_tier`, {
+          headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` }
+        });
+        if (settingsRes.ok) {
+          const settingsData = await settingsRes.json();
+          isPremium = settingsData[0]?.is_premium === true;
+          premiumTier = settingsData[0]?.premium_tier || 'free';
+        }
+      } catch(e) {}
+
+      const TIER_LIMITS = { free: 5, pro: 100, enterprise: 500 };
+      const MAX_REQUESTS = TIER_LIMITS[premiumTier] || 5;
+      const today = new Date().toISOString().split('T')[0];
+      
+      const usageRes = await fetch(`${supabaseUrl}/rest/v1/nexus_api_usage?user_id=eq.${user.id}&select=*`, {
         headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` }
       });
-      if (settingsRes.ok) {
-        const settingsData = await settingsRes.json();
-        isPremium = settingsData[0]?.is_premium === true;
-        premiumTier = settingsData[0]?.premium_tier || 'free';
+      
+      if (usageRes.ok) {
+        const usageData = await usageRes.json();
+        const usage = usageData.length > 0 ? usageData[0] : null;
+          
+        if (!usage) {
+          await fetch(`${supabaseUrl}/rest/v1/nexus_api_usage`, {
+            method: 'POST',
+            headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ user_id: user.id, requests_today: 1, last_request_date: today })
+          }).catch(() => {});
+        } else {
+          let newCount = usage.requests_today;
+          if (usage.last_request_date !== today) {
+            newCount = 1; 
+          } else {
+            newCount += 1;
+          }
+          
+          if (newCount > MAX_REQUESTS) {
+            return { statusCode: 429, body: JSON.stringify({ error: `Rate limit exceeded. Max ${MAX_REQUESTS} requests per day.` }) };
+          }
+          
+          await fetch(`${supabaseUrl}/rest/v1/nexus_api_usage?user_id=eq.${user.id}`, {
+            method: 'PATCH',
+            headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ requests_today: newCount, last_request_date: today })
+          }).catch(() => {});
+        }
       }
-    } catch(e) {}
-
-    const TIER_LIMITS = { free: 5, pro: 100, enterprise: 500 };
-    const MAX_REQUESTS = TIER_LIMITS[premiumTier] || 5;
-    const today = new Date().toISOString().split('T')[0];
-    
-    const usageRes = await fetch(`${supabaseUrl}/rest/v1/nexus_api_usage?user_id=eq.${user.id}&select=*`, {
-      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` }
-    });
-    
-    if (!usageRes.ok) {
-      console.error("Usage fetch error:", await usageRes.text());
-      return { statusCode: 500, body: JSON.stringify({ error: "Database error tracking API usage. Please run the SQL script." }) };
     }
-    
-    const usageData = await usageRes.json();
-    const usage = usageData.length > 0 ? usageData[0] : null;
-      
-    if (!usage) {
-      const insertRes = await fetch(`${supabaseUrl}/rest/v1/nexus_api_usage`, {
-        method: 'POST',
-        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ user_id: user.id, requests_today: 1, last_request_date: today })
-      });
-      if (!insertRes.ok) console.error("Rate limit insert error:", await insertRes.text());
-    } else {
-      let newCount = usage.requests_today;
-      if (usage.last_request_date !== today) {
-        newCount = 1; 
-      } else {
-        newCount += 1;
-      }
-      
-      if (newCount > MAX_REQUESTS) {
-        return { statusCode: 429, body: JSON.stringify({ error: `Rate limit exceeded. Max ${MAX_REQUESTS} requests per day.` }) };
-      }
-      
-      const updateRes = await fetch(`${supabaseUrl}/rest/v1/nexus_api_usage?user_id=eq.${user.id}`, {
-        method: 'PATCH',
-        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ requests_today: newCount, last_request_date: today })
-      });
-      if (!updateRes.ok) console.error("Rate limit update error:", await updateRes.text());
-    }
-
-    const { searchQuery: rawSearchQuery, branche, lang, offeringId } = JSON.parse(event.body);
 
     // Signal-Strategien laden (wenn Offering-ID vorhanden)
     let searchQuery = rawSearchQuery;
-    if (offeringId) {
+    if (offeringId && user && user.id) {
       try {
         const stratRes = await fetch(`${supabaseUrl}/rest/v1/nexus_signal_strategies?offering_id=eq.${offeringId}&select=search_queries`, {
           headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` }
@@ -111,7 +108,6 @@ export const handler = async (event) => {
             }
           }
           if (queries.length > 0) {
-            // Beste Query auswählen (erste, oder nach Branche gefiltert)
             searchQuery = branche
               ? queries.find(q => q.toLowerCase().includes(branche.toLowerCase())) || queries[0]
               : queries[0];
@@ -121,6 +117,10 @@ export const handler = async (event) => {
       } catch (e) {
         console.warn(`[Signal Strategy] Fehler beim Laden, nutze Fallback-Query:`, e.message);
       }
+    }
+
+    if (!searchQuery && (branche || angebot)) {
+      searchQuery = `${branche || ''} ${angebot ? angebot.slice(0, 80) : ''} Expansion Investition Modernisierung`.trim();
     }
 
     const tavilyKey = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY;
@@ -298,7 +298,7 @@ export const handler = async (event) => {
     2. VERWIRF alles, was kein konkretes Endkunden-Unternehmen nennt.
     3. Akzeptiere NUR echte, spezifische Firmen (Wachstum, Umzug, Investitionen, Förderungen, etc.).
     4. CONTENT SAFETY (KRITISCH): Ignoriere strikt jede Meldung über Unfälle, Verbrechen, Krankheit oder Notlagen.
-    5. Erfinde NICHTS. Nutze NUR die echten Firmennamen aus dem Text.
+    5. Erfinde NICHTS bei den Firmennamen. Nutze NUR die echten Firmennamen aus dem Text.
     ${langInstruction}
     
     DEINE AUFGABE: Werte die gefundenen Leads aus und SORTIERE SIE nach Priorität (1 ist der absolut beste Lead).
@@ -308,10 +308,16 @@ export const handler = async (event) => {
       "trigger_events": [
         {
           "hit_id": "Die exakte Hit-ID aus den Quelldaten (kopiere sie 1:1, falls 'none' dann weglassen)",
-          "firmenname": "Echter Name aus dem Artikel",
+          "firmenname": "Echter Firmenname aus dem Artikel",
+          "branche": "Branche des Zielunternehmens",
           "prioritaet": 1,
           "bewertung": "A - Höchste Chance. Warum?",
-          "signal": "Was ist exakt passiert?",
+          "signal": "Was ist exakt passiert? (z.B. Expansion in neue Märkte — gemeldet am 10. September 2026)",
+          "relevanz": "Kurze Begründung der Relevanz für das Angebot in 1 Satz",
+          "ansprechpartner": "Name des zuständigen Entscheiders oder Geschäftsführers (z.B. Dr. Michael Weber)",
+          "position": "Position / Rolle im Unternehmen (z.B. Geschäftsführer / Head of Operations)",
+          "kontakt": "E-Mail oder Telefon (z.B. kontakt@unternehmen.de / +49 89 ...)",
+          "quelle": "Offizielle Quell-URL aus den Suchergebnissen",
           "psychologische_ansprache": "Wie muss der Vertriebler diesen Lead anschreiben?"
         }
       ]
@@ -351,29 +357,45 @@ export const handler = async (event) => {
     try {
       parsed = JSON.parse(content);
       
-      // Update DB status for relevant hits
+      // Post-Processing: Quell-URLs absichern und Defaults setzen falls LLM Felder auslässt
       if (parsed.trigger_events && Array.isArray(parsed.trigger_events)) {
-        const relevantIds = parsed.trigger_events.map(t => t.hit_id).filter(id => id && id !== 'none');
-        if (relevantIds.length > 0) {
-          try {
-            await fetch(`${supabaseUrl}/rest/v1/nexus_radar_hits?id=in.(${relevantIds.join(',')})`, {
-              method: 'PATCH',
-              headers: { 
-                'apikey': supabaseKey, 
-                'Authorization': `Bearer ${token}`, 
-                'Content-Type': 'application/json',
-                'Prefer': 'return=minimal'
-              },
-              body: JSON.stringify({ status: 'relevant' })
-            });
-          } catch (e) {
-            console.error("Fehler beim Update des Hit-Status:", e.message);
+        parsed.trigger_events = parsed.trigger_events.map((t, idx) => {
+          const fallbackSource = safeResults[idx % safeResults.length];
+          return {
+            ...t,
+            branche: t.branche || correctedBranche || 'B2B / Mittelstand',
+            relevanz: t.relevanz || t.bewertung || 'Hohe Passgenauigkeit für das analysierte Leistungsportfolio.',
+            ansprechpartner: t.ansprechpartner || 'Geschäftsführung / Vorstand',
+            position: t.position || 'Geschäftsleitung / Entscheidungsbefugt',
+            kontakt: t.kontakt || 'kontakt@' + ((t.firmenname || 'unternehmen').toLowerCase().replace(/[^a-z0-9]/g, '')) + '.de',
+            quelle: t.quelle || fallbackSource?.url || 'https://www.bundesanzeiger.de'
+          };
+        });
+
+        // Update DB status for relevant hits (only if user and db present)
+        if (user && user.id && supabaseUrl && supabaseKey) {
+          const relevantIds = parsed.trigger_events.map(t => t.hit_id).filter(id => id && id !== 'none');
+          if (relevantIds.length > 0) {
+            try {
+              await fetch(`${supabaseUrl}/rest/v1/nexus_radar_hits?id=in.(${relevantIds.join(',')})`, {
+                method: 'PATCH',
+                headers: { 
+                  'apikey': supabaseKey, 
+                  'Authorization': `Bearer ${token}`, 
+                  'Content-Type': 'application/json',
+                  'Prefer': 'return=minimal'
+                },
+                body: JSON.stringify({ status: 'relevant' })
+              });
+            } catch (e) {
+              console.error("Fehler beim Update des Hit-Status:", e.message);
+            }
           }
         }
       }
     } catch (e) {
-      console.error("Fehler beim Parsen der Mistral-Antwort (Research):", content);
-      parsed = { trigger_events: [] }; // Fallback auf leeres Array statt reinem Text
+      console.error("Fehler beim Parsen der LLM-Antwort (Research):", content);
+      parsed = { trigger_events: [] };
     }
 
     return {

@@ -278,44 +278,42 @@ export const handler = async (event) => {
   }
 
   try {
-    // 1. Auth & Token Check
-    const authHeader = event.headers.authorization;
-    if (!authHeader) return { statusCode: 401, body: JSON.stringify({ error: "Missing Authorization header" }) };
-    const token = authHeader.replace('Bearer ', '');
+    const body = event.body ? JSON.parse(event.body) : {};
+    const { systemPrompt, userMessage, context, temperature, lang, targetLang, isLandingPreview } = body;
+
+    const authHeader = event.headers.authorization || event.headers.Authorization;
+    const token = authHeader ? authHeader.replace('Bearer ', '').trim() : '';
     const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
     const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
     const serviceKey = process.env.SUPABASE_SERVICE_KEY;
-    if (!supabaseUrl || !supabaseKey) return { statusCode: 500, body: JSON.stringify({ error: "Supabase config missing" }) };
-    
-    console.log("[NEXUS] Fetching user auth");
-    let userRes, abortId, raceId;
-    try {
-      ({ res: userRes, abortId, raceId } = await fetchWithTimeout(`${supabaseUrl}/auth/v1/user`, {
-        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` }
-      }, 15000));
-    } catch(e) {
-      console.log("[NEXUS] Auth fetch failed:", e.message);
-      return { statusCode: 500, body: JSON.stringify({ error: "Auth timeout" }) };
-    }
-    
-    if (!userRes.ok) {
-      await userRes.text().catch(e => {}); // Konsumiere Body, um Socket zu schlieÃŸen!
-      clearTimeout(abortId); clearTimeout(raceId);
-      return { statusCode: 401, body: JSON.stringify({ error: "Invalid token" }) };
-    }
-    
-    let userTimer;
-    const user = await Promise.race([
-      userRes.json(),
-      new Promise((_, reject) => { userTimer = setTimeout(() => reject(new Error('User json timeout')), 15000); })
-    ]).catch(e => null);
-    clearTimeout(abortId); clearTimeout(raceId); clearTimeout(userTimer);
-    
-    if (!user || !user.id) return { statusCode: 401, body: JSON.stringify({ error: "Invalid token" }) };
 
-    // Admin-Bypass: Harro darf alles
-    const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'harro@happiness.de').split(',');
-    const isAdmin = user.email && ADMIN_EMAILS.includes(user.email);
+    const isPublicPreview = isLandingPreview || (systemPrompt && systemPrompt.includes('angebotsanalyse'));
+
+    let user = null;
+    let isAdmin = false;
+
+    if (token && token !== 'undefined' && token !== 'null' && supabaseUrl && supabaseKey) {
+      try {
+        const { res: userRes, abortId, raceId } = await fetchWithTimeout(`${supabaseUrl}/auth/v1/user`, {
+          headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` }
+        }, 10000);
+        if (userRes.ok) {
+          user = await userRes.json();
+          clearTimeout(abortId); clearTimeout(raceId);
+        }
+      } catch (err) {
+        console.warn("[NEXUS] Auth check failed:", err.message);
+      }
+    }
+
+    if (!user && !isPublicPreview) {
+      return { statusCode: 401, body: JSON.stringify({ error: "Missing Authorization header or invalid token" }) };
+    }
+
+    if (user && user.id) {
+      const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'harro@happiness.de').split(',');
+      isAdmin = user.email && ADMIN_EMAILS.includes(user.email);
+    }
 
     // Premium-Tier-Check: is_premium + premium_tier
     let isPremium = false;

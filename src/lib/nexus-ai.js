@@ -345,7 +345,7 @@ export async function schlageFollowUp(lead, letzteAktion) {
  * NeXus Research Pipeline (Modularer Datenbeschaffungs- & Bewertungs-Prozess)
  * Langfristig können hier neben Tavily weitere Adapter (NewsAPI, LinkedIn etc.) integriert werden.
  */
-export async function runResearchPipeline(searchQuery, branche = '', lang = 'de', offeringId = null) {
+export async function runResearchPipeline(searchQuery, branche = '', lang = 'de', offeringId = null, isLandingPreview = false, angebot = '') {
   const { data: { session } } = await supabase.auth.getSession()
   const token = session?.access_token || ''
 
@@ -353,9 +353,9 @@ export async function runResearchPipeline(searchQuery, branche = '', lang = 'de'
     method: "POST",
     headers: { 
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`
+      ...(token ? { "Authorization": `Bearer ${token}` } : {})
     },
-    body: JSON.stringify({ searchQuery, branche, lang, offeringId })
+    body: JSON.stringify({ searchQuery, branche, lang, offeringId, isLandingPreview, angebot })
   });
 
   if (!res.ok) {
