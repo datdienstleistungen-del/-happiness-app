@@ -6,9 +6,9 @@
  * 2. Seiten-Crawl mit Cheerio (/impressum, /kontakt, /team, /about, /leadership, etc.)
  * 3. E-Mail-Extraktion (Regex + mailto:)
  * 4. Muster-Ableitung (vorname.nachname, v.nachname, vornamenachname, etc.)
- * 5. Namens-Findung für Zielperson (LinkedIn-Snippets via Tavily)
+ * 5. Namens-Findung für Zielperson (mit strikter Domain/Firmen-Verifikation & person: null bei Default)
  * 6. E-Mail-Zusammensetzung & Konfidenz-Berechnung
- * 7. Coach-Antwort-Formatierung
+ * 7. Coach-Antwort-Formatierung (inkl. person: null Fall)
  */
 
 import * as cheerio from 'cheerio';
@@ -38,7 +38,7 @@ const NON_PERSON_WORDS = new Set([
   'in the', 'as the', 'for the', 'at the', 'bei der', 'seit dem', 'von der', 
   'aus der', 'mit der', 'the ceo', 'der ceo', 'die firma', 'das unternehmen',
   'magazine global', 'silicon valley', 'press release', 'news portal', 'career page',
-  'the founder', 'the co', 'executive director', 'board member'
+  'the founder', 'the co', 'executive director', 'board member', 'people also', 'view profile'
 ]);
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
@@ -145,12 +145,7 @@ export async function crawlDomainPages(domain) {
     '/contact',
     '/team',
     '/about',
-    '/about-us',
-    '/ueber-uns',
-    '/leadership',
-    '/management',
-    '/presse',
-    '/press'
+    '/about-us'
   ];
 
   // Maximal 8 Unterseiten
@@ -349,14 +344,16 @@ export function deriveEmailPattern(personalEmails, genericEmails, domain) {
 }
 
 /**
- * 5. Namens- & Rollen-Findung für die Zielperson
+ * 5. Namens- & Rollen-Findung mit strikter Domain-/Firmen-Verifikation & person: null bei Default
  */
 export async function findTargetPerson(companyName, domain, targetRoleOrName) {
-  const tavilyKey = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY;
-  const roleQuery = targetRoleOrName || 'CEO OR Geschäftsführer OR Head of Sales OR Founder';
+  // Wenn keine Rolle oder kein Name explizit vorgegeben wurde (Fall "Default" / falsy / "Entscheider")
+  if (!targetRoleOrName || targetRoleOrName === 'Default' || targetRoleOrName === 'Entscheider' || targetRoleOrName === 'Default Role') {
+    return null;
+  }
 
-  // Ist targetRoleOrName bereits ein konkreter Vor- und Nachname? (z.B. "Jack Hidary", "Hanno Renner")
-  if (targetRoleOrName && targetRoleOrName.trim().split(/\s+/).length >= 2 && !/(head|ceo|director|manager|leiter|vorstand|sales|vp|marketing|founder|gründer)/i.test(targetRoleOrName)) {
+  // 1. Ist targetRoleOrName bereits ein konkreter Vor- und Nachname? (z.B. "Bastian Nominacher", "Hanno Renner")
+  if (targetRoleOrName.trim().split(/\s+/).length >= 2 && !/(head|ceo|director|manager|leiter|vorstand|sales|vp|marketing|founder|gründer)/i.test(targetRoleOrName)) {
     return {
       name: targetRoleOrName.trim(),
       role: 'Entscheider / Ansprechpartner',
@@ -364,13 +361,12 @@ export async function findTargetPerson(companyName, domain, targetRoleOrName) {
     };
   }
 
+  const tavilyKey = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY;
   if (!tavilyKey) {
-    return {
-      name: 'Jack Hidary',
-      role: targetRoleOrName || 'Geschäftsführung',
-      source: 'fallback'
-    };
+    return null;
   }
+
+  const roleQuery = targetRoleOrName;
 
   try {
     const res = await fetchWithTimeout('https://api.tavily.com/search', {
@@ -387,41 +383,55 @@ export async function findTargetPerson(companyName, domain, targetRoleOrName) {
     if (res.ok) {
       const data = await res.json();
       if (data.results && data.results.length > 0) {
+        const companyClean = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const domainClean = domain.toLowerCase().split('.')[0].replace(/[^a-z0-9]/g, '');
+
         for (const r of data.results) {
           const title = (r.title || '').trim();
-          const snippet = r.content || '';
+          const snippet = (r.content || '');
           const url = r.url || '';
+          const fullText = (title + ' ' + snippet + ' ' + url).toLowerCase();
 
-          // 1. Titel-Segmentierung: Erster Block vor Bindestrich/Pipe/Em-Dash
+          // VERIFIKATION 1: Ist die Firma oder Domain im Treffer vorhanden?
+          const companyInResult = fullText.includes(companyClean) || fullText.includes(domainClean);
+          if (!companyInResult) continue;
+
+          // Extraktion Versuch A: Titel Segment vor Bindestrich (z.B. "Jack Hidary | Leadership - SandboxAQ")
           const firstChunk = title.split(/\s*[-–—|]\s*/)[0].trim();
           const words = firstChunk.split(/\s+/);
           if (words.length >= 2 && words.length <= 3 && words.every(w => /^[A-ZÄÖÜ][a-zäöüß]+$/.test(w))) {
             const candidate = words.join(' ');
-            if (!NON_PERSON_WORDS.has(candidate.toLowerCase()) && !candidate.toLowerCase().includes(companyName.toLowerCase())) {
-              let extractedRole = targetRoleOrName || 'Geschäftsführung';
-              const parts = title.split(/\s*[-–—|]\s*/);
-              if (parts[1] && !parts[1].toLowerCase().includes('linkedin')) extractedRole = parts[1].trim();
-              
-              console.log(`[EmailCrawler] Person via Title Segment gefunden: ${candidate} (${extractedRole})`);
-              return {
-                name: candidate,
-                role: extractedRole,
-                source: url
-              };
+            if (!NON_PERSON_WORDS.has(candidate.toLowerCase()) && !candidate.toLowerCase().includes(companyClean)) {
+              // VERIFIKATION 2: Tauchen Name UND Firma im selben Treffer gemeinsam auf?
+              const nameInResult = fullText.includes(candidate.toLowerCase());
+              if (nameInResult) {
+                let extractedRole = targetRoleOrName || 'Geschäftsführung';
+                const parts = title.split(/\s*[-–—|]\s*/);
+                if (parts[1] && !parts[1].toLowerCase().includes('linkedin')) extractedRole = parts[1].trim();
+                
+                console.log(`[EmailCrawler] Verifizierte Person gefunden: ${candidate} (${extractedRole}) bei ${companyName}`);
+                return {
+                  name: candidate,
+                  role: extractedRole,
+                  source: url
+                };
+              }
             }
           }
 
-          // 2. Snippet Namensprüfung: "Jack Hidary is the founder and CEO of SandboxAQ..."
+          // Extraktion Versuch B: Snippet Regex ("X is the founder and CEO of Y...")
           const snippetMatch = snippet.match(/([A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+))\s+(?:is the founder|is founder|is the ceo|is ceo|ist der geschäftsführer|ist gründer|ist ceo|fungiert als)/i);
           if (snippetMatch && snippetMatch[1]) {
             const candidate = snippetMatch[1].trim();
-            if (!NON_PERSON_WORDS.has(candidate.toLowerCase()) && !candidate.toLowerCase().includes(companyName.toLowerCase())) {
-              console.log(`[EmailCrawler] Person via Snippet gefunden: ${candidate}`);
-              return {
-                name: candidate,
-                role: targetRoleOrName || 'CEO & Founder',
-                source: url
-              };
+            if (!NON_PERSON_WORDS.has(candidate.toLowerCase()) && !candidate.toLowerCase().includes(companyClean)) {
+              if (fullText.includes(candidate.toLowerCase()) && companyInResult) {
+                console.log(`[EmailCrawler] Verifizierte Person via Snippet gefunden: ${candidate} bei ${companyName}`);
+                return {
+                  name: candidate,
+                  role: targetRoleOrName || 'CEO & Founder',
+                  source: url
+                };
+              }
             }
           }
         }
@@ -431,12 +441,7 @@ export async function findTargetPerson(companyName, domain, targetRoleOrName) {
     console.warn('[EmailCrawler] Personensuche fehlgeschlagen:', err.message);
   }
 
-  // Standard Fallback wenn nichts gefunden
-  return {
-    name: 'Jack Hidary',
-    role: targetRoleOrName || 'CEO & Founder',
-    source: 'inferred'
-  };
+  return null;
 }
 
 /**
@@ -528,32 +533,42 @@ export async function runEmailPatternCrawler({ companyName, domain: rawDomain, t
   // 4. Muster-Ableitung
   const patternInfo = deriveEmailPattern(personal, generic, cleanDomain);
 
-  // 5. Namens-Findung
-  const person = await findTargetPerson(companyName || cleanDomain.split('.')[0], cleanDomain, targetRoleOrName);
+  // 5. Namens-Findung mit Verifikation
+  const personInfo = await findTargetPerson(companyName || cleanDomain.split('.')[0], cleanDomain, targetRoleOrName);
 
-  // 6. E-Mail generieren
-  const generatedEmail = constructEmail(person.name, patternInfo.patternType, cleanDomain);
-
-  // 7. Coach-Antworttext generieren
+  let person = null;
   let coachText = '';
-  if (patternInfo.isGuess) {
-    coachText = `Basierend auf der Domain **${cleanDomain}** (gecrawlt: ${reachablePages.length} Seiten, keine Personenadressen gefunden) lautet das angenommene Standard-Muster: \`\`\`${generatedEmail}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, ungeprüfte Standard-Vermutung).`;
+
+  if (personInfo && personInfo.name) {
+    const generatedEmail = constructEmail(personInfo.name, patternInfo.patternType, cleanDomain);
+    person = {
+      name: personInfo.name,
+      role: personInfo.role,
+      email: generatedEmail,
+      email_confidence: patternInfo.confidence,
+      email_source: personInfo.source,
+      pattern: patternInfo.patternLabel
+    };
+
+    if (patternInfo.isGuess) {
+      coachText = `Basierend auf der Domain **${cleanDomain}** (gecrawlt: ${reachablePages.length} Seiten, keine Personenadressen gefunden) lautet das angenommene Standard-Muster: \`\`\`${generatedEmail}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, ungeprüfte Standard-Vermutung).`;
+    } else {
+      coachText = `Basierend auf dem E-Mail-Muster von **${cleanDomain}** (abgeleitet aus ${personal.length} gefundenen Adressen auf der Website) lautet die wahrscheinliche Adresse: \`\`\`${generatedEmail}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, ungeprüft).`;
+    }
   } else {
-    coachText = `Basierend auf dem E-Mail-Muster von **${cleanDomain}** (abgeleitet aus ${personal.length} gefundenen Adressen auf der Website) lautet die wahrscheinliche Adresse: \`\`\`${generatedEmail}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, ungeprüft).`;
+    // Wenn KEINE konkrete Zielperson ermittelbar war (person: null)
+    person = null;
+    const reasonText = patternInfo.isGuess 
+      ? 'ungeprüfte Standard-Vermutung'
+      : `abgeleitet aus ${personal.length} echten Mitarbeiter-Adressen auf ${cleanDomain}`;
+    coachText = `Kein konkreter Ansprechpartner ermittelbar. Das E-Mail-Muster von **${cleanDomain}** lautet aber: \`\`\`${patternInfo.patternLabel}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, ${reasonText}).`;
   }
 
   return {
     success: true,
     company: companyName || cleanDomain,
     domain: cleanDomain,
-    person: {
-      name: person.name,
-      role: person.role,
-      email: generatedEmail,
-      email_confidence: patternInfo.confidence,
-      email_source: patternInfo.source,
-      pattern: patternInfo.patternLabel
-    },
+    person,
     crawledPages: reachablePages.map(p => p.url),
     foundEmails: {
       personal,
