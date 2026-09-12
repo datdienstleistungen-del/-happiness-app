@@ -1324,6 +1324,10 @@ Nur relevante Kandidaten (Score > 40).`;
         if ((context.primaryRoleTitles || []).some(t => roleLower.includes(t.toLowerCase()))) score += 30;
         // Boost for matching secondary roles
         if ((context.secondaryRoleTitles || []).some(t => roleLower.includes(t.toLowerCase()))) score += 15;
+        // Penalty for non-matching roles (neither primary nor secondary)
+        const matchesPrimary = (context.primaryRoleTitles || []).some(t => roleLower.includes(t.toLowerCase()));
+        const matchesSecondary = (context.secondaryRoleTitles || []).some(t => roleLower.includes(t.toLowerCase()));
+        if (!matchesPrimary && !matchesSecondary) score -= 25;
         // Boost for matching department
         if ((context.primaryRoleTitles || []).some(t => deptLower.includes(t.toLowerCase().split(' ')[0]))) score += 10;
         // Penalty for excluded roles
@@ -1698,6 +1702,10 @@ export const handler = async (event) => {
           if (primaryRoleTitles.some(t => roleLower.includes(t.toLowerCase()))) score += 30;
           // Boost for matching secondary roles
           if (secondaryRoleTitles.some(t => roleLower.includes(t.toLowerCase()))) score += 15;
+          // Penalty for non-matching roles (neither primary nor secondary)
+          const matchesPrimary = primaryRoleTitles.some(t => roleLower.includes(t.toLowerCase()));
+          const matchesSecondary = secondaryRoleTitles.some(t => roleLower.includes(t.toLowerCase()));
+          if (!matchesPrimary && !matchesSecondary) score -= 25;
           // Penalty for excluded roles
           if (excludedRoles.some(t => roleLower.includes(t.toLowerCase()))) score -= 40;
           // Boost for company validated
@@ -1716,6 +1724,57 @@ export const handler = async (event) => {
       if (excludedRoles.some(t => roleLower.includes(t.toLowerCase()))) return false;
       return true;
     });
+    
+    // Quality gate: best candidate MUST match target role (primary or secondary)
+    // Uses function-keyword matching, not just substring matching
+    if (validCandidates.length > 0) {
+      const GENERIC_ROLE_WORDS = new Set([
+        'manager', 'director', 'head', 'vp', 'chief', 'officer', 'president',
+        'leiter', 'chef', 'direktor', 'vorstand', 'geschäftsführer', 'gründer',
+        'partner', 'associate', 'assistant', 'specialist', 'coordinator',
+        'representative', 'executive', 'administrator', 'advisor', 'consultant',
+        'analyst', 'engineer', 'developer', 'architect', 'designer'
+      ]);
+      
+      function getFunctionWords(roleOrTitle) {
+        return (roleOrTitle || '').toLowerCase()
+          .split(/[\s\/,]+/)
+          .filter(w => w.length >= 3 && !GENERIC_ROLE_WORDS.has(w));
+      }
+      
+      const primaryFunctionWords = new Set(primaryRoleTitles.flatMap(getFunctionWords));
+      const secondaryFunctionWords = new Set(secondaryRoleTitles.flatMap(getFunctionWords));
+      
+      const bestRole = validCandidates[0].role || '';
+      const bestWords = new Set(bestRole.toLowerCase().split(/[\s\/,]+/));
+      const bestMatchesPrimary = [...primaryFunctionWords].some(w => bestWords.has(w));
+      const bestMatchesSecondary = [...secondaryFunctionWords].some(w => bestWords.has(w));
+      
+      if (!bestMatchesPrimary && !bestMatchesSecondary) {
+        console.log(`[ContactIntel] Quality gate: best candidate role "${bestRole}" does NOT match target "${targetRole}" — rejecting`);
+        return {
+          statusCode: 200,
+          body: JSON.stringify({
+            status: 'NO_MATCHING_PERSON_FOUND',
+            targetRole,
+            primaryRoleTitles,
+            secondaryRoleTitles,
+            excludedRoles,
+            roleReason,
+            roleConfidence,
+            pagesCrawled,
+            crawlMethod,
+            debug: {
+              searchedRoles: allSearchRoles,
+              pagesInvestigated: pagesCrawled.length,
+              candidatesFound: candidates.length,
+              candidatesAfterRanking: validCandidates.length,
+              reason: `Bester Kandidat "${validCandidates[0].name}" (Rolle: "${bestRole}") passt nicht zur Zielrolle "${targetRole}"`
+            }
+          })
+        };
+      }
+    }
     
     if (validCandidates.length === 0) {
       console.log('[ContactIntel] No candidates survived ranking filter');
