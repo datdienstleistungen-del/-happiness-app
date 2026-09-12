@@ -242,24 +242,6 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
                 </button>
               ))}
             </div>
-
-            <div className="nexus-coach-input-area" style={{ marginTop: '32px' }}>
-              <form onSubmit={handleSend} className="nexus-coach-form">
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={activeQuickAction ? SALES_QUICK_ACTIONS.find(a => a.id === activeQuickAction)?.placeholder : 'Füge hier deine Firmen-Analysen, Recherchen oder Fragen ein... (Shift+Enter für neue Zeile)'}
-                  disabled={loading}
-                  autoFocus
-                  rows={4}
-                  style={{ resize: 'vertical', minHeight: '80px', width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-light)', background: 'var(--bg-card)', color: 'var(--text-primary)', fontSize: '0.95rem' }}
-                />
-                <button type="submit" disabled={loading || !message.trim()} style={{ alignSelf: 'flex-end', marginBottom: '4px' }}>
-                  <ArrowRight size={20} />
-                </button>
-              </form>
-            </div>
           </div>
         ) : (
           <div className="nexus-coach-messages">

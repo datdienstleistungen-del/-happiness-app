@@ -1,7 +1,8 @@
 .angebotsanalyse-page {
-  max-width: 800px;
+  max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 24px 32px;
 }
 
 .angebotsanalyse-header {
