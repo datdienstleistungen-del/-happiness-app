@@ -266,11 +266,11 @@ export default function NexusLandingPage() {
           <div className="nexus-lp-trust-strip">
             <div className="nexus-lp-trust-item">
               <ShieldCheck size={16} className="text-[#18AB61]" />
-              <span>100% DSGVO-konform (Art. 6 Abs. 1 lit. f)</span>
+              <span>DSGVO-konforme Datenrecherche (Art. 6 Abs. 1 lit. f)</span>
             </div>
             <div className="nexus-lp-trust-item">
               <FileCheck size={16} className="text-[#18AB61]" />
-              <span>Echte Primärquellen-Verifikation</span>
+              <span>Transparente Primärquellen-Verifikation</span>
             </div>
             <div className="nexus-lp-trust-item">
               <Check size={16} className="text-[#18AB61]" />
@@ -301,16 +301,16 @@ export default function NexusLandingPage() {
             <div className="nexus-lp-pillar-icon">
               <Shield size={24} />
             </div>
-            <h3>2. Entscheider-Audit (0% Halluzination)</h3>
-            <p>Keine E-Mail-Heuristiken ins Blaue. NeXus prüft die offizielle Website, das Impressum und Pressemitteilungen auf echte, verifizierte Ansprechpartner.</p>
+            <h3>2. Entscheider-Audit (Quellen-Verifikation)</h3>
+            <p>Kein blindes E-Mail-Raten. NeXus gleicht Daten mit offiziellen Unternehmens-Websites, Impressen und Bekanntmachungen ab und belegt Fundstellen transparent.</p>
           </div>
 
           <div className="nexus-lp-pillar-card">
             <div className="nexus-lp-pillar-icon">
               <Zap size={24} />
             </div>
-            <h3>3. Psychologische Message Engine</h3>
-            <p>Unsere KI formuliert einen persönlichen Aufhänger, der exakt auf das erkannte Trigger-Ereignis Bezug nimmt. Höhere Relevanz, spürbar mehr Termine.</p>
+            <h3>3. Kontextbezogene Ansprache</h3>
+            <p>Generiert relevante Aufhänger bezogen auf reale Trigger-Events für den professionellen B2B-Outreach (z. B. via LinkedIn & Direktansprache).</p>
           </div>
         </div>
       </section>
@@ -342,8 +342,8 @@ export default function NexusLandingPage() {
           <div className="nexus-lp-step-item">
             <div className="nexus-lp-step-num">03</div>
             <div className="nexus-lp-step-content">
-              <h4>1-Click Outreach versenden</h4>
-              <p>Übernehmen Sie den fertig generierten, signalbezogenen Pitch für LinkedIn Direct Message oder E-Mail und vereinbaren Sie den qualifizierten Termin.</p>
+              <h4>1-Click Outreach vorbereiten</h4>
+              <p>Übernehmen Sie den fertig generierten, signalbezogenen Pitch für Ihren B2B-Outreach (z. B. LinkedIn-Nachricht oder Telefonat) und vereinbaren Sie den qualifizierten Termin.</p>
             </div>
           </div>
         </div>
@@ -352,31 +352,31 @@ export default function NexusLandingPage() {
       {/* Compliance & DSGVO Section */}
       <section id="compliance" className="nexus-lp-compliance-section">
         <div className="nexus-lp-section-header">
-          <span className="nexus-lp-section-tag">Rechtssicherheit // Made in Germany</span>
-          <h2 className="nexus-lp-section-title">100% DSGVO-konform für den B2B-Vertrieb</h2>
+          <span className="nexus-lp-section-tag">Rechtssicherheit // B2B-Standards</span>
+          <h2 className="nexus-lp-section-title">DSGVO-konforme B2B-Recherche & Datensicherheit</h2>
         </div>
 
         <div className="nexus-lp-compliance-grid">
           <div className="nexus-lp-comp-card">
             <h4>Art. 6 Abs. 1 lit. f DSGVO</h4>
-            <p>Vollständig rechtskonforme Verarbeitung geschäftlicher Kontaktdaten im Rahmen des berechtigten Interesses im B2B-Direktvertrieb.</p>
+            <p>Rechtskonforme Recherche öffentlich zugänglicher Unternehmens- und Kontaktdaten im Rahmen des berechtigten Interesses im B2B-Umfeld.</p>
           </div>
 
           <div className="nexus-lp-comp-card">
-            <h4>Server in Frankfurt / EU</h4>
-            <p>Ausschließlich europäische ISO-27001-zertifizierte Rechenzentren mit strengster Datenhoheit.</p>
+            <h4>EU-Hosting & Verschlüsselung</h4>
+            <p>Hosting und Datenhaltung in europäischen Rechenzentren (ISO 27001) mit moderner TLS-Ende-zu-Ende-Verschlüsselung.</p>
           </div>
 
           <div className="nexus-lp-comp-card">
             <h4>Transparenter Quellennachweis</h4>
-            <p>Jeder gefundene Kontaktpunkt ist mit dem offiziellen Primärquellen-Link (z. B. Impressum) lückenlos belegt.</p>
+            <p>Jeder gefundene Kontaktpunkt ist mit dem offiziellen Quelllink belegt.</p>
           </div>
         </div>
       </section>
 
       {/* Bottom Closing CTA */}
       <footer className="nexus-lp-footer">
-        <h2>Bereit, Ihren B2B-Vertrieb auf Autopilot zu setzen?</h2>
+        <h2>Bereit, qualifizierte B2B-Kaufbereitschaft gezielt zu identifizieren?</h2>
         <p>Testen Sie NeXus jetzt mit Ihrem eigenen Angebot.</p>
         <button className="nexus-lp-submit-btn" onClick={scrollToTest}>
           <span>Jetzt kostenlose Analyse starten</span>
