@@ -162,22 +162,30 @@ export async function crawlDomainPages(domain) {
 
   for (const path of targets) {
     const url = `https://${cleanDomain}${path}`;
+    const t0 = Date.now();
     try {
       const res = await fetchWithTimeout(url, {
         method: 'GET',
         headers: BROWSER_HEADERS
       }, 5000);
 
+      const elapsed = Date.now() - t0;
+
       if (res.ok) {
         const html = await res.text();
         crawledPages.push({ url, path: path || '/', status: res.status });
 
         const $ = cheerio.load(html);
+        const pageEmails = [];
 
         // 1. Text durchsuchen
         const bodyText = $('body').text() || '';
         const textMatches = bodyText.match(EMAIL_REGEX) || [];
-        textMatches.forEach(em => rawEmails.add(em.toLowerCase().trim()));
+        textMatches.forEach(em => {
+          const cleanEm = em.toLowerCase().trim();
+          rawEmails.add(cleanEm);
+          pageEmails.push(cleanEm);
+        });
 
         // 2. Mailto-Links durchsuchen
         $('a[href^="mailto:"]').each((_, el) => {
@@ -185,13 +193,19 @@ export async function crawlDomainPages(domain) {
           const mailtoMatch = href.replace(/^mailto:/i, '').split('?')[0].trim().toLowerCase();
           if (mailtoMatch && EMAIL_REGEX.test(mailtoMatch)) {
             rawEmails.add(mailtoMatch);
+            pageEmails.push(mailtoMatch);
           }
         });
+
+        console.log(`[EmailCrawler] HTTP GET ${url} -> Status: ${res.status} (${elapsed}ms, ${pageEmails.length} Emails extrahiert)`);
       } else {
         crawledPages.push({ url, path: path || '/', status: res.status });
+        console.log(`[EmailCrawler] HTTP GET ${url} -> Status: ${res.status} (${elapsed}ms)`);
       }
     } catch (e) {
+      const elapsed = Date.now() - t0;
       crawledPages.push({ url, path: path || '/', status: 0, error: e.message });
+      console.log(`[EmailCrawler] HTTP GET ${url} -> FAILED: ${e.message} (${elapsed}ms)`);
     }
   }
 
