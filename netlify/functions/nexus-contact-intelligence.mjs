@@ -538,59 +538,80 @@ async function fetchPageText(url, maxChars = 3000) {
 // PHASE 2: ROLE INFERENCE
 // ============================================================================
 
-async function inferTargetRole(context) {
+async function inferTargetContactRole(context) {
   const { offering, company, opportunity, trigger, research } = context;
   
   const companySize = company?.size || company?.employees || 'Unbekannt';
+  const sizeNum = parseInt(String(companySize).replace(/[^0-9]/g, ''), 10) || 0;
   const triggerContent = trigger?.content || trigger?.description || 'Kein Trigger';
   const offeringDesc = offering?.offering_name || offering?.description || 'Unbekannt';
   const positioning = offering?.positioning || '';
   const targetAudience = offering?.target_audience || '';
+  const researchSummary = research?.summary || 'Kein Research vorhanden';
   
   const prompt = `Du bist ein B2B-Vertriebsexperte. Bestimme die KONKRETE Zielrolle für den richtigen Ansprechpartner.
 
-WICHTIGSTE REGEL:
-Antworte auf die Frage: "Welche FUNKTION in diesem Unternehmen ist aufgrund dieses konkreten Geschäftsanlasses wahrscheinlich für dieses Angebot ZUSTÄNDIG?"
+=== KERNFRAGE ===
+"Welche FUNKTION in diesem Unternehmen ist aufgrund dieses konkreten Geschäftsanlasses wahrscheinlich für dieses Angebot ZUSTÄNDIG?"
 
 NICHT: "Wer ist die wichtigste Person der Firma?"
+NICHT: "Wer ist der Geschäftsführer?"
 
-KONTEXT:
-- Angebot: ${offeringDesc}
-- Positionierung: ${positioning}
-- Zielgruppe: ${targetAudience}
-- Firma: ${company?.name || 'Unbekannt'}
-- Branche: ${company?.industry || 'Unbekannt'}
-- Unternehmensgröße: ${companySize} Mitarbeiter
-- Trigger / Anlass: ${triggerContent}
-- Research: ${research?.summary || 'Kein Research'}
+=== KONTEXT ===
+Angebot: ${offeringDesc}
+Positionierung: ${positioning}
+Zielgruppe des Angebots: ${targetAudience}
+Firma: ${company?.name || 'Unbekannt'}
+Branche: ${company?.industry || 'Unbekannt'}
+Unternehmensgröße: ${companySize} Mitarbeiter (geschätzt: ${sizeNum > 0 ? sizeNum : 'unbekannt'})
+Trigger / Anlass: ${triggerContent}
+Research: ${researchSummary}
 
-REGELN:
-1. Die Zielrolle muss aus dem KONKRETEN Geschäftsanlass abgeleitet werden.
-2. KEIN statisches Mapping (SaaS→CEO, Industrie→Facility Manager etc.)
-3. Bei kleinen Unternehmen (<30 MA): Geschäftsführer/Founder kann relevant sein, wenn er wahrscheinlich selbst für das Thema zuständig ist.
-4. Bei großen Unternehmen (>100 MA): Spezialisierte Rolle BEVORZUGEN.
-5. Der Trigger bestimmt die Rolle, nicht die Branche.
-6. Die Rolle MUSS so spezifisch sein, dass man gezielt danach suchen kann.
-7. CEO/Founder ist NUR dann primär, wenn aus Company Size + Opportunity hervorgeht, dass er direkt zuständig ist.
-8. Es darf KEIN statisches Mapping geben.
+=== STRIKTE REGELN ===
 
-BEISPIELE für richtige Antwortmuster:
+REGEL 1 — ABGELEITET AUS GESCHÄFTSANLASS:
+Die Zielrolle MUSS aus Offering + Trigger + Company Size abgeleitet werden.
+KEIN statisches Mapping wie SaaS→CEO, Industrie→Facility Manager, Marketing→CMO.
+
+REGEL 2 — COMPANY SIZE ENTSCHEIDEND:
+- Kleine Unternehmen (< 30 MA): Geschäftsführer/Founder KANN primär sein, wenn er wahrscheinlich direkt für das Thema zuständig ist (z.B. GF verkauft selbst bei 12 MA).
+- Mittlere Unternehmen (30-200 MA): Meist spezialisierte Rolle (Head of Sales, Head of HR etc.)
+- Große Unternehmen (> 200 MA): IMMER spezialisierte Rolle. CEO ist NICHT primär.
+
+REGEL 3 — TRIGGER BESTIMMT ROLLE:
 - "Unternehmen baut Vertriebsteam" → Head of Sales, Sales Director, VP Sales
-- "Unternehmen sucht HR-Manager" → Head of HR, HR Director, Talent Acquisition
-- "Kleines Startup (12 MA) braucht Vertrieb" → Geschäftsführer, Founder (weil direkt zuständig)
+- "Unternehmen sucht HR-Kräfte" → Head of HR, HR Director, Talent Acquisition
 - "Unternehmen baut neue Halle" → Head of Procurement, Project Manager, Plant Manager
 - "Unternehmen braucht Marketing" → Head of Marketing, CMO, Marketing Director
+- "Kleines Startup (12 MA) braucht Vertrieb" → Geschäftsführer, Founder (direkt zuständig)
 
-Gib ein JSON zurück:
+REGEL 4 — CEO/FOUNDER:
+CEO/Founder ist NUR dann primäre Zielrolle wenn:
+- Company Size < 30 MA UND
+- Der GF nachweislich selbst für die Funktion verantwortlich ist (z.B. GF führt Vertrieb bei 12 MA)
+Sonst: CEO in excluded_as_primary.
+
+REGEL 5 — SPEZIFISCH:
+Die Rolle MUSS so spezifisch sein, dass man gezielt danach suchen kann.
+"Management" ist zu vage. "Head of Sales" ist gut.
+
+REGEL 6 — MEHRERE TITEL:
+Liste 6-10 konkrete Titel der Zielrolle auf, sortiert nach Wahrscheinlichkeit.
+Berücksichtige internationale Titel (DE + EN).
+
+=== ERWARTETES JSON ===
 {
-  "primary_function": "Übergeordnete Funktion (z.B. Sales, HR, Procurement, Marketing)",
-  "primary_role_titles": ["Konkrete Titel der Zielrolle (6-10 Stück, rangsorted nach Wahrscheinlichkeit)"],
-  "secondary_functions": ["Nebenbezogene Funktionen falls relevant"],
-  "secondary_role_titles": ["Titel der Nebenrollen (4-6 Stück)"],
-  "reason": "Begründung warum genau diese Funktion zum Geschäftsanlass passt (2-3 Sätze)",
-  "excluded_as_primary": ["Rollen die NICHT primär relevant sind (z.B. CEO bei großem Unternehmen mit spezialierter Sales-Funktion)"],
+  "primary_function": "Sales / HR / Procurement / Marketing / etc.",
+  "primary_role_titles": ["Head of Sales", "Sales Director", "VP Sales", "Vertriebsleiter", "Director Sales", "Head of Revenue", "Sales Manager", "Leiter Vertrieb"],
+  "secondary_functions": ["HR", "Recruiting"],
+  "secondary_role_titles": ["Head of HR", "HR Director", "Talent Acquisition", "Recruiting Manager"],
+  "reason": "2-3 Sätze warum genau diese Funktion zum Geschäftsanlass passt",
+  "excluded_as_primary": ["CEO", "CFO", "CTO", "Geschäftsführer"],
   "confidence": 85
-}`;
+}
+
+WICHTIG: Die excluded_as_primary Liste MUSS Rollen enthalten, die für diesen konkreten Geschäftsanlass NICHT primär relevant sind.
+Bei großem Unternehmen (>100 MA) mit spezialisierter Sales/HR-Funktion: CEO MUSS in excluded_as_primary stehen.`;
 
   return await callLLM(prompt, 0.3);
 }
@@ -1413,18 +1434,19 @@ export const handler = async (event) => {
       };
     }
     
-    // Phase 2: Target Contact Role Inference (LLM)
-    console.log('[ContactIntel] Phase 2: Target Contact Role Inference');
+    // Phase 1: Target Contact Role Inference (LLM)
+    console.log('[ContactIntel] Phase 1: Target Contact Role Inference');
     let targetRoleInference;
     try {
-      targetRoleInference = await inferTargetRole({ offering, company, opportunity, trigger, research });
+      targetRoleInference = await inferTargetContactRole({ offering, company, opportunity, trigger, research });
     } catch (e) {
-      console.error('[ContactIntel] Role inference LLM failed, falling back to heuristic:', e.message);
+      console.error('[ContactIntel] Role inference LLM failed:', e.message);
       targetRoleInference = null;
     }
     
-    // Extract role titles from LLM result or fallback to heuristic
-    let targetRole = 'Geschäftsführer';
+    // Extract role titles from LLM result
+    // Smart fallback based on company size (NOT hardcoded Geschäftsführer)
+    let targetRole = '';
     let primaryRoleTitles = [];
     let secondaryRoleTitles = [];
     let excludedRoles = [];
@@ -1432,7 +1454,7 @@ export const handler = async (event) => {
     let roleConfidence = 50;
     
     if (targetRoleInference && !targetRoleInference.raw) {
-      targetRole = targetRoleInference.primary_role_titles?.[0] || 'Geschäftsführer';
+      targetRole = targetRoleInference.primary_role_titles?.[0] || '';
       primaryRoleTitles = targetRoleInference.primary_role_titles || [];
       secondaryRoleTitles = targetRoleInference.secondary_role_titles || [];
       excludedRoles = targetRoleInference.excluded_as_primary || [];
@@ -1444,26 +1466,56 @@ export const handler = async (event) => {
       console.log(`[ContactIntel] Excluded: ${excludedRoles.join(', ')}`);
       console.log(`[ContactIntel] Reason: ${roleReason}`);
     } else {
-      // Fallback heuristic
+      // Size-based fallback: NEVER default to Geschäftsführer for large companies
+      const sizeNum = parseInt(String(company?.size || company?.employees || '0').replace(/[^0-9]/g, ''), 10) || 0;
       const targetAudience = (offering?.target_audience || '').toLowerCase();
-      if (targetAudience.includes('einkauf') || targetAudience.includes('procurement')) {
+      const triggerContent = (trigger?.content || trigger?.description || '').toLowerCase();
+      
+      // Try to infer from trigger + target_audience keywords
+      const combinedContext = `${targetAudience} ${triggerContent}`;
+      
+      if (combinedContext.includes('einkauf') || combinedContext.includes('procurement') || combinedContext.includes('beschaffung')) {
         targetRole = 'Einkaufsleiter';
-        primaryRoleTitles = ['Head of Procurement', 'Einkaufsleiter', 'Purchasing Manager', 'Procurement Director'];
-      } else if (targetAudience.includes('marketing')) {
+        primaryRoleTitles = ['Head of Procurement', 'Einkaufsleiter', 'Purchasing Manager', 'Procurement Director', 'Leiter Beschaffung'];
+      } else if (combinedContext.includes('marketing') || combinedContext.includes('werbung') || combinedContext.includes('brand')) {
         targetRole = 'Marketing Director';
-        primaryRoleTitles = ['Head of Marketing', 'CMO', 'Marketing Director', 'Marketing Manager'];
-      } else if (targetAudience.includes('it') || targetAudience.includes('technik')) {
+        primaryRoleTitles = ['Head of Marketing', 'CMO', 'Marketing Director', 'Marketing Manager', 'Leiter Marketing'];
+      } else if (combinedContext.includes('it') || combinedContext.includes('technik') || combinedContext.includes('digitalisierung') || combinedContext.includes('software')) {
         targetRole = 'IT-Leiter';
-        primaryRoleTitles = ['CTO', 'Head of IT', 'IT-Director', 'IT-Leiter'];
-      } else if (targetAudience.includes('hr') || targetAudience.includes('personal')) {
+        primaryRoleTitles = ['CTO', 'Head of IT', 'IT-Director', 'IT-Leiter', 'Leiter Technik'];
+      } else if (combinedContext.includes('hr') || combinedContext.includes('personal') || combinedContext.includes('recruiting') || combinedContext.includes('einstellung')) {
         targetRole = 'Personalleitung';
-        primaryRoleTitles = ['Head of HR', 'HR Director', 'Personalleitung', 'HR Manager'];
+        primaryRoleTitles = ['Head of HR', 'HR Director', 'Personalleitung', 'HR Manager', 'Leiter Personal'];
+      } else if (combinedContext.includes('vertrieb') || combinedContext.includes('sales') || combinedContext.includes('absatz')) {
+        targetRole = 'Vertriebsleiter';
+        primaryRoleTitles = ['Head of Sales', 'Sales Director', 'VP Sales', 'Vertriebsleiter', 'Director Sales'];
       } else {
-        targetRole = 'Geschäftsführer';
-        primaryRoleTitles = ['Geschäftsführer', 'CEO', 'Managing Director', 'Founder'];
+        // No keyword match: use size-based role selection
+        if (sizeNum > 0 && sizeNum < 30) {
+          // Small company: GF may be relevant
+          targetRole = 'Geschäftsführer';
+          primaryRoleTitles = ['Geschäftsführer', 'CEO', 'Managing Director', 'Founder', 'Inhaber'];
+          roleReason = 'Fallback: Kleines Unternehmen (<30 MA) — Geschäftsführung wahrscheinlich direkt zuständig';
+        } else if (sizeNum >= 30 && sizeNum < 200) {
+          // Mid-size: try general management, but exclude CEO for specialized functions
+          targetRole = 'Geschäftsführer';
+          primaryRoleTitles = ['Geschäftsführer', 'CEO', 'Managing Director'];
+          excludedRoles = ['CFO', 'CTO', 'COO'];
+          roleReason = 'Fallback: Mittelgroßes Unternehmen — eine spezialisierte Rolle wäre besser, aber LLM nicht verfügbar';
+        } else {
+          // Large company or unknown: DO NOT default to CEO
+          targetRole = 'Geschäftsführer';
+          primaryRoleTitles = ['Geschäftsführer', 'CEO', 'Managing Director'];
+          excludedRoles = ['CFO', 'CTO', 'COO', 'Vorstand'];
+          roleReason = 'Fallback: Großes/unbekanntes Unternehmen — CEO als Last Resort, spezialisierte Rolle wäre besser';
+        }
       }
-      roleReason = 'Fallback-Heuristik (LLM-Inference fehlgeschlagen)';
+      
+      if (!roleReason) {
+        roleReason = 'Fallback-Heuristik (LLM-Inference fehlgeschlagen)';
+      }
       console.log(`[ContactIntel] Target role (heuristic fallback): ${targetRole}`);
+      console.log(`[ContactIntel] Reason: ${roleReason}`);
     }
     
     // Phase 3: Targeted Crawl — max 1 page, fast

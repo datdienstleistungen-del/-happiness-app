@@ -1,4 +1,5 @@
-// â”€â”€ Multi-Provider Fallback Chain â”€â”€
+// ── Multi-Provider Fallback Chain ──
+import { runEmailPatternCrawler } from './nexus-email-crawler.mjs';
 
 async function fetchWithTimeout(url, options, timeoutMs = 4000) {
   const controller = new AbortController();
@@ -425,34 +426,72 @@ export const handler = async (event) => {
     
     messages.push({ role: "user", content: userMessage });
 
-    // --- WEB SEARCH: Auto-Suche bei Bedarf ---
+    // --- WEB SEARCH & STANDALONE EMAIL CRAWLER: Auto-Suche & Crawler bei Bedarf ---
     const lowerMsg = userMessage.toLowerCase();
-    const isContactMode = systemPrompt.includes('Recherche-Agent');
+    const isContactMode = systemPrompt.includes('Recherche-Agent') || systemPrompt.includes('Coach');
     const searchTriggers = ['website', 'url', 'homepage', 'link', 'ansprechpartner', 'ceo', 
-      'geschäftsführer', 'head of', 'wer ist', 'kontakt', 'linkedin', 'firmensitz', 'adresse'];
+      'geschäftsführer', 'head of', 'wer ist', 'kontakt', 'linkedin', 'firmensitz', 'adresse', 'email', 'e-mail', 'mail'];
     const needsSearch = isContactMode || searchTriggers.some(t => lowerMsg.includes(t));
     
     if (needsSearch) {
       // Firma aus Context oder Nachricht extrahieren
-      const companyName = context?.company || userMessage.replace(/finde den entscheider|find contact|website|url|homepage|link|ansprechpartner|ceo|geschäftsführer|head of|wer ist|kontakt|linkedin|firmensitz|adresse|von|für|die|der|das/gi, '').trim().split(/\s+/).slice(0, 3).join(' ');
+      const rawCompany = (context?.company?.name || context?.company || userMessage)
+        .replace(/finde den entscheider|find contact|wie lautet die e-mail|wie ist die email|e-mail von|email von|website|url|homepage|link|ansprechpartner|ceo|geschäftsführer|head of|wer ist|kontakt|linkedin|firmensitz|adresse|von|für|die|der|das|bei/gi, '')
+        .trim().split(/\s+/).slice(0, 3).join(' ');
+      
+      const companyName = rawCompany.length > 1 ? rawCompany : (context?.company?.name || null);
       
       if (companyName && companyName.length > 1) {
-        console.log(`[NEXUS] Auto-Search for: ${companyName}`);
+        console.log(`[NEXUS] Auto-Search & Email Crawler for: ${companyName}`);
         
-        // Parallele Suchen: Website + Ansprechpartner
-        const [websiteResults, contactResults] = await Promise.all([
+        // Parallele Ausführung: WebSearch + Email Crawler
+        const [websiteResults, contactResults, crawlerResult] = await Promise.all([
           webSearch(`${companyName} website homepage`),
-          webSearch(`${companyName} CEO Geschäftsführer Geschäftsführung Ansprechpartner Leiter`)
+          webSearch(`${companyName} CEO Geschäftsführer Geschäftsführung Ansprechpartner Leiter`),
+          runEmailPatternCrawler({ companyName }).catch(err => {
+            console.warn('[NEXUS] Email Crawler Fehler:', err.message);
+            return null;
+          })
         ]);
         
         const allResults = [...(websiteResults || []), ...(contactResults || [])];
+        let searchContext = '';
         if (allResults.length > 0) {
-          const searchContext = allResults.map(r => `Quelle: ${r.title}\nURL: ${r.url}\nInfo: ${r.snippet}`).join("\n\n");
-          messages[messages.length - 1].content = `[SYSTEM-INTERN: Web-Suche durchgeführt für "${companyName}". Gefundene Ergebnisse:\n\n${searchContext}\n\nBEFEHL: Nutze diese Informationen um die Frage des Nutzers präzise zu beantworten. Nenne konkrete URLs und Namen. Falls die Suche nichts Relevantes ergibt, sage das ehrlich.]\n\nMeine Frage: ${userMessage}`;
+          searchContext = allResults.map(r => `Quelle: ${r.title}\nURL: ${r.url}\nInfo: ${r.snippet}`).join("\n\n");
+        }
+        
+        let crawlerContext = '';
+        if (crawlerResult && crawlerResult.success) {
+          crawlerContext = `\n\n--- STANDALONE EMAIL CRAWLER ERGEBNISSE (On-Demand Intelligence) ---
+Firma: ${crawlerResult.company}
+Domain: ${crawlerResult.domain}
+Gecrawlt: ${crawlerResult.crawledPages?.length || 0} Seiten (${crawlerResult.crawledPages?.join(', ') || ''})
+Gefundene Personen-Adressen: ${crawlerResult.foundEmails?.personal?.join(', ') || 'Keine direkten'}
+Allgemeine Adressen: ${crawlerResult.foundEmails?.generic?.join(', ') || 'Keine'}
+Abgeleitetes Muster: ${crawlerResult.patternInfo?.patternLabel || 'vorname.nachname@' + crawlerResult.domain}
+Zielperson: ${crawlerResult.person?.name || 'Ansprechpartner'} (${crawlerResult.person?.role || 'Entscheider'})
+Generierte E-Mail: ${crawlerResult.person?.email}
+Konfidenz: ${crawlerResult.person?.email_confidence}/100 (${crawlerResult.patternInfo?.isGuess ? 'ungeprüfte Standard-Vermutung' : 'abgeleitet aus echten Website-Adressen'})
+Formulierungsvorschlag: ${crawlerResult.coachText}`;
+        } else if (crawlerResult && crawlerResult.success === false) {
+          crawlerContext = `\n\n--- STANDALONE EMAIL CRAWLER INFO ---
+Status: Keine Domain erreichbar oder keine E-Mail-Muster auffindbar (${crawlerResult.reason}).
+Formulierungsvorschlag: ${crawlerResult.coachText}`;
+        }
+
+        if (searchContext || crawlerContext) {
+          messages[messages.length - 1].content = `[SYSTEM-INTERN: On-Demand Recherche & Email-Crawler für "${companyName}":
+
+${searchContext}
+${crawlerContext}
+
+BEFEHL: Verwende diese Daten für eine präzise, faktenbasierte und transparente Antwort. Nenne die E-Mail-Adresse, das erkannte Muster und die Konfidenz transparent (z.B. "Basierend auf dem E-Mail-Muster von..."). Falls keine Daten vorliegen, sage das ehrlich. Erwähne keine kostenpflichtigen Drittanbieter-Tools wie Hunter.io.]
+
+Meine Frage: ${userMessage}`;
         }
       }
     }
-    // --- END WEB SEARCH ---
+    // --- END WEB SEARCH & STANDALONE EMAIL CRAWLER ---
 
     console.log("[NEXUS] Starting callAI loop");
     const result = await callAI(messages, temperature || 0.3);
