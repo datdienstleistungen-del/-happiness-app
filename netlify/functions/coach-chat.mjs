@@ -190,7 +190,7 @@ async function tryDeepSeek(messages) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'deepseek-v4-flash',
+        model: 'deepseek-chat',
         messages,
         temperature: 0.7,
         max_tokens: 1024
@@ -221,7 +221,7 @@ async function tryOpenRouterDeepSeek(messages) {
         'X-Title': 'Happiness Coach Chat'
       },
       body: JSON.stringify({
-        model: 'deepseek/deepseek-v4-flash',
+        model: 'deepseek/deepseek-chat',
         messages,
         temperature: 0.7,
         max_tokens: 1024
@@ -418,8 +418,8 @@ export const handler = async (event) => {
       // 2. Groq (llama-3.3-70b-versatile)
       // 3. OpenRouter (google/gemma-4-26b-a4b-it:free)
       // 4. Mistral API (mistral-small-latest)
-      // 5. DeepSeek API (deepseek-v4-flash)
-      // 6. OpenRouter (deepseek/deepseek-v4-flash)
+      // 5. DeepSeek API (deepseek-chat)
+      // 6. OpenRouter (deepseek/deepseek-chat)
       let responseText = null
       let providerUsed = ''
 

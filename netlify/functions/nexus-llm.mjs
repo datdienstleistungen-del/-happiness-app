@@ -143,7 +143,7 @@ async function tryDeepSeek(messages, temperature = 0.3) {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'deepseek-v4-flash',
+        model: 'deepseek-chat',
         messages,
         temperature,
         max_tokens: 4096
@@ -151,7 +151,7 @@ async function tryDeepSeek(messages, temperature = 0.3) {
     })
     if (!res.ok) { await res.text().catch(e => {}); return null; }
     const data = await res.json()
-    return { text: data.choices?.[0]?.message?.content || null, provider: 'deepseek', model: 'deepseek-v4-flash' }
+    return { text: data.choices?.[0]?.message?.content || null, provider: 'deepseek', model: 'deepseek-chat' }
   } catch { return null }
 }
 

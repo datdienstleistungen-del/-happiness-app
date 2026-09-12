@@ -1271,7 +1271,7 @@ async function discoverEmails(rankedContacts, companyName, companyDomain) {
 
 async function callLLM(prompt, temperature = 0.3) {
   const providers = [
-    { url: 'https://api.deepseek.com/chat/completions', key: process.env.DEEPSEEK_API_KEY, model: 'deepseek-v4-flash' },
+    { url: 'https://api.deepseek.com/chat/completions', key: process.env.DEEPSEEK_API_KEY, model: 'deepseek-chat' },
     { url: 'https://api.mistral.ai/v1/chat/completions', key: process.env.MISTRAL_API_KEY, model: 'mistral-small-latest' }
   ];
   

@@ -177,7 +177,7 @@ async function tryDeepSeek(systemPrompt) {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${DEEPSEEK_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'deepseek-v4-flash',
+        model: 'deepseek-chat',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: 'Erstelle das Drehbuch basierend auf der Szenen-Analyse.' }

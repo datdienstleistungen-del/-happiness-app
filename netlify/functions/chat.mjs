@@ -300,7 +300,7 @@ ${message}`
         { name: 'mistral', url: 'https://api.mistral.ai/v1/chat/completions', key: process.env.MISTRAL_API_KEY, model: 'mistral-small-latest' },
         { name: 'groq', url: 'https://api.groq.com/openai/v1/chat/completions', key: process.env.GROQ_API_KEY, model: 'llama-3.3-70b-versatile' },
         { name: 'openrouter', url: 'https://openrouter.ai/api/v1/chat/completions', key: process.env.OPENROUTER_API_KEY, model: 'google/gemma-4-26b-a4b-it:free' },
-        { name: 'deepseek', url: 'https://api.deepseek.com/chat/completions', key: process.env.DEEPSEEK_API_KEY, model: 'deepseek-v4-flash' },
+        { name: 'deepseek', url: 'https://api.deepseek.com/chat/completions', key: process.env.DEEPSEEK_API_KEY, model: 'deepseek-chat' },
       ]
 
       for (const p of leadProviders) {
@@ -846,7 +846,7 @@ ${message}`
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({
-                model: 'deepseek-v4-flash',
+                model: 'deepseek-chat',
                 messages: buildMessages(historyLimit),
                 temperature: reqTemperature,
                 max_tokens: 4096,
@@ -859,7 +859,7 @@ ${message}`
               aiResponse = dsData.choices?.[0]?.message?.content || ''
               usage = dsData.usage
               provider = 'deepseek'
-              modelName = 'deepseek-v4-flash'
+              modelName = 'deepseek-chat'
               success = true
             } else {
               const dsData = await dsRes.json().catch(() => ({}))
