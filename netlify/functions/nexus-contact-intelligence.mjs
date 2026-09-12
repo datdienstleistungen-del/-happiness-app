@@ -695,7 +695,7 @@ const LOW_VALUE_KEYWORDS = [
   /\breferenz\b/i, /\bcase\b/i, /\bportfolio\b/i, /\bprojekt\b/i,
 ];
 
-function scoreLinkBySemantics(url, anchorText, companyName, parentContext = null) {
+function scoreLinkBySemantics(url, anchorText, companyName, parentContext = null, targetRoleTitles = []) {
   const urlLower = url.toLowerCase();
   const anchorLower = (anchorText || '').toLowerCase();
   const companyLower = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -707,6 +707,20 @@ function scoreLinkBySemantics(url, anchorText, companyName, parentContext = null
   // Step 1: Check for LOW VALUE → immediate rejection
   if (LOW_VALUE_KEYWORDS.some(p => p.test(urlLower))) return -10;
   if (LOW_VALUE_KEYWORDS.some(p => p.test(anchorLower))) return -10;
+  
+  // Step 1.5: TARGET ROLE MATCH — highest priority signal
+  if (targetRoleTitles.length > 0) {
+    const roleMatchAnchor = targetRoleTitles.filter(t => anchorLower.includes(t.toLowerCase())).length;
+    const roleMatchUrl = targetRoleTitles.filter(t => urlLower.includes(t.toLowerCase())).length;
+    if (roleMatchAnchor >= 1) {
+      score += 30;
+      console.log(`  [Score] +30 target-role-match-in-anchor: "${anchorText}"`);
+    }
+    if (roleMatchUrl >= 1) {
+      score += 15;
+      console.log(`  [Score] +15 target-role-match-in-url`);
+    }
+  }
   
   // Step 2: LEADERSHIP keywords — strongest signal (Endziel)
   const leadershipHitsAnchor = LEADERSHIP_KEYWORDS.filter(p => p.test(anchorLower)).length;
@@ -841,7 +855,7 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
   
   if (!companyDomain) {
     console.log('[Crawler] No domain provided, using search fallback');
-    const searchCandidates = await crawlViaSearch(companyName, targetRole, alternativeRoles);
+    const searchCandidates = await crawlViaSearch(companyName, targetRole, alternativeRoles, companyDomain);
     return {
       candidates: searchCandidates,
       pagesCrawled: [],
@@ -858,7 +872,7 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
   
   if (!homepageHtml) {
     console.log(`[Crawler] Homepage not reachable: ${baseUrl}`);
-    return await crawlViaSearch(companyName, targetRole, alternativeRoles);
+    return await crawlViaSearch(companyName, targetRole, alternativeRoles, companyDomain);
   }
   
   // ========== LEVEL 0: Homepage ==========
@@ -883,7 +897,7 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
   const scoredLinks = linksWithAnchor
     .map(l => {
       const category = categorizeLinkSemantic(l.url, l.anchorText);
-      const score = scoreLinkBySemantics(l.url, l.anchorText, companyName);
+      const score = scoreLinkBySemantics(l.url, l.anchorText, companyName, null, alternativeRoles);
       return { ...l, score, category };
     })
     .filter(l => l.score > 0)
@@ -953,7 +967,7 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
     const scoredChildren = hubLinksInner
       .map(l => {
         const category = categorizeLinkSemantic(l.url, l.anchorText);
-        const score = scoreLinkBySemantics(l.url, l.anchorText, companyName, parentContext);
+        const score = scoreLinkBySemantics(l.url, l.anchorText, companyName, parentContext, alternativeRoles);
         return { ...l, score, category, parentUrl: hub.url, parentAnchor: hub.anchorText, parentTitle: hubTitle, parentCategory: hub.category };
       })
       .filter(l => l.score > 0 && !pagesCrawled.includes(l.url)) // Skip already-crawled
@@ -1043,7 +1057,7 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
   // ========== PHASE B: Search Fallback ==========
   if (allCandidates.length === 0) {
     console.log('[Crawler] Phase B: Search fallback (no candidates from direct crawl)');
-    const fallbackCandidates = await crawlViaSearch(companyName, targetRole, alternativeRoles);
+    const fallbackCandidates = await crawlViaSearch(companyName, targetRole, alternativeRoles, companyDomain);
     allCandidates.push(...fallbackCandidates);
   }
   
@@ -1066,24 +1080,32 @@ function isJobUrl(url) {
     /\/bewerbung/i.test(u);
 }
 
-async function crawlViaSearch(companyName, targetRole, searchRoles = []) {
+async function crawlViaSearch(companyName, targetRole, searchRoles = [], companyDomain = null) {
   const candidates = [];
   const roles = searchRoles.length > 0 ? searchRoles : [targetRole];
   
-  // Generate search queries for each role
+  // Generate targeted search queries using actual domain
   const queries = [];
-  for (const role of roles.slice(0, 5)) {
-    queries.push(`"${companyName}" "${role}"`);
-    const domainHint = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
-    queries.push(`site:${domainHint}.com "${role}"`);
-  }
-  queries.push(`"${companyName}" team management`);
+  const domain = companyDomain || companyName.toLowerCase().replace(/[^a-z0-9]/g, '') + '.com';
   
-  console.log(`  [Search] Generated ${queries.length} search queries for ${roles.length} roles`);
+  // Primary: site-specific queries with actual domain (most valuable)
+  for (const role of roles.slice(0, 4)) {
+    queries.push(`site:${domain} "${role}"`);
+  }
+  
+  // Secondary: general queries with company name + role
+  for (const role of roles.slice(0, 3)) {
+    queries.push(`"${companyName}" "${role}"`);
+  }
+  
+  // Fallback: broader team/management query
+  queries.push(`site:${domain} team OR management OR contact`);
+  
+  console.log(`  [Search] Generated ${queries.length} queries for ${roles.length} roles (domain: ${domain})`);
   
   // Execute queries in parallel
   const allResults = [];
-  const queryPromises = queries.slice(0, 6).map(async (q) => {
+  const queryPromises = queries.slice(0, 8).map(async (q) => {
     console.log(`  [Search] Query: ${q}`);
     try {
       const results = await webSearch(q);
@@ -1100,22 +1122,31 @@ async function crawlViaSearch(companyName, targetRole, searchRoles = []) {
   }
   console.log(`  [Search] Got ${allResults.length} total results`);
   
-  // Deduplicate URLs, filter jobs
+  // Deduplicate URLs, filter jobs, prioritize company domain
   const seenUrls = new Set();
-  const urls = allResults
+  const allUrls = allResults
     .filter(r => {
       if (seenUrls.has(r.url)) return false;
       if (isJobUrl(r.url)) return false;
       seenUrls.add(r.url);
       return true;
-    })
-    .slice(0, 5);
+    });
   
-  console.log(`  [Search] ${urls.length} unique non-job URLs to fetch`);
+  // Sort: company domain pages first, then others
+  const domainBase = domain.replace(/^www\./, '');
+  allUrls.sort((a, b) => {
+    const aOnDomain = a.url.toLowerCase().includes(domainBase) ? 0 : 1;
+    const bOnDomain = b.url.toLowerCase().includes(domainBase) ? 0 : 1;
+    return aOnDomain - bOnDomain;
+  });
+  
+  const urls = allUrls.slice(0, 6);
+  
+  console.log(`  [Search] ${urls.length} URLs to fetch (${allUrls.filter(r => r.url.toLowerCase().includes(domainBase)).length} on company domain)`);
   
   const pagePromises = urls.map(async (r) => {
     console.log(`  [Search] Fetching: ${r.url}`);
-    const text = await fetchPageText(r.url, 3000);
+    const text = await fetchPageText(r.url, 4000);
     if (!text || text.length < 200) {
       console.log(`  [Search] Skipped ${r.url} (text=${text?.length || 0})`);
       return [];
@@ -1125,8 +1156,7 @@ async function crawlViaSearch(companyName, targetRole, searchRoles = []) {
     return persons.map(p => {
       p.source_url = r.url;
       const urlLower = r.url.toLowerCase();
-      const nameWords = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
-      p.company_validated = urlLower.includes(nameWords) || urlLower.includes(companyName.toLowerCase().replace(/\s+/g, ''));
+      p.company_validated = urlLower.includes(domainBase) || urlLower.includes(companyName.toLowerCase().replace(/\s+/g, ''));
       console.log(`  [Search] Found: ${p.name} (${p.role}) validated=${p.company_validated}`);
       return p;
     });
@@ -1135,7 +1165,7 @@ async function crawlViaSearch(companyName, targetRole, searchRoles = []) {
   const results2 = await Promise.all(pagePromises);
   for (const persons of results2) {
     candidates.push(...persons);
-    if (candidates.length >= 3) break;
+    if (candidates.length >= 5) break;
   }
   
   console.log(`  [Search] Final candidates: ${candidates.length}`);
@@ -1180,7 +1210,7 @@ GESUCHTE ROLLE: ${targetRole}
 QUELLE: ${sourceUrl}
 
 TEXT DER WEBSEITE:
-${cleanText.substring(0, 2000)}
+${cleanText.substring(0, 2500)}
 
 STRENGE REGELN:
 1. NUR vollständige plausible Personennamen (Vor- + Nachname)
@@ -1190,9 +1220,10 @@ STRENGE REGELN:
 5. Jede Person MUSS eine klare Position/Rolle haben
 6. Die Person MUSS zur Firma ${companyName} gehören (nicht zu einer anderen Firma)
 7. Quelle ist die angegebene URL
+8. ORDNE jede Person einer Abteilung zu (Sales, HR, Management, Marketing, IT, Finance, Operations, etc.)
 
 Gib ein JSON Array zurück:
-[{"name": "Vorname Nachname", "role": "Position", "evidence": "Zitat aus dem Text das die Person belegt"}]
+[{"name": "Vorname Nachname", "role": "Position", "department": "Abteilung", "evidence": "Zitat aus dem Text das die Person belegt"}]
 
 Wenn du KEINE klaren Personen findest, gib ein leeres Array zurück: []`;
 
@@ -1222,10 +1253,14 @@ Wenn du KEINE klaren Personen findest, gib ein leeres Array zurück: []`;
     if (role.length < 3 || role.length > 80) return false;
     // Evidence must be meaningful
     if (!p.evidence || p.evidence.length < 10) return false;
+    // Filter out generic/low-value roles
+    const roleLower = role.toLowerCase();
+    if (['mitarbeiter', 'employee', 'staff', 'team', 'member'].some(g => roleLower === g)) return false;
     return true;
   }).map(p => ({
     name: p.name.trim(),
     role: p.role.trim(),
+    department: (p.department || '').trim(),
     evidence: p.evidence.trim(),
     confidence: 80
   }));
@@ -1244,19 +1279,27 @@ async function rankContacts(candidates, context) {
 KONTEXT:
 - Angebot: ${context.offering?.offering_name || 'Unbekannt'}
 - Zielrolle: ${context.targetRole || 'Unbekannt'}
+- Primäre Titel: ${(context.primaryRoleTitles || []).join(', ')}
+- Sekundäre Titel: ${(context.secondaryRoleTitles || []).join(', ')}
+- Ausgeschlossene Titel: ${(context.excludedRoles || []).join(', ')}
 - Trigger: ${context.trigger?.content || 'Kein Trigger'}
 - Firma: ${context.company?.name || 'Unbekannt'}
 
 KANDIDATEN:
-${candidates.map((c, i) => `${i + 1}. ${c.name} — ${c.role || 'Rolle unbekannt'} (Quelle: ${c.source_url || 'direkt'}, company_validated: ${c.company_validated ? 'ja' : 'nein'})`).join('\n')}
+${candidates.map((c, i) => `${i + 1}. ${c.name} — ${c.role || 'Rolle unbekannt'} (${c.department || 'Abteilung unbekannt'}) (Quelle: ${c.source_url || 'direkt'}, company_validated: ${c.company_validated ? 'ja' : 'nein'})`).join('\n')}
 
 BEWERTUNGSKRITERIEN (in Reihenfolge):
-1. Company Validated (stammt die Person von der eigenen Firmenseite?)
-2. Role Fit (passt die Rolle zur Zielrolle?)
-3. Evidence Quality (ist die Evidenz überzeugend?)
-4. Opportunity Fit (passt die Person zum Angebot?)
+1. ROLE MATCH: Passt die Rolle zu den primären Titeln? (Höchste Priorität)
+2. COMPANY VALIDATED: Stammt die Person von der eigenen Firmenseite?
+3. DEPARTMENT MATCH: Passt die Abteilung zur Zielrolle?
+4. EVIDENCE QUALITY: Ist die Evidenz überzeugend?
+5. OPPORTUNITY FIT: Passt die Person zum Angebot?
 
-WICHTIG: Nur validierte Personen (company_validated=true) bewerten. Externe Quellen ablehnen.
+STRIKTE REGELN:
+- CEO/Geschäftsführer DARF NICHT automatisch auf Platz 1 landen, wenn eine spezialisierte Rolle (Sales, HR, etc.) vorhanden ist.
+- Personen aus excluded_as_primary MÜSSEN einen Score unter 50 bekommen.
+- company_validated=true ist ein starker Bonus (+15).
+- Externe Quellen (LinkedIn, Xing) sind weniger vertrauenswürdig als eigene Firmenseiten.
 
 Gib ein JSON Array zurück, sortiert nach Score (höchster zuerst):
 [
@@ -1267,7 +1310,38 @@ Gib ein JSON Array zurück, sortiert nach Score (höchster zuerst):
 Nur relevante Kandidaten (Score > 40).`;
 
   const result = await callLLM(prompt, 0.2);
-  if (!result?.rankings) return candidates.map((c, i) => ({ ...c, rank_score: 90 - i * 10 }));
+  
+  // LLM fallback: heuristic scoring
+  if (!result?.rankings) {
+    console.log('[Ranking] LLM failed, using heuristic ranking');
+    return candidates
+      .map(c => {
+        let score = 50;
+        const roleLower = (c.role || '').toLowerCase();
+        const deptLower = (c.department || '').toLowerCase();
+        
+        // Strong boost for matching primary roles
+        if ((context.primaryRoleTitles || []).some(t => roleLower.includes(t.toLowerCase()))) score += 30;
+        // Boost for matching secondary roles
+        if ((context.secondaryRoleTitles || []).some(t => roleLower.includes(t.toLowerCase()))) score += 15;
+        // Boost for matching department
+        if ((context.primaryRoleTitles || []).some(t => deptLower.includes(t.toLowerCase().split(' ')[0]))) score += 10;
+        // Penalty for excluded roles
+        if ((context.excludedRoles || []).some(t => roleLower.includes(t.toLowerCase()))) score -= 40;
+        // Boost for company validated
+        if (c.company_validated) score += 15;
+        // Penalty for generic Geschäftsführer when specialized roles expected
+        if (roleLower.includes('geschäftsführer') || roleLower.includes('ceo')) {
+          if ((context.primaryRoleTitles || []).length > 0 && 
+              !(context.primaryRoleTitles || []).some(t => t.toLowerCase().includes('geschäftsführer'))) {
+            score -= 25;
+          }
+        }
+        return { ...c, rank_score: Math.max(0, Math.min(100, score)) };
+      })
+      .filter(c => c.rank_score > 40)
+      .sort((a, b) => b.rank_score - a.rank_score);
+  }
   
   return result.rankings
     .filter(r => r.rank_score > 40)
@@ -1279,64 +1353,7 @@ Nur relevante Kandidaten (Score > 40).`;
 }
 
 // ============================================================================
-// PHASE 6: EMAIL DISCOVERY — No Construction, Only Found or Unknown
-// ============================================================================
-
-async function discoverEmails(rankedContacts, companyName, companyDomain) {
-  for (const contact of rankedContacts) {
-    contact.email_status = 'UNKNOWN';
-    contact.email = null;
-    contact.email_source = null;
-    
-    // Only search on the company's own domain and public sources
-    if (!companyDomain) continue;
-    
-    // Search for publicly listed email on company pages
-    const searchQueries = [
-      `"${contact.name}" site:${companyDomain}`,
-      `"${contact.name}" "${companyName}" email`
-    ];
-    
-    for (const query of searchQueries) {
-      const results = await webSearch(query);
-      if (!results) continue;
-      
-      for (const r of results) {
-        // Only accept emails from the company's own domain
-        const urlLower = r.url.toLowerCase();
-        const isOnCompanySite = urlLower.includes(companyDomain);
-        
-        const emailMatch = (r.snippet + ' ' + r.title).match(
-          /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g
-        );
-        
-        if (emailMatch?.length > 0) {
-          for (const email of emailMatch) {
-            const emailDomain = email.split('@')[1]?.toLowerCase();
-            // Only accept if from company domain
-            if (emailDomain && emailDomain.includes(companyDomain.replace('www.', ''))) {
-              contact.email = email;
-              contact.email_status = 'FOUND';
-              contact.email_source = r.url;
-              break;
-            }
-          }
-          if (contact.email_status === 'FOUND') break;
-        }
-      }
-      if (contact.email_status === 'FOUND') break;
-    }
-  }
-  
-  return rankedContacts;
-}
-
-// ============================================================================
-// EMAIL PATTERN-GUESSING
-// ============================================================================
-
-// Email patterns removed — only FOUND/UNKNOWN, no guessing
-
+// PHASE 7: CALL LLM
 // ============================================================================
 // LLM CALL
 // ============================================================================
