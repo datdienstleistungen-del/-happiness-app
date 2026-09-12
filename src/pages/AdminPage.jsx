@@ -76,7 +76,7 @@ export default function AdminPage() {
   if (!isAdmin) return (
     <div className="container">
       <div className="empty-state">
-        <div className="empty-icon">🔒</div>
+        <div className="empty-icon"></div>
         <p>{t('admin.noAccess') || 'Kein Zugang'}</p>
       </div>
     </div>
@@ -585,7 +585,7 @@ function ActivityTab({ users }) {
                 <tr key={u.id}>
                   <td><strong>{u.name}</strong></td>
                   <td>@{u.username}</td>
-                  <td>{u.role === 'admin' ? '🛡️ Admin' : u.banned ? '🚫 Gebannt' : 'User'}</td>
+                  <td>{u.role === 'admin' ? '️ Admin' : u.banned ? ' Gebannt' : 'User'}</td>
                   <td>{new Date(u.created_at).toLocaleDateString('de-DE')}</td>
                   <td style={{ color: u.last_seen && Date.now() - new Date(u.last_seen).getTime() < 300000 ? 'var(--success)' : 'inherit' }}>
                     {formatTime(u.last_seen)}

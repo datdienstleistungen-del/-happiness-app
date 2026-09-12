@@ -17,10 +17,10 @@ function getOrCreateVisitorId() {
 }
 
 const GENRES = [
-  { id: 'comedy_prank', emoji: '🎭', label: 'Comedy / Prank', desc: 'Unterhaltung, Pointen, Reaktionen' },
-  { id: 'werbevideo_marketing', emoji: '📢', label: 'Werbevideo', desc: 'Marketing, Produkt, Call-to-Action' },
-  { id: 'lernvideo_kinder', emoji: '🧒', label: 'Lernvideo (Kinder)', desc: 'Einfach, spielerisch, freundlich' },
-  { id: 'lernvideo_erwachsene', emoji: '🎓', label: 'Lernvideo (Erwachsene)', desc: 'Informativ, strukturiert, sachlich' }
+  { id: 'comedy_prank', emoji: '', label: 'Comedy / Prank', desc: 'Unterhaltung, Pointen, Reaktionen' },
+  { id: 'werbevideo_marketing', emoji: '', label: 'Werbevideo', desc: 'Marketing, Produkt, Call-to-Action' },
+  { id: 'lernvideo_kinder', emoji: '', label: 'Lernvideo (Kinder)', desc: 'Einfach, spielerisch, freundlich' },
+  { id: 'lernvideo_erwachsene', emoji: '', label: 'Lernvideo (Erwachsene)', desc: 'Informativ, strukturiert, sachlich' }
 ]
 
 async function extractFramesFromVideo(videoSrc, maxFrames = 6) {
@@ -102,14 +102,14 @@ export default function VideoScriptPage() {
         btnHooks: 'Hooks generieren',
         chooseHook: 'Wähle deinen Hook (Sekunde 0:00-0:01)',
         hooksHint: 'Wähle oder kopiere den stärksten Hook für dein Video.',
-        quickActionTitle: '💡 Einfache Schnell-Aktionen pro Hook-Idee:',
-        quickAction1: 'Klicke auf "📋 Hook kopieren", um die Idee sofort in die Zwischenablage zu kopieren.',
-        quickAction2: 'Klicke auf "✨ Drehbuch generieren", um sofort das vollständige Skript schreiben zu lassen.',
+        quickActionTitle: ' Einfache Schnell-Aktionen pro Hook-Idee:',
+        quickAction1: 'Klicke auf " Hook kopieren", um die Idee sofort in die Zwischenablage zu kopieren.',
+        quickAction2: 'Klicke auf " Drehbuch generieren", um sofort das vollständige Skript schreiben zu lassen.',
         selected: 'Ausgewählt',
         select: 'Auswählen',
         copyHook: 'Hook kopieren',
         continueWithHook: 'Mit diesem Hook weiter → Drehbuch generieren',
-        sendToCapCut: '🎬 An CapCut Studio senden',
+        sendToCapCut: ' An CapCut Studio senden',
         authTitle: 'Melde dich an, um fortzufahren',
         visual: 'Szenen-Bild',
         text: 'Text',
@@ -143,14 +143,14 @@ export default function VideoScriptPage() {
         btnHooks: 'Generate Hooks',
         chooseHook: 'Choose your Hook (second 0:00-0:01)',
         hooksHint: 'Select or copy the strongest hook for your video.',
-        quickActionTitle: '💡 Quick actions per hook idea:',
-        quickAction1: 'Click "📋 Copy Hook" to copy the idea to your clipboard immediately.',
-        quickAction2: 'Click "✨ Write Script" to write the full script immediately.',
+        quickActionTitle: ' Quick actions per hook idea:',
+        quickAction1: 'Click " Copy Hook" to copy the idea to your clipboard immediately.',
+        quickAction2: 'Click " Write Script" to write the full script immediately.',
         selected: 'Selected',
         select: 'Select',
         copyHook: 'Copy Hook',
         continueWithHook: 'Continue with this hook → Write Script',
-        sendToCapCut: '🎬 Send to CapCut Studio',
+        sendToCapCut: ' Send to CapCut Studio',
         authTitle: 'Log in to continue',
         visual: 'Visual',
         text: 'Text',
@@ -184,14 +184,14 @@ export default function VideoScriptPage() {
         btnHooks: 'Hooks genereren',
         chooseHook: 'Kies je Hook (seconde 0:00-0:01)',
         hooksHint: 'Selecteer of kopieer de sterkste hook voor je video.',
-        quickActionTitle: '💡 Snelle acties per hook-idee:',
-        quickAction1: 'Klik op "📋 Hook kopiëren" om het idee direct naar je klembord te kopiëren.',
-        quickAction2: 'Klik op "✨ Script schrijven" om direct het volledige script te laten schrijven.',
+        quickActionTitle: ' Snelle acties per hook-idee:',
+        quickAction1: 'Klik op " Hook kopiëren" om het idee direct naar je klembord te kopiëren.',
+        quickAction2: 'Klik op " Script schrijven" om direct het volledige script te laten schrijven.',
         selected: 'Geselecteerd',
         select: 'Selecteren',
         copyHook: 'Hook kopiëren',
         continueWithHook: 'Doorgaan met deze hook → Script schrijven',
-        sendToCapCut: '🎬 Naar CapCut Studio sturen',
+        sendToCapCut: ' Naar CapCut Studio sturen',
         authTitle: 'Meld je aan om door te gaan',
         visual: 'Visueel',
         text: 'Tekst',
@@ -225,14 +225,14 @@ export default function VideoScriptPage() {
         btnHooks: 'Generar Ganchos',
         chooseHook: 'Elige tu gancho (segundo 0:00-0:01)',
         hooksHint: 'Selecciona o copia el gancho más fuerte para tu video.',
-        quickActionTitle: '💡 Acciones rápidas por idea de gancho:',
-        quickAction1: 'Haz clic en "📋 Copiar gancho" para copiar la idea al portapapeles de inmediato.',
-        quickAction2: 'Haz clic en "✨ Crear guion" para escribir el guion completo de inmediato.',
+        quickActionTitle: ' Acciones rápidas por idea de gancho:',
+        quickAction1: 'Haz clic en " Copiar gancho" para copiar la idea al portapapeles de inmediato.',
+        quickAction2: 'Haz clic en " Crear guion" para escribir el guion completo de inmediato.',
         selected: 'Seleccionado',
         select: 'Seleccionar',
         copyHook: 'Copiar gancho',
         continueWithHook: 'Continuar con este gancho → Generar guion',
-        sendToCapCut: '🎬 Enviar a CapCut Studio',
+        sendToCapCut: ' Enviar a CapCut Studio',
         authTitle: 'Inicia sesión para continuar',
         visual: 'Visual',
         text: 'Texto',
@@ -266,14 +266,14 @@ export default function VideoScriptPage() {
         btnHooks: 'Générer des accroches',
         chooseHook: 'Choisissez votre accroche (seconde 0:00-0:01)',
         hooksHint: 'Sélectionnez ou copiez l\'accroche la plus forte pour votre vidéo.',
-        quickActionTitle: '💡 Actions rapides par idée d\'accroche :',
-        quickAction1: 'Cliquez sur "📋 Copier l\'accroche" pour copier l\'idée dans le presse-papiers immédiatement.',
-        quickAction2: 'Cliquez sur "✨ Créer le script" pour rédiger le script complet immédiatement.',
+        quickActionTitle: ' Actions rapides par idée d\'accroche :',
+        quickAction1: 'Cliquez sur " Copier l\'accroche" pour copier l\'idée dans le presse-papiers immédiatement.',
+        quickAction2: 'Cliquez sur " Créer le script" pour rédiger le script complet immédiatement.',
         selected: 'Sélectionné',
         select: 'Sélectionner',
         copyHook: 'Copier l\'accroche',
         continueWithHook: 'Continuer avec cette accroche → Créer le script',
-        sendToCapCut: '🎬 Envoyer à CapCut Studio',
+        sendToCapCut: ' Envoyer à CapCut Studio',
         authTitle: 'Connectez-vous pour continuer',
         visual: 'Visuel',
         text: 'Texte',
@@ -307,14 +307,14 @@ export default function VideoScriptPage() {
         btnHooks: 'Genera Ganci',
         chooseHook: 'Scegli il tuo Gancio (secondo 0:00-0:01)',
         hooksHint: 'Seleziona o copia il gancio più forte per il tuo video.',
-        quickActionTitle: '💡 Azioni rapide per idea di gancio:',
-        quickAction1: 'Clicca su "📋 Copia gancio" per copiare l\'idea negli appunti immediatamente.',
-        quickAction2: 'Clicca su "✨ Crea copione" per scrivere il copione completo immediatamente.',
+        quickActionTitle: ' Azioni rapide per idea di gancio:',
+        quickAction1: 'Clicca su " Copia gancio" per copiare l\'idea negli appunti immediatamente.',
+        quickAction2: 'Clicca su " Crea copione" per scrivere il copione completo immediatamente.',
         selected: 'Selezionato',
         select: 'Seleziona',
         copyHook: 'Copia gancio',
         continueWithHook: 'Continua con questo gancio → Genera copione',
-        sendToCapCut: '🎬 Invia a CapCut Studio',
+        sendToCapCut: ' Invia a CapCut Studio',
         authTitle: 'Accedi per continuare',
         visual: 'Visuale',
         text: 'Testo',
@@ -348,14 +348,14 @@ export default function VideoScriptPage() {
         btnHooks: 'Δημιουργία Hooks',
         chooseHook: 'Επιλέξτε το Hook σας (δευτερόλεπτο 0:00-0:01)',
         hooksHint: 'Επιλέξτε ή αντιγράψτε το πιο δυνατό hook για το βίντεό σας.',
-        quickActionTitle: '💡 Γρήγορες ενέργειες ανά ιδέα hook:',
-        quickAction1: 'Κάντε κλικ στο "📋 Αντιγραφή hook" για να αντιγράψετε την ιδέα στο πρόχειρο αμέσως.',
-        quickAction2: 'Κάντε κλικ στο "✨ Δημιουργία σεναρίου" για να γραφτεί το πλήρες σενάριο αμέσως.',
+        quickActionTitle: ' Γρήγορες ενέργειες ανά ιδέα hook:',
+        quickAction1: 'Κάντε κλικ στο " Αντιγραφή hook" για να αντιγράψετε την ιδέα στο πρόχειρο αμέσως.',
+        quickAction2: 'Κάντε κλικ στο " Δημιουργία σεναρίου" για να γραφτεί το πλήρες σενάριο αμέσως.',
         selected: 'Επιλέχθηκε',
         select: 'Επιλογή',
         copyHook: 'Αντιγραφή hook',
         continueWithHook: 'Συνέχεια με αυτό το hook → Δημιουργία σεναρίου',
-        sendToCapCut: '🎬 Αποστολή στο CapCut Studio',
+        sendToCapCut: ' Αποστολή στο CapCut Studio',
         authTitle: 'Συνδεθείτε για να συνεχίσετε',
         visual: 'Οπτικό',
         text: 'Κείμενο',
@@ -523,9 +523,9 @@ export default function VideoScriptPage() {
 
   const handleCopyHookText = async (hook, index) => {
     const textToCopy = `Hook #${index + 1} (${hook.trigger || ''})
-👁️ Szenen-Bild: ${hook.visual || ''}
-📝 Text: ${hook.text || ''}
-🔊 Audio: ${hook.audio || ''}`
+️ Szenen-Bild: ${hook.visual || ''}
+ Text: ${hook.text || ''}
+ Audio: ${hook.audio || ''}`
 
     try {
       await navigator.clipboard.writeText(textToCopy)
@@ -840,7 +840,7 @@ export default function VideoScriptPage() {
               <p className="vsp-hooks-hint">{getTxt('hooksHint')}</p>
 
               <div className="vsp-desc-intro" style={{ marginBottom: '1.5rem', background: '#e8f4f4', borderColor: '#085041', color: '#085041', fontSize: '13.5px' }}>
-                💡 <strong>{getTxt('quickActionTitle')}</strong>
+                 <strong>{getTxt('quickActionTitle')}</strong>
                 <ul style={{ margin: '8px 0 0 16px', padding: 0 }}>
                   <li>{getTxt('quickAction1')}</li>
                   <li>{getTxt('quickAction2')}</li>
@@ -871,13 +871,13 @@ export default function VideoScriptPage() {
                     </div>
                     <div className="vsp-hook-trigger">{hook.trigger}</div>
                     <div className="vsp-hook-visual">
-                      <strong>👁️ {getTxt('visual')}:</strong> {hook.visual}
+                      <strong>️ {getTxt('visual')}:</strong> {hook.visual}
                     </div>
                     <div className="vsp-hook-text">
-                      <strong>📝 {getTxt('text')}:</strong> {hook.text}
+                      <strong> {getTxt('text')}:</strong> {hook.text}
                     </div>
                     <div className="vsp-hook-audio">
-                      <strong>🔊 {getTxt('audio')}:</strong> {hook.audio}
+                      <strong> {getTxt('audio')}:</strong> {hook.audio}
                     </div>
 
                     <div className="vsp-hook-card-actions" style={{ display: 'flex', gap: '8px', marginTop: '16px', borderTop: '1px solid #eee', paddingTop: '12px' }} onClick={(e) => e.stopPropagation()}>

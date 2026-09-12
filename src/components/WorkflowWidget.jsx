@@ -10,11 +10,11 @@ import { trackCopyAction } from '../intelligence/analytics/custom'
 import './WorkflowWidget.css'
 
 const PHASES = [
-  { key: 'clarifying', label: 'Klären', icon: '🎯', desc: 'Ziel verstehen' },
-  { key: 'planning', label: 'Planen', icon: '📝', desc: 'Schritte definieren' },
-  { key: 'executing', label: 'Umsetzen', icon: '⚡', desc: 'H.I.T. arbeitet' },
-  { key: 'reviewing', label: 'Prüfen', icon: '👁️', desc: 'Ergebnis prüfen' },
-  { key: 'published', label: 'Fertig', icon: '🚀', desc: 'Veröffentlicht' },
+  { key: 'clarifying', label: 'Klären', icon: '', desc: 'Ziel verstehen' },
+  { key: 'planning', label: 'Planen', icon: '', desc: 'Schritte definieren' },
+  { key: 'executing', label: 'Umsetzen', icon: '', desc: 'H.I.T. arbeitet' },
+  { key: 'reviewing', label: 'Prüfen', icon: '️', desc: 'Ergebnis prüfen' },
+  { key: 'published', label: 'Fertig', icon: '', desc: 'Veröffentlicht' },
 ]
 
 const STEP_ICONS = {
@@ -28,20 +28,20 @@ const STEP_ICONS = {
 }
 
 const PLATFORM_META = {
-  tiktok: { icon: '🎵', label: 'TikTok', color: '#000000' },
-  facebook: { icon: '👥', label: 'Facebook', color: '#1877F2' },
-  instagram: { icon: '📸', label: 'Instagram', color: '#E4405F' },
-  linkedin: { icon: '💼', label: 'LinkedIn', color: '#0A66C2' },
+  tiktok: { icon: '', label: 'TikTok', color: '#000000' },
+  facebook: { icon: '', label: 'Facebook', color: '#1877F2' },
+  instagram: { icon: '', label: 'Instagram', color: '#E4405F' },
+  linkedin: { icon: '', label: 'LinkedIn', color: '#0A66C2' },
   youtube: { icon: '▶️', label: 'YouTube', color: '#FF0000' },
-  kleinanzeigen: { icon: '🏷️', label: 'Kleinanzeigen', color: '#FF6600' },
-  marketplace: { icon: '🏷️', label: 'Marktplatz', color: '#FF6600' },
-  reddit: { icon: '🔴', label: 'Reddit', color: '#FF4500' },
-  pinterest: { icon: '📌', label: 'Pinterest', color: '#E60023' },
-  email: { icon: '✉️', label: 'E-Mail', color: '#007BFF' },
-  podcast: { icon: '🎙️', label: 'Podcast', color: '#8B5CF6' },
-  video: { icon: '🎬', label: 'Video-Skript', color: '#085041' },
-  post: { icon: '📝', label: 'Post-Text', color: '#085041' },
-  content: { icon: '📝', label: 'Content', color: '#085041' },
+  kleinanzeigen: { icon: '️', label: 'Kleinanzeigen', color: '#FF6600' },
+  marketplace: { icon: '️', label: 'Marktplatz', color: '#FF6600' },
+  reddit: { icon: '', label: 'Reddit', color: '#FF4500' },
+  pinterest: { icon: '', label: 'Pinterest', color: '#E60023' },
+  email: { icon: '️', label: 'E-Mail', color: '#007BFF' },
+  podcast: { icon: '️', label: 'Podcast', color: '#8B5CF6' },
+  video: { icon: '', label: 'Video-Skript', color: '#085041' },
+  post: { icon: '', label: 'Post-Text', color: '#085041' },
+  content: { icon: '', label: 'Content', color: '#085041' },
 }
 
 export default function WorkflowWidget({ workflow, onClose }) {
@@ -253,7 +253,7 @@ export default function WorkflowWidget({ workflow, onClose }) {
               )}
             </div>
             {artifacts.map(art => {
-              const meta = PLATFORM_META[art.artifact_type] || { icon: '📝', label: art.artifact_type, color: '#085041' }
+              const meta = PLATFORM_META[art.artifact_type] || { icon: '', label: art.artifact_type, color: '#085041' }
               return (
                 <div key={art.id} className="wf-artifact-card" style={{ borderColor: `${meta.color}20` }}>
                   <div className="wf-artifact-icon">{meta.icon}</div>

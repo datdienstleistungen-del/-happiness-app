@@ -65,7 +65,7 @@ export default function VideoFeed() {
   if (videos.length === 0) {
     return (
       <div className="empty-state">
-        <div className="empty-icon">🎬</div>
+        <div className="empty-icon"></div>
         <p>{t('video.noVideos')}</p>
       </div>
     )
@@ -141,7 +141,7 @@ function VideoCard({ video, currentUserId, onLike, onDelete, formatTime, t }) {
         </div>
         {video.user_id === currentUserId && (
           <button className="btn btn-sm btn-danger" onClick={() => onDelete(video.id)}>
-            🗑️
+            ️
           </button>
         )}
       </div>
@@ -163,13 +163,13 @@ function VideoCard({ video, currentUserId, onLike, onDelete, formatTime, t }) {
           className={`btn btn-sm ${isLiked ? 'btn-primary' : 'btn-outline'}`}
           onClick={() => onLike(video.id)}
         >
-          {isLiked ? '❤️' : '🤍'} {likes.length}
+          {isLiked ? '️' : ''} {likes.length}
         </button>
         <button
           className="btn btn-sm btn-outline"
           onClick={() => setShowComments(!showComments)}
         >
-          💬 {comments.length}
+           {comments.length}
         </button>
         <button
           className="btn btn-sm btn-outline"
@@ -179,7 +179,7 @@ function VideoCard({ video, currentUserId, onLike, onDelete, formatTime, t }) {
             }
           }}
         >
-          📤 {t('video.share')}
+           {t('video.share')}
         </button>
       </div>
 

@@ -11,7 +11,7 @@ const TONES = [
   {
     id: 'business',
     label: 'Business & Kleinanzeigen',
-    icon: '💼',
+    icon: '',
     prompt: `Rolle: Du bist ein erfahrener Texter für professionelle Plattformen wie eBay Kleinanzeigen, LinkedIn undgeschäftliche Netzwerke.
 Aufgabe: Schreibe einen fertigen, postfertigen Text basierend auf dem Entwurf. Absolut KEIN Gaming-Slang, KEINE umgangssprachlichen Ausdrücke.
 Stil: Professionell, klar, überzeugend, gut strukturiert. Optimiert für direkte Kaufanfragen oder geschäftliche Kontaktaufnahme.
@@ -22,7 +22,7 @@ Format: Nur den fertigen Text ausgeben. Kein Meta-Kommentar, keine Analyse, kein
   {
     id: 'gamer',
     label: 'Gamer & Streamer',
-    icon: '🎮',
+    icon: '',
     prompt: `Rolle: Du bist ein authentischer Gamer und Streamer, der in der Community bekannt ist.
 Aufgabe: Schreibe einen kurzen, prägnanten Post im echten Gamer-Slang. NUTZE DIESE KEYWORDS NATÜRLICH: Clutch, bodenlos, Rage-Quit, Highlight, Macher, Noob, Sweaten, Chat ist eskaliert.
 Stil: Short, punchy, max. 4 Bullet Points. Wie ein echter Gamertweet, kein Marketing-Text.
@@ -32,7 +32,7 @@ Format: Nur den fertigen Text ausgeben. Kein Meta-Kommentar, keine Analyse.`
   {
     id: 'creative',
     label: 'Kreativ & Viral',
-    icon: '✨',
+    icon: '',
     prompt: `Rolle: Du bist ein kreativer Content Creator für Instagram, TikTok und Lifestyle-Blogs.
 Aufgabe: Schreibe einen emotionalen, viral-tauglichen Post mit starken Hooks und passenden Emojis.
 Stil: Storytelling, emotional, eingängig. Optimiert für Likes, Shares und Kommentare.
@@ -172,7 +172,7 @@ export default function PostPreparationPage() {
           <div className="post-prep-source">
             <div className="post-prep-source-section">
               <div className="post-prep-source-label">
-                ✏️ Dein Entwurf
+                ️ Dein Entwurf
               </div>
               <div className="post-prep-source-text">{draft}</div>
             </div>

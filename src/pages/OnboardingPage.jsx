@@ -66,21 +66,21 @@ export default function OnboardingPage() {
 
             <div className="onboarding-cards">
               <button className="onboarding-card" onClick={() => handleChoice('community')} disabled={saving}>
-                <span className="onboarding-card-icon">🌍</span>
+                <span className="onboarding-card-icon"></span>
                 <span className="onboarding-card-title">{t('onboarding.connect')}</span>
                 <span className="onboarding-card-desc">{t('onboarding.connectDesc')}</span>
                 <span className="onboarding-card-btn">{t('onboarding.connectBtn')}</span>
               </button>
 
               <button className="onboarding-card" onClick={() => handleChoice('creator')} disabled={saving}>
-                <span className="onboarding-card-icon">🚀</span>
+                <span className="onboarding-card-icon"></span>
                 <span className="onboarding-card-title">{t('onboarding.creator')}</span>
                 <span className="onboarding-card-desc">{t('onboarding.creatorDesc')}</span>
                 <span className="onboarding-card-btn">{t('onboarding.creatorBtn')}</span>
               </button>
 
               <button className="onboarding-card" onClick={() => handleChoice('ai')} disabled={saving}>
-                <span className="onboarding-card-icon">🤖</span>
+                <span className="onboarding-card-icon"></span>
                 <span className="onboarding-card-title">{t('onboarding.ai')}</span>
                 <span className="onboarding-card-desc">{t('onboarding.aiDesc')}</span>
                 <span className="onboarding-card-btn">{t('onboarding.aiBtn')}</span>
@@ -96,19 +96,19 @@ export default function OnboardingPage() {
 
             <div className="onboarding-cards">
               <button className="onboarding-card" onClick={() => handleSkill('beginner')} disabled={saving}>
-                <span className="onboarding-card-icon">🎬</span>
+                <span className="onboarding-card-icon"></span>
                 <span className="onboarding-card-title">{t('onboarding.skillBeginner')}</span>
                 <span className="onboarding-card-desc">{t('onboarding.skillBeginnerDesc')}</span>
               </button>
 
               <button className="onboarding-card" onClick={() => handleSkill('intermediate')} disabled={saving}>
-                <span className="onboarding-card-icon">🎥</span>
+                <span className="onboarding-card-icon"></span>
                 <span className="onboarding-card-title">{t('onboarding.skillIntermediate')}</span>
                 <span className="onboarding-card-desc">{t('onboarding.skillIntermediateDesc')}</span>
               </button>
 
               <button className="onboarding-card" onClick={() => handleSkill('pro')} disabled={saving}>
-                <span className="onboarding-card-icon">🎞️</span>
+                <span className="onboarding-card-icon">️</span>
                 <span className="onboarding-card-title">{t('onboarding.skillPro')}</span>
                 <span className="onboarding-card-desc">{t('onboarding.skillProDesc')}</span>
               </button>

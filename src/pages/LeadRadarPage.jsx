@@ -10,32 +10,32 @@ import './LeadRadarPage.css'
 import '../components/SetupWizard.css'
 
 const LIVE_FEEDS = [
-  // 🇺🇸 North America
+  //  North America
   { url: '/api/reddit-proxy/r/Twitch/new/.rss', continent: 'na', platform: 'twitch', lang: 'en', badge: 'Gamer' },
   { url: '/api/reddit-proxy/r/NewTubers/new/.rss', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Creator' },
   { url: '/api/reddit-proxy/r/SideHustle/new/.rss', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Business' },
   { url: '/api/reddit-proxy/r/CryptoCurrency/new/.rss', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Trader' },
   { url: '/api/reddit-proxy/r/realestateinvesting/new/.rss', continent: 'na', platform: 'reddit', lang: 'en', badge: 'Real Estate' },
 
-  // 🇪🇺 Europe
+  //  Europe
   { url: '/api/reddit-proxy/r/de_EDV/new/.rss', continent: 'eu', platform: 'reddit', lang: 'de', badge: 'Tech-EU' },
   { url: '/api/reddit-proxy/r/Finanzen/new/.rss', continent: 'eu', platform: 'reddit', lang: 'de', badge: 'Trader-EU' },
   { url: '/api/reddit-proxy/r/Immobilien/new/.rss', continent: 'eu', platform: 'reddit', lang: 'de', badge: 'Real Estate-EU' },
 
-  // 🇧🇷 Latin America
+  //  Latin America
   { url: '/api/reddit-proxy/r/investimentos/new/.rss', continent: 'latam', platform: 'reddit', lang: 'pt', badge: 'Trader-BR' },
   { url: '/api/reddit-proxy/r/brdev/new/.rss', continent: 'latam', platform: 'reddit', lang: 'pt', badge: 'Tech-BR' },
 
-  // 🇦🇺 Asia-Pacific
+  //  Asia-Pacific
   { url: '/api/reddit-proxy/r/AusFinance/new/.rss', continent: 'apac', platform: 'reddit', lang: 'en', badge: 'Trader-AU' },
   { url: '/api/reddit-proxy/r/gamedev/new/.rss', continent: 'apac', platform: 'reddit', lang: 'en', badge: 'Builder-Global' },
 ]
 
 const CONTINENTS = [
-  { id: 'na', label: 'North America', flag: '🇺🇸', platforms: 'Live Hubs', lang: 'en' },
-  { id: 'eu', label: 'Europe', flag: '🇪🇺', platforms: 'Live Hubs', lang: 'de' },
-  { id: 'latam', label: 'Latin America', flag: '🇧🇷', platforms: 'Live Hubs', lang: 'es' },
-  { id: 'apac', label: 'Asia-Pacific', flag: '🇦🇺', platforms: 'Live Hubs', lang: 'en' },
+  { id: 'na', label: 'North America', flag: '', platforms: 'Live Hubs', lang: 'en' },
+  { id: 'eu', label: 'Europe', flag: '', platforms: 'Live Hubs', lang: 'de' },
+  { id: 'latam', label: 'Latin America', flag: '', platforms: 'Live Hubs', lang: 'es' },
+  { id: 'apac', label: 'Asia-Pacific', flag: '', platforms: 'Live Hubs', lang: 'en' },
 ]
 
 const PLATFORMS = [
@@ -45,10 +45,10 @@ const PLATFORMS = [
 ]
 
 const CONTINENT_OPTIONS = [
-  { value: 'na', label: '🇺🇸 US — North America' },
-  { value: 'eu', label: '🇪🇺 EU — Europe' },
-  { value: 'latam', label: '🇧🇷 BR — Latin America' },
-  { value: 'apac', label: '🇦🇺 AU — Asia-Pacific' },
+  { value: 'na', label: ' US — North America' },
+  { value: 'eu', label: ' EU — Europe' },
+  { value: 'latam', label: ' BR — Latin America' },
+  { value: 'apac', label: ' AU — Asia-Pacific' },
 ]
 
 const LANG_OPTIONS = [
@@ -70,16 +70,16 @@ const PLATFORM_BADGES = {
 }
 
 const CONTEXT_BADGES = {
-  'Global Search': { color: '#0EA5E9', label: '🌍 Global Search' },
-  'News Radar': { color: '#EF4444', label: '📰 News Radar' },
-  'Job Board': { color: '#10B981', label: '💼 Job Board' },
-  Business: { color: '#10B981', label: '💼 Business' },
+  'Global Search': { color: '#0EA5E9', label: ' Global Search' },
+  'News Radar': { color: '#EF4444', label: ' News Radar' },
+  'Job Board': { color: '#10B981', label: ' Job Board' },
+  Business: { color: '#10B981', label: ' Business' },
   Milestone: { color: '#EAB308', label: '⭐ Milestone' },
-  'Advice-Seeker': { color: '#22C55E', label: '❓ Advice-Seeker' },
-  'Privacy-First': { color: '#A855F7', label: '🔒 Privacy-First' },
-  Builder: { color: '#F97316', label: '🛠️ Builder' },
-  Trader: { color: '#00FF88', label: '📈 Trader' },
-  'Real Estate': { color: '#1E40AF', label: '🏠 Real Estate' },
+  'Advice-Seeker': { color: '#22C55E', label: ' Advice-Seeker' },
+  'Privacy-First': { color: '#A855F7', label: ' Privacy-First' },
+  Builder: { color: '#F97316', label: '️ Builder' },
+  Trader: { color: '#00FF88', label: ' Trader' },
+  'Real Estate': { color: '#1E40AF', label: ' Real Estate' },
 }
 
 const LANG_BADGES = {
@@ -92,13 +92,13 @@ const LANG_BADGES = {
 
 const EMPTY_FORM = { platform: 'reddit', continent: 'na', lang: 'en', badge: 'Business', source_url: '', text: '' }
 const BADGE_OPTIONS = [
-  { value: 'Global Search', label: '🌍 Global Search' },
-  { value: 'News Radar', label: '📰 News Radar' },
-  { value: 'Job Board', label: '💼 Job Board' },
-  { value: 'Business', label: '💼 Business' },
-  { value: 'Privacy-First', label: '🔒 Privacy-First' },
-  { value: 'Trader', label: '📈 Trader' },
-  { value: 'Real Estate', label: '🏠 Real Estate' },
+  { value: 'Global Search', label: ' Global Search' },
+  { value: 'News Radar', label: ' News Radar' },
+  { value: 'Job Board', label: ' Job Board' },
+  { value: 'Business', label: ' Business' },
+  { value: 'Privacy-First', label: ' Privacy-First' },
+  { value: 'Trader', label: ' Trader' },
+  { value: 'Real Estate', label: ' Real Estate' },
 ]
 
 function cleanText(str) {
@@ -786,7 +786,7 @@ STRATEGIE-FOKUS FÜR DIESE QUELLE (${badge}): ${b2bStrategyMap[badge] || b2bStra
           </button>
         ))}
         <button className="lr-tab" style={{ border: '1px solid #10B981', background: 'rgba(16, 185, 129, 0.05)' }} onClick={() => setGuideModalOpen(true)}>
-          <span className="lr-tab-flag">📖</span>
+          <span className="lr-tab-flag"></span>
           <span className="lr-tab-label">Gebrauchsanweisung</span>
           <span className="lr-tab-platforms">NeXus Quickstart</span>
         </button>
@@ -799,11 +799,11 @@ STRATEGIE-FOKUS FÜR DIESE QUELLE (${badge}): ${b2bStrategyMap[badge] || b2bStra
           <div className={`lr-empty-radar ${radarActive ? 'lr-empty-radar-active' : ''}`} onClick={radarActive ? stopRadar : runLiveRadar}>
             <Radar size={48} className={`lr-radar-pulse ${radarActive ? 'lr-spinner' : ''}`} />
           </div>
-          <h2>🛰️ Global Radar scanning...</h2>
+          <h2>️ Global Radar scanning...</h2>
           <p>{radarActive ? 'Scanning feeds now — auto-repeats every 60s. Click to stop.' : 'Click the radar icon or button below to scan live feeds.'}</p>
           <p className="lr-empty-sub">{LIVE_FEEDS.filter(f => f.continent === activeContinent).length} active feeds for this region — all client-side.</p>
           <button className="lr-empty-scan-btn" onClick={radarActive ? stopRadar : runLiveRadar}>
-            {radarActive ? <><Loader size={14} className="lr-spinner" /> ⏹ Stop Radar</> : <><Radio size={14} /> ⚡ Start Live Radar</>}
+            {radarActive ? <><Loader size={14} className="lr-spinner" /> ⏹ Stop Radar</> : <><Radio size={14} />  Start Live Radar</>}
           </button>
         </div>
       ) : (
@@ -961,20 +961,20 @@ STRATEGIE-FOKUS FÜR DIESE QUELLE (${badge}): ${b2bStrategyMap[badge] || b2bStra
                   <span style={{ fontSize: '0.9rem', color: '#9CA3AF', marginBottom: '10px', display: 'block' }}>Datenquellen:</span>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: '#0F172A', padding: '12px', borderRadius: '8px', border: '1px solid #1E293B', marginBottom: '8px' }}>
                     <input type="checkbox" checked={scanSources.upwork} onChange={e => setScanSources(prev => ({...prev, upwork: e.target.checked}))} />
-                    <span style={{ color: '#E5E7EB' }}>💼 B2B Job Boards (Upwork)</span>
+                    <span style={{ color: '#E5E7EB' }}> B2B Job Boards (Upwork)</span>
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: '#0F172A', padding: '12px', borderRadius: '8px', border: '1px solid #1E293B', marginBottom: '8px' }}>
                     <input type="checkbox" checked={scanSources.news} onChange={e => setScanSources(prev => ({...prev, news: e.target.checked}))} />
-                    <span style={{ color: '#E5E7EB' }}>📰 Trigger Events (Google News)</span>
+                    <span style={{ color: '#E5E7EB' }}> Trigger Events (Google News)</span>
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: '#0F172A', padding: '12px', borderRadius: '8px', border: '1px solid #1E293B' }}>
                     <input type="checkbox" checked={scanSources.reddit} onChange={e => setScanSources(prev => ({...prev, reddit: e.target.checked}))} />
-                    <span style={{ color: '#E5E7EB' }}>🌍 Global Social Search (Reddit)</span>
+                    <span style={{ color: '#E5E7EB' }}> Global Social Search (Reddit)</span>
                   </label>
                 </div>
 
                 <button className="lr-form-submit" onClick={() => { setConfigModalOpen(false); runLiveRadar(); }} style={{ marginTop: '10px', height: '52px', fontSize: '16px', fontWeight: 'bold' }}>
-                  🚀 Speichern & Radar Starten
+                   Speichern & Radar Starten
                 </button>
               </div>
           </div>
@@ -995,13 +995,13 @@ STRATEGIE-FOKUS FÜR DIESE QUELLE (${badge}): ${b2bStrategyMap[badge] || b2bStra
               <p>Ein Trigger-Event ist ein Auslöser im Netz, der anzeigt, dass ein Unternehmen genau jetzt Bedarf an einer Lösung hat. NeXus sucht nicht nach Leuten, die rufen: "Ich brauche Produkt X!" (da ist die Konkurrenz bereits riesig). NeXus sucht nach Signalen: Ein neuer Manager wird eingestellt, in einem Forum wird über ein technisches Problem geklagt, oder ein Unternehmen expandiert.</p>
               
               <h4 style={{ color: '#F3F4F6', marginTop: '20px', borderBottom: '1px solid #374151', paddingBottom: '8px' }}>1. Radar & KI konfigurieren (Der Setup-Scan)</h4>
-              <p>Klicke oben rechts auf das kleine Zahnrad ⚙️ (Einstellungen). Trage bei "Was verkaufst du?" dein eigenes Angebot ein (z.B. "B2B Software", "Logistik"). Die KI nutzt dieses Feld, um später deine Pitches zu schreiben! Dann wählst du deine Zielregion und klickst auf "Start Live Radar".</p>
+              <p>Klicke oben rechts auf das kleine Zahnrad ️ (Einstellungen). Trage bei "Was verkaufst du?" dein eigenes Angebot ein (z.B. "B2B Software", "Logistik"). Die KI nutzt dieses Feld, um später deine Pitches zu schreiben! Dann wählst du deine Zielregion und klickst auf "Start Live Radar".</p>
 
               <h4 style={{ color: '#F3F4F6', marginTop: '20px', borderBottom: '1px solid #374151', paddingBottom: '8px' }}>2. Leads richtig lesen (Die Badges)</h4>
               <p>Das Radar spuckt dir Leads aus. <strong>News Radar:</strong> PR-Artikel, perfekt für Glückwünsche zur Expansion. <strong>Forum:</strong> Direkte Frustration eines Nutzers – extrem wertvoll, du kennst den Schmerzpunkt.</p>
 
               <h4 style={{ color: '#F3F4F6', marginTop: '20px', borderBottom: '1px solid #374151', paddingBottom: '8px' }}>3. Den KI-Pitch generieren (Der magische Button)</h4>
-              <p>Schreibe keine Standard-Nachricht! Klicke auf den Button ⚡ "Generate Global Helper Response". Die KI analysiert den Kontext des Leads und schreibt dir eine hochpsychologische Vertriebsnachricht, die exakt dein Produkt als Lösung positioniert.</p>
+              <p>Schreibe keine Standard-Nachricht! Klicke auf den Button  "Generate Global Helper Response". Die KI analysiert den Kontext des Leads und schreibt dir eine hochpsychologische Vertriebsnachricht, die exakt dein Produkt als Lösung positioniert.</p>
 
               <h4 style={{ color: '#F3F4F6', marginTop: '20px', borderBottom: '1px solid #374151', paddingBottom: '8px' }}>4. Akquise durchführen</h4>
               <p>Klicke auf "View original post", recherchiere den Namen des Autors oder Managers, suche ihn auf LinkedIn und schicke ihm exakt den Text, den NeXus für dich generiert hat. Du nutzt Gratulationen und Schmerzpunkte als Hebel, um ein Gespräch anzufangen.</p>

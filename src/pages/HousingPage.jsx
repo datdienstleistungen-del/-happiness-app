@@ -177,7 +177,7 @@ export default function HousingPage() {
                     <h3 style={{ marginBottom: '0.25rem' }}>{item.title}</h3>
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                       <span className="badge badge-primary">{housingType}</span>
-                      {size && <span className="badge" style={{ background: 'var(--border)', color: 'var(--text)' }}>📐 {size}</span>}
+                      {size && <span className="badge" style={{ background: 'var(--border)', color: 'var(--text)' }}> {size}</span>}
                       {available && <span className="badge" style={{ background: 'var(--border)', color: 'var(--text)' }}><Calendar size={12} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />{available}</span>}
                     </div>
                   </div>
@@ -190,7 +190,7 @@ export default function HousingPage() {
                 {user && item.user_id !== user.id && (
                   <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
                     <button className="btn btn-sm btn-primary" onClick={() => alert(`${t('housing.contactInfo')}: ${item.user_id}`)}>
-                      ✉️ {t('housing.contactBtn')}
+                      ️ {t('housing.contactBtn')}
                     </button>
                   </div>
                 )}

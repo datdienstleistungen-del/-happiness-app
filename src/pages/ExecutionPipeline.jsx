@@ -349,7 +349,7 @@ export default function ExecutionPipeline() {
 
           <div style={{ textAlign: 'center', padding: '0 16px' }}>
             <div style={{ fontSize: '2rem', marginBottom: '8px' }}>
-              {guidedIndex === 0 ? '👋' : guidedIndex === guidedQuestions.length - 1 ? '✨' : '💬'}
+              {guidedIndex === 0 ? '' : guidedIndex === guidedQuestions.length - 1 ? '' : ''}
             </div>
             <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '6px' }}>
               {q.question}
@@ -478,13 +478,13 @@ export default function ExecutionPipeline() {
   }
 
   const stepIcons = {
-    understand: '🎯',
-    script: '📝',
-    create: '🎬',
-    research: '📚',
-    draft: '✍️',
-    analyze: '🔍',
-    prepare: '📦',
+    understand: '',
+    script: '',
+    create: '',
+    research: '',
+    draft: '️',
+    analyze: '',
+    prepare: '',
   }
 
   const steps = STEP_LABELS_BY_PLATFORM[intent?.platform] || []
@@ -542,7 +542,7 @@ export default function ExecutionPipeline() {
         {finished && apiDone && showResult && (
           <div className="ep-result">
             <div className="ep-result-header">
-              <div className="ep-result-icon">✅</div>
+              <div className="ep-result-icon"></div>
               <div>
                 <p className="ep-result-title">Ergebnis bereit</p>
                 <p className="ep-result-subtitle">

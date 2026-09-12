@@ -16,81 +16,81 @@ import './PlatformEngine.css'
 
 const GOAL_CHIPS = {
   de: [
-    { label: 'Mehr Kunden gewinnen', icon: '🎯' },
-    { label: 'Reichweite erhöhen', icon: '📈' },
-    { label: 'Produkt verkaufen', icon: '🛒' },
-    { label: 'Community aufbauen', icon: '👥' },
-    { label: 'Event bewerben', icon: '🎪' },
-    { label: 'Mitarbeiter finden', icon: '💼' },
+    { label: 'Mehr Kunden gewinnen', icon: '' },
+    { label: 'Reichweite erhöhen', icon: '' },
+    { label: 'Produkt verkaufen', icon: '' },
+    { label: 'Community aufbauen', icon: '' },
+    { label: 'Event bewerben', icon: '' },
+    { label: 'Mitarbeiter finden', icon: '' },
   ],
   en: [
-    { label: 'Get more customers', icon: '🎯' },
-    { label: 'Increase reach', icon: '📈' },
-    { label: 'Sell a product', icon: '🛒' },
-    { label: 'Build community', icon: '👥' },
-    { label: 'Promote event', icon: '🎪' },
-    { label: 'Find employees', icon: '💼' },
+    { label: 'Get more customers', icon: '' },
+    { label: 'Increase reach', icon: '' },
+    { label: 'Sell a product', icon: '' },
+    { label: 'Build community', icon: '' },
+    { label: 'Promote event', icon: '' },
+    { label: 'Find employees', icon: '' },
   ],
   es: [
-    { label: 'Ganar más clientes', icon: '🎯' },
-    { label: 'Aumentar alcance', icon: '📈' },
-    { label: 'Vender producto', icon: '🛒' },
-    { label: 'Crear comunidad', icon: '👥' },
-    { label: 'Promocionar evento', icon: '🎪' },
-    { label: 'Encontrar empleados', icon: '💼' },
+    { label: 'Ganar más clientes', icon: '' },
+    { label: 'Aumentar alcance', icon: '' },
+    { label: 'Vender producto', icon: '' },
+    { label: 'Crear comunidad', icon: '' },
+    { label: 'Promocionar evento', icon: '' },
+    { label: 'Encontrar empleados', icon: '' },
   ],
   fr: [
-    { label: 'Gagner plus de clients', icon: '🎯' },
-    { label: 'Augmenter la portée', icon: '📈' },
-    { label: 'Vendre un produit', icon: '🛒' },
-    { label: 'Créer une communauté', icon: '👥' },
-    { label: 'Promouvoir un événement', icon: '🎪' },
-    { label: 'Trouver des employés', icon: '💼' },
+    { label: 'Gagner plus de clients', icon: '' },
+    { label: 'Augmenter la portée', icon: '' },
+    { label: 'Vendre un produit', icon: '' },
+    { label: 'Créer une communauté', icon: '' },
+    { label: 'Promouvoir un événement', icon: '' },
+    { label: 'Trouver des employés', icon: '' },
   ],
   it: [
-    { label: 'Ottenere più clienti', icon: '🎯' },
-    { label: 'Aumentare la portata', icon: '📈' },
-    { label: 'Vendere un prodotto', icon: '🛒' },
-    { label: 'Creare una community', icon: '👥' },
-    { label: 'Promuovere un evento', icon: '🎪' },
-    { label: 'Trovare dipendenti', icon: '💼' },
+    { label: 'Ottenere più clienti', icon: '' },
+    { label: 'Aumentare la portata', icon: '' },
+    { label: 'Vendere un prodotto', icon: '' },
+    { label: 'Creare una community', icon: '' },
+    { label: 'Promuovere un evento', icon: '' },
+    { label: 'Trovare dipendenti', icon: '' },
   ],
   nl: [
-    { label: 'Meer klanten winnen', icon: '🎯' },
-    { label: 'Bereik vergroten', icon: '📈' },
-    { label: 'Product verkopen', icon: '🛒' },
-    { label: 'Community opbouwen', icon: '👥' },
-    { label: 'Evenement promoten', icon: '🎪' },
-    { label: 'Medewerkers vinden', icon: '💼' },
+    { label: 'Meer klanten winnen', icon: '' },
+    { label: 'Bereik vergroten', icon: '' },
+    { label: 'Product verkopen', icon: '' },
+    { label: 'Community opbouwen', icon: '' },
+    { label: 'Evenement promoten', icon: '' },
+    { label: 'Medewerkers vinden', icon: '' },
   ],
   el: [
-    { label: 'Κερδίστε περισσότερους πελάτες', icon: '🎯' },
-    { label: 'Αυξήστε την εμβέλεια', icon: '📈' },
-    { label: 'Πουλήστε ένα προϊόν', icon: '🛒' },
-    { label: 'Χτίστε κοινότητα', icon: '👥' },
-    { label: 'Προωθήστε ένα event', icon: '🎪' },
-    { label: 'Βρείτε υπαλλήλους', icon: '💼' },
+    { label: 'Κερδίστε περισσότερους πελάτες', icon: '' },
+    { label: 'Αυξήστε την εμβέλεια', icon: '' },
+    { label: 'Πουλήστε ένα προϊόν', icon: '' },
+    { label: 'Χτίστε κοινότητα', icon: '' },
+    { label: 'Προωθήστε ένα event', icon: '' },
+    { label: 'Βρείτε υπαλλήλους', icon: '' },
   ],
 }
 
 const TICKER_ITEMS = [
   {
-    icon: '📦',
+    icon: '',
     question: <>Niemand kauft dein Produkt auf <span className="highlight-coral">Kleinanzeigen?</span></>,
     solution: <><span className="highlight-petrol font-bold">H.I.T.</span> macht den <span className="highlight-mint font-semibold">Verkaufstext unwiderstehlich</span>.</>
   },
   {
-    icon: '💼',
+    icon: '',
     question: <>Deine <span className="highlight-amber">Bewerbung</span> klingt wie aus dem Jahr 1995?</>,
     solution: <><span className="highlight-petrol font-bold">H.I.T.</span> bringt dein <span className="highlight-mint font-semibold">Anschreiben</span> auf das nächste Level.</>
   },
   {
-    icon: '📱',
+    icon: '',
     question: <>Du sitzt seit 20 Minuten vor einem <span className="highlight-coral">leeren Post?</span></>,
     solution: <><span className="highlight-petrol font-bold">H.I.T.</span> schreibt deinen <span className="highlight-mint font-semibold">Social-Media-Text</span> in 5 Sekunden.</>
   },
   {
-    icon: '🎬',
+    icon: '',
     question: <>Dein Video hat nach 3 Sekunden schon <span className="highlight-amber">0 Zuschauer?</span></>,
     solution: <><span className="highlight-petrol font-bold">H.I.T.</span> baut dir den <span className="highlight-mint font-semibold">perfekten Hook</span>.</>
   }
@@ -98,22 +98,22 @@ const TICKER_ITEMS = [
 
 const DUEL_SETS = [
   {
-    title: 'Verkauf 📦',
+    title: 'Verkauf ',
     bad: '„Verkaufe iPhone 13. Zustand gut, siehe Bilder. Keine Rücknahme.“',
     good: '„Biete gepflegtes iPhone 13. Akku hält top, Display kratzerfrei. Bei Fragen gerne melden!“',
-    hit: '„Dein neues iPhone 13 wartet schon! 📱 Top-Zustand, langlebiger Akku & bereit für den Einsatz. Schnapp es dir, bevor es weg ist! ✨“'
+    hit: '„Dein neues iPhone 13 wartet schon!  Top-Zustand, langlebiger Akku & bereit für den Einsatz. Schnapp es dir, bevor es weg ist! “'
   },
   {
-    title: 'Bewerbung 💼',
+    title: 'Bewerbung ',
     bad: '„Sehr geehrte Damen und Herren, hiermit bewerbe ich mich auf Ihre Stelle als...“',
     good: '„Sehr geehrte Damen und Herren, mit meinen Fähigkeiten im Bereich X möchte ich Ihr Team unterstützen...“',
-    hit: '„Sie suchen jemanden, der ab Tag 1 voll anpackt und frischen Wind in Ihre Projekte bringt? Genau das biete ich Ihnen... 🚀“'
+    hit: '„Sie suchen jemanden, der ab Tag 1 voll anpackt und frischen Wind in Ihre Projekte bringt? Genau das biete ich Ihnen... “'
   },
   {
-    title: 'Video / Social Media 🎬',
+    title: 'Video / Social Media ',
     bad: '„Hallo Leute, willkommen auf meinem Kanal! Heute zeige ich euch mal ein paar Tipps...“',
     good: '„Wenn du Probleme beim Texten hast, schau dir diese drei einfachen Kniffe an...“',
-    hit: '„Hör sofort auf, deine Texte selbst zu schreiben! 🛑 Dieser eine Trick spart dir Stunden...“'
+    hit: '„Hör sofort auf, deine Texte selbst zu schreiben!  Dieser eine Trick spart dir Stunden...“'
   }
 ]
 
@@ -389,25 +389,25 @@ export default function PlatformEngine() {
       lights.push({ 
         type: 'red', 
         label: 'HOOK',
-        text: '⚠️ Hook leer! Bitte füge einen Hook-Text hinzu.' 
+        text: '️ Hook leer! Bitte füge einen Hook-Text hinzu.' 
       })
     } else if (hookLen > 130) {
       lights.push({ 
         type: 'red', 
         label: 'HOOK',
-        text: '⚠️ Hook viel zu lang. Zuschauer scrollen sofort ab.' 
+        text: '️ Hook viel zu lang. Zuschauer scrollen sofort ab.' 
       })
     } else if (hookLen >= 90) {
       lights.push({ 
         type: 'yellow', 
         label: 'HOOK',
-        text: '⚠️ Hook etwas lang. Versuche, die Kernaussage schneller zu bringen.' 
+        text: '️ Hook etwas lang. Versuche, die Kernaussage schneller zu bringen.' 
       })
     } else {
       lights.push({ 
         type: 'green', 
         label: 'HOOK',
-        text: '✅ Hook hat eine ideale, knackige Länge!' 
+        text: ' Hook hat eine ideale, knackige Länge!' 
       })
     }
 
@@ -416,25 +416,25 @@ export default function PlatformEngine() {
       lights.push({ 
         type: 'red', 
         label: 'HAUPTTEIL',
-        text: '⚠️ Hauptteil leer. Bitte füge den Video-Inhalt ein.' 
+        text: '️ Hauptteil leer. Bitte füge den Video-Inhalt ein.' 
       })
     } else if (bodyLen < 100 || bodyLen > 1000) {
       lights.push({ 
         type: 'red', 
         label: 'HAUPTTEIL',
-        text: '⚠️ Hauptteil ungeeignet für optimale Retention (zu kurz oder zu überladen).' 
+        text: '️ Hauptteil ungeeignet für optimale Retention (zu kurz oder zu überladen).' 
       })
     } else if (bodyLen >= 300 && bodyLen <= 800) {
       lights.push({ 
         type: 'green', 
         label: 'HAUPTTEIL',
-        text: '✅ Hauptteil hat die optimale Pacing-Dichte!' 
+        text: ' Hauptteil hat die optimale Pacing-Dichte!' 
       })
     } else {
       lights.push({ 
         type: 'yellow', 
         label: 'HAUPTTEIL',
-        text: '⚠️ Hauptteil ist sehr kurz oder lang. Achte auf Pattern Interrupts.' 
+        text: '️ Hauptteil ist sehr kurz oder lang. Achte auf Pattern Interrupts.' 
       })
     }
 
@@ -443,25 +443,25 @@ export default function PlatformEngine() {
       lights.push({ 
         type: 'red', 
         label: 'CTA & LOOP',
-        text: '⚠️ Kein CTA vorhanden. Die Zuschauer wissen nicht, was sie tun sollen.' 
+        text: '️ Kein CTA vorhanden. Die Zuschauer wissen nicht, was sie tun sollen.' 
       })
     } else if (ctaLen > 120) {
       lights.push({ 
         type: 'red', 
         label: 'CTA & LOOP',
-        text: '⚠️ CTA viel zu lang. Zuschauer schalten vor dem Videoende ab.' 
+        text: '️ CTA viel zu lang. Zuschauer schalten vor dem Videoende ab.' 
       })
     } else if (ctaLen >= 60) {
       lights.push({ 
         type: 'yellow', 
         label: 'CTA & LOOP',
-        text: '⚠️ CTA etwas lang. Vermeide langes Verabschieden.' 
+        text: '️ CTA etwas lang. Vermeide langes Verabschieden.' 
       })
     } else {
       lights.push({ 
         type: 'green', 
         label: 'CTA & LOOP',
-        text: '✅ CTA ist kurz und direkt!' 
+        text: ' CTA ist kurz und direkt!' 
       })
     }
 
@@ -901,7 +901,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
           alignItems: 'center',
           animation: 'peFadeIn 0.3s ease'
         }}>
-          <span>⚠️ {error}</span>
+          <span>️ {error}</span>
           <button 
             onClick={() => setError('')} 
             style={{ background: 'none', border: 'none', color: '#ffffff', cursor: 'pointer', fontSize: '1.1rem', padding: '0 0.5rem' }}
@@ -1060,11 +1060,11 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                   <div className="pe-score-grid">
                     <div className="pe-score-item">
                       <span className="pe-score-label">{t('landing.goalDetected')}</span>
-                      <span className="pe-score-value done">✅</span>
+                      <span className="pe-score-value done"></span>
                     </div>
                     <div className="pe-score-item">
                       <span className="pe-score-label">{t('landing.strategyCreated')}</span>
-                      <span className="pe-score-value done">✅</span>
+                      <span className="pe-score-value done"></span>
                     </div>
                     <div className="pe-score-item">
                       <span className="pe-score-label">{t('landing.contentChance')}</span>
@@ -1081,7 +1081,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                     <div className="pe-recommended-list">
                       {top3Keys.map((key, i) => (
                         <span key={key} className="pe-recommended-item">
-                          {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} {getAgentName(key)}
+                          {i === 0 ? '' : i === 1 ? '' : ''} {getAgentName(key)}
                         </span>
                       ))}
                     </div>
@@ -1202,7 +1202,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
           {mobileStep === 'studio' && (phase === 'result' || phase === 'refining') && (
             <div className="pe-result-phase">
               <div className="pe-result-header">
-                <h2 className="pe-result-title">✨ {t('platformEngine.resultTitle')}</h2>
+                <h2 className="pe-result-title"> {t('platformEngine.resultTitle')}</h2>
                 <p className="pe-result-subtitle">
                   {goal} · {top3Keys.length} Plattformen erstellt
                 </p>
@@ -1213,7 +1213,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                 <div className="pe-copilot-chat-card">
                   <div className="pe-chat-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '1px solid var(--border, #e5e7eb)', paddingBottom: '0.75rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '1.25rem' }}>🤖</span>
+                      <span style={{ fontSize: '1.25rem' }}></span>
                       <div>
                         <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700' }}>H.I.T. Co-Pilot</h3>
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted, #6b7280)' }}>Online</span>
@@ -1295,7 +1295,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                 {/* RECHTE SPALTE: Live-Skript-Vorschau */}
                 <div className="pe-copilot-preview-card">
                   <div className="pe-preview-header" style={{ marginBottom: '1rem', borderBottom: '1px solid var(--border, #e5e7eb)', paddingBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700' }}>🎬 Aktuelles Skript</h3>
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700' }}> Aktuelles Skript</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <span className="pe-platform-badge" style={{ background: 'var(--color-mint, #10b981)', color: '#fff', fontSize: '9px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase' }}>
                         TikTok / Short
@@ -1367,17 +1367,17 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                           )}
                           <div className="pe-preview-block" style={{ borderLeftColor: 'var(--color-mint, #10b981)', background: 'var(--bg-secondary, #f9fafb)', padding: '12px', borderRadius: '8px', marginTop: '12px' }}>
                             <div className="pe-preview-title" style={{ color: 'var(--color-mint, #059669)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', fontWeight: '700' }}>
-                              🎥 Video-Quellen & Footage finden
+                               Video-Quellen & Footage finden
                             </div>
                             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted, #6b7280)', margin: '4px 0 10px 0', lineHeight: '1.4' }}>
                               Passendes Footage für deine Szenen suchen und herunterladen:
                             </p>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                               {getFootageSources(r, goal).map((src, sIdx) => {
-                                let icon = '🔗'
+                                let icon = ''
                                 if (src.platform.toLowerCase().includes('youtube')) icon = '▶️'
-                                if (src.platform.toLowerCase().includes('tiktok')) icon = '🎵'
-                                if (src.platform.toLowerCase().includes('pexels') || src.platform.toLowerCase().includes('pixabay')) icon = '📹'
+                                if (src.platform.toLowerCase().includes('tiktok')) icon = ''
+                                if (src.platform.toLowerCase().includes('pexels') || src.platform.toLowerCase().includes('pixabay')) icon = ''
                                 return (
                                   <a
                                     key={sIdx}
@@ -1487,7 +1487,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
 
                   <div className="pe-duel-widget">
                     <div className="pe-duel-header">
-                      <span className="pe-duel-icon">⚡</span>
+                      <span className="pe-duel-icon"></span>
                       <span className="pe-duel-title">Vergleichs-Duell: {DUEL_SETS[duelIndex].title}</span>
                     </div>
                     <div className="pe-duel-grid">
@@ -1500,7 +1500,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                         <p className="pe-duel-text">{DUEL_SETS[duelIndex].good}</p>
                       </div>
                       <div className="pe-duel-column pe-duel-hit">
-                        <span className="pe-duel-badge">H.I.T. Magie ✨</span>
+                        <span className="pe-duel-badge">H.I.T. Magie </span>
                         <p className="pe-duel-text">{DUEL_SETS[duelIndex].hit}</p>
                       </div>
                     </div>
@@ -1650,11 +1650,11 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
               <div className="pe-score-grid">
                 <div className="pe-score-item">
                   <span className="pe-score-label">{t('landing.goalDetected')}</span>
-                  <span className="pe-score-value done">✅</span>
+                  <span className="pe-score-value done"></span>
                 </div>
                 <div className="pe-score-item">
                   <span className="pe-score-label">{t('landing.strategyCreated')}</span>
-                  <span className="pe-score-value done">✅</span>
+                  <span className="pe-score-value done"></span>
                 </div>
                 <div className="pe-score-item">
                   <span className="pe-score-label">{t('landing.contentChance')}</span>
@@ -1671,7 +1671,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                 <div className="pe-recommended-list">
                   {top3Keys.map((key, i) => (
                     <span key={key} className="pe-recommended-item">
-                      {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} {getAgentName(key)}
+                      {i === 0 ? '' : i === 1 ? '' : ''} {getAgentName(key)}
                     </span>
                   ))}
                 </div>
@@ -1718,7 +1718,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
             <div className="pe-result-phase">
               <div className="pe-result-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', width: '100%' }}>
                 <div>
-                  <h2 className="pe-result-title">✨ {t('platformEngine.resultTitle')}</h2>
+                  <h2 className="pe-result-title"> {t('platformEngine.resultTitle')}</h2>
                   <p className="pe-result-subtitle">
                     {goal} · {top3Keys.length} Plattformen erstellt
                   </p>
@@ -1741,7 +1741,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                       transition: 'all 0.2s ease',
                     }}
                   >
-                    ❓ Tour starten
+                     Tour starten
                   </button>
                   <button
                     onClick={() => setPhase('questions')}
@@ -1772,7 +1772,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                 <div className="pe-copilot-chat-card">
                   <div className="pe-chat-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '1px solid var(--border, #e5e7eb)', paddingBottom: '0.75rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '1.25rem' }}>🤖</span>
+                      <span style={{ fontSize: '1.25rem' }}></span>
                       <div>
                         <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700' }}>H.I.T. Co-Pilot</h3>
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted, #6b7280)' }}>Online</span>
@@ -1854,7 +1854,7 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                 {/* RECHTE SPALTE: Live-Skript-Vorschau */}
                 <div className="pe-copilot-preview-card">
                   <div className="pe-preview-header" style={{ marginBottom: '1rem', borderBottom: '1px solid var(--border, #e5e7eb)', paddingBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700' }}>🎬 Aktuelles Skript</h3>
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '700' }}> Aktuelles Skript</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <span className="pe-platform-badge" style={{ background: 'var(--color-mint, #10b981)', color: '#fff', fontSize: '9px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase' }}>
                         TikTok / Short
@@ -1926,17 +1926,17 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
                           )}
                           <div className="pe-preview-block" style={{ borderLeftColor: 'var(--color-mint, #10b981)', background: 'var(--bg-secondary, #f9fafb)', padding: '12px', borderRadius: '8px', marginTop: '12px' }}>
                             <div className="pe-preview-title" style={{ color: 'var(--color-mint, #059669)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', fontWeight: '700' }}>
-                              🎥 Video-Quellen & Footage finden
+                               Video-Quellen & Footage finden
                             </div>
                             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted, #6b7280)', margin: '4px 0 10px 0', lineHeight: '1.4' }}>
                               Passendes Footage für deine Szenen suchen und herunterladen:
                             </p>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                               {getFootageSources(r, goal).map((src, sIdx) => {
-                                let icon = '🔗'
+                                let icon = ''
                                 if (src.platform.toLowerCase().includes('youtube')) icon = '▶️'
-                                if (src.platform.toLowerCase().includes('tiktok')) icon = '🎵'
-                                if (src.platform.toLowerCase().includes('pexels') || src.platform.toLowerCase().includes('pixabay')) icon = '📹'
+                                if (src.platform.toLowerCase().includes('tiktok')) icon = ''
+                                if (src.platform.toLowerCase().includes('pexels') || src.platform.toLowerCase().includes('pixabay')) icon = ''
                                 return (
                                   <a
                                     key={sIdx}
@@ -2026,28 +2026,28 @@ Erkläre kurz davor oder danach im Text, was du geändert hast, sodass die Antwo
             <h4 className="pe-info-what-title">Was H.I.T. für dich tut:</h4>
             <div className="pe-info-features">
               <div className="pe-info-feature">
-                <span>🎯</span>
+                <span></span>
                 <div>
                   <strong>Zielgruppen-Fokus</strong>
                   <p>H.I.T. analysiert deine Idee und optimiert sie für deine Nische.</p>
                 </div>
               </div>
               <div className="pe-info-feature">
-                <span>🤖</span>
+                <span></span>
                 <div>
                   <strong>Co-Pilot Skript-Optimierung</strong>
                   <p>Passe das Skript im Chat in Sekundenschnelle an deine Wünsche an.</p>
                 </div>
               </div>
               <div className="pe-info-feature">
-                <span>🎥</span>
+                <span></span>
                 <div>
                   <strong>Footage-Sourcing</strong>
                   <p>Erhalte direkte Links zu den besten Video-Clips im Web – kein langes Suchen.</p>
                 </div>
               </div>
               <div className="pe-info-feature">
-                <span>⚡</span>
+                <span></span>
                 <div>
                   <strong>CapCut-Export</strong>
                   <p>Lade das fertige Projekt herunter und öffne es direkt in CapCut.</p>

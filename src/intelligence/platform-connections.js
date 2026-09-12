@@ -11,7 +11,7 @@ import { supabase } from '../lib/supabase'
 export const PLATFORMS = {
   capcut: {
     name: 'CapCut',
-    icon: '✂️',
+    icon: '️',
     color: '#000000',
     description: 'Video-Bearbeitung und -Publikation',
     authType: 'oauth', // 'oauth', 'api_key', 'manual'
@@ -20,7 +20,7 @@ export const PLATFORMS = {
   },
   tiktok: {
     name: 'TikTok',
-    icon: '🎵',
+    icon: '',
     color: '#000000',
     description: 'Kurzvideo-Plattform',
     authType: 'oauth',
@@ -29,7 +29,7 @@ export const PLATFORMS = {
   },
   instagram: {
     name: 'Instagram',
-    icon: '📸',
+    icon: '',
     color: '#E4405F',
     description: 'Foto- und Video-Plattform',
     authType: 'oauth',
@@ -38,7 +38,7 @@ export const PLATFORMS = {
   },
   facebook: {
     name: 'Facebook',
-    icon: '👥',
+    icon: '',
     color: '#1877F2',
     description: 'Soziales Netzwerk',
     authType: 'oauth',
@@ -47,7 +47,7 @@ export const PLATFORMS = {
   },
   linkedin: {
     name: 'LinkedIn',
-    icon: '💼',
+    icon: '',
     color: '#0A66C2',
     description: 'Berufliches Netzwerk',
     authType: 'oauth',
@@ -65,7 +65,7 @@ export const PLATFORMS = {
   },
   reddit: {
     name: 'Reddit',
-    icon: '💬',
+    icon: '',
     color: '#FF4500',
     description: 'Community-Plattform',
     authType: 'oauth',
@@ -74,7 +74,7 @@ export const PLATFORMS = {
   },
   pinterest: {
     name: 'Pinterest',
-    icon: '📌',
+    icon: '',
     color: '#BD081C',
     description: 'Bild-Plattform',
     authType: 'oauth',
@@ -83,7 +83,7 @@ export const PLATFORMS = {
   },
   email: {
     name: 'E-Mail',
-    icon: '📧',
+    icon: '',
     color: '#EA4335',
     description: 'E-Mail-Versand',
     authType: 'manual', // SMTP-Konfiguration
@@ -92,7 +92,7 @@ export const PLATFORMS = {
   },
   podcast: {
     name: 'Podcast',
-    icon: '🎙️',
+    icon: '️',
     color: '#8B5CF6',
     description: 'Audio-Publikation',
     authType: 'manual', // RSS-Feed-URL

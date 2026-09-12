@@ -192,7 +192,7 @@ export default function DailyPackageCard() {
         <div className="dp-header-right">
           {streak > 0 && (
             <div className="dp-streak">
-              <span className="dp-streak-fire">🔥</span>
+              <span className="dp-streak-fire"></span>
               <span>{streak} Tag{streak > 1 ? 'e' : ''} streak</span>
             </div>
           )}
@@ -209,7 +209,7 @@ export default function DailyPackageCard() {
           className={`dp-copy-btn ${copied === 'hook' ? 'dp-copied' : ''}`}
           onClick={() => copyToClipboard(pkg.hook, 'hook')}
         >
-          {copied === 'hook' ? '✓ Kopiert' : 'Kopieren'}
+          {copied === 'hook' ? ' Kopiert' : 'Kopieren'}
         </button>
       </div>
 
@@ -220,7 +220,7 @@ export default function DailyPackageCard() {
           className={`dp-copy-btn ${copied === 'script' ? 'dp-copied' : ''}`}
           onClick={() => copyToClipboard(pkg.script, 'script')}
         >
-          {copied === 'script' ? '✓ Kopiert' : 'Kopieren'}
+          {copied === 'script' ? ' Kopiert' : 'Kopieren'}
         </button>
       </div>
 
@@ -232,7 +232,7 @@ export default function DailyPackageCard() {
             className={`dp-copy-btn ${copied === 'hashtags' ? 'dp-copied' : ''}`}
             onClick={() => copyToClipboard(hashtagsText, 'hashtags')}
           >
-            {copied === 'hashtags' ? '✓ Kopiert' : 'Kopieren'}
+            {copied === 'hashtags' ? ' Kopiert' : 'Kopieren'}
           </button>
         </div>
         <div className="dp-time">
@@ -243,7 +243,7 @@ export default function DailyPackageCard() {
 
       <div className="dp-actions">
         <button className="dp-btn dp-btn-copy-all" onClick={copyAll}>
-          {copied === 'all' ? '✓ Alles kopiert' : 'Alles kopieren'}
+          {copied === 'all' ? ' Alles kopiert' : 'Alles kopieren'}
         </button>
         <button className="dp-btn dp-btn-analyze" onClick={sendToAnalytics}>
           Analysieren

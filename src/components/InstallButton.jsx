@@ -62,7 +62,7 @@ function IOSModal({ onDismiss }) {
           <X size={18} />
         </button>
 
-        <div className="install-modal-icon">📱</div>
+        <div className="install-modal-icon"></div>
         <h3>App zum Home-Bildschirm</h3>
 
         <div className="install-modal-steps">

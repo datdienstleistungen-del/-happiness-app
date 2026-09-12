@@ -140,7 +140,7 @@ const translations = {
     admin: { title: 'Admin-Bereich', noAccess: 'Kein Zugriff. Nur für Admins.', users: 'Nutzer', posts: 'Beiträge', items: 'Anzeigen', delete: 'Löschen' },
     housing: { title: 'Wohnungen', subtitle: 'Finde dein neues Zuhause — WG-Zimmer, Wohnungen und mehr', browse: 'Suchen', create: 'Inserat erstellen', titleField: 'Titel', desc: 'Beschreibung', price: 'Preis (€/Monat)', type: 'Wohnungstyp', location: 'Standort', size: 'Größe (m²)', availableFrom: 'Verfügbar ab', contact: 'Kontakt', contactInfo: 'Kontakt', contactBtn: 'Kontaktieren', publish: 'Inserat veröffentlichen', search: 'Standort oder Titel suchen...', allTypes: 'Alle Typen', maxPrice: 'Max. Preis', noResults: 'Keine Wohnungen gefunden.', createAd: 'Neues Inserat' },
     video: { title: 'Videos', newVideo: 'Neues Video', selectVideo: 'Video auswählen', caption: 'Beschreibung', captionPlaceholder: 'Was zeigt dein Video?', publish: 'Veröffentlichen', uploading: 'Wird hochgeladen...', cancel: 'Abbrechen', noVideos: 'Noch keine Videos. Sei der Erste!', noComments: 'Noch keine Kommentare.', commentPlaceholder: 'Kommentar schreiben...', send: 'Senden', share: 'Teilen', delete: 'Löschen' },
-    videoMaker: { title: '🎬 Video Creator', preview: 'Vorschau', bgColor: 'Hintergrundfarbe', textColor: 'Textfarbe', accentColor: 'Akzentfarbe', addScene: '+ Szene hinzufügen', record: '🎥 Video aufnehmen', recording: '⏳ Wird aufgenommen...', scene: 'Szene', sceneOf: 'von', saved: 'Video gespeichert! ✅', ready: 'Bereit', tips: '💡 Tipps', tip1: 'Halte Texte kurz und knackig', tip2: 'Verwende kontrastreiche Farben', tip3: '3-4 Szenen sind ideal für TikTok', tip4: 'Das Video wird als WebM heruntergeladen', duration: 'Sekunden', scene1Text1: 'Deine Daten bleiben', scene1Text2: 'in Europa', scene2Text1: 'Kein Milliardär', scene2Text2: 'manipuliert dich', scene3Text1: 'Happiness', scene3Text2: 'Datenschutz · Demokratie', scene4Text1: 'Kostenlos', scene4Text2: 'Jetzt ausprobieren!' },
+    videoMaker: { title: ' Video Creator', preview: 'Vorschau', bgColor: 'Hintergrundfarbe', textColor: 'Textfarbe', accentColor: 'Akzentfarbe', addScene: '+ Szene hinzufügen', record: ' Video aufnehmen', recording: '⏳ Wird aufgenommen...', scene: 'Szene', sceneOf: 'von', saved: 'Video gespeichert! ', ready: 'Bereit', tips: ' Tipps', tip1: 'Halte Texte kurz und knackig', tip2: 'Verwende kontrastreiche Farben', tip3: '3-4 Szenen sind ideal für TikTok', tip4: 'Das Video wird als WebM heruntergeladen', duration: 'Sekunden', scene1Text1: 'Deine Daten bleiben', scene1Text2: 'in Europa', scene2Text1: 'Kein Milliardär', scene2Text2: 'manipuliert dich', scene3Text1: 'Happiness', scene3Text2: 'Datenschutz · Demokratie', scene4Text1: 'Kostenlos', scene4Text2: 'Jetzt ausprobieren!' },
     ai: { profile: 'Profil', export: 'Exportieren', delete: 'Löschen', newChat: 'Neuer Chat', consentMessage: 'Um dir personalisierte Hilfe zu geben, speichern wir deine Gesprächsverlauf und ein Profil über dich. Alle Daten bleiben in Europa und unterliegen dem europäischen Datenschutz (DSGVO).', acceptConsent: 'Akzeptieren', yourProfile: 'Dein Profil', profileInfo: 'Dieses Profil wird automatisch basierend auf deinen Gesprächen erstellt.', family: 'Familie', preferences: 'Vorlieben', location: 'Standort', occupation: 'Beruf', dataConsent: 'Ich stimme der Speicherung meiner Daten zu', welcome: 'Hallo! Ich bin dein Happiness AI', welcomeDesc: 'Ich kann dir helfen bei Alltagsproblemen, Kochideen, Auto-Fragen, Familienproblemen und mehr.', placeholder: 'Stell mir eine Frage...', footer: 'Deine Daten bleiben in Europa. DSGVO-konform.', systemLanguage: 'Deutsch', chip1: 'Was kochen?', chip1Q: 'Was soll ich heute kochen?', chip2: 'Handwerk', chip2Q: 'Mein Wasserhahn tropft, wie repariere ich das?', chip3: 'Auto', chip3Q: 'Soll ich ein Elektroauto kaufen?', chip4: 'Job', chip4Q: 'Tipps fuer einen Jobwechsel?' },
     time: { justNow: 'Gerade eben', minutes: 'Min.', hours: 'Std.', days: 'Tg.' },
     dashboard: { posts: 'Beiträge', users: 'Nutzer', friends: 'Freunde', notifications: 'Benachrichtigungen', lastPosts: 'Letzte Beiträge', workflows: 'Aktive Workflows', noWorkflows: 'Noch keine Workflows. Starte mit einem Ziel oben!', hitCommand: 'Was möchtest du heute erreichen?', hitPlaceholder: 'Beschreibe dein Ziel in einem Satz...', hitStart: 'H.I.T. starten', communityInspiration: 'Community-Inspiration', communitySub: 'Sieh, was andere erstellen.', percentDone: 'fertig', continue: 'Weiter', howTitle: 'So funktioniert es:', howText: 'Beschreib dein Ziel unten — H.I.T. generiert dir automatisch Texte, Skripte und Posts für alle Plattformen. Du kopierst und postest.' },
@@ -262,7 +262,7 @@ const translations = {
       shareAll: 'Alle teilen',
       moreAvailable: 'Weitere Versionen verfügbar:',
       moreButton: 'Weitere Plattformen generieren',
-      recsTitle: '💡 Empfehlungen von H.I.T.',
+      recsTitle: ' Empfehlungen von H.I.T.',
       packageTitle: 'Dein Paket enthält:',
       generating: 'H.I.T. arbeitet für dich...',
       recommended: 'Empfohlene Plattformen:',
@@ -279,10 +279,10 @@ const translations = {
       resetButton: 'Neues Content-Ziel eingeben'
     },
     nextActionHub: {
-      banner: '💡 Nächster Schritt: Kopiere das Skript, plane den Post für die nächste empfohlene Uhrzeit und warte 2 Tage, um die Analytics zu vergleichen.',
-      capcutButton: '🎬 In CapCut Studio öffnen',
-      trackingButton: '📊 Tracking-Task anlegen',
-      resetButton: '🔄 Neues Content-Ziel eingeben'
+      banner: ' Nächster Schritt: Kopiere das Skript, plane den Post für die nächste empfohlene Uhrzeit und warte 2 Tage, um die Analytics zu vergleichen.',
+      capcutButton: ' In CapCut Studio öffnen',
+      trackingButton: ' Tracking-Task anlegen',
+      resetButton: ' Neues Content-Ziel eingeben'
     },
     videoShowcase: {
       title: '3 Wörter rein. Fertiges Video raus.',
@@ -293,10 +293,10 @@ const translations = {
       badge1: 'TikTok',
       badge2: 'Instagram',
       badge3: 'YouTube Shorts',
-      cta: '🚀 Jetzt selbst ausprobieren'
+      cta: ' Jetzt selbst ausprobieren'
     },
     capcut: {
-      uploadPromptTitle: '📸 Möchtest du Fotos oder Videos zu deinen Szenen hinzufügen?',
+      uploadPromptTitle: ' Möchtest du Fotos oder Videos zu deinen Szenen hinzufügen?',
       btnUploadYes: 'Ja, Medien hochladen',
       btnUploadNo: 'Nein, weiter zum Skript',
       sceneTitle: 'Szene',
@@ -306,11 +306,11 @@ const translations = {
       btnUploadPhoto: 'Foto hochladen',
       btnUploadVideo: 'Video hochladen',
       exportPanelTitle: 'Nach CapCut exportieren',
-      btnCopyScript: '📋 Skript in Zwischenablage',
+      btnCopyScript: ' Skript in Zwischenablage',
       btnCopyScriptDesc: 'Voiceover-Text wird kopiert',
-      btnDownloadZip: '📥 Fotos als Zip herunterladen',
+      btnDownloadZip: ' Fotos als Zip herunterladen',
       btnDownloadZipDesc: 'Alle hochgeladenen Fotos als .zip',
-      btnDownloadDraft: '📁 CapCut Projekt herunterladen',
+      btnDownloadDraft: ' CapCut Projekt herunterladen',
       btnDownloadDraftDesc: 'draft_content.json für deine Timeline',
       guideTitle: 'So funktioniert\'s:',
       guideStep1: '1. Klick auf "Skript kopieren".',
@@ -412,7 +412,7 @@ const translations = {
   },
   en: {
     legal: { impressum: 'Legal Notice', privacy: 'Privacy Policy', terms: 'Terms of Service' },
-    nexus: {leadRadar: 'Lead Radar', scanAuto: 'Automatic scan for your offering:', findTriggers: 'Find trigger events and buying signals in your market', liveSearch: '🌐 Live Web Search', simulation: '🧪 Simulation', switchMode: 'Switch Mode', signalsFound: 'buying signals found', hideSearch: 'Hide search', manualSearch: 'Manual search', rescan: 'Rescan', noSignals: 'No buying signals found yet.', searchActive: 'Search in progress...', generatePitch: 'Generate Message', generating: 'Generating...', discard: 'Discard', errorPipeline: 'Error creating pipeline data', noOfferingFound: 'No active offering found', defineOfferingFirst: 'To use the radar optimally, you should define an offering first.', toOfferingAnalysis: 'To Offering Analysis', scanning: 'Scanning market for', targetGroup: 'Target Group', buyingCycle: 'Buying Cycle', budgetType: 'Budget Type', painPoints: 'Identified Pain Points', impact: 'Impact', costs: 'Costs', triggerEvents: 'Trigger Events', situationContext: 'Situation / Context (from Radar)', companyName: 'Company Name', previousContact: 'Previous Contact', objection: 'Objection', companyOrForum: 'Company Name / Forum', contributionOrQuestion: 'Contribution / Question', workspaceDescription: 'Click on a company in your pipeline to generate a pitch', yourPipeline: 'Your Pipeline', noLeads: 'No leads in pipeline. Use the Lead Radar!', selectMode: 'Select Mode', generateMessage: 'Generate Message' , openPipeline: '? Open in Pipeline', rejected: 'Rejected', analyzing: 'Analyzing...', kiReason: 'AI REASONING', kiReasonRejected: 'AI REASONING (REJECTED)', noRatingYet: 'Not rated yet.', noHits: 'No Radar Hits', noHitsDesc: 'The automated cron job has not found any relevant signals yet.', liveSearchTest: 'Start Live Search', deleteAll: 'Delete all', autoFind: 'Auto-Find', saveContact: 'Save', noContact: 'No contact person', addContact: 'Add contact person', contactSaved: 'Contact saved!', generatePitchAction: 'Generate Pitch', pitchGenerated: 'Your pitch is ready!', backToDashboard: 'Back to Dashboard', myOfferingProfile: 'My Offering Profile', offeringDesc: 'Define your core offering. This data is the foundation for the entire NeXus Intelligence.', yourProduct: 'Your Product / Service', whoIsTarget: 'Who is your ideal customer? (Target Audience)', whatIsValueProp: 'What is your biggest selling point (Value Proposition)?', saveProfile: 'Save Offering Profile', savingProfile: 'Saving Profile...', cancel: 'Cancel', activeProfile: 'Active Offering Profile', switchProfile: 'Switch Profile:', productService: 'Product / Service', targetGroupHeader: 'Target Audience', valuePropHeader: 'Value Proposition', nextSteps: 'Next steps in the NeXus Pipeline', toLeadRadar: 'To Lead Radar', findCompaniesDesc: 'Find suitable companies in your target audience', createNewProfile: 'Create New Profile', errRequired: 'Please fill out all required fields.', errDbSave: 'Database Error.', actionPitch: 'Action (Pitch)', intelligenceTab: 'Intelligence'},
+    nexus: {leadRadar: 'Lead Radar', scanAuto: 'Automatic scan for your offering:', findTriggers: 'Find trigger events and buying signals in your market', liveSearch: ' Live Web Search', simulation: ' Simulation', switchMode: 'Switch Mode', signalsFound: 'buying signals found', hideSearch: 'Hide search', manualSearch: 'Manual search', rescan: 'Rescan', noSignals: 'No buying signals found yet.', searchActive: 'Search in progress...', generatePitch: 'Generate Message', generating: 'Generating...', discard: 'Discard', errorPipeline: 'Error creating pipeline data', noOfferingFound: 'No active offering found', defineOfferingFirst: 'To use the radar optimally, you should define an offering first.', toOfferingAnalysis: 'To Offering Analysis', scanning: 'Scanning market for', targetGroup: 'Target Group', buyingCycle: 'Buying Cycle', budgetType: 'Budget Type', painPoints: 'Identified Pain Points', impact: 'Impact', costs: 'Costs', triggerEvents: 'Trigger Events', situationContext: 'Situation / Context (from Radar)', companyName: 'Company Name', previousContact: 'Previous Contact', objection: 'Objection', companyOrForum: 'Company Name / Forum', contributionOrQuestion: 'Contribution / Question', workspaceDescription: 'Click on a company in your pipeline to generate a pitch', yourPipeline: 'Your Pipeline', noLeads: 'No leads in pipeline. Use the Lead Radar!', selectMode: 'Select Mode', generateMessage: 'Generate Message' , openPipeline: '? Open in Pipeline', rejected: 'Rejected', analyzing: 'Analyzing...', kiReason: 'AI REASONING', kiReasonRejected: 'AI REASONING (REJECTED)', noRatingYet: 'Not rated yet.', noHits: 'No Radar Hits', noHitsDesc: 'The automated cron job has not found any relevant signals yet.', liveSearchTest: 'Start Live Search', deleteAll: 'Delete all', autoFind: 'Auto-Find', saveContact: 'Save', noContact: 'No contact person', addContact: 'Add contact person', contactSaved: 'Contact saved!', generatePitchAction: 'Generate Pitch', pitchGenerated: 'Your pitch is ready!', backToDashboard: 'Back to Dashboard', myOfferingProfile: 'My Offering Profile', offeringDesc: 'Define your core offering. This data is the foundation for the entire NeXus Intelligence.', yourProduct: 'Your Product / Service', whoIsTarget: 'Who is your ideal customer? (Target Audience)', whatIsValueProp: 'What is your biggest selling point (Value Proposition)?', saveProfile: 'Save Offering Profile', savingProfile: 'Saving Profile...', cancel: 'Cancel', activeProfile: 'Active Offering Profile', switchProfile: 'Switch Profile:', productService: 'Product / Service', targetGroupHeader: 'Target Audience', valuePropHeader: 'Value Proposition', nextSteps: 'Next steps in the NeXus Pipeline', toLeadRadar: 'To Lead Radar', findCompaniesDesc: 'Find suitable companies in your target audience', createNewProfile: 'Create New Profile', errRequired: 'Please fill out all required fields.', errDbSave: 'Database Error.', actionPitch: 'Action (Pitch)', intelligenceTab: 'Intelligence'},
     nav: { home: 'Home', community: 'Community', friends: 'Friends', marketplace: 'Marketplace', jobs: 'Jobs', courses: 'Courses', housing: 'Housing', profile: 'Profile', wissenschaft: 'Science', history: 'History', admin: 'Admin', logout: 'Logout', aiChat: 'AI Chat', videoMaker: 'Video Editor', more: 'More', videoFinder: 'Video Finder', videoScript: 'Video Script', capcutStudio: 'CapCut Studio' },
     home: { welcome: 'Welcome to the Happiness App!', subtitle: 'Great to have you here,', desc: 'Your European platform for happiness and connection' },
     auth: { login: 'Login', register: 'Register', email: 'Email', password: 'Password', name: 'Name', username: 'Username', noAccount: "Don't have an account?", hasAccount: 'Already have an account?', loginHere: 'Login here', registerHere: 'Register here', createAccount: 'Create your account', loginSubtitle: 'Login to continue', registering: 'Registering...', logging: 'Logging in...', errorSecurity: 'For security purposes, you can only request this again after a few seconds.', errorInvalidLogin: 'Invalid login credentials. Please check your email and password.', errorEmailNotConfirmed: 'Email not confirmed. Please check your inbox.', errorRateLimit: 'Too many attempts. Please wait a moment.', errorAlreadyRegistered: 'This email address is already registered.', errorValidEmail: 'Please enter a valid email address.', errorPasswordLength: 'Password must be at least 6 characters long.', registerSuccess: 'Registration successful!', registerConfirm: 'Please confirm your email address. Check your inbox and click the confirmation link.', registerAfterConfirm: 'You can then log in.', goToLogin: 'Go to login' },
@@ -427,7 +427,7 @@ const translations = {
     admin: { title: 'Admin Area', noAccess: 'No access. Admins only.', users: 'Users', posts: 'Posts', items: 'Ads', delete: 'Delete' },
     housing: { title: 'Housing', subtitle: 'Find your new home — shared rooms, apartments and more', browse: 'Search', create: 'Create Listing', titleField: 'Title', desc: 'Description', price: 'Price (€/month)', type: 'Housing Type', location: 'Location', size: 'Size (m²)', availableFrom: 'Available from', contact: 'Contact', contactInfo: 'Contact', contactBtn: 'Contact', publish: 'Publish Listing', search: 'Search location or title...', allTypes: 'All types', maxPrice: 'Max. price', noResults: 'No housing found.', createAd: 'New Listing' },
     video: { title: 'Videos', newVideo: 'New Video', selectVideo: 'Select Video', caption: 'Caption', captionPlaceholder: 'What does your video show?', publish: 'Publish', uploading: 'Uploading...', cancel: 'Cancel', noVideos: 'No videos yet. Be the first!', noComments: 'No comments yet.', commentPlaceholder: 'Write a comment...', send: 'Send', share: 'Share', delete: 'Delete' },
-    videoMaker: { title: '🎬 Video Creator', preview: 'Preview', bgColor: 'Background Color', textColor: 'Text Color', accentColor: 'Accent Color', addScene: '+ Add Scene', record: '🎥 Record Video', recording: '⏳ Recording...', scene: 'Scene', sceneOf: 'of', saved: 'Video saved! ✅', ready: 'Ready', tips: '💡 Tips', tip1: 'Keep text short and punchy', tip2: 'Use contrasting colors', tip3: '3-4 scenes are ideal for TikTok', tip4: 'Video downloads as WebM', duration: 'Seconds', scene1Text1: 'Your data stays', scene1Text2: 'in Europe', scene2Text1: 'No billionaire', scene2Text2: 'manipulates you', scene3Text1: 'Happiness', scene3Text2: 'Privacy · Democracy', scene4Text1: 'Free', scene4Text2: 'Try it now!' },
+    videoMaker: { title: ' Video Creator', preview: 'Preview', bgColor: 'Background Color', textColor: 'Text Color', accentColor: 'Accent Color', addScene: '+ Add Scene', record: ' Record Video', recording: '⏳ Recording...', scene: 'Scene', sceneOf: 'of', saved: 'Video saved! ', ready: 'Ready', tips: ' Tips', tip1: 'Keep text short and punchy', tip2: 'Use contrasting colors', tip3: '3-4 scenes are ideal for TikTok', tip4: 'Video downloads as WebM', duration: 'Seconds', scene1Text1: 'Your data stays', scene1Text2: 'in Europe', scene2Text1: 'No billionaire', scene2Text2: 'manipulates you', scene3Text1: 'Happiness', scene3Text2: 'Privacy · Democracy', scene4Text1: 'Free', scene4Text2: 'Try it now!' },
     ai: { profile: 'Profile', export: 'Export', delete: 'Delete', newChat: 'New Chat', consentMessage: 'To give you personalized help, we store your conversation history and a profile about you. All data stays in Europe and is subject to European data protection (GDPR).', acceptConsent: 'Accept', yourProfile: 'Your Profile', profileInfo: 'This profile is automatically created based on your conversations.', family: 'Family', preferences: 'Preferences', location: 'Location', occupation: 'Occupation', dataConsent: 'I consent to storing my data', welcome: "Hello! I'm your Happiness AI", welcomeDesc: 'I can help you with everyday problems, cooking ideas, car questions, family issues and more.', placeholder: 'Ask me a question...', footer: 'Your data stays in Europe. GDPR compliant.', systemLanguage: 'English', chip1: 'What to cook?', chip1Q: 'What should I cook today?', chip2: 'Handwerk', chip2Q: 'My faucet is dripping, how do I fix it?', chip3: 'Auto', chip3Q: 'Should I buy an electric car?', chip4: 'Job', chip4Q: 'Tips for a job change?' },
     time: { justNow: 'Just now', minutes: 'min.', hours: 'hrs.', days: 'days' },
     dashboard: { posts: 'Posts', users: 'Users', friends: 'Friends', wissenschaft: 'Science', lastPosts: 'Recent Posts', workflows: 'Active Workflows', noWorkflows: 'No workflows yet. Start with a goal above!', hitCommand: 'What do you want to achieve today?', hitPlaceholder: 'Describe your goal in one sentence...', hitStart: 'Start H.I.T.', communityInspiration: 'Community Inspiration', communitySub: 'See what others are creating.', percentDone: 'done', continue: 'Continue', howTitle: 'How it works:', howText: 'Describe your goal below — H.I.T. automatically generates texts, scripts and posts for all platforms. You copy and post.' },
@@ -549,7 +549,7 @@ const translations = {
       shareAll: 'Share all',
       moreAvailable: 'More versions available:',
       moreButton: 'Generate more platforms',
-      recsTitle: '💡 Recommendations from H.I.T.',
+      recsTitle: ' Recommendations from H.I.T.',
       packageTitle: 'Your package contains:',
       generating: 'H.I.T. is working for you...',
       recommended: 'Recommended platforms:',
@@ -566,10 +566,10 @@ const translations = {
       resetButton: 'Enter new content goal'
     },
     nextActionHub: {
-      banner: '💡 Next Step: Copy the script, schedule the post for the next recommended time, and wait 2 days to compare analytics.',
-      capcutButton: '🎬 Open in CapCut Studio',
-      trackingButton: '📊 Set up tracking task',
-      resetButton: '🔄 Enter new content goal'
+      banner: ' Next Step: Copy the script, schedule the post for the next recommended time, and wait 2 days to compare analytics.',
+      capcutButton: ' Open in CapCut Studio',
+      trackingButton: ' Set up tracking task',
+      resetButton: ' Enter new content goal'
     },
     videoShowcase: {
       title: '3 words in. Finished video out.',
@@ -580,10 +580,10 @@ const translations = {
       badge1: 'TikTok',
       badge2: 'Instagram',
       badge3: 'YouTube Shorts',
-      cta: '🚀 Try it yourself now'
+      cta: ' Try it yourself now'
     },
     capcut: {
-      uploadPromptTitle: '📸 Would you like to add photos or videos to your scenes?',
+      uploadPromptTitle: ' Would you like to add photos or videos to your scenes?',
       btnUploadYes: 'Yes, upload media',
       btnUploadNo: 'No, continue to script',
       sceneTitle: 'Scene',
@@ -593,11 +593,11 @@ const translations = {
       btnUploadPhoto: 'Upload Photo',
       btnUploadVideo: 'Upload Video',
       exportPanelTitle: 'Export to CapCut',
-      btnCopyScript: '📋 Copy Script to Clipboard',
+      btnCopyScript: ' Copy Script to Clipboard',
       btnCopyScriptDesc: 'Copies the voiceover text',
-      btnDownloadZip: '📥 Download Photos as ZIP',
+      btnDownloadZip: ' Download Photos as ZIP',
       btnDownloadZipDesc: 'All uploaded photos as .zip',
-      btnDownloadDraft: '📁 Download CapCut Project',
+      btnDownloadDraft: ' Download CapCut Project',
       btnDownloadDraftDesc: 'draft_content.json for your timeline',
       guideTitle: 'How it works:',
       guideStep1: '1. Click "Copy Script".',
@@ -714,7 +714,7 @@ const translations = {
     admin: { title: 'Área de Admin', noAccess: 'Sin acceso. Solo administradores.', users: 'Usuarios', posts: 'Publicaciones', items: 'Anuncios', delete: 'Eliminar' },
     housing: { title: 'Viviendas', subtitle: 'Encuentra tu nuevo hogar — habitaciones compartidas, apartamentos y más', browse: 'Buscar', create: 'Crear Anuncio', titleField: 'Título', desc: 'Descripción', price: 'Precio (€/mes)', type: 'Tipo de Vivienda', location: 'Ubicación', size: 'Tamaño (m²)', availableFrom: 'Disponible desde', contact: 'Contacto', contactInfo: 'Contacto', contactBtn: 'Contactar', publish: 'Publicar Anuncio', search: 'Buscar ubicación o título...', allTypes: 'Todos los tipos', maxPrice: 'Precio máx.', noResults: 'No se encontraron viviendas.', createAd: 'Nuevo Anuncio' },
     video: { title: 'Videos', newVideo: 'Nuevo Video', selectVideo: 'Seleccionar Video', caption: 'Descripción', captionPlaceholder: '¿Qué muestra tu video?', publish: 'Publicar', uploading: 'Subiendo...', cancel: 'Cancelar', noVideos: 'Aún no hay videos. ¡Sé el primero!', noComments: 'Aún no hay comentarios.', commentPlaceholder: 'Escribe un comentario...', send: 'Enviar', share: 'Compartir', delete: 'Eliminar' },
-    videoMaker: { title: '🎬 Creador de Videos', preview: 'Vista previa', bgColor: 'Color de fondo', textColor: 'Color de texto', accentColor: 'Color de acento', addScene: '+ Agregar escena', record: '🎥 Grabar video', recording: '⏳ Grabando...', scene: 'Escena', sceneOf: 'de', saved: '¡Video guardado! ✅', ready: 'Listo', tips: '💡 Consejos', tip1: 'Mantén el texto corto y directo', tip2: 'Usa colores contrastantes', tip3: '3-4 escenas son ideales para TikTok', tip4: 'El video se descarga como WebM', duration: 'Segundos', scene1Text1: 'Tus datos permanecen', scene1Text2: 'en Europa', scene2Text1: 'Ningún millonario', scene2Text2: 'te manipula', scene3Text1: 'Happiness', scene3Text2: 'Privacidad · Democracia', scene4Text1: 'Gratis', scene4Text2: '¡Pruébalo ahora!' },
+    videoMaker: { title: ' Creador de Videos', preview: 'Vista previa', bgColor: 'Color de fondo', textColor: 'Color de texto', accentColor: 'Color de acento', addScene: '+ Agregar escena', record: ' Grabar video', recording: '⏳ Grabando...', scene: 'Escena', sceneOf: 'de', saved: '¡Video guardado! ', ready: 'Listo', tips: ' Consejos', tip1: 'Mantén el texto corto y directo', tip2: 'Usa colores contrastantes', tip3: '3-4 escenas son ideales para TikTok', tip4: 'El video se descarga como WebM', duration: 'Segundos', scene1Text1: 'Tus datos permanecen', scene1Text2: 'en Europa', scene2Text1: 'Ningún millonario', scene2Text2: 'te manipula', scene3Text1: 'Happiness', scene3Text2: 'Privacidad · Democracia', scene4Text1: 'Gratis', scene4Text2: '¡Pruébalo ahora!' },
     ai: { profile: 'Perfil', export: 'Exportar', delete: 'Eliminar', newChat: 'Nuevo Chat', consentMessage: 'Para darte ayuda personalizada, almacenamos tu historial de conversaciones y un perfil sobre ti. Todos los datos permanecen en Europa y están sujetos a la protección de datos europea (RGPD).', acceptConsent: 'Aceptar', yourProfile: 'Tu Perfil', profileInfo: 'Este perfil se crea automáticamente basándose en tus conversaciones.', family: 'Familia', preferences: 'Preferencias', location: 'Ubicación', occupation: 'Ocupación', dataConsent: 'Consiento el almacenamiento de mis datos', welcome: '¡Hola! Soy tu Happiness AI', welcomeDesc: 'Puedo ayudarte con problemas cotidianos, ideas de cocina, preguntas sobre coches, problemas familiares y más.', placeholder: 'Hazme una pregunta...', footer: 'Tus datos permanecen en Europa. RGPD compliant.', systemLanguage: 'Español', chip1: '¿Qué cocinar?', chip1Q: '¿Qué debería cocinar hoy?', chip2: 'Handwerk', chip2Q: 'Mi grifo gotea, ¿cómo lo reparo?', chip3: 'Auto', chip3Q: '¿Debería comprar un coche eléctrico?', chip4: 'Job', chip4Q: '¿Consejos para cambiar de empleo?' },
     time: { justNow: 'Ahora mismo', minutes: 'min.', hours: 'hrs.', days: 'días' },
     dashboard: { posts: 'Publicaciones', users: 'Usuarios', friends: 'Amigos', wissenschaft: 'Ciencia', lastPosts: 'Últimas Publicaciones', howTitle: 'Así funciona:', howText: 'Describe tu objetivo abajo — H.I.T. genera automáticamente textos, guiones y publicaciones para todas las plataformas. Copia y publica.' },
@@ -800,7 +800,7 @@ const translations = {
       shareAll: 'Compartir todos',
       moreAvailable: 'Más versiones disponibles:',
       moreButton: 'Generar más plataformas',
-      recsTitle: '💡 Recomendaciones de H.I.T.',
+      recsTitle: ' Recomendaciones de H.I.T.',
       packageTitle: 'Tu paquete contiene:',
       generating: 'H.I.T. está trabajando por ti...',
       recommended: 'Plataformas recomendadas:',
@@ -816,10 +816,10 @@ const translations = {
       resetButton: 'Ingresar nuevo objetivo'
     },
     nextActionHub: {
-      banner: '💡 Siguiente paso: Copia el guion, programa la publicación para la próxima hora recomendada y espera 2 días para comparar analíticas.',
-      capcutButton: '🎬 Abrir en CapCut Studio',
-      trackingButton: '📊 Configurar tarea de seguimiento',
-      resetButton: '🔄 Ingresar nuevo objetivo'
+      banner: ' Siguiente paso: Copia el guion, programa la publicación para la próxima hora recomendada y espera 2 días para comparar analíticas.',
+      capcutButton: ' Abrir en CapCut Studio',
+      trackingButton: ' Configurar tarea de seguimiento',
+      resetButton: ' Ingresar nuevo objetivo'
     },
     videoScript: {
       title: 'Guion de Video',
@@ -925,7 +925,7 @@ const translations = {
     admin: { title: 'Zone Admin', noAccess: 'Accès refusé. Admins uniquement.', users: 'Utilisateurs', posts: 'Publications', items: 'Annonces', delete: 'Supprimer' },
     housing: { title: 'Logements', subtitle: 'Trouvez votre nouveau chez-vous — chambres partagées, appartements et plus', browse: 'Rechercher', create: 'Créer une Annonce', titleField: 'Titre', desc: 'Description', price: 'Prix (€/mois)', type: 'Type de Logement', location: 'Lieu', size: 'Surface (m²)', availableFrom: 'Disponible dès', contact: 'Contact', contactInfo: 'Contact', contactBtn: 'Contacter', publish: 'Publier l\'Annonce', search: 'Rechercher lieu ou titre...', allTypes: 'Tous les types', maxPrice: 'Prix max', noResults: 'Aucun logement trouvé.', createAd: 'Nouvelle Annonce' },
     video: { title: 'Vidéos', newVideo: 'Nouvelle Vidéo', selectVideo: 'Sélectionner une Vidéo', caption: 'Description', captionPlaceholder: 'Que montre votre vidéo?', publish: 'Publier', uploading: 'Téléversement...', cancel: 'Annuler', noVideos: 'Pas encore de vidéos. Soyez le premier!', noComments: 'Pas encore de commentaires.', commentPlaceholder: 'Écrire un commentaire...', send: 'Envoyer', share: 'Partager', delete: 'Supprimer' },
-    videoMaker: { title: '🎬 Créateur de Vidéos', preview: 'Aperçu', bgColor: "Couleur d'arrière-plan", textColor: 'Couleur du texte', accentColor: "Couleur d'accent", addScene: '+ Ajouter une scène', record: '🎥 Enregistrer la vidéo', recording: '⏳ Enregistrement...', scene: 'Scène', sceneOf: 'de', saved: 'Vidéo enregistrée! ✅', ready: 'Prêt', tips: '💡 Conseils', tip1: 'Gardez le texte court et percutant', tip2: 'Utilisez des couleurs contrastées', tip3: '3-4 scènes sont idéales pour TikTok', tip4: 'La vidéo est téléchargée en WebM', duration: 'Secondes', scene1Text1: 'Vos données restent', scene1Text2: 'en Europe', scene2Text1: 'Aucun milliardaire', scene2Text2: 'ne vous manipule', scene3Text1: 'Happiness', scene3Text2: 'Vie privée · Démocratie', scene4Text1: 'Gratuit', scene4Text2: 'Essayez maintenant!' },
+    videoMaker: { title: ' Créateur de Vidéos', preview: 'Aperçu', bgColor: "Couleur d'arrière-plan", textColor: 'Couleur du texte', accentColor: "Couleur d'accent", addScene: '+ Ajouter une scène', record: ' Enregistrer la vidéo', recording: '⏳ Enregistrement...', scene: 'Scène', sceneOf: 'de', saved: 'Vidéo enregistrée! ', ready: 'Prêt', tips: ' Conseils', tip1: 'Gardez le texte court et percutant', tip2: 'Utilisez des couleurs contrastées', tip3: '3-4 scènes sont idéales pour TikTok', tip4: 'La vidéo est téléchargée en WebM', duration: 'Secondes', scene1Text1: 'Vos données restent', scene1Text2: 'en Europe', scene2Text1: 'Aucun milliardaire', scene2Text2: 'ne vous manipule', scene3Text1: 'Happiness', scene3Text2: 'Vie privée · Démocratie', scene4Text1: 'Gratuit', scene4Text2: 'Essayez maintenant!' },
     ai: { profile: 'Profil', export: 'Exporter', delete: 'Supprimer', newChat: 'Nouveau Chat', consentMessage: "Pour vous aider de manière personnalisée, nous stockons votre historique de conversations et un profil vous concernant. Toutes les données restent en Europe et sont soumises à la protection des données européenne (RGPD).", acceptConsent: 'Accepter', yourProfile: 'Votre Profil', profileInfo: 'Ce profil est automatiquement créé en fonction de vos conversations.', family: 'Famille', preferences: 'Préférences', location: 'Emplacement', occupation: 'Profession', dataConsent: 'Je consens au stockage de mes données', welcome: "Bonjour! Je suis votre Happiness AI", welcomeDesc: 'Je peux vous aider avec les problèmes du quotidien, les idées de cuisine, les questions sur les voitures, les problèmes familiaux et plus.', placeholder: 'Posez-moi une question...', footer: 'Vos données restent en Europe. RGPD compliant.', systemLanguage: 'Français', chip1: 'Quoi cuisiner?', chip1Q: 'Que devrais-je cuisiner aujourd\'hui?', chip2: 'Handwerk', chip2Q: 'Mon robinet fuit, comment le réparer?', chip3: 'Auto', chip3Q: 'Devrais-je acheter une voiture électrique?', chip4: 'Job', chip4Q: 'Conseils pour changer d\'emploi?' },
     time: { justNow: "À l'instant", minutes: 'min.', hours: 'h.', days: 'j.' },
     dashboard: { posts: 'Publications', users: 'Utilisateurs', friends: 'Amis', wissenschaft: 'Science', lastPosts: 'Dernières Publications', howTitle: 'Comment ça marche:', howText: 'Décrivez votre objectif ci-dessous — H.I.T. génère automatiquement des textes, des scripts et des publications pour toutes les plateformes. Copiez et publiez.' },
@@ -1011,7 +1011,7 @@ const translations = {
       shareAll: 'Tout partager',
       moreAvailable: 'Plus de versions disponibles :',
       moreButton: 'Générer plus de plateformes',
-      recsTitle: '💡 Recommandations de H.I.T.',
+      recsTitle: ' Recommandations de H.I.T.',
       packageTitle: 'Votre paquet contient :',
       generating: 'H.I.T. travaille pour vous...',
       recommended: 'Plateformes recommandées :',
@@ -1027,10 +1027,10 @@ const translations = {
       resetButton: 'Entrer un nouvel objectif'
     },
     nextActionHub: {
-      banner: '💡 Étape suivante : Copiez le script, planifiez la publication pour la prochaine heure recommandée et attendez 2 jours pour comparer les analyses.',
-      capcutButton: '🎬 Ouvrir dans CapCut Studio',
-      trackingButton: '📊 Configurer la tâche de suivi',
-      resetButton: '🔄 Entrer un nouvel objectif'
+      banner: ' Étape suivante : Copiez le script, planifiez la publication pour la prochaine heure recommandée et attendez 2 jours pour comparer les analyses.',
+      capcutButton: ' Ouvrir dans CapCut Studio',
+      trackingButton: ' Configurer la tâche de suivi',
+      resetButton: ' Entrer un nouvel objectif'
     },
     videoScript: {
       title: 'Script Vidéo',
@@ -1136,7 +1136,7 @@ const translations = {
     admin: { title: 'Area Admin', noAccess: 'Accesso negato. Solo admin.', users: 'Utenti', posts: 'Post', items: 'Annunci', delete: 'Elimina' },
     housing: { title: 'Alloggi', subtitle: 'Trova la tua nuova casa — stanze condivise, appartamenti e altro', browse: 'Cerca', create: 'Crea Annuncio', titleField: 'Titolo', desc: 'Descrizione', price: 'Prezzo (€/mese)', type: 'Tipo di Alloggio', location: 'Posizione', size: 'Superficie (m²)', availableFrom: 'Disponibile dal', contact: 'Contatto', contactInfo: 'Contatto', contactBtn: 'Contatta', publish: 'Pubblica Annuncio', search: 'Cerca posizione o titolo...', allTypes: 'Tutti i tipi', maxPrice: 'Prezzo máx', noResults: 'Nessun alloggio trovato.', createAd: 'Nuovo Annuncio' },
     video: { title: 'Video', newVideo: 'Nuovo Video', selectVideo: 'Seleziona Video', caption: 'Descrizione', captionPlaceholder: 'Cosa mostra il tuo video?', publish: 'Pubblica', uploading: 'Caricamento...', cancel: 'Annulla', noVideos: 'Nessun video ancora. Sii il primo!', noComments: 'Nessun commento ancora.', commentPlaceholder: 'Scrivi un commento...', send: 'Invia', share: 'Condividi', delete: 'Elimina' },
-    videoMaker: { title: '🎬 Creatore di Video', preview: 'Anteprima', bgColor: 'Colore sfondo', textColor: 'Colore testo', accentColor: "Colore accento", addScene: '+ Aggiungi scena', record: '🎥 Registra video', recording: '⏳ Registrazione...', scene: 'Scena', sceneOf: 'di', saved: 'Video salvato! ✅', ready: 'Pronto', tips: '💡 Suggerimenti', tip1: 'Mantieni il testo breve e incisivo', tip2: 'Usa colori contrastanti', tip3: '3-4 scene sono ideali per TikTok', tip4: 'Il video viene scaricato come WebM', duration: 'Secondi', scene1Text1: 'I tuoi dati restano', scene1Text2: 'in Europa', scene2Text1: 'Nessun miliardario', scene2Text2: 'ti manipola', scene3Text1: 'Happiness', scene3Text2: 'Privacy · Democrazia', scene4Text1: 'Gratuito', scene4Text2: 'Provalo ora!' },
+    videoMaker: { title: ' Creatore di Video', preview: 'Anteprima', bgColor: 'Colore sfondo', textColor: 'Colore testo', accentColor: "Colore accento", addScene: '+ Aggiungi scena', record: ' Registra video', recording: '⏳ Registrazione...', scene: 'Scena', sceneOf: 'di', saved: 'Video salvato! ', ready: 'Pronto', tips: ' Suggerimenti', tip1: 'Mantieni il testo breve e incisivo', tip2: 'Usa colori contrastanti', tip3: '3-4 scene sono ideali per TikTok', tip4: 'Il video viene scaricato come WebM', duration: 'Secondi', scene1Text1: 'I tuoi dati restano', scene1Text2: 'in Europa', scene2Text1: 'Nessun miliardario', scene2Text2: 'ti manipola', scene3Text1: 'Happiness', scene3Text2: 'Privacy · Democrazia', scene4Text1: 'Gratuito', scene4Text2: 'Provalo ora!' },
     ai: { profile: 'Profilo', export: 'Esporta', delete: 'Elimina', newChat: 'Nuova Chat', consentMessage: 'Per darti aiuto personalizzato, memorizziamo la cronologia delle conversazioni e un profilo su di te. Tutti i dati rimangono in Europa e sono soggetti alla protezione dei dati europea (GDPR).', acceptConsent: 'Accetta', yourProfile: 'Il Tuo Profilo', profileInfo: 'Questo profilo viene creato automaticamente in base alle tue conversazioni.', family: 'Famiglia', preferences: 'Preferenze', location: 'Posizione', occupation: 'Occupazione', dataConsent: 'Consento la memorizzazione dei miei dati', welcome: 'Ciao! Sono il tuo Happiness AI', welcomeDesc: 'Posso aiutarti con problemi quotidiani, idee per cucinare, domande sulla macchina, problemi familiari e altro.', placeholder: 'Fai una domanda...', footer: 'I tuoi dati rimangono in Europa. GDPR compliant.', systemLanguage: 'Italiano', chip1: 'Cosa cucinare?', chip1Q: 'Cosa dovrei cucinare oggi?', chip2: 'Handwerk', chip2Q: 'Il mio rubinetto gocciola, come ripararlo?', chip3: 'Auto', chip3Q: 'Dovrei comprare un\'auto elettrica?', chip4: 'Job', chip4Q: 'Consigli per cambiare lavoro?' },
     time: { justNow: 'Adesso', minutes: 'min.', hours: 'ore', days: 'giorni' },
     dashboard: { posts: 'Post', users: 'Utenti', friends: 'Amici', wissenschaft: 'Scienza', lastPosts: 'Ultimi Post', howTitle: 'Come funziona:', howText: 'Descrivi il tuo obiettivo qui sotto — H.I.T. genera automaticamente testi, copioni e post per tutte le piattaforme. Copia e pubblica.' },
@@ -1222,7 +1222,7 @@ const translations = {
       shareAll: 'Condividi tutti',
       moreAvailable: 'Altre versioni disponibili:',
       moreButton: 'Genera altre piattaforme',
-      recsTitle: '💡 Raccomandazioni di H.I.T.',
+      recsTitle: ' Raccomandazioni di H.I.T.',
       packageTitle: 'Il tuo pacchetto contiene:',
       generating: 'H.I.T. sta lavorando per te...',
       recommended: 'Piattaforme consigliate:',
@@ -1238,10 +1238,10 @@ const translations = {
       resetButton: 'Inserisci un nuovo obiettivo'
     },
     nextActionHub: {
-      banner: '💡 Prossimo passo: Copia lo script, pianifica la pubblicazione per il prossimo orario consigliato e attendi 2 giorni per confrontare le analytics.',
-      capcutButton: '🎬 Apri in CapCut Studio',
-      trackingButton: '📊 Configura il task di monitoraggio',
-      resetButton: '🔄 Inserisci un nuovo obiettivo'
+      banner: ' Prossimo passo: Copia lo script, pianifica la pubblicazione per il prossimo orario consigliato e attendi 2 giorni per confrontare le analytics.',
+      capcutButton: ' Apri in CapCut Studio',
+      trackingButton: ' Configura il task di monitoraggio',
+      resetButton: ' Inserisci un nuovo obiettivo'
     },
     videoScript: {
       title: 'Copione Video',
@@ -1347,7 +1347,7 @@ const translations = {
     admin: { title: 'Admin Gebied', noAccess: 'Geen toegang. Alleen admins.', users: 'Gebruikers', posts: 'Berichten', items: 'Advertenties', delete: 'Verwijderen' },
     housing: { title: 'Woningen', subtitle: 'Vind je nieuwe thuis — gedeelde kamers, appartementen en meer', browse: 'Zoeken', create: 'Advertentie Aanmaken', titleField: 'Titel', desc: 'Beschrijving', price: 'Prijs (€/maand)', type: 'Woningtype', location: 'Locatie', size: 'Oppervlakte (m²)', availableFrom: 'Beschikbaar vanaf', contact: 'Contact', contactInfo: 'Contact', contactBtn: 'Contact', publish: 'Advertentie Publiceren', search: 'Zoek op locatie of titel...', allTypes: 'Alle typen', maxPrice: 'Max. prijs', noResults: 'Geen woningen gevonden.', createAd: 'Nieuwe Advertentie' },
     video: { title: 'Video\'s', newVideo: 'Nieuwe Video', selectVideo: 'Selecteer Video', caption: 'Beschrijving', captionPlaceholder: 'Wat toont jouw video?', publish: 'Publiceren', uploading: 'Uploaden...', cancel: 'Annuleren', noVideos: 'Nog geen video\'s. Wees de eerste!', noComments: 'Nog geen reacties.', commentPlaceholder: 'Schrijf een reactie...', send: 'Verzenden', share: 'Delen', delete: 'Verwijderen' },
-    videoMaker: { title: '🎬 Video Maker', preview: 'Voorbeeld', bgColor: 'Achtergrondkleur', textColor: 'Tekstkleur', accentColor: 'Accentkleur', addScene: '+ Scene toevoegen', record: '🎥 Video opnemen', recording: '⏳ Opname...', scene: 'Scene', sceneOf: 'van', saved: 'Video opgeslagen! ✅', ready: 'Gereed', tips: '💡 Tips', tip1: 'Houd tekst kort en krachtig', tip2: 'Gebruik contrasterende kleuren', tip3: '3-4 scenes zijn ideaal voor TikTok', tip4: 'Video wordt gedownload als WebM', duration: 'Seconden', scene1Text1: 'Jouw gegevens blijven', scene1Text2: 'in Europa', scene2Text1: 'Geen miljardair', scene2Text2: 'manipuleert jou', scene3Text1: 'Happiness', scene3Text2: 'Privacy · Democratie', scene4Text1: 'Gratis', scene4Text2: 'Probeer het nu!' },
+    videoMaker: { title: ' Video Maker', preview: 'Voorbeeld', bgColor: 'Achtergrondkleur', textColor: 'Tekstkleur', accentColor: 'Accentkleur', addScene: '+ Scene toevoegen', record: ' Video opnemen', recording: '⏳ Opname...', scene: 'Scene', sceneOf: 'van', saved: 'Video opgeslagen! ', ready: 'Gereed', tips: ' Tips', tip1: 'Houd tekst kort en krachtig', tip2: 'Gebruik contrasterende kleuren', tip3: '3-4 scenes zijn ideaal voor TikTok', tip4: 'Video wordt gedownload als WebM', duration: 'Seconden', scene1Text1: 'Jouw gegevens blijven', scene1Text2: 'in Europa', scene2Text1: 'Geen miljardair', scene2Text2: 'manipuleert jou', scene3Text1: 'Happiness', scene3Text2: 'Privacy · Democratie', scene4Text1: 'Gratis', scene4Text2: 'Probeer het nu!' },
     ai: { profile: 'Profiel', export: 'Exporteren', delete: 'Verwijderen', newChat: 'Nieuw Gesprek', consentMessage: 'Om je gepersonaliseerde hulp te geven, bewaren we je gespreksgeschiedenis en een profiel over jou. Alle gegevens blijven in Europa en vallen onder de Europese gegevensbescherming (AVG).', acceptConsent: 'Accepteren', yourProfile: 'Jouw Profiel', profileInfo: 'Dit profiel wordt automatisch aangemaakt op basis van je gesprekken.', family: 'Gezin', preferences: 'Voorkeuren', location: 'Locatie', occupation: 'Beroep', dataConsent: 'Ik ga akkoord met het opslaan van mijn gegevens', welcome: 'Hallo! Ik ben jouw Happiness AI', welcomeDesc: 'Ik kan je helpen met alledaagse problemen, kookideeën, auto-vragen, gezinsproblemen en meer.', placeholder: 'Stel me een vraag...', footer: 'Jouw gegevens blijven in Europa. AVG compliant.', systemLanguage: 'Nederlands', chip1: 'Wat koken?', chip1Q: 'Wat zal ik vandaag koken?', chip2: 'Handwerk', chip2Q: 'Mijn kraan lekt, hoe repareer ik dat?', chip3: 'Auto', chip3Q: 'Moet ik een elektrische auto kopen?', chip4: 'Job', chip4Q: 'Tips voor een baanwissel?' },
     time: { justNow: 'Zojuist', minutes: 'min.', hours: 'u.', days: 'd.' },
     dashboard: { posts: 'Berichten', users: 'Gebruikers', friends: 'Vrienden', wissenschaft: 'Wetenschap', lastPosts: 'Recente Berichten', howTitle: 'Zo werkt het:', howText: 'Beschrijf je doel hieronder — H.I.T. genereert automatisch teksten, scripts en berichten voor alle platforms. Kopieer en publiceer.' },
@@ -1433,7 +1433,7 @@ const translations = {
       shareAll: 'Alles delen',
       moreAvailable: 'Meer versies beschikbaar:',
       moreButton: 'Meer platforms genereren',
-      recsTitle: '💡 Aanbevelingen van H.I.T.',
+      recsTitle: ' Aanbevelingen van H.I.T.',
       packageTitle: 'Je pakket bevat:',
       generating: 'H.I.T. werkt voor je...',
       recommended: 'Aanbevolen platforms:',
@@ -1449,10 +1449,10 @@ const translations = {
       resetButton: 'Nieuw contentdoel invoeren'
     },
     nextActionHub: {
-      banner: '💡 Volgende stap: Kopieer het script, plan de post voor de volgende aanbevolen tijd en wacht 2 dagen om analytics te vergelijken.',
-      capcutButton: '🎬 Openen in CapCut Studio',
-      trackingButton: '📊 Tracking-taak instellen',
-      resetButton: '🔄 Nieuw contentdoel invoeren'
+      banner: ' Volgende stap: Kopieer het script, plan de post voor de volgende aanbevolen tijd en wacht 2 dagen om analytics te vergelijken.',
+      capcutButton: ' Openen in CapCut Studio',
+      trackingButton: ' Tracking-taak instellen',
+      resetButton: ' Nieuw contentdoel invoeren'
     },
     videoScript: {
       title: 'Videoscenario',
@@ -1558,7 +1558,7 @@ const translations = {
     admin: { title: 'Περιοχή Διαχειριστή', noAccess: 'Χωρίς πρόσβαση. Μόνο διαχειριστές.', users: 'Χρήστες', posts: 'Αναρτήσεις', items: 'Αγγελίες', delete: 'Διαγραφή' },
     housing: { title: 'Κατοικίες', subtitle: 'Βρείτε το νέο σας σπίτι — κοινόχρηστα δωμάτια, διαμερίσματα και άλλα', browse: 'Αναζήτηση', create: 'Δημιουργία Αγγελίας', titleField: 'Τίτλος', desc: 'Περιγραφή', price: 'Τιμή (€/μήνα)', type: 'Τύπος Κατοικίας', location: 'Τοποθεσία', size: 'Εμβαδόν (m²)', availableFrom: 'Διαθέσιμο από', contact: 'Επικοινωνία', contactInfo: 'Επικοινωνία', contactBtn: 'Επικοινωνήστε', publish: 'Δημοσίευση Αγγελίας', search: 'Αναζήτηση τοποθεσίας ή τίτλου...', allTypes: 'Όλοι οι τύποι', maxPrice: 'Μέγ. τιμή', noResults: 'Δεν βρέθηκαν κατοικίες.', createAd: 'Νέα Αγγελία' },
     video: { title: 'Βίντεο', newVideo: 'Νέο Βίντεο', selectVideo: 'Επιλέξτε Βίντεο', caption: 'Περιγραφή', captionPlaceholder: 'Τι δείχνει το βίντεο;', publish: 'Δημοσίευση', uploading: 'Μεταφόρτωση...', cancel: 'Ακύρωση', noVideos: 'Δεν υπάρχουν βίντεο ακόμα. Είστε ο πρώτος!', noComments: 'Δεν υπάρχουν σχόλια ακόμα.', commentPlaceholder: 'Γράψτε ένα σχόλιο...', send: 'Αποστολή', share: 'Κοινοποίηση', delete: 'Διαγραφή' },
-    videoMaker: { title: '🎬 Δημιουργός Βίντεο', preview: 'Προεπισκόπηση', bgColor: 'Χρώμα φόντου', textColor: 'Χρώμα κειμένου', accentColor: 'Χρώμα έμφασης', addScene: '+ Προσθήκη σκηνής', record: '🎥 Καταγραφή βίντεο', recording: '⏳ Καταγραφή...', scene: 'Σκηνή', sceneOf: 'από', saved: 'Το βίντεο αποθηκεύτηκε! ✅', ready: 'Έτοιμο', tips: '💡 Συμβουλές', tip1: 'Κρατήστε το κείμενο σύντομο', tip2: 'Χρησιμοποιήστε αντίθετα χρώματα', tip3: '3-4 σκηνές είναι ιδανικές για TikTok', tip4: 'Το βίντεο κατέβεται ως WebM', duration: 'Δευτερόλεπτα', scene1Text1: 'Τα δεδομένα σας παραμένουν', scene1Text2: 'στην Ευρώπη', scene2Text1: 'Κανένας δισεκατομμυριούχος', scene2Text2: 'δεν σας χειραγωγεί', scene3Text1: 'Happiness', scene3Text2: 'Απόρρητο · Δημοκρατία', scene4Text1: 'Δωρεάν', scene4Text2: 'Δοκιμάστε τώρα!' },
+    videoMaker: { title: ' Δημιουργός Βίντεο', preview: 'Προεπισκόπηση', bgColor: 'Χρώμα φόντου', textColor: 'Χρώμα κειμένου', accentColor: 'Χρώμα έμφασης', addScene: '+ Προσθήκη σκηνής', record: ' Καταγραφή βίντεο', recording: '⏳ Καταγραφή...', scene: 'Σκηνή', sceneOf: 'από', saved: 'Το βίντεο αποθηκεύτηκε! ', ready: 'Έτοιμο', tips: ' Συμβουλές', tip1: 'Κρατήστε το κείμενο σύντομο', tip2: 'Χρησιμοποιήστε αντίθετα χρώματα', tip3: '3-4 σκηνές είναι ιδανικές για TikTok', tip4: 'Το βίντεο κατέβεται ως WebM', duration: 'Δευτερόλεπτα', scene1Text1: 'Τα δεδομένα σας παραμένουν', scene1Text2: 'στην Ευρώπη', scene2Text1: 'Κανένας δισεκατομμυριούχος', scene2Text2: 'δεν σας χειραγωγεί', scene3Text1: 'Happiness', scene3Text2: 'Απόρρητο · Δημοκρατία', scene4Text1: 'Δωρεάν', scene4Text2: 'Δοκιμάστε τώρα!' },
     ai: { profile: 'Προφίλ', export: 'Εξαγωγή', delete: 'Διαγραφή', newChat: 'Νέα Συζήτηση', consentMessage: 'Για να σας δώσουμε εξατομικευμένη βοήθεια, αποθηκεύουμε το ιστορικό συνομιλιών και ένα προφίλ για εσάς. Όλα τα δεδομένα παραμένουν στην Ευρώπη και υπόκεινται στην ευρωπαϊκή προστασία δεδομένων (GDPR).', acceptConsent: 'Αποδοχή', yourProfile: 'Το Προφίλ σας', profileInfo: 'Αυτό το προφίλ δημιουργείται αυτόματα με βάση τις συνομιλίες σας.', family: 'Οικογένεια', preferences: 'Προτιμήσεις', location: 'Τοποθεσία', occupation: 'Επάγγελμα', dataConsent: 'Συναινώ στην αποθήκευση των δεδομένων μου', welcome: 'Γεια! Είμαι ο Happiness AI σας', welcomeDesc: 'Μπορώ να σας βοηθήσω με καθημερινά προβλήματα, ιδέες μαγειρέματος, ερωτήσεις για αυτοκίνητο, οικογενειακά προβλήματα και άλλα.', placeholder: 'Κάντε μου μια ερώτηση...', footer: 'Τα δεδομένα σας παραμένουν στην Ευρώπη. GDPR compliant.', systemLanguage: 'Ελληνικά', chip1: 'Τι να μαγειρέψω?', chip1Q: 'Τι θα έπρεπε να μαγειρέψω σήμερα;', chip2: 'Handwerk', chip2Q: 'Η βρύση μου στάζει, πώς τη φτιάχνω;', chip3: 'Auto', chip3Q: 'Πρέπει να αγοράσω ηλεκτρικό αυτοκίνητο;', chip4: 'Job', chip4Q: 'Συμβουλές για αλλαγή δουλειάς;' },
     time: { justNow: 'Μόλις τώρα', minutes: 'λεπ.', hours: 'ώρ.', days: 'ημέρ.' },
     dashboard: { posts: 'Αναρτήσεις', users: 'Χρήστες', friends: 'Φίλοι', wissenschaft: 'Επιστήμη', lastPosts: 'Πρόσφατες Αναρτήσεις', howTitle: 'Πώς λειτουργεί:', howText: 'Περιγράψτε τον στόχο σας παρακάτω — Η H.I.T. δημιουργεί αυτόματα κείμενα, σενάρια και αναρτήσεις για όλες τις πλατφόρμες. Αντιγράψτε και δημοσιεύστε.' },
@@ -1644,7 +1644,7 @@ const translations = {
       shareAll: 'Κοινοποίηση όλων',
       moreAvailable: 'Περισσότερες εκδόσεις διαθέσιμες:',
       moreButton: 'Δημιουργία περισσότερων πλατφορμών',
-      recsTitle: '💡 Συστάσεις από το H.I.T.',
+      recsTitle: ' Συστάσεις από το H.I.T.',
       packageTitle: 'Το πακέτο σας περιέχει:',
       generating: 'Το H.I.T. εργάζεται για εσάς...',
       recommended: 'Συνιστώμενες πλατφόρμες:',
@@ -1660,10 +1660,10 @@ const translations = {
       resetButton: 'Εισαγάγετε νέο στόχο'
     },
     nextActionHub: {
-      banner: '💡 Επόμενο βήμα: Αντιγράψτε το σενάριο, προγραμματίστε τη δημοσίευση για την επόμενη συνιστώμενη ώρα και περιμένετε 2 ημέρες για να συγκρίνετε τα analytics.',
-      capcutButton: '🎬 Άνοιγμα στο CapCut Studio',
-      trackingButton: '📊 Ρύθμιση task παρακολούθησης',
-      resetButton: '🔄 Εισαγάγετε νέο στόχο'
+      banner: ' Επόμενο βήμα: Αντιγράψτε το σενάριο, προγραμματίστε τη δημοσίευση για την επόμενη συνιστώμενη ώρα και περιμένετε 2 ημέρες για να συγκρίνετε τα analytics.',
+      capcutButton: ' Άνοιγμα στο CapCut Studio',
+      trackingButton: ' Ρύθμιση task παρακολούθησης',
+      resetButton: ' Εισαγάγετε νέο στόχο'
     },
     videoScript: {
       title: 'Σενάριο Βίντεο',
@@ -1793,11 +1793,11 @@ export function useLanguage() {
 }
 
 export const LANGUAGES = [
-  { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
-  { code: 'en', label: 'English', flag: '🇬🇧' },
-  { code: 'es', label: 'Español', flag: '🇪🇸' },
-  { code: 'fr', label: 'Français', flag: '🇫🇷' },
-  { code: 'it', label: 'Italiano', flag: '🇮🇹' },
-  { code: 'nl', label: 'Nederlands', flag: '🇳🇱' },
-  { code: 'el', label: 'Ελληνικά', flag: '🇬🇷' },
+  { code: 'de', label: 'Deutsch', flag: 'DE' },
+  { code: 'en', label: 'English', flag: 'EN' },
+  { code: 'es', label: 'Español', flag: 'ES' },
+  { code: 'fr', label: 'Français', flag: 'FR' },
+  { code: 'it', label: 'Italiano', flag: 'IT' },
+  { code: 'nl', label: 'Nederlands', flag: 'NL' },
+  { code: 'el', label: 'Ελληνικά', flag: 'EL' },
 ]

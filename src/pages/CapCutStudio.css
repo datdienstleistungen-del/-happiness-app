@@ -306,7 +306,7 @@
 }
 
 .ccp-paywall-features li::before {
-  content: "✓ ";
+  content: " ";
   color: #22c55e;
   font-weight: 700;
 }

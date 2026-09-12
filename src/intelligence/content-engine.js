@@ -25,25 +25,25 @@ import newsletterPrompt from '../platforms/newsletter.js'
 const PLATFORM_AGENTS = {
   tiktok: {
     name: 'TikTok',
-    icon: '🎵',
+    icon: '',
     prompt: tiktokPrompt,
     keywords: ['tiktok', 'reel', 'kurzvideo'],
   },
   instagram: {
     name: 'Instagram',
-    icon: '📸',
+    icon: '',
     prompt: instagramPrompt,
     keywords: ['instagram', 'ig', 'story'],
   },
   facebook: {
     name: 'Facebook',
-    icon: '👥',
+    icon: '',
     prompt: facebookPrompt,
     keywords: ['facebook', 'fb'],
   },
   linkedin: {
     name: 'LinkedIn',
-    icon: '💼',
+    icon: '',
     prompt: linkedinPrompt,
     keywords: ['linkedin'],
   },
@@ -55,43 +55,43 @@ const PLATFORM_AGENTS = {
   },
   twitter: {
     name: 'X / Twitter',
-    icon: '🐦',
+    icon: '',
     prompt: twitterPrompt,
     keywords: ['twitter', 'tweet', 'x post'],
   },
   pinterest: {
     name: 'Pinterest',
-    icon: '📌',
+    icon: '',
     prompt: pinterestPrompt,
     keywords: ['pinterest', 'pin', 'board'],
   },
   reddit: {
     name: 'Reddit',
-    icon: '🔴',
+    icon: '',
     prompt: redditPrompt,
     keywords: ['reddit', 'thread', 'ama'],
   },
   blog: {
     name: 'Blog',
-    icon: '📝',
+    icon: '',
     prompt: blogPrompt,
     keywords: ['blog', 'artikel'],
   },
   newsletter: {
     name: 'Newsletter',
-    icon: '✉️',
+    icon: '️',
     prompt: newsletterPrompt,
     keywords: ['newsletter', 'mailing'],
   },
   googleBusiness: {
     name: 'Google Business',
-    icon: '📍',
+    icon: '',
     prompt: googleBusinessPrompt,
     keywords: ['google business', 'gm', 'lokales'],
   },
   kleinanzeigen: {
     name: 'Kleinanzeigen',
-    icon: '🏷️',
+    icon: '️',
     prompt: kleinanzeigenPrompt,
     keywords: ['kleinanzeige', 'verkauf', 'vermietung', 'preis'],
   },
@@ -214,7 +214,7 @@ export function getAgentName(platformKey) {
 }
 
 export function getAgentIcon(platformKey) {
-  return PLATFORM_AGENTS[platformKey]?.icon || '📄'
+  return PLATFORM_AGENTS[platformKey]?.icon || ''
 }
 
 export function getAllPlatforms() {

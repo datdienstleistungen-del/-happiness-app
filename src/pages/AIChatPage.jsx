@@ -455,7 +455,7 @@ export default function AIChatPage() {
         friendlyMsg = 'Das KI-System ist gerade ausgelastet. Bitte versuch es in kurzem nochmal.'
       }
 
-      setMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${friendlyMsg}\n\nFalls das Problem weiterhin auftritt, melde dich beim Support.` }])
+      setMessages(prev => [...prev, { role: 'assistant', content: `️ ${friendlyMsg}\n\nFalls das Problem weiterhin auftritt, melde dich beim Support.` }])
     } finally {
       setIsLoading(false)
     }
@@ -468,26 +468,26 @@ export default function AIChatPage() {
     const isSensitive = socraticTopics.some(topic => lower.includes(topic))
     
     if (isSensitive) {
-      return "Das ist ein Thema, das du mit einem Erwachsenen besprechen solltest, dem du vertraust — Eltern, Lehrer, oder eine Vertrauensperson. 💬"
+      return "Das ist ein Thema, das du mit einem Erwachsenen besprechen solltest, dem du vertraust — Eltern, Lehrer, oder eine Vertrauensperson. "
     }
     
     if (lower.includes('kochen') || lower.includes('essen') || lower.includes('rezept')) {
-      return "Gute Idee! Was hast du denn daheim? 🍳\n\nIch kann dir helfen mit:\n- Schnellen Gerichten\n- Gesundem Essen\n- Snacks für unterwegs\n\nWas klingt gut?"
+      return "Gute Idee! Was hast du denn daheim? \n\nIch kann dir helfen mit:\n- Schnellen Gerichten\n- Gesundem Essen\n- Snacks für unterwegs\n\nWas klingt gut?"
     }
     
     if (lower.includes('auto') || lower.includes('verbrenner')) {
-      return "Auto-Frage! 🚗\n\nWas ist dir wichtiger: Umwelt oder Reichweite?\n\nEs gibt gute Argumente für beide Seiten."
+      return "Auto-Frage! \n\nWas ist dir wichtiger: Umwelt oder Reichweite?\n\nEs gibt gute Argumente für beide Seiten."
     }
     
     if (lower.includes('kind') || lower.includes('kinder')) {
-      return "Kinder verstehen ist manchmal schwierig! 🤔\n\nWas genau ist los? Erzähl mir mehr."
+      return "Kinder verstehen ist manchmal schwierig! \n\nWas genau ist los? Erzähl mir mehr."
     }
     
     if (lower.includes('hallo') || lower.includes('hi') || lower.includes('hey')) {
-      return "Hey! 👋 Willkommen bei Happiness AI.\n\nWas beschäftigt dich heute? Frag mich alles!"
+      return "Hey!  Willkommen bei Happiness AI.\n\nWas beschäftigt dich heute? Frag mich alles!"
     }
     
-    return "Interessant! 🤔\n\nWas denkst du denn darüber?\n\nIch kann dir helfen bei:\n- Schule & Lernen\n- Musik & Filme\n- Kochen\n- Sport\n- Oder einfach nur quatschen"
+    return "Interessant! \n\nWas denkst du denn darüber?\n\nIch kann dir helfen bei:\n- Schule & Lernen\n- Musik & Filme\n- Kochen\n- Sport\n- Oder einfach nur quatschen"
   }
 
   const handleKeyPress = (e) => {

@@ -1099,7 +1099,7 @@ export default function SalesWorkspacePage() {
                                 {foundContact.rank_score}%
                               </span>
                               {foundContact.company_validated && (
-                                <span style={{ marginLeft: '8px', color: '#22c55e', fontSize: '0.8rem' }}>✓ {t('nexus.wsCompanyWebsite')}</span>
+                                <span style={{ marginLeft: '8px', color: '#22c55e', fontSize: '0.8rem' }}> {t('nexus.wsCompanyWebsite')}</span>
                               )}
                             </div>
                           )}

@@ -9,7 +9,7 @@ export default function MockStudioExplainer({ onStartTour }) {
   const [animationStep, setAnimationStep] = useState(0) // 0: typing, 1: loading, 2: results
   const [typedText, setTypedText] = useState('')
 
-  const fullText = 'Erstelle ein Video über epische Fußball-Fails ⚽'
+  const fullText = 'Erstelle ein Video über epische Fußball-Fails '
 
   // Visibility check
   if (!isVisible) return null
@@ -111,7 +111,7 @@ export default function MockStudioExplainer({ onStartTour }) {
             <div className="mse-results-grid">
               {/* Left Column: Co-Pilot Mock */}
               <div className="mse-result-col mse-copilot-col">
-                <div className="mse-sub-header">🤖 H.I.T. Co-Pilot</div>
+                <div className="mse-sub-header"> H.I.T. Co-Pilot</div>
                 <div className="mse-chat-msg">
                   Hallo! Ich habe die ideale Video-Strategie für deinen Ziel-Fokus "Fußball-Fails" erstellt. Ich habe eine fesselnde Anekdote recherchiert und als psychologische Metapher eingebaut. Schau dir das fertige Skript rechts an!
                 </div>
@@ -119,15 +119,15 @@ export default function MockStudioExplainer({ onStartTour }) {
 
               {/* Right Column: Script Mock */}
               <div className="mse-result-col mse-script-col">
-                <div className="mse-sub-header">🎬 Aktuelles Skript (TikTok)</div>
+                <div className="mse-sub-header"> Aktuelles Skript (TikTok)</div>
                 <div className="mse-script-block">
                   <div className="mse-block-title">Hook (0-3s)</div>
-                  <div className="mse-block-desc">"Das passiert, wenn Fußballer denken, sie wären Messi..." ⚽💥</div>
+                  <div className="mse-block-desc">"Das passiert, wenn Fußballer denken, sie wären Messi..." </div>
                 </div>
                 <div className="mse-script-block">
                   <div className="mse-block-title">Footage & Quellen</div>
                   <div className="mse-links-row">
-                    <span className="mse-mock-link">🔗 TikTok: "Football Fails"</span>
+                    <span className="mse-mock-link"> TikTok: "Football Fails"</span>
                     <span className="mse-mock-link">▶️ YouTube: "Funny Football"</span>
                   </div>
                 </div>

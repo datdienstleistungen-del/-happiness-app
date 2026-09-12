@@ -139,11 +139,11 @@ const getT = (lang) => {
       btnUploadYes: isNL ? 'Ja, foto\'s uploaden' : isDE ? 'Ja, Fotos hochladen' : 'Yes, upload photos',
       btnUploadNo: isNL ? 'Nee, bedankt' : isDE ? 'Nein, danke' : 'No, thanks',
       exportPanelTitle: isNL ? 'Exporteren naar CapCut' : isDE ? 'Nach CapCut exportieren' : 'Export to CapCut',
-      btnCopyScript: isNL ? '📋 Script naar klembord' : isDE ? '📋 Skript in Zwischenablage' : '📋 Copy Script to Clipboard',
+      btnCopyScript: isNL ? ' Script naar klembord' : isDE ? ' Skript in Zwischenablage' : ' Copy Script to Clipboard',
       btnCopyScriptDesc: isNL ? 'Voice-overtekst wordt gekopieerd' : isDE ? 'Voiceover-Text wird kopiert' : 'Copies the voiceover text',
-      btnDownloadZip: isNL ? '📥 Foto\'s als ZIP downloaden' : isDE ? '📥 Fotos als Zip herunterladen' : '📥 Download Photos as ZIP',
+      btnDownloadZip: isNL ? ' Foto\'s als ZIP downloaden' : isDE ? ' Fotos als Zip herunterladen' : ' Download Photos as ZIP',
       btnDownloadZipDesc: isNL ? 'Alle geüploade foto\'s als .zip' : isDE ? 'Alle hochgeladenen Fotos als .zip' : 'All uploaded photos as .zip',
-      btnDownloadDraft: isNL ? '📁 CapCut-project downloaden' : isDE ? '📁 CapCut Projekt herunterladen' : '📁 Download CapCut Project',
+      btnDownloadDraft: isNL ? ' CapCut-project downloaden' : isDE ? ' CapCut Projekt herunterladen' : ' Download CapCut Project',
       btnDownloadDraftDesc: isNL ? 'draft_content.json voor je tijdlijn' : isDE ? 'draft_content.json für deine Timeline' : 'draft_content.json for your timeline',
       zippingProgress: isNL ? 'ZIP-archief maken...' : isDE ? 'Erstelle ZIP-Archiv...' : 'Creating ZIP archive...',
       guideTitle: isNL ? 'Hoe het werkt:' : isDE ? "So funktioniert's:" : 'How it works:',
@@ -215,10 +215,10 @@ const getExampleRecipe = (isDE) => ({
   ],
   publishing_payload: {
     tiktok_instagram: {
-      hook: isDE ? 'Creator? Ändere deine Strategie NOW 🚀' : 'Creators? Change your strategy NOW 🚀',
+      hook: isDE ? 'Creator? Ändere deine Strategie NOW ' : 'Creators? Change your strategy NOW ',
       description: isDE
-        ? 'Die meisten Creators machen den gleichen Fehler: Sie haben keine Strategie.\n\nIch zeige dir, wie es anders geht. Link in Bio 👆\n\n#creator #contentcreator #socialmedia #strategie #growth'
-        : 'Most creators make the same mistake: no strategy.\n\nI\'ll show you how to do it differently. Link in bio 👆\n\n#creator #contentcreator #socialmedia #strategy #growth'
+        ? 'Die meisten Creators machen den gleichen Fehler: Sie haben keine Strategie.\n\nIch zeige dir, wie es anders geht. Link in Bio \n\n#creator #contentcreator #socialmedia #strategie #growth'
+        : 'Most creators make the same mistake: no strategy.\n\nI\'ll show you how to do it differently. Link in bio \n\n#creator #contentcreator #socialmedia #strategy #growth'
     },
     linkedin_facebook: {
       headline: isDE ? 'Creator-Strategie: Was 90% falsch machen' : 'Creator Strategy: What 90% get wrong',
@@ -229,8 +229,8 @@ const getExampleRecipe = (isDE) => ({
     youtube_shorts: {
       title: isDE ? 'Creator-Strategie: So wirst du erfolgreich' : 'Creator Strategy: How to Succeed',
       description: isDE
-        ? 'Die meisten Creators machen den gleichen Fehler. In diesem Video zeige ich dir, wie du es richtig machst.\n\n🎁 3 Gratis-Videos: happiness-eu.netlify.app\n\n#creator #youtube #strategie'
-        : 'Most creators make the same mistake. In this video, I\'ll show you how to do it right.\n\n🎁 3 free videos: happiness-eu.netlify.app\n\n#creator #youtube #strategy'
+        ? 'Die meisten Creators machen den gleichen Fehler. In diesem Video zeige ich dir, wie du es richtig machst.\n\n 3 Gratis-Videos: happiness-eu.netlify.app\n\n#creator #youtube #strategie'
+        : 'Most creators make the same mistake. In this video, I\'ll show you how to do it right.\n\n 3 free videos: happiness-eu.netlify.app\n\n#creator #youtube #strategy'
     },
     reddit: {
       title: isDE ? 'Ich habe 3 Monate als Creator experimentiert. Hier sind die Ergebnisse.' : 'I experimented as a creator for 3 months. Here are the results.',
@@ -701,10 +701,10 @@ export default function TikTokVideoPage() {
           </div>
 
           <div className="ccp-example-meta">
-            <span>🎬 {exampleRecipe.duration}s</span>
-            <span>📐 {exampleRecipe.ratio}</span>
-            <span>🎨 {exampleRecipe.style}</span>
-            <span>🎵 {exampleRecipe.bgm}</span>
+            <span> {exampleRecipe.duration}s</span>
+            <span> {exampleRecipe.ratio}</span>
+            <span> {exampleRecipe.style}</span>
+            <span> {exampleRecipe.bgm}</span>
           </div>
 
           <div className="ccp-section">
@@ -809,7 +809,7 @@ export default function TikTokVideoPage() {
 
       {recipe && !showUploadPrompt && scenesWithMedia.filter(s => s?.mediaUrl).length === 0 && (
         <div className="ccp-upload-prompt">
-          <div className="ccp-upload-prompt-icon">📸</div>
+          <div className="ccp-upload-prompt-icon"></div>
           <p>{t.capcut.uploadPromptTitle}</p>
           <div className="ccp-upload-prompt-actions">
             <button className="ccp-btn-primary" onClick={() => setShowUploadPrompt(true)}>
@@ -1129,9 +1129,9 @@ function SceneCard({ scene, index, t, showUpload, mediaData, onUpload, onRemove 
                         <span className="ccp-upload-status">{isDE ? 'Wird hochgeladen...' : 'Uploading...'}</span>
                       </div>
                     ) : mediaData.cloudUrl ? (
-                      <span className="ccp-upload-success">{isDE ? '✓ In der Cloud gespeichert' : '✓ Saved to cloud'}</span>
+                      <span className="ccp-upload-success">{isDE ? ' In der Cloud gespeichert' : ' Saved to cloud'}</span>
                     ) : mediaData.uploadError ? (
-                      <span className="ccp-upload-error">{isDE ? '✗ Upload fehlgeschlagen' : '✗ Upload failed'}</span>
+                      <span className="ccp-upload-error">{isDE ? ' Upload fehlgeschlagen' : ' Upload failed'}</span>
                     ) : null}
                     <button className="ccp-upload-remove" onClick={onRemove}>
                       <X size={14} /> {isDE ? 'Entfernen' : 'Remove'}

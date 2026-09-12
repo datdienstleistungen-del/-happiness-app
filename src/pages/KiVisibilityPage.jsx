@@ -393,7 +393,7 @@ export default function KiVisibilityPage() {
                 ))}
               </div>
             )}
-            {location && <div className="kiv-preview-location">📍 {location}</div>}
+            {location && <div className="kiv-preview-location"> {location}</div>}
           </div>
         </div>
       </div>

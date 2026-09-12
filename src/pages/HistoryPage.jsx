@@ -31,7 +31,7 @@ export default function HistoryPage() {
 
   return (
     <div className="container">
-      <div className="page-header"><h1>📜 {t('history.title')}</h1></div>
+      <div className="page-header"><h1> {t('history.title')}</h1></div>
 
       <div className="tabs">
         <button className={`tab ${tab === 'posts' ? 'active' : ''}`} onClick={() => setTab('posts')}>{t('history.posts')} ({posts.length})</button>
@@ -46,13 +46,13 @@ export default function HistoryPage() {
             <div key={p.id} className="card"><span className="card-time">{new Date(p.created_at).toLocaleDateString('de-DE')}</span><p style={{ marginTop: '0.5rem' }}>{p.content}</p></div>
           )))}
           {tab === 'items' && (items.length === 0 ? <div className="empty-state"><p>{t('history.none')} {t('history.items').toLowerCase()}.</p></div> : items.map(i => (
-            <div key={i.id} className="card"><span className="card-time">{new Date(i.created_at).toLocaleDateString('de-DE')} · {i.active ? '✅ Aktiv' : '❌ Deaktiviert'}</span><p style={{ marginTop: '0.5rem' }}><strong>{i.title}</strong> - {i.price.toFixed(2)} €</p></div>
+            <div key={i.id} className="card"><span className="card-time">{new Date(i.created_at).toLocaleDateString('de-DE')} · {i.active ? ' Aktiv' : ' Deaktiviert'}</span><p style={{ marginTop: '0.5rem' }}><strong>{i.title}</strong> - {i.price.toFixed(2)} €</p></div>
           )))}
           {tab === 'jobs' && (jobs.length === 0 ? <div className="empty-state"><p>{t('history.none')} {t('history.jobs').toLowerCase()}.</p></div> : jobs.map(j => (
-            <div key={j.id} className="card"><span className="card-time">{new Date(j.created_at).toLocaleDateString('de-DE')} · {j.active ? '✅ Aktiv' : '❌ Deaktiviert'}</span><p style={{ marginTop: '0.5rem' }}><strong>{j.title}</strong> · {j.job_type}</p></div>
+            <div key={j.id} className="card"><span className="card-time">{new Date(j.created_at).toLocaleDateString('de-DE')} · {j.active ? ' Aktiv' : ' Deaktiviert'}</span><p style={{ marginTop: '0.5rem' }}><strong>{j.title}</strong> · {j.job_type}</p></div>
           )))}
           {tab === 'courses' && (courses.length === 0 ? <div className="empty-state"><p>{t('history.none')} {t('history.courses').toLowerCase()}.</p></div> : courses.map(c => (
-            <div key={c.id} className="card"><span className="card-time">{new Date(c.created_at).toLocaleDateString('de-DE')} · {c.active ? '✅ Aktiv' : '❌ Deaktiviert'}</span><p style={{ marginTop: '0.5rem' }}><strong>{c.title}</strong> · {c.category}</p></div>
+            <div key={c.id} className="card"><span className="card-time">{new Date(c.created_at).toLocaleDateString('de-DE')} · {c.active ? ' Aktiv' : ' Deaktiviert'}</span><p style={{ marginTop: '0.5rem' }}><strong>{c.title}</strong> · {c.category}</p></div>
           )))}
         </>
       )}

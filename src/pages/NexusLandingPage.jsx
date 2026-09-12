@@ -536,8 +536,8 @@ export default function NexusLandingPage() {
                       ich habe gesehen, dass Sie bei Kärcher aktuell <strong>12 neue Account Executives</strong> für die DACH-Expansion aufbauen..."
                     </p>
                     <div className="nexus-pitch-badge-wrap">
-                      <span className="nexus-pill-badge-mini">🎯 Trigger: Sales Expansion</span>
-                      <span className="nexus-pill-badge-mini">⚡ Relevanz: 98%</span>
+                      <span className="nexus-pill-badge-mini"> Trigger: Sales Expansion</span>
+                      <span className="nexus-pill-badge-mini"> Relevanz: 98%</span>
                     </div>
                   </div>
                 </div>

@@ -105,7 +105,7 @@ export default function PlatformConnection({ platform, onConnected, onSkip }) {
   return (
     <div className="pc-card pc-disconnected">
       <div className="pc-header">
-        <span className="pc-icon">{platformInfo?.icon || '🔗'}</span>
+        <span className="pc-icon">{platformInfo?.icon || ''}</span>
         <div className="pc-info">
           <h3 className="pc-name">{platformInfo?.name || platform}</h3>
           <p className="pc-desc">{platformInfo?.description || ''}</p>

@@ -103,7 +103,7 @@ export default function VideoUpload({ onUploadComplete }) {
 
   return (
     <div className="card">
-      <h3 style={{ marginBottom: '1rem' }}>🎬 {t('video.newVideo')}</h3>
+      <h3 style={{ marginBottom: '1rem' }}> {t('video.newVideo')}</h3>
 
       {!video ? (
         <div
@@ -119,7 +119,7 @@ export default function VideoUpload({ onUploadComplete }) {
           onMouseEnter={(e) => e.target.style.borderColor = 'var(--primary)'}
           onMouseLeave={(e) => e.target.style.borderColor = 'var(--border)'}
         >
-          <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎥</div>
+          <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}></div>
           <p style={{ color: 'var(--text-muted)' }}>{t('video.selectVideo')}</p>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>MP4, MOV • Max. 100 MB</p>
           <input

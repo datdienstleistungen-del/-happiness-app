@@ -12,10 +12,10 @@ const RECOMMENDATION_PROMPT = `Du bist H.I.T., ein strategischer Content-Berater
 Erstelle 3-5 konkrete Empfehlungen für den Nutzer.
 
 Kategorien:
-1. 📱 Plattform — welche Plattform ist am besten geeignet?
+1.  Plattform — welche Plattform ist am besten geeignet?
 2. ⏰ Timing — wann veröffentlichen?
-3. 💡 Strategie — was könnte der Nutzer übersehen?
-4. 🎯 Unerwarteter Mehrwert — welche Plattform überrascht?
+3.  Strategie — was könnte der Nutzer übersehen?
+4.  Unerwarteter Mehrwert — welche Plattform überrascht?
 
 Regeln:
 - Jede Empfehlung: kurze Überschrift (max 5 Wörter) + 1-2 Sätze Erklärung
@@ -27,7 +27,7 @@ JSON-Schema:
   "recommendations": [
     {
       "type": "platform" | "timing" | "strategy" | "surprise",
-      "icon": "📱" | "⏰" | "💡" | "🎯",
+      "icon": "" | "⏰" | "" | "",
       "title": "string",
       "text": "string"
     }
@@ -99,7 +99,7 @@ Content-Score: ${analysis.contentScore}%`
 function normalizeRecommendation(rec) {
   return {
     type: rec.type || 'strategy',
-    icon: rec.icon || '💡',
+    icon: rec.icon || '',
     title: rec.title || 'Tipp',
     text: rec.text || ''
   }
@@ -112,7 +112,7 @@ function fallbackRecommendations(analysis) {
     const primary = analysis.topPlatforms[0]
     recs.push({
       type: 'platform',
-      icon: '📱',
+      icon: '',
       title: 'Plattform-Empfehlung',
       text: `${platformName(primary)} passt am besten für dein Ziel "${analysis.goal}".`
     })
@@ -128,7 +128,7 @@ function fallbackRecommendations(analysis) {
   if (analysis.targetAudience) {
     recs.push({
       type: 'strategy',
-      icon: '💡',
+      icon: '',
       title: 'Tipp für dich',
       text: `Sprich deine Zielgruppe (${analysis.targetAudience}) direkt mit einer Frage an — das erhöht das Engagement.`
     })
@@ -136,7 +136,7 @@ function fallbackRecommendations(analysis) {
 
   recs.push({
     type: 'surprise',
-    icon: '🎯',
+    icon: '',
     title: 'Unerwarteter Tipp',
     text: 'Google Business wird oft vergessen, ist aber für lokale Sichtbarkeit extrem effektiv.'
   })

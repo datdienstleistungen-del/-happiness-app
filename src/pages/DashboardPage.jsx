@@ -46,8 +46,8 @@ function isSimpleGoal(goal) {
     && !/video|tiktok|reel|youtube|film|kurzvideo/i.test(lower)
 }
 
-const PHASE_ICONS = { plan: '📝', create: '🎨', grow: '🚀' }
-const STATUS_ICONS = { pending: '○', active: '●', completed: '✓', skipped: '–', failed: '✗' }
+const PHASE_ICONS = { plan: '', create: '', grow: '' }
+const STATUS_ICONS = { pending: '○', active: '●', completed: '', skipped: '–', failed: '' }
 
 export default function DashboardPage() {
   const { user, profile } = useAuth()

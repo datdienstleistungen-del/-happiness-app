@@ -11,12 +11,12 @@ import MockStudioExplainer from '../components/MockStudioExplainer'
 import './LandingPage.css'
 
 const GOAL_CHIPS = [
-  { icon: '🎯', de: 'Mehr Kunden gewinnen', en: 'Get more customers', es: 'Ganar más clientes', fr: 'Gagner plus de clients', it: 'Ottenere più clienti', nl: 'Meer klanten winnen', el: 'Κερδίστε περισσότερους πελάτες' },
-  { icon: '📈', de: 'Reichweite erhöhen', en: 'Increase reach', es: 'Aumentar alcance', fr: 'Augmenter la portée', it: 'Aumentare la portata', nl: 'Bereik vergroten', el: 'Αυξήστε την εμβέλεια' },
-  { icon: '🛒', de: 'Produkt verkaufen', en: 'Sell a product', es: 'Vender producto', fr: 'Vendre un produit', it: 'Vendere un prodotto', nl: 'Product verkopen', el: 'Πουλήστε ένα προϊόν' },
-  { icon: '👥', de: 'Community aufbauen', en: 'Build community', es: 'Crear comunidad', fr: 'Créer une communauté', it: 'Creare una community', nl: 'Community opbouwen', el: 'Χτίστε κοινότητα' },
-  { icon: '🎪', de: 'Event bewerben', en: 'Promote event', es: 'Promocionar evento', fr: 'Promouvoir un événement', it: 'Promuovere un evento', nl: 'Evenement promoten', el: 'Προωθήστε ένα event' },
-  { icon: '💼', de: 'Mitarbeiter finden', en: 'Find employees', es: 'Encontrar empleados', fr: 'Trouver des employés', it: 'Trovare dipendenti', nl: 'Medewerkers vinden', el: 'Βρείτε υπαλλήλους' },
+  { icon: '', de: 'Mehr Kunden gewinnen', en: 'Get more customers', es: 'Ganar más clientes', fr: 'Gagner plus de clients', it: 'Ottenere più clienti', nl: 'Meer klanten winnen', el: 'Κερδίστε περισσότερους πελάτες' },
+  { icon: '', de: 'Reichweite erhöhen', en: 'Increase reach', es: 'Aumentar alcance', fr: 'Augmenter la portée', it: 'Aumentare la portata', nl: 'Bereik vergroten', el: 'Αυξήστε την εμβέλεια' },
+  { icon: '', de: 'Produkt verkaufen', en: 'Sell a product', es: 'Vender producto', fr: 'Vendre un produit', it: 'Vendere un prodotto', nl: 'Product verkopen', el: 'Πουλήστε ένα προϊόν' },
+  { icon: '', de: 'Community aufbauen', en: 'Build community', es: 'Crear comunidad', fr: 'Créer une communauté', it: 'Creare una community', nl: 'Community opbouwen', el: 'Χτίστε κοινότητα' },
+  { icon: '', de: 'Event bewerben', en: 'Promote event', es: 'Promocionar evento', fr: 'Promouvoir un événement', it: 'Promuovere un evento', nl: 'Evenement promoten', el: 'Προωθήστε ένα event' },
+  { icon: '', de: 'Mitarbeiter finden', en: 'Find employees', es: 'Encontrar empleados', fr: 'Trouver des employés', it: 'Trovare dipendenti', nl: 'Medewerkers vinden', el: 'Βρείτε υπαλλήλους' },
 ]
 
 const PRE_FILL_EXAMPLES = [
@@ -293,7 +293,7 @@ export default function LandingPage() {
             )}
 
             <div className="landing-social-proof">
-              <span className="landing-social-check">✓</span> {t('landing.freeToStart')}
+              <span className="landing-social-check"></span> {t('landing.freeToStart')}
             </div>
 
             <div className="landing-meta">
@@ -349,11 +349,11 @@ export default function LandingPage() {
           <div className="demo-result-score">
             <div className="score-item">
               <span className="score-label">{t('landing.goalDetected')}</span>
-              <span className="score-value done">✅</span>
+              <span className="score-value done"></span>
             </div>
             <div className="score-item">
               <span className="score-label">{t('landing.strategyCreated')}</span>
-              <span className="score-value done">✅</span>
+              <span className="score-value done"></span>
             </div>
             <div className="score-item">
               <span className="score-label">{t('landing.contentChance')}</span>
@@ -367,7 +367,7 @@ export default function LandingPage() {
 
           <div className="demo-result-platform">
             <div className="demo-result-platform-header">
-              <span className="platform-badge">📸 Instagram</span>
+              <span className="platform-badge"> Instagram</span>
               <button
                 className="copy-btn"
                 onClick={() => {
@@ -409,19 +409,19 @@ export default function LandingPage() {
           <div className="what-we-are-workflow">
             <div className="what-we-are-steps">
               <div className="landing-step">
-                <span className="landing-step-icon">🎯</span>
+                <span className="landing-step-icon"></span>
                 <strong>{t('landing.step1Title')}</strong>
                 <p>{t('landing.step1Desc')}</p>
               </div>
               <span className="step-arrow">&rarr;</span>
               <div className="landing-step">
-                <span className="landing-step-icon">🧠</span>
+                <span className="landing-step-icon"></span>
                 <strong>{t('landing.step2Title')}</strong>
                 <p>{t('landing.step2Desc')}</p>
               </div>
               <span className="step-arrow">&rarr;</span>
               <div className="landing-step">
-                <span className="landing-step-icon">🚀</span>
+                <span className="landing-step-icon"></span>
                 <strong>{t('landing.step3Title')}</strong>
                 <p>{t('landing.step3Desc')}</p>
               </div>
@@ -441,18 +441,18 @@ export default function LandingPage() {
         <h2>{t('landing.platforms')}</h2>
         <div className="platform-grid">
           {[
-            { name: 'TikTok', icon: '🎵' },
-            { name: 'Instagram', icon: '📸' },
-            { name: 'LinkedIn', icon: '💼' },
-            { name: 'Facebook', icon: '👥' },
+            { name: 'TikTok', icon: '' },
+            { name: 'Instagram', icon: '' },
+            { name: 'LinkedIn', icon: '' },
+            { name: 'Facebook', icon: '' },
             { name: 'YouTube', icon: '▶️' },
-            { name: 'X / Twitter', icon: '🐦' },
-            { name: 'Pinterest', icon: '📌' },
-            { name: 'Reddit', icon: '🔴' },
-            { name: 'Blog', icon: '📝' },
-            { name: 'Newsletter', icon: '✉️' },
-            { name: 'Google Business', icon: '📍' },
-            { name: 'Kleinanzeigen', icon: '🏷️' },
+            { name: 'X / Twitter', icon: '' },
+            { name: 'Pinterest', icon: '' },
+            { name: 'Reddit', icon: '' },
+            { name: 'Blog', icon: '' },
+            { name: 'Newsletter', icon: '️' },
+            { name: 'Google Business', icon: '' },
+            { name: 'Kleinanzeigen', icon: '️' },
           ].map(p => (
             <div key={p.name} className="platform-card">
               <span className="platform-icon">{p.icon}</span>

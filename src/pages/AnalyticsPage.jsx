@@ -285,31 +285,31 @@ export default function AnalyticsPage() {
     const ctaLen = (cta || '').trim().length
 
     if (hookLen === 0) {
-      tips.push('⚠️ Hook ist leer. Füge einen fesselnden Einstieg von 1-3 Sekunden hinzu.')
+      tips.push('️ Hook ist leer. Füge einen fesselnden Einstieg von 1-3 Sekunden hinzu.')
     } else if (hookLen > 130) {
-      tips.push('⚠️ Hook ist zu lang (> 130 Zeichen). Zuschauer scrollen sofort ab.')
+      tips.push('️ Hook ist zu lang (> 130 Zeichen). Zuschauer scrollen sofort ab.')
     } else if (hookLen > 90) {
-      tips.push('⚠️ Hook ist etwas lang. Versuche, die Kernaussage schneller auf den Punkt zu bringen.')
+      tips.push('️ Hook ist etwas lang. Versuche, die Kernaussage schneller auf den Punkt zu bringen.')
     } else {
-      tips.push('✅ Hook-Länge ist optimal für Kurzvideos!')
+      tips.push(' Hook-Länge ist optimal für Kurzvideos!')
     }
 
     if (bodyLen === 0) {
-      tips.push('⚠️ Hauptteil ist leer. Beschreibe das Kern-Thema deines Videos.')
+      tips.push('️ Hauptteil ist leer. Beschreibe das Kern-Thema deines Videos.')
     } else if (bodyLen < 300) {
-      tips.push('⚠️ Hauptteil ist sehr kurz (< 300 Zeichen). Das Video bietet eventuell zu wenig Mehrwert.')
+      tips.push('️ Hauptteil ist sehr kurz (< 300 Zeichen). Das Video bietet eventuell zu wenig Mehrwert.')
     } else if (bodyLen > 800) {
-      tips.push('⚠️ Hauptteil ist sehr lang (> 800 Zeichen). Das senkt die Dynamik und erhöht die Absprungrate.')
+      tips.push('️ Hauptteil ist sehr lang (> 800 Zeichen). Das senkt die Dynamik und erhöht die Absprungrate.')
     } else {
-      tips.push('✅ Hauptteil-Länge ist im perfekten Bereich für hohe Informationsdichte!')
+      tips.push(' Hauptteil-Länge ist im perfekten Bereich für hohe Informationsdichte!')
     }
 
     if (ctaLen === 0) {
-      tips.push('⚠️ Ein klarer Call-to-Action fehlt. Sag Zuschauern, was sie tun sollen.')
+      tips.push('️ Ein klarer Call-to-Action fehlt. Sag Zuschauern, was sie tun sollen.')
     } else if (ctaLen > 120) {
-      tips.push('⚠️ CTA/Loop ist zu lang (> 120 Zeichen). Zuschauer schalten vor dem Ende ab.')
+      tips.push('️ CTA/Loop ist zu lang (> 120 Zeichen). Zuschauer schalten vor dem Ende ab.')
     } else {
-      tips.push('✅ CTA ist kurz und direkt!')
+      tips.push(' CTA ist kurz und direkt!')
     }
 
     const hookPct = points[3] + '%'
@@ -341,25 +341,25 @@ export default function AnalyticsPage() {
       lights.push({ 
         type: 'red', 
         label: 'HOOK',
-        text: '⚠️ Hook leer! Bitte füge einen Hook-Text hinzu.' 
+        text: '️ Hook leer! Bitte füge einen Hook-Text hinzu.' 
       })
     } else if (hookLen > 130) {
       lights.push({ 
         type: 'red', 
         label: 'HOOK',
-        text: '⚠️ Hook viel zu lang. Zuschauer scrollen sofort ab.' 
+        text: '️ Hook viel zu lang. Zuschauer scrollen sofort ab.' 
       })
     } else if (hookLen >= 90) {
       lights.push({ 
         type: 'yellow', 
         label: 'HOOK',
-        text: '⚠️ Hook etwas lang. Versuche, die Kernaussage schneller zu bringen.' 
+        text: '️ Hook etwas lang. Versuche, die Kernaussage schneller zu bringen.' 
       })
     } else {
       lights.push({ 
         type: 'green', 
         label: 'HOOK',
-        text: '✅ Hook hat eine ideale, knackige Länge!' 
+        text: ' Hook hat eine ideale, knackige Länge!' 
       })
     }
 
@@ -369,25 +369,25 @@ export default function AnalyticsPage() {
       lights.push({ 
         type: 'red', 
         label: 'HAUPTTEIL',
-        text: '⚠️ Hauptteil leer. Bitte füge den Video-Inhalt ein.' 
+        text: '️ Hauptteil leer. Bitte füge den Video-Inhalt ein.' 
       })
     } else if (bodyLen < 100 || bodyLen > 1000) {
       lights.push({ 
         type: 'red', 
         label: 'HAUPTTEIL',
-        text: '⚠️ Hauptteil ungeeignet für optimale Retention (zu kurz oder zu überladen).' 
+        text: '️ Hauptteil ungeeignet für optimale Retention (zu kurz oder zu überladen).' 
       })
     } else if (bodyLen >= 300 && bodyLen <= 800) {
       lights.push({ 
         type: 'green', 
         label: 'HAUPTTEIL',
-        text: '✅ Hauptteil hat die optimale Pacing-Dichte!' 
+        text: ' Hauptteil hat die optimale Pacing-Dichte!' 
       })
     } else {
       lights.push({ 
         type: 'yellow', 
         label: 'HAUPTTEIL',
-        text: '⚠️ Hauptteil ist sehr kurz oder lang. Achte auf Pattern Interrupts.' 
+        text: '️ Hauptteil ist sehr kurz oder lang. Achte auf Pattern Interrupts.' 
       })
     }
 
@@ -397,25 +397,25 @@ export default function AnalyticsPage() {
       lights.push({ 
         type: 'red', 
         label: 'CTA & LOOP',
-        text: '⚠️ Kein CTA vorhanden. Die Zuschauer wissen nicht, was sie tun sollen.' 
+        text: '️ Kein CTA vorhanden. Die Zuschauer wissen nicht, was sie tun sollen.' 
       })
     } else if (ctaLen > 120) {
       lights.push({ 
         type: 'red', 
         label: 'CTA & LOOP',
-        text: '⚠️ CTA viel zu lang. Zuschauer schalten vor dem Videoende ab.' 
+        text: '️ CTA viel zu lang. Zuschauer schalten vor dem Videoende ab.' 
       })
     } else if (ctaLen >= 60) {
       lights.push({ 
         type: 'yellow', 
         label: 'CTA & LOOP',
-        text: '⚠️ CTA etwas lang. Vermeide langes Verabschieden.' 
+        text: '️ CTA etwas lang. Vermeide langes Verabschieden.' 
       })
     } else {
       lights.push({ 
         type: 'green', 
         label: 'CTA & LOOP',
-        text: '✅ CTA ist kurz und direkt!' 
+        text: ' CTA ist kurz und direkt!' 
       })
     }
 
@@ -434,10 +434,10 @@ Deine Aufgabe ist es, das eingereichte Videoskript (Hook, Body, CTA) des Creator
 
 Strukturiere deine Antwort zwingend in genau diese vier Abschnitte unter Verwendung von Markdown:
 
-### 📊 REICHWEITEN-PROGNOSE
+###  REICHWEITEN-PROGNOSE
 [Gib hier eine ehrliche, datenbasierte Einschätzung des viralen Potenzials des ursprünglichen Skripts. Welche Aspekte sind gut, wo springen die Leute ab?]
 
-### ✍️ OPTIMIERTES SKRIPT
+### ️ OPTIMIERTES SKRIPT
 **Hook (0-3s):**
 [Hier der verbesserte, extrem packende Hook]
 
@@ -447,10 +447,10 @@ Strukturiere deine Antwort zwingend in genau diese vier Abschnitte unter Verwend
 **Call-to-Action (CTA):**
 [Hier ein CTA, der eine Aktion auslöst oder einen perfekten Loop zurück zum Hook bildet]
 
-### 🎬 CAPCUT-REGIEANWEISUNGEN
+###  CAPCUT-REGIEANWEISUNGEN
 [Führe hier konkrete Sekunden-Anweisungen für Pattern Interrupts auf (z.B. 0-3s: Zoom-In + rotes Text-Overlay; 6s: B-Roll Einblendung; 9s: Soundeffekt "Whoosh" etc.). Empfiehl Schnitte und Effekte alle 2-3 Sekunden, um die Retention hochzuhalten.]
 
-### 🎬 CAPCUT-TEMPLATE EMPFEHLUNG
+###  CAPCUT-TEMPLATE EMPFEHLUNG
 [Schlage hier eine konkrete Art von CapCut-Trend-Vorlage vor, nach der in der CapCut-App gesucht werden soll (z. B. '3-Sekunden-Split-Screen' oder eine Vorlage mit harten Bass-Drops bei der ersten Silbe), um das Skript visuell zu untermauern. Erkläre kurz, wie der Text-Hook exakt synchron mit dem visuellen Effekt der Vorlage matchen muss, um den typischen Absturz bei Sekunde 0:02 zu verhindern.]
 
 Antworte ausschließlich im angegebenen Markdown-Format auf Deutsch. Antworte direkt und professionell ohne Einleitung ("Hier ist deine Analyse...").`;
@@ -632,7 +632,7 @@ Antworte AUSSCHLIESSLICH mit dem neuen, optimierten CTA-Text auf Deutsch. Schrei
           {/* Collapsible Coaching Panel */}
           <div className={`coaching-panel ${showGuide ? 'expanded' : 'collapsed'}`}>
             <button className="coaching-panel-toggle" onClick={() => setShowGuide(!showGuide)}>
-              <span className="cpt-title">🚀 Dein Fahrplan zum viralen Video</span>
+              <span className="cpt-title"> Dein Fahrplan zum viralen Video</span>
               <span className="cpt-arrow">{showGuide ? '▲ Ausblenden' : '▼ Einblenden'}</span>
             </button>
             
@@ -642,21 +642,21 @@ Antworte AUSSCHLIESSLICH mit dem neuen, optimierten CTA-Text auf Deutsch. Schrei
                   <div className="coaching-step">
                     <span className="step-num">1</span>
                     <div className="step-info">
-                      <h5>📊 DIAGNOSE</h5>
+                      <h5> DIAGNOSE</h5>
                       <p>Prüfe die Ampelkarten und deine Retention-Kurve auf Schwachstellen.</p>
                     </div>
                   </div>
                   <div className="coaching-step">
                     <span className="step-num">2</span>
                     <div className="step-info">
-                      <h5>⚡ OPTIMIERUNG</h5>
+                      <h5> OPTIMIERUNG</h5>
                       <p>Klicke unten auf "KI-Optimierungs-Audit starten", um Fehler beheben zu lassen.</p>
                     </div>
                   </div>
                   <div className="coaching-step">
                     <span className="step-num">3</span>
                     <div className="step-info">
-                      <h5>🎬 ACTION</h5>
+                      <h5> ACTION</h5>
                       <p>Kopiere das optimierte Skript und schneide dein Video exakt nach den CapCut-Regieanweisungen.</p>
                     </div>
                   </div>
@@ -733,10 +733,10 @@ Antworte AUSSCHLIESSLICH mit dem neuen, optimierten CTA-Text auf Deutsch. Schrei
                       className={`preset-btn ${selectedPreset === key ? 'active' : ''}`}
                       onClick={() => handlePresetSelect(key)}
                     >
-                      {key === 'viral' && '🔥 '}
-                      {key === 'weak_hook' && '👋 '}
+                      {key === 'viral' && ' '}
+                      {key === 'weak_hook' && ' '}
                       {key === 'slow_pacing' && '⏳ '}
-                      {key === 'abrupt_exit' && '🛑 '}
+                      {key === 'abrupt_exit' && ' '}
                       {key === 'viral' ? 'Viral' : key === 'weak_hook' ? 'Boring Hook' : key === 'slow_pacing' ? 'Slow' : 'Plötzliches Ende'}
                     </button>
                   ))}
@@ -914,8 +914,8 @@ Antworte AUSSCHLIESSLICH mit dem neuen, optimierten CTA-Text auf Deutsch. Schrei
                   <div className="hotspot-popup-header">
                     <h4>
                       {activeHotspot === 3 && '⏰ Sekunde 3: Die Hook-Schranke!'}
-                      {activeHotspot === 15 && '⚡ Sekunde 15: Das Aufmerksamkeits-Tief!'}
-                      {activeHotspot === 30 && '🔄 Sekunde 30: Die CTA-Falle!'}
+                      {activeHotspot === 15 && ' Sekunde 15: Das Aufmerksamkeits-Tief!'}
+                      {activeHotspot === 30 && ' Sekunde 30: Die CTA-Falle!'}
                     </h4>
                     <button className="hotspot-popup-close" onClick={() => setActiveHotspot(null)}>×</button>
                   </div>
@@ -943,7 +943,7 @@ Antworte AUSSCHLIESSLICH mit dem neuen, optimierten CTA-Text auf Deutsch. Schrei
                         {light.label}
                         {light.type !== 'green' && (
                           <span style={{ fontSize: '9px', opacity: 0.85, fontWeight: '700' }}>
-                            {isOptimizing ? ' ⏳' : ' ✨'}
+                            {isOptimizing ? ' ⏳' : ' '}
                           </span>
                         )}
                       </span>
@@ -978,7 +978,7 @@ Antworte AUSSCHLIESSLICH mit dem neuen, optimierten CTA-Text auf Deutsch. Schrei
               {/* Local Feedback / Recommendation list */}
               {analyzerResults && analyzerResults.tips && (
                 <div className="local-tips-container">
-                  <h4>💡 Verbesserungsvorschläge (Live-Feedback)</h4>
+                  <h4> Verbesserungsvorschläge (Live-Feedback)</h4>
                   <ul>
                     {analyzerResults.tips.map((tip, i) => (
                       <li key={i}>{tip}</li>
@@ -1000,12 +1000,12 @@ Antworte AUSSCHLIESSLICH mit dem neuen, optimierten CTA-Text auf Deutsch. Schrei
                 <div className="ai-feedback-actions">
                   <LocalCopyButton 
                     text={extractOptimizedScript(aiFeedback)} 
-                    label="📋 Skript in Zwischenablage kopieren" 
+                    label=" Skript in Zwischenablage kopieren" 
                     className="primary-copy" 
                   />
                   <LocalCopyButton 
                     text={aiFeedback} 
-                    label="📋 Gesamte Analyse kopieren" 
+                    label=" Gesamte Analyse kopieren" 
                     className="secondary-copy" 
                   />
                 </div>
@@ -1191,13 +1191,13 @@ function LocalCopyButton({ text, label, className = "" }) {
   return (
     <button className={`inner-copy-btn ${className}`} onClick={handleCopy}>
       {copied ? <Check size={13} style={{ color: '#1d9e75' }} /> : <Copy size={13} />}
-      <span>{copied ? '✓ Kopiert!' : (label || 'Kopieren')}</span>
+      <span>{copied ? ' Kopiert!' : (label || 'Kopieren')}</span>
     </button>
   )
 }
 
 function extractOptimizedScript(markdown) {
   if (!markdown) return ''
-  const match = markdown.match(/### ✍️ OPTIMIERTES SKRIPT([\s\S]*?)(### 🎬 CAPCUT-REGIEANWEISUNGEN|### 🎬 CAPCUT-TEMPLATE EMPFEHLUNG|$)/i)
+  const match = markdown.match(/### ️ OPTIMIERTES SKRIPT([\s\S]*?)(###  CAPCUT-REGIEANWEISUNGEN|###  CAPCUT-TEMPLATE EMPFEHLUNG|$)/i)
   return match ? match[1].trim() : markdown
 }

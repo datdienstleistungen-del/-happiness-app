@@ -35,7 +35,7 @@ export default function VideoShowcase() {
               <div className="prompt-header">
                 <span className="prompt-label">{t('videoShowcase.promptLabel')}</span>
                 <button className="copy-icon-btn" onClick={copyPrompt} aria-label="Copy Prompt">
-                  📋
+                  
                 </button>
               </div>
               <div className="prompt-content">
@@ -46,14 +46,14 @@ export default function VideoShowcase() {
             <div className="results-box">
               <span className="results-label">{t('videoShowcase.resultLabel')}</span>
               <div className="platform-badges">
-                <span className="badge badge-tiktok">🎬 {t('videoShowcase.badge1')}</span>
-                <span className="badge badge-instagram">📸 {t('videoShowcase.badge2')}</span>
-                <span className="badge badge-shorts">📝 {t('videoShowcase.badge3')}</span>
+                <span className="badge badge-tiktok"> {t('videoShowcase.badge1')}</span>
+                <span className="badge badge-instagram"> {t('videoShowcase.badge2')}</span>
+                <span className="badge badge-shorts"> {t('videoShowcase.badge3')}</span>
               </div>
             </div>
 
             <div className="showcase-branding">
-              <span className="hit-logo-small">⚡ H.I.T.</span>
+              <span className="hit-logo-small"> H.I.T.</span>
             </div>
           </div>
         </div>

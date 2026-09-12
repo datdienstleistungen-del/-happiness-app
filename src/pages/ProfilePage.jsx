@@ -47,7 +47,7 @@ export default function ProfilePage() {
 
   return (
     <div className="container">
-      <div className="page-header"><h1>👤 {t('profile.title')}</h1></div>
+      <div className="page-header"><h1> {t('profile.title')}</h1></div>
 
       <div className="tabs">
         <button className={`tab ${tab === 'profile' ? 'active' : ''}`} onClick={() => setTab('profile')}>{t('profile.title')}</button>

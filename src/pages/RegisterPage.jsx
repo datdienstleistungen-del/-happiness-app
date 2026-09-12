@@ -62,7 +62,7 @@ export default function RegisterPage() {
       <div className="auth-card">
         {success ? (
           <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}></div>
             <h1 style={{ fontSize: '1.3rem', marginBottom: '0.75rem' }}>{t('auth.registerSuccess')}</h1>
             <p style={{ color: 'var(--text-muted, #6b7280)', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
               {t('auth.registerConfirm')}

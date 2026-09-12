@@ -98,7 +98,7 @@ export default function FriendsPage() {
   return (
     <div className="container">
       <div className="page-header">
-        <h1>👥 Deine Streamer Squads</h1>
+        <h1> Deine Streamer Squads</h1>
       </div>
 
       <div className="tabs">
@@ -136,7 +136,7 @@ export default function FriendsPage() {
 
           {tab === 'requests' && (
             requests.length === 0 ? (
-              <div className="empty-state"><div className="empty-icon">📩</div><p>{t('friends.noRequests')}</p></div>
+              <div className="empty-state"><div className="empty-icon"></div><p>{t('friends.noRequests')}</p></div>
             ) : requests.map(r => (
               <div key={r.id} className="list-item">
                 <div className="list-item-info">
@@ -147,8 +147,8 @@ export default function FriendsPage() {
                   </div>
                 </div>
                 <div className="list-item-actions">
-                  <button className="btn btn-sm btn-primary" onClick={() => acceptRequest(r.id)}>✓ {t('friends.accept')}</button>
-                  <button className="btn btn-sm btn-outline" onClick={() => declineRequest(r.id)}>✗ {t('friends.decline')}</button>
+                  <button className="btn btn-sm btn-primary" onClick={() => acceptRequest(r.id)}> {t('friends.accept')}</button>
+                  <button className="btn btn-sm btn-outline" onClick={() => declineRequest(r.id)}> {t('friends.decline')}</button>
                 </div>
               </div>
             ))

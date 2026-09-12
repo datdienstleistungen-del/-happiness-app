@@ -122,20 +122,20 @@ export default function SetupWizard({ onComplete, onClose }) {
               <p>Wo suchst du nach Leads?</p>
               
               <div className="wiz-options-grid">
-                <button className={`wiz-reg ${region === 'eu' ? 'on' : ''}`} onClick={() => setRegion('eu')}>🇪🇺 Europa (EU/DE)</button>
-                <button className={`wiz-reg ${region === 'na' ? 'on' : ''}`} onClick={() => setRegion('na')}>🇺🇸 USA (NA)</button>
-                <button className={`wiz-reg ${region === 'latam' ? 'on' : ''}`} onClick={() => setRegion('latam')}>🇧🇷 Lateinamerika</button>
-                <button className={`wiz-reg ${region === 'apac' ? 'on' : ''}`} onClick={() => setRegion('apac')}>🇦🇺 Asien-Pazifik</button>
+                <button className={`wiz-reg ${region === 'eu' ? 'on' : ''}`} onClick={() => setRegion('eu')}> Europa (EU/DE)</button>
+                <button className={`wiz-reg ${region === 'na' ? 'on' : ''}`} onClick={() => setRegion('na')}> USA (NA)</button>
+                <button className={`wiz-reg ${region === 'latam' ? 'on' : ''}`} onClick={() => setRegion('latam')}> Lateinamerika</button>
+                <button className={`wiz-reg ${region === 'apac' ? 'on' : ''}`} onClick={() => setRegion('apac')}> Asien-Pazifik</button>
               </div>
 
               {region === 'na' && (
                 <div className="wiz-hint">
-                  <strong>🇺🇸 Hinweis zum US-Markt:</strong> Der Vertriebsansatz ist direkter und aggressiver. Trigger-Events finden sich oft in Job Boards, Funding-News und sehr offenen Social Media Diskussionen.
+                  <strong> Hinweis zum US-Markt:</strong> Der Vertriebsansatz ist direkter und aggressiver. Trigger-Events finden sich oft in Job Boards, Funding-News und sehr offenen Social Media Diskussionen.
                 </div>
               )}
               {region === 'eu' && (
                 <div className="wiz-hint">
-                  <strong>🇪🇺 Hinweis zum EU-Markt:</strong> Sehr DSGVO-fokussiert. Pitches müssen zurückhaltender und wertstiftender sein. Trigger-Events verstecken sich oft in B2B-Foren und PR-Mitteilungen.
+                  <strong> Hinweis zum EU-Markt:</strong> Sehr DSGVO-fokussiert. Pitches müssen zurückhaltender und wertstiftender sein. Trigger-Events verstecken sich oft in B2B-Foren und PR-Mitteilungen.
                 </div>
               )}
             </div>
