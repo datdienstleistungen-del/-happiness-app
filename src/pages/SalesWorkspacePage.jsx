@@ -225,13 +225,17 @@ export default function SalesWorkspacePage() {
           setFormData(prev => ({ ...prev, ansprechpartner: fullStr }));
 
           // Intelligence-Tab aktualisieren
+          const nameParts = (contact.name || '').split(' ');
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.slice(1).join(' ') || '';
           setFullContext(prev => prev ? {
             ...prev,
-            contacts: [{ nexus_contacts: { name: contact.name, role: contact.role || '', email: contact.email || null } }]
+            contacts: [{ nexus_contacts: { first_name: firstName, last_name: lastName, role: contact.role || '', email: contact.email || null } }]
           } : prev);
           
-          // Kontakt mit vollständigen Daten speichern (evidence, source_url, email_status)
+          // Kontakt mit vollständigen Daten speichern
           setFoundContact({
+            id: contact.id,
             name: contact.name,
             role: contact.role,
             email: contact.email,
@@ -239,8 +243,10 @@ export default function SalesWorkspacePage() {
             evidence: contact.evidence || null,
             source_url: contact.source_url || null,
             rank_score: contact.rank_score,
-            company_validated: contact.company_validated || false
+            company_validated: contact.company_validated || false,
+            phone: contact.phone || null
           });
+          setContactPersisted(true);
         } else {
            setFormData(prev => ({ ...prev, ansprechpartner: 'Kein verlässlicher Ansprechpartner gefunden' }));
         }
@@ -1105,8 +1111,8 @@ export default function SalesWorkspacePage() {
                     <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
                       <h4 style={{ marginTop: 0, color: 'var(--color-koralle)' }}>Offering & Positioning</h4>
                       <div style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>
-                        <strong>Angebot:</strong> {fullContext.offering?.offering_name || '-'}<br/><br/>
-                        <strong>Positioning / Nutzen:</strong><br/>
+                        <strong>{t('nexus.wsOffering')}</strong> {fullContext.offering?.offering_name || '-'}<br/><br/>
+                        <strong>{t('nexus.wsPositioning')}</strong><br/>
                         {fullContext.offering?.positioning || '-'}
                       </div>
                     </div>
