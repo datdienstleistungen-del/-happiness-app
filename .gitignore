@@ -32,5 +32,26 @@ Thumbs.db
 # One-time upload scripts
 upload-*.cjs
 
+# Test files (not needed in repo)
+test-*.mjs
+test-*.cjs
+test-*.js
+test-results/
+
+# Debug/fix files
+fix*.js
+fix*.cjs
+fix*.mjs
+builder.mjs
+check-*.mjs
+run-cron*.mjs
+real-test.mjs
+verify-*.mjs
+
+# Artifacts
+*.zip
+Nexus_Exports/
+supabase/.temp/
+
 # Installers
 *.exe
