@@ -826,7 +826,7 @@ export default function SalesWorkspacePage() {
                     {renderFormFields()}
                     
                     <div className="form-group" style={{ marginTop: '16px' }}>
-                      <label htmlFor="targetLang">{t('nexus.wsFormLang')}</label>
+                      <label htmlFor="targetLang">{t('nexus.wsFormLang') || 'Ausgabesprache der Nachricht'}</label>
                       <select
                         id="targetLang"
                         name="targetLang"
@@ -834,11 +834,11 @@ export default function SalesWorkspacePage() {
                         onChange={handleInputChange}
                         style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-light)', background: 'var(--bg)', color: 'var(--text-primary)' }}
                       >
-                        <option value="auto">{t('nexus.wsFormLangAuto')}</option>
-                        <option value="de">{t('nexus.wsFormLangDe')}</option>
-                        <option value="en">{t('nexus.wsFormLangEn')}</option>
-                        <option value="es">{t('nexus.wsFormLangEs')}</option>
-                        <option value="fr">{t('nexus.wsFormLangFr')}</option>
+                        <option value="auto">{t('nexus.wsFormLangAuto') || 'Automatisch (wie Website / Lead)'}</option>
+                        <option value="de">{t('nexus.wsFormLangDe') || 'Deutsch (DE)'}</option>
+                        <option value="en">{t('nexus.wsFormLangEn') || 'Englisch (EN)'}</option>
+                        <option value="es">{t('nexus.wsFormLangEs') || 'Spanisch (ES)'}</option>
+                        <option value="fr">{t('nexus.wsFormLangFr') || 'Französisch (FR)'}</option>
                       </select>
                     </div>
 
