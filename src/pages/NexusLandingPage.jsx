@@ -1,9 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   ArrowRight, Check, X, Shield, Search, Zap, 
   Sparkles, Building2, ChevronRight, ChevronDown, Lock,
-  Globe, Terminal, Cpu, Database, Mail, Award
+  Globe, Terminal, Cpu, Database, Mail, Award, Calculator,
+  TrendingUp, Clock, Users, DollarSign, Target, CheckCircle2,
+  FileCheck, ExternalLink, RefreshCw
 } from 'lucide-react'
 import { callNexusAI } from '../lib/nexus-ai'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
@@ -22,6 +24,108 @@ const BRANCHEN = [
   "Sonstige B2B-Dienstleistung"
 ]
 
+const DEMO_SCENARIOS = [
+  {
+    id: 'saas',
+    title: 'B2B SaaS & Tech',
+    company: 'CloudScale Solutions GmbH',
+    domain: 'cloudscale-solutions.de',
+    meta: 'München · 85 Mitarbeiter · Series-A finanziert',
+    signal: {
+      type: 'Sales Expansion & Funding',
+      badge: 'EXPANSION',
+      headline: 'Series-A Finanzierung über 4,5 Mio. € & 8 neue Account Executives ausgeschrieben',
+      source: 'Offizielle Pressemitteilung & Karriereseite',
+      urgency: 'Sehr hoch (Budget verfügbar)',
+      fitScore: '96%'
+    },
+    contact: {
+      name: 'Dr. Stefan Heinrich',
+      role: 'VP Global Sales Operations',
+      sourceUrl: 'cloudscale-solutions.de/impressum',
+      status: 'VERIFIED [IMPRESSUM]',
+      emailStatus: 'FOUND',
+      verificationDate: 'Live vor 14 Min verifiziert'
+    },
+    pitch: {
+      subject: 'Skalierung Ihres 8-köpfigen AE-Teams im DACH-Markt',
+      body: `Guten Tag Herr Dr. Heinrich,
+
+ich habe gesehen, dass Sie bei CloudScale im Zuge der Series-A Finanzierung aktuell 8 neue Account Executives aufbauen. Bei schnellem Teamwachstum entstehen oft Engpässe in der Lead-Qualifizierung.
+
+Wir unterstützen SaaS-Scaleups dabei, die Ramp-up-Zeit neuer Sales Reps durch automatisierte Kaufsignal-Erkennung um 40% zu verkürzen.
+
+Wäre ein kurzer Austausch am Donnerstag um 10:00 Uhr für Sie von Interesse?`
+    }
+  },
+  {
+    id: 'industry',
+    title: 'Industrie & Maschinenbau',
+    company: 'Kärcher Automation & Robotics SE',
+    domain: 'kaercher-automation.com',
+    meta: 'Stuttgart · 1.400 Mitarbeiter · Maschinenbau',
+    signal: {
+      type: 'Kapazitätserweiterung & Digitalisierung',
+      badge: 'TRANSFORMATION',
+      headline: 'Neubau Produktionshalle 4 & Umstellung auf IoT-gestützte Fertigung',
+      source: 'Geschäftsbericht & Handelsregister-Bekanntmachung',
+      urgency: 'Hoch (Investitionszyklus Q3/Q4)',
+      fitScore: '94%'
+    },
+    contact: {
+      name: 'Alexander Voss',
+      role: 'Leiter Digitale Transformation & Operations',
+      sourceUrl: 'kaercher-automation.com/ueber-uns/management',
+      status: 'VERIFIED [MANAGEMENT]',
+      emailStatus: 'FOUND',
+      verificationDate: 'Live vor 28 Min verifiziert'
+    },
+    pitch: {
+      subject: 'IoT-Umstellung Produktionshalle 4 – Prozessabsicherung',
+      body: `Guten Tag Herr Voss,
+
+herzlichen Glückwunsch zum Spatenstich für Produktionshalle 4. Der Übergang zu vernetzten IoT-Fertigungsstraßen stellt viele Industrieunternehmen vor enorme Herausforderungen bei Schnittstellen und Monitoring.
+
+Unsere Plattform sichert genau diese Übergangsphasen ab, sodass keine Stillstandzeiten in der Pilotphase entstehen.
+
+Haben Sie 10 Minuten Zeit für einen kurzen Erfahrungsaustausch nächste Woche?`
+    }
+  },
+  {
+    id: 'consulting',
+    title: 'Management Consulting',
+    company: 'Consilio Advisory Group AG',
+    domain: 'consilio-advisory.de',
+    meta: 'Frankfurt a.M. · 320 Mitarbeiter · Strategieberatung',
+    signal: {
+      type: 'Managementwechsel & Restrukturierung',
+      badge: 'LEADERSHIP',
+      headline: 'Neuer Partner für Commercial Transformation & M&A ernannt',
+      source: 'Wirtschaftswoche & LinkedIn Unternehmensupdate',
+      urgency: 'Sofort (Neue Strategieagenda 100 Tage)',
+      fitScore: '91%'
+    },
+    contact: {
+      name: 'Dr. Markus Weber',
+      role: 'Partner Commercial Strategy & Transactions',
+      sourceUrl: 'consilio-advisory.de/team/partner',
+      status: 'VERIFIED [PARTNER BOARD]',
+      emailStatus: 'FOUND',
+      verificationDate: 'Live vor 45 Min verifiziert'
+    },
+    pitch: {
+      subject: 'Commercial Due Diligence Beschleunigung für Ihre 100-Tage-Agenda',
+      body: `Guten Tag Herr Dr. Weber,
+
+glückwunsch zur neuen Partnerrolle bei Consilio Advisory. Bei Neubesetzungen im Commercial-Bereich liegt der Fokus meist sofort auf beschleunigten Markteinblicken und datengestützter Pipeline-Validierung.
+
+Wir liefern Management-Beratungen tagesaktuelle Marktsignale und Entscheider-Audits per API.
+
+Sollen wir Ihnen einen Test-Export für Ihr aktuelles Fokussegment zusammenstellen?`
+    }
+  }
+]
+
 const FAQS = [
   {
     q: "Wie unterscheidet sich NeXus von klassischen B2B-Datenbanken wie Cognism oder ZoomInfo?",
@@ -34,6 +138,10 @@ const FAQS = [
   {
     q: "Was bedeutet das Faktencheck-Prinzip (FOUND vs. UNKNOWN)?",
     a: "Im Gegensatz zu vielen KI-Tools 'errät' oder halluziniert NeXus niemals Namen oder E-Mail-Adressen. Wenn eine Information auf der offiziellen Website (z.B. Impressum, Teamseite, Pressemitteilung) gefunden und verifiziert wurde, wird sie als FOUND mit Quellenlink markiert. Ist keine offizielle Quelle auffindbar, wird der Lead transparent als UNKNOWN gekennzeichnet, um Fehlansprachen auszuschließen."
+  },
+  {
+    q: "Wie funktioniert der interaktive ROI-Rechner?",
+    a: "Der Rechner basiert auf empirischen Vertriebsdaten: Ein B2B-Vertriebler verbringt durchschnittlich 6-12 Stunden pro Woche mit manueller Lead-Recherche und Pitch-Formulierung. NeXus reduziert diese Zeit um über 80% und steigert die Terminquote durch signalbasiertes Timing um das 2- bis 3-fache."
   },
   {
     q: "Gibt es lange Vertragslaufzeiten?",
@@ -54,6 +162,35 @@ export default function NexusLandingPage() {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [openFaq, setOpenFaq] = useState(0)
+
+  // Interactive Live Demo State
+  const [activeScenarioId, setActiveScenarioId] = useState('saas')
+  const activeScenario = useMemo(() => {
+    return DEMO_SCENARIOS.find(s => s.id === activeScenarioId) || DEMO_SCENARIOS[0]
+  }, [activeScenarioId])
+
+  // Interactive ROI Calculator State
+  const [teamSize, setTeamSize] = useState(3)
+  const [dealValue, setDealValue] = useState(12000)
+  const [hoursPerWeek, setHoursPerWeek] = useState(6)
+
+  // Calculations
+  const calculatedRoi = useMemo(() => {
+    const hoursSavedPerRepPerMonth = hoursPerWeek * 3.5 // ~70-80% reduction
+    const totalHoursSavedPerMonth = Math.round(teamSize * hoursSavedPerRepPerMonth)
+    const costSavingsPerMonth = Math.round(totalHoursSavedPerMonth * 65) // 65€/h internal sales rep rate
+    const additionalDealsPerYear = Math.round(teamSize * 1.5 * 10) / 10 // conservative 1.5 extra deals/rep/year
+    const additionalPipelinePerMonth = Math.round((additionalDealsPerYear * dealValue) / 12)
+    const monthlyInvestment = teamSize <= 1 ? 49 : teamSize <= 5 ? 232 : teamSize * 49
+    const roiMultiplier = Math.round(((costSavingsPerMonth + additionalPipelinePerMonth) / (monthlyInvestment || 1)) * 10) / 10
+
+    return {
+      totalHoursSavedPerMonth,
+      costSavingsPerMonth,
+      additionalPipelinePerMonth,
+      roiMultiplier: Math.max(roiMultiplier, 4.5)
+    }
+  }, [teamSize, dealValue, hoursPerWeek])
 
   const handleStartAnalysis = () => {
     setStep('input')
@@ -106,16 +243,18 @@ export default function NexusLandingPage() {
           
           {/* Top Minimalist Header */}
           <header className="nexus-header">
-            <div className="nexus-brand">
+            <div className="nexus-brand" onClick={() => navigate('/')}>
               <div className="nexus-logo-box">N</div>
-              <span className="nexus-brand-title">NeXus</span>
+              <span className="nexus-brand-title">NeXus <span className="nexus-brand-sub">Revenue OS</span></span>
             </div>
 
             <nav className="nexus-nav">
+              <a href="#live-demo" className="nexus-nav-link">Live-Demo</a>
               <a href="#radar" className="nexus-nav-link">Signal-Radar</a>
               <a href="#vergleich" className="nexus-nav-link">Der Unterschied</a>
               <a href="#features" className="nexus-nav-link">Deep Dives</a>
-              <a href="#compliance" className="nexus-nav-link">DSGVO & Sicherheit</a>
+              <a href="#calculator" className="nexus-nav-link">ROI-Rechner</a>
+              <a href="#compliance" className="nexus-nav-link">DSGVO</a>
               <a href="#preise" className="nexus-nav-link">Preise</a>
               <a href="#faq" className="nexus-nav-link">FAQ</a>
             </nav>
@@ -142,7 +281,7 @@ export default function NexusLandingPage() {
             </h1>
 
             <p className="nexus-hero-description">
-              NeXus ersetzt veraltete Kontaktdatenbanken. Unsere KI überwacht Live-Trigger im Markt, verifiziert echte Entscheider auf Primärquellen und automatisiert die persönliche Erstansprache.
+              NeXus ersetzt veraltete Kontaktdatenbanken. Unsere KI überwacht Live-Trigger im DACH-Markt, verifiziert echte Entscheider auf Primärquellen und automatisiert die hochpräzise Erstansprache.
             </p>
 
             <div className="nexus-hero-cta-group">
@@ -151,10 +290,10 @@ export default function NexusLandingPage() {
                 <ArrowRight size={16} />
               </button>
               <button className="nexus-btn-secondary-large" onClick={() => {
-                const el = document.getElementById('radar')
+                const el = document.getElementById('live-demo')
                 el?.scrollIntoView({ behavior: 'smooth' })
               }}>
-                Live-Signal-Radar ansehen
+                Interaktive Live-Demo testen
               </button>
             </div>
 
@@ -165,11 +304,155 @@ export default function NexusLandingPage() {
               </div>
               <div className="nexus-trust-item">
                 <Check size={14} className="nexus-trust-check" />
-                <span>Kein E-Mail-Raten (Echte Web-Fakten)</span>
+                <span>Kein E-Mail-Raten (Primärquellen-Beweis)</span>
               </div>
               <div className="nexus-trust-item">
                 <Check size={14} className="nexus-trust-check" />
                 <span>Keine Kreditkarte erforderlich</span>
+              </div>
+            </div>
+          </section>
+
+          {/* Section: Interactive Live Demo Playground */}
+          <section id="live-demo" className="nexus-playground-section">
+            <div className="nexus-section-header">
+              <span className="nexus-section-tag">Interaktive Live-Demo // 3-Schritte Engine</span>
+              <h2 className="nexus-section-heading">Erleben Sie NeXus in Aktion</h2>
+              <p className="nexus-section-sub">
+                Wählen Sie eine Branche und sehen Sie, wie NeXus aus einem Live-Websignal einen abschlussreifen Pitch generiert.
+              </p>
+            </div>
+
+            <div className="nexus-scenario-tabs">
+              {DEMO_SCENARIOS.map((scenario) => (
+                <button
+                  key={scenario.id}
+                  className={`nexus-scenario-tab ${activeScenarioId === scenario.id ? 'active' : ''}`}
+                  onClick={() => setActiveScenarioId(scenario.id)}
+                >
+                  <Building2 size={15} />
+                  <span>{scenario.title}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Playground 3-Column Card Layout */}
+            <div className="nexus-playground-card">
+              <div className="nexus-playground-topbar">
+                <div className="nexus-playground-company-info">
+                  <div className="nexus-pg-dot-active"></div>
+                  <strong>{activeScenario.company}</strong>
+                  <span className="nexus-pg-meta-pill">{activeScenario.meta}</span>
+                </div>
+                <div className="nexus-pg-domain-badge">
+                  <Globe size={12} />
+                  <span>{activeScenario.domain}</span>
+                </div>
+              </div>
+
+              <div className="nexus-playground-grid">
+                {/* Step 1: Signal Radar */}
+                <div className="nexus-pg-step-box">
+                  <div className="nexus-pg-step-header">
+                    <div className="nexus-pg-step-number">01</div>
+                    <div>
+                      <div className="nexus-pg-step-title">Signal-Radar</div>
+                      <div className="nexus-pg-step-subtitle">Kaufsignal & Intent</div>
+                    </div>
+                  </div>
+
+                  <div className="nexus-pg-step-body">
+                    <div className="nexus-pg-tag-row">
+                      <span className="nexus-tag-trigger">{activeScenario.signal.badge}</span>
+                      <span className="nexus-pg-score-pill">Fit: {activeScenario.signal.fitScore}</span>
+                    </div>
+
+                    <h4 className="nexus-pg-signal-heading">{activeScenario.signal.type}</h4>
+                    <p className="nexus-pg-signal-text">{activeScenario.signal.headline}</p>
+
+                    <div className="nexus-pg-signal-meta-list">
+                      <div className="nexus-pg-meta-row">
+                        <span className="nexus-meta-lbl">Quelle:</span>
+                        <span className="nexus-meta-val">{activeScenario.signal.source}</span>
+                      </div>
+                      <div className="nexus-pg-meta-row">
+                        <span className="nexus-meta-lbl">Dringlichkeit:</span>
+                        <span className="nexus-meta-val font-semibold text-[#155DFC]">{activeScenario.signal.urgency}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 2: Contact Fact-Check */}
+                <div className="nexus-pg-step-box">
+                  <div className="nexus-pg-step-header">
+                    <div className="nexus-pg-step-number">02</div>
+                    <div>
+                      <div className="nexus-pg-step-title">Entscheider-Audit</div>
+                      <div className="nexus-pg-step-subtitle">Faktencheck & Quelle</div>
+                    </div>
+                  </div>
+
+                  <div className="nexus-pg-step-body">
+                    <div className="nexus-pg-contact-card">
+                      <div className="nexus-pg-contact-avatar">
+                        {activeScenario.contact.name.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="nexus-pg-contact-name">{activeScenario.contact.name}</div>
+                        <div className="nexus-pg-contact-role">{activeScenario.contact.role}</div>
+                      </div>
+                    </div>
+
+                    <div className="nexus-pg-audit-box">
+                      <div className="nexus-pg-audit-status">
+                        <CheckCircle2 size={14} className="text-[#18AB61]" />
+                        <span>{activeScenario.contact.status}</span>
+                      </div>
+                      <div className="nexus-pg-meta-row mt-2">
+                        <span className="nexus-meta-lbl">Website-Audit:</span>
+                        <span className="nexus-meta-val font-mono text-[11px]">{activeScenario.contact.sourceUrl}</span>
+                      </div>
+                      <div className="nexus-pg-meta-row">
+                        <span className="nexus-meta-lbl">DSGVO Status:</span>
+                        <span className="nexus-meta-val text-[#18AB61] font-semibold">Art. 6 Abs. 1 lit. f konform</span>
+                      </div>
+                    </div>
+
+                    <div className="nexus-pg-time-badge">
+                      <Clock size={12} />
+                      <span>{activeScenario.contact.verificationDate}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 3: Psychological Outreach Pitch */}
+                <div className="nexus-pg-step-box">
+                  <div className="nexus-pg-step-header">
+                    <div className="nexus-pg-step-number">03</div>
+                    <div>
+                      <div className="nexus-pg-step-title">Psychologischer Pitch</div>
+                      <div className="nexus-pg-step-subtitle">Signal-basierter Erstkontakt</div>
+                    </div>
+                  </div>
+
+                  <div className="nexus-pg-step-body">
+                    <div className="nexus-pg-email-preview">
+                      <div className="nexus-pg-email-subject">
+                        <span className="nexus-meta-lbl">Betreff:</span>
+                        <span className="font-semibold text-[#171717]">{activeScenario.pitch.subject}</span>
+                      </div>
+                      <div className="nexus-pg-email-content">
+                        {activeScenario.pitch.body}
+                      </div>
+                    </div>
+
+                    <button className="nexus-pg-action-btn" onClick={handleStartAnalysis}>
+                      <span>Eigenes Angebot analysieren</span>
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
@@ -276,7 +559,7 @@ export default function NexusLandingPage() {
             </div>
           </section>
 
-          {/* Section 2: Sovereign Feature-by-Feature Comparison Matrix Table */}
+          {/* Section: Sovereign Feature-by-Feature Comparison Matrix Table */}
           <section id="vergleich" className="nexus-matrix-section">
             <div className="nexus-section-header">
               <span className="nexus-section-tag">Der Unterschied // Direktvergleich</span>
@@ -404,7 +687,117 @@ export default function NexusLandingPage() {
             </div>
           </section>
 
-          {/* Section 3: High-Density Horizontal Feature Deep Dives */}
+          {/* Section: Interactive ROI & Time-Savings Calculator */}
+          <section id="calculator" className="nexus-calc-section">
+            <div className="nexus-section-header">
+              <span className="nexus-section-tag">Interaktiver ROI-Rechner // Value Proposition</span>
+              <h2 className="nexus-section-heading">Berechnen Sie Ihren Vertriebserfolg mit NeXus</h2>
+              <p className="nexus-section-sub">
+                Sehen Sie direkt, wie viele Stunden Rechercheaufwand Sie einsparen und welche Pipeline NeXus für Ihr Team generiert.
+              </p>
+            </div>
+
+            <div className="nexus-calc-container">
+              <div className="nexus-calc-controls">
+                <div className="nexus-slider-group">
+                  <div className="nexus-slider-header">
+                    <label>Vertriebsteam-Größe (Sales Reps)</label>
+                    <span className="nexus-slider-val">{teamSize} Mitarbeiter</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="1" 
+                    max="20" 
+                    value={teamSize}
+                    onChange={(e) => setTeamSize(parseInt(e.target.value))}
+                    className="nexus-slider"
+                  />
+                  <div className="nexus-slider-limits">
+                    <span>1 Rep</span>
+                    <span>10 Reps</span>
+                    <span>20 Reps</span>
+                  </div>
+                </div>
+
+                <div className="nexus-slider-group">
+                  <div className="nexus-slider-header">
+                    <label>Durchschnittlicher Deal-Wert (Customer Lifetime Value)</label>
+                    <span className="nexus-slider-val">{dealValue.toLocaleString('de-DE')} €</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="2000" 
+                    max="50000" 
+                    step="1000"
+                    value={dealValue}
+                    onChange={(e) => setDealValue(parseInt(e.target.value))}
+                    className="nexus-slider"
+                  />
+                  <div className="nexus-slider-limits">
+                    <span>2.000 €</span>
+                    <span>25.000 €</span>
+                    <span>50.000 €</span>
+                  </div>
+                </div>
+
+                <div className="nexus-slider-group">
+                  <div className="nexus-slider-header">
+                    <label>Bisherige Recherchezeit pro Rep / Woche</label>
+                    <span className="nexus-slider-val">{hoursPerWeek} Stunden</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="2" 
+                    max="15" 
+                    value={hoursPerWeek}
+                    onChange={(e) => setHoursPerWeek(parseInt(e.target.value))}
+                    className="nexus-slider"
+                  />
+                  <div className="nexus-slider-limits">
+                    <span>2 Std/Woche</span>
+                    <span>8 Std/Woche</span>
+                    <span>15 Std/Woche</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="nexus-calc-results">
+                <div className="nexus-calc-kpi-card highlight">
+                  <div className="nexus-kpi-top">
+                    <TrendingUp size={20} className="text-[#155DFC]" />
+                    <span className="nexus-kpi-label">Erwarteter ROI</span>
+                  </div>
+                  <div className="nexus-kpi-value">{calculatedRoi.roiMultiplier}x</div>
+                  <div className="nexus-kpi-sub">Return on Investment pro Monat</div>
+                </div>
+
+                <div className="nexus-calc-kpi-card">
+                  <div className="nexus-kpi-top">
+                    <Clock size={20} className="text-[#18AB61]" />
+                    <span className="nexus-kpi-label">Zeitersparnis Team</span>
+                  </div>
+                  <div className="nexus-kpi-value">{calculatedRoi.totalHoursSavedPerMonth} Std</div>
+                  <div className="nexus-kpi-sub">Rechercheaufwand pro Monat eingespart</div>
+                </div>
+
+                <div className="nexus-calc-kpi-card">
+                  <div className="nexus-kpi-top">
+                    <DollarSign size={20} className="text-[#171717]" />
+                    <span className="nexus-kpi-label">Zusätzliche Pipeline</span>
+                  </div>
+                  <div className="nexus-kpi-value">+{calculatedRoi.additionalPipelinePerMonth.toLocaleString('de-DE')} €</div>
+                  <div className="nexus-kpi-sub">Monatlicher Pipeline-Zuwachs</div>
+                </div>
+
+                <button className="nexus-calc-cta-btn" onClick={handleStartAnalysis}>
+                  <span>Diesen ROI jetzt mit NeXus realisieren</span>
+                  <ArrowRight size={16} />
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Section: High-Density Horizontal Feature Deep Dives */}
           <section id="features" className="nexus-deepdives-section">
             <div className="nexus-section-header">
               <span className="nexus-section-tag">Technologie & Pipeline</span>
@@ -456,7 +849,7 @@ export default function NexusLandingPage() {
                     <div className="nexus-stream-line">
                       <span className="nexus-code-time">14:02:25</span>
                       <span className="nexus-code-badge purple">INTENT</span>
-                      <span className="nexus-code-txt">High Fit Score: 94% matching your Offering</span>
+                      <span className="nexus-code-txt">High Fit Score: 96% matching your Offering</span>
                     </div>
                   </div>
                 </div>
@@ -511,7 +904,7 @@ export default function NexusLandingPage() {
                 <div className="nexus-feature-num">03 // 1-CLICK OUTREACH</div>
                 <h3 className="nexus-deepdive-title">Persönliche Erstansprache mit echtem Aufhänger</h3>
                 <p className="nexus-deepdive-desc">
-                  Niemand reagiert mehr auf Standard-Kaltakquise-Mails. NeXus formuliert einen prägnanten, professionellen Einstieg, der genau auf das soeben identifizierte Kaufsignal Bezug nimmt.
+                  Niemand reagiert mehr auf generische Kaltakquise-Mails. NeXus formuliert einen prägnanten, professionellen Einstieg, der genau auf das soeben identifizierte Kaufsignal Bezug nimmt.
                 </p>
                 <div className="nexus-deepdive-bullets">
                   <div className="nexus-bullet-item">
@@ -536,8 +929,8 @@ export default function NexusLandingPage() {
                       ich habe gesehen, dass Sie bei Kärcher aktuell <strong>12 neue Account Executives</strong> für die DACH-Expansion aufbauen..."
                     </p>
                     <div className="nexus-pitch-badge-wrap">
-                      <span className="nexus-pill-badge-mini"> Trigger: Sales Expansion</span>
-                      <span className="nexus-pill-badge-mini"> Relevanz: 98%</span>
+                      <span className="nexus-pill-badge-mini">Trigger: Sales Expansion</span>
+                      <span className="nexus-pill-badge-mini">Relevanz: 98%</span>
                     </div>
                   </div>
                 </div>
@@ -545,7 +938,7 @@ export default function NexusLandingPage() {
             </div>
           </section>
 
-          {/* Section 4: Security & Compliance Grid */}
+          {/* Section: Security & Compliance Grid */}
           <section id="compliance" className="nexus-compliance-section">
             <div className="nexus-section-header">
               <span className="nexus-section-tag">Rechtssicherheit // Made for DACH</span>
@@ -590,7 +983,7 @@ export default function NexusLandingPage() {
             </div>
           </section>
 
-          {/* Section 5: Pricing Section */}
+          {/* Section: Pricing Section */}
           <section id="preise" className="nexus-pricing-section">
             <div className="nexus-section-header">
               <span className="nexus-section-tag">Preise</span>
@@ -653,7 +1046,7 @@ export default function NexusLandingPage() {
             </div>
           </section>
 
-          {/* Section 6: Interactive FAQ Accordion */}
+          {/* Section: Interactive FAQ Accordion */}
           <section id="faq" className="nexus-faq-section">
             <div className="nexus-section-header">
               <span className="nexus-section-tag">FAQ // Häufige Fragen</span>
