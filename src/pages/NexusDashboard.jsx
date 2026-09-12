@@ -181,7 +181,7 @@ export default function NexusDashboard() {
               opportunities.slice(0, 5).map((opp) => (
                 <div key={opp.id} className="nexus-trigger-item">
                   <div className={`nexus-trigger-badge ${opp.pipeline_stage === 'opportunity' ? 'hoch' : 'mittel'}`}>
-                    {opp.pipeline_stage === 'opportunity' ? '🔥' : '📍'}
+                    {opp.pipeline_stage === 'opportunity' ? <Zap size={13} /> : <Target size={13} />}
                   </div>
                   <div className="nexus-trigger-content">
                     <strong>{opp.nexus_companies?.name || 'Unbekannt'}</strong>

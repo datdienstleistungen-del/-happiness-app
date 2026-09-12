@@ -134,7 +134,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
       <nav className="sidebar-nav">
         {!collapsed && (
           <div className="sidebar-section-title" style={{ color: 'var(--color-koralle)', fontWeight: '700' }}>
-            NeXus ⭐
+            NeXus
           </div>
         )}
         {renderLinks(nexusLinks)}
@@ -199,8 +199,8 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
             </>
           ) : (
             <>
-              <div className="sidebar-avatar" onClick={() => navigate('/login')} style={{ cursor: 'pointer', background: 'var(--color-koralle, #d85a30)' }}>
-                👤
+              <div className="sidebar-avatar" onClick={() => navigate('/login')} style={{ cursor: 'pointer', background: 'var(--color-koralle, #d85a30)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <User size={16} />
               </div>
               {!collapsed && (
                 <div className="sidebar-user-info">
@@ -263,11 +263,13 @@ export default function AppLayout({ children }) {
   const { user } = useAuth()
   const location = useLocation()
 
-  const shouldShowSidebar = ((user && !['/onboarding', '/today-question'].includes(location.pathname)) || (!user && ['/', '/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname)))
-  
-  const shouldShowPublicTopbar = !user && !['/login', '/register', '/video-finder', '/video-script', '/capcut-studio', '/tour', '/nexus'].includes(location.pathname)
+  // Clean landing page: When guest visits "/" or "/nexus", NO sidebar and NO app topbar
+  const isLandingPage = ['/', '/nexus'].includes(location.pathname) && !user
+  const isSpecialPage = ['/onboarding', '/today-question'].includes(location.pathname)
 
-  const isMainContentWithSidebar = ((user && !['/onboarding', '/today-question'].includes(location.pathname)) || (!user && ['/', '/video-finder', '/video-script', '/capcut-studio', '/tour'].includes(location.pathname)))
+  const shouldShowSidebar = user && !isSpecialPage
+  const shouldShowPublicTopbar = false
+  const isMainContentWithSidebar = shouldShowSidebar
 
   return (
     <>

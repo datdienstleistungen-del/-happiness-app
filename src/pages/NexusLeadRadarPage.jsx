@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Radar, Search, ArrowRight, Building2, AlertCircle, RefreshCw, Briefcase, Globe, CheckCircle } from 'lucide-react'
+import { Radar, Search, ArrowRight, Building2, AlertCircle, RefreshCw, Briefcase, Globe, CheckCircle, Sparkles } from 'lucide-react'
 import { callNexusAI, runResearchPipeline } from '../lib/nexus-ai'
 import { supabase } from '../lib/supabase'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
@@ -313,7 +313,7 @@ export default function NexusLeadRadarPage() {
             </p>
           </div>
           <button className="btn-primary" onClick={() => setWizardOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            ✨ Setup-Assistent
+            <Sparkles size={16} /> Setup-Assistent
           </button>
         </div>
       </header>
@@ -403,7 +403,7 @@ export default function NexusLeadRadarPage() {
                   )}
                   {trigger.psychologische_ansprache && (
                     <div style={{ marginBottom: '12px', padding: '8px', background: '#10B98110', borderRadius: '6px', borderLeft: '3px solid #10B981' }}>
-                      <strong style={{ display: 'block', marginBottom: '4px', fontSize: '0.8rem', textTransform: 'uppercase', color: '#10B981' }}>🧠 Psychologische Ansprache</strong>
+                      <strong style={{ display: 'block', marginBottom: '4px', fontSize: '0.8rem', textTransform: 'uppercase', color: '#10B981' }}>Psychologische Ansprache</strong>
                       <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{trigger.psychologische_ansprache}</p>
                     </div>
                   )}

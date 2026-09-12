@@ -52,7 +52,14 @@ export default function SalesWorkspacePage() {
   const [contactPersisted, setContactPersisted] = useState(false) // true nur wenn DB-Save erfolgreich war
   const [generatedMessage, setGeneratedMessage] = useState(null) // Generierte Nachricht
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false) // Nachricht wird generiert
-  const [editedMessage, setEditedMessage] = useState('') // Vom Benutzer bearbeitete Nachricht
+  const [editedMessage, setEditedMessage] = useState('')
+
+  const MODI_LABELS = {
+    sales_pitch: { label: t('nexus.wsModePitchLabel'), desc: t('nexus.wsModePitchDesc') },
+    follow_up: { label: t('nexus.wsModeFollowUpLabel'), desc: t('nexus.wsModeFollowUpDesc') },
+    einwandbehandlung: { label: t('nexus.wsModeEinwandLabel'), desc: t('nexus.wsModeEinwandDesc') },
+    forum_response: { label: t('nexus.wsModeForumLabel'), desc: t('nexus.wsModeForumDesc') }
+  }
 
   // --- TEMPORÄRER TEST-SETUP BUTTON ---
   const runTestSetup = async () => {
@@ -95,7 +102,7 @@ export default function SalesWorkspacePage() {
           return
         }
       }
-      alert("✅ Realistische Testdaten (TechNova + Müller AG) erfolgreich eingefügt! Bitte jetzt den Cron-Befehl im Terminal ausführen.")
+      alert("Realistische Testdaten (TechNova + Müller AG) erfolgreich eingefügt! Bitte jetzt den Cron-Befehl im Terminal ausführen.")
     } catch (e) {
       alert("Fehler: " + e.message)
     }
@@ -431,20 +438,20 @@ export default function SalesWorkspacePage() {
         return (
           <>
             <div className="form-group">
-              <label htmlFor="company">Firmenname *</label>
+              <label htmlFor="company">{t('nexus.wsFormCompany')}</label>
               <input
                 id="company"
                 name="company"
                 type="text"
                 value={formData.company}
                 onChange={handleInputChange}
-                placeholder="z.B. Mustermann GmbH"
+                placeholder={t('nexus.wsCompanyPlaceholder')}
                 required
               />
             </div>
             <div className="form-group">
               <label htmlFor="ansprechpartner" style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '12px' }}>
-                Ansprechpartner (optional)
+                {t('nexus.wsFormContact')}
                 <button 
                   type="button" 
                   onClick={handleFindContact} 
@@ -464,7 +471,7 @@ export default function SalesWorkspacePage() {
                   }}
                 >
                   <Search size={14} />
-                  {findingContact ? 'Suche...' : 'Auto-Finden'}
+                  {findingContact ? t('nexus.wsBtnResearching') : 'Auto-Finden'}
                 </button>
               </label>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -474,7 +481,7 @@ export default function SalesWorkspacePage() {
                   type="text"
                   value={formData.ansprechpartner}
                   onChange={handleInputChange}
-                  placeholder="z.B. Herr Schmidt"
+                  placeholder={t('nexus.wsContactFormPlaceholder')}
                   style={{ flex: 1 }}
                 />
                 {foundContact && (
@@ -494,20 +501,20 @@ export default function SalesWorkspacePage() {
                       gap: '4px'
                     }}
                   >
-                    <CheckCircle size={14} /> Speichern
+                    <CheckCircle size={14} /> {t('nexus.wsBtnSave')}
                   </button>
                 )}
               </div>
             </div>
             <div className="form-group">
-              <label htmlFor="branche">Branche</label>
+              <label htmlFor="branche">{t('nexus.wsFormIndustry')}</label>
               <input
                 id="branche"
                 name="branche"
                 type="text"
                 value={formData.branche}
                 onChange={handleInputChange}
-                placeholder="z.B. IT, Handwerk, etc."
+                placeholder={t('nexus.wsIndustryPlaceholder')}
               />
             </div>
             <div className="form-group">
@@ -517,7 +524,7 @@ export default function SalesWorkspacePage() {
                 name="situation"
                 value={formData.situation}
                 onChange={handleInputChange}
-                placeholder="Was weißt du über die Situation des Unternehmens?"
+                placeholder={t('nexus.wsSituationPlaceholder')}
                 rows={4}
               />
             </div>
@@ -535,7 +542,7 @@ export default function SalesWorkspacePage() {
                 type="text"
                 value={formData.company}
                 onChange={handleInputChange}
-                placeholder="z.B. Mustermann GmbH"
+                placeholder={t('nexus.wsCompanyPlaceholder')}
                 required
               />
             </div>
@@ -546,7 +553,7 @@ export default function SalesWorkspacePage() {
                 name="situation"
                 value={formData.situation}
                 onChange={handleInputChange}
-                placeholder="Wann und wie hast du zuletzt kontaktiert?"
+                placeholder={t('nexus.wsFollowUpPlaceholder')}
                 rows={3}
               />
             </div>
@@ -564,7 +571,7 @@ export default function SalesWorkspacePage() {
                 type="text"
                 value={formData.company}
                 onChange={handleInputChange}
-                placeholder="z.B. Mustermann GmbH"
+                placeholder={t('nexus.wsCompanyPlaceholder')}
                 required
               />
             </div>
@@ -575,7 +582,7 @@ export default function SalesWorkspacePage() {
                 name="einwand"
                 value={formData.einwand}
                 onChange={handleInputChange}
-                placeholder="Was hat der Kunde als Einwand vorgebracht?"
+                placeholder={t('nexus.wsEinwandPlaceholder')}
                 rows={3}
                 required
               />
@@ -594,7 +601,7 @@ export default function SalesWorkspacePage() {
                 type="text"
                 value={formData.company}
                 onChange={handleInputChange}
-                placeholder="z.B. LinkedIn-Beitrag von Mustermann GmbH"
+                placeholder={t('nexus.wsForumCompanyPlaceholder')}
                 required
               />
             </div>
@@ -605,7 +612,7 @@ export default function SalesWorkspacePage() {
                 name="situation"
                 value={formData.situation}
                 onChange={handleInputChange}
-                placeholder="Was steht im Beitrag oder in der Frage?"
+                placeholder={t('nexus.wsForumPlaceholder')}
                 rows={3}
               />
             </div>
@@ -626,7 +633,7 @@ export default function SalesWorkspacePage() {
           onClick={() => window.history.back()}
           style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', fontSize: '0.9rem' }}
         >
-          <ArrowRight size={14} style={{ transform: 'rotate(180deg)' }} /> Zurück
+          <ArrowRight size={14} style={{ transform: 'rotate(180deg)' }} /> {t('nexus.wsBtnBack')}
         </button>
         <div className="header-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -657,7 +664,7 @@ export default function SalesWorkspacePage() {
               }}
             >
               <MessageSquare size={18} />
-              Coach fragen
+              {t('nexus.wsBtnCoach')}
             </button>
           )}
         </div>
@@ -718,27 +725,27 @@ export default function SalesWorkspacePage() {
                   onClick={() => setActiveTab('historie')}
                   style={{ background: activeTab === 'historie' ? 'var(--color-koralle)' : 'transparent', color: activeTab === 'historie' ? 'white' : 'var(--text-primary)', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
                 >
-                  Historie
+                  {t('nexus.wsTabHistory')}
                 </button>
                 <button 
                   className={`tab-btn ${activeTab === 'aktion' ? 'active' : ''}`} 
                   onClick={() => setActiveTab('aktion')}
                   style={{ background: activeTab === 'aktion' ? 'var(--color-koralle)' : 'transparent', color: activeTab === 'aktion' ? 'white' : 'var(--text-primary)', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
                 >
-                  Aktion (Pitch)
+                  {t('nexus.wsTabPitch')}
                 </button>
                 <button 
                   className={`tab-btn ${activeTab === 'intelligence' ? 'active' : ''}`} 
                   onClick={() => setActiveTab('intelligence')}
                   style={{ background: activeTab === 'intelligence' ? 'var(--color-koralle)' : 'transparent', color: activeTab === 'intelligence' ? 'white' : 'var(--text-primary)', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
                 >
-                  Intelligence
+                  {t('nexus.wsTabAudit')}
                 </button>
               </div>
               
               {activeOpp && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                  Status: 
+                  {`${t('nexus.wsStage')}: `}
                   <span style={{ background: 'var(--bg-secondary)', padding: '4px 12px', borderRadius: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
                     {activeOpp.pipeline_stage.toUpperCase()}
                   </span>
@@ -750,13 +757,13 @@ export default function SalesWorkspacePage() {
             {activeTab === 'historie' && (
               <div className="tab-content-historie" style={{ display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', paddingRight: '8px' }}>
                 {historyItems.length === 0 ? (
-                  <p style={{ color: 'var(--text-secondary)' }}>Noch keine Aktivitäten in dieser Akte.</p>
+                  <p style={{ color: 'var(--text-secondary)' }}>{t('nexus.wsNoHistory')}</p>
                 ) : (
                   historyItems.map((item, idx) => (
                     <div key={idx} style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                         <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                          {item._type === 'content' ? `KI Generiert: ${item.type}` : item.description}
+                          {item._type === 'content' ? t('nexus.wsGeneratedPitch') + ': ' + item.type : item.description}
                         </span>
                         <span>{new Date(item.created_at).toLocaleString()}</span>
                       </div>
@@ -800,8 +807,8 @@ export default function SalesWorkspacePage() {
                       >
                         <mode.icon size={20} />
                         <div>
-                          <span className="mode-label">{mode.label}</span>
-                          <span className="mode-description">{mode.description}</span>
+                          <span className="mode-label">{MODI_LABELS[mode.id]?.label}</span>
+                          <span className="mode-description">{MODI_LABELS[mode.id]?.desc}</span>
                         </div>
                       </button>
                     ))}
@@ -813,7 +820,7 @@ export default function SalesWorkspacePage() {
                     {renderFormFields()}
                     
                     <div className="form-group" style={{ marginTop: '16px' }}>
-                      <label htmlFor="targetLang">Zielsprache der Nachricht</label>
+                      <label htmlFor="targetLang">{t('nexus.wsFormLang')}</label>
                       <select
                         id="targetLang"
                         name="targetLang"
@@ -821,11 +828,11 @@ export default function SalesWorkspacePage() {
                         onChange={handleInputChange}
                         style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-light)', background: 'var(--bg)', color: 'var(--text-primary)' }}
                       >
-                        <option value="auto">Automatisch (Passend zur Ziel-Firma)</option>
-                        <option value="de">Deutsch</option>
-                        <option value="en">Englisch</option>
-                        <option value="es">Spanisch</option>
-                        <option value="fr">Französisch</option>
+                        <option value="auto">{t('nexus.wsFormLangAuto')}</option>
+                        <option value="de">{t('nexus.wsFormLangDe')}</option>
+                        <option value="en">{t('nexus.wsFormLangEn')}</option>
+                        <option value="es">{t('nexus.wsFormLangEs')}</option>
+                        <option value="fr">{t('nexus.wsFormLangFr')}</option>
                       </select>
                     </div>
 
@@ -852,9 +859,9 @@ export default function SalesWorkspacePage() {
                   {result && (
                     <div className="sales-result">
                       <div className="result-header">
-                        <h3>Generierte Nachricht (Wurde automatisch in der Historie gespeichert)</h3>
+                        <h3>{t('nexus.wsGeneratedMessage')}</h3>
                         <button className="copy-btn" onClick={handleCopy}>
-                          {copied ? <><CheckCircle size={16} /> Kopiert!</> : <><Copy size={16} /> Kopieren</>}
+                          {copied ? <><CheckCircle size={16} /> {t('nexus.wsBtnCopied')}</> : <><Copy size={16} /> {t('nexus.wsBtnCopy')}</>}
                         </button>
                       </div>
                       <NexusAnalysisResult data={result} mode={selectedMode} />
@@ -868,7 +875,7 @@ export default function SalesWorkspacePage() {
             {activeTab === 'intelligence' && (
               <div className="tab-content-intelligence" style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
                 <h3 style={{ marginTop: 0, display: 'flex', alignItems: 'center' }}>
-                  Lead-Akte (Opportunity Context) <ContextHelpButton helpKey="lead_akte.opportunity" />
+                  {t('nexus.wsAuditTitle')} <ContextHelpButton helpKey="lead_akte.opportunity" />
                 </h3>
                 
                 {fullContext ? (
@@ -876,23 +883,23 @@ export default function SalesWorkspacePage() {
                     
                     {/* 1. Company & Contact */}
                     <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
-                      <h4 style={{ marginTop: 0, color: 'var(--color-koralle)' }}>Unternehmen & Kontakt</h4>
+                      <h4 style={{ marginTop: 0, color: 'var(--color-koralle)' }}>{t('nexus.wsAuditCompanyContact')}</h4>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '0.9rem' }}>
                         <div>
-                          <strong>Firma:</strong> <br/>
+                          <strong>{t('nexus.wsAuditFirm')}</strong> <br/>
                           {fullContext.company?.name || '-'} {fullContext.company?.industry ? `(${fullContext.company.industry})` : ''}
                         </div>
                         <div>
-                          <strong>Ansprechpartner:</strong> <br/>
+                          <strong>{t('nexus.wsAuditContact')}</strong> <br/>
                           {fullContext.contacts?.length > 0 ? (
                             <span>
                               {`${fullContext.contacts[0].nexus_contacts.first_name || ''} ${fullContext.contacts[0].nexus_contacts.last_name || ''}`.trim()} 
                               {fullContext.contacts[0].nexus_contacts.role && ` (${fullContext.contacts[0].nexus_contacts.role})`}
                             </span>
                           ) : findingContact ? (
-                            <span style={{ color: 'var(--text-secondary)' }}>Suche laeuft...</span>
+                            <span style={{ color: 'var(--text-secondary)' }}>{t('nexus.wsSearching')}</span>
                           ) : (
-                            <span style={{ color: 'var(--text-secondary)' }}>Kein Ansprechpartner gefunden</span>
+                            <span style={{ color: 'var(--text-secondary)' }}>{t('nexus.wsAuditNoContact')}</span>
                           )}
                         </div>
                       </div>
@@ -903,7 +910,7 @@ export default function SalesWorkspacePage() {
                           {/* Evidenz */}
                           {foundContact.evidence && (
                             <div style={{ marginBottom: '8px' }}>
-                              <strong style={{ color: 'var(--text-primary)' }}>Evidenz:</strong><br/>
+                              <strong style={{ color: 'var(--text-primary)' }}>{t('nexus.wsAuditEvidence')}</strong><br/>
                               <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>
                                 "{foundContact.evidence}"
                               </span>
@@ -913,7 +920,7 @@ export default function SalesWorkspacePage() {
                           {/* Quelle */}
                           {foundContact.source_url && (
                             <div style={{ marginBottom: '8px' }}>
-                              <strong style={{ color: 'var(--text-primary)' }}>Quelle:</strong>{' '}
+                              <strong style={{ color: 'var(--text-primary)' }}>{t('nexus.wsAuditSource')}</strong>{' '}
                               <a 
                                 href={foundContact.source_url} 
                                 target="_blank" 
@@ -949,7 +956,7 @@ export default function SalesWorkspacePage() {
                               <span style={{ color: '#22c55e' }}>{foundContact.email}</span>
                             ) : (
                               // Fall 3: Keine Email (UNKNOWN)
-                              <span style={{ color: 'var(--text-secondary)' }}>Keine E-Mail gefunden</span>
+                              <span style={{ color: 'var(--text-secondary)' }}>{t('nexus.wsNoEmail')}</span>
                             )}
                           </div>
                           
@@ -987,7 +994,7 @@ export default function SalesWorkspacePage() {
                                   fontSize: '0.8rem'
                                 }}
                               >
-                                Bestätigen
+                                {t('nexus.wsBtnConfirm')}
                               </button>
                               <button
                                 type="button"
@@ -1014,7 +1021,7 @@ export default function SalesWorkspacePage() {
                                   fontSize: '0.8rem'
                                 }}
                               >
-                                Verwerfen
+                                {t('nexus.wsBtnReject')}
                               </button>
                             </div>
                           )}
@@ -1024,7 +1031,7 @@ export default function SalesWorkspacePage() {
                             <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
                               <input
                                 type="email"
-                                placeholder="E-Mail manuell eingeben"
+                                placeholder={t('nexus.wsEmailPlaceholder')}
                                 id="manualEmailInput"
                                 style={{
                                   padding: '4px 8px',
@@ -1073,7 +1080,7 @@ export default function SalesWorkspacePage() {
                                   fontSize: '0.8rem'
                                 }}
                               >
-                                Speichern
+                                {t('nexus.wsBtnSave')}
                               </button>
                             </div>
                           )}
@@ -1086,7 +1093,7 @@ export default function SalesWorkspacePage() {
                                 {foundContact.rank_score}%
                               </span>
                               {foundContact.company_validated && (
-                                <span style={{ marginLeft: '8px', color: '#22c55e', fontSize: '0.8rem' }}>✓ Firmenwebsite</span>
+                                <span style={{ marginLeft: '8px', color: '#22c55e', fontSize: '0.8rem' }}>✓ {t('nexus.wsCompanyWebsite')}</span>
                               )}
                             </div>
                           )}
@@ -1107,28 +1114,28 @@ export default function SalesWorkspacePage() {
                     {/* 3. Trigger */}
                     {activeTrigger && (
                       <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
-                        <h4 style={{ marginTop: 0, color: 'var(--color-koralle)' }}>Ursprüngliches Kaufsignal (Trigger)</h4>
+                        <h4 style={{ marginTop: 0, color: 'var(--color-koralle)' }}>{t('nexus.wsTriggerSignal')}</h4>
                         <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.5', margin: '0 0 16px 0', fontSize: '0.95rem' }}>
                           {activeTrigger.content}
                         </p>
                         
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                           <div>
-                            <strong style={{ color: 'var(--text-primary)' }}>Quelle:</strong> <br/>
+                            <strong style={{ color: 'var(--text-primary)' }}>{t('nexus.wsAuditSource')}</strong> <br/>
                             {activeTrigger.source?.startsWith('http') ? (
                               <a href={activeTrigger.source} target="_blank" rel="noreferrer" style={{ color: 'var(--color-koralle)', textDecoration: 'none' }}>
-                                Original-Link öffnen ↗
+                                {t('nexus.wsOpenLink')}
                               </a>
                             ) : (
                               activeTrigger.source
                             )}
                           </div>
                           <div>
-                            <strong style={{ color: 'var(--text-primary)' }}>Entdeckt am:</strong> <br/>
+                            <strong style={{ color: 'var(--text-primary)' }}>{t('nexus.wsDiscoveredAt')}</strong> <br/>
                             {new Date(activeTrigger.created_at).toLocaleDateString()}
                           </div>
                           <div>
-                            <strong style={{ color: 'var(--text-primary)' }}>Trigger-Typ:</strong> <br/>
+                            <strong style={{ color: 'var(--text-primary)' }}>{t('nexus.wsTriggerType')}</strong> <br/>
                             {activeTrigger.signal_type || 'Unbekannt'}
                           </div>
                           <div>
@@ -1143,21 +1150,21 @@ export default function SalesWorkspacePage() {
                     {foundContact && (
                       <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
                         <h4 style={{ marginTop: 0, color: 'var(--color-koralle)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <Send size={18} /> Nachricht vorbereiten
+                          <Send size={18} /> {t('nexus.wsPrepareMessage')}
                         </h4>
                         
                         {/* Contact Summary */}
                         <div style={{ marginBottom: '12px', fontSize: '0.9rem', padding: '8px', background: 'var(--bg-secondary)', borderRadius: '4px' }}>
-                          <strong>An:</strong> {foundContact.name}{' '}
+                          <strong>{t('nexus.wsTo')}</strong> {foundContact.name}{' '}
                           {foundContact.role && <span>({foundContact.role})</span>}
                           <br/>
-                          <strong>Firma:</strong> {fullContext.company?.name || '-'}
+                          <strong>{t('nexus.wsAuditFirm')}</strong> {fullContext.company?.name || '-'}
                           <br/>
                           <strong>E-Mail:</strong>{' '}
                           {foundContact.email && foundContact.email_status !== 'UNKNOWN' ? (
                             <span style={{ color: '#22c55e' }}>{foundContact.email}</span>
                           ) : (
-                            <span style={{ color: 'var(--text-secondary)' }}>Nicht öffentlich verfügbar</span>
+                            <span style={{ color: 'var(--text-secondary)' }}>{t('nexus.wsNotPublic')}</span>
                           )}
                         </div>
 
@@ -1179,14 +1186,14 @@ export default function SalesWorkspacePage() {
                               gap: '6px'
                             }}
                           >
-                            <Send size={14} /> Nachricht generieren
+                            <Send size={14} /> {t('nexus.wsBtnGenerate')}
                           </button>
                         )}
 
                         {/* Loading */}
                         {isGeneratingMessage && (
                           <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', padding: '12px 0' }}>
-                            Nachricht wird generiert...
+                            {t('nexus.wsBtnGenerating')}
                           </div>
                         )}
 
@@ -1196,14 +1203,14 @@ export default function SalesWorkspacePage() {
                             {/* Subject */}
                             {generatedMessage.subject && (
                               <div style={{ marginBottom: '8px', fontSize: '0.85rem' }}>
-                                <strong>Betreff:</strong> {generatedMessage.subject}
+                                <strong>{t('nexus.wsOutreachSubject')}</strong> {generatedMessage.subject}
                               </div>
                             )}
                             
                             {/* Message (editable) */}
                             <div style={{ marginBottom: '12px' }}>
                               <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.85rem', fontWeight: 600 }}>
-                                Nachricht:
+                                {t('nexus.wsMessage')}
                               </label>
                               <textarea
                                 value={editedMessage}
@@ -1225,7 +1232,7 @@ export default function SalesWorkspacePage() {
                             {/* Used Facts */}
                             {generatedMessage.used_facts?.length > 0 && (
                               <div style={{ marginBottom: '8px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                <strong>Verwendete Fakten:</strong>
+                                <strong>{t('nexus.wsUsedFacts')}</strong>
                                 <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
                                   {generatedMessage.used_facts.map((fact, i) => (
                                     <li key={i}>{fact}</li>
@@ -1237,7 +1244,7 @@ export default function SalesWorkspacePage() {
                             {/* Interpretations */}
                             {generatedMessage.interpretations?.length > 0 && (
                               <div style={{ marginBottom: '8px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                <strong>Interpretationen:</strong>
+                                <strong>{t('nexus.wsInterpretations')}</strong>
                                 <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
                                   {generatedMessage.interpretations.map((interp, i) => (
                                     <li key={i}>{interp}</li>
@@ -1249,7 +1256,7 @@ export default function SalesWorkspacePage() {
                             {/* Sources */}
                             {generatedMessage.sources?.length > 0 && (
                               <div style={{ marginBottom: '12px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                <strong>Quellen:</strong>
+                                <strong>{t('nexus.wsSources')}</strong>
                                 <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
                                   {generatedMessage.sources.map((src, i) => (
                                     <li key={i}>{src}</li>
@@ -1278,7 +1285,7 @@ export default function SalesWorkspacePage() {
                                 }}
                               >
                                 {copied ? <CheckCircle size={14} /> : <Copy size={14} />}
-                                {copied ? 'Kopiert!' : !contactPersisted ? 'Erst E-Mail bestätigen' : 'Kopieren'}
+                                {copied ? t('nexus.wsBtnCopied') : !contactPersisted ? t('nexus.wsConfirmFirst') : t('nexus.wsBtnCopy')}
                               </button>
                               <button
                                 type="button"
@@ -1293,7 +1300,7 @@ export default function SalesWorkspacePage() {
                                   fontSize: '0.85rem'
                                 }}
                               >
-                                Neu generieren
+                                {t('nexus.wsBtnRegenerate')}
                               </button>
                             </div>
                           </div>
@@ -1302,14 +1309,14 @@ export default function SalesWorkspacePage() {
                         {/* Error */}
                         {generatedMessage?.status === 'error' && (
                           <div style={{ color: '#ef4444', fontSize: '0.9rem' }}>
-                            Fehler: {generatedMessage.error}
+                            {t('nexus.wsError')} {generatedMessage.error}
                           </div>
                         )}
                       </div>
                     )}
                   </div>
                   ) : (
-                  <p>Lade Intelligence-Daten...</p>
+                  <p>{t('nexus.wsLoading')}</p>
                 )}
               </div>
             )}
@@ -1317,8 +1324,8 @@ export default function SalesWorkspacePage() {
         ) : (
           <div className="sales-workspace-empty-state" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <CheckCircle size={48} color="var(--border-light)" />
-            <h2 style={{ color: 'var(--text-primary)' }}>Wähle eine Firma aus der Pipeline</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>Oder gib die Daten manuell im Radar ein.</p>
+            <h2 style={{ color: 'var(--text-primary)' }}>{t('nexus.wsNoOpp')}</h2>
+            <p style={{ color: 'var(--text-secondary)' }}>{t('nexus.wsNoOppDesc')}</p>
           </div>
         )}
         

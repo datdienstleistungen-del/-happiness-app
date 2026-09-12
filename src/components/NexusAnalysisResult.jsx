@@ -332,7 +332,7 @@ function LeadIntelligenceView({ data }) {
   return <AngebotsanalyseView data={data} />
 }
 
-// 🔮 Sales Message (Plain Text) 🔮
+// Sales Message (Plain Text)
 
 function SalesMessageView({ data, text }) {
   // If the parsed object has a response property, use it. 
