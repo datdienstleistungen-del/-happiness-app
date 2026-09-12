@@ -205,8 +205,9 @@ export default function SalesWorkspacePage() {
           return;
         }
         
-        if (res.status === 'no_candidates') {
-          setFormData(prev => ({ ...prev, ansprechpartner: 'Kein passender Ansprechpartner gefunden' }));
+        if (res.status === 'no_candidates' || res.status === 'NO_MATCHING_PERSON_FOUND') {
+          const debugInfo = res.debug ? ` (${res.debug.candidatesFound} Kandidaten, ${res.debug.pagesInvestigated} Seiten)` : '';
+          setFormData(prev => ({ ...prev, ansprechpartner: `Kein passender Ansprechpartner gefunden${debugInfo}` }));
           return;
         }
         

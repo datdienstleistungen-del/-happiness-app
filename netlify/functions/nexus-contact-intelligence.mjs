@@ -541,34 +541,54 @@ async function fetchPageText(url, maxChars = 3000) {
 async function inferTargetRole(context) {
   const { offering, company, opportunity, trigger, research } = context;
   
-  const prompt = `Du bist ein B2B-Vertriebsexperte. Leite aus dem Geschäftskontext die ZIELROLLE für den richtigen Ansprechpartner ab.
+  const companySize = company?.size || company?.employees || 'Unbekannt';
+  const triggerContent = trigger?.content || trigger?.description || 'Kein Trigger';
+  const offeringDesc = offering?.offering_name || offering?.description || 'Unbekannt';
+  const positioning = offering?.positioning || '';
+  const targetAudience = offering?.target_audience || '';
+  
+  const prompt = `Du bist ein B2B-Vertriebsexperte. Bestimme die KONKRETE Zielrolle für den richtigen Ansprechpartner.
+
+WICHTIGSTE REGEL:
+Antworte auf die Frage: "Welche FUNKTION in diesem Unternehmen ist aufgrund dieses konkreten Geschäftsanlasses wahrscheinlich für dieses Angebot ZUSTÄNDIG?"
+
+NICHT: "Wer ist die wichtigste Person der Firma?"
 
 KONTEXT:
-- Angebot: ${offering?.offering_name || 'Unbekannt'}
-- Positionierung: ${offering?.positioning || 'Unbekannt'}
-- Zielgruppe: ${offering?.target_audience || 'Unbekannt'}
+- Angebot: ${offeringDesc}
+- Positionierung: ${positioning}
+- Zielgruppe: ${targetAudience}
 - Firma: ${company?.name || 'Unbekannt'}
 - Branche: ${company?.industry || 'Unbekannt'}
-- Firmengröße: ${company?.size || 'Unbekannt'}
-- Trigger: ${trigger?.content || 'Kein Trigger'}
+- Unternehmensgröße: ${companySize} Mitarbeiter
+- Trigger / Anlass: ${triggerContent}
 - Research: ${research?.summary || 'Kein Research'}
 
 REGELN:
-1. Die Zielrolle muss aus dem KONKRETEN Geschäftsanlass entstehen.
-2. KEINE starren Regeln (SaaS→CEO, HR→CMO etc.)
-3. Bei kleinen Firmen (<50 MA): CEO/Founder kann relevant sein
-4. Bei großen Firmen: Spezialisierte Rolle bevorzugen
-5. Der Trigger bestimmt die Rolle, nicht die Branche
-6. Die Rolle MUSS so spezifisch sein, dass man bei LinkedIn danach suchen kann
+1. Die Zielrolle muss aus dem KONKRETEN Geschäftsanlass abgeleitet werden.
+2. KEIN statisches Mapping (SaaS→CEO, Industrie→Facility Manager etc.)
+3. Bei kleinen Unternehmen (<30 MA): Geschäftsführer/Founder kann relevant sein, wenn er wahrscheinlich selbst für das Thema zuständig ist.
+4. Bei großen Unternehmen (>100 MA): Spezialisierte Rolle BEVORZUGEN.
+5. Der Trigger bestimmt die Rolle, nicht die Branche.
+6. Die Rolle MUSS so spezifisch sein, dass man gezielt danach suchen kann.
+7. CEO/Founder ist NUR dann primär, wenn aus Company Size + Opportunity hervorgeht, dass er direkt zuständig ist.
+8. Es darf KEIN statisches Mapping geben.
 
-WICHTIG: Gib NUR eine konkrete Rolle zurück (z.B. "VP Sales DACH" oder "Head of Marketing Midmarket"). 
-KEINE generischen Rollen wie "Verantwortlicher" oder "Ansprechpartner".
+BEISPIELE für richtige Antwortmuster:
+- "Unternehmen baut Vertriebsteam" → Head of Sales, Sales Director, VP Sales
+- "Unternehmen sucht HR-Manager" → Head of HR, HR Director, Talent Acquisition
+- "Kleines Startup (12 MA) braucht Vertrieb" → Geschäftsführer, Founder (weil direkt zuständig)
+- "Unternehmen baut neue Halle" → Head of Procurement, Project Manager, Plant Manager
+- "Unternehmen braucht Marketing" → Head of Marketing, CMO, Marketing Director
 
 Gib ein JSON zurück:
 {
-  "primary_role": "Konkrete Zielrolle (z.B. Head of Sales, VP Marketing)",
-  "alternative_roles": ["Rolle 2", "Rolle 3"],
-  "role_reason": "Warum gerade diese Rolle zum Trigger/Kontext passt (1-2 Sätze)",
+  "primary_function": "Übergeordnete Funktion (z.B. Sales, HR, Procurement, Marketing)",
+  "primary_role_titles": ["Konkrete Titel der Zielrolle (6-10 Stück, rangsorted nach Wahrscheinlichkeit)"],
+  "secondary_functions": ["Nebenbezogene Funktionen falls relevant"],
+  "secondary_role_titles": ["Titel der Nebenrollen (4-6 Stück)"],
+  "reason": "Begründung warum genau diese Funktion zum Geschäftsanlass passt (2-3 Sätze)",
+  "excluded_as_primary": ["Rollen die NICHT primär relevant sind (z.B. CEO bei großem Unternehmen mit spezialierter Sales-Funktion)"],
   "confidence": 85
 }`;
 
@@ -800,7 +820,7 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
   
   if (!companyDomain) {
     console.log('[Crawler] No domain provided, using search fallback');
-    const searchCandidates = await crawlViaSearch(companyName, targetRole);
+    const searchCandidates = await crawlViaSearch(companyName, targetRole, alternativeRoles);
     return {
       candidates: searchCandidates,
       pagesCrawled: [],
@@ -817,7 +837,7 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
   
   if (!homepageHtml) {
     console.log(`[Crawler] Homepage not reachable: ${baseUrl}`);
-    return await crawlViaSearch(companyName, targetRole);
+    return await crawlViaSearch(companyName, targetRole, alternativeRoles);
   }
   
   // ========== LEVEL 0: Homepage ==========
@@ -1002,7 +1022,7 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
   // ========== PHASE B: Search Fallback ==========
   if (allCandidates.length === 0) {
     console.log('[Crawler] Phase B: Search fallback (no candidates from direct crawl)');
-    const fallbackCandidates = await crawlViaSearch(companyName, targetRole);
+    const fallbackCandidates = await crawlViaSearch(companyName, targetRole, alternativeRoles);
     allCandidates.push(...fallbackCandidates);
   }
   
@@ -1025,21 +1045,52 @@ function isJobUrl(url) {
     /\/bewerbung/i.test(u);
 }
 
-async function crawlViaSearch(companyName, targetRole) {
+async function crawlViaSearch(companyName, targetRole, searchRoles = []) {
   const candidates = [];
+  const roles = searchRoles.length > 0 ? searchRoles : [targetRole];
   
-  const query = `"${companyName}" ${targetRole} site`;
-  console.log(`  [Search] Query: ${query}`);
-  const results = await webSearch(query);
-  if (!results || results.length === 0) {
-    console.log('  [Search] No results from webSearch');
+  // Generate search queries for each role
+  const queries = [];
+  for (const role of roles.slice(0, 5)) {
+    queries.push(`"${companyName}" "${role}"`);
+    const domainHint = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    queries.push(`site:${domainHint}.com "${role}"`);
+  }
+  queries.push(`"${companyName}" team management`);
+  
+  console.log(`  [Search] Generated ${queries.length} search queries for ${roles.length} roles`);
+  
+  // Execute queries in parallel
+  const allResults = [];
+  const queryPromises = queries.slice(0, 6).map(async (q) => {
+    console.log(`  [Search] Query: ${q}`);
+    try {
+      const results = await webSearch(q);
+      if (results) allResults.push(...results);
+    } catch (e) {
+      console.log(`  [Search] Query failed: ${e.message}`);
+    }
+  });
+  await Promise.all(queryPromises);
+  
+  if (allResults.length === 0) {
+    console.log('  [Search] No results from any query');
     return candidates;
   }
-  console.log(`  [Search] Got ${results.length} results`);
+  console.log(`  [Search] Got ${allResults.length} total results`);
   
-  // Take only first 3 non-job URLs, fetch in PARALLEL
-  const urls = results.filter(r => !isJobUrl(r.url)).slice(0, 3);
-  console.log(`  [Search] ${urls.length} URLs after job-filter`);
+  // Deduplicate URLs, filter jobs
+  const seenUrls = new Set();
+  const urls = allResults
+    .filter(r => {
+      if (seenUrls.has(r.url)) return false;
+      if (isJobUrl(r.url)) return false;
+      seenUrls.add(r.url);
+      return true;
+    })
+    .slice(0, 5);
+  
+  console.log(`  [Search] ${urls.length} unique non-job URLs to fetch`);
   
   const pagePromises = urls.map(async (r) => {
     console.log(`  [Search] Fetching: ${r.url}`);
@@ -1362,22 +1413,58 @@ export const handler = async (event) => {
       };
     }
     
-    // Phase 2: Role — simple heuristic, NO LLM call (saves 5-8s)
-    let targetRole = 'Geschäftsführer';
-    const companyName = company?.name || '';
-    const offeringName = offering?.offering_name || '';
-    const targetAudience = offering?.target_audience || '';
-    // Simple heuristic: if target_audience mentions specific roles, use them
-    if (targetAudience.toLowerCase().includes('einkauf') || targetAudience.toLowerCase().includes('procurement')) {
-      targetRole = 'Einkaufsleiter';
-    } else if (targetAudience.toLowerCase().includes('marketing')) {
-      targetRole = 'Marketing Director';
-    } else if (targetAudience.toLowerCase().includes('it') || targetAudience.toLowerCase().includes('technik')) {
-      targetRole = 'IT-Leiter';
-    } else if (targetAudience.toLowerCase().includes('hr') || targetAudience.toLowerCase().includes('personal')) {
-      targetRole = 'Personalleitung';
+    // Phase 2: Target Contact Role Inference (LLM)
+    console.log('[ContactIntel] Phase 2: Target Contact Role Inference');
+    let targetRoleInference;
+    try {
+      targetRoleInference = await inferTargetRole({ offering, company, opportunity, trigger, research });
+    } catch (e) {
+      console.error('[ContactIntel] Role inference LLM failed, falling back to heuristic:', e.message);
+      targetRoleInference = null;
     }
-    console.log(`[ContactIntel] Target role (heuristic): ${targetRole}`);
+    
+    // Extract role titles from LLM result or fallback to heuristic
+    let targetRole = 'Geschäftsführer';
+    let primaryRoleTitles = [];
+    let secondaryRoleTitles = [];
+    let excludedRoles = [];
+    let roleReason = '';
+    let roleConfidence = 50;
+    
+    if (targetRoleInference && !targetRoleInference.raw) {
+      targetRole = targetRoleInference.primary_role_titles?.[0] || 'Geschäftsführer';
+      primaryRoleTitles = targetRoleInference.primary_role_titles || [];
+      secondaryRoleTitles = targetRoleInference.secondary_role_titles || [];
+      excludedRoles = targetRoleInference.excluded_as_primary || [];
+      roleReason = targetRoleInference.reason || '';
+      roleConfidence = targetRoleInference.confidence || 50;
+      console.log(`[ContactIntel] Target role (LLM): ${targetRole}`);
+      console.log(`[ContactIntel] Primary titles: ${primaryRoleTitles.join(', ')}`);
+      console.log(`[ContactIntel] Secondary titles: ${secondaryRoleTitles.join(', ')}`);
+      console.log(`[ContactIntel] Excluded: ${excludedRoles.join(', ')}`);
+      console.log(`[ContactIntel] Reason: ${roleReason}`);
+    } else {
+      // Fallback heuristic
+      const targetAudience = (offering?.target_audience || '').toLowerCase();
+      if (targetAudience.includes('einkauf') || targetAudience.includes('procurement')) {
+        targetRole = 'Einkaufsleiter';
+        primaryRoleTitles = ['Head of Procurement', 'Einkaufsleiter', 'Purchasing Manager', 'Procurement Director'];
+      } else if (targetAudience.includes('marketing')) {
+        targetRole = 'Marketing Director';
+        primaryRoleTitles = ['Head of Marketing', 'CMO', 'Marketing Director', 'Marketing Manager'];
+      } else if (targetAudience.includes('it') || targetAudience.includes('technik')) {
+        targetRole = 'IT-Leiter';
+        primaryRoleTitles = ['CTO', 'Head of IT', 'IT-Director', 'IT-Leiter'];
+      } else if (targetAudience.includes('hr') || targetAudience.includes('personal')) {
+        targetRole = 'Personalleitung';
+        primaryRoleTitles = ['Head of HR', 'HR Director', 'Personalleitung', 'HR Manager'];
+      } else {
+        targetRole = 'Geschäftsführer';
+        primaryRoleTitles = ['Geschäftsführer', 'CEO', 'Managing Director', 'Founder'];
+      }
+      roleReason = 'Fallback-Heuristik (LLM-Inference fehlgeschlagen)';
+      console.log(`[ContactIntel] Target role (heuristic fallback): ${targetRole}`);
+    }
     
     // Phase 3: Targeted Crawl — max 1 page, fast
     if (Date.now() - startTime >= HARD_LIMIT_MS - 8000) {
@@ -1458,11 +1545,15 @@ export const handler = async (event) => {
         console.log('[ContactIntel] Re-verification failed:', e.message);
       }
     }
+    // Build search roles list: primary + secondary titles
+    const allSearchRoles = [...primaryRoleTitles, ...secondaryRoleTitles].filter(Boolean);
+    console.log(`[ContactIntel] Search roles: ${allSearchRoles.join(', ')}`);
+    
     const crawlResult = await crawlForContacts(
       company?.name || 'Unbekannt', 
       companyDomain, 
       targetRole, 
-      [],
+      allSearchRoles,
       startTime
     );
     
@@ -1472,24 +1563,108 @@ export const handler = async (event) => {
     
     console.log(`[ContactIntel] Found ${candidates.length} candidates via ${crawlMethod} (${pagesCrawled.length} pages crawled)`);
     
+    // Debug: Log all candidates
+    candidates.forEach((c, i) => {
+      console.log(`[ContactIntel] Candidate ${i + 1}: ${c.name} — ${c.role || 'unknown role'} (validated: ${c.company_validated}, source: ${c.source_url || 'unknown'})`);
+    });
+    
     if (candidates.length === 0) {
       return {
         statusCode: 200,
         body: JSON.stringify({
-          status: 'no_candidates',
+          status: 'NO_MATCHING_PERSON_FOUND',
           targetRole,
+          primaryRoleTitles,
+          secondaryRoleTitles,
+          excludedRoles,
+          roleReason,
+          roleConfidence,
           pagesCrawled,
           crawlMethod,
-          message: 'Keine passenden Ansprechpartner gefunden'
+          debug: {
+            searchedRoles: allSearchRoles,
+            pagesInvestigated: pagesCrawled.length,
+            candidatesFound: 0,
+            reason: 'Keine Personen mit passenden Rollen auf den untersuchten Seiten gefunden'
+          }
         })
       };
     }
     
-    // Skip ranking LLM — just use first candidate (saves 5-8s)
-    const best = candidates[0];
-    console.log(`[ContactIntel] Best candidate: ${best.name} (${best.role})`);
+    // Phase 5+8: Person Matching + Final Ranking
+    console.log('[ContactIntel] Phase 5+8: Person Matching & Ranking');
+    let rankedCandidates;
+    try {
+      rankedCandidates = await rankContacts(candidates, {
+        offering,
+        company,
+        targetRole,
+        primaryRoleTitles,
+        secondaryRoleTitles,
+        excludedRoles,
+        trigger,
+        research
+      });
+    } catch (e) {
+      console.error('[ContactIntel] Ranking LLM failed, using heuristic ranking:', e.message);
+      // Heuristic ranking: prefer role match, then company validated
+      rankedCandidates = candidates
+        .map(c => {
+          let score = 50;
+          const roleLower = (c.role || '').toLowerCase();
+          // Boost for matching primary roles
+          if (primaryRoleTitles.some(t => roleLower.includes(t.toLowerCase()))) score += 30;
+          // Boost for matching secondary roles
+          if (secondaryRoleTitles.some(t => roleLower.includes(t.toLowerCase()))) score += 15;
+          // Penalty for excluded roles
+          if (excludedRoles.some(t => roleLower.includes(t.toLowerCase()))) score -= 40;
+          // Boost for company validated
+          if (c.company_validated) score += 10;
+          // Penalty for generic roles
+          if (roleLower.includes('geschäftsführer') && primaryRoleTitles.length > 0 && !primaryRoleTitles.some(t => t.toLowerCase().includes('geschäftsführer'))) score -= 20;
+          return { ...c, rank_score: Math.max(0, Math.min(100, score)) };
+        })
+        .sort((a, b) => b.rank_score - a.rank_score);
+    }
     
-    // Skip email web search — use pattern guessing only (saves 3-5s)
+    // Filter out low-score candidates and excluded roles
+    const validCandidates = rankedCandidates.filter(c => {
+      if (c.rank_score < 30) return false;
+      const roleLower = (c.role || '').toLowerCase();
+      if (excludedRoles.some(t => roleLower.includes(t.toLowerCase()))) return false;
+      return true;
+    });
+    
+    if (validCandidates.length === 0) {
+      console.log('[ContactIntel] No candidates survived ranking filter');
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          status: 'NO_MATCHING_PERSON_FOUND',
+          targetRole,
+          primaryRoleTitles,
+          secondaryRoleTitles,
+          excludedRoles,
+          roleReason,
+          roleConfidence,
+          pagesCrawled,
+          crawlMethod,
+          debug: {
+            searchedRoles: allSearchRoles,
+            pagesInvestigated: pagesCrawled.length,
+            candidatesFound: candidates.length,
+            candidatesAfterRanking: 0,
+            reason: `Alle ${candidates.length} Kandidaten wurden aussortiert (Score < 30 oder ausgeschlossene Rolle)`
+          }
+        })
+      };
+    }
+    
+    const best = validCandidates[0];
+    console.log(`[ContactIntel] Best candidate: ${best.name} (${best.role}) — Score: ${best.rank_score}`);
+    if (validCandidates.length > 1) {
+      console.log(`[ContactIntel] Alternatives: ${validCandidates.slice(1, 4).map(c => `${c.name} (${c.role}, Score: ${c.rank_score})`).join(', ')}`);
+    }
     
     // Phase 7: Save
     console.log('[ContactIntel] Phase 7: Save');
@@ -1569,11 +1744,30 @@ export const handler = async (event) => {
       statusCode: 200,
       body: JSON.stringify({
         status: 'found',
-        primary: best,
-        alternatives: candidates.slice(1, 4),
+        primary: {
+          ...best,
+          rank_score: best.rank_score || 80
+        },
+        alternatives: validCandidates.slice(1, 4).map(c => ({
+          name: c.name,
+          role: c.role,
+          evidence: c.evidence,
+          source_url: c.source_url,
+          company_validated: c.company_validated,
+          rank_score: c.rank_score
+        })),
         targetRole,
-        roleReason: '',
-        roleConfidence: 70
+        primaryRoleTitles,
+        secondaryRoleTitles,
+        roleReason,
+        roleConfidence,
+        debug: {
+          searchedRoles: allSearchRoles,
+          pagesInvestigated: pagesCrawled.length,
+          candidatesFound: candidates.length,
+          candidatesAfterRanking: validCandidates.length,
+          bestScore: best.rank_score
+        }
       })
     };
     
