@@ -83,11 +83,11 @@ export async function resolveDomain(companyOrDomain) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         api_key: tavilyKey,
-        query: `"${input}" offizielle Website official website homepage`,
+        query: `${input} official website homepage`,
         search_depth: 'basic',
         max_results: 6
       })
-    }, 6000);
+    }, 8000);
 
     if (!res.ok) return null;
     const data = await res.json();
@@ -130,11 +130,136 @@ export async function resolveDomain(companyOrDomain) {
   return null;
 }
 
+const ROLE_PATTERNS = [
+  /\b(?:CEO|Chief Executive Officer|CTO|Chief Technology Officer|COO|Chief Operating Officer|CFO|Chief Financial Officer|CIO|CMO|Chief Marketing Officer|CRO|Chief Revenue Officer)\b/i,
+  /\b(?:Geschäftsführer(?:in)?|Geschäftsführung|Vorstand|Managing Director|Gründer(?:in)?|Founder|Co-Founder|Inhaber(?:in)?|Partner)\b/i,
+  /\b(?:VP|Vice President)(?:\s+of)?(?:\s+[A-Za-z&/ -]+)?\b/i,
+  /\b(?:Head of|Director of|Director|Leiter(?:in)?)\s+[A-Za-z&/ -]+\b/i,
+  /\b(?:Sales Director|Vertriebsleiter(?:in)?|Account Executive|Sales Manager)\b/i,
+  /\b(?:Chairman(?:,\s*Board of Directors)?)\b/i
+];
+
+export function cleanPersonName(raw) {
+  if (!raw) return null;
+  let name = raw.replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+  name = name.replace(/^(?:Dr\.|Prof\.|Prof\. Dr\.|Dipl\.-[A-Za-z.]+|M\.Sc\.|B\.Sc\.)\s+/i, '');
+  name = name.replace(/^[^A-ZÄÖÜa-zäöüß]+/, '').replace(/[^A-ZÄÖÜa-zäöüß]+$/, '').trim();
+  
+  const words = name.split(/\s+/);
+  if (words.length >= 2 && words.length <= 4) {
+    if (words.every(w => /^[A-ZÄÖÜ][a-zäöüß]+(?:-[A-ZÄÖÜ][a-zäöüß]+)?$/.test(w))) {
+      if (!NON_PERSON_WORDS.has(name.toLowerCase())) {
+        return name;
+      }
+    }
+  }
+  return null;
+}
+
+export function extractPersonsFromHtml(html, pageUrl) {
+  if (!html) return [];
+  const $ = cheerio.load(html);
+  const foundPersons = [];
+  const seen = new Set();
+
+  function addPerson(name, role) {
+    const validName = cleanPersonName(name);
+    if (!validName || !role) return;
+    const cleanRole = role.replace(/[\u200B-\u200D\uFEFF]/g, '').trim().replace(/\s+/g, ' ');
+    if (cleanRole.length < 3 || cleanRole.length > 80) return;
+    const key = `${validName.toLowerCase()}|${cleanRole.toLowerCase()}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      foundPersons.push({
+        name: validName,
+        role: cleanRole,
+        sourceUrl: pageUrl
+      });
+    }
+  }
+
+  // 1. JSON-LD Structured Data
+  $('script[type="application/ld+json"]').each((_, el) => {
+    try {
+      const data = JSON.parse($(el).html());
+      const items = Array.isArray(data) ? data : [data];
+      for (const item of items) {
+        if (item['@type'] === 'Person' && item.name) {
+          addPerson(item.name, item.jobTitle || item.roleName || 'Team Member');
+        }
+        if (item.employee && Array.isArray(item.employee)) {
+          for (const emp of item.employee) {
+            if (emp.name) addPerson(emp.name, emp.jobTitle || 'Employee');
+          }
+        }
+      }
+    } catch (e) {}
+  });
+
+  // 2. Impressum Regex
+  const bodyText = $('body').text();
+  const impressumMatches = bodyText.matchAll(/(?:Geschäftsführer(?:in)?|Vertreten durch|Managing Director|Vorstand|Inhaber(?:in)?)[\s:]+([A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+){1,3})/gi);
+  for (const m of impressumMatches) {
+    if (m[1]) {
+      addPerson(m[1], 'Geschäftsführung / Managing Director');
+    }
+  }
+
+  // 3. Structured Headings / Strong Elements
+  $('h1, h2, h3, h4, h5, strong, b, .name, [class*="name"], [class*="team-member"], [class*="leadership"]').each((_, el) => {
+    const rawName = $(el).text().trim();
+    const candidateName = cleanPersonName(rawName);
+
+    if (candidateName) {
+      const parent = $(el).parent();
+      let roleText = null;
+
+      const nextText = $(el).next().text().trim();
+      if (nextText && ROLE_PATTERNS.some(rx => rx.test(nextText))) {
+        roleText = nextText;
+      } else {
+        const parentText = parent.text().replace(rawName, '').trim();
+        for (const rx of ROLE_PATTERNS) {
+          const match = parentText.match(rx);
+          if (match) {
+            roleText = match[0];
+            break;
+          }
+        }
+      }
+
+      if (roleText) {
+        addPerson(candidateName, roleText);
+      }
+    }
+  });
+
+  // 4. Compact string patterns in text blocks
+  $('div, p, li').each((_, el) => {
+    let text = $(el).text().trim().replace(/\s+/g, ' ');
+    text = text.replace(/([a-zäöüß])([A-ZÄÖÜ])/g, '$1 $2');
+    if (text.length > 10 && text.length < 140) {
+      for (const rx of ROLE_PATTERNS) {
+        const match = text.match(rx);
+        if (match && match.index > 0) {
+          const namePart = text.slice(0, match.index).trim();
+          const candidateName = cleanPersonName(namePart);
+          if (candidateName) {
+            addPerson(candidateName, text.slice(match.index).trim());
+          }
+        }
+      }
+    }
+  });
+
+  return foundPersons;
+}
+
 /**
  * 2. Seiten-Crawl der Firmendomain (Direct Fetch + Fallback Tavily Snippet Inspection)
  */
 export async function crawlDomainPages(domain) {
-  if (!domain) return { pages: [], rawEmails: [] };
+  if (!domain) return { pages: [], rawEmails: [], extractedPersons: [] };
 
   const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].toLowerCase();
   const subpages = [
@@ -145,13 +270,21 @@ export async function crawlDomainPages(domain) {
     '/contact',
     '/team',
     '/about',
-    '/about-us'
+    '/about-us',
+    '/leadership',
+    '/management',
+    '/ueber-uns',
+    '/unternehmen',
+    '/company/leadership',
+    '/who-we-are',
+    '/mitarbeiter',
+    '/staff'
   ];
 
-  // Maximal 8 Unterseiten
-  const targets = subpages.slice(0, 8);
+  const targets = subpages;
   const crawledPages = [];
   const rawEmails = new Set();
+  const extractedPersons = [];
 
   console.log(`[EmailCrawler] Starte Domain-Crawl für: ${cleanDomain} (max ${targets.length} Seiten)`);
 
@@ -192,7 +325,15 @@ export async function crawlDomainPages(domain) {
           }
         });
 
-        console.log(`[EmailCrawler] HTTP GET ${url} -> Status: ${res.status} (${elapsed}ms, ${pageEmails.length} Emails extrahiert)`);
+        // 3. Personen direkt aus HTML extrahieren
+        const pagePersons = extractPersonsFromHtml(html, url);
+        for (const person of pagePersons) {
+          if (!extractedPersons.some(ep => ep.name.toLowerCase() === person.name.toLowerCase() && ep.role.toLowerCase() === person.role.toLowerCase())) {
+            extractedPersons.push(person);
+          }
+        }
+
+        console.log(`[EmailCrawler] HTTP GET ${url} -> Status: ${res.status} (${elapsed}ms, ${pageEmails.length} Emails, ${pagePersons.length} Personen)`);
       } else {
         crawledPages.push({ url, path: path || '/', status: res.status });
         console.log(`[EmailCrawler] HTTP GET ${url} -> Status: ${res.status} (${elapsed}ms)`);
@@ -251,10 +392,11 @@ export async function crawlDomainPages(domain) {
     }
   }
 
-  console.log(`[EmailCrawler] ${crawledPages.filter(p => p.status === 200).length} Seiten erfolgreich analysiert, ${rawEmails.size} Roh-Emails gefunden.`);
+  console.log(`[EmailCrawler] ${crawledPages.filter(p => p.status === 200).length} Seiten erfolgreich analysiert, ${rawEmails.size} Roh-Emails, ${extractedPersons.length} Personen auf Website gefunden.`);
   return { 
     pages: crawledPages, 
     rawEmails: Array.from(rawEmails),
+    extractedPersons,
     domainBlocked,
     fallbackSource,
     isFallbackUsed
@@ -390,25 +532,128 @@ export function deriveEmailPattern(personalEmails, genericEmails, domain, option
 }
 
 /**
- * 5. Namens- & Rollen-Findung mit strikter Domain-/Firmen-Verifikation & person: null bei Default
+ * 5. Rollen-Matching & Personen-Findung
  */
-export async function findTargetPerson(companyName, domain, targetRoleOrName) {
+export function matchPersonFromWebsite(extractedPersons, targetRoleOrName) {
+  if (!extractedPersons || extractedPersons.length === 0 || !targetRoleOrName) return null;
+  if (targetRoleOrName === 'Default' || targetRoleOrName === 'Entscheider' || targetRoleOrName === 'Default Role') return null;
+
+  const targetLower = targetRoleOrName.trim().toLowerCase();
+
+  // 1. Direkter Namens-Treffer (falls targetRoleOrName ein konkreter Name ist)
+  for (const p of extractedPersons) {
+    const pNameLower = p.name.toLowerCase();
+    if (pNameLower === targetLower || targetLower.includes(pNameLower) || pNameLower.includes(targetLower)) {
+      return {
+        name: p.name,
+        role: p.role,
+        source: p.sourceUrl,
+        person_source: 'own_website',
+        role_match: 'exact'
+      };
+    }
+  }
+
+  // 2. Exakter Rollen-Treffer
+  for (const p of extractedPersons) {
+    const roleLower = p.role.toLowerCase();
+    if (roleLower === targetLower || 
+        (targetLower === 'ceo' && (roleLower === 'ceo' || roleLower.startsWith('ceo ') || roleLower.endsWith(' ceo') || roleLower.includes('chief executive officer'))) ||
+        (targetLower === 'cto' && (roleLower === 'cto' || roleLower.includes('chief technology officer'))) ||
+        (targetLower === 'cfo' && (roleLower === 'cfo' || roleLower.includes('chief financial officer'))) ||
+        (targetLower === 'coo' && (roleLower === 'coo' || roleLower.includes('chief operating officer'))) ||
+        (targetLower === 'managing director' && roleLower.includes('managing director')) ||
+        (roleLower.replace(/[^a-z0-9]/g, '') === targetLower.replace(/[^a-z0-9]/g, ''))) {
+      return {
+        name: p.name,
+        role: p.role,
+        source: p.sourceUrl,
+        person_source: 'own_website',
+        role_match: 'exact'
+      };
+    }
+  }
+
+  // 3. Rollenfamilien für angenähertes Matching (role_match: "approximate")
+  const families = [
+    {
+      keywords: ['sales', 'vertrieb', 'business development', 'cro', 'revenue', 'account', 'vertriebsleiter', 'head of sales', 'vp sales', 'director of sales'],
+      matches: (role) => /sales|vertrieb|business development|cro|revenue|account/i.test(role)
+    },
+    {
+      keywords: ['ceo', 'geschäftsführer', 'geschäftsführung', 'managing director', 'founder', 'gründer', 'vorstand', 'inhaber', 'president', 'leitung'],
+      matches: (role) => /ceo|chief executive|geschäftsführer|geschäftsführung|managing director|founder|gründer|vorstand|inhaber|president/i.test(role)
+    },
+    {
+      keywords: ['engineering', 'cto', 'tech', 'technology', 'it', 'software', 'entwicklungsleiter'],
+      matches: (role) => /engineering|cto|technology|tech|chief technology|software/i.test(role)
+    },
+    {
+      keywords: ['marketing', 'cmo', 'marketingleiter', 'growth', 'brand'],
+      matches: (role) => /marketing|cmo|growth|brand|chief marketing/i.test(role)
+    },
+    {
+      keywords: ['people', 'hr', 'human resources', 'talent', 'operations', 'coo', 'personal'],
+      matches: (role) => /people|hr|talent|human resources|operations|coo|chief operating/i.test(role)
+    },
+    {
+      keywords: ['finance', 'cfo', 'finanzen', 'kaufmännisch'],
+      matches: (role) => /finance|cfo|finanzen|chief financial/i.test(role)
+    }
+  ];
+
+  for (const fam of families) {
+    if (fam.keywords.some(k => targetLower.includes(k))) {
+      for (const p of extractedPersons) {
+        if (fam.matches(p.role)) {
+          return {
+            name: p.name,
+            role: p.role,
+            source: p.sourceUrl,
+            person_source: 'own_website',
+            role_match: 'approximate'
+          };
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * 5. Namens- & Rollen-Findung mit Priorität (1. Eigene Website, 2. Externe Suche mit Domain-Verifikation)
+ */
+export async function findTargetPerson(companyName, domain, targetRoleOrName, extractedPersons = []) {
   // Wenn keine Rolle oder kein Name explizit vorgegeben wurde (Fall "Default" / falsy / "Entscheider")
   if (!targetRoleOrName || targetRoleOrName === 'Default' || targetRoleOrName === 'Entscheider' || targetRoleOrName === 'Default Role') {
     return null;
   }
 
-  // 1. Ist targetRoleOrName bereits ein konkreter Vor- und Nachname? (z.B. "Bastian Nominacher", "Hanno Renner")
-  if (targetRoleOrName.trim().split(/\s+/).length >= 2 && !/(head|ceo|director|manager|leiter|vorstand|sales|vp|marketing|founder|gründer)/i.test(targetRoleOrName)) {
-    return {
-      name: targetRoleOrName.trim(),
-      role: 'Entscheider / Ansprechpartner',
-      source: 'user_input'
-    };
+  // PRIORITY 1: Direkt auf der Firmenseite gefundene Person (own_website)
+  if (extractedPersons && extractedPersons.length > 0) {
+    const websiteMatch = matchPersonFromWebsite(extractedPersons, targetRoleOrName);
+    if (websiteMatch) {
+      console.log(`[EmailCrawler] Person auf eigener Website gefunden (${websiteMatch.role_match}): ${websiteMatch.name} (${websiteMatch.role}) auf ${websiteMatch.source}`);
+      return websiteMatch;
+    }
   }
 
+  // Ist targetRoleOrName bereits ein konkreter Vor- und Nachname? (z.B. "Bastian Nominacher", "Hanno Renner")
+  const isDirectName = targetRoleOrName.trim().split(/\s+/).length >= 2 && !/(head|ceo|director|manager|leiter|vorstand|sales|vp|marketing|founder|gründer|cfo|cto|coo|cro)/i.test(targetRoleOrName);
+
+  // PRIORITY 2: Externe Tavily-Suche als Fallback (mit strikter Domain-Verifikation)
   const tavilyKey = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY;
   if (!tavilyKey) {
+    if (isDirectName) {
+      return {
+        name: targetRoleOrName.trim(),
+        role: 'Entscheider / Ansprechpartner',
+        source: 'user_input',
+        person_source: 'user_input',
+        role_match: 'exact'
+      };
+    }
     return null;
   }
 
@@ -455,11 +700,13 @@ export async function findTargetPerson(companyName, domain, targetRoleOrName) {
                 const parts = title.split(/\s*[-–—|]\s*/);
                 if (parts[1] && !parts[1].toLowerCase().includes('linkedin')) extractedRole = parts[1].trim();
                 
-                console.log(`[EmailCrawler] Verifizierte Person gefunden: ${candidate} (${extractedRole}) bei ${companyName}`);
+                console.log(`[EmailCrawler] Verifizierte Person via externer Suche gefunden: ${candidate} (${extractedRole}) bei ${companyName}`);
                 return {
                   name: candidate,
                   role: extractedRole,
-                  source: url
+                  source: url,
+                  person_source: 'external_search',
+                  role_match: isDirectName ? 'exact' : (extractedRole.toLowerCase().includes(targetRoleOrName.toLowerCase()) ? 'exact' : 'approximate')
                 };
               }
             }
@@ -475,7 +722,9 @@ export async function findTargetPerson(companyName, domain, targetRoleOrName) {
                 return {
                   name: candidate,
                   role: targetRoleOrName || 'CEO & Founder',
-                  source: url
+                  source: url,
+                  person_source: 'external_search',
+                  role_match: isDirectName ? 'exact' : 'approximate'
                 };
               }
             }
@@ -485,6 +734,17 @@ export async function findTargetPerson(companyName, domain, targetRoleOrName) {
     }
   } catch (err) {
     console.warn('[EmailCrawler] Personensuche fehlgeschlagen:', err.message);
+  }
+
+  // Wenn targetRoleOrName ein direkter Personenname war und keine externe Suche anschlug
+  if (isDirectName) {
+    return {
+      name: targetRoleOrName.trim(),
+      role: 'Entscheider / Ansprechpartner',
+      source: 'user_input',
+      person_source: 'user_input',
+      role_match: 'exact'
+    };
   }
 
   return null;
@@ -560,7 +820,7 @@ export async function runEmailPatternCrawler({ companyName, domain: rawDomain, t
   const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].toLowerCase();
 
   // 2. Crawl
-  const { pages, rawEmails, domainBlocked, fallbackSource, isFallbackUsed } = await crawlDomainPages(cleanDomain);
+  const { pages, rawEmails, extractedPersons, domainBlocked, fallbackSource, isFallbackUsed } = await crawlDomainPages(cleanDomain);
   const reachablePages = pages.filter(p => p.status === 200);
 
   if (reachablePages.length === 0) {
@@ -584,8 +844,8 @@ export async function runEmailPatternCrawler({ companyName, domain: rawDomain, t
     isFallbackUsed
   });
 
-  // 5. Namens-Findung mit Verifikation
-  const personInfo = await findTargetPerson(companyName || cleanDomain.split('.')[0], cleanDomain, targetRoleOrName);
+  // 5. Namens-Findung mit Verifikation & Priorität (1. Website HTML, 2. Externe Suche)
+  const personInfo = await findTargetPerson(companyName || cleanDomain.split('.')[0], cleanDomain, targetRoleOrName, extractedPersons);
 
   let person = null;
   let coachText = '';
@@ -598,6 +858,8 @@ export async function runEmailPatternCrawler({ companyName, domain: rawDomain, t
       email: generatedEmail,
       email_confidence: patternInfo.confidence,
       email_source: personInfo.source,
+      person_source: personInfo.person_source || 'own_website',
+      role_match: personInfo.role_match || 'exact',
       pattern: patternInfo.patternLabel
     };
 
