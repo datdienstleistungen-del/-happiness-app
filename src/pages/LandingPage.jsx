@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Rocket, Sparkles, Check, ArrowRight, Zap, Clock, Target, Mic, MicOff } from 'lucide-react'
+import { 
+  Rocket, Sparkles, Check, ArrowRight, Zap, Clock, Target, 
+  Mic, MicOff, Brain, Users, TrendingUp, ShoppingBag, 
+  Calendar, UserPlus, Globe, Video, MessageSquare, Share2, 
+  Search, ShieldCheck, CheckCircle2, ChevronRight
+} from 'lucide-react'
 import { trackDemoStarted, trackDemoCompleted } from '../intelligence/analytics'
 import { trackLandingFunnel } from '../intelligence/analytics/custom'
 import { useLanguage } from '../i18n/translations.jsx'
@@ -11,13 +16,17 @@ import MockStudioExplainer from '../components/MockStudioExplainer'
 import './LandingPage.css'
 
 const GOAL_CHIPS = [
-  { icon: '', de: 'Mehr Kunden gewinnen', en: 'Get more customers', es: 'Ganar más clientes', fr: 'Gagner plus de clients', it: 'Ottenere più clienti', nl: 'Meer klanten winnen', el: 'Κερδίστε περισσότερους πελάτες' },
-  { icon: '', de: 'Reichweite erhöhen', en: 'Increase reach', es: 'Aumentar alcance', fr: 'Augmenter la portée', it: 'Aumentare la portata', nl: 'Bereik vergroten', el: 'Αυξήστε την εμβέλεια' },
-  { icon: '', de: 'Produkt verkaufen', en: 'Sell a product', es: 'Vender producto', fr: 'Vendre un produit', it: 'Vendere un prodotto', nl: 'Product verkopen', el: 'Πουλήστε ένα προϊόν' },
-  { icon: '', de: 'Community aufbauen', en: 'Build community', es: 'Crear comunidad', fr: 'Créer une communauté', it: 'Creare una community', nl: 'Community opbouwen', el: 'Χτίστε κοινότητα' },
-  { icon: '', de: 'Event bewerben', en: 'Promote event', es: 'Promocionar evento', fr: 'Promouvoir un événement', it: 'Promuovere un evento', nl: 'Evenement promoten', el: 'Προωθήστε ένα event' },
-  { icon: '', de: 'Mitarbeiter finden', en: 'Find employees', es: 'Encontrar empleados', fr: 'Trouver des employés', it: 'Trovare dipendenti', nl: 'Medewerkers vinden', el: 'Βρείτε υπαλλήλους' },
+  { icon: Users, de: 'Mehr Kunden gewinnen', en: 'Get more customers', es: 'Ganar más clientes', fr: 'Gagner plus de clients', it: 'Ottenere più clienti', nl: 'Meer klanten winnen', el: 'Κερδίστε περισσότερους πελάτες' },
+  { icon: TrendingUp, de: 'Reichweite erhöhen', en: 'Increase reach', es: 'Aumentar alcance', fr: 'Augmenter la portée', it: 'Aumentare la portata', nl: 'Bereik vergroten', el: 'Αυξήστε την εμβέλεια' },
+  { icon: ShoppingBag, de: 'Produkt verkaufen', en: 'Sell a product', es: 'Vender producto', fr: 'Vendre un produit', it: 'Vendere un prodotto', nl: 'Product verkopen', el: 'Πουλήστε ένα προϊόν' },
+  { icon: HeartHandshakeIcon, de: 'Community aufbauen', en: 'Build community', es: 'Crear comunidad', fr: 'Créer une communauté', it: 'Creare una community', nl: 'Community opbouwen', el: 'Χτίστε κοινότητα' },
+  { icon: Calendar, de: 'Event bewerben', en: 'Promote event', es: 'Promocionar evento', fr: 'Promouvoir un événement', it: 'Promuovere un evento', nl: 'Evenement promoten', el: 'Προωθήστε ένα event' },
+  { icon: UserPlus, de: 'Mitarbeiter finden', en: 'Find employees', es: 'Encontrar empleados', fr: 'Trouver des employés', it: 'Trovare dipendenti', nl: 'Medewerkers vinden', el: 'Βρείτε υπαλλήλους' },
 ]
+
+function HeartHandshakeIcon(props) {
+  return <Users {...props} />
+}
 
 const PRE_FILL_EXAMPLES = [
   { de: 'Mein nächstes Reel soll viral gehen', en: 'Make my next Reel go viral' },
@@ -38,6 +47,21 @@ const SPEECH_LANG_MAP = {
   el: 'el-GR'
 }
 
+const PLATFORMS = [
+  { name: 'TikTok', tag: 'Short Video' },
+  { name: 'Instagram', tag: 'Reels & Carousel' },
+  { name: 'LinkedIn', tag: 'B2B & Thought Leadership' },
+  { name: 'Facebook', tag: 'Community & Groups' },
+  { name: 'YouTube', tag: 'Shorts & Longform' },
+  { name: 'X / Twitter', tag: 'Threads & News' },
+  { name: 'Pinterest', tag: 'Visual Discovery' },
+  { name: 'Reddit', tag: 'Discussions & Value' },
+  { name: 'Blog', tag: 'SEO & In-Depth' },
+  { name: 'Newsletter', tag: 'Direct Retention' },
+  { name: 'Google Business', tag: 'Local Search' },
+  { name: 'Marktplätze', tag: 'Direct Sales' },
+]
+
 export default function LandingPage() {
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
@@ -46,7 +70,6 @@ export default function LandingPage() {
   const inputChangedTracked = useRef(false)
   const [goal, setGoal] = useState('')
   const [phase, setPhase] = useState('input') // input | analysis | result | error
-  const [analysis, setAnalysis] = useState(null)
   const [demoResult, setDemoResult] = useState(null)
   const [error, setError] = useState('')
   const [isRecording, setIsRecording] = useState(false)
@@ -61,7 +84,7 @@ export default function LandingPage() {
   }
 
   useEffect(() => {
-    document.title = 'NeXus — B2B Sales Operating System'
+    document.title = 'NeXus — KI-Content & B2B Sales Engine'
     trackLandingFunnel('opened')
 
     const randomIndex = Math.floor(Math.random() * PRE_FILL_EXAMPLES.length)
@@ -70,8 +93,8 @@ export default function LandingPage() {
 
   useEffect(() => {
     if (goalInputRef.current) {
-      goalInputRef.current.style.height = 'auto';
-      goalInputRef.current.style.height = `${goalInputRef.current.scrollHeight}px`;
+      goalInputRef.current.style.height = 'auto'
+      goalInputRef.current.style.height = `${goalInputRef.current.scrollHeight}px`
     }
   }, [goal])
 
@@ -173,8 +196,8 @@ export default function LandingPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: `Erstelle einen Instagram-Post für dieses Ziel: "${goal.trim()}". Antworte NUR mit JSON: {"hook":"...","body":"...","hashtags":["..."],"cta":"..."}`,
-          systemPrompt: `Du bist ein Instagram-Content-Experte. Erstelle einen kurzen, knackigen Post (100-150 Wörter). Hook im ersten Satz. 3-5 Hashtags. CTA am Ende. Antworte NUR mit validem JSON.` + langInstruction,
+          message: `Erstelle einen hochwirksamen Post für dieses Ziel: "${goal.trim()}". Antworte NUR mit JSON: {"hook":"...","body":"...","hashtags":["..."],"cta":"..."}`,
+          systemPrompt: `Du bist ein B2B- und Social-Media-Content-Experte. Erstelle einen kurzen, knackigen Post (100-150 Wörter). Hook im ersten Satz. 3-5 Hashtags. Klarer CTA am Ende. Antworte NUR mit validem JSON.` + langInstruction,
           history: []
         })
       })
@@ -205,7 +228,6 @@ export default function LandingPage() {
   const resetDemo = () => {
     setPhase('input')
     setDemoResult(null)
-    setAnalysis(null)
     setError('')
   }
 
@@ -238,14 +260,14 @@ export default function LandingPage() {
                   rows={1}
                   value={goal}
                   onChange={(e) => {
-                    handleInputChange(e);
-                    e.target.style.height = 'auto';
-                    e.target.style.height = `${e.target.scrollHeight}px`;
+                    handleInputChange(e)
+                    e.target.style.height = 'auto'
+                    e.target.style.height = `${e.target.scrollHeight}px`
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      startDemo();
+                      e.preventDefault()
+                      startDemo()
                     }
                   }}
                   placeholder={t('landing.placeholder')}
@@ -280,20 +302,25 @@ export default function LandingPage() {
             {/* Quick Chips */}
             {phase === 'input' && (
               <div className="landing-chips">
-                {GOAL_CHIPS.map((chip) => (
-                  <button
-                    key={chip.de}
-                    className="landing-chip"
-                    onClick={() => handleChipClick(chip)}
-                  >
-                    <span>{chip.icon}</span> {chip[lang] || chip.de}
-                  </button>
-                ))}
+                {GOAL_CHIPS.map((chip) => {
+                  const ChipIcon = chip.icon
+                  return (
+                    <button
+                      key={chip.de}
+                      className="landing-chip"
+                      onClick={() => handleChipClick(chip)}
+                    >
+                      <ChipIcon size={14} className="landing-chip-icon" />
+                      <span>{chip[lang] || chip.de}</span>
+                    </button>
+                  )
+                })}
               </div>
             )}
 
             <div className="landing-social-proof">
-              <span className="landing-social-check"></span> {t('landing.freeToStart')}
+              <CheckCircle2 size={15} className="landing-social-check text-[#18AB61]" /> 
+              <span>{t('landing.freeToStart')}</span>
             </div>
 
             <div className="landing-meta">
@@ -301,7 +328,7 @@ export default function LandingPage() {
             </div>
 
             <div className="landing-actions">
-              <Link to="/register" className="btn btn-outline">{t('landing.register')}</Link>
+              <Link to="/register" className="btn btn-primary">{t('landing.register')}</Link>
               <Link to="/login" className="btn btn-outline">{t('landing.login')}</Link>
             </div>
 
@@ -349,11 +376,11 @@ export default function LandingPage() {
           <div className="demo-result-score">
             <div className="score-item">
               <span className="score-label">{t('landing.goalDetected')}</span>
-              <span className="score-value done"></span>
+              <span className="score-value done"><Check size={15} /></span>
             </div>
             <div className="score-item">
               <span className="score-label">{t('landing.strategyCreated')}</span>
-              <span className="score-value done"></span>
+              <span className="score-value done"><Check size={15} /></span>
             </div>
             <div className="score-item">
               <span className="score-label">{t('landing.contentChance')}</span>
@@ -367,7 +394,7 @@ export default function LandingPage() {
 
           <div className="demo-result-platform">
             <div className="demo-result-platform-header">
-              <span className="platform-badge"> Instagram</span>
+              <span className="platform-badge">Instagram Post</span>
               <button
                 className="copy-btn"
                 onClick={() => {
@@ -399,29 +426,35 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* Video Showcase — Emotion first */}
+      {/* Video Showcase */}
       <VideoShowcase />
 
-      {/* How it works — Logic second */}
+      {/* How it works — Product Explanation */}
       <div className="what-we-are">
         <h2>{t('landing.howItWorks')}</h2>
         <div className="what-we-are-content">
           <div className="what-we-are-workflow">
             <div className="what-we-are-steps">
               <div className="landing-step">
-                <span className="landing-step-icon"></span>
+                <div className="landing-step-icon-wrap">
+                  <Target size={22} className="landing-step-svg" />
+                </div>
                 <strong>{t('landing.step1Title')}</strong>
                 <p>{t('landing.step1Desc')}</p>
               </div>
-              <span className="step-arrow">&rarr;</span>
+              <span className="step-arrow"><ChevronRight size={20} /></span>
               <div className="landing-step">
-                <span className="landing-step-icon"></span>
+                <div className="landing-step-icon-wrap">
+                  <Brain size={22} className="landing-step-svg" />
+                </div>
                 <strong>{t('landing.step2Title')}</strong>
                 <p>{t('landing.step2Desc')}</p>
               </div>
-              <span className="step-arrow">&rarr;</span>
+              <span className="step-arrow"><ChevronRight size={20} /></span>
               <div className="landing-step">
-                <span className="landing-step-icon"></span>
+                <div className="landing-step-icon-wrap">
+                  <Rocket size={22} className="landing-step-svg" />
+                </div>
                 <strong>{t('landing.step3Title')}</strong>
                 <p>{t('landing.step3Desc')}</p>
               </div>
@@ -440,23 +473,10 @@ export default function LandingPage() {
       <div className="landing-platforms">
         <h2>{t('landing.platforms')}</h2>
         <div className="platform-grid">
-          {[
-            { name: 'TikTok', icon: '' },
-            { name: 'Instagram', icon: '' },
-            { name: 'LinkedIn', icon: '' },
-            { name: 'Facebook', icon: '' },
-            { name: 'YouTube', icon: '▶️' },
-            { name: 'X / Twitter', icon: '' },
-            { name: 'Pinterest', icon: '' },
-            { name: 'Reddit', icon: '' },
-            { name: 'Blog', icon: '' },
-            { name: 'Newsletter', icon: '️' },
-            { name: 'Google Business', icon: '' },
-            { name: 'Kleinanzeigen', icon: '️' },
-          ].map(p => (
+          {PLATFORMS.map(p => (
             <div key={p.name} className="platform-card">
-              <span className="platform-icon">{p.icon}</span>
               <span className="platform-name">{p.name}</span>
+              <span className="platform-tag-sub">{p.tag}</span>
             </div>
           ))}
         </div>
