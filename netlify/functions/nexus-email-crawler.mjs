@@ -205,12 +205,16 @@ export async function crawlDomainPages(domain) {
   }
 
   // Falls Direct Crawl durch WAF / 429 geblockt wurde, aber Domain prinzipiell existiert:
-  const successfulPages = crawledPages.filter(p => p.status === 200);
+  const directSuccessful = crawledPages.filter(p => p.status === 200);
+  const isDirectBlocked = crawledPages.some(p => p.status === 429 || p.status === 403 || p.status === 503);
+  const domainBlocked = isDirectBlocked && directSuccessful.length === 0;
+  let fallbackSource = null;
+  let isFallbackUsed = false;
   const tavilyKey = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY;
 
-  if (successfulPages.length === 0 && tavilyKey && !cleanDomain.includes('fake') && !cleanDomain.includes('nonexistent')) {
+  if (directSuccessful.length === 0 && tavilyKey && !cleanDomain.includes('fake') && !cleanDomain.includes('nonexistent') && !crawledPages.every(p => p.status === 0)) {
     try {
-      console.log(`[EmailCrawler] Direct fetch eingeschränkt. Starte sekundäre Analyse für: ${cleanDomain}`);
+      console.log(`[EmailCrawler] Direct fetch eingeschränkt${domainBlocked ? ' (Bot-Schutz/429 erkannt)' : ''}. Starte sekundäre Analyse für: ${cleanDomain}`);
       const res = await fetchWithTimeout('https://api.tavily.com/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -225,11 +229,20 @@ export async function crawlDomainPages(domain) {
       if (res.ok) {
         const data = await res.json();
         if (data.results && data.results.length > 0) {
+          isFallbackUsed = true;
+          const fallbackHostnames = new Set();
           for (const r of data.results) {
+            try {
+              const u = new URL(r.url);
+              fallbackHostnames.add(u.hostname.replace(/^www\./, ''));
+            } catch (e) {}
             crawledPages.push({ url: r.url, path: 'search_indexed', status: 200 });
             const content = (r.title + ' ' + (r.content || '')).toLowerCase();
             const matches = content.match(EMAIL_REGEX) || [];
             matches.forEach(em => rawEmails.add(em.toLowerCase().trim()));
+          }
+          if (fallbackHostnames.size > 0) {
+            fallbackSource = Array.from(fallbackHostnames).join(', ');
           }
         }
       }
@@ -239,7 +252,13 @@ export async function crawlDomainPages(domain) {
   }
 
   console.log(`[EmailCrawler] ${crawledPages.filter(p => p.status === 200).length} Seiten erfolgreich analysiert, ${rawEmails.size} Roh-Emails gefunden.`);
-  return { pages: crawledPages, rawEmails: Array.from(rawEmails) };
+  return { 
+    pages: crawledPages, 
+    rawEmails: Array.from(rawEmails),
+    domainBlocked,
+    fallbackSource,
+    isFallbackUsed
+  };
 }
 
 /**
@@ -279,8 +298,9 @@ export function classifyEmails(rawEmails, domain) {
 /**
  * 4. Muster-Ableitung mit Frequenz-Voting
  */
-export function deriveEmailPattern(personalEmails, genericEmails, domain) {
+export function deriveEmailPattern(personalEmails, genericEmails, domain, options = {}) {
   const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].toLowerCase();
+  const { domainBlocked = false, fallbackSource = null, isFallbackUsed = false } = options;
 
   if (personalEmails.length > 0) {
     const patternCounts = {};
@@ -318,6 +338,20 @@ export function deriveEmailPattern(personalEmails, genericEmails, domain) {
     }
 
     let patternLabel = bestPattern.replace('{vorname}', 'vorname').replace('{nachname}', 'nachname').replace('{v}', 'v') + '@' + cleanDomain;
+
+    if (isFallbackUsed || domainBlocked) {
+      const sourceDesc = fallbackSource || 'Fallback-Quelle';
+      return {
+        patternType: bestPattern,
+        patternLabel,
+        confidence: Math.min(personalEmails.length >= 2 ? 50 : 45, 50),
+        source: 'fallback_search',
+        isGuess: false,
+        sampleEmails: personalEmails,
+        reason: `Muster aus ${personalEmails.length} Adresse(n) auf ${sourceDesc} abgeleitet (Zieldomain ${cleanDomain} blockiert Zugriffe mit Status 429/Bot-Schutz)`
+      };
+    }
+
     const confidence = personalEmails.length >= 2 ? 80 : 70;
 
     return {
@@ -332,6 +366,18 @@ export function deriveEmailPattern(personalEmails, genericEmails, domain) {
   }
 
   // Fallback wenn KEINE personenbezogene Adresse gefunden wurde
+  if (domainBlocked || isFallbackUsed) {
+    return {
+      patternType: '{vorname}.{nachname}',
+      patternLabel: 'vorname.nachname@' + cleanDomain,
+      confidence: 40,
+      source: 'default_fallback',
+      isGuess: true,
+      sampleEmails: genericEmails,
+      reason: `Standardmuster angenommen (Zieldomain ${cleanDomain} blockiert Zugriffe mit Status 429/Bot-Schutz, ${fallbackSource ? `stattdessen ${fallbackSource} geprüft: ` : ''}keine Personen-E-Mails gefunden)`
+    };
+  }
+
   return {
     patternType: '{vorname}.{nachname}',
     patternLabel: 'vorname.nachname@' + cleanDomain,
@@ -514,13 +560,14 @@ export async function runEmailPatternCrawler({ companyName, domain: rawDomain, t
   const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].toLowerCase();
 
   // 2. Crawl
-  const { pages, rawEmails } = await crawlDomainPages(cleanDomain);
+  const { pages, rawEmails, domainBlocked, fallbackSource, isFallbackUsed } = await crawlDomainPages(cleanDomain);
   const reachablePages = pages.filter(p => p.status === 200);
 
   if (reachablePages.length === 0) {
     return {
       success: false,
       domain: cleanDomain,
+      domain_blocked: Boolean(domainBlocked),
       pagesCrawled: pages,
       reason: `Domain ${cleanDomain} ist aktuell nicht erreichbar.`,
       coachText: `Die Firmendomain **${cleanDomain}** konnte nicht abgerufen werden (Server antwortet nicht). Es konnten daher keine E-Mail-Muster analysiert werden.`
@@ -531,7 +578,11 @@ export async function runEmailPatternCrawler({ companyName, domain: rawDomain, t
   const { generic, personal } = classifyEmails(rawEmails, cleanDomain);
 
   // 4. Muster-Ableitung
-  const patternInfo = deriveEmailPattern(personal, generic, cleanDomain);
+  const patternInfo = deriveEmailPattern(personal, generic, cleanDomain, {
+    domainBlocked,
+    fallbackSource,
+    isFallbackUsed
+  });
 
   // 5. Namens-Findung mit Verifikation
   const personInfo = await findTargetPerson(companyName || cleanDomain.split('.')[0], cleanDomain, targetRoleOrName);
@@ -550,24 +601,49 @@ export async function runEmailPatternCrawler({ companyName, domain: rawDomain, t
       pattern: patternInfo.patternLabel
     };
 
-    if (patternInfo.isGuess) {
-      coachText = `Basierend auf der Domain **${cleanDomain}** (gecrawlt: ${reachablePages.length} Seiten, keine Personenadressen gefunden) lautet das angenommene Standard-Muster: \`\`\`${generatedEmail}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, ungeprüfte Standard-Vermutung).`;
+    if (domainBlocked || isFallbackUsed) {
+      if (patternInfo.isGuess) {
+        coachText = `Zieldomain **${cleanDomain}** blockiert Zugriffe (Status 429), stattdessen wurde **${fallbackSource || 'Fallback-Quelle'}** geprüft — Ergebnis daher weniger belastbar. Das angenommene Standard-Muster lautet: \`\`\`${generatedEmail}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, ungeprüfte Standard-Vermutung).`;
+      } else {
+        coachText = `Zieldomain **${cleanDomain}** blockiert Zugriffe (Status 429), stattdessen wurde **${fallbackSource || 'Fallback-Quelle'}** geprüft (Ergebnis weniger belastbar). Basierend darauf lautet das vermutete Muster: \`\`\`${generatedEmail}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, Fallback-Quelle).`;
+      }
     } else {
-      coachText = `Basierend auf dem E-Mail-Muster von **${cleanDomain}** (abgeleitet aus ${personal.length} gefundenen Adressen auf der Website) lautet die wahrscheinliche Adresse: \`\`\`${generatedEmail}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, ungeprüft).`;
+      if (patternInfo.isGuess) {
+        coachText = `Basierend auf der Domain **${cleanDomain}** (gecrawlt: ${reachablePages.length} Seiten, keine Personenadressen gefunden) lautet das angenommene Standard-Muster: \`\`\`${generatedEmail}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, ungeprüfte Standard-Vermutung).`;
+      } else {
+        coachText = `Basierend auf dem E-Mail-Muster von **${cleanDomain}** (abgeleitet aus ${personal.length} gefundenen Adressen auf der Website) lautet die wahrscheinliche Adresse: \`\`\`${generatedEmail}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, ungeprüft).`;
+      }
     }
   } else {
     // Wenn KEINE konkrete Zielperson ermittelbar war (person: null)
     person = null;
-    const reasonText = patternInfo.isGuess 
-      ? 'ungeprüfte Standard-Vermutung'
-      : `abgeleitet aus ${personal.length} echten Mitarbeiter-Adressen auf ${cleanDomain}`;
-    coachText = `Kein konkreter Ansprechpartner ermittelbar. Das E-Mail-Muster von **${cleanDomain}** lautet aber: \`\`\`${patternInfo.patternLabel}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, ${reasonText}).`;
+    if (domainBlocked || isFallbackUsed) {
+      if (patternInfo.isGuess) {
+        coachText = `Kein konkreter Ansprechpartner ermittelbar. Zieldomain **${cleanDomain}** blockiert Zugriffe (Status 429), stattdessen wurde **${fallbackSource || 'Fallback-Quelle'}** geprüft — Ergebnis daher weniger belastbar. Das angenommene Standard-Muster lautet: \`\`\`${patternInfo.patternLabel}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, ungeprüfte Standard-Vermutung).`;
+      } else {
+        coachText = `Kein konkreter Ansprechpartner ermittelbar. Zieldomain **${cleanDomain}** blockiert Zugriffe (Status 429), stattdessen wurde **${fallbackSource || 'Fallback-Quelle'}** geprüft (Ergebnis weniger belastbar). Vermutetes E-Mail-Muster: \`\`\`${patternInfo.patternLabel}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, abgeleitet aus Fallback-Quelle ${fallbackSource}).`;
+      }
+    } else {
+      const reasonText = patternInfo.isGuess 
+        ? 'ungeprüfte Standard-Vermutung'
+        : `abgeleitet aus ${personal.length} echten Mitarbeiter-Adressen auf ${cleanDomain}`;
+      coachText = `Kein konkreter Ansprechpartner ermittelbar. Das E-Mail-Muster von **${cleanDomain}** lautet aber: \`\`\`${patternInfo.patternLabel}\`\`\` (Konfidenz: ${patternInfo.confidence}/100, ${reasonText}).`;
+    }
+  }
+
+  const resultObj = {
+    success: true,
+    company: companyName || cleanDomain,
+    domain: cleanDomain
+  };
+
+  if (domainBlocked) {
+    resultObj.domain_blocked = true;
+    resultObj.fallback_source = fallbackSource || null;
   }
 
   return {
-    success: true,
-    company: companyName || cleanDomain,
-    domain: cleanDomain,
+    ...resultObj,
     person,
     crawledPages: reachablePages.map(p => p.url),
     foundEmails: {
