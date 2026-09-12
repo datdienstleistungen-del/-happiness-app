@@ -539,7 +539,7 @@ async function fetchPageText(url, maxChars = 3000) {
 // ============================================================================
 
 async function inferTargetContactRole(context) {
-  const { offering, company, opportunity, trigger, research } = context;
+  const { offering, company, trigger, research } = context;
   
   const companySize = company?.size || company?.employees || 'Unbekannt';
   const sizeNum = parseInt(String(companySize).replace(/[^0-9]/g, ''), 10) || 0;
@@ -1465,7 +1465,7 @@ export const handler = async (event) => {
     console.log('[ContactIntel] Phase 1: Target Contact Role Inference');
     let targetRoleInference;
     try {
-      targetRoleInference = await inferTargetContactRole({ offering, company, opportunity, trigger, research });
+      targetRoleInference = await inferTargetContactRole({ offering, company, trigger, research });
     } catch (e) {
       console.error('[ContactIntel] Role inference LLM failed:', e.message);
       targetRoleInference = null;
