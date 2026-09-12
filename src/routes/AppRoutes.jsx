@@ -60,10 +60,10 @@ export default function AppRoutes() {
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/nexus/dashboard" /> : <LoginPage />} />
         <Route path="/register" element={user ? <Navigate to="/nexus/dashboard" /> : <RegisterPage />} />
-        <Route path="/" element={user ? <Navigate to="/nexus/dashboard" /> : <LandingPage />} />
+        <Route path="/" element={<NexusLandingPage />} />
         <Route path="/coach" element={<ProtectedRoute><CoachChatPage /></ProtectedRoute>} />
         <Route path="/nexus/sales-workspace/coach/:leadId?" element={<ProtectedRoute><CoachChatPage /></ProtectedRoute>} />
-        <Route path="/nexus" element={<LandingPage />} />
+        <Route path="/nexus" element={<NexusLandingPage />} />
         <Route path="/nexus/dashboard" element={<ProtectedRoute><NexusDashboard /></ProtectedRoute>} />
         <Route path="/nexus/angebotsanalyse" element={<ProtectedRoute><AngebotsanalysePage /></ProtectedRoute>} />
         <Route path="/nexus/lead-radar" element={<ProtectedRoute><LeadRadarPage /></ProtectedRoute>} />

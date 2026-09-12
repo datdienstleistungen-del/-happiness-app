@@ -263,11 +263,11 @@ export default function AppLayout({ children }) {
   const { user } = useAuth()
   const location = useLocation()
 
-  // Clean landing page: When guest visits "/" or "/nexus", NO sidebar and NO app topbar
-  const isLandingPage = ['/', '/nexus'].includes(location.pathname) && !user
+  // Clean landing page: When visiting "/", "/nexus" or "/landing", NO sidebar
+  const isLandingPage = ['/', '/nexus', '/landing'].includes(location.pathname)
   const isSpecialPage = ['/onboarding', '/today-question'].includes(location.pathname)
 
-  const shouldShowSidebar = user && !isSpecialPage
+  const shouldShowSidebar = user && !isSpecialPage && !isLandingPage
   const shouldShowPublicTopbar = false
   const isMainContentWithSidebar = shouldShowSidebar
 
