@@ -73,23 +73,14 @@
 }
 
 .nexus-lp-nav {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  padding: 0 4px;
-}
-
-.nexus-lp-nav::-webkit-scrollbar {
   display: none;
+  align-items: center;
+  gap: 24px;
 }
 
 @media (min-width: 768px) {
   .nexus-lp-nav {
-    gap: 24px;
-    overflow-x: visible;
+    display: flex;
   }
 }
 
