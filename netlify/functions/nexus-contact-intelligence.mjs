@@ -1412,6 +1412,21 @@ export const handler = async (event) => {
     return { statusCode: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' } };
   }
   
+  // Temporary diagnostic: GET request shows env var status
+  if (event.httpMethod === 'GET') {
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        DEEPSEEK_API_KEY: !!process.env.DEEPSEEK_API_KEY,
+        MISTRAL_API_KEY: !!process.env.MISTRAL_API_KEY,
+        TAVILY_API_KEY: !!process.env.TAVILY_API_KEY,
+        SUPABASE_SERVICE_KEY: !!process.env.SUPABASE_SERVICE_KEY,
+        VITE_SUPABASE_URL: !!process.env.VITE_SUPABASE_URL,
+      })
+    };
+  }
+  
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
