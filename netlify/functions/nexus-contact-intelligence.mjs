@@ -909,15 +909,14 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
     console.log(`  [${l.score}] [${l.category}] ${l.anchorText.substring(0, 40)} → ${path}`);
   });
   
-  // ========== LEVEL 1: Hub Pages (3-5 most relevant) ==========
+  // ========== LEVEL 1: Hub Pages (max 3) ==========
   console.log(`\n[Crawler] === LEVEL 1: Hub Pages ===`);
   
   const hubLinks = scoredLinks
     .filter(l => l.category === 'corp_hub' || l.category === 'leadership')
-    .slice(0, 5); // Max 5 hubs
+    .slice(0, 3); // Max 3 hubs
   
   if (hubLinks.length === 0) {
-    // Fallback: take top 3 any-category links
     hubLinks.push(...scoredLinks.slice(0, 3));
   }
   
@@ -927,7 +926,7 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
   const childLinks = [];
   
   for (const hub of hubLinks) {
-    if (startTime && Date.now() - startTime > 16000) {
+    if (startTime && Date.now() - startTime > 14000) {
       console.log(`[Crawler] Timeout approaching, skipping hub: ${hub.url}`);
       break;
     }
@@ -979,8 +978,8 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
       console.log(`    [${l.score}] [${l.category}] ${l.anchorText.substring(0, 40)} → ${path} (parent: ${l.parentCategory})`);
     });
     
-    // Add top children to crawl queue (max 8 total across all hubs)
-    childLinks.push(...scoredChildren.slice(0, 8 - childLinks.length));
+    // Add top children to crawl queue (max 4 total across all hubs)
+    childLinks.push(...scoredChildren.slice(0, 4 - childLinks.length));
   }
   
   // ========== LEVEL 2: Child Pages (Leadership/Person Detail Pages) ==========
@@ -988,11 +987,11 @@ async function crawlForContacts(companyName, companyDomain, targetRole, alternat
   
   // Sort children by score, take top ones
   childLinks.sort((a, b) => b.score - a.score);
-  const topChildren = childLinks.slice(0, 8);
+  const topChildren = childLinks.slice(0, 4);
   
   // Extract persons from each child page
   for (const child of topChildren) {
-    if (startTime && Date.now() - startTime > 18000) {
+    if (startTime && Date.now() - startTime > 16000) {
       console.log(`[Crawler] Timeout approaching, skipping: ${child.url}`);
       break;
     }
