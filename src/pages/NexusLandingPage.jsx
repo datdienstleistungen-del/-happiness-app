@@ -392,7 +392,7 @@ export default function NexusLandingPage() {
                               <Lock size={15} />
                             </div>
                             <span className="nexus-lead-gated-copy">
-                              Ansprechpartner & verifizierte Kontaktdaten – nach kostenloser Registrierung sichtbar
+                              Ansprechpartner & Kontaktdaten – nach kostenloser Registrierung sichtbar
                             </span>
                           </div>
                         </div>
@@ -405,7 +405,7 @@ export default function NexusLandingPage() {
                 {/* Main CTA */}
                 <div className="nexus-lead-preview-footer">
                   <button className="nexus-lp-submit-btn nexus-lead-main-cta" onClick={handleRegisterWithResult}>
-                    <span>Kostenlos registrieren und alle {totalSignalsCount} aktiven Signale mit vollständigen Kontaktdaten sehen</span>
+                    <span>Kostenlos registrieren und alle Treffer freischalten</span>
                     <ArrowRight size={18} />
                   </button>
                 </div>
