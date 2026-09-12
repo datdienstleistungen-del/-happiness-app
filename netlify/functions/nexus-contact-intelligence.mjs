@@ -1365,8 +1365,9 @@ async function callLLM(prompt, temperature = 0.3) {
   ];
   
   for (const p of providers) {
-    if (!p.key) continue;
+    if (!p.key) { console.log(`[callLLM] SKIP ${p.model}: no API key`); continue; }
     try {
+      console.log(`[callLLM] Trying ${p.model}...`);
       const { res } = await fetchWithTimeout(p.url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${p.key}` },
@@ -1379,17 +1380,26 @@ async function callLLM(prompt, temperature = 0.3) {
           temperature,
           max_tokens: 1500
         })
-      }, 5000);
+      }, 15000);
       
-      if (!res.ok) continue;
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => '');
+        console.log(`[callLLM] ${p.model} HTTP ${res.status}: ${errBody.substring(0, 200)}`);
+        continue;
+      }
       const data = await res.json();
       const text = data.choices?.[0]?.message?.content || '';
+      console.log(`[callLLM] ${p.model} responded (${text.length} chars)`);
       
       // JSON parsen
       const cleaned = text.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
       try { return JSON.parse(cleaned); } catch(e) { return { raw: text }; }
-    } catch (e) { continue; }
+    } catch (e) { 
+      console.log(`[callLLM] ${p.model} exception: ${e.message}`);
+      continue; 
+    }
   }
+  console.log('[callLLM] All providers failed, returning null');
   return null;
 }
 
@@ -1482,7 +1492,10 @@ export const handler = async (event) => {
       console.log(`[ContactIntel] Secondary titles: ${secondaryRoleTitles.join(', ')}`);
       console.log(`[ContactIntel] Excluded: ${excludedRoles.join(', ')}`);
       console.log(`[ContactIntel] Reason: ${roleReason}`);
+    } else if (targetRoleInference?.raw) {
+      console.log(`[ContactIntel] LLM returned raw (unparseable): ${targetRoleInference.raw.substring(0, 200)}`);
     } else {
+      console.log(`[ContactIntel] LLM returned null — all providers failed`);
       // Size-based fallback: NEVER default to Geschäftsführer for large companies
       const sizeNum = parseInt(String(company?.size || company?.employees || '0').replace(/[^0-9]/g, ''), 10) || 0;
       const targetAudience = (offering?.target_audience || '').toLowerCase();
