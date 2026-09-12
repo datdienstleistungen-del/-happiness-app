@@ -101,6 +101,9 @@ export default function AppRoutes() {
         <Route path="/impressum" element={<LegalPage />} />
         <Route path="/datenschutz" element={<LegalPage />} />
         <Route path="/agb" element={<LegalPage />} />
+
+        {/* Catch-all: Redirect unknown URLs to landing page */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
   )

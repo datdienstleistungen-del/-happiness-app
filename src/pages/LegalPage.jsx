@@ -106,7 +106,9 @@ Sie haben jederzeit das Recht, unentgeltlich Auskunft über Herkunft, Empfänger
 
 ## 2. Hosting
 
-Diese Website wird bei Netlify gehostet. Anbieter ist die Netlify, Inc., 44 Montgomery Street, Suite 300, San Francisco, California 94104, USA.
+Diese Website wird bei Netlify gehostet. Anbieter ist die Netlify, Inc., 44 Montgomery Street, Suite 300, San Francisco, California 94104, USA. Netlify stellt europäische Rechenzentren für die Datenverarbeitung bereit.
+
+Datenbanken und Backend-Dienste werden über Supabase bereitgestellt (Supabase, Inc.). Die Datenhaltung erfolgt in europäischen Rechenzentren (AWS EU-West-1, Irland).
 
 Netlify verarbeitet personenbezogene Daten nur im Rahmen der Erfüllung unserer vertraglichen Verpflichtungen und auf Grundlage unserer berechtigten Interessen an der sicheren und effizienten Bereitstellung unseres Online-Angebots.
 
@@ -222,7 +224,9 @@ You have the right to receive information about the origin, recipients, and purp
 
 ## 2. Hosting
 
-This website is hosted by Netlify. Provider is Netlify, Inc., 44 Montgomery Street, Suite 300, San Francisco, California 94104, USA.
+This website is hosted by Netlify. Provider is Netlify, Inc., 44 Montgomery Street, Suite 300, San Francisco, California 94104, USA. Netlify provides European data centers for data processing.
+
+Databases and backend services are provided through Supabase (Supabase, Inc.). Data is stored in European data centers (AWS EU-West-1, Ireland).
 
 ## 3. Payment Processing (Stripe)
 
@@ -294,7 +298,7 @@ Es gilt das Recht der Bundesrepublik Deutschland. Sollten einzelne Bestimmungen 
         content: `
 ## 1. Scope
 
-These Terms of Service apply to all contracts for the delivery of goods and the provision of services between:
+These Terms of Service apply to all contracts for the use of the software "NeXus" (Sales Operating System) and related services between:
 
 Harro Goerndt
 D.A.T Dienstleistungen
@@ -302,42 +306,32 @@ Weserstraße 16
 26382 Wilhelmshaven, Germany
 Email: datdienstleistungen@gmail.com
 
-and their customers.
+and their customers. These Terms of Service apply in the version valid at the time of contract conclusion.
 
-## 2. Services
+## 2. Copyright and Intellectual Property
 
-### AI Chat (Artificial Intelligence)
-The Happiness AI Chat offers artificial intelligence that can help users with everyday questions. The AI's responses do not constitute legal, medical, or financial advice.
+**Sole author of the software "NeXus", including the concept, methodology (Signal vs. Trigger, Offering Analysis), and system architecture is Harro Goerndt (Weserstraße 16, 26382 Wilhelmshaven).**
+The content, source code, user interfaces, and works created by the provider on these pages are subject to German copyright law. Reproduction, modification, distribution, and any form of exploitation beyond the limits of copyright law require the express written consent of Harro Goerndt.
 
-### Pricing
-Using the AI Chat is free for up to 20 questions. After that, a payment of 4.99 EUR per month is required to continue asking unlimited questions.
+## 3. Services
 
-### Payment Methods
-The following payment methods are accepted:
-- SEPA Direct Debit (instant transfer)
-- Credit card (Visa, Mastercard)
+### NeXus Sales Operating System
+NeXus provides artificial intelligence and data analysis for identifying commercial buying signals (triggers) on the internet. The AI-powered evaluations and generated sales texts serve as aids and do not constitute a guarantee for commercial success or deals.
 
-Payment is processed through Stripe.
+### Pricing & Payment Methods
+The use of NeXus is subject to the subscription models communicated on the website. Payment is made through the payment service provider Stripe (SEPA direct debit, credit card).
 
-## 3. Cancellation
+## 4. Cancellation
 
-### Cancellation by the Customer
-The customer can cancel their subscription at any time with 30 days notice until the end of the month.
+The customer may cancel their subscription at any time with 30 days' notice until the end of the month. Cancellation can be done through the account settings or by email.
 
-### Cancellation by the Provider
-The provider may cancel the subscription with 30 days notice if the customer violates essential provisions of these terms.
+## 5. Liability
 
-## 4. Liability
-
-The responses of the Happiness AI are based on artificial intelligence and may contain errors. The provider is not liable for damages arising from the use of AI responses.
-
-## 5. Privacy
-
-The collection and use of customer personal data is carried out in compliance with applicable data protection regulations, particularly the GDPR. For more information, please see our Privacy Policy.
+The provider is liable for its own content on these pages in accordance with general laws. The results of the NeXus AI are based on probabilities and publicly available data. The provider assumes no liability for the accuracy of the AI assessments or resulting business decisions by the user.
 
 ## 6. Final Provisions
 
-German law applies. Should individual provisions of these terms be or become invalid, this shall not affect the validity of the remaining provisions.
+The law of the Federal Republic of Germany applies. Should individual provisions of these Terms of Service be or become invalid, this shall not affect the validity of the remaining provisions.
         `
       }
     }

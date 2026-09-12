@@ -17,7 +17,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 36px;
+  padding: 12px 16px;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid #EBEBEB;
@@ -26,6 +26,12 @@
   z-index: 50;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .nexus-lp-header {
+    padding: 16px 36px;
+  }
 }
 
 .nexus-lp-brand {
@@ -67,14 +73,23 @@
 }
 
 .nexus-lp-nav {
-  display: none;
+  display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 0 4px;
+}
+
+.nexus-lp-nav::-webkit-scrollbar {
+  display: none;
 }
 
 @media (min-width: 768px) {
   .nexus-lp-nav {
-    display: flex;
+    gap: 24px;
+    overflow-x: visible;
   }
 }
 
@@ -82,11 +97,18 @@
   background: transparent;
   border: none;
   color: #666666;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   text-decoration: none;
   transition: color 0.15s ease;
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .nexus-lp-nav-link {
+    font-size: 13px;
+  }
 }
 
 .nexus-lp-nav-link:hover {
@@ -304,6 +326,13 @@
   display: flex;
   justify-content: flex-end;
   margin-top: 4px;
+  padding-bottom: 80px;
+}
+
+@media (min-width: 640px) {
+  .nexus-lp-form-action {
+    padding-bottom: 0;
+  }
 }
 
 .nexus-lp-submit-btn {
