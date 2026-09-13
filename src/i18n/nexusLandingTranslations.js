@@ -16,7 +16,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
     "showcase": {
       "badge": "⚡ BEISPIEL: So arbeitet NeXus",
       "offerLabel": "Angebot:",
-      "offerText": "„Cloudbasierte Vertriebssoftware für IT- und SaaS-Unternehmen“",
+      "offerText": "„B2B Sales Intelligence & Intent-Signal-Akquise für wachsende Unternehmen“",
       "highIntent": "Kaufbereit: Hoher Intent",
       "detectedSignal": "🎯 Erkanntes Signal:",
       "decisionMaker": "👤 Relevanter Entscheider (Contact Intelligence):",
@@ -24,16 +24,16 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "approachLabel": "✉️ Signalbezogener Gesprächsansatz (Vorschau):",
       "ctaButton": "✨ Das will ich für mein eigenes B2B-Angebot testen",
       "demoResult": {
-        "company": "Personio SE",
-        "industry": "IT & Digitalisierung / B2B SaaS",
-        "signal": "Expansion nach Frankreich angekündigt. Aufbau eines neuen Sales- & Marketing-Teams in Paris gestartet (Quelle: Bundesanzeiger & LinkedIn Jobs).",
-        "psychologische_ansprache": "Fokus auf Skalierung & lokale Markt-Expertise. Nutzenversprechen: Strukturierte Lead-Pipeline für den französischen Markt ohne administrativen Overhead vor Ort.",
+        "company": "D.A.T. Dienstleistungen",
+        "industry": "B2B Sales Intelligence & Vertriebsberatung",
+        "signal": "Ausbau von NeXus Revenue OS und Skalierung der B2B-Akquise für internationale Märkte gestartet (Quelle: Offizielle Bekanntmachung & LinkedIn).",
+        "psychologische_ansprache": "Fokus auf skalierbare Lead-Pipeline & Echtzeit-Kaufsignale. Nutzenversprechen: Qualifizierte B2B-Abschlüsse ohne Kaltakquise-Reibung.",
         "ansprechpartner": {
           "name": "Harro Goerndt",
-          "rolle": "Head of Sales & Revenue Operations",
+          "rolle": "Inhaber & Head of Revenue Operations",
           "email": "datdienstleistungen@gmail.com",
           "email_status": "VERIFIED",
-          "confidence": 95
+          "confidence": 98
         }
       }
     },
@@ -182,7 +182,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
     "showcase": {
       "badge": "⚡ SHOWCASE: How NeXus Works",
       "offerLabel": "Offer / Solution:",
-      "offerText": "“Cloud-based CRM & sales pipeline automation for growing B2B tech companies”",
+      "offerText": "“B2B Sales Intelligence & Intent Signal Acquisition for growing enterprises”",
       "highIntent": "High Buying Intent Detected",
       "detectedSignal": "🎯 Detected Intent Signal:",
       "decisionMaker": "👤 Verified Decision-Maker (Contact Intelligence):",
@@ -190,16 +190,16 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "approachLabel": "✉️ Contextual Outreach Angle (Preview):",
       "ctaButton": "✨ Test this for my own B2B product / service",
       "demoResult": {
-        "company": "Personio SE",
-        "industry": "IT & Digital Infrastructure / B2B SaaS",
-        "signal": "International expansion into Western Europe announced. Rapid recruitment of local sales and customer success teams in progress (Source: Commercial Register & Public Job Openings).",
-        "psychologische_ansprache": "Positioned around scaling velocity & regional go-to-market execution: structured outbound pipelines without administrative friction.",
+        "company": "D.A.T. Dienstleistungen",
+        "industry": "B2B Sales Intelligence & Revenue Operations",
+        "signal": "International expansion and commercial deployment of NeXus Revenue OS for high-intent B2B market acquisition (Source: Public Announcement & Professional Registry).",
+        "psychologische_ansprache": "Positioned around scaling velocity & real-time intent triggers: high-converting B2B appointments without cold outreach friction.",
         "ansprechpartner": {
           "name": "Harro Goerndt",
-          "rolle": "Head of Sales & Revenue Operations",
+          "rolle": "Founder & Head of Revenue Operations",
           "email": "datdienstleistungen@gmail.com",
           "email_status": "VERIFIED",
-          "confidence": 95
+          "confidence": 98
         }
       }
     },
@@ -348,7 +348,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
     "showcase": {
       "badge": "⚡ EJEMPLO: Cómo funciona NeXus",
       "offerLabel": "Oferta / Solución:",
-      "offerText": "«Software de ventas y CRM en la nube para empresas tecnológicas en crecimiento»",
+      "offerText": "«Inteligencia de ventas B2B y radar de señales de compra para empresas en crecimiento»",
       "highIntent": "Alta intención de compra detectada",
       "detectedSignal": "🎯 Señal de compra detectada:",
       "decisionMaker": "👤 Tomador de decisiones verificado (Contact Intelligence):",
@@ -356,16 +356,16 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "approachLabel": "✉️ Enfoque comercial contextual (Vista previa):",
       "ctaButton": "✨ Probar esto para mi propia oferta B2B",
       "demoResult": {
-        "company": "Personio SE",
-        "industry": "TI y Digitalización / B2B SaaS",
-        "signal": "Expansión a nuevos mercados europeos anunciada. Creación de nuevos equipos de ventas y marketing en curso (Fuente: Registro Oficial y Ofertas de Empleo).",
-        "psychologische_ansprache": "Enfoque en escalabilidad y aceleración de ventas: pipeline estructurado sin sobrecarga administrativa.",
+        "company": "D.A.T. Dienstleistungen",
+        "industry": "Inteligencia de Ventas B2B y Consultoría Comercial",
+        "signal": "Lanzamiento y expansión internacional de NeXus Revenue OS para la captación automatizada de clientes B2B (Fuente: Anuncio oficial y registros públicos).",
+        "psychologische_ansprache": "Enfoque en escalabilidad y señales de compra en tiempo real: pipeline estructurado sin fricción de prospección en frío.",
         "ansprechpartner": {
           "name": "Harro Goerndt",
-          "rolle": "Head of Sales & Revenue Operations",
+          "rolle": "Director General y Responsable de Revenue Operations",
           "email": "datdienstleistungen@gmail.com",
           "email_status": "VERIFIED",
-          "confidence": 95
+          "confidence": 98
         }
       }
     },
@@ -514,7 +514,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
     "showcase": {
       "badge": "⚡ EXEMPLE : Comment fonctionne NeXus",
       "offerLabel": "Offre / Solution :",
-      "offerText": "« Logiciel CRM et automatisation des ventes cloud pour entreprises tech en croissance »",
+      "offerText": "« Intelligence commerciale B2B et signaux d'achat en temps réel pour entreprises en croissance »",
       "highIntent": "Forte intention d'achat détectée",
       "detectedSignal": "🎯 Signal d'achat détecté :",
       "decisionMaker": "👤 Décideur vérifié (Contact Intelligence) :",
@@ -522,16 +522,16 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "approachLabel": "✉️ Approche commerciale contextuelle (Aperçu) :",
       "ctaButton": "✨ Tester cela pour ma propre offre B2B",
       "demoResult": {
-        "company": "Personio SE",
-        "industry": "IT & Logiciels B2B / SaaS",
-        "signal": "Expansion internationale annoncée. Recrutement accéléré d'équipes commerciales et marketing en cours (Source : Registre du Commerce & Offres d'emploi).",
-        "psychologische_ansprache": "Positionnement axé sur la vitesse de déploiement et la croissance : pipeline commercial structuré sans friction administrative.",
+        "company": "D.A.T. Dienstleistungen",
+        "industry": "Intelligence Commerciale B2B & Revenue Operations",
+        "signal": "Déploiement international de NeXus Revenue OS pour l'acquisition automatisée de clients B2B à fort potentiel (Source : Annonce officielle et registres publics).",
+        "psychologische_ansprache": "Positionnement axé sur la vitesse de déploiement et les signaux d'achat en temps réel : pipeline de vente structuré sans démarchage à froid.",
         "ansprechpartner": {
           "name": "Harro Goerndt",
-          "rolle": "Head of Sales & Revenue Operations",
+          "rolle": "Fondateur & Directeur des Opérations Commerciales",
           "email": "datdienstleistungen@gmail.com",
           "email_status": "VERIFIED",
-          "confidence": 95
+          "confidence": 98
         }
       }
     },
@@ -680,7 +680,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
     "showcase": {
       "badge": "⚡ ESEMPIO: Come funziona NeXus",
       "offerLabel": "Offerta / Soluzione:",
-      "offerText": "“Software di vendita e CRM in cloud per aziende tech e SaaS in rapida crescita”",
+      "offerText": "“B2B Sales Intelligence e acquisizione basata su segnali d'intento per aziende in crescita”",
       "highIntent": "Alta intenzione d'acquisto rilevata",
       "detectedSignal": "🎯 Segnale d'acquisto rilevato:",
       "decisionMaker": "👤 Decision Maker Verificato (Contact Intelligence):",
@@ -688,16 +688,16 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "approachLabel": "✉️ Proposta di outreach contestuale (Anteprima):",
       "ctaButton": "✨ Prova questo per la mia offerta B2B",
       "demoResult": {
-        "company": "Personio SE",
-        "industry": "IT e Digitalizzazione / B2B SaaS",
-        "signal": "Espansione verso nuovi mercati europei annunciata. Reclutamento di nuovi team commerciali e marketing avviato (Fonte: Registro Imprese & Annunci di lavoro).",
-        "psychologische_ansprache": "Focus su scalabilità rapida ed efficienza operativa: pipeline outbound strutturata senza attriti organizzativi.",
+        "company": "D.A.T. Dienstleistungen",
+        "industry": "B2B Sales Intelligence & Consulenza di Vendita",
+        "signal": "Espansione internazionale e lancio di NeXus Revenue OS per l'acquisizione mirata di lead B2B ad alta intenzione (Fonte: Annuncio ufficiale e registri pubblici).",
+        "psychologische_ansprache": "Focus su pipeline automatizzata e segnali d'acquisto in tempo reale: appuntamenti B2B qualificati senza attrito da contatti a freddo.",
         "ansprechpartner": {
           "name": "Harro Goerndt",
-          "rolle": "Head of Sales & Revenue Operations",
+          "rolle": "Titolare & Responsabile Revenue Operations",
           "email": "datdienstleistungen@gmail.com",
           "email_status": "VERIFIED",
-          "confidence": 95
+          "confidence": 98
         }
       }
     },
@@ -846,7 +846,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
     "showcase": {
       "badge": "⚡ VOORBEELD: Hoe NeXus werkt",
       "offerLabel": "Aanbod / Oplossing:",
-      "offerText": "„Cloudgebaseerde verkoop- en CRM-software voor groeiende tech- en SaaS-bedrijven“",
+      "offerText": "„B2B Sales Intelligence & intent-gebaseerde acquisitie voor groeiende ondernemingen“",
       "highIntent": "Hoge koopintentie gedetecteerd",
       "detectedSignal": "🎯 Gedetecteerd koopsignaal:",
       "decisionMaker": "👤 Geverifieerde beslisser (Contact Intelligence):",
@@ -854,16 +854,16 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "approachLabel": "✉️ Contextuele outreach pitch (Voorbeeld):",
       "ctaButton": "✨ Test dit voor mijn eigen B2B-aanbod",
       "demoResult": {
-        "company": "Personio SE",
-        "industry": "IT & Digitalisering / B2B SaaS",
-        "signal": "Internationale expansie aangekondigd. Werving van nieuwe verkoop- en marketingteams gestart (Bron: Handelsregister & Vacatures).",
-        "psychologische_ansprache": "Gericht op snelle schaalbaarheid en marktexpertise: gestructureerde lead-pipeline zonder administratieve vertraging.",
+        "company": "D.A.T. Dienstleistungen",
+        "industry": "B2B Sales Intelligence & Commercieel Advies",
+        "signal": "Internationale uitrol van NeXus Revenue OS voor gerichte B2B-leadgeneratie en koopsignalen gestart (Bron: Officiële aankondiging en registers).",
+        "psychologische_ansprache": "Gericht op schaalbare lead-pipelines en realtime koopsignalen: gekwalificeerde B2B-gesprekken zonder koude acquisitie.",
         "ansprechpartner": {
           "name": "Harro Goerndt",
-          "rolle": "Head of Sales & Revenue Operations",
+          "rolle": "Eigenaar & Head of Revenue Operations",
           "email": "datdienstleistungen@gmail.com",
           "email_status": "VERIFIED",
-          "confidence": 95
+          "confidence": 98
         }
       }
     },
@@ -1012,7 +1012,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
     "showcase": {
       "badge": "⚡ ΠΑΡΑΔΕΙΓΜΑ: Πώς λειτουργεί το NeXus",
       "offerLabel": "Προσφορά / Λύση:",
-      "offerText": "«Λογισμικό πωλήσεων και CRM cloud για αναπτυσσόμενες εταιρείες τεχνολογίας και SaaS»",
+      "offerText": "«B2B Sales Intelligence & απόκτηση πελατών βάσει σημάτων πρόθεσης για επιχειρήσεις»",
       "highIntent": "Υψηλή πρόθεση αγοράς",
       "detectedSignal": "🎯 Αναγνωρισμένο σήμα αγοράς:",
       "decisionMaker": "👤 Επαληθευμένος υπεύθυνος (Contact Intelligence):",
@@ -1020,16 +1020,16 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "approachLabel": "✉️ Προσέγγιση βάσει σήματος (Προεπισκόπηση):",
       "ctaButton": "✨ Δοκιμάστε το για τη δική σας προσφορά B2B",
       "demoResult": {
-        "company": "Personio SE",
-        "industry": "IT & Ψηφιοποίηση / B2B SaaS",
-        "signal": "Ανακοινώθηκε διεθνής επέκταση στην Ευρώπη. Δημιουργία νέων ομάδων πωλήσεων και marketing σε εξέλιξη (Πηγή: Επίσημο Μητρώο & Αγγελίες).",
-        "psychologische_ansprache": "Εστίαση στην ταχεία κλιμάκωση και εκτέλεση πωλήσεων: δομημένο outbound pipeline χωρίς διοικητική επιβάρυνση.",
+        "company": "D.A.T. Dienstleistungen",
+        "industry": "B2B Sales Intelligence & Συμβουλευτική Πωλήσεων",
+        "signal": "Διεθνής επέκταση και ανάπτυξη του NeXus Revenue OS για αυτοματοποιημένη απόκτηση πελατών B2B (Πηγή: Επίσημη ανακοίνωση και δημόσια μητρώα).",
+        "psychologische_ansprache": "Εστίαση σε αυτοματοποιημένο pipeline πωλήσεων και σήματα αγοράς σε πραγματικό χρόνο: εξειδικευμένες B2B επαφές χωρίς cold outreach.",
         "ansprechpartner": {
           "name": "Harro Goerndt",
-          "rolle": "Head of Sales & Revenue Operations",
+          "rolle": "Ιδιοκτήτης & Head of Revenue Operations",
           "email": "datdienstleistungen@gmail.com",
           "email_status": "VERIFIED",
-          "confidence": 95
+          "confidence": 98
         }
       }
     },
