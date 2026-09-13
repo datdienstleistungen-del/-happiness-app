@@ -97,6 +97,18 @@ export async function getOfferingById(id) {
   return error ? null : data;
 }
 
+export async function updateOffering(offeringId, data) {
+  const { data: result, error } = await supabase
+    .from('nexus_offerings')
+    .update({ ...data, updated_at: new Date().toISOString() })
+    .eq('id', offeringId)
+    .select()
+    .single();
+  
+  if (error) { console.error('[NeXus DB] Update offering error:', error.message); return null; }
+  return result;
+}
+
 // -----------------------------------------------------------------------------
 // 2b. SIGNAL STRATEGIES (Suchstrategien pro Offering)
 // -----------------------------------------------------------------------------

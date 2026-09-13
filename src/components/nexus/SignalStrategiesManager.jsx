@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { generateSignalStrategies, getSignalStrategies } from '../../lib/nexus-db';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../i18n/translations.jsx';
@@ -6,7 +6,8 @@ import { Zap, Loader2, Globe, FileText, CheckCircle } from 'lucide-react';
 
 export default function SignalStrategiesManager({ offering }) {
   const { user } = useAuth();
-  const { t, language } = useLanguage();
+  const { t, lang, language } = useLanguage();
+  const activeLang = lang || language || 'de';
   const [strategies, setStrategies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -34,7 +35,15 @@ export default function SignalStrategiesManager({ offering }) {
     setGenerating(true);
     setError(null);
     try {
-      const newStrats = await generateSignalStrategies(offering.id, offering.ai_understanding, offering.target_markets, language);
+      const aiUnderstanding = offering.ai_understanding || {
+        offering_name: offering.offering_name,
+        target_audience: offering.target_audience,
+        positioning: offering.positioning,
+        icp_data: offering.icp_data,
+        trigger_model: offering.trigger_model,
+        demand_contexts: offering.trigger_model?.trigger_events || offering.trigger_model?.relevante_trigger || []
+      };
+      const newStrats = await generateSignalStrategies(offering.id, aiUnderstanding, offering.target_markets, activeLang);
       if (newStrats && newStrats.length > 0) {
         await loadStrategies(); // Reload from DB
       } else {
