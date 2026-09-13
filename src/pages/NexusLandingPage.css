@@ -112,6 +112,45 @@
   gap: 10px;
 }
 
+.nexus-lp-lang-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #F4F4F6;
+  border: 1px solid #E4E4E7;
+  border-radius: 6px;
+  padding: 4px 8px;
+  transition: all 0.15s ease;
+}
+
+.nexus-lp-lang-switcher:hover {
+  background: #EBEBEF;
+  border-color: #D4D4D8;
+}
+
+.nexus-lp-lang-icon {
+  color: #71717A;
+  flex-shrink: 0;
+}
+
+.nexus-lp-lang-select {
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: #27272A;
+  cursor: pointer;
+  outline: none;
+  padding-right: 2px;
+}
+
+.nexus-lp-lang-option {
+  background: #FFFFFF;
+  color: #18181B;
+  font-size: 13px;
+}
+
 .nexus-lp-btn-ghost {
   background: transparent;
   border: none;
@@ -368,6 +407,11 @@
 .demo-contact-details {
   font-size: 14px;
   color: #0F172A;
+}
+
+.demo-contact-email-tag {
+  color: #155DFC;
+  font-weight: 500;
 }
 
 .pitch-preview-text {
