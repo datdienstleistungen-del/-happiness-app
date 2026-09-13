@@ -209,6 +209,231 @@
   padding: 32px;
   text-align: left;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+  position: relative;
+}
+
+/* Animations */
+.animate-fade-in {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Showcase / Demo Preview Mode --- */
+.demo-preview-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.demo-intro-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(21, 93, 252, 0.08);
+  border: 1px solid rgba(21, 93, 252, 0.2);
+  color: #155DFC;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  width: fit-content;
+}
+
+.demo-input-preview-card {
+  background: #F8FAFC;
+  border: 1px dashed #CBD5E1;
+  border-radius: 10px;
+  padding: 14px 18px;
+}
+
+.preview-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748B;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.preview-text {
+  font-size: 14px;
+  color: #1E293B;
+  margin: 0;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+/* Result Card */
+.demo-result-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 22px 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.result-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #F1F5F9;
+  flex-wrap: wrap;
+}
+
+.company-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.company-info h3 {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0;
+}
+
+.industry-sub {
+  display: block;
+  font-size: 12.5px;
+  color: #64748B;
+  margin-top: 2px;
+}
+
+.badge-intent-high {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #EF4444;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.result-body-section h4 {
+  font-size: 12.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #475569;
+  letter-spacing: 0.02em;
+  margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.result-body-section p {
+  font-size: 13.5px;
+  color: #334155;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.contact-box-highlight {
+  background: linear-gradient(135deg, rgba(21, 93, 252, 0.04) 0%, rgba(16, 185, 129, 0.04) 100%);
+  border: 1px solid rgba(21, 93, 252, 0.15);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.demo-contact-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.demo-contact-details {
+  font-size: 14px;
+  color: #0F172A;
+}
+
+.pitch-preview-text {
+  font-style: italic;
+  color: #1E293B;
+  background: #F8FAFC;
+  border-left: 3px solid #155DFC;
+  padding: 10px 14px;
+  border-radius: 0 6px 6px 0;
+}
+
+/* Primary Big CTA Button */
+.nexus-primary-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #155DFC 0%, #0D47C4 100%);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(21, 93, 252, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-top: 4px;
+}
+
+.nexus-primary-cta-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(21, 93, 252, 0.45);
+  background: linear-gradient(135deg, #1d65ff 0%, #104ecc 100%);
+}
+
+.pulse-effect {
+  position: relative;
+}
+
+/* Back link in custom mode */
+.back-to-preview-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: #155DFC;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 14px;
+  transition: opacity 0.15s ease;
+}
+
+.back-to-preview-link:hover {
+  text-decoration: underline;
+  opacity: 0.85;
+}
+
+.section-sub-instructions {
+  font-size: 13px;
+  color: #666666;
+  margin: 2px 0 0;
 }
 
 .nexus-lp-test-header {
@@ -754,106 +979,109 @@
   margin: 0 auto;
 }
 
-/* --- 3 Pillars --- */
-.nexus-lp-pillars-section {
-  max-width: 1000px;
+/* --- Consolidated Workflow Section (In 3 Schritten zum Abschluss) --- */
+.nexus-workflow-section {
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 64px 24px;
+  padding: 72px 24px;
   border-top: 1px solid #EBEBEB;
 }
 
-.nexus-lp-pillars-grid {
+.nexus-workflow-section .section-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.nexus-workflow-section .section-badge {
+  display: inline-block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #155DFC;
+  background: rgba(21, 93, 252, 0.08);
+  border: 1px solid rgba(21, 93, 252, 0.2);
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.nexus-workflow-section h2 {
+  font-family: 'Geist', sans-serif;
+  font-size: 2.1rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: #0F172A;
+  margin: 0 0 10px;
+}
+
+.nexus-workflow-section .section-header p {
+  font-size: 15px;
+  color: #64748B;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+.workflow-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
 }
 
 @media (min-width: 768px) {
-  .nexus-lp-pillars-grid {
-    grid-template-columns: 1fr 1fr 1fr;
+  .workflow-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
-.nexus-lp-pillar-card {
+.workflow-step {
   background: #FFFFFF;
-  border: 1px solid #EBEBEB;
-  border-radius: 10px;
-  padding: 28px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 32px 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
 }
 
-.nexus-lp-pillar-icon {
-  width: 44px;
-  height: 44px;
-  background: #EBF2FE;
+.workflow-step:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(21, 93, 252, 0.08);
+  border-color: #CBD5E1;
+}
+
+.workflow-step .step-number {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  font-weight: 800;
   color: #155DFC;
+  background: #EFF6FF;
+  border: 1px solid #DBEAFE;
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
-.nexus-lp-pillar-card h3 {
-  font-size: 1.15rem;
+.workflow-step h3 {
+  font-size: 1.2rem;
   font-weight: 700;
-  color: #171717;
+  color: #0F172A;
   margin: 0 0 10px;
+  letter-spacing: -0.01em;
 }
 
-.nexus-lp-pillar-card p {
-  font-size: 13.5px;
-  line-height: 1.55;
-  color: #666666;
-  margin: 0;
-}
-
-/* --- Workflow Guide --- */
-.nexus-lp-guide-section {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 64px 24px;
-  border-top: 1px solid #EBEBEB;
-}
-
-.nexus-lp-guide-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.nexus-lp-step-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
-  background: #FFFFFF;
-  border: 1px solid #EBEBEB;
-  border-radius: 10px;
-  padding: 20px 24px;
-}
-
-.nexus-lp-step-num {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 13px;
-  font-weight: 700;
-  color: #155DFC;
-  background: #EBF2FE;
-  padding: 6px 12px;
-  border-radius: 6px;
-  flex-shrink: 0;
-}
-
-.nexus-lp-step-content h4 {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #171717;
-  margin: 0 0 4px;
-}
-
-.nexus-lp-step-content p {
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: #666666;
+.workflow-step p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #475569;
   margin: 0;
 }
 

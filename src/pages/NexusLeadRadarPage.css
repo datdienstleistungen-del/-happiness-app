@@ -518,3 +518,188 @@
     justify-content: center;
   }
 }
+
+/* ==========================================================================
+   Contact Intelligence Section in Trigger Cards
+   ========================================================================== */
+
+.trigger-contact-section {
+  margin: 12px 0 6px;
+  padding: 10px 14px;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trigger-contact-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.trigger-contact-person {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.contact-icon {
+  color: #155DFC;
+  flex-shrink: 0;
+}
+
+.contact-details {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.contact-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary, #0F172A);
+  flex-shrink: 0;
+}
+
+.contact-role {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #64748B);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contact-empty {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #94A3B8);
+  font-style: italic;
+}
+
+/* Status Badges */
+.contact-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.contact-status-badge.status-verified,
+.contact-status-badge.status-found {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.contact-status-badge.status-pattern,
+.contact-status-badge.status-predicted {
+  background: rgba(245, 158, 11, 0.12);
+  color: #D97706;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.contact-status-badge.status-unknown,
+.contact-status-badge.status-no_match {
+  background: rgba(107, 114, 128, 0.10);
+  color: #64748B;
+  border: 1px solid rgba(107, 114, 128, 0.20);
+}
+
+.contact-status-badge.status-loading {
+  background: rgba(21, 93, 252, 0.10);
+  color: #155DFC;
+  border: 1px solid rgba(21, 93, 252, 0.20);
+}
+
+/* Quick Actions / E-Mail Row */
+.trigger-contact-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.contact-email-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.contact-copy-email-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: var(--bg-secondary, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 6px;
+  color: var(--text-primary, #0F172A);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.contact-copy-email-btn:hover {
+  background: #eff6ff;
+  border-color: #155DFC;
+  color: #155DFC;
+}
+
+.contact-copy-email-btn .copy-icon {
+  opacity: 0.6;
+}
+
+.copy-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #10B981;
+  background: rgba(16, 185, 129, 0.15);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.contact-fetch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: transparent;
+  border: 1px dashed #155DFC;
+  border-radius: 6px;
+  color: #155DFC;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.contact-fetch-btn:hover:not(:disabled) {
+  background: rgba(21, 93, 252, 0.08);
+}
+
+.contact-fetch-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+

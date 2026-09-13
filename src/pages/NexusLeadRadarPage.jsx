@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Radar, Search, ArrowRight, Building2, AlertCircle, RefreshCw, Briefcase, Globe, CheckCircle, Sparkles } from 'lucide-react'
-import { callNexusAI, runResearchPipeline } from '../lib/nexus-ai'
+import { Radar, Search, ArrowRight, Building2, AlertCircle, RefreshCw, Briefcase, Globe, CheckCircle, Sparkles, User, Mail, Copy, HelpCircle } from 'lucide-react'
+import { callNexusAI, runResearchPipeline, callContactIntelligence } from '../lib/nexus-ai'
 import { supabase } from '../lib/supabase'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import SetupWizard from '../components/SetupWizard'
@@ -56,6 +56,8 @@ export default function NexusLeadRadarPage() {
   const [showManualSearch, setShowManualSearch] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [isLoadingContact, setIsLoadingContact] = useState({}) // Format: { [companyName]: boolean }
+  const [copiedEmail, setCopiedEmail] = useState(null)
 
   // State Persistence: Save ALL state to localStorage on every change
   useEffect(() => {
@@ -189,13 +191,22 @@ export default function NexusLeadRadarPage() {
     if (result && typeof result === 'object' && !Array.isArray(result)) {
       if (result.trigger_events && Array.isArray(result.trigger_events)) {
         return result.trigger_events.map(t => {
+          const emailFound = t.contact?.email || (typeof t.kontakt === 'string' && t.kontakt.includes('@') ? t.kontakt : (typeof t.email === 'string' && t.email.includes('@') ? t.email : null))
           return {
             company: t.firmenname || t.company || 'Unbekanntes Unternehmen',
             prioritaet: t.prioritaet || 99,
             bewertung: t.bewertung || '',
             signal: t.signal || t.beschreibung || t.event || '',
             psychologische_ansprache: t.psychologische_ansprache || '',
-            quelle: 'KI-Analyse'
+            quelle: t.quelle || 'KI-Analyse',
+            ansprechpartner: {
+              name: t.contact?.name || t.ansprechpartner || null,
+              rolle: t.contact?.role || t.position || null,
+              email: emailFound,
+              email_status: t.contact?.email_status || (emailFound ? 'FOUND' : 'UNKNOWN'),
+              confidence: t.contact?.confidence || null,
+              source_url: t.contact?.source_url || t.quelle || null
+            }
           }
         }).sort((a, b) => a.prioritaet - b.prioritaet)
       }
@@ -210,13 +221,22 @@ export default function NexusLeadRadarPage() {
         const parsed = JSON.parse(jsonStr.trim())
         if (parsed.trigger_events && Array.isArray(parsed.trigger_events)) {
           return parsed.trigger_events.map(t => {
+            const emailFound = t.contact?.email || (typeof t.kontakt === 'string' && t.kontakt.includes('@') ? t.kontakt : (typeof t.email === 'string' && t.email.includes('@') ? t.email : null))
             return {
               company: t.firmenname || t.company || 'Unbekanntes Unternehmen',
               prioritaet: t.prioritaet || 99,
               bewertung: t.bewertung || '',
               signal: t.signal || t.beschreibung || t.event || '',
               psychologische_ansprache: t.psychologische_ansprache || '',
-              quelle: 'KI-Analyse'
+              quelle: t.quelle || 'KI-Analyse',
+              ansprechpartner: {
+                name: t.contact?.name || t.ansprechpartner || null,
+                rolle: t.contact?.role || t.position || null,
+                email: emailFound,
+                email_status: t.contact?.email_status || (emailFound ? 'FOUND' : 'UNKNOWN'),
+                confidence: t.contact?.confidence || null,
+                source_url: t.contact?.source_url || t.quelle || null
+              }
             }
           }).sort((a, b) => a.prioritaet - b.prioritaet)
         }
@@ -237,7 +257,15 @@ export default function NexusLeadRadarPage() {
           company: line.replace(/^[-#\d.]+\s*/, '').trim(),
           signal: '',
           prioritaet: 99,
-          quelle: 'KI-Analyse'
+          quelle: 'KI-Analyse',
+          ansprechpartner: {
+            name: null,
+            rolle: null,
+            email: null,
+            email_status: 'UNKNOWN',
+            confidence: null,
+            source_url: null
+          }
         }
       } else if (current && !current.signal) {
         current.signal = line.trim()
@@ -249,8 +277,104 @@ export default function NexusLeadRadarPage() {
       company: 'Analyse-Ergebnis', 
       signal: result.substring(0, 200) + '...', 
       prioritaet: 99,
-      quelle: 'KI-Analyse'
+      quelle: 'KI-Analyse',
+      ansprechpartner: {
+        name: null,
+        rolle: null,
+        email: null,
+        email_status: 'UNKNOWN',
+        confidence: null,
+        source_url: null
+      }
     }]
+  }
+
+  const handleFetchContact = async (trigger) => {
+    const companyName = trigger.company
+    setIsLoadingContact(prev => ({ ...prev, [companyName]: true }))
+
+    try {
+      const res = await callContactIntelligence({
+        company: { name: companyName },
+        offering: activeOffering,
+        trigger: trigger.signal
+      })
+
+      if (res && res.status === 'found' && res.primary) {
+        const contact = res.primary
+        setTriggers(prevTriggers => 
+          prevTriggers.map(t => {
+            if (t.company === companyName) {
+              return {
+                ...t,
+                ansprechpartner: {
+                  name: contact.name || null,
+                  rolle: contact.role || null,
+                  email: contact.email || null,
+                  email_status: contact.email_status || (contact.email ? 'FOUND' : 'UNKNOWN'),
+                  confidence: contact.confidence || contact.rank_score || null,
+                  source_url: contact.source_url || null
+                }
+              }
+            }
+            return t
+          })
+        )
+      } else {
+        setTriggers(prevTriggers => 
+          prevTriggers.map(t => {
+            if (t.company === companyName) {
+              return {
+                ...t,
+                ansprechpartner: {
+                  name: null,
+                  rolle: null,
+                  email: null,
+                  email_status: 'NO_MATCH',
+                  confidence: null,
+                  source_url: null
+                }
+              }
+            }
+            return t
+          })
+        )
+      }
+    } catch (error) {
+      console.error(`Crawl fehlgeschlagen für ${companyName}:`, error)
+    } finally {
+      setIsLoadingContact(prev => ({ ...prev, [companyName]: false }))
+    }
+  }
+
+  const getStatusLabel = (status, confidence) => {
+    switch (status?.toUpperCase()) {
+      case 'VERIFIED':
+      case 'FOUND':
+        return 'Verifiziert'
+      case 'PATTERN':
+      case 'PREDICTED':
+        return confidence ? `Muster (${confidence}%)` : 'Muster abgeleitet'
+      case 'LOADING':
+        return 'Crawl läuft...'
+      case 'NO_MATCH':
+        return 'Kein Treffer'
+      case 'UNKNOWN':
+      default:
+        return 'Nicht ermittelt'
+    }
+  }
+
+  const copyToClipboard = (text) => {
+    if (!text) return
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        setCopiedEmail(text)
+        setTimeout(() => setCopiedEmail(null), 2000)
+      })
+      .catch(err => {
+        console.error('Fehler beim Kopieren in die Zwischenablage: ', err)
+      })
   }
 
   const getSignificanceColor = (signifikanz) => {
@@ -277,14 +401,25 @@ export default function NexusLeadRadarPage() {
     
     const signalData = {
       signal_type: 'KI_DETECTED',
-      content: trigger.event,
+      content: trigger.event || `Priorität: ${trigger.prioritaet}\n\nBewertung: ${trigger.bewertung}\n\nSignal: ${trigger.signal}\n\nPsychologie: ${trigger.psychologische_ansprache}`,
       source: 'NeXus Radar Scan',
-      confidence_score: trigger.signifikanz === 'hoch' ? 0.9 : trigger.signifikanz === 'mittel' ? 0.6 : 0.3
+      confidence_score: trigger.prioritaet === 1 ? 0.9 : trigger.prioritaet === 2 ? 0.7 : 0.5
     }
 
+    const contactData = trigger.ansprechpartner || null
+
     try {
-      await processSignalToOpportunity(activeOffering.id, companyData, signalData)
-      setSavedLeads(prev => [...prev, trigger.company])
+      const opp = await processSignalToOpportunity(activeOffering.id, companyData, signalData, contactData)
+      if (opp && opp.id) {
+        setSavedLeads(prev => {
+          if (Array.isArray(prev)) {
+            return [...prev, trigger.company]
+          }
+          return { ...prev, [trigger.company]: opp.id }
+        })
+      } else {
+        setSavedLeads(prev => Array.isArray(prev) ? [...prev, trigger.company] : { ...prev, [trigger.company]: true })
+      }
     } catch (err) {
       console.error(err)
       alert(t('nexus.errorPipeline'))
@@ -408,16 +543,105 @@ export default function NexusLeadRadarPage() {
                     </div>
                   )}
                   <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}><strong>Signal:</strong> {trigger.signal}</p>
+
+                  {/* Contact Intelligence Block */}
+                  <div className="trigger-contact-section">
+                    <div className="trigger-contact-header">
+                      <div className="trigger-contact-person">
+                        <User size={15} className="contact-icon" />
+                        {trigger.ansprechpartner?.name ? (
+                          <div className="contact-details">
+                            <span className="contact-name">{trigger.ansprechpartner.name}</span>
+                            {trigger.ansprechpartner.rolle && (
+                              <span className="contact-role" title={trigger.ansprechpartner.rolle}>
+                                · {trigger.ansprechpartner.rolle}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="contact-empty">Kein Ansprechpartner zugeordnet</span>
+                        )}
+                      </div>
+
+                      {/* Status-Badge */}
+                      <span className={`contact-status-badge status-${trigger.ansprechpartner?.email_status?.toLowerCase() || 'unknown'}`}>
+                        {(trigger.ansprechpartner?.email_status === 'VERIFIED' || trigger.ansprechpartner?.email_status === 'FOUND') && <CheckCircle size={12} />}
+                        {(trigger.ansprechpartner?.email_status === 'PATTERN' || trigger.ansprechpartner?.email_status === 'PREDICTED') && <Sparkles size={12} />}
+                        {(trigger.ansprechpartner?.email_status === 'UNKNOWN' || trigger.ansprechpartner?.email_status === 'NO_MATCH' || !trigger.ansprechpartner?.email_status) && <HelpCircle size={12} />}
+                        {getStatusLabel(trigger.ansprechpartner?.email_status, trigger.ansprechpartner?.confidence)}
+                      </span>
+                    </div>
+
+                    {/* Contact Actions / E-Mail Row */}
+                    <div className="trigger-contact-footer">
+                      {trigger.ansprechpartner?.email ? (
+                        <div className="contact-email-wrapper">
+                          <button 
+                            type="button"
+                            className="contact-copy-email-btn"
+                            onClick={() => copyToClipboard(trigger.ansprechpartner.email)}
+                            title="In Zwischenablage kopieren"
+                          >
+                            <Mail size={13} />
+                            <span>{trigger.ansprechpartner.email}</span>
+                            {copiedEmail === trigger.ansprechpartner.email ? (
+                              <span className="copy-badge">Kopiert!</span>
+                            ) : (
+                              <Copy size={12} className="copy-icon" />
+                            )}
+                          </button>
+                        </div>
+                      ) : (
+                        <button 
+                          type="button"
+                          className="contact-fetch-btn"
+                          disabled={isLoadingContact[trigger.company]}
+                          onClick={() => handleFetchContact(trigger)}
+                        >
+                          {isLoadingContact[trigger.company] ? (
+                            <>
+                              <RefreshCw size={13} className="spin" />
+                              <span>Recherchiere Website & Impressum...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Search size={13} />
+                              <span>Ansprechpartner & E-Mail ermitteln</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <div className="trigger-actions">
-                  {savedLeads.includes(trigger.company) ? (
-                    <button className="action-btn action-btn-primary" style={{ background: '#10B981', borderColor: '#10B981' }} disabled>
-                      <CheckCircle size={16} />
-                      Übernommen
-                    </button>
+                  {(Array.isArray(savedLeads) ? savedLeads.includes(trigger.company) : Boolean(savedLeads?.[trigger.company])) ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                      <button className="action-btn action-btn-primary" style={{ background: '#10B981', borderColor: '#10B981', cursor: 'default' }} disabled>
+                        <CheckCircle size={16} />
+                        Übernommen
+                      </button>
+                      <button 
+                        type="button"
+                        className="action-btn action-btn-secondary" 
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 12px' }}
+                        onClick={() => {
+                          const oppId = (!Array.isArray(savedLeads) && savedLeads?.[trigger.company]) || null
+                          navigate(oppId ? `/nexus/workspace?opportunityId=${oppId}` : '/nexus/workspace')
+                        }}
+                      >
+                        <span>Im Sales Workspace öffnen</span>
+                        <ArrowRight size={14} />
+                      </button>
+                    </div>
                   ) : (
                     <button className="action-btn action-btn-primary" onClick={() => handleProcessSignal({
                       company: trigger.company,
+                      prioritaet: trigger.prioritaet,
+                      bewertung: trigger.bewertung,
+                      signal: trigger.signal,
+                      psychologische_ansprache: trigger.psychologische_ansprache,
+                      ansprechpartner: trigger.ansprechpartner,
                       event: `Priorität: ${trigger.prioritaet}\n\nBewertung: ${trigger.bewertung}\n\nSignal: ${trigger.signal}\n\nPsychologie: ${trigger.psychologische_ansprache}`
                     })}>
                       <ArrowRight size={16} />

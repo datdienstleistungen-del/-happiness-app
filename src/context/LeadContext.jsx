@@ -51,7 +51,7 @@ export function LeadProvider({ children }) {
   }, [loadPipelineData])
 
   // 2. Die Kern-Pipeline: Mache aus einem rohen Signal eine Opportunity
-  const processSignalToOpportunity = useCallback(async (offeringId, companyData, signalData) => {
+  const processSignalToOpportunity = useCallback(async (offeringId, companyData, signalData, contactData = null) => {
     if (!user) return null
     setLoading(true)
     try {
@@ -100,6 +100,26 @@ export function LeadProvider({ children }) {
       if (opp && triggerEvent) {
         // 5. M:N Opportunity <-> Trigger verknüpfen
         await db.linkTriggerToOpportunity(opp.id, triggerEvent.id)
+
+        // 5b. Falls Kontaktdaten vorhanden sind, in nexus_contacts anlegen und verknüpfen
+        if (contactData && (contactData.name || contactData.email)) {
+          try {
+            await db.saveOpportunityContact(
+              user.id,
+              company.id,
+              opp.id,
+              contactData.name || 'Unbekannter Ansprechpartner',
+              contactData.rolle || 'Entscheider',
+              contactData.source_url || 'Lead Radar',
+              contactData.confidence || 80,
+              contactData.email || null,
+              contactData.email_status || 'UNKNOWN',
+              contactData.source_url || null
+            )
+          } catch (cErr) {
+            console.warn('[LeadContext] Contact link error:', cErr)
+          }
+        }
         
         // 6. Activity loggen
         await db.logActivity(

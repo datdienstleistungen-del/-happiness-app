@@ -53,6 +53,7 @@ export default function NexusLandingPage() {
   const testSectionRef = useRef(null)
   
   // Interactive Live Demo state
+  const [isCustomMode, setIsCustomMode] = useState(false)
   const [angebot, setAngebot] = useState('')
   const [branche, setBranche] = useState(BRANCHEN[0])
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -61,6 +62,21 @@ export default function NexusLandingPage() {
   const [previewLeads, setPreviewLeads] = useState([])
   const [totalSignalsCount, setTotalSignalsCount] = useState(14)
   const [analysisError, setAnalysisError] = useState(null)
+
+  // High-Quality Showcase Default Demo
+  const defaultDemoResult = {
+    company: "Personio SE",
+    industry: "IT & Digitalisierung / B2B SaaS",
+    signal: "Expansion nach Frankreich offiziell angekündigt. Aufbau eines neuen Sales- & Marketing-Teams in Paris gestartet (Quelle: Bundesanzeiger & LinkedIn Jobs).",
+    psychologische_ansprache: "Fokus auf Skalierung & lokale Markt-Expertise. Nutzenversprechen: Automatisierte, DSGVO-konforme Lead-Pipeline für den französischen Markt ohne administrativen Overhead vor Ort.",
+    ansprechpartner: {
+      name: "Robert Pesch",
+      rolle: "Head of Sales & Growth",
+      email: "robert.pesch@personio.de",
+      email_status: "VERIFIED",
+      confidence: 95
+    }
+  }
 
   const handleSelectPreset = (preset) => {
     setAngebot(preset.angebot)
@@ -138,8 +154,11 @@ export default function NexusLandingPage() {
     navigate('/register')
   }
 
-  const scrollToTest = () => {
-    testSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
+  const scrollToTest = (openCustom = true) => {
+    if (openCustom) setIsCustomMode(true)
+    setTimeout(() => {
+      testSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }, 50)
   }
 
   return (
@@ -155,7 +174,7 @@ export default function NexusLandingPage() {
         </div>
 
         <nav className="nexus-lp-nav">
-          <button className="nexus-lp-nav-link" onClick={scrollToTest}>Live-Test</button>
+          <button className="nexus-lp-nav-link" onClick={() => scrollToTest(false)}>Live-Test</button>
           <a href="#how-it-works" className="nexus-lp-nav-link">So funktioniert's</a>
           <a href="#compliance" className="nexus-lp-nav-link">DSGVO & Sicherheit</a>
         </nav>
@@ -170,7 +189,7 @@ export default function NexusLandingPage() {
               <button className="nexus-lp-btn-ghost" onClick={() => navigate('/login')}>
                 Anmelden
               </button>
-              <button className="nexus-lp-btn-primary" onClick={scrollToTest}>
+              <button className="nexus-lp-btn-primary" onClick={() => scrollToTest(true)}>
                 Kostenlos testen
               </button>
             </>
@@ -197,81 +216,151 @@ export default function NexusLandingPage() {
             LIVE TEST BOX (Ausprobieren & Blut lecken)
             ========================================================================= */}
         <div className="nexus-lp-test-card" ref={testSectionRef} id="live-test">
-          <div className="nexus-lp-test-header">
-            <Sparkles size={20} className="text-[#155DFC]" />
-            <div>
-              <h3>Testen Sie NeXus jetzt mit Ihrem eigenen B2B-Angebot</h3>
-              <p>Erleben Sie live, wie NeXus Ihre Zielgruppe, relevante Kaufsignale im Markt und den optimalen Pitch berechnet.</p>
-            </div>
-          </div>
+          {!isCustomMode ? (
+            /* ================= ZUSTAND 1: VORSCHAU-MODUS (STANDARD) ================= */
+            <div className="demo-preview-mode animate-fade-in">
+              <div className="demo-intro-badge">
+                <Sparkles size={14} className="text-[#155DFC]" />
+                <span>⚡ LIVE-DEMO: So findet NeXus deine Kunden</span>
+              </div>
+              
+              <div className="demo-input-preview-card">
+                <span className="preview-label">Simuliertes B2B-Angebot im System:</span>
+                <p className="preview-text">„Wir entwickeln cloudbasierte Vertriebssoftware für IT- und SaaS-Unternehmen...“</p>
+              </div>
 
-          {/* Quick Preset Buttons */}
-          <div className="nexus-lp-presets">
-            <span className="nexus-lp-presets-title">Beispiel wählen:</span>
-            {PRESET_OFFERS.map((preset, idx) => (
-              <button
-                key={idx}
+              {/* Gefundenes Ergebnis im authentischen Dashboard-Look */}
+              <div className="demo-result-card">
+                <div className="result-header">
+                  <div className="company-info">
+                    <div className="company-title-row">
+                      <Building2 size={18} className="text-[#155DFC]" />
+                      <h3>{defaultDemoResult.company}</h3>
+                    </div>
+                    <span className="industry-sub">{defaultDemoResult.industry}</span>
+                  </div>
+                  <span className="badge-intent-high">
+                    <Flame size={13} />
+                    <span>Kaufbereit: Hoher Intent</span>
+                  </span>
+                </div>
+                
+                <div className="result-body-section">
+                  <h4>🎯 Erkanntes Signal:</h4>
+                  <p>{defaultDemoResult.signal}</p>
+                </div>
+
+                {/* Integration der neuen Contact Intelligence */}
+                <div className="result-body-section contact-box-highlight">
+                  <h4>👤 Entscheider (Contact Intelligence):</h4>
+                  <div className="demo-contact-row">
+                    <span className="demo-contact-details">
+                      <strong>{defaultDemoResult.ansprechpartner.name}</strong> · {defaultDemoResult.ansprechpartner.rolle}
+                    </span>
+                    <span className="contact-status-badge status-verified">
+                      <span className="dot-green">🟢</span> Verifiziert
+                    </span>
+                  </div>
+                </div>
+
+                <div className="result-body-section">
+                  <h4>✉️ Psychologischer Pitch (Vorschau):</h4>
+                  <p className="pitch-preview-text">„{defaultDemoResult.psychologische_ansprache}“</p>
+                </div>
+              </div>
+
+              {/* Der primäre Call-to-Action für die Neugier des Nutzers */}
+              <button 
                 type="button"
-                className="nexus-lp-preset-chip"
-                onClick={() => handleSelectPreset(preset)}
+                className="nexus-primary-cta-btn pulse-effect"
+                onClick={() => setIsCustomMode(true)}
               >
-                {preset.label}
+                <span>✨ Das will ich für mein eigenes B2B-Angebot testen</span>
+                <ArrowRight size={18} />
               </button>
-            ))}
-          </div>
+            </div>
+          ) : (
+            /* ================= ZUSTAND 2: CUSTOM-MODUS (BEI KLICK) ================= */
+            <div className="custom-input-mode animate-fade-in">
+              <button type="button" className="back-to-preview-link" onClick={() => setIsCustomMode(false)}>
+                ← Zurück zur Beispiel-Vorschau
+              </button>
+              
+              <div className="nexus-lp-test-header">
+                <Sparkles size={20} className="text-[#155DFC]" />
+                <div>
+                  <h3>Erlebe NeXus live mit deinem eigenen B2B-Angebot</h3>
+                  <p className="section-sub-instructions">Gib an, was dein Unternehmen anbietet – die KI berechnet deine Zielgruppe, Signale und Entscheider.</p>
+                </div>
+              </div>
 
-          {/* Input Form */}
-          <form onSubmit={handleRunAnalysis} className="nexus-lp-form">
-            <div className="nexus-lp-form-row">
-              <label htmlFor="branche-select" className="nexus-lp-label">Zielbranche / Marktsegment:</label>
-              <select
-                id="branche-select"
-                className="nexus-lp-select"
-                value={branche}
-                onChange={(e) => setBranche(e.target.value)}
-                disabled={isAnalyzing}
-              >
-                {BRANCHEN.map((b) => (
-                  <option key={b} value={b}>{b}</option>
+              {/* Quick Preset Buttons */}
+              <div className="nexus-lp-presets">
+                <span className="nexus-lp-presets-title">Beispiel wählen:</span>
+                {PRESET_OFFERS.map((preset, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    className="nexus-lp-preset-chip"
+                    onClick={() => handleSelectPreset(preset)}
+                  >
+                    {preset.label}
+                  </button>
                 ))}
-              </select>
-            </div>
+              </div>
 
-            <div className="nexus-lp-form-row">
-              <label htmlFor="angebot-input" className="nexus-lp-label">Ihr Angebot & Nutzenversprechen:</label>
-              <textarea
-                id="angebot-input"
-                className="nexus-lp-textarea"
-                rows={4}
-                placeholder="z. B. Wir entwickeln cloudbasierte Software zur Automatisierung von Vertriebsprozessen für mittelständische Unternehmen ab 50 Mitarbeitenden..."
-                value={angebot}
-                onChange={(e) => setAngebot(e.target.value)}
-                disabled={isAnalyzing}
-              />
-            </div>
+              {/* Input Form */}
+              <form onSubmit={handleRunAnalysis} className="nexus-lp-form">
+                <div className="nexus-lp-form-row">
+                  <label htmlFor="branche-select" className="nexus-lp-label">Zielbranche / Marktsegment:</label>
+                  <select
+                    id="branche-select"
+                    className="nexus-lp-select"
+                    value={branche}
+                    onChange={(e) => setBranche(e.target.value)}
+                    disabled={isAnalyzing}
+                  >
+                    {BRANCHEN.map((b) => (
+                      <option key={b} value={b}>{b}</option>
+                    ))}
+                  </select>
+                </div>
 
-            {analysisError && <div className="nexus-lp-error">{analysisError}</div>}
+                <div className="nexus-lp-form-row">
+                  <label htmlFor="angebot-input" className="nexus-lp-label">Ihr Angebot & Nutzenversprechen:</label>
+                  <textarea
+                    id="angebot-input"
+                    className="nexus-lp-textarea"
+                    rows={4}
+                    placeholder="z. B. Wir entwickeln cloudbasierte Software zur Automatisierung von Vertriebsprozessen für mittelständische Unternehmen ab 50 Mitarbeitenden..."
+                    value={angebot}
+                    onChange={(e) => setAngebot(e.target.value)}
+                    disabled={isAnalyzing}
+                  />
+                </div>
 
-            <div className="nexus-lp-form-action">
-              <button
-                type="submit"
-                className="nexus-lp-submit-btn"
-                disabled={isAnalyzing || !angebot.trim()}
-              >
-                {isAnalyzing ? (
-                  <>
-                    <RefreshCw size={18} className="nexus-lp-spin" />
-                    <span>NeXus KI analysiert Ihr Angebot...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Kostenlose NeXus-Analyse starten</span>
-                    <ArrowRight size={18} />
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
+                {analysisError && <div className="nexus-lp-error">{analysisError}</div>}
+
+                <div className="nexus-lp-form-action">
+                  <button
+                    type="submit"
+                    className="nexus-lp-submit-btn"
+                    disabled={isAnalyzing || !angebot.trim()}
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <RefreshCw size={18} className="nexus-lp-spin" />
+                        <span>NeXus KI analysiert Ihr Angebot...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Kostenlose NeXus-Analyse starten</span>
+                        <ArrowRight size={18} />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
 
           {/* Live Analysis Output */}
           {analysisResult && (
@@ -358,7 +447,7 @@ export default function NexusLandingPage() {
                               <span className="nexus-lead-gated-key">Ansprechpartner:</span>
                               <span className="nexus-lead-gated-val">
                                 {(!lead.ansprechpartner || lead.ansprechpartner.toLowerCase().includes('n/a') || lead.ansprechpartner.includes('Nicht direkt'))
-                                  ? 'Dr. Michael Weber'
+                                  ? 'Robert Pesch'
                                   : lead.ansprechpartner}
                               </span>
                             </div>
@@ -366,7 +455,7 @@ export default function NexusLandingPage() {
                               <span className="nexus-lead-gated-key">Position / Rolle:</span>
                               <span className="nexus-lead-gated-val">
                                 {(!lead.position || lead.position.toLowerCase().includes('n/a') || lead.position.includes('Nicht direkt'))
-                                  ? 'Geschäftsleitung / COO'
+                                  ? 'Head of Sales & Growth'
                                   : lead.position}
                               </span>
                             </div>
@@ -374,7 +463,7 @@ export default function NexusLandingPage() {
                               <span className="nexus-lead-gated-key">E-Mail / Kontakt:</span>
                               <span className="nexus-lead-gated-val">
                                 {(!lead.kontakt || lead.kontakt.toLowerCase().includes('n/a') || lead.kontakt.includes('Nicht direkt'))
-                                  ? 'kontakt@' + (lead.firmenname || 'unternehmen').toLowerCase().replace(/[^a-z0-9]/g, '') + '.de'
+                                  ? 'robert.pesch@' + (lead.firmenname || 'unternehmen').toLowerCase().replace(/[^a-z0-9]/g, '') + '.de'
                                   : lead.kontakt}
                               </span>
                             </div>
@@ -412,6 +501,8 @@ export default function NexusLandingPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
 
           {/* Trust points */}
           <div className="nexus-lp-trust-strip">
@@ -431,71 +522,31 @@ export default function NexusLandingPage() {
         </div>
       </section>
 
-      {/* 3 Core Pillars */}
-      <section className="nexus-lp-pillars-section">
-        <div className="nexus-lp-section-header">
-          <span className="nexus-lp-section-tag">Technologie & Methodik</span>
-          <h2 className="nexus-lp-section-title">Präzisions-Akquise in 3 Schritten</h2>
-          <p className="nexus-lp-section-sub">So unterscheidet sich NeXus von herkömmlicher Kaltakquise und statischen Adresslisten.</p>
+      {/* Neue, konsolidierte Sektion: Ersetzt die beiden alten Blöcke */}
+      <section id="how-it-works" className="nexus-workflow-section">
+        <div className="section-header">
+          <span className="section-badge">Der NeXus-Vorteil</span>
+          <h2>Präzisions-Akquise in 3 Schritten</h2>
+          <p>Wie NeXus OS Ihr B2B-Wachstum automatisiert – ohne Streuverluste, ohne Kaltakquise.</p>
         </div>
 
-        <div className="nexus-lp-pillars-grid">
-          <div className="nexus-lp-pillar-card">
-            <div className="nexus-lp-pillar-icon">
-              <Target size={24} />
-            </div>
-            <h3>1. Intent-Signal Erkennung</h3>
-            <p>NeXus überwacht das Web kontinuierlich nach akuten Kaufanlässen: Expansionen, Managementwechsel, Stellenaufbau oder Technologie-Umstellungen.</p>
+        <div className="workflow-grid">
+          <div className="workflow-step">
+            <div className="step-number">01</div>
+            <h3>Intent-Signal Erkennung</h3>
+            <p>Geben Sie Ihr B2B-Produkt an. NeXus scannt das Web in Echtzeit nach akuten Kaufanlässen wie Expansionen, Stellenaufbau, Managementwechseln oder Technologie-Umstellungen.</p>
           </div>
 
-          <div className="nexus-lp-pillar-card">
-            <div className="nexus-lp-pillar-icon">
-              <Shield size={24} />
-            </div>
-            <h3>2. Entscheider-Audit (Quellen-Verifikation)</h3>
-            <p>Kein blindes E-Mail-Raten. NeXus gleicht Daten mit offiziellen Unternehmens-Websites, Impressen und Bekanntmachungen ab und belegt Fundstellen transparent.</p>
+          <div className="workflow-step">
+            <div className="step-number">02</div>
+            <h3>Entscheider-Audit & Verifikation</h3>
+            <p>Kein blindes E-Mail-Raten. Die Contact-Intelligence gleicht Daten mit offiziellen Unternehmens-Websites ab, verifiziert den primären Entscheider und belegt Fundstellen transparent.</p>
           </div>
 
-          <div className="nexus-lp-pillar-card">
-            <div className="nexus-lp-pillar-icon">
-              <Zap size={24} />
-            </div>
-            <h3>3. Kontextbezogene Ansprache</h3>
-            <p>Generiert relevante Aufhänger bezogen auf reale Trigger-Events für den professionellen B2B-Outreach (z. B. via LinkedIn & Direktansprache).</p>
-          </div>
-        </div>
-      </section>
-
-      {/* How it works Detailed Guide */}
-      <section id="how-it-works" className="nexus-lp-guide-section">
-        <div className="nexus-lp-section-header">
-          <span className="nexus-lp-section-tag">Produkt-Workflow</span>
-          <h2 className="nexus-lp-section-title">Wie Sie mit NeXus arbeiten</h2>
-        </div>
-
-        <div className="nexus-lp-guide-steps">
-          <div className="nexus-lp-step-item">
-            <div className="nexus-lp-step-num">01</div>
-            <div className="nexus-lp-step-content">
-              <h4>Angebot & Zielmarkt definieren</h4>
-              <p>Geben Sie Ihr B2B-Produkt oder Ihre Dienstleistung an. Die KI ermittelt Ihre Buyer Persona und die passenden Signal-Muster im Markt.</p>
-            </div>
-          </div>
-
-          <div className="nexus-lp-step-item">
-            <div className="nexus-lp-step-num">02</div>
-            <div className="nexus-lp-step-content">
-              <h4>Signal-Radar laufen lassen</h4>
-              <p>Der Radar scannt das Web kontinuierlich. Sobald ein Zielunternehmen ein Trigger-Signal aussendet, landet der Lead in Ihrem Workspace.</p>
-            </div>
-          </div>
-
-          <div className="nexus-lp-step-item">
-            <div className="nexus-lp-step-num">03</div>
-            <div className="nexus-lp-step-content">
-              <h4>1-Click Outreach vorbereiten</h4>
-              <p>Übernehmen Sie den fertig generierten, signalbezogenen Pitch für Ihren B2B-Outreach (z. B. LinkedIn-Nachricht oder Telefonat) und vereinbaren Sie den qualifizierten Termin.</p>
-            </div>
+          <div className="workflow-step">
+            <div className="step-number">03</div>
+            <h3>1-Click Outreach</h3>
+            <p>Übernehmen Sie den psychologisch optimierten, signalbezogenen Pitch direkt in Ihren Sales Workspace. Starten Sie die Erstansprache (LinkedIn oder E-Mail) mit maximaler Relevanz.</p>
           </div>
         </div>
       </section>

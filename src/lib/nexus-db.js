@@ -356,7 +356,18 @@ export async function getOpportunityContext(id) {
   return data;
 }
 
-export async function saveOpportunityContact(userId, companyId, opportunityId, contactName, contactRole, source = 'tavily', confidence = 0) {
+export async function saveOpportunityContact(
+  userId, 
+  companyId, 
+  opportunityId, 
+  contactName, 
+  contactRole, 
+  source = 'tavily', 
+  confidence = 0,
+  email = null,
+  emailStatus = 'UNKNOWN',
+  sourceUrl = null
+) {
   // Split name into first_name + last_name
   const nameParts = (contactName || '').trim().split(/\s+/);
   const firstName = nameParts[0] || '';
@@ -365,7 +376,18 @@ export async function saveOpportunityContact(userId, companyId, opportunityId, c
   // 1. Insert into nexus_contacts
   const { data: contact, error: err1 } = await supabase
     .from('nexus_contacts')
-    .insert({ user_id: userId, company_id: companyId, first_name: firstName, last_name: lastName, role: contactRole })
+    .insert({ 
+      user_id: userId, 
+      company_id: companyId, 
+      first_name: firstName, 
+      last_name: lastName, 
+      role: contactRole,
+      email: email,
+      email_confidence: confidence,
+      email_source: source,
+      source_url: sourceUrl,
+      updated_at: new Date().toISOString()
+    })
     .select()
     .single();
   

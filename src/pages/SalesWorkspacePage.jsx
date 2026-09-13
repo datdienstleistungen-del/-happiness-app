@@ -18,17 +18,25 @@ const MODI = [
   { id: 'forum_response', label: 'Forum-Antwort', icon: Phone, description: 'Auf Forenbeiträge antworten' }
 ]
 
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 export default function SalesWorkspacePage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const oppIdFromUrl = searchParams.get('opportunityId')
   const { t, lang } = useLanguage()
   const { user } = useAuth()
   const { opportunities, triggers, deleteOpportunity } = useLead()
   
   const [selectedMode, setSelectedMode] = useState('sales_pitch')
-  const [activeOppId, setActiveOppId] = useState(null)
+  const [activeOppId, setActiveOppId] = useState(oppIdFromUrl || null)
   const [activeTab, setActiveTab] = useState('aktion') // 'historie', 'aktion', 'intelligence'
+
+  useEffect(() => {
+    if (oppIdFromUrl && oppIdFromUrl !== activeOppId) {
+      setActiveOppId(oppIdFromUrl)
+    }
+  }, [oppIdFromUrl])
   const [historyItems, setHistoryItems] = useState([])
   const [showCoach, setShowCoach] = useState(false)
   const [activeOpp, setActiveOpp] = useState(null)
