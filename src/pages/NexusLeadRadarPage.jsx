@@ -425,11 +425,11 @@ export default function NexusLeadRadarPage() {
     <div className="lead-radar-page">
       <header className="page-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
         <button 
-          className="btn-secondary" 
+          className="btn-back-link" 
           onClick={() => navigate('/nexus/dashboard')}
           style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', fontSize: '0.9rem' }}
         >
-          <ArrowRight size={14} style={{ transform: 'rotate(180deg)' }} /> Zurück zum Dashboard
+          <ArrowRight size={14} style={{ transform: 'rotate(180deg)' }} /> {t('nexus.backToDashboard', 'Zurück zum Dashboard')}
         </button>
         <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
           <div className="header-title" style={{ margin: 0 }}>
@@ -443,7 +443,7 @@ export default function NexusLeadRadarPage() {
             </p>
           </div>
           <button className="btn-primary" onClick={() => setWizardOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Sparkles size={16} /> Setup-Assistent
+            <Sparkles size={16} /> {t('nexus.setupAssistant', 'Setup-Assistent')}
           </button>
         </div>
       </header>
@@ -493,15 +493,15 @@ export default function NexusLeadRadarPage() {
       {/* Empty State (0 Results) */}
       {triggers.length === 0 && !loading && !error && activeOffering && (
         <div className="lead-radar-empty" style={{ textAlign: 'center', padding: '40px', background: 'var(--bg-secondary)', borderRadius: '12px', marginTop: '20px' }}>
-          <h3>Keine aktuellen Signale gefunden</h3>
-          <p>Für dein Angebot "{activeOffering?.offering_name}" gab es in den letzten 14 Tagen keine relevanten News-Artikel.</p>
+          <h3>{t('nexus.noCurrentSignals', 'Keine aktuellen Signale gefunden')}</h3>
+          <p>{t('nexus.noCurrentSignalsDesc', 'Für dein Angebot gab es in den letzten 14 Tagen keine relevanten News-Artikel.')}</p>
           <button 
             className="btn-primary" 
             style={{ marginTop: '15px' }}
             onClick={() => { setError(null); generateTriggersFromOffering(activeOffering) }}
           >
             <RefreshCw size={14} style={{ marginRight: '8px' }} />
-            Nochmal scannen
+            {t('nexus.rescan', 'Nochmal scannen')}
           </button>
         </div>
       )}
@@ -518,34 +518,44 @@ export default function NexusLeadRadarPage() {
                 <div className="trigger-significance" style={{ 
                   background: trigger.prioritaet === 1 ? '#EF444420' : trigger.prioritaet === 2 ? '#F59E0B20' : '#3B82F620',
                   color: trigger.prioritaet === 1 ? '#EF4444' : trigger.prioritaet === 2 ? '#F59E0B' : '#3B82F6',
-                  fontSize: '1.2rem',
-                  fontWeight: 'bold'
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  display: 'inline-block',
+                  marginBottom: '8px'
                 }}>
-                  #{trigger.prioritaet}
+                  {trigger.prioritaet === 1 ? '🔥 HOHE PRIORITÄT' : trigger.prioritaet === 2 ? '⚡ MITTLERE PRIORITÄT' : 'ℹ️ NIEDRIGE PRIORITÄT'}
                 </div>
-                <div className="trigger-content">
-                  <h3>{trigger.company}</h3>
-                  {trigger.bewertung && (
-                    <div style={{ marginBottom: '12px', padding: '8px', background: 'var(--bg-secondary)', borderRadius: '6px', borderLeft: trigger.prioritaet === 1 ? '3px solid #EF4444' : '3px solid #3B82F6' }}>
-                      <strong style={{ display: 'block', marginBottom: '4px', fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Bewertung</strong>
-                      <p style={{ margin: 0, fontSize: '0.9rem' }}>{trigger.bewertung}</p>
-                    </div>
-                  )}
-                  {trigger.psychologische_ansprache && (
-                    <div style={{ marginBottom: '12px', padding: '8px', background: '#10B98110', borderRadius: '6px', borderLeft: '3px solid #10B981' }}>
-                      <strong style={{ display: 'block', marginBottom: '4px', fontSize: '0.8rem', textTransform: 'uppercase', color: '#10B981' }}>Psychologische Ansprache</strong>
-                      <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{trigger.psychologische_ansprache}</p>
-                    </div>
-                  )}
-                  <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}><strong>Signal:</strong> {trigger.signal}</p>
+                <h3 className="trigger-company">{trigger.company}</h3>
+                
+                {trigger.bewertung && (
+                  <p className="trigger-rating" style={{ fontStyle: 'italic', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                    "{trigger.bewertung}"
+                  </p>
+                )}
 
-                  {/* Contact Intelligence Block */}
-                  <div className="trigger-contact-section">
-                    <div className="trigger-contact-header">
+                <div className="trigger-body">
+                  <p className="trigger-desc">{trigger.signal}</p>
+                  
+                  {trigger.psychologische_ansprache && (
+                    <div className="trigger-strategy" style={{ background: 'var(--bg-elevated)', padding: '10px', borderRadius: '8px', marginTop: '10px' }}>
+                      <strong style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--color-koralle)' }}>
+                        <Sparkles size={14} /> {t('nexus.psychologyPitch', 'Psychologischer Hebel:')}
+                      </strong>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '0.9rem' }}>{trigger.psychologische_ansprache}</p>
+                    </div>
+                  )}
+
+                  {/* Echte Ansprechpartner / Kontakt-Intelligence Box */}
+                  <div className="trigger-contact-box">
+                    <div className="trigger-contact-main">
                       <div className="trigger-contact-person">
-                        <User size={15} className="contact-icon" />
+                        <div className="contact-avatar-icon">
+                          <User size={15} />
+                        </div>
                         {trigger.ansprechpartner?.name ? (
-                          <div className="contact-details">
+                          <div className="contact-name-role">
                             <span className="contact-name">{trigger.ansprechpartner.name}</span>
                             {trigger.ansprechpartner.rolle && (
                               <span className="contact-role" title={trigger.ansprechpartner.rolle}>
@@ -554,7 +564,7 @@ export default function NexusLeadRadarPage() {
                             )}
                           </div>
                         ) : (
-                          <span className="contact-empty">Kein Ansprechpartner zugeordnet</span>
+                          <span className="contact-empty">{t('nexus.noContactAssigned', 'Kein Ansprechpartner zugeordnet')}</span>
                         )}
                       </div>
 
@@ -575,12 +585,12 @@ export default function NexusLeadRadarPage() {
                             type="button"
                             className="contact-copy-email-btn"
                             onClick={() => copyToClipboard(trigger.ansprechpartner.email)}
-                            title="In Zwischenablage kopieren"
+                            title={t('nexus.wsClipboard', 'In Zwischenablage kopieren')}
                           >
                             <Mail size={13} />
                             <span>{trigger.ansprechpartner.email}</span>
                             {copiedEmail === trigger.ansprechpartner.email ? (
-                              <span className="copy-badge">Kopiert!</span>
+                              <span className="copy-badge">{t('nexus.wsBtnCopied', 'Kopiert!')}</span>
                             ) : (
                               <Copy size={12} className="copy-icon" />
                             )}
@@ -596,12 +606,12 @@ export default function NexusLeadRadarPage() {
                           {isLoadingContact[trigger.company] ? (
                             <>
                               <RefreshCw size={13} className="spin" />
-                              <span>Recherchiere Website & Impressum...</span>
+                              <span>{t('nexus.radar.researchingWeb', 'Recherchiere Website & Impressum...')}</span>
                             </>
                           ) : (
                             <>
                               <Search size={13} />
-                              <span>Ansprechpartner & E-Mail ermitteln</span>
+                              <span>{t('nexus.radar.fetchContact', 'Ansprechpartner & E-Mail ermitteln')}</span>
                             </>
                           )}
                         </button>
@@ -614,7 +624,7 @@ export default function NexusLeadRadarPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
                       <button className="action-btn action-btn-primary" style={{ background: '#10B981', borderColor: '#10B981', cursor: 'default' }} disabled>
                         <CheckCircle size={16} />
-                        Übernommen
+                        {t('nexus.radar.saved', 'Übernommen')}
                       </button>
                       <button 
                         type="button"
@@ -625,7 +635,7 @@ export default function NexusLeadRadarPage() {
                           navigate(oppId ? `/nexus/workspace?opportunityId=${oppId}` : '/nexus/workspace')
                         }}
                       >
-                        <span>Im Sales Workspace öffnen</span>
+                        <span>{t('nexus.radar.openWorkspace', 'Im Sales Workspace öffnen')}</span>
                         <ArrowRight size={14} />
                       </button>
                     </div>
@@ -640,7 +650,7 @@ export default function NexusLeadRadarPage() {
                       event: `Priorität: ${trigger.prioritaet}\n\nBewertung: ${trigger.bewertung}\n\nSignal: ${trigger.signal}\n\nPsychologie: ${trigger.psychologische_ansprache}`
                     })}>
                       <ArrowRight size={16} />
-                      In Pipeline übernehmen
+                      {t('nexus.radar.saveToPipeline', 'In Pipeline übernehmen')}
                     </button>
                   )}
                 </div>

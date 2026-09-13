@@ -62,10 +62,10 @@ export default function SignalStrategiesManager({ offering }) {
         <div>
           <h3 style={{ margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Globe size={20} color="var(--color-brand)" />
-            Signal Strategies Engine
+            {t('nexus.offeringAnalysis.strategyEngineTitle', 'Signal Strategies Engine')}
           </h3>
           <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-            Die KI analysiert dein Angebot und generiert maßgeschneiderte Suchstrategien für deine Zielmärkte ({offering.target_markets?.join(', ') || 'Global'}).
+            {t('nexus.offeringAnalysis.strategyEngineDesc', 'Die KI analysiert dein Angebot und generiert maßgeschneiderte Suchstrategien für deine Zielmärkte.')} ({offering.target_markets?.join(', ') || 'Global'}).
           </p>
         </div>
         <button 
@@ -75,7 +75,7 @@ export default function SignalStrategiesManager({ offering }) {
           style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
         >
           {generating ? <Loader2 size={16} className="spin" /> : <Zap size={16} />}
-          {generating ? 'Generiere...' : (strategies.length > 0 ? 'Neu generieren' : 'Strategien generieren')}
+          {generating ? t('nexus.offeringAnalysis.btnGeneratingStrategies', 'Generiere...') : (strategies.length > 0 ? t('nexus.offeringAnalysis.btnRegenerateStrategies', 'Neu generieren') : t('nexus.offeringAnalysis.btnGenerateStrategies', 'Strategien generieren'))}
         </button>
       </div>
 
@@ -94,9 +94,9 @@ export default function SignalStrategiesManager({ offering }) {
       {!loading && strategies.length === 0 && !generating && (
         <div style={{ textAlign: 'center', padding: '32px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px dashed var(--border-light)' }}>
           <FileText size={32} color="var(--text-tertiary)" style={{ marginBottom: '12px' }} />
-          <h4 style={{ margin: '0 0 8px 0' }}>Noch keine Signalstrategien</h4>
+          <h4 style={{ margin: '0 0 8px 0' }}>{t('nexus.offeringAnalysis.noStrategiesYet', 'Noch keine Signalstrategien')}</h4>
           <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Klicke auf "Strategien generieren", um die NeXus Intelligence Engine zu starten.
+            {t('nexus.offeringAnalysis.noStrategiesDesc', 'Klicke auf "Strategien generieren", um die NeXus Intelligence Engine zu starten.')}
           </p>
         </div>
       )}

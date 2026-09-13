@@ -51,24 +51,24 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
   }
 
   const nexusLinks = [
-    { to: '/nexus/dashboard', icon: LayoutDashboard, label: 'NeXus Dashboard' },
-    { to: '/nexus/angebotsanalyse', icon: Target, label: 'Angebotsanalyse' },
-    { to: '/nexus/lead-radar', icon: Radar, label: 'Lead Radar' },
-    { to: '/nexus/sales-workspace', icon: Briefcase, label: 'Sales Workspace' },
+    { to: '/nexus/dashboard', icon: LayoutDashboard, label: t('nexus.nav.dashboard', 'NeXus Dashboard') },
+    { to: '/nexus/angebotsanalyse', icon: Target, label: t('nexus.nav.offeringAnalysis', 'Angebotsanalyse') },
+    { to: '/nexus/lead-radar', icon: Radar, label: t('nexus.nav.leadRadar', 'Lead Radar') },
+    { to: '/nexus/sales-workspace', icon: Briefcase, label: t('nexus.nav.salesWorkspace', 'Sales Workspace') },
   ]
 
   const coachLinks = [
-    { to: '/coach', icon: Heart, label: 'Coach' },
+    { to: '/coach', icon: Heart, label: t('nexus.nav.coach', 'Coach') },
   ]
 
   const contentLinks = [
-    { to: '/video-finder', icon: Search, label: 'Video Finder' },
-    { to: '/video-script', icon: Video, label: 'Video Script', badge: 'NEU' },
-    { to: '/capcut-studio', icon: Film, label: 'CapCut Studio' },
+    { to: '/video-finder', icon: Search, label: t('nexus.nav.videoFinder', 'Video Finder') },
+    { to: '/video-script', icon: Video, label: t('nexus.nav.videoScript', 'Video Script'), badge: 'NEU' },
+    { to: '/capcut-studio', icon: Film, label: t('nexus.nav.capcutStudio', 'CapCut Studio') },
   ]
 
   const accountLinks = [
-    { to: '/wissenschaft', icon: BookOpen, label: 'Vertriebspsychologie' },
+    { to: '/wissenschaft', icon: BookOpen, label: t('nexus.nav.psychology', 'Vertriebspsychologie') },
   ]
 
   if (profile?.role === 'admin') {
@@ -103,7 +103,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
                 cursor: 'help'
               }}
             >
-              {t('newFeatures.new')}
+              {t('newFeatures.new', 'NEU')}
             </span>
           )}
         </span>
@@ -134,7 +134,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
       <nav className="sidebar-nav">
         {!collapsed && (
           <div className="sidebar-section-title" style={{ color: 'var(--color-koralle)', fontWeight: '700' }}>
-            NeXus
+            {t('nexus.nav.nexus', 'NeXus')}
           </div>
         )}
         {renderLinks(nexusLinks)}
@@ -142,7 +142,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
         <div className="sidebar-divider"></div>
         {!collapsed && (
           <div className="sidebar-section-title">
-            {lang === 'es' ? 'Asistente' : lang === 'nl' ? 'Assistent' : lang === 'fr' ? 'Assistant' : lang === 'it' ? 'Assistente' : lang === 'el' ? 'Βοηθός' : lang === 'en' ? 'Assistant' : 'Assistent'}
+            {t('nexus.nav.assistant', 'Assistent')}
           </div>
         )}
         {renderLinks(coachLinks)}
@@ -150,7 +150,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
         <div className="sidebar-divider"></div>
         {!collapsed && (
           <div className="sidebar-section-title" style={{ display: 'flex', alignItems: 'center' }}>
-            Video Intelligence
+            {t('nexus.nav.videoIntelligence', 'Video Intelligence')}
           </div>
         )}
         {renderLinks(contentLinks)}
@@ -158,7 +158,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
         <div className="sidebar-divider"></div>
         {!collapsed && (
           <div className="sidebar-section-title">
-            Wissen
+            {t('nexus.nav.knowledge', 'Wissen')}
           </div>
         )}
         {renderLinks(accountLinks)}
@@ -193,7 +193,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
               {!collapsed && (
                 <div className="sidebar-user-info">
                   <div className="sidebar-user-name">{profile?.name || user?.email}</div>
-                  <button className="sidebar-logout" onClick={handleSignOut}>{t('nav.logout')}</button>
+                  <button className="sidebar-logout" onClick={handleSignOut}>{t('nav.logout', 'Abmelden')}</button>
                 </div>
               )}
             </>
@@ -205,7 +205,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
               {!collapsed && (
                 <div className="sidebar-user-info">
                   <div className="sidebar-user-name">
-                    {lang === 'es' ? 'Modo Invitado' : lang === 'nl' ? 'Gastmodus' : lang === 'fr' ? 'Mode Invité' : lang === 'it' ? 'Modalità Ospite' : lang === 'el' ? 'Λειτουργία Επισκέπτη' : lang === 'en' ? 'Guest Mode' : 'Gast-Modus'}
+                    {t('nexus.nav.guestMode', 'Gast-Modus')}
                   </div>
                   <button className="sidebar-logout" onClick={() => navigate('/login')} style={{ color: 'var(--color-koralle, #d85a30)', fontWeight: 'bold' }}>{t('auth.login')}</button>
                 </div>

@@ -20,13 +20,6 @@ function getOrCreateVisitorId() {
   return vid
 }
 
-const SALES_QUICK_ACTIONS = [
-  { id: 'pitch', label: 'Sales Pitch erstellen', icon: MessageSquare, placeholder: 'Beschreibe dein Angebot und deine Zielgruppe...' },
-  { id: 'einwand', label: 'Einwand behandeln', icon: AlertCircle, placeholder: 'Was sagt der Kunde? z.B. "Ist zu teuer"...' },
-  { id: 'followup', label: 'Follow-Up Vorschlag', icon: TrendingUp, placeholder: 'Was war die letzte Aktion mit diesem Lead?' },
-  { id: 'analyse', label: 'Lead analysieren', icon: Users, placeholder: 'Firmenname, Branche, was weißt du über das Unternehmen?' },
-]
-
 export default function CoachChatPage({ embeddedLeadId, onClose }) {
   const { user } = useAuth()
   const { leadId: paramLeadId } = useParams()
@@ -36,6 +29,13 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
   // Hole alle Daten aus dem Context
   const { activeOffering, opportunities, triggers } = useLead()
   const { t, lang } = useLanguage()
+
+  const SALES_QUICK_ACTIONS = [
+    { id: 'pitch', label: t('nexus.coach.actionPitch', 'Sales Pitch erstellen'), icon: MessageSquare, placeholder: t('nexus.coach.phPitch', 'Beschreibe dein Angebot und deine Zielgruppe...') },
+    { id: 'einwand', label: t('nexus.coach.actionObjection', 'Einwand behandeln'), icon: AlertCircle, placeholder: t('nexus.coach.phObjection', 'Was sagt der Kunde? z.B. "Ist zu teuer"...') },
+    { id: 'followup', label: t('nexus.coach.actionFollowup', 'Follow-Up Vorschlag'), icon: TrendingUp, placeholder: t('nexus.coach.phFollowup', 'Was war die letzte Aktion mit diesem Lead?') },
+    { id: 'analyse', label: t('nexus.coach.actionAnalyze', 'Lead analysieren'), icon: Users, placeholder: t('nexus.coach.phAnalyze', 'Firmenname, Branche, was weißt du über das Unternehmen?') },
+  ]
   
   const [message, setMessage] = useState('')
   const [chatHistory, setChatHistory] = useState([])
@@ -209,10 +209,10 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
             <div className="nexus-coach-welcome-icon">
               <Target size={48} />
             </div>
-            <h2>{currentLead ? `Coach: ${currentLead.nexus_companies?.name || 'Lead'}` : 'Willkommen beim NeXus Sales Coach'}</h2>
+            <h2>{currentLead ? `Coach: ${currentLead.nexus_companies?.name || 'Lead'}` : t('nexus.coach.welcomeTitle', 'Willkommen beim NeXus Sales Coach')}</h2>
             <p>{currentLead 
-              ? `Ich helfe dir beim Verkauf an ${currentLead.nexus_companies?.name || 'diesen Lead'}. Wähle eine Aktion oder stelle mir eine Frage.`
-              : 'Ich helfe dir bei der Vertriebsoptimierung. Wähle eine Aktion oder stelle mir eine Frage.'
+              ? `${t('nexus.coach.helpPrefix', 'Ich helfe dir beim Verkauf an')} ${currentLead.nexus_companies?.name || 'diesen Lead'}. ${t('nexus.coach.chooseAction', 'Wähle eine Aktion oder stelle mir eine Frage.')}`
+              : t('nexus.coach.generalHelp', 'Ich helfe dir bei der Vertriebsoptimierung. Wähle eine Aktion oder stelle mir eine Frage.')
             }</p>
             
             {currentLead && (
@@ -225,7 +225,7 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
                 color: 'var(--text-secondary, #666)',
                 border: '1px solid var(--border-light, #e0e0e0)'
               }}>
-                <strong>Kontext:</strong> {currentLead.nexus_companies?.name || '?'} · {activeOffering?.offering_name || '?'}
+                <strong>{t('nexus.coach.context', 'Kontext')}:</strong> {currentLead.nexus_companies?.name || '?'} · {activeOffering?.offering_name || '?'}
                 {leadTriggers.length > 0 && ` · ${leadTriggers.length} Trigger`}
               </div>
             )}
@@ -287,7 +287,7 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
               onKeyDown={handleKeyDown}
               placeholder={activeQuickAction 
                 ? SALES_QUICK_ACTIONS.find(a => a.id === activeQuickAction)?.placeholder
-                : 'Stelle eine Vertriebsfrage... (Shift+Enter für neue Zeile)'}
+                : t('nexus.coach.inputPlaceholder', 'Stelle eine Vertriebsfrage... (Shift+Enter für neue Zeile)')}
               disabled={loading}
               rows={2}
               style={{ flex: 1, resize: 'vertical', minHeight: '44px', maxHeight: '150px', padding: '10px 14px', borderRadius: '8px', border: 'none', background: 'transparent', color: 'var(--text-primary)', fontSize: '0.95rem', outline: 'none' }}

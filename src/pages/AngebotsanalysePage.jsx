@@ -233,7 +233,7 @@ export default function AngebotsanalysePage() {
           onClick={() => navigate('/nexus/dashboard')}
         >
           <ArrowRight size={14} className="rotate-180" /> 
-          <span>{t('nexus.backToDashboard') || 'Zurück zum Dashboard'}</span>
+          <span>{t('nexus.backToDashboard', 'Zurück zum Dashboard')}</span>
         </button>
 
         <div className="header-title-box">
@@ -242,10 +242,10 @@ export default function AngebotsanalysePage() {
           </div>
           <div>
             <h1>
-              Mein Angebot <ContextHelpButton helpKey="offering.definition" />
+              {t('nexus.offeringAnalysis.headerTitle', 'Mein Angebot')} <ContextHelpButton helpKey="offering.definition" />
             </h1>
             <p className="header-subtitle">
-              Definiere dein zentrales Wertangebot. NeXus analysiert dein Angebot semantisch und aktiviert automatische Suchstrategien für den Lead Radar.
+              {t('nexus.offeringAnalysis.subtitle', 'Definiere dein zentrales Wertangebot. NeXus analysiert dein Angebot semantisch und aktiviert automatische Suchstrategien für den Lead Radar.')}
             </p>
           </div>
         </div>
@@ -273,8 +273,8 @@ export default function AngebotsanalysePage() {
           <div className="single-input-header">
             <Sparkles size={20} className="text-[#155DFC]" />
             <div>
-              <h2>Was bietest du an?</h2>
-              <p>Beschreibe dein Produkt oder deine Dienstleistung in 1–2 Sätzen. NeXus ermittelt Zielgruppe, Schmerzpunkte und Kaufauslöser automatisch.</p>
+              <h2>{t('nexus.offeringAnalysis.singleInputTitle', 'Was bietest du an?')}</h2>
+              <p>{t('nexus.offeringAnalysis.singleInputSubtitle', 'Beschreibe dein Produkt oder deine Dienstleistung in 1–2 Sätzen. NeXus ermittelt Zielgruppe, Schmerzpunkte und Kaufauslöser automatisch.')}</p>
             </div>
           </div>
 
@@ -283,7 +283,7 @@ export default function AngebotsanalysePage() {
               <textarea
                 className="single-input-textarea"
                 rows={3}
-                placeholder="z. B. Cloudbasierte CRM- und Vertriebssoftware für wachsende IT-Unternehmen..."
+                placeholder={t('nexus.offeringAnalysis.placeholder', 'z. B. Cloudbasierte CRM- und Vertriebssoftware für wachsende IT-Unternehmen...')}
                 value={angebotInput}
                 onChange={(e) => setAngebotInput(e.target.value)}
                 disabled={isAnalyzing}
@@ -292,7 +292,7 @@ export default function AngebotsanalysePage() {
 
               {/* Inspiration Chips */}
               <div className="preset-chips-row">
-                <span className="preset-label">Inspiration:</span>
+                <span className="preset-label">{t('nexus.offeringAnalysis.inspiration', 'Inspiration:')}</span>
                 {PRESET_IDEAS.map((preset, idx) => (
                   <button
                     key={idx}
@@ -316,12 +316,12 @@ export default function AngebotsanalysePage() {
                 {isAnalyzing ? (
                   <>
                     <RefreshCw size={16} className="spin" />
-                    <span>NeXus analysiert dein Angebot …</span>
+                    <span>{t('nexus.offeringAnalysis.btnAnalyzing', 'NeXus analysiert dein Angebot …')}</span>
                   </>
                 ) : (
                   <>
                     <Zap size={16} />
-                    <span>Angebot analysieren ⚡</span>
+                    <span>{t('nexus.offeringAnalysis.btnAnalyze', 'Angebot analysieren ⚡')}</span>
                   </>
                 )}
               </button>
@@ -332,7 +332,7 @@ export default function AngebotsanalysePage() {
                   className="btn-cancel-link"
                   onClick={() => { setIsCreatingNew(false); setAnalysisResult(null); }}
                 >
-                  Abbrechen (Zurück zum Profil)
+                  {t('nexus.offeringAnalysis.btnCancel', 'Abbrechen (Zurück zum Profil)')}
                 </button>
               )}
             </div>
@@ -343,7 +343,7 @@ export default function AngebotsanalysePage() {
             <div className="analysis-output-section animate-fade-in">
               <div className="analysis-output-badge">
                 <CheckCircle2 size={18} className="text-[#10B981]" />
-                <h3>NeXus hat dein Angebot verstanden</h3>
+                <h3>{t('nexus.offeringAnalysis.understoodTitle', 'NeXus hat dein Angebot verstanden')}</h3>
               </div>
 
               {/* Visualized Intelligence Matrix */}
@@ -360,7 +360,7 @@ export default function AngebotsanalysePage() {
                 >
                   <div className="toggle-left">
                     <Edit3 size={15} />
-                    <span>Erkannte Daten überprüfen oder anpassen (Optional)</span>
+                    <span>{t('nexus.offeringAnalysis.reviewTitle', 'Erkannte Daten überprüfen oder anpassen (Optional)')}</span>
                   </div>
                   {showManualFields ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                 </button>
@@ -368,7 +368,7 @@ export default function AngebotsanalysePage() {
                 {showManualFields && (
                   <div className="manual-review-fields animate-fade-in">
                     <div className="review-field">
-                      <label htmlFor="formOfferingName">Angebotsname / Titel</label>
+                      <label htmlFor="formOfferingName">{t('nexus.offeringAnalysis.fieldName', 'Angebotsname / Titel')}</label>
                       <input 
                         id="formOfferingName"
                         type="text" 
@@ -379,7 +379,7 @@ export default function AngebotsanalysePage() {
                     </div>
 
                     <div className="review-field">
-                      <label htmlFor="formTargetAudience">Zielgruppe & Entscheider</label>
+                      <label htmlFor="formTargetAudience">{t('nexus.offeringAnalysis.fieldAudience', 'Zielgruppe & Entscheider')}</label>
                       <textarea 
                         id="formTargetAudience"
                         rows={2}
@@ -390,7 +390,7 @@ export default function AngebotsanalysePage() {
                     </div>
 
                     <div className="review-field">
-                      <label htmlFor="formPositioning">Value Proposition / Verkaufsargument</label>
+                      <label htmlFor="formPositioning">{t('nexus.offeringAnalysis.fieldPositioning', 'Value Proposition / Verkaufsargument')}</label>
                       <textarea 
                         id="formPositioning"
                         rows={2}
@@ -414,12 +414,12 @@ export default function AngebotsanalysePage() {
                   {isSaving ? (
                     <>
                       <RefreshCw size={16} className="spin" />
-                      <span>Speichere & aktiviere Signal-Strategien...</span>
+                      <span>{t('nexus.offeringAnalysis.btnSaving', 'Speichere & aktiviere Signal-Strategien...')}</span>
                     </>
                   ) : (
                     <>
                       <Save size={16} />
-                      <span>Angebotsprofil speichern & Signal-Strategien aktivieren</span>
+                      <span>{t('nexus.offeringAnalysis.btnSaveOffering', 'Angebotsprofil speichern & Signal-Strategien aktivieren')}</span>
                     </>
                   )}
                 </button>
@@ -436,10 +436,10 @@ export default function AngebotsanalysePage() {
           {/* Profile Switcher & Actions Top Bar */}
           <div className="profile-top-bar">
             <div className="profile-badge-row">
-              <span className="badge-active-indicator">🟢 Aktives Angebot</span>
+              <span className="badge-active-indicator">{t('nexus.offeringAnalysis.activeTitle', '🟢 Aktives Angebot')}</span>
               {offerings.length > 1 && (
                 <div className="profile-select-wrap">
-                  <label htmlFor="profile-select">Profil wechseln:</label>
+                  <label htmlFor="profile-select">{t('nexus.offeringAnalysis.switchProfile', 'Profil wechseln:')}</label>
                   <select
                     id="profile-select"
                     value={activeOfferingId || ''}
@@ -462,24 +462,24 @@ export default function AngebotsanalysePage() {
               onClick={handleStartNewAnalysis}
             >
               <Plus size={15} />
-              <span>Neues Angebot analysieren</span>
+              <span>{t('nexus.offeringAnalysis.btnNewOffering', 'Neues Angebot analysieren')}</span>
             </button>
           </div>
 
           {/* Active Profile Summary Card */}
           <div className="active-profile-card">
             <div className="profile-section">
-              <span className="profile-label">Produkt / Dienstleistung</span>
+              <span className="profile-label">{t('nexus.offeringAnalysis.productService', 'Produkt / Dienstleistung')}</span>
               <h3 className="profile-offering-name">{activeOffering?.offering_name || 'B2B Angebot'}</h3>
             </div>
 
             <div className="profile-grid">
               <div className="profile-grid-col">
-                <span className="profile-label">Zielgruppe</span>
+                <span className="profile-label">{t('nexus.offeringAnalysis.targetGroup', 'Zielgruppe')}</span>
                 <p className="profile-text">{activeOffering?.target_audience || 'Noch keine Zielgruppe definiert.'}</p>
               </div>
               <div className="profile-grid-col">
-                <span className="profile-label">Value Proposition / Positionierung</span>
+                <span className="profile-label">{t('nexus.offeringAnalysis.valueProp', 'Value Proposition / Positionierung')}</span>
                 <p className="profile-text">{activeOffering?.positioning || 'Noch keine Positionierung hinterlegt.'}</p>
               </div>
             </div>
@@ -491,14 +491,14 @@ export default function AngebotsanalysePage() {
           {/* Next Steps CTA to Lead Radar */}
           <div className="pipeline-next-step-card">
             <div className="next-step-info">
-              <h4>🎯 Bereit für den Lead Radar?</h4>
-              <p>Nutze die generierten Signal-Strategien deines Angebots, um akute Kaufreize im Markt in Echtzeit zu finden.</p>
+              <h4>{t('nexus.offeringAnalysis.readyRadar', '🎯 Bereit für den Lead Radar?')}</h4>
+              <p>{t('nexus.offeringAnalysis.readyRadarDesc', 'Nutze die generierten Signal-Strategien deines Angebots, um akute Kaufreize im Markt in Echtzeit zu finden.')}</p>
             </div>
             <button 
               className="btn-to-radar"
               onClick={() => navigate('/nexus/lead-radar')}
             >
-              <span>Zum Lead Radar</span>
+              <span>{t('nexus.offeringAnalysis.toLeadRadar', 'Zum Lead Radar')}</span>
               <ArrowRight size={16} />
             </button>
           </div>
