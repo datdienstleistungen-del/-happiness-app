@@ -80,10 +80,6 @@ export default function NexusLeadRadarPage() {
     // überschrieben werden, falls der Nutzer während der Ladezeit die Seite verlässt!
 
     try {
-      const triggerModel = offering.trigger_model || []
-      const icpData = offering.icp_data || {}
-      const branche = (icpData.branchen && icpData.branchen.length > 0) ? icpData.branchen[0] : ''
-
       // Bevorzugt: Signal-Strategien aus DB (generiert von nexus-generate-strategies)
       let query = ''
       try {
@@ -102,17 +98,15 @@ export default function NexusLeadRadarPage() {
         console.warn('Signal-Strategien konnten nicht geladen werden:', e)
       }
 
-      // Fallback: trigger_model oder bereinigter Offering-Name
+      // Fallback: bereinigter Offering-Name + Target Audience
       if (!query) {
-        if (triggerModel && triggerModel.length > 0) {
-          query = triggerModel.map(te => te.event).join(' OR ')
-        } else {
-          const cleaned = offering.offering_name.replace(/ich möchte|ein neues|verkaufen/gi, '').trim()
-          query = cleaned || offering.offering_name.split(' ').slice(0, 3).join(' ')
-        }
+        const audience = (offering.target_audience || '').split(/[,(]/)[0].trim()
+        const name = (offering.offering_name || '').replace(/ich möchte|ein neues|verkaufen/gi, '').trim()
+        query = [name, audience].filter(Boolean).join(' ') || 'B2B Leads'
       }
 
       // Always use the live research pipeline now ("Fenster zur Welt")
+      const branche = (offering.target_audience || '').split(/[,(]/)[0].trim()
       let result = await runResearchPipeline(query, branche, lang, offering.id)
 
       const parsed = parseTriggerResult(result)
@@ -140,9 +134,10 @@ export default function NexusLeadRadarPage() {
 
     try {
       // Nutze die ECHTE Pipeline (Tavily + Mistral), keine Halluzinationen mehr!
+      const branche = (activeOffering?.target_audience || '').split(/[,(]/)[0].trim()
       const result = await runResearchPipeline(
         manualQuery, 
-        activeOffering?.icp_data?.branchen?.[0] || '', 
+        branche, 
         lang,
         activeOffering?.id
       )
@@ -394,7 +389,7 @@ export default function NexusLeadRadarPage() {
 
     const companyData = {
       name: trigger.company,
-      industry: activeOffering.icp_data?.branchen?.[0] || 'Unbekannt',
+      industry: (activeOffering.target_audience || '').split(/[,(]/)[0].trim() || 'Unbekannt',
       size: '',
       domain: ''
     }

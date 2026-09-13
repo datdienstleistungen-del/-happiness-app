@@ -6,7 +6,7 @@ import {
   Layers, Zap, ShieldCheck, Globe
 } from 'lucide-react'
 import { callNexusAI } from '../lib/nexus-ai'
-import { createOffering, updateOffering, generateSignalStrategies } from '../lib/nexus-db'
+import { createOffering, generateSignalStrategies } from '../lib/nexus-db'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import SignalStrategiesManager from '../components/nexus/SignalStrategiesManager'
 import { useLead } from '../context/LeadContext'
@@ -56,8 +56,9 @@ export default function AngebotsanalysePage() {
   const [error, setError] = useState(null)
   const [successMsg, setSuccessMsg] = useState(null)
 
-  // Check for pending landing page analysis on initial mount
+  // Check for pending landing page analysis on initial mount (only when logged in)
   useEffect(() => {
+    if (!user) return
     try {
       const pendingStr = sessionStorage.getItem('nexus_pending_analysis')
       if (pendingStr) {
@@ -73,7 +74,7 @@ export default function AngebotsanalysePage() {
     } catch (e) {
       console.warn('Could not parse pending analysis:', e)
     }
-  }, [])
+  }, [user])
 
   // Auto-fill active offering in view mode
   useEffect(() => {
@@ -172,17 +173,7 @@ export default function AngebotsanalysePage() {
       const payload = {
         offering_name: formOfferingName.trim() || angebotInput.trim().slice(0, 50),
         target_audience: formTargetAudience.trim() || 'B2B Entscheider',
-        positioning: formPositioning.trim() || angebotInput.trim(),
-        icp_data: {
-          raw_input: angebotInput.trim(),
-          zielgruppe: analysisResult?.zielgruppe || null,
-          schmerzpunkte: analysisResult?.schmerzpunkte || null
-        },
-        trigger_model: {
-          trigger_events: analysisResult?.trigger_events || [],
-          vertriebsstrategie: analysisResult?.vertriebsstrategie || null,
-          pitch_grundlage: analysisResult?.pitch_grundlage || null
-        }
+        positioning: formPositioning.trim() || angebotInput.trim()
       }
 
       const savedOffering = await createOffering(user.id, payload)
@@ -196,9 +187,7 @@ export default function AngebotsanalysePage() {
           offering_name: savedOffering.offering_name,
           target_audience: savedOffering.target_audience,
           positioning: savedOffering.positioning,
-          icp_data: savedOffering.icp_data,
-          trigger_model: savedOffering.trigger_model,
-          demand_contexts: savedOffering.trigger_model?.trigger_events || []
+          demand_contexts: analysisResult?.trigger_events || analysisResult?.relevante_trigger || []
         }
         await generateSignalStrategies(savedOffering.id, aiUnderstanding, null, lang || 'de')
       } catch (stratErr) {

@@ -39,9 +39,7 @@ export default function SignalStrategiesManager({ offering }) {
         offering_name: offering.offering_name,
         target_audience: offering.target_audience,
         positioning: offering.positioning,
-        icp_data: offering.icp_data,
-        trigger_model: offering.trigger_model,
-        demand_contexts: offering.trigger_model?.trigger_events || offering.trigger_model?.relevante_trigger || []
+        demand_contexts: []
       };
       const newStrats = await generateSignalStrategies(offering.id, aiUnderstanding, offering.target_markets, activeLang);
       if (newStrats && newStrats.length > 0) {
