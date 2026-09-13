@@ -128,7 +128,7 @@ async function tryOpenRouterGemma(messages) {
       headers: {
         'Authorization': `Bearer ${key}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://happiness-eu.netlify.app',
+        'HTTP-Referer': 'https://nexus-hit.netlify.app',
         'X-Title': 'Happiness Coach Chat'
       },
       body: JSON.stringify({
@@ -217,7 +217,7 @@ async function tryOpenRouterDeepSeek(messages) {
       headers: {
         'Authorization': `Bearer ${key}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://happiness-eu.netlify.app',
+        'HTTP-Referer': 'https://nexus-hit.netlify.app',
         'X-Title': 'Happiness Coach Chat'
       },
       body: JSON.stringify({

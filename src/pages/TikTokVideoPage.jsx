@@ -169,8 +169,8 @@ const PLATFORMS = [
 const getExampleRecipe = (isDE) => ({
   video_title: isDE ? 'Creator-Strategie: So wirst du erfolgreich' : 'Creator Strategy: How to Succeed',
   voiceover_script: isDE
-    ? 'Willst du ein erfolgreicher Creator werden? Es ist Zeit, deine Strategie zu ändern. Heute müssen Creators schnell, kreativ und authentisch sein. Ein guter Creator kennt sein Publikum und bietet ihnen Mehrwert. Wir bieten dir 3 Gratis-Videos, um deine Fähigkeiten zu verbessern. Danach nur 4,99 €. Besuche happiness-eu.netlify.app, um loszulegen!'
-    : 'Want to become a successful creator? It\'s time to change your strategy. Today, creators need to be fast, creative, and authentic. A good creator knows their audience and provides value. We offer 3 free videos to improve your skills. After that, only €4.99. Visit happiness-eu.netlify.app to get started!',
+    ? 'Willst du ein erfolgreicher Creator werden? Es ist Zeit, deine Strategie zu ändern. Heute müssen Creators schnell, kreativ und authentisch sein. Ein guter Creator kennt sein Publikum und bietet ihnen Mehrwert. Wir bieten dir 3 Gratis-Videos, um deine Fähigkeiten zu verbessern. Danach nur 4,99 €. Besuche nexus-hit.netlify.app, um loszulegen!'
+    : 'Want to become a successful creator? It\'s time to change your strategy. Today, creators need to be fast, creative, and authentic. A good creator knows their audience and provides value. We offer 3 free videos to improve your skills. After that, only €4.99. Visit nexus-hit.netlify.app to get started!',
   duration: 20,
   ratio: '9:16',
   style: 'Future Tech',
@@ -206,8 +206,8 @@ const getExampleRecipe = (isDE) => ({
     {
       timestamp: '15-20s',
       spoken_text: isDE
-        ? 'Wir bieten dir 3 Gratis-Videos. Danach nur 4,99 €. Besuche happiness-eu.netlify.app!'
-        : 'We offer 3 free videos. After that, only €4.99. Visit happiness-eu.netlify.app!',
+        ? 'Wir bieten dir 3 Gratis-Videos. Danach nur 4,99 €. Besuche nexus-hit.netlify.app!'
+        : 'We offer 3 free videos. After that, only €4.99. Visit nexus-hit.netlify.app!',
       visual_prompt: isDE
         ? 'CTA-Screen mit Website-URL, Creator zeigt auf Link, energetisch'
         : 'CTA screen with website URL, creator points to link, energetic'
@@ -229,8 +229,8 @@ const getExampleRecipe = (isDE) => ({
     youtube_shorts: {
       title: isDE ? 'Creator-Strategie: So wirst du erfolgreich' : 'Creator Strategy: How to Succeed',
       description: isDE
-        ? 'Die meisten Creators machen den gleichen Fehler. In diesem Video zeige ich dir, wie du es richtig machst.\n\n 3 Gratis-Videos: happiness-eu.netlify.app\n\n#creator #youtube #strategie'
-        : 'Most creators make the same mistake. In this video, I\'ll show you how to do it right.\n\n 3 free videos: happiness-eu.netlify.app\n\n#creator #youtube #strategy'
+        ? 'Die meisten Creators machen den gleichen Fehler. In diesem Video zeige ich dir, wie du es richtig machst.\n\n 3 Gratis-Videos: nexus-hit.netlify.app\n\n#creator #youtube #strategie'
+        : 'Most creators make the same mistake. In this video, I\'ll show you how to do it right.\n\n 3 free videos: nexus-hit.netlify.app\n\n#creator #youtube #strategy'
     },
     reddit: {
       title: isDE ? 'Ich habe 3 Monate als Creator experimentiert. Hier sind die Ergebnisse.' : 'I experimented as a creator for 3 months. Here are the results.',

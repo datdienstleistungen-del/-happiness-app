@@ -6,7 +6,7 @@ import { chromium } from 'playwright';
   const context = await browser.newContext();
   const page = await context.newPage();
   
-  await page.goto('https://happiness-eu.netlify.app/', { waitUntil: 'networkidle' });
+  await page.goto('https://nexus-hit.netlify.app/', { waitUntil: 'networkidle' });
   
   try {
     await page.waitForTimeout(3000); 

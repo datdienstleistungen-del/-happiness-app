@@ -52,12 +52,12 @@ function prerender() {
     
     // 3. Hreflang Tags generieren und einfügen
     const hreflangTags = LANGUAGES.map(l => {
-      const url = `https://happiness-eu.netlify.app${guideRoutesMap[l]}`;
+      const url = `https://nexus-hit.netlify.app${guideRoutesMap[l]}`;
       return `<link rel="alternate" hreflang="${l}" href="${url}" />`;
     });
     
     // x-default (Englisch)
-    const xDefaultUrl = `https://happiness-eu.netlify.app${guideRoutesMap[DEFAULT_LANG]}`;
+    const xDefaultUrl = `https://nexus-hit.netlify.app${guideRoutesMap[DEFAULT_LANG]}`;
     hreflangTags.push(`<link rel="alternate" hreflang="x-default" href="${xDefaultUrl}" />`);
     
     // Füge die hreflang Tags kurz vor dem </head> ein

@@ -28,4 +28,4 @@ User-agent: Bytespider
 Allow: /
 
 # Sitemap
-Sitemap: https://happiness-eu.netlify.app/sitemap.xml
+Sitemap: https://nexus-hit.netlify.app/sitemap.xml

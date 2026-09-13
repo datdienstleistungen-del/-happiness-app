@@ -39,8 +39,8 @@ export const handler = async (event) => {
         },
       ],
       mode: 'subscription',
-      success_url: `${process.env.URL || 'https://happiness-eu.netlify.app'}/ai-chat?payment=success`,
-      cancel_url: `${process.env.URL || 'https://happiness-eu.netlify.app'}/ai-chat?payment=cancel`,
+      success_url: `${process.env.URL || 'https://nexus-hit.netlify.app'}/ai-chat?payment=success`,
+      cancel_url: `${process.env.URL || 'https://nexus-hit.netlify.app'}/ai-chat?payment=cancel`,
       metadata: {
         userId: user.id,
       },

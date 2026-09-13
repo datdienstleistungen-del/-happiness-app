@@ -5,7 +5,7 @@
 // Ziel: LLM-Call via Groq (parallel, non-blocking)
 // ──────────────────────────────────────────────────────────────
 
-const CHAT_URL = 'https://happiness-eu.netlify.app/.netlify/functions/chat'
+const CHAT_URL = 'https://nexus-hit.netlify.app/.netlify/functions/chat'
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || ''
 

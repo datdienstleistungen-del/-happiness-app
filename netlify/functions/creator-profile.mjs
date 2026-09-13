@@ -4,7 +4,7 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-const SITE_URL = 'https://happiness-eu.netlify.app'
+const SITE_URL = 'https://nexus-hit.netlify.app'
 
 function escapeHtml(str) {
   return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')
@@ -93,7 +93,7 @@ function generateHTML(profile) {
     </div>` : ''}
     ${profile.location ? `<p class="location">📍 ${escapeHtml(profile.location)}</p>` : ''}
     <div class="footer">
-      <a href="${SITE_URL}">powered by H.I.T. — happiness-eu.netlify.app</a>
+      <a href="${SITE_URL}">powered by H.I.T. — nexus-hit.netlify.app</a>
     </div>
   </div>
 </body>

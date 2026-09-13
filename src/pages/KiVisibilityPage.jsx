@@ -206,7 +206,7 @@ export default function KiVisibilityPage() {
     )
   }
 
-  const publicUrl = `https://happiness-eu.netlify.app/creator/${slug}`
+  const publicUrl = `https://nexus-hit.netlify.app/creator/${slug}`
 
   return (
     <div className="kiv-page">
@@ -256,7 +256,7 @@ export default function KiVisibilityPage() {
           <div className="kiv-field">
             <label>URL-Slug</label>
             <div className="kiv-slug-input">
-              <span className="kiv-slug-prefix">happiness-eu.netlify.app/creator/</span>
+              <span className="kiv-slug-prefix">nexus-hit.netlify.app/creator/</span>
               <input
                 type="text"
                 value={slug}

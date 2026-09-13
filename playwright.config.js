@@ -4,7 +4,7 @@ export default defineConfig({
   testDir: './e2e',
   timeout: 30000,
   use: {
-    baseURL: 'https://happiness-eu.netlify.app',
+    baseURL: 'https://nexus-hit.netlify.app',
     headless: true,
     screenshot: 'only-on-failure',
   },

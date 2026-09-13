@@ -740,7 +740,7 @@ function KnowledgeTab({ knowledge, onRefresh }) {
 function NotificationTab() {
   const [title, setTitle] = useState('')
   const [message, setMessage] = useState('')
-  const [url, setUrl] = useState('https://happiness-eu.netlify.app')
+  const [url, setUrl] = useState('https://nexus-hit.netlify.app')
   const [segment, setSegment] = useState('')
   const [sending, setSending] = useState(false)
   const [msg, setMsg] = useState('')

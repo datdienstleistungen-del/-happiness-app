@@ -44,7 +44,7 @@ export const handler = async (event) => {
       app_id: ONESIGNAL_APP_ID,
       contents: { en: message },
       headings: { en: title },
-      url: url || 'https://happiness-eu.netlify.app',
+      url: url || 'https://nexus-hit.netlify.app',
     }
 
     if (segment) {

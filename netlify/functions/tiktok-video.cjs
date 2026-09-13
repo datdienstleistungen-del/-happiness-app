@@ -97,7 +97,7 @@ exports.handler = async (event) => {
       statusCode: 402,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': 'https://happiness-eu.netlify.app',
+        'Access-Control-Allow-Origin': 'https://nexus-hit.netlify.app',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization'
       },
       body: JSON.stringify({ error: 'Kostenloses Kontingent aufgebraucht', code: 'limit_reached' })
@@ -279,7 +279,7 @@ Nur valides JSON ausgeben.`
     statusCode: 200,
     headers: {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': 'https://happiness-eu.netlify.app',
+      'Access-Control-Allow-Origin': 'https://nexus-hit.netlify.app',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization'
     },
     body: JSON.stringify({ scenes, totalDuration: scenes.reduce((sum, s) => sum + s.duration, 0) })

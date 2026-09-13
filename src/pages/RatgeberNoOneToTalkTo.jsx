@@ -14,7 +14,7 @@ export const guideRoutesMap = {
   el: '/el/odigos/kaneis-gia-na-miliseis'
 };
 
-const BASE_URL = 'https://happiness-eu.netlify.app';
+const BASE_URL = 'https://nexus-hit.netlify.app';
 
 export default function RatgeberNoOneToTalkTo({ locale = 'en' }) {
   const content = guideContent[locale] || guideContent['en'];

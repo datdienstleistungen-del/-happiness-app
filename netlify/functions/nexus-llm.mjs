@@ -57,7 +57,7 @@ async function tryOpenRouter(messages, temperature = 0.3) {
       headers: {
         'Authorization': `Bearer ${key}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://happiness-eu.netlify.app',
+        'HTTP-Referer': 'https://nexus-hit.netlify.app',
         'X-Title': 'NeXus Sales Intelligence'
       },
       body: JSON.stringify({

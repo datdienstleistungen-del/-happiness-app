@@ -156,7 +156,7 @@ export default function DailyPackageCard() {
 
   const copyAll = async () => {
     if (!pkg) return
-    const watermark = '\n\nErstellt mit https://happiness-eu.netlify.app'
+    const watermark = '\n\nErstellt mit https://nexus-hit.netlify.app'
     const full = `${pkg.hook}\n\n${pkg.script}\n\n${pkg.hashtags.map(t => '#' + t).join(' ')}${watermark}`
     await copyToClipboard(full, 'all')
   }
@@ -251,7 +251,7 @@ export default function DailyPackageCard() {
       </div>
 
       <div className="dp-watermark">
-        Erstellt mit <a href="https://happiness-eu.netlify.app" target="_blank" rel="noopener noreferrer">happiness-eu.netlify.app</a>
+        Erstellt mit <a href="https://nexus-hit.netlify.app" target="_blank" rel="noopener noreferrer">nexus-hit.netlify.app</a>
       </div>
 
       {/* === FREETEXT MODAL === */}

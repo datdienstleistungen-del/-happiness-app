@@ -6,7 +6,7 @@ import { chromium } from 'playwright';
   const context = await browser.newContext();
   const page = await context.newPage();
   
-  await page.goto('https://happiness-eu.netlify.app/coach', { waitUntil: 'networkidle' });
+  await page.goto('https://nexus-hit.netlify.app/coach', { waitUntil: 'networkidle' });
   
   try {
     // Wait for the input field to be visible

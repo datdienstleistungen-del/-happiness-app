@@ -148,7 +148,7 @@ async function tryOpenRouter(systemPrompt) {
       headers: {
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://happiness-eu.netlify.app',
+        'HTTP-Referer': 'https://nexus-hit.netlify.app',
         'X-Title': 'Happiness Video Script'
       },
       body: JSON.stringify({

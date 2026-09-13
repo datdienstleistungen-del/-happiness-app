@@ -107,7 +107,7 @@ async function tryOpenRouterImages(imagePayloads) {
       headers: {
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://happiness-eu.netlify.app',
+        'HTTP-Referer': 'https://nexus-hit.netlify.app',
         'X-Title': 'Happiness Video Analysis'
       },
       body: JSON.stringify({

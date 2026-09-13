@@ -6,7 +6,7 @@ Markiert deinen eigenen Traffic als `internal` in GA4, damit er nicht die echten
 
 ### Über URL
 ```
-https://happiness-eu.netlify.app/?developer=true
+https://nexus-hit.netlify.app/?developer=true
 ```
 
 ### Über Konsole
@@ -23,7 +23,7 @@ localStorage.setItem('developer_mode', 'true')
 
 ### Über URL
 ```
-https://happiness-eu.netlify.app/?developer=false
+https://nexus-hit.netlify.app/?developer=false
 ```
 
 ### Über Konsole

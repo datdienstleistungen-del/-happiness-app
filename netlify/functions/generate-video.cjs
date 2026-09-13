@@ -141,7 +141,7 @@ Output: Nur valides JSON.`
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': 'https://happiness-eu.netlify.app',
+        'Access-Control-Allow-Origin': 'https://nexus-hit.netlify.app',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization'
       },
       body: JSON.stringify({ scenes })

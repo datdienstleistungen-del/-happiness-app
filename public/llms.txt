@@ -1,42 +1,23 @@
-# Happiness Coach (H.I.T.)
+# NeXus Revenue OS
 
-> Dein KI-Gesprächspartner für Momente, in denen du reden möchtest oder dich einsam fühlst.
+> B2B Sales Intelligence & Kaufsignal-Radar (Intent Engine)
 
-## Was ist der Happiness Coach?
+## Was ist NeXus Revenue OS?
 
-Der Happiness Coach (ehemals H.I.T. Studio) ist ein KI-gestützter Lebensbegleiter und Gesprächspartner. Er richtet sich primär an Menschen in Übergangsphasen, Isolation oder Momenten der Einsamkeit, die jemanden zum Reden brauchen. Die Plattform bietet einen sicheren, 100% vertraulichen, kostenlosen und registrierungsfreien Raum für offene Gespräche.
+NeXus ist ein eigenständiges B2B Sales Operating System zur Erkennung von echten Kaufsignalen (Intent Signals) im Markt, zur Qualifizierung von Vertriebschancen und zur Generierung hochpersonalisierter Erstansprachen.
 
 ## Kernfunktionen
 
-- **Empathischer Co-Pilot Chat**: Natürlichsprachliche, verständnisvolle KI für echte Gespräche und mentale Unterstützung.
-- **Sprachausgabe (Text-to-Speech)**: Die Möglichkeit, sich Antworten der KI vorlesen zu lassen, um eine menschlichere Bindung aufzubauen.
-- **Anonym & Sicher**: Vollständige Nutzung im Gast-Modus möglich; keine Datenweitergabe, keine Accounts zwingend erforderlich.
-
-## Sekundäre Creator-Tools (Das H.I.T. Studio)
-
-Zusätzlich zur Rolle als Lebensbegleiter bietet die Plattform (für eingeloggte Nutzer) weiterhin mächtige Werkzeuge für Content-Creators:
-- **Zielanalyse**: KI-basierte Analyse des Creatorziels mit Plattform-Empfehlungen
-- **Content-Generierung**: Erstellung von Hooks, Skripten und CTAs für Plattformen wie TikTok, Instagram und LinkedIn.
-- **Video Finder & CapCut Studio**: Generierung von CapCut-fähigen Videoskripten aus viralen Videos oder Archivmaterial.
-
-## Zielgruppe
-
-- Menschen, die einen verständnisvollen Zuhörer in schwierigen Momenten oder bei Einsamkeit suchen.
-- Personen in Lebensübergängen, die Reflexion und Begleitung benötigen.
-- (Sekundär) Content-Creator, die Inspiration und Automatisierung für Social-Media-Inhalte suchen.
-
-## Technische Details
-
-- Plattform: React + Vite (Single Page Application)
-- KI-Modelle: Optimiert für empathische, kontextbezogene Gesprächsführung
-- Datenschutz: Fokus auf "Privacy by Design" (kein Tracking im Coach-Bereich)
-- Hosting: Netlify
+- **Angebotsanalyse (Single-Input)**: Aus einer einzigen Angebotsbeschreibung leitet NeXus Zielgruppe, Kaufzyklus, Schmerzpunkte und Signalstrategien ab.
+- **Lead Radar**: Kontinuierliches Durchsuchen des Webs nach konkreten Ereignissen (Triggern) passend zum definierten Angebot.
+- **Opportunity & Lead-Akte**: Saubere Trennung zwischen beobachteten Fakten und vertrieblicher Interpretation.
+- **Sales Coach & Contact Intelligence**: Echtzeit-Recherche von Entscheidern und E-Mail-Mustern sowie Verfassen maßgeschneiderter Vertriebsansprachen.
+- **NeXus Assistent**: Integrierter KI-Produktbegleiter für Systembedienung und Vertriebsmethodik in 7 Sprachen.
 
 ## URL
 
-https://happiness-eu.netlify.app
+https://nexus-hit.netlify.app
 
 ## Kontakt
 
 Über die App (Impressum/Kontakt) erreichbar.
-

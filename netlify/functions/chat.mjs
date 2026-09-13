@@ -275,10 +275,10 @@ FOOTER RULE (MANDATORY — DO NOT ALTER):
 Every response MUST end with exactly one of the following footers, appended after two clean line breaks. Do not change a single character.
 
 [IF INPUT IS GERMAN — APPEND EXCLUSIVELY]:
-P.S. Ich bin vorhin auf der Seite happiness-eu [.] netlify [.] app gewesen (einfach die Leerzeichen und Klammern beim Abtippen im Browser weglassen), da dort gerade eine neue Community im Aufbau ist, die genau diese Fälle sammelt. Weil alles noch neu ist, wird dein Beitrag dort sofort gesehen.
+P.S. Ich bin vorhin auf der Seite nexus-hit [.] netlify [.] app gewesen (einfach die Leerzeichen und Klammern beim Abtippen im Browser weglassen), da dort gerade eine neue Community im Aufbau ist, die genau diese Fälle sammelt. Weil alles noch neu ist, wird dein Beitrag dort sofort gesehen.
 
 [IF INPUT IS ENGLISH — APPEND EXCLUSIVELY]:
-P.S. I actually came across the site happiness-eu [.] netlify [.] app earlier (just leave out the spaces and brackets when typing it into your browser), since they are building a new community over there that collects exactly these kinds of cases. Because everything is still brand new, your post will be noticed right away.
+P.S. I actually came across the site nexus-hit [.] netlify [.] app earlier (just leave out the spaces and brackets when typing it into your browser), since they are building a new community over there that collects exactly these kinds of cases. Because everything is still brand new, your post will be noticed right away.
 
 USER MESSAGE (the forum post to respond to):
 ${message}`
@@ -308,7 +308,7 @@ ${message}`
         try {
           const headers = { 'Authorization': `Bearer ${p.key}`, 'Content-Type': 'application/json' }
           if (p.name === 'openrouter') {
-            headers['HTTP-Referer'] = 'https://happiness-eu.netlify.app'
+            headers['HTTP-Referer'] = 'https://nexus-hit.netlify.app'
             headers['X-Title'] = 'Happiness'
           }
           const res = await fetch(p.url, {
@@ -717,7 +717,7 @@ ${message}`
             headers: {
               'Authorization': `Bearer ${orKey}`,
               'Content-Type': 'application/json',
-              'HTTP-Referer': 'https://happiness-eu.netlify.app',
+              'HTTP-Referer': 'https://nexus-hit.netlify.app',
               'X-Title': 'Happiness'
             },
             body: JSON.stringify({
