@@ -417,7 +417,7 @@ export const handler = async (event) => {
     
     let langInstruction = `\n\nCRITICAL REQUIREMENT: Du musst deine gesamte Antwort / Nachricht zwingend in dieser Sprache verfassen: ${langName}! (Respond completely in ${langName}).`;
     if (targetLang === 'auto') {
-      langInstruction = `\n\nCRITICAL REQUIREMENT: Passe die Sprache der Nachricht automatisch an das Land des Ziel-Unternehmens an. (z.B. Englisch für internationale Firmen, Deutsch für DACH).`;
+      langInstruction = `\n\nCRITICAL REQUIREMENT: Falls ein spezifisches Zielunternehmen aus einem anderen Land adressiert wird, passe die Nachricht an dessen Landessprache an. Ansonsten verfasse die gesamte Antwort / Nachricht zwingend in dieser Sprache: ${langName}! (Respond completely in ${langName}).`;
     }
 
     const contextSystem = (context && context.system) ? `\n\n${context.system}` : '';

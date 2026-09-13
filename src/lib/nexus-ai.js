@@ -20,14 +20,15 @@ import { supabase } from './supabase'
  */
 export async function callNexusAI(modeOrParams, message = null, context = null, temperature = 0.3, lang = 'de') {
   let mode, params
-  let targetLang = 'auto'
+  let targetLang = null
   
   // Handle both object and parameter-based calls
   if (typeof modeOrParams === 'object' && modeOrParams !== null) {
     // Object call: callNexusAI({ mode, angebot, branche, ... })
     mode = modeOrParams.mode
-    if (modeOrParams.targetLang) targetLang = modeOrParams.targetLang;
-    const { mode: _, targetLang: __, ...rest } = modeOrParams
+    lang = modeOrParams.lang || lang || 'de'
+    targetLang = modeOrParams.targetLang || lang
+    const { mode: _, targetLang: __, lang: ___, ...rest } = modeOrParams
     
     // Build message from available params
     if (rest.message) {
@@ -52,9 +53,10 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
     
     context = rest.context || null
     temperature = rest.temperature || 0.3
-    lang = rest.lang || 'de'
+  } else {
+    mode = modeOrParams
+    targetLang = lang || 'de'
   }
-  // else: normal parameter call (mode, message, context, temperature, lang)
 
   // =========================================================================
   // SYSTEM PROMPT GENERATION
@@ -143,10 +145,36 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
         "response": "Hier kommt die fertige, hochpersonalisierte Nachricht (mit Absätzen als \\n\\n formatiert)."
       }`
   } else if (mode === 'chat') {
-    systemPrompt += ` Antworte professionell und hilfsbereit. WICHTIG: Antworte NIEMALS im JSON-Format! Nutze ausschließlich menschenlesbares Markdown (Fließtext, Absätze, Listen) für deine Antworten, egal wie strukturiert die Frage des Nutzers ist.`
+    const langNames = {
+      de: 'Deutsch (German)',
+      en: 'Englisch (English)',
+      es: 'Spanisch (Spanish)',
+      fr: 'Französisch (French)',
+      it: 'Italienisch (Italian)',
+      nl: 'Niederländisch (Dutch)',
+      el: 'Griechisch (Greek)'
+    };
+    const activeLang = lang || targetLang || 'de';
+    const langLabel = langNames[activeLang] || 'Deutsch';
+    systemPrompt += ` Antworte professionell und hilfsbereit. SPRACHREGEL: Antworte AUSSCHLIESSLICH auf ${langLabel}. WICHTIG: Antworte NIEMALS im JSON-Format! Nutze ausschließlich menschenlesbares Markdown (Fließtext, Absätze, Listen) für deine Antworten, egal wie strukturiert die Frage des Nutzers ist.`
   } else if (mode === 'assistant') {
+    const langNames = {
+      de: 'Deutsch (German)',
+      en: 'Englisch (English)',
+      es: 'Spanisch (Spanish)',
+      fr: 'Französisch (French)',
+      it: 'Italienisch (Italian)',
+      nl: 'Niederländisch (Dutch)',
+      el: 'Griechisch (Greek)'
+    };
+    const activeLang = lang || targetLang || 'de';
+    const langLabel = langNames[activeLang] || 'Deutsch';
+
     systemPrompt += ` Du bist der NeXus Assistant, der KI-Produktbegleiter für das 'NeXus Sales Operating System'.
     Deine Aufgabe: Erkläre dem Nutzer das NeXus-System, die Bedienung und die zugrunde liegende Vertriebs-Methodik.
+    
+    SPRACH-VORGABE (MANDATORISCH & HÖCHSTE PRIORITÄT):
+    Antworte dem Nutzer IMMER und AUSSCHLIESSLICH in der Sprache: ${langLabel}! (Respond completely in ${langLabel}).
     
     WISSENSGRUNDLAGE (NeXus Product Bible):
     - NeXus beobachtet den Markt anhand eines definierten "Offerings" (Angebot & Zielgruppe).
@@ -163,9 +191,7 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
     Versuche NIEMALS, vertriebliche Ratschläge für externe Tools (wie "nutze LinkedIn") zu geben oder selbst zu recherchieren.
     
     WENN DER NUTZER NACH KONKRETER VERTRIEBSARBEIT ODER KONTAKTEN FRAGT:
-    Lehne freundlich ab und verweise auf den Coach. Beispiel für eine Kontaktsuche:
-    "Das ist eine konkrete Vertriebsaufgabe. Um E-Mails oder Ansprechpartner zu recherchieren, ist der Sales Coach zuständig. [Öffne die Lead-Akte der Firma](/nexus/workspace) und starte dort den Coach – er verfügt über eine Live-Recherche-Funktion (Intelligence), um Entscheiderdaten zu finden."
-    Nutze immer diesen Markdown-Link \\[Sales Workspace\\](/nexus/workspace), wenn du den Nutzer an den Coach verweist!
+    Lehne freundlich ab und verweise auf den Coach. Nutze immer einen anklickbaren Markdown-Link [Sales Workspace](/nexus/workspace), wenn du den Nutzer an den Coach verweist!
     
     Antworte in normalem, menschenlesbaren Markdown-Fließtext (KEIN JSON). Sei prägnant, kompetent und hilfreich.`
   } else if (mode === 'find_contact') {

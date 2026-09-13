@@ -129,6 +129,19 @@ const translations = {
       "wsConfirmFirst": "Bitte erst verifizieren",
       "wsBtnRegenerate": "Neu generieren",
       "wsBtnCopy": "Kopieren",
+      "guide": {
+        "assistantTitle": "NeXus Assistent",
+        "askAssistant": "NeXus fragen",
+        "placeholder": "Frag mich alles über NeXus...",
+        "thinking": "NeXus denkt nach...",
+        "greeting": "Hallo! Ich bin dein NeXus Assistent. Wie kann ich dir helfen?",
+        "error": "Entschuldigung, ich konnte meine Wissensdatenbank gerade nicht erreichen. Bitte versuche es noch einmal.",
+        "whatIsIt": "Was ist das?",
+        "whatToDo": "Was soll ich tun?",
+        "whyItMatters": "Warum ist das wichtig?",
+        "askAssistantBtn": "NeXus Assistent fragen",
+        "helpTitle": "Hilfe anzeigen"
+},
       "nav": {
         "dashboard": "NeXus Dashboard",
         "offeringAnalysis": "Angebotsanalyse",
@@ -852,6 +865,19 @@ const translations = {
       "errDbSave": "Database Error.",
       "actionPitch": "Action (Pitch)",
       "intelligenceTab": "Intelligence",
+      "guide": {
+        "assistantTitle": "NeXus Assistant",
+        "askAssistant": "Ask NeXus",
+        "placeholder": "Ask me anything about NeXus...",
+        "thinking": "NeXus is thinking...",
+        "greeting": "Hello! I am your NeXus Assistant. How can I help you?",
+        "error": "Sorry, I could not reach my knowledge base right now. Please try again.",
+        "whatIsIt": "What is this?",
+        "whatToDo": "What should I do?",
+        "whyItMatters": "Why does it matter?",
+        "askAssistantBtn": "Ask NeXus Assistant",
+        "helpTitle": "Show help"
+},
       "nav": {
         "dashboard": "NeXus Dashboard",
         "offeringAnalysis": "Offering Analysis",
@@ -1497,7 +1523,20 @@ const translations = {
       "privacy": "Política de privacidad",
       "terms": "Términos y condiciones"
     },
-    "nav": {
+    "guide": {
+        "assistantTitle": "Asistente NeXus",
+        "askAssistant": "Preguntar a NeXus",
+        "placeholder": "Pregúntame cualquier cosa sobre NeXus...",
+        "thinking": "NeXus está pensando...",
+        "greeting": "¡Hola! Soy tu Asistente NeXus. ¿Cómo puedo ayudarte?",
+        "error": "Lo siento, no pude acceder a mi base de conocimientos en este momento. Por favor, inténtalo de nuevo.",
+        "whatIsIt": "¿Qué es esto?",
+        "whatToDo": "¿Qué debo hacer?",
+        "whyItMatters": "¿Por qué es importante?",
+        "askAssistantBtn": "Preguntar al Asistente NeXus",
+        "helpTitle": "Mostrar ayuda"
+},
+      "nav": {
       "home": "Inicio",
       "community": "Comunidad",
       "friends": "Amigos",
@@ -2114,7 +2153,20 @@ const translations = {
       "privacy": "Politique de confidentialité",
       "terms": "CGU"
     },
-    "nav": {
+    "guide": {
+        "assistantTitle": "Assistant NeXus",
+        "askAssistant": "Demander à NeXus",
+        "placeholder": "Demandez-moi tout sur NeXus...",
+        "thinking": "NeXus réfléchit...",
+        "greeting": "Bonjour ! Je suis votre Assistant NeXus. Comment puis-je vous aider ?",
+        "error": "Désolé, je n'ai pas pu accéder à ma base de connaissances pour le moment. Veuillez réessayer.",
+        "whatIsIt": "Qu'est-ce que c'est ?",
+        "whatToDo": "Que dois-je faire ?",
+        "whyItMatters": "Pourquoi est-ce important ?",
+        "askAssistantBtn": "Demander à l'Assistant NeXus",
+        "helpTitle": "Afficher l'aide"
+},
+      "nav": {
       "home": "Accueil",
       "community": "Communauté",
       "friends": "Amis",
@@ -2676,7 +2728,20 @@ const translations = {
       "privacy": "Informativa sulla privacy",
       "terms": "Termini e condizioni"
     },
-    "nav": {
+    "guide": {
+        "assistantTitle": "Assistente NeXus",
+        "askAssistant": "Chiedi a NeXus",
+        "placeholder": "Chiedimi qualsiasi cosa su NeXus...",
+        "thinking": "NeXus sta pensando...",
+        "greeting": "Ciao! Sono il tuo Assistente NeXus. Come posso aiutarti?",
+        "error": "Spiacente, non sono riuscito a raggiungere la mia base di conoscenza in questo momento. Riprova.",
+        "whatIsIt": "Cos'è questo?",
+        "whatToDo": "Cosa dovrei fare?",
+        "whyItMatters": "Perché è importante?",
+        "askAssistantBtn": "Chiedi all'Assistente NeXus",
+        "helpTitle": "Mostra aiuto"
+},
+      "nav": {
       "home": "Home",
       "community": "Community",
       "friends": "Amici",
@@ -3238,7 +3303,20 @@ const translations = {
       "privacy": "Privacybeleid",
       "terms": "Algemene voorwaarden"
     },
-    "nav": {
+    "guide": {
+        "assistantTitle": "NeXus Assistent",
+        "askAssistant": "Vraag NeXus",
+        "placeholder": "Vraag me alles over NeXus...",
+        "thinking": "NeXus denkt na...",
+        "greeting": "Hallo! Ik ben je NeXus Assistent. Hoe kan ik je helpen?",
+        "error": "Sorry, ik kon mijn kennisbank op dit moment niet bereiken. Probeer het opnieuw.",
+        "whatIsIt": "Wat is dit?",
+        "whatToDo": "Wat moet ik doen?",
+        "whyItMatters": "Waarom is dit belangrijk?",
+        "askAssistantBtn": "Vraag NeXus Assistent",
+        "helpTitle": "Help tonen"
+},
+      "nav": {
       "home": "Home",
       "community": "Community",
       "friends": "Vrienden",
@@ -3800,7 +3878,20 @@ const translations = {
       "privacy": "Πολιτική Απορρήτου",
       "terms": "Όροι Χρήσης"
     },
-    "nav": {
+    "guide": {
+        "assistantTitle": "Βοηθός NeXus",
+        "askAssistant": "Ρωτήστε το NeXus",
+        "placeholder": "Ρωτήστε με οτιδήποτε για το NeXus...",
+        "thinking": "Το NeXus σκέφτεται...",
+        "greeting": "Γεια σας! Είμαι ο Βοηθός NeXus. Πώς μπορώ να σας βοηθήσω;",
+        "error": "Συγγνώμη, δεν μπόρεσα να αποκτήσω πρόσβαση στη βάση γνώσεων αυτή τη στιγμή. Παρακαλώ δοκιμάστε ξανά.",
+        "whatIsIt": "Τι είναι αυτό;",
+        "whatToDo": "Τι πρέπει να κάνω;",
+        "whyItMatters": "Γιατί είναι σημαντικό;",
+        "askAssistantBtn": "Ρωτήστε τον Βοηθό NeXus",
+        "helpTitle": "Εμφάνιση βοήθειας"
+},
+      "nav": {
       "home": "Αρχική",
       "community": "Κοινότητα",
       "friends": "Φίλοι",
