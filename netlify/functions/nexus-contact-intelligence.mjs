@@ -13,13 +13,14 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { resolveCompanyWebsite, getGoogleCseQuotaStatus } from './nexus-domain-discovery.mjs';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
 // ============================================================================
-// DOMAIN DISCOVERY + VERIFICATION
+// DOMAIN DISCOVERY + VERIFICATION (2-Step Heuristic + Google CSE Fallback)
 // ============================================================================
 
 function getCompanyNameVariants(companyName) {
@@ -212,90 +213,19 @@ async function verifyDomain(domain, companyName) {
 }
 
 async function discoverDomain(companyName) {
-  console.log(`[DomainDiscovery] Searching domain for: "${companyName}"`);
-  
-  // Try multiple query variants for better coverage
-  const queries = [
-    `"${companyName}" official website`,
-    `"${companyName}" homepage`,
-  ];
-  
-  const allCandidates = [];
-  
-  for (const query of queries) {
-    const results = await webSearch(query);
-    if (!results) {
-      console.log(`[DomainDiscovery] No results for: ${query}`);
-      continue;
-    }
-    
-    console.log(`[DomainDiscovery] Query "${query}" → ${results.length} results`);
-    
-    const skipDomains = /linkedin|facebook|twitter|x\.com|instagram|youtube|glassdoor|indeed|xing|crunchbase|bloomberg|reuters|wallstreet|google|bing|yahoo|tavily|wikipedia|mondaq|sunzinet|handelsblatt|tagesschau/i;
-    
-    for (const r of results) {
-      try {
-        const urlObj = new URL(r.url);
-        const hostname = urlObj.hostname.replace(/^www\./, '');
-        
-        if (skipDomains.test(hostname)) {
-          console.log(`[DomainDiscovery] SKIP (aggregator): ${hostname}`);
-          continue;
-        }
-        
-        const parts = hostname.split('.');
-        if (parts.length < 2) continue;
-        const baseDomain = parts.slice(-2).join('.');
-        
-        if (skipDomains.test(baseDomain)) continue;
-        
-        // Score candidate
-        const companyLower = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const domainLower = hostname.replace(/[^a-z0-9]/g, '');
-        
-        let score = 0;
-        if (domainLower.includes(companyLower)) score += 10;
-        if (r.title.toLowerCase().includes(companyName.toLowerCase())) score += 5;
-        if (parts.length === 2) score += 2;
-        
-        // Check for duplicates
-        if (!allCandidates.some(c => c.domain === baseDomain)) {
-          allCandidates.push({ domain: baseDomain, score, url: r.url, title: r.title });
-          console.log(`[DomainDiscovery] Candidate: ${baseDomain} (score ${score}) from ${r.url}`);
-        }
-      } catch (e) { continue; }
-    }
+  console.log(`[DomainDiscovery] Searching domain for: "${companyName}" via 2-Step Architecture`);
+  const res = await resolveCompanyWebsite(companyName);
+  if (res && res.domain) {
+    return {
+      domain: res.domain,
+      confidence: res.source === 'step1_heuristic' ? 90 : 85,
+      status: 'verified',
+      source: res.url || `https://${res.domain}`,
+      pageTitle: res.title || companyName,
+      step2Called: res.step2Called
+    };
   }
-  
-  if (allCandidates.length === 0) {
-    console.log('[DomainDiscovery] No candidates found');
-    return null;
-  }
-  
-  // Sort by score
-  allCandidates.sort((a, b) => b.score - a.score);
-  console.log(`[DomainDiscovery] ${allCandidates.length} candidates, verifying top 3...`);
-  
-  // Verify each candidate until one passes
-  for (const c of allCandidates.slice(0, 3)) {
-    console.log(`[DomainDiscovery] Verifying: ${c.domain}`);
-    const verification = await verifyDomain(c.domain, companyName);
-    
-    if (verification.verified) {
-      console.log(`[DomainDiscovery] VERIFIED: ${c.domain} (confidence ${verification.confidence})`);
-      return {
-        domain: c.domain,
-        confidence: verification.confidence,
-        status: 'verified',
-        source: verification.finalUrl,
-        pageTitle: verification.pageTitle
-      };
-    } else {
-      console.log(`[DomainDiscovery] NOT verified: ${c.domain} — ${verification.reason}`);
-    }
-  }
-  
-  console.log('[DomainDiscovery] No domain passed verification');
+  console.log(`[DomainDiscovery] No domain verified for "${companyName}"`);
   return null;
 }
 

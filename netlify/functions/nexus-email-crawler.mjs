@@ -12,6 +12,7 @@
  */
 
 import * as cheerio from 'cheerio';
+import { resolveCompanyWebsite, SKIP_DOMAINS } from './nexus-domain-discovery.mjs';
 
 const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
 
@@ -23,8 +24,6 @@ const GENERIC_PREFIXES = [
   'kundenservice', 'zentrale', 'verwaltung', 'buchhaltung', 'news', 'security',
   'abuse', 'postmaster', 'webmaster', 'hostmaster', 'compliance', 'legal'
 ];
-
-const SKIP_DOMAINS = /linkedin|facebook|twitter|x\.com|instagram|youtube|glassdoor|indeed|xing|crunchbase|bloomberg|reuters|wallstreet|google|bing|yahoo|tavily|wikipedia|mondaq|handelsblatt|tagesschau|spiegel|zeit\.de|faz\.net|kununu|leadiq|zoominfo|apollo\.io|rocketreach|dnb\.com|owler|signalhire|lusha|northdata|firmenwissen/i;
 
 const BROWSER_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
@@ -55,79 +54,12 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
 }
 
 /**
- * 1. Domain-Auflösung
+ * 1. Domain-Auflösung via 2-Stufen-Architektur (Heuristik -> Google CSE Fallback)
  */
 export async function resolveDomain(companyOrDomain) {
   if (!companyOrDomain) return null;
-  const input = companyOrDomain.trim();
-
-  // Ist es bereits eine Domain?
-  if (/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/.*)?$/.test(input) || input.startsWith('http://') || input.startsWith('https://')) {
-    try {
-      const clean = input.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].toLowerCase();
-      return clean;
-    } catch {
-      // Weiter mit Suche
-    }
-  }
-
-  const tavilyKey = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY;
-  if (!tavilyKey) {
-    console.warn('[EmailCrawler] Kein Tavily Key vorhanden');
-    return null;
-  }
-
-  try {
-    const res = await fetchWithTimeout('https://api.tavily.com/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        api_key: tavilyKey,
-        query: `${input} official website homepage`,
-        search_depth: 'basic',
-        max_results: 6
-      })
-    }, 8000);
-
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!data.results || data.results.length === 0) return null;
-
-    const companyKeyword = input.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 6);
-
-    // Pass 1: Beste Passung (Domain enthält Firmenname)
-    for (const r of data.results) {
-      try {
-        const urlObj = new URL(r.url);
-        const host = urlObj.hostname.replace(/^www\./, '').toLowerCase();
-        if (SKIP_DOMAINS.test(host)) continue;
-
-        const hostClean = host.replace(/[^a-z0-9]/g, '');
-        if (hostClean.includes(companyKeyword)) {
-          console.log(`[EmailCrawler] Domain gefunden (Match): ${host} für "${input}"`);
-          return host;
-        }
-      } catch (e) {
-        continue;
-      }
-    }
-
-    // Pass 2: Erste nicht-gesperrte Domain
-    for (const r of data.results) {
-      try {
-        const urlObj = new URL(r.url);
-        const host = urlObj.hostname.replace(/^www\./, '').toLowerCase();
-        if (!SKIP_DOMAINS.test(host)) {
-          console.log(`[EmailCrawler] Domain gefunden (Fallback): ${host} für "${input}"`);
-          return host;
-        }
-      } catch {}
-    }
-  } catch (err) {
-    console.error('[EmailCrawler] Domain-Auflösungsfehler:', err.message);
-  }
-
-  return null;
+  const res = await resolveCompanyWebsite(companyOrDomain);
+  return res && res.domain ? res.domain : null;
 }
 
 const ROLE_PATTERNS = [
