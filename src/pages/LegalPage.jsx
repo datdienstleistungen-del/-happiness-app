@@ -258,7 +258,7 @@ You have the right at any time:
         content: `
 ## 1. Geltungsbereich
 
-Diese Allgemeinen Geschäftsbedingungen (nachfolgend „AGB") gelten für alle Verträge über die Nutzung der Software "NeXus" (Sales Operating System) sowie damit verbundene Dienstleistungen zwischen
+Diese Allgemeinen Geschäftsbedingungen (nachfolgend „AGB") gelten für alle Verträge über die Nutzung der Software "NeXus" (Revenue OS) sowie damit verbundene Dienstleistungen zwischen
 
 Harro Goerndt
 Weserstraße 16
@@ -274,7 +274,7 @@ Die durch den Anbieter erstellten Inhalte, Quellcodes, Benutzeroberflächen und 
 
 ## 3. Leistungen
 
-### NeXus Sales Operating System
+### NeXus Revenue OS
 NeXus bietet eine künstliche Intelligenz und Datenanalyse zur Identifikation von vertrieblichen Kaufsignalen (Triggern) im Internet. Die KI-gestützten Auswertungen und generierten Vertriebstexte dienen als Hilfsmittel und stellen keine Garantie für vertrieblichen Erfolg oder Abschlüsse dar.
 
 ### Preisgestaltung & Zahlungsarten
@@ -298,7 +298,7 @@ Es gilt das Recht der Bundesrepublik Deutschland. Sollten einzelne Bestimmungen 
         content: `
 ## 1. Scope
 
-These Terms of Service apply to all contracts for the use of the software "NeXus" (Sales Operating System) and related services between:
+These Terms of Service apply to all contracts for the use of the software "NeXus" (Revenue OS) and related services between:
 
 Harro Goerndt
 D.A.T Dienstleistungen
@@ -315,7 +315,7 @@ The content, source code, user interfaces, and works created by the provider on 
 
 ## 3. Services
 
-### NeXus Sales Operating System
+### NeXus Revenue OS
 NeXus provides artificial intelligence and data analysis for identifying commercial buying signals (triggers) on the internet. The AI-powered evaluations and generated sales texts serve as aids and do not constitute a guarantee for commercial success or deals.
 
 ### Pricing & Payment Methods

@@ -3,7 +3,7 @@ import { useAuth } from './AuthContext'
 import * as db from '../lib/nexus-db'
 
 /**
- * NeXus LeadContext (Sales Operating System)
+ * NeXus LeadContext (Revenue OS)
  * 
  * Verwaltet den State der Pipeline (Triggers -> Opportunities)
  * und bietet die Core-Methoden für den Intelligence-Workflow.

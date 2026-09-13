@@ -244,7 +244,7 @@ VERBOTEN:
 
 const NEXUS_KNOWLEDGE = `---
 WAS IST NeXus?
-NeXus ist ein Sales Operating System mit folgender Architektur:
+NeXus ist ein Revenue OS mit folgender Architektur:
 1. Angebotsanalyse → definiert Offering & Zielgruppe
 2. Lead Radar → findet Kaufsignale (Trigger Events) im Markt
 3. Opportunity → Lead-Akte mit allen Informationen

@@ -48,7 +48,7 @@ export default function Logo() {
         ))}
       </span>
       <span style={{ fontSize: '8.5px', color: '#6b7280', letterSpacing: '0.4px', textTransform: 'uppercase', fontWeight: 700, marginTop: '2px' }}>
-        Sales Operating System
+        Revenue OS
       </span>
     </div>
   );

@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 
 /**
- * NeXus Database Helper V2 (Sales Operating System Architecture)
+ * NeXus Database Helper V2 (Revenue OS Architecture)
  * 
  * Speichert und lädt NeXus-Daten aus Supabase.
  * Soft-Deletes: Alle GET-Abfragen ignorieren Sätze mit deleted_at != null.

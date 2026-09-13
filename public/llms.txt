@@ -4,7 +4,7 @@
 
 ## Was ist NeXus Revenue OS?
 
-NeXus ist ein eigenständiges B2B Sales Operating System zur Erkennung von echten Kaufsignalen (Intent Signals) im Markt, zur Qualifizierung von Vertriebschancen und zur Generierung hochpersonalisierter Erstansprachen.
+NeXus ist ein eigenständiges B2B Revenue OS zur Erkennung von echten Kaufsignalen (Intent Signals) im Markt, zur Qualifizierung von Vertriebschancen und zur Generierung hochpersonalisierter Erstansprachen.
 
 ## Kernfunktionen
 

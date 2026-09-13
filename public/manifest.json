@@ -1,7 +1,7 @@
 {
   "name": "NeXus Sales Intelligence",
   "short_name": "NeXus",
-  "description": "Das KI-gestützte B2B Sales Operating System. Automatische Lead-Generierung, intelligente Kontaktrecherche und personalisierte Erstansprache.",
+  "description": "Das KI-gestützte B2B Revenue OS. Automatische Lead-Generierung, intelligente Kontaktrecherche und personalisierte Erstansprache.",
   "id": "nexus-sales-intelligence",
   "start_url": "/",
   "display": "standalone",
