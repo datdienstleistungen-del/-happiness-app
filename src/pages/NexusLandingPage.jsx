@@ -47,7 +47,7 @@ const LOADING_PHASES = [
   { id: 1, text: "Extrahiere Zielgruppe und Buyer Persona...", icon: "🧠" },
   { id: 2, text: "Signal-Radar scannt den Markt nach Live-Kaufreizen...", icon: "🛰️" },
   { id: 3, text: "Contact Intelligence verifiziert primäre Entscheider...", icon: "👤" },
-  { id: 4, text: "Psychologischer Pitch wird für das Zielunternehmen kalibriert...", icon: "✉️" }
+  { id: 4, text: "Signalbezogener Pitch wird für das Zielunternehmen kalibriert...", icon: "✉️" }
 ]
 
 export default function NexusLandingPage() {
@@ -71,8 +71,8 @@ export default function NexusLandingPage() {
   const defaultDemoResult = {
     company: "Personio SE",
     industry: "IT & Digitalisierung / B2B SaaS",
-    signal: "Expansion nach Frankreich offiziell angekündigt. Aufbau eines neuen Sales- & Marketing-Teams in Paris gestartet (Quelle: Bundesanzeiger & LinkedIn Jobs).",
-    psychologische_ansprache: "Fokus auf Skalierung & lokale Markt-Expertise. Nutzenversprechen: Automatisierte, DSGVO-konforme Lead-Pipeline für den französischen Markt ohne administrativen Overhead vor Ort.",
+    signal: "Expansion nach Frankreich angekündigt. Aufbau eines neuen Sales- & Marketing-Teams in Paris gestartet (Quelle: Bundesanzeiger & LinkedIn Jobs).",
+    psychologische_ansprache: "Fokus auf Skalierung & lokale Markt-Expertise. Nutzenversprechen: Strukturierte Lead-Pipeline für den französischen Markt ohne administrativen Overhead vor Ort.",
     ansprechpartner: {
       name: "Robert Pesch",
       rolle: "Head of Sales & Growth",
@@ -259,7 +259,7 @@ export default function NexusLandingPage() {
         </h1>
 
         <p className="nexus-lp-hero-subtitle">
-          Vergiss veraltete Kontaktdatenbanken und Kaltakquise. NeXus scannt das Web in Echtzeit nach Intent-Signalen, verifiziert echte Entscheider auf offiziellen Quellseiten und generiert psychologisch treffende Erstansprachen.
+          Vergiss veraltete Kontaktdatenbanken und Kaltakquise. NeXus scannt das Web in Echtzeit nach Intent-Signalen, verifiziert relevante Entscheider auf öffentlich zugänglichen Quellen und generiert signalbezogene Erstansprachen.
         </p>
 
         {/* =========================================================================
@@ -271,12 +271,12 @@ export default function NexusLandingPage() {
             <div className="demo-preview-mode animate-fade-in">
               <div className="demo-intro-badge">
                 <Sparkles size={14} className="text-[#155DFC]" />
-                <span>⚡ LIVE-DEMO: So findet NeXus deine Kunden</span>
+                <span>⚡ BEISPIEL: So arbeitet NeXus</span>
               </div>
               
               <div className="demo-input-preview-card">
-                <span className="preview-label">Simuliertes B2B-Angebot im System:</span>
-                <p className="preview-text">„Wir entwickeln cloudbasierte Vertriebssoftware für IT- und SaaS-Unternehmen...“</p>
+                <span className="preview-label">Angebot:</span>
+                <p className="preview-text">„Cloudbasierte Vertriebssoftware für IT- und SaaS-Unternehmen“</p>
               </div>
 
               {/* Gefundenes Ergebnis im authentischen Dashboard-Look */}
@@ -302,7 +302,7 @@ export default function NexusLandingPage() {
 
                 {/* Integration der neuen Contact Intelligence */}
                 <div className="result-body-section contact-box-highlight">
-                  <h4>👤 Entscheider (Contact Intelligence):</h4>
+                  <h4>👤 Relevanter Entscheider (Contact Intelligence):</h4>
                   <div className="demo-contact-row">
                     <span className="demo-contact-details">
                       <strong>{defaultDemoResult.ansprechpartner.name}</strong> · {defaultDemoResult.ansprechpartner.rolle}
@@ -314,7 +314,7 @@ export default function NexusLandingPage() {
                 </div>
 
                 <div className="result-body-section">
-                  <h4>✉️ Psychologischer Pitch (Vorschau):</h4>
+                  <h4>✉️ Signalbezogener Gesprächsansatz (Vorschau):</h4>
                   <p className="pitch-preview-text">„{defaultDemoResult.psychologische_ansprache}“</p>
                 </div>
               </div>
@@ -617,7 +617,7 @@ export default function NexusLandingPage() {
           <div className="nexus-lp-trust-strip">
             <div className="nexus-lp-trust-item">
               <ShieldCheck size={16} className="text-[#18AB61]" />
-              <span>DSGVO-konforme Datenrecherche (Art. 6 Abs. 1 lit. f)</span>
+              <span>Recherche nach DSGVO-Grundsätzen (Art. 6 Abs. 1 lit. f)</span>
             </div>
             <div className="nexus-lp-trust-item">
               <FileCheck size={16} className="text-[#18AB61]" />
@@ -649,13 +649,13 @@ export default function NexusLandingPage() {
           <div className="workflow-step">
             <div className="step-number">02</div>
             <h3>Entscheider-Audit & Verifikation</h3>
-            <p>Kein blindes E-Mail-Raten. Die Contact-Intelligence gleicht Daten mit offiziellen Unternehmens-Websites ab, verifiziert den primären Entscheider und belegt Fundstellen transparent.</p>
+            <p>Kein blindes E-Mail-Raten. Die Contact-Intelligence gleicht Daten mit öffentlich zugänglichen Unternehmens-Websites ab, verifiziert den primären Entscheider und belegt Fundstellen transparent.</p>
           </div>
 
           <div className="workflow-step">
             <div className="step-number">03</div>
             <h3>1-Click Outreach</h3>
-            <p>Übernehmen Sie den psychologisch optimierten, signalbezogenen Pitch direkt in Ihren Sales Workspace. Starten Sie die Erstansprache (LinkedIn oder E-Mail) mit maximaler Relevanz.</p>
+            <p>Übernehmen Sie den signalbezogenen, kontextuellen Gesprächsansatz direkt in Ihren Sales Workspace. Starten Sie die Erstansprache (LinkedIn oder E-Mail) mit maximaler Relevanz.</p>
           </div>
         </div>
       </section>
@@ -664,13 +664,13 @@ export default function NexusLandingPage() {
       <section id="compliance" className="nexus-lp-compliance-section">
         <div className="nexus-lp-section-header">
           <span className="nexus-lp-section-tag">Rechtssicherheit // B2B-Standards</span>
-          <h2 className="nexus-lp-section-title">DSGVO-konforme B2B-Recherche & Datensicherheit</h2>
+          <h2 className="nexus-lp-section-title">Recherche öffentlich zugänglicher B2B-Informationen & Datensicherheit</h2>
         </div>
 
         <div className="nexus-lp-compliance-grid">
           <div className="nexus-lp-comp-card">
             <h4>Art. 6 Abs. 1 lit. f DSGVO</h4>
-            <p>Rechtskonforme Recherche öffentlich zugänglicher Unternehmens- und Kontaktdaten im Rahmen des berechtigten Interesses im B2B-Umfeld.</p>
+            <p>Recherche öffentlich zugänglicher Unternehmens- und Kontaktdaten unter Berücksichtigung der DSGVO im Rahmen des berechtigten Interesses im B2B-Umfeld.</p>
           </div>
 
           <div className="nexus-lp-comp-card">
