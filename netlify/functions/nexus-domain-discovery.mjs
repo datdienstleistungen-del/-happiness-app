@@ -1,10 +1,10 @@
 ﻿/**
  * NeXus Domain Discovery & Verification Engine
  * 
- * 2-Stufen-Architektur:
- * Schritt 1 (kostenlos): Heuristisches Raten plausibler Domain-Kandidaten + HTTP-Verifikation (HEAD/GET).
- * Schritt 2 (Absicherung): Echte Google Custom Search JSON API (100 Gratis-Anfragen/Tag mit Quota-Tracking).
- * Fallback: Ehrlich "nicht auffindbar" (keine erfundenen Daten, kein Tavily).
+ * 2-Stufen-Architektur mit gehärteter Verifikation:
+ * Schritt 1 (kostenlos): Heuristisches Raten nach TLD-Hierarchie (.de/.com vor .io/.ai) + WAF/Bot-Detection + Content-Audit.
+ * Schritt 2 (Absicherung): Mehrstufige Google Custom Search JSON API mit Directory/Review-Filter & Quota-Tracking (100/Tag).
+ * Fallback: Ehrlich "nicht auffindbar" / "nicht sicher gefunden" (keine Verzeichnis-URLs, keine erfundenen Daten).
  */
 
 const GOOGLE_CSE_DAILY_LIMIT = 100;
@@ -37,15 +37,20 @@ export function recordGoogleCseUsage() {
   return quotaState.usedToday;
 }
 
-export const SKIP_DOMAINS = /linkedin|facebook|twitter|x\.com|instagram|youtube|glassdoor|indeed|xing|crunchbase|bloomberg|reuters|wallstreet|google|bing|yahoo|tavily|wikipedia|mondaq|handelsblatt|tagesschau|spiegel|zeit\.de|faz\.net|kununu|leadiq|zoominfo|apollo\.io|rocketreach|dnb\.com|owler|signalhire|lusha|northdata|firmenwissen|unternehmensregister|bundesanzeiger|stepstone|gelbeseiten|dasoertliche/i;
+// Umfangreicher Filter für Social Media, Presse, HR, Bewertungsportale & Tool-Verzeichnisse
+export const SKIP_DOMAINS = /linkedin|facebook|twitter|x\.com|instagram|youtube|glassdoor|indeed|xing|crunchbase|bloomberg|reuters|wallstreet|google|bing|yahoo|tavily|wikipedia|mondaq|handelsblatt|tagesschau|spiegel|zeit\.de|faz\.net|kununu|leadiq|zoominfo|apollo\.io|rocketreach|dnb\.com|owler|signalhire|lusha|northdata|firmenwissen|unternehmensregister|bundesanzeiger|stepstone|gelbeseiten|dasoertliche|ki-syndikat|futuretools|futurepedia|theresanaiforthat|g2\.com|capterra|trustpilot|omr\.com|provenexpert|softwareadvice|getapp|producthunt|alternativeto|saasworthy|sourceforge|trustradius|startupvalley|gruenderszene/i;
+
+// Verzeichnis- & Review-Pfade auf Drittseiten ausschließen
+export const DIRECTORY_PATH_PATTERNS = /\/(tools|tool|review|reviews|software|product|products|company|companies|directory|listing|profile|profiles|app|apps)\/[a-z0-9_-]+/i;
 
 const BROWSER_HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-  'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7'
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
+  'Upgrade-Insecure-Requests': '1'
 };
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = 4000) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 4500) {
   const controller = new AbortController();
   const abortId = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -59,10 +64,10 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 4000) {
 }
 
 /**
- * Normalisiert Firmennamen und erzeugt 2-6 hochplausible Domain-Kandidaten
+ * Normalisiert Firmennamen und erzeugt strukturierte Domain-Kandidaten nach TLD-Priorität
  */
 export function generateDomainCandidates(companyName) {
-  if (!companyName) return [];
+  if (!companyName) return { tier1: [], tier2: [], tier3: [] };
   const clean = companyName.toLowerCase().trim();
 
   // Strip Rechtsformen und Zusätze
@@ -89,28 +94,40 @@ export function generateDomainCandidates(companyName) {
     baseNames.add(words.slice(0, 2).join(''));
   }
 
-  const tlds = ['.de', '.com', '.io', '.ai', '.eu'];
-  const candidates = [];
+  // TLD-Hierarchie: Tier 1 (.de, .com, .at, .ch) hat absolute Priorität vor Tier 2 (.eu, .org) und Tier 3 (.io, .ai)
+  const tier1Tlds = ['.de', '.com', '.at', '.ch'];
+  const tier2Tlds = ['.eu', '.org'];
+  const tier3Tlds = ['.io', '.ai', '.app', '.co'];
+
+  const tier1 = [];
+  const tier2 = [];
+  const tier3 = [];
 
   for (const base of baseNames) {
-    for (const tld of tlds) {
-      candidates.push(`${base}${tld}`);
-    }
+    for (const tld of tier1Tlds) tier1.push(`${base}${tld}`);
+    for (const tld of tier2Tlds) tier2.push(`${base}${tld}`);
+    for (const tld of tier3Tlds) tier3.push(`${base}${tld}`);
   }
 
-  return [...new Set(candidates)].slice(0, 8);
+  return {
+    tier1: [...new Set(tier1)],
+    tier2: [...new Set(tier2)],
+    tier3: [...new Set(tier3)],
+    all: [...new Set([...tier1, ...tier2, ...tier3])]
+  };
 }
 
 /**
- * Prüft ob eine HTTP-Antwort plausibel die Firmenwebsite darstellt
+ * Gehärtete Prüfung eines Domain-Kandidaten (inkl. WAF/Cloudflare/Vercel Erkennung & Content-Audit)
  */
-async function verifyCandidateHttp(domain, companyName) {
-  const companyKeywords = companyName
+async function verifyCandidateHttp(domain, companyName, isTier1 = false) {
+  const cleanComp = companyName
     .toLowerCase()
     .replace(/\b(gmbh|ag|se|kg|ug|llc|inc|ltd)\b/g, '')
-    .replace(/[^a-z0-9äöüß]/g, ' ')
-    .split(/\s+/)
-    .filter(w => w.length >= 3);
+    .replace(/[^a-z0-9äöüß]/g, '')
+    .trim();
+
+  const domainBase = domain.split('.')[0].replace(/[^a-z0-9]/g, '');
 
   for (const scheme of ['https', 'http']) {
     try {
@@ -121,42 +138,77 @@ async function verifyCandidateHttp(domain, companyName) {
         headers: BROWSER_HEADERS
       }, 4000);
 
+      const finalUrl = res.url || url;
+      let finalHost = domain;
+      try {
+        finalHost = new URL(finalUrl).hostname.replace(/^www\./, '').toLowerCase();
+      } catch {}
+
+      if (SKIP_DOMAINS.test(finalHost)) continue;
+
+      // 1. Fall: Domain ist live und liefert 200 OK
       if (res.ok) {
-        const finalUrl = res.url;
-        let finalHost = domain;
-        try {
-          finalHost = new URL(finalUrl).hostname.replace(/^www\./, '').toLowerCase();
-        } catch {}
-
-        if (SKIP_DOMAINS.test(finalHost)) continue;
-
         const html = await res.text();
         const lowerHtml = html.toLowerCase();
         
-        // Titel und Text prüfen
         const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
         const titleText = titleMatch ? titleMatch[1].toLowerCase() : '';
 
-        // Mindestens ein Kern-Keyword muss im Titel oder Content vorkommen
-        const hasKeywordMatch = companyKeywords.some(kw => titleText.includes(kw) || lowerHtml.includes(kw));
+        // Domain-Parking & Domain-Händler strikt ausschließen
+        const isParked = /domain for sale|buy this domain|domain kaufen|sedo|dan\.com|godaddy|hugedomains|afternic/i.test(titleText) ||
+                         /this domain is registered|kaufen sie diese domain/i.test(lowerHtml);
+        if (isParked) continue;
 
-        // Offizielle Signale prüfen (Impressum, Kontakt, About)
-        const hasOfficialSignals = /impressum|kontakt|contact|about|über uns|ueber uns|datenschutz/i.test(lowerHtml);
+        // Directory / Review-Portal Indikatoren
+        const isDirectory = /software katalog|tool directory|best ai tools|review platform|vergleichsportal/i.test(titleText);
+        if (isDirectory) continue;
 
-        // Parked Domain / Domain Seller ausschließen
-        const isParked = /domain for sale|buy this domain|domain kaufen|sedo|dan\.com|godaddy/i.test(titleText);
+        // Strenger Abgleich:
+        // Bei Tier 1 (.de/.com) reicht exakte Namensübereinstimmung im Host + relevante Seite
+        const isExactHostMatch = finalHost.split('.')[0].replace(/[^a-z0-9]/g, '') === cleanComp;
+        const hasKeywordMatch = titleText.includes(cleanComp) || lowerHtml.slice(0, 3000).includes(cleanComp);
+        const hasOfficialSignals = /impressum|kontakt|contact|about|über uns|ueber uns|datenschutz|privacy/i.test(lowerHtml);
 
-        if (!isParked && (hasKeywordMatch || hasOfficialSignals)) {
+        if (isExactHostMatch && (hasKeywordMatch || hasOfficialSignals)) {
           return {
             verified: true,
             domain: finalHost,
             finalUrl,
-            title: titleMatch ? titleMatch[1].trim() : ''
+            title: titleMatch ? titleMatch[1].trim() : `${companyName} (Offizielle Website)`
+          };
+        }
+
+        if (hasKeywordMatch && hasOfficialSignals) {
+          return {
+            verified: true,
+            domain: finalHost,
+            finalUrl,
+            title: titleMatch ? titleMatch[1].trim() : `${companyName} (Offizielle Website)`
+          };
+        }
+      }
+
+      // 2. Fall: WAF / Bot-Protection (Status 429 / 403) bei exakter Tier 1 Domain (.com / .de)
+      // Viele Enterprise- & Tech-Websites (z.B. Personio SE auf personio.com / personio.de) blockieren Node-Fetches mit Vercel/Cloudflare Checkpoint.
+      if ((res.status === 429 || res.status === 403) && isTier1) {
+        const html = await res.text().catch(() => '');
+        const isWaf = /security checkpoint|cloudflare|just a moment|ddos-guard|imperva|akamai|bot protection/i.test(html) ||
+                      res.headers.get('server')?.toLowerCase().includes('cloudflare') ||
+                      res.headers.get('x-vercel-id');
+
+        const isExactHost = domainBase === cleanComp;
+        if (isWaf && isExactHost) {
+          console.log(`[DomainDiscovery] 🛡️ WAF/Bot-Schutz erkannt auf geschützter Tier-1 Domain ${domain} (Status ${res.status}). Domain ist live und gehört zur Firma.`);
+          return {
+            verified: true,
+            domain: finalHost,
+            finalUrl: `https://${finalHost}`,
+            title: `${companyName} (Offizielle Website — WAF-geschützt)`
           };
         }
       }
     } catch (e) {
-      // Nächster Scheme oder nächster Kandidat
+      // Weiter zum nächsten Scheme oder Kandidaten
     }
   }
 
@@ -164,22 +216,53 @@ async function verifyCandidateHttp(domain, companyName) {
 }
 
 /**
- * SCHRITT 1: Heuristisches Raten + HTTP-Check (Kostenlos)
+ * SCHRITT 1: Heuristisches Raten mit TLD-Priorität (Kostenlos)
  */
 export async function discoverDomainStep1(companyName) {
   console.log(`[DomainDiscovery] 🚀 Schritt 1 (Raten / Heuristik) für "${companyName}" gestartet...`);
   const candidates = generateDomainCandidates(companyName);
-  console.log(`[DomainDiscovery] Schritt 1 prüft Kandidaten:`, candidates.slice(0, 4).join(', '));
 
-  for (const candidate of candidates) {
-    const check = await verifyCandidateHttp(candidate, companyName);
+  // Phase 1: Tier 1 prüfen (.de, .com, .at, .ch)
+  console.log(`[DomainDiscovery] Prüfe Tier-1 TLDs (.de/.com):`, candidates.tier1.join(', '));
+  for (const candidate of candidates.tier1) {
+    const check = await verifyCandidateHttp(candidate, companyName, true);
     if (check.verified) {
-      console.log(`[DomainDiscovery] ✅ Schritt 1 ERFOLGREICH: "${check.domain}" bestätigt (Titel: "${check.title.slice(0, 60)}")`);
+      console.log(`[DomainDiscovery] ✅ Schritt 1 ERFOLGREICH (Tier 1): "${check.domain}" bestätigt.`);
       return {
         domain: check.domain,
         url: check.finalUrl,
         title: check.title,
-        source: 'step1_heuristic',
+        source: 'step1_heuristic_tier1',
+        step2Called: false
+      };
+    }
+  }
+
+  // Phase 2: Tier 2 (.eu, .org)
+  for (const candidate of candidates.tier2) {
+    const check = await verifyCandidateHttp(candidate, companyName, false);
+    if (check.verified) {
+      console.log(`[DomainDiscovery] ✅ Schritt 1 ERFOLGREICH (Tier 2): "${check.domain}" bestätigt.`);
+      return {
+        domain: check.domain,
+        url: check.finalUrl,
+        title: check.title,
+        source: 'step1_heuristic_tier2',
+        step2Called: false
+      };
+    }
+  }
+
+  // Phase 3: Tier 3 (.io, .ai) nur wenn KEIN Tier 1 / Tier 2 existiert
+  for (const candidate of candidates.tier3) {
+    const check = await verifyCandidateHttp(candidate, companyName, false);
+    if (check.verified) {
+      console.log(`[DomainDiscovery] ✅ Schritt 1 ERFOLGREICH (Tier 3): "${check.domain}" bestätigt.`);
+      return {
+        domain: check.domain,
+        url: check.finalUrl,
+        title: check.title,
+        source: 'step1_heuristic_tier3',
         step2Called: false
       };
     }
@@ -190,7 +273,42 @@ export async function discoverDomainStep1(companyName) {
 }
 
 /**
- * SCHRITT 2: Google Custom Search JSON API (100 Gratis-Anfragen / Tag)
+ * Filtert Suchergebnisse gegen Verzeichnisse, Bewertungsportale und Aggregator-Pfade
+ */
+export function filterSearchResult(item) {
+  if (!item) return null;
+  const itemUrl = item.link || item.formattedUrl;
+  if (!itemUrl) return null;
+
+  try {
+    const parsed = new URL(itemUrl);
+    const host = parsed.hostname.replace(/^www\./, '').toLowerCase();
+
+    // 1. Domain-Filter (Verzeichnisse & Social Media)
+    if (SKIP_DOMAINS.test(host)) {
+      console.log(`[GoogleCSE] ❌ Überspringe Verzeichnis/Portal-Domain: ${host} (${itemUrl})`);
+      return null;
+    }
+
+    // 2. Pfad-Filter (z.B. /tools/tendigo, /review/myreach)
+    if (DIRECTORY_PATH_PATTERNS.test(parsed.pathname)) {
+      console.log(`[GoogleCSE] ❌ Überspringe Aggregator-Pfad: ${parsed.pathname} auf ${host}`);
+      return null;
+    }
+
+    return {
+      domain: host,
+      url: itemUrl,
+      title: item.title || '',
+      snippet: item.snippet || ''
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * SCHRITT 2: Mehrstufige Google Custom Search JSON API (100 Gratis-Anfragen / Tag)
  */
 export async function discoverDomainStep2(companyName) {
   const quota = getGoogleCseQuotaStatus();
@@ -211,63 +329,71 @@ export async function discoverDomainStep2(companyName) {
              process.env.GOOGLE_CSE_ID || 
              process.env.GOOGLE_CUSTOM_SEARCH_CX;
 
-  const searchQuery = `"${companyName}" offizielle Website`;
-
   if (!apiKey || !cx) {
-    console.warn(`[GoogleCSE] ⚠️ GOOGLE_SEARCH_API_KEY oder GOOGLE_SEARCH_ENGINE_ID (CX) nicht in Umgebung konfiguriert.`);
-    return null;
+    console.warn(`[GoogleCSE] ⚠️ GOOGLE_SEARCH_API_KEY oder GOOGLE_SEARCH_ENGINE_ID (CX) nicht konfiguriert.`);
+    return { error: 'NOT_CONFIGURED', reason: 'Google Custom Search API Key / CX nicht in Umgebung hinterlegt.' };
   }
 
-  // Quota zählen
-  recordGoogleCseUsage();
-  console.log(`[GoogleCSE] 🔍 Google API Request: query="${searchQuery}" (CX: ${cx.slice(0, 6)}...)`);
+  // Mehrstufige Suchstrategie für Startups & nischige Firmen
+  const queryStages = [
+    `"${companyName}" offizielle Website`,
+    `"${companyName}" Impressum`,
+    `"${companyName}" Software OR Tool OR Kontakt`
+  ];
 
-  const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${encodeURIComponent(apiKey)}&cx=${encodeURIComponent(cx)}&q=${encodeURIComponent(searchQuery)}&num=5`;
-
-  try {
-    const res = await fetchWithTimeout(searchUrl, { headers: { 'Accept': 'application/json' } }, 7000);
-    if (!res.ok) {
-      const errBody = await res.text().catch(() => '');
-      console.error(`[GoogleCSE] API Error (${res.status}): ${errBody}`);
-      return null;
+  for (let stageIdx = 0; stageIdx < queryStages.length; stageIdx++) {
+    const currentQuota = getGoogleCseQuotaStatus();
+    if (currentQuota.usedToday >= currentQuota.limit) {
+      console.warn(`[GoogleCSE] ⚠️ Kontingent während mehrstufiger Suche erreicht.`);
+      break;
     }
 
-    const data = await res.json();
-    if (!data.items || data.items.length === 0) {
-      console.log(`[GoogleCSE] Keine Suchergebnisse für "${searchQuery}"`);
-      return null;
-    }
+    const searchQuery = queryStages[stageIdx];
+    recordGoogleCseUsage();
+    console.log(`[GoogleCSE] 🔍 Stufe ${stageIdx + 1}/${queryStages.length}: "${searchQuery}" (Verbrauch: ${quotaState.usedToday}/${GOOGLE_CSE_DAILY_LIMIT})`);
 
-    for (const item of data.items) {
-      try {
-        const itemUrl = item.link || item.formattedUrl;
-        if (!itemUrl) continue;
-        const host = new URL(itemUrl).hostname.replace(/^www\./, '').toLowerCase();
+    const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${encodeURIComponent(apiKey)}&cx=${encodeURIComponent(cx)}&q=${encodeURIComponent(searchQuery)}&num=5`;
 
-        if (SKIP_DOMAINS.test(host)) {
-          console.log(`[GoogleCSE] Überspringe Verzeichnis/Social-Treffer: ${host}`);
-          continue;
-        }
-
-        console.log(`[GoogleCSE] ✅ Schritt 2 Treffer: ${host} (Titel: "${item.title}", Link: ${itemUrl})`);
-        return {
-          domain: host,
-          url: itemUrl,
-          title: item.title,
-          snippet: item.snippet,
-          query: searchQuery,
-          source: 'step2_google_cse',
-          step2Called: true,
-          rawItem: item
-        };
-      } catch (err) {
+    try {
+      const res = await fetchWithTimeout(searchUrl, { headers: { 'Accept': 'application/json' } }, 7000);
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => '');
+        console.error(`[GoogleCSE] API Error (${res.status}): ${errBody}`);
         continue;
       }
+
+      const data = await res.json();
+      if (!data.items || data.items.length === 0) {
+        console.log(`[GoogleCSE] Keine Treffer für Stufe ${stageIdx + 1} ("${searchQuery}")`);
+        continue;
+      }
+
+      // Treffer filtern
+      for (const item of data.items) {
+        const valid = filterSearchResult(item);
+        if (valid) {
+          console.log(`[GoogleCSE] ✅ Echte Firmen-Domain gefunden: ${valid.domain} (Titel: "${valid.title}", Link: ${valid.url})`);
+          return {
+            domain: valid.domain,
+            url: valid.url,
+            title: valid.title,
+            snippet: valid.snippet,
+            query: searchQuery,
+            source: 'step2_google_cse',
+            stage: stageIdx + 1,
+            step2Called: true,
+            rawItem: item
+          };
+        }
+      }
+
+      console.log(`[GoogleCSE] Stufe ${stageIdx + 1} lieferte nur Aggregatoren/Verzeichnisse. Starte nächste Suchstufe...`);
+    } catch (err) {
+      console.error(`[GoogleCSE] Fehler in Suchstufe ${stageIdx + 1}:`, err.message);
     }
-  } catch (err) {
-    console.error(`[GoogleCSE] Fehler bei Ausführung:`, err.message);
   }
 
+  console.log(`[GoogleCSE] ❌ Alle Suchstufen für "${companyName}" ergaben keine verifizierte Firmen-Domain.`);
   return null;
 }
 
@@ -294,7 +420,7 @@ export async function resolveCompanyWebsite(companyOrDomain) {
     } catch {}
   }
 
-  // 1. Schritt 1 (Kostenlos via Raten / Heuristik)
+  // 1. Schritt 1 (Kostenlos via Raten / TLD-Hierarchie)
   const step1Result = await discoverDomainStep1(input);
   if (step1Result && step1Result.domain) {
     return {
@@ -302,7 +428,7 @@ export async function resolveCompanyWebsite(companyOrDomain) {
       url: step1Result.url,
       title: step1Result.title,
       status: 'VERIFIED',
-      source: 'step1_heuristic',
+      source: step1Result.source,
       step2Called: false,
       quota: getGoogleCseQuotaStatus()
     };
@@ -319,17 +445,18 @@ export async function resolveCompanyWebsite(companyOrDomain) {
       rawItem: step2Result.rawItem,
       status: 'VERIFIED',
       source: 'step2_google_cse',
+      stage: step2Result.stage,
       step2Called: true,
       quota: getGoogleCseQuotaStatus()
     };
   }
 
   // 3. Ehrlicher Fallback: Nicht auffindbar
-  console.log(`[DomainDiscovery] ❌ Weder Schritt 1 noch Schritt 2 konnten eine offizielle Website für "${input}" finden. Status: nicht auffindbar.`);
+  console.log(`[DomainDiscovery] ❌ Weder Schritt 1 noch Schritt 2 konnten eine offizielle Website für "${input}" finden. Status: nicht sicher gefunden.`);
   return {
     domain: null,
     status: 'NOT_FOUND',
-    reason: 'Website nicht auffindbar',
+    reason: step2Result?.error === 'NOT_CONFIGURED' ? 'Google Search API nicht konfiguriert' : 'nicht sicher gefunden (nur Verzeichnisse oder keine Website auffindbar)',
     step2Called: true,
     quota: getGoogleCseQuotaStatus()
   };
