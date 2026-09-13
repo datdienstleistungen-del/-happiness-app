@@ -177,17 +177,28 @@ function summarizeResearch(resultJson) {
 // 2. SYSTEM-PROMPT BUILDER — Saubere Trennung in Schichten
 // ============================================================================
 
+const LANGUAGE_NAMES = {
+  de: 'Deutsch',
+  en: 'English',
+  es: 'Español',
+  fr: 'Français',
+  it: 'Italiano',
+  nl: 'Nederlands',
+  el: 'Ελληνικά (Greek)'
+};
+
 /**
  * Baut den System-Prompt für den Coach auf.
  * Schichten: Basis | NeXus-Wissen | Vertriebswissen | Kontext | Grounding
  * 
  * @param {object} context - Aus buildCoachContext()
  * @param {string|null} quickAction - Aktive Quick-Action (pitch, einwand, followup, analyse)
+ * @param {string} lang - Die gewählte Sprache des Nutzers (z.B. 'en', 'de', 'es', etc.)
  * @returns {string} Der vollständige System-Prompt
  */
-export function buildCoachSystemPrompt(context, quickAction = null) {
+export function buildCoachSystemPrompt(context, quickAction = null, lang = 'de') {
   const layers = [
-    BASE_PROMPT,
+    getBasePrompt(lang),
     NEXUS_KNOWLEDGE,
     SALES_KNOWLEDGE,
     buildContextLayer(context),
@@ -203,11 +214,13 @@ export function buildCoachSystemPrompt(context, quickAction = null) {
 // 3. PROMPT-LAYERS — Sauber getrennt und wartbar
 // ============================================================================
 
-const BASE_PROMPT = `Du bist NeXus Sales Coach — ein erfahrener B2B-Vertriebsexperte.
+function getBasePrompt(lang = 'de') {
+  const targetLanguage = LANGUAGE_NAMES[lang] || 'Deutsch';
+  return `Du bist NeXus Sales Coach — ein erfahrener B2B-Vertriebsexperte.
 Du hilfst dem Nutzer (Verkäufer), seine Leads in Abschlüsse zu verwandeln.
 
-DEIN VERHALTEN:
-- Antworte IMMER auf Deutsch.
+DEIN VERHALTEN & SPRACHREGEL:
+- Antworte IMMER in der Sprache des Nutzers: ${targetLanguage}. (CRITICAL: Respond ALWAYS in ${targetLanguage}).
 - Schreibe wie ein ECHTER MENSCH in einem Chat — natürlich, direkt, auf Augenhöhe.
 - Nutze Fließtext, natürliche Sätze und weiche Übergänge.
 - Fasse dich KNAPP: Maximal 3-5 prägnante Sätze pro Antwort.
@@ -226,7 +239,8 @@ VERBOTEN:
 - NIEMALS "Firma: X", "Score: Y" o.ä. als Fließtext ausgeben.
 - NIEMALS ausweichen oder generische Floskeln verwenden.
 - NIEMALS nach Informationen fragen, die bereits im Kontext verfügbar sind.
-- NIEMALS Quellen oder Artikel erfinden. Wenn keine Research-Daten mit Quellen vorhanden sind, sage das klar und direkt. Erwähne keine Pressemitteilungen, die du nicht kennst.`
+- NIEMALS Quellen oder Artikel erfinden. Wenn keine Research-Daten mit Quellen vorhanden sind, sage das klar und direkt. Erwähne keine Pressemitteilungen, die du nicht kennst.`;
+}
 
 const NEXUS_KNOWLEDGE = `---
 WAS IST NeXus?

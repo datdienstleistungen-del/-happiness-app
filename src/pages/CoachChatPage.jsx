@@ -125,7 +125,7 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
       })
 
       // --- SYSTEM-PROMPT: Saubere Trennung ---
-      const systemContext = buildCoachSystemPrompt(context, activeQuickAction)
+      const systemContext = buildCoachSystemPrompt(context, activeQuickAction, lang || 'de')
 
       // --- DEBUG: Was steht im Prompt? ---
       const contextSection = systemContext.split('--- AKTUELLER KONTEXT')[1]?.split('---')[0] || 'KEIN KONTEXT GEFUNDEN'
@@ -133,7 +133,7 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
       console.log('[NeXusCoach] System-Prompt Länge:', systemContext.length, 'Zeichen')
 
       const recentHistory = chatHistory.slice(-4);
-      const response = await callNexusAI('chat', message, { system: systemContext, history: recentHistory }, 0.5)
+      const response = await callNexusAI('chat', message, { system: systemContext, history: recentHistory }, 0.5, lang || 'de')
       
       if (response) {
         let textContent = ''

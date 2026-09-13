@@ -399,7 +399,15 @@ export const handler = async (event) => {
 
     console.log("[NEXUS] Starting handler");
 
-    const languageNames = { de: 'Deutsch', en: 'Englisch', es: 'Spanisch', fr: 'FranzÃ¶sisch', it: 'Italienisch', nl: 'NiederlÃ¤ndisch' };
+    const languageNames = { 
+      de: 'Deutsch', 
+      en: 'Englisch (English)', 
+      es: 'Spanisch (Spanish)', 
+      fr: 'Französisch (French)', 
+      it: 'Italienisch (Italian)', 
+      nl: 'Niederländisch (Dutch)',
+      el: 'Griechisch (Greek)'
+    };
     
     let finalLang = lang || 'de';
     if (targetLang && targetLang !== 'auto') {
@@ -407,9 +415,9 @@ export const handler = async (event) => {
     }
     const langName = languageNames[finalLang] || languageNames['de'];
     
-    let langInstruction = `\n\nCRITICAL REQUIREMENT: Du musst die Nachricht zwingend auf ${langName} verfassen!`;
+    let langInstruction = `\n\nCRITICAL REQUIREMENT: Du musst deine gesamte Antwort / Nachricht zwingend in dieser Sprache verfassen: ${langName}! (Respond completely in ${langName}).`;
     if (targetLang === 'auto') {
-      langInstruction = `\n\nCRITICAL REQUIREMENT: Passe die Sprache der Nachricht automatisch an das Land des Ziel-Unternehmens an. (z.B. Englisch fÃ¼r internationale Firmen, Deutsch fÃ¼r DACH).`;
+      langInstruction = `\n\nCRITICAL REQUIREMENT: Passe die Sprache der Nachricht automatisch an das Land des Ziel-Unternehmens an. (z.B. Englisch für internationale Firmen, Deutsch für DACH).`;
     }
 
     const contextSystem = (context && context.system) ? `\n\n${context.system}` : '';
