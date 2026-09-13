@@ -15,6 +15,13 @@
 [build.environment]
   NODE_VERSION = "22"
 
+# 301 Permanent Redirect from legacy domain
+[[redirects]]
+  from = "https://happiness-eu.netlify.app/*"
+  to = "https://nexus-hit.netlify.app/:splat"
+  status = 301
+  force = true
+
 [[redirects]]
   from = "/api/reddit-proxy/*"
   to = "/.netlify/functions/reddit-proxy/:splat"
