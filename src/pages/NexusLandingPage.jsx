@@ -74,9 +74,9 @@ export default function NexusLandingPage() {
     signal: "Expansion nach Frankreich angekündigt. Aufbau eines neuen Sales- & Marketing-Teams in Paris gestartet (Quelle: Bundesanzeiger & LinkedIn Jobs).",
     psychologische_ansprache: "Fokus auf Skalierung & lokale Markt-Expertise. Nutzenversprechen: Strukturierte Lead-Pipeline für den französischen Markt ohne administrativen Overhead vor Ort.",
     ansprechpartner: {
-      name: "Robert Pesch",
-      rolle: "Head of Sales & Growth",
-      email: "robert.pesch@personio.de",
+      name: "Harro Goerndt",
+      rolle: "Head of Sales & Revenue Operations",
+      email: "harro.goerndt@personio.de",
       email_status: "VERIFIED",
       confidence: 95
     }
