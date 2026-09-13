@@ -593,6 +593,227 @@
   to { transform: rotate(360deg); }
 }
 
+/* Radical Minimum Input Box (Magic Form) */
+.nexus-magic-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.nexus-magic-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nexus-magic-label {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #1E293B;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nexus-magic-textarea {
+  border: 1.5px solid #CBD5E1;
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 14.5px;
+  font-family: inherit;
+  color: #0F172A;
+  outline: none;
+  background: #FFFFFF;
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 72px;
+  line-height: 1.5;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.nexus-magic-textarea:focus {
+  border-color: #155DFC;
+  box-shadow: 0 0 0 3px rgba(21, 93, 252, 0.15);
+}
+
+.nexus-magic-presets {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.nexus-magic-presets-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.nexus-magic-preset-chip {
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  color: #334155;
+  padding: 4px 11px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.nexus-magic-preset-chip:hover:not(:disabled) {
+  background: #EBF2FE;
+  color: #155DFC;
+  border-color: #C8D8FB;
+  transform: translateY(-1px);
+}
+
+.nexus-magic-action {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.nexus-magic-submit-btn {
+  background: linear-gradient(135deg, #155DFC 0%, #0B45C4 100%);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  font-size: 14.5px;
+  font-weight: 700;
+  padding: 13px 26px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(21, 93, 252, 0.3);
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .nexus-magic-submit-btn {
+    width: auto;
+  }
+}
+
+.nexus-magic-submit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1347E5 0%, #0937A3 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(21, 93, 252, 0.4);
+}
+
+.nexus-magic-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Sequential Live-Loading Animation (4 Phases) */
+.nexus-phase-loader-container {
+  margin-top: 24px;
+  padding: 20px 22px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.nexus-phase-loader-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1E293B;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.nexus-phases-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nexus-phase-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13.5px;
+  transition: all 0.25s ease;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.nexus-phase-item.phase-pending {
+  opacity: 0.35;
+  color: #94A3B8;
+}
+
+.nexus-phase-item.phase-active {
+  opacity: 1;
+  color: #0F172A;
+  font-weight: 600;
+  background: #FFFFFF;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border-left: 3px solid #155DFC;
+}
+
+.nexus-phase-item.phase-done {
+  opacity: 0.85;
+  color: #059669;
+  font-weight: 500;
+}
+
+.nexus-phase-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.nexus-phase-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #155DFC;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: nexus-spin 0.8s linear infinite;
+}
+
+.nexus-phase-bullet {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #CBD5E1;
+}
+
+.nexus-phase-text-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nexus-phase-emoji {
+  font-size: 15px;
+}
+
+.nexus-phase-text {
+  line-height: 1.4;
+}
+
 /* Result Box */
 .nexus-lp-result-container {
   margin-top: 28px;
