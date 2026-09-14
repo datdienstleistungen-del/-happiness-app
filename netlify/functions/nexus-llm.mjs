@@ -282,7 +282,7 @@ export const handler = async (event) => {
     const body = event.body ? JSON.parse(event.body) : {};
     const { systemPrompt, userMessage, context, temperature, lang, targetLang, isLandingPreview } = body;
 
-    const authHeader = event.headers.authorization || event.headers.Authorization;
+    const authHeader = (event.headers && (event.headers.authorization || event.headers.Authorization)) || '';
     const token = authHeader ? authHeader.replace('Bearer ', '').trim() : '';
     const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
     const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
@@ -435,8 +435,8 @@ export const handler = async (event) => {
     messages.push({ role: "user", content: userMessage });
 
     // --- WEB SEARCH & STANDALONE EMAIL CRAWLER: Auto-Suche & Crawler bei Bedarf ---
-    const lowerMsg = userMessage.toLowerCase();
-    const isContactMode = systemPrompt.includes('Recherche-Agent') || systemPrompt.includes('Coach');
+    const lowerMsg = (userMessage || '').toLowerCase();
+    const isContactMode = systemPrompt ? (systemPrompt.includes('Recherche-Agent') || systemPrompt.includes('Coach')) : false;
     const searchTriggers = ['website', 'url', 'homepage', 'link', 'ansprechpartner', 'ceo', 
       'geschäftsführer', 'head of', 'wer ist', 'kontakt', 'linkedin', 'firmensitz', 'adresse', 'email', 'e-mail', 'mail'];
     const needsSearch = isContactMode || searchTriggers.some(t => lowerMsg.includes(t));

@@ -437,3 +437,206 @@
   color: #EF4444 !important;
   opacity: 1 !important;
 }
+
+
+/* ==========================================================================
+   NEXUS SOCIAL OUTREACH SUITE
+   ========================================================================== */
+.social-outreach-suite {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.social-presence-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 14px 18px;
+}
+
+.social-presence-links {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.social-presence-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.social-presence-badge.linkedin {
+  background: rgba(10, 102, 194, 0.1);
+  color: #0a66c2;
+  border: 1px solid rgba(10, 102, 194, 0.25);
+}
+.social-presence-badge.linkedin:hover {
+  background: rgba(10, 102, 194, 0.2);
+}
+
+.social-presence-badge.youtube {
+  background: rgba(255, 0, 0, 0.1);
+  color: #ff0000;
+  border: 1px solid rgba(255, 0, 0, 0.25);
+}
+.social-presence-badge.youtube:hover {
+  background: rgba(255, 0, 0, 0.2);
+}
+
+.social-presence-badge.website {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+}
+.social-presence-badge.website:hover {
+  border-color: var(--color-koralle);
+}
+
+.social-presence-badge.unverified {
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  border: 1px dashed var(--border-light);
+  opacity: 0.7;
+}
+
+.social-activities-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.social-activity-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.social-activity-card:hover {
+  border-color: var(--color-koralle);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.social-activity-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.social-platform-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.social-platform-tag.youtube {
+  color: #ff0000;
+}
+.social-platform-tag.linkedin {
+  color: #0a66c2;
+}
+
+.social-activity-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.social-activity-snippet {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.social-relevance-box {
+  background: rgba(16, 185, 129, 0.08);
+  border-left: 3px solid #10b981;
+  padding: 8px 12px;
+  border-radius: 0 6px 6px 0;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.social-activity-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.social-analysis-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.social-analysis-step {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.social-analysis-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-koralle);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.social-outreach-preview-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 8px;
+  margin-top: 12px;
+}
+
+.social-outreach-tab-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.social-outreach-tab-btn.active {
+  background: var(--color-koralle);
+  color: white;
+}

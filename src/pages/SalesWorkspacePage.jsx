@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { Briefcase, Mail, MessageSquare, Phone, Send, Copy, CheckCircle, AlertCircle, List, Trash2, ArrowRight, Search } from 'lucide-react'
-import { callNexusAI, runDeepResearch, callContactIntelligence, callMessageGeneration } from '../lib/nexus-ai'
+import { Briefcase, Mail, MessageSquare, Send, Copy, CheckCircle, AlertCircle, List, Trash2, ArrowRight, Search, Share2, ExternalLink, Video, Globe, Sparkles, RefreshCw } from 'lucide-react'
+import { callNexusAI, runDeepResearch, callContactIntelligence, callMessageGeneration, callSocialIntelligence } from '../lib/nexus-ai'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import { useLead } from '../context/LeadContext'
 import { useAuth } from '../context/AuthContext'
@@ -15,7 +15,7 @@ const MODI = [
   { id: 'sales_pitch', label: 'Sales Pitch', icon: Send, description: 'Persönliche Erstnachricht' },
   { id: 'follow_up', label: 'Follow-Up', icon: Mail, description: 'Nachfass-Nachricht' },
   { id: 'einwandbehandlung', label: 'Einwandbehandlung', icon: MessageSquare, description: 'Auf Einwände reagieren' },
-  { id: 'forum_response', label: 'Forum-Antwort', icon: Phone, description: 'Auf Forenbeiträge antworten' }
+  { id: 'forum_response', label: 'Social Outreach', icon: Share2, description: 'LinkedIn / YouTube / Foren' }
 ]
 
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -61,6 +61,92 @@ export default function SalesWorkspacePage() {
   const [generatedMessage, setGeneratedMessage] = useState(null) // Generierte Nachricht
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false) // Nachricht wird generiert
   const [editedMessage, setEditedMessage] = useState('')
+
+  // --- NEXUS SOCIAL INTELLIGENCE STATE ---
+  const [socialState, setSocialState] = useState({
+    loading: false,
+    loadedCompany: null,
+    profiles: null,
+    activities: [],
+    selectedActivity: null,
+    outreachData: null,
+    generatingOutreach: false,
+    activeTab: 'comment', // 'comment' | 'direct_message'
+    copiedComment: false,
+    copiedDm: false,
+    error: null
+  });
+
+  const loadSocialActivities = async (force = false) => {
+    const compName = fullContext?.company?.name || formData.company;
+    if (!compName) return;
+    if (!force && socialState.loadedCompany === compName && socialState.activities.length > 0) return;
+
+    setSocialState(prev => ({ ...prev, loading: true, error: null, selectedActivity: null, outreachData: null }));
+    try {
+      const res = await callSocialIntelligence({
+        action: 'discover_activities',
+        companyName: compName,
+        website: fullContext?.company?.website || null,
+        trigger: activeTrigger || (fullContext?.opportunity?.trigger_title ? { title: fullContext.opportunity.trigger_title } : null),
+        offering: fullContext?.offering || null
+      });
+      setSocialState(prev => ({
+        ...prev,
+        loading: false,
+        loadedCompany: compName,
+        profiles: res.profiles || null,
+        activities: res.activities || [],
+        status: res.status
+      }));
+    } catch (err) {
+      console.error("Error discovering social activities:", err);
+      setSocialState(prev => ({ ...prev, loading: false, error: err.message }));
+    }
+  };
+
+  useEffect(() => {
+    if (selectedMode === 'forum_response' && (fullContext?.company?.name || formData.company)) {
+      const compName = fullContext?.company?.name || formData.company;
+      if (socialState.loadedCompany !== compName) {
+        loadSocialActivities();
+      }
+    }
+  }, [selectedMode, fullContext?.company?.name, formData.company]);
+
+  const handleUseForOutreach = async (activity) => {
+    setSocialState(prev => ({
+      ...prev,
+      selectedActivity: activity,
+      generatingOutreach: true,
+      outreachData: null,
+      activeTab: 'comment',
+      copiedComment: false,
+      copiedDm: false
+    }));
+    try {
+      const res = await callSocialIntelligence({
+        action: 'generate_social_outreach',
+        companyName: fullContext?.company?.name || formData.company,
+        activity,
+        trigger: activeTrigger || (fullContext?.opportunity?.trigger_title ? { title: fullContext.opportunity.trigger_title } : null),
+        offering: fullContext?.offering || null,
+        contact: foundContact || (fullContext?.contacts?.[0]?.nexus_contacts ? {
+          name: `${fullContext.contacts[0].nexus_contacts.first_name || ''} ${fullContext.contacts[0].nexus_contacts.last_name || ''}`.trim(),
+          role: fullContext.contacts[0].nexus_contacts.role
+        } : null)
+      });
+      setSocialState(prev => ({
+        ...prev,
+        generatingOutreach: false,
+        outreachData: res
+      }));
+    } catch (err) {
+      console.error("Error generating outreach:", err);
+      setSocialState(prev => ({ ...prev, generatingOutreach: false, error: err.message }));
+    }
+  };
+
 
   const MODI_LABELS = {
     sales_pitch: { label: t('nexus.wsModePitchLabel'), desc: t('nexus.wsModePitchDesc') },
@@ -829,7 +915,302 @@ export default function SalesWorkspacePage() {
                     ))}
                   </div>
                 </div>
-                <main className="sales-workspace-main" style={{ width: '100%' }}>
+                
+                {selectedMode === 'forum_response' ? (
+                  <div className="social-outreach-suite" style={{ width: '100%' }}>
+                    {/* 1. Social Presence Bar */}
+                    <div className="social-presence-bar">
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                          {t('nexus.wsSocialPresence') || 'Social-Präsenz'}: {fullContext?.company?.name || formData.company || '-'}
+                        </strong>
+                        <div className="social-presence-links">
+                          {fullContext?.company?.website && (
+                            <a href={fullContext.company.website.startsWith('http') ? fullContext.company.website : 'https://' + fullContext.company.website} target="_blank" rel="noopener noreferrer" className="social-presence-badge website">
+                              <Globe size={14} /> Website ↗
+                            </a>
+                          )}
+                          {socialState.profiles?.linkedin?.url ? (
+                            <a href={socialState.profiles.linkedin.url} target="_blank" rel="noopener noreferrer" className="social-presence-badge linkedin">
+                              <ExternalLink size={14} /> LinkedIn Unternehmensseite ↗
+                            </a>
+                          ) : (
+                            <span className="social-presence-badge unverified">
+                              LinkedIn: Keine verifizierte URL
+                            </span>
+                          )}
+                          {socialState.profiles?.youtube?.url ? (
+                            <a href={socialState.profiles.youtube.url} target="_blank" rel="noopener noreferrer" className="social-presence-badge youtube">
+                              <Video size={14} /> YouTube Kanal ↗
+                            </a>
+                          ) : (
+                            <span className="social-presence-badge unverified">
+                              YouTube: Kein Kanal verlinkt
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => loadSocialActivities(true)} 
+                        className="btn-secondary"
+                        disabled={socialState.loading}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '6px 12px' }}
+                      >
+                        <RefreshCw size={13} className={socialState.loading ? 'btn-spinner' : ''} />
+                        {socialState.loading ? t('nexus.wsSearching') : 'Aktivitäten aktualisieren'}
+                      </button>
+                    </div>
+
+                    {/* 2. Error State */}
+                    {socialState.error && (
+                      <div className="error-message">
+                        <AlertCircle size={16} />
+                        {socialState.error}
+                      </div>
+                    )}
+
+                    {/* 3. Loading State */}
+                    {socialState.loading && (
+                      <div style={{ padding: '36px', textAlign: 'center', background: 'var(--bg-card)', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+                        <div className="btn-spinner" style={{ margin: '0 auto 16px', width: '28px', height: '28px' }}></div>
+                        <h4 style={{ margin: '0 0 8px 0' }}>{t('nexus.wsSocialSearching') || 'Recherchiere verifizierte Social-Aktivitäten...'}</h4>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>
+                          Untersuche verifizierte Kanäle (YouTube, LinkedIn) für {fullContext?.company?.name || formData.company}...
+                        </p>
+                      </div>
+                    )}
+
+                    {/* 4. Detail View: Selected Activity & Generated Outreach */}
+                    {!socialState.loading && socialState.selectedActivity && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <button 
+                            className="btn-secondary" 
+                            onClick={() => setSocialState(prev => ({ ...prev, selectedActivity: null, outreachData: null }))}
+                            style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', padding: '6px 12px' }}
+                          >
+                            <ArrowRight size={14} style={{ transform: 'rotate(180deg)' }} /> {t('nexus.wsSocialBackToList') || 'Zurück zur Beitragsliste'}
+                          </button>
+                          <a 
+                            href={socialState.selectedActivity.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="btn-secondary"
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--color-koralle)' }}
+                          >
+                            <ExternalLink size={14} /> {t('nexus.wsSocialOpenOriginal') || 'Original öffnen'} ↗
+                          </a>
+                        </div>
+
+                        {/* Mini Activity Header Card */}
+                        <div style={{ padding: '14px 18px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                            <span className={`social-platform-tag ${socialState.selectedActivity.platform}`}>
+                              {socialState.selectedActivity.platform === 'youtube' ? <Video size={14} /> : <Share2 size={14} />}
+                              {socialState.selectedActivity.platform.toUpperCase()}
+                            </span>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>• {socialState.selectedActivity.date}</span>
+                          </div>
+                          <h4 style={{ margin: '0 0 6px 0', fontSize: '1rem' }}>{socialState.selectedActivity.title}</h4>
+                          {socialState.selectedActivity.snippet && (
+                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{socialState.selectedActivity.snippet}</p>
+                          )}
+                        </div>
+
+                        {/* Generating State */}
+                        {socialState.generatingOutreach && (
+                          <div style={{ padding: '36px', textAlign: 'center', background: 'var(--bg-card)', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+                            <div className="btn-spinner" style={{ margin: '0 auto 16px', width: '28px', height: '28px' }}></div>
+                            <h4 style={{ margin: '0 0 8px 0' }}>{t('nexus.wsSocialAnalyzing') || 'Analysiere Beitrag & erstelle Social Outreach...'}</h4>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>
+                              Erstelle fundierten Mehrwert-Kommentar und passgenaue Direktnachricht...
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Outreach Result */}
+                        {!socialState.generatingOutreach && socialState.outreachData && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            {/* 3-Step Analysis Box */}
+                            <div className="social-analysis-box">
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border-light)', paddingBottom: '10px' }}>
+                                <Sparkles size={18} color="var(--color-koralle)" />
+                                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>
+                                  {t('nexus.wsSocialPostAnalysis') || 'Beitrags-Analyse'}
+                                </h4>
+                              </div>
+                              <div className="social-analysis-step">
+                                <span className="social-analysis-label">{t('nexus.wsSocialWhatItSays') || 'Was sagt dieser Beitrag aus?'}</span>
+                                <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.5, color: 'var(--text-primary)' }}>
+                                  {socialState.outreachData.analysis?.post_summary || 'Reale öffentliche Veröffentlichung des Unternehmens.'}
+                                </p>
+                              </div>
+                              <div className="social-analysis-step">
+                                <span className="social-analysis-label">{t('nexus.wsSocialWhyRelevant') || 'Warum ist er relevant für dein Angebot?'}</span>
+                                <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.5, color: 'var(--text-primary)' }}>
+                                  {socialState.outreachData.analysis?.relevance_explanation || 'Bietet einen konkreten, thematischen Anknüpfungspunkt für die Erstansprache.'}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Outreach Tabs (Comment vs Direct Message) */}
+                            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '10px', padding: '20px' }}>
+                              <div className="social-outreach-preview-tabs">
+                                <button 
+                                  className={`social-outreach-tab-btn ${socialState.activeTab === 'comment' ? 'active' : ''}`}
+                                  onClick={() => setSocialState(prev => ({ ...prev, activeTab: 'comment' }))}
+                                >
+                                  💬 {t('nexus.wsSocialCommentTab') || 'Mehrwert-Kommentar'}
+                                </button>
+                                <button 
+                                  className={`social-outreach-tab-btn ${socialState.activeTab === 'direct_message' ? 'active' : ''}`}
+                                  onClick={() => setSocialState(prev => ({ ...prev, activeTab: 'direct_message' }))}
+                                >
+                                  ✉️ {t('nexus.wsSocialDmTab') || 'Direktnachricht (InMail / DM)'}
+                                </button>
+                              </div>
+
+                              <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                <textarea
+                                  value={socialState.activeTab === 'comment' ? (socialState.outreachData.comment || '') : (socialState.outreachData.direct_message || '')}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setSocialState(prev => ({
+                                      ...prev,
+                                      outreachData: {
+                                        ...prev.outreachData,
+                                        [prev.activeTab === 'comment' ? 'comment' : 'direct_message']: val
+                                      }
+                                    }));
+                                  }}
+                                  rows={6}
+                                  style={{
+                                    width: '100%',
+                                    padding: '12px 14px',
+                                    borderRadius: '8px',
+                                    border: '1px solid var(--border-light)',
+                                    background: 'var(--bg)',
+                                    color: 'var(--text-primary)',
+                                    fontFamily: 'inherit',
+                                    fontSize: '0.95rem',
+                                    lineHeight: 1.5,
+                                    resize: 'vertical'
+                                  }}
+                                />
+
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                                  <button
+                                    className="btn-primary"
+                                    onClick={() => {
+                                      const textToCopy = socialState.activeTab === 'comment' ? socialState.outreachData.comment : socialState.outreachData.direct_message;
+                                      navigator.clipboard.writeText(textToCopy || '');
+                                      if (socialState.activeTab === 'comment') {
+                                        setSocialState(prev => ({ ...prev, copiedComment: true }));
+                                        setTimeout(() => setSocialState(prev => ({ ...prev, copiedComment: false })), 2500);
+                                      } else {
+                                        setSocialState(prev => ({ ...prev, copiedDm: true }));
+                                        setTimeout(() => setSocialState(prev => ({ ...prev, copiedDm: false })), 2500);
+                                      }
+                                    }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                                  >
+                                    {(socialState.activeTab === 'comment' ? socialState.copiedComment : socialState.copiedDm) ? (
+                                      <><CheckCircle size={16} /> Kopiert!</>
+                                    ) : (
+                                      <><Copy size={16} /> In die Zwischenablage kopieren</>
+                                    )}
+                                  </button>
+
+                                  <a
+                                    href={socialState.selectedActivity.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn-secondary"
+                                    style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-koralle)', fontWeight: 600 }}
+                                  >
+                                    <ExternalLink size={16} /> Originalbeitrag öffnen & posten ↗
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* 5. Activities List */}
+                    {!socialState.loading && !socialState.selectedActivity && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>
+                            {t('nexus.wsSocialActivities') || 'Letzte Aktivitäten & Content'} ({socialState.activities.length})
+                          </h4>
+                        </div>
+
+                        {socialState.activities.length === 0 ? (
+                          <div style={{ padding: '32px', textAlign: 'center', background: 'var(--bg-card)', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+                            <p style={{ color: 'var(--text-secondary)', margin: '0 0 16px 0' }}>
+                              {t('nexus.wsSocialNoActivities') || 'Für dieses Unternehmen konnten aktuell keine verifizierten öffentlichen Social-Aktivitäten gefunden werden.'}
+                            </p>
+                            {socialState.profiles?.linkedin?.url && (
+                              <a href={socialState.profiles.linkedin.url} target="_blank" rel="noopener noreferrer" className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                <ExternalLink size={14} /> LinkedIn Unternehmensseite manuell öffnen ↗
+                              </a>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="social-activities-grid">
+                            {socialState.activities.map((act) => (
+                              <div key={act.id} className="social-activity-card">
+                                <div className="social-activity-header">
+                                  <span className={`social-platform-tag ${act.platform}`}>
+                                    {act.platform === 'youtube' ? <Video size={14} /> : <Share2 size={14} />}
+                                    {act.platform.toUpperCase()}
+                                  </span>
+                                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{act.date}</span>
+                                </div>
+
+                                <h4 className="social-activity-title">{act.title}</h4>
+
+                                {act.snippet && (
+                                  <p className="social-activity-snippet">{act.snippet}</p>
+                                )}
+
+                                {act.relevance_reason && (
+                                  <div className="social-relevance-box">
+                                    <strong>{act.relevance_score ? `${act.relevance_score}% Relevanz: ` : ''}</strong>
+                                    {act.relevance_reason}
+                                  </div>
+                                )}
+
+                                <div className="social-activity-actions">
+                                  <a 
+                                    href={act.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="btn-secondary"
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '6px 12px' }}
+                                  >
+                                    <ExternalLink size={14} /> {t('nexus.wsSocialOpenOriginal') || 'Original öffnen'} ↗
+                                  </a>
+                                  <button
+                                    className="btn-primary"
+                                    onClick={() => handleUseForOutreach(act)}
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '6px 14px' }}
+                                  >
+                                    <Sparkles size={14} /> {t('nexus.wsSocialUseForOutreach') || 'Für Outreach verwenden'}
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <main className="sales-workspace-main" style={{ width: '100%' }}>
+
                   
                   <form onSubmit={handleGenerate} className="sales-form">
                     {renderFormFields()}
@@ -883,6 +1264,7 @@ export default function SalesWorkspacePage() {
                     </div>
                   )}
                 </main>
+                )}
               </div>
             )}
 

@@ -530,3 +530,27 @@ export async function callEmailVerify({ contactId, email, domain }) {
   return res.json();
 }
 
+/**
+ * Ruft die NeXus Social Intelligence Function auf (Recherche & Generierung)
+ */
+export async function callSocialIntelligence(params) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token || '';
+
+  const res = await fetch('/.netlify/functions/nexus-social-intelligence', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(params)
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(`Social Intelligence Error: ${err.error || res.statusText}`);
+  }
+
+  return res.json();
+}
+

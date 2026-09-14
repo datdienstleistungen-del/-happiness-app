@@ -8,6 +8,21 @@ const translations = {
       "terms": "AGB"
     },
     "nexus": {
+      "wsSocialPresence": "Social-Präsenz",
+      "wsSocialActivities": "Letzte Aktivitäten & Content",
+      "wsSocialNoActivities": "Für dieses Unternehmen konnten aktuell keine verifizierten öffentlichen Social-Aktivitäten gefunden werden.",
+      "wsSocialUseForOutreach": "Für Outreach verwenden",
+      "wsSocialOpenOriginal": "Original öffnen",
+      "wsSocialAnalyzing": "Analysiere Beitrag & erstelle Social Outreach...",
+      "wsSocialPostAnalysis": "Beitrags-Analyse",
+      "wsSocialWhatItSays": "Was sagt dieser Beitrag aus?",
+      "wsSocialWhyRelevant": "Warum ist er relevant für dein Angebot?",
+      "wsSocialCommentTab": "Mehrwert-Kommentar",
+      "wsSocialDmTab": "Direktnachricht (InMail / DM)",
+      "wsSocialBackToList": "Zurück zur Beitragsliste",
+      "wsSocialSearching": "Recherchiere verifizierte Social-Aktivitäten...",
+      "wsSocialRelevanceScore": "Relevanz zum Kaufsignal",
+
       "leadRadar": "Lead Radar",
       "scanAuto": "Automatischer Scan für dein Angebot:",
       "findTriggers": "Finde Trigger Events und Kaufsignale in deinem Markt",
