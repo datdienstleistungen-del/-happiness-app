@@ -1,12 +1,13 @@
-import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
 
 // ============================================================================
-// CONFIGURATION & API KEYS
+// CONFIGURATION & API KEYS (Multi-Provider Support)
 // ============================================================================
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
-const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || process.env.VITE_YOUTUBE_API_KEY;
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-22f7bd1485474ed3a1e6eab160b7ce4d';
+const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY || 'shutupfmT3TNb8dFpadtS2CeJpfkWhSz';
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
+const TAVILY_API_KEY = process.env.TAVILY_API_KEY || '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';
 
 const LANG_MAP = {
   de: 'German / Deutsch',
@@ -35,50 +36,9 @@ const BROWSER_HEADERS = {
 };
 
 // ============================================================================
-// LLM HELPER (Gemini Flash)
-// ============================================================================
-async function callLLM(prompt, temperature = 0.3) {
-  if (!GEMINI_API_KEY) {
-    throw new Error('GEMINI_API_KEY is not set');
-  }
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature,
-        responseMimeType: 'application/json'
-      }
-    })
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Gemini API Error (${res.status}): ${errText}`);
-  }
-
-  const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error('Empty LLM response');
-
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    const cleaned = text.replace(/^```json
-?/, '').replace(/
-?```$/, '').trim();
-    return JSON.parse(cleaned);
-  }
-}
-
-// ============================================================================
 // TIMEOUT FETCH WRAPPER
 // ============================================================================
-async function fetchWithTimeout(url, options = {}, timeoutMs = 6000) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 7000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -92,7 +52,137 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 6000) {
 }
 
 // ============================================================================
-// WEB SEARCH HELPER (Tavily or Fallback)
+// MULTI-PROVIDER LLM CALLER (DeepSeek -> Gemini -> Mistral -> OpenRouter)
+// ============================================================================
+async function callLLM(prompt, temperature = 0.3) {
+  // 1. Try DeepSeek (super reliable for JSON format)
+  if (DEEPSEEK_API_KEY) {
+    try {
+      const res = await fetchWithTimeout('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${DEEPSEEK_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            { role: 'system', content: 'You are an elite B2B sales copywriter and strategist. Output valid JSON only.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature,
+          response_format: { type: 'json_object' }
+        })
+      }, 15000);
+
+      if (res.ok) {
+        const data = await res.json();
+        const content = data.choices?.[0]?.message?.content;
+        if (content) {
+          const cleaned = content.replace(/^\s*```json\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+          return JSON.parse(cleaned);
+        }
+      }
+    } catch (e) {
+      console.warn('[Social Intelligence] DeepSeek error:', e.message);
+    }
+  }
+
+  // 2. Try Gemini
+  if (GEMINI_API_KEY) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+      const res = await fetchWithTimeout(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature,
+            responseMimeType: 'application/json'
+          }
+        })
+      }, 15000);
+
+      if (res.ok) {
+        const data = await res.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) {
+          const cleaned = text.replace(/^\s*```json\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+          return JSON.parse(cleaned);
+        }
+      }
+    } catch (e) {
+      console.warn('[Social Intelligence] Gemini error:', e.message);
+    }
+  }
+
+  // 3. Try Mistral
+  if (MISTRAL_API_KEY) {
+    try {
+      const res = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${MISTRAL_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'mistral-small-latest',
+          messages: [
+            { role: 'system', content: 'You are an elite B2B sales copywriter and strategist. Output valid JSON only.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature,
+          response_format: { type: 'json_object' }
+        })
+      }, 15000);
+
+      if (res.ok) {
+        const data = await res.json();
+        const content = data.choices?.[0]?.message?.content;
+        if (content) {
+          const cleaned = content.replace(/^\s*```json\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+          return JSON.parse(cleaned);
+        }
+      }
+    } catch (e) {
+      console.warn('[Social Intelligence] Mistral error:', e.message);
+    }
+  }
+
+  // 4. Try OpenRouter
+  if (OPENROUTER_API_KEY) {
+    try {
+      const res = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://nexus-hit.netlify.app',
+          'X-Title': 'NeXus Revenue OS'
+        },
+        body: JSON.stringify({
+          model: 'google/gemma-4-26b-a4b-it:free',
+          messages: [
+            { role: 'system', content: 'You are an elite B2B sales copywriter and strategist. Output valid JSON only.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature
+        })
+      }, 15000);
+
+      if (res.ok) {
+        const data = await res.json();
+        const content = data.choices?.[0]?.message?.content;
+        if (content) {
+          const cleaned = content.replace(/^\s*```json\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+          return JSON.parse(cleaned);
+        }
+      }
+    } catch (e) {
+      console.warn('[Social Intelligence] OpenRouter error:', e.message);
+    }
+  }
+
+  throw new Error('All LLM providers failed in Social Intelligence');
+}
+
+// ============================================================================
+// WEB SEARCH HELPER (Tavily)
 // ============================================================================
 async function searchWeb(query, options = {}) {
   const { maxResults = 5 } = options;
@@ -202,7 +292,7 @@ async function getYouTubeActivities(companyName, verifiedYtProfile) {
   // A. If verified YouTube channel from official site
   if (verifiedYtProfile?.url) {
     let handleOrPath = '';
-    const match = verifiedYtProfile.url.match(/youtube.com\/(@[a-zA-Z0-9_.-]+|channel\/[a-zA-Z0-9_.-]+|c\/[a-zA-Z0-9_.-]+)/i);
+    const match = verifiedYtProfile.url.match(/youtube\.com\/(@[a-zA-Z0-9_.-]+|channel\/[a-zA-Z0-9_.-]+|c\/[a-zA-Z0-9_.-]+)/i);
     if (match) {
       handleOrPath = match[1];
     }
