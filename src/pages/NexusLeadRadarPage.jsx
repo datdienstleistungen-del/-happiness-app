@@ -111,6 +111,7 @@ export default function NexusLeadRadarPage() {
 
       const parsed = parseTriggerResult(result)
       setTriggers(parsed)
+      trackRadarScan(branche, parsed?.length || 0, true)
     } catch (err) {
       console.error('Lead Radar Fehler:', err)
       if (err.name === 'RateLimitError') {

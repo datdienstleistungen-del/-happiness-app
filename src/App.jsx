@@ -10,6 +10,7 @@ import { LeadProvider } from './context/LeadContext'
 import { GuideProvider } from './context/GuideContext'
 import { useOneSignal } from './hooks/useOneSignal'
 import { trackPageView, checkAndTrackReturnVisit, getVisitorId } from './intelligence/analytics/custom'
+import { trackNexusPageView } from './lib/nexus-analytics'
 import AppRoutes from './routes/AppRoutes'
 import AppLayout from './components/layout/AppLayout'
 import './App.css'
@@ -92,6 +93,7 @@ export default function App() {
       supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', user.id).then()
     }
     trackPageView(location.pathname)
+    trackNexusPageView(location.pathname)
     if (user && profile && profile.role !== 'admin') {
       supabase.from('page_views').insert({
         path: location.pathname,

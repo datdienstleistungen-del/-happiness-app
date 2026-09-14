@@ -7,6 +7,7 @@ import {
   FileCheck, Search, Users, Flame, Shield, Check, Terminal, ExternalLink
 } from 'lucide-react'
 import { callNexusAI, runResearchPipeline } from '../lib/nexus-ai'
+import { trackNexusEvent, trackUpgradeClick } from '../lib/nexus-analytics'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage, LANGUAGES } from '../i18n/translations'
 import { NEXUS_LANDING_TRANSLATIONS } from '../i18n/nexusLandingTranslations'

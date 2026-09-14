@@ -146,6 +146,7 @@ export default function SalesWorkspacePage() {
         generatingOutreach: false,
         outreachData: res
       }));
+      trackSocialOutreachGenerated(activity.platform, fullContext?.company?.name || formData.company, res.post_lang);
     } catch (err) {
       console.error("Error generating outreach:", err);
       setSocialState(prev => ({ ...prev, generatingOutreach: false, error: err.message }));
@@ -1212,9 +1213,11 @@ export default function SalesWorkspacePage() {
                                       const textToCopy = socialState.activeTab === 'comment' ? socialState.outreachData.comment : socialState.outreachData.direct_message;
                                       navigator.clipboard.writeText(textToCopy || '');
                                       if (socialState.activeTab === 'comment') {
+                                        trackSocialCommentCopied(socialState.selectedActivity.platform, fullContext?.company?.name || formData.company);
                                         setSocialState(prev => ({ ...prev, copiedComment: true }));
                                         setTimeout(() => setSocialState(prev => ({ ...prev, copiedComment: false })), 2500);
                                       } else {
+                                        trackSocialDmCopied(socialState.selectedActivity.platform, fullContext?.company?.name || formData.company);
                                         setSocialState(prev => ({ ...prev, copiedDm: true }));
                                         setTimeout(() => setSocialState(prev => ({ ...prev, copiedDm: false })), 2500);
                                       }
@@ -1232,6 +1235,7 @@ export default function SalesWorkspacePage() {
                                     href={socialState.selectedActivity.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    onClick={() => trackSocialOriginalOpened(socialState.selectedActivity.platform, socialState.selectedActivity.url)}
                                     className="btn-secondary"
                                     style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', color: 'var(--color-koralle)', fontWeight: 600, fontSize: '0.95rem' }}
                                   >

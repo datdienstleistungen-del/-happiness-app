@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { callNexusAI } from '../lib/nexus-ai'
 import { createOffering, generateSignalStrategies } from '../lib/nexus-db'
+import { trackOfferingAnalyzed } from '../lib/nexus-analytics'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import SignalStrategiesManager from '../components/nexus/SignalStrategiesManager'
 import { useLead } from '../context/LeadContext'
@@ -119,6 +120,7 @@ export default function AngebotsanalysePage() {
       posStr = data.vertriebsstrategie
     }
     setFormPositioning(posStr)
+    trackOfferingAnalyzed(nameCandidate, audienceStr)
   }
 
   // Single-Input Trigger: Run existing AI analysis
