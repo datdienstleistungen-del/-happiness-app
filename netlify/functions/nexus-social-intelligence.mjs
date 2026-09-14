@@ -372,7 +372,7 @@ Return VALID JSON ONLY in this format:
 }
 
 // ============================================================================
-// STEP 5: OUTREACH GENERATOR (Comment + Direct Message — AUTO POST LANG + REVIEW TRANSLATION)
+// STEP 5: OUTREACH GENERATOR (Comment + Direct Message — AUTO POST LANG + REVIEW TRANSLATION + LANDING PAGE LINK)
 // ============================================================================
 async function generateSocialOutreach(params) {
   const { activity, companyName, trigger, offering, contact, targetPostLang, targetLang, uiLang, lang } = params;
@@ -381,7 +381,7 @@ async function generateSocialOutreach(params) {
   let detectedLang = 'en';
   const combinedText = ((activity.title || '') + ' ' + (activity.snippet || '')).toLowerCase();
   
-  if (/[äöüß]/.test(combinedText) || /\b(und|der|die|das|wir|fuer|gmbh|unternehmen|vertrieb|schmerzpunkte|kunden|erfolg)\b/.test(combinedText)) {
+  if (/[äöüß]/.test(combinedText) || /\b(und|der|die|das|wir|fuer|gmbh|unternehmen|vertrieb|schmerzpunkte|kunden|erfolg|beratung)\b/.test(combinedText)) {
     detectedLang = 'de';
   } else if (/\b(le|la|les|des|pour|avec|nous|entreprise|solution|gestion|connaissance)\b/.test(combinedText)) {
     detectedLang = 'fr';
@@ -393,21 +393,29 @@ async function generateSocialOutreach(params) {
     detectedLang = 'nl';
   }
 
-  // Determine post language (default to detected source language unless explicitly overridden)
-  const explicitPostLang = (targetPostLang && targetPostLang !== 'auto') ? targetPostLang : (targetLang && targetLang !== 'auto' && targetLang !== uiLang ? targetLang : null);
-  const postLangKey = explicitPostLang || detectedLang;
+  // Determine post language: use explicit targetPostLang if set and !== 'auto', else detected source language
+  let postLangKey = detectedLang;
+  if (targetPostLang && targetPostLang !== 'auto') {
+    postLangKey = targetPostLang;
+  } else if (targetLang && targetLang !== 'auto' && targetLang !== uiLang && targetLang !== lang) {
+    postLangKey = targetLang;
+  }
+
   const userUiLangKey = uiLang || lang || 'de';
 
   const postLanguageStr = LANG_MAP[postLangKey] || LANG_MAP['en'];
   const postLangDisplayName = LANG_NAMES[postLangKey] || 'English';
   const uiLanguageStr = LANG_MAP[userUiLangKey] || LANG_MAP['de'];
 
+  // User landing page URL
+  const landingPageUrl = offering?.website || offering?.landing_page || 'https://nexus-hit.netlify.app';
+
   const prompt = `You are an elite B2B Social Selling & Revenue Conversion Strategist in "NeXus Revenue OS".
 
 COMMERCIAL SALES PURPOSE:
-We are engaging with this public post/video specifically as a B2B sales opportunity.
-The goal is to generate inbound interest and drive qualified decision-makers to our solution/landing page.
-Do NOT just write polite, passive praise. Build a consultative bridge to our offering!
+We are engaging with this public post/video specifically as an active B2B sales opportunity.
+The goal is to generate inbound interest and drive traffic/leads directly to our landing page: ${landingPageUrl}.
+You MUST include a direct consultative invitation and the exact landing page link (${landingPageUrl}) in BOTH the public comment and the direct message.
 
 CONTEXT:
 - Target Company: "${companyName}"
@@ -419,23 +427,26 @@ CONTEXT:
   * URL: "${activity.url}"
 - Intent Signal / Trigger Event: "${trigger?.title || trigger?.description || 'Expansion / Modernization'}"
 - Our Offering: "${offering?.offering_name || 'NeXus Revenue OS'}" — ${offering?.positioning || 'B2B Sales Intelligence & Intent Detection'}
+- Our Landing Page / Website URL: "${landingPageUrl}"
 
-STRICT DUAL-LANGUAGE RULES:
-1. "comment" and "direct_message" MUST be written in the POST LANGUAGE: 👉 ${postLanguageStr} 👈 (e.g. English for English videos so it can be posted directly).
-2. "comment_translation", "direct_message_translation", and all "analysis" fields (post_summary, relevance_explanation) MUST be written in the USER'S UI LANGUAGE: 👉 ${uiLanguageStr} 👈 (so the user can review and understand everything in their native language before posting).
+STRICT DUAL-LANGUAGE & LINK RULES:
+1. "comment" and "direct_message" MUST be written 100% strictly in the POST LANGUAGE: 👉 ${postLanguageStr} 👈.
+   NEVER write German if the post language is English (${postLanguageStr})!
+2. "comment" and "direct_message" MUST BOTH contain our exact landing page link: ${landingPageUrl} with an appealing CTA.
+3. "comment_translation", "direct_message_translation", and all "analysis" fields (post_summary, relevance_explanation) MUST be written in the USER'S UI LANGUAGE: 👉 ${uiLanguageStr} 👈 (so the user can review and understand everything in German/native UI).
 
 TASKS:
 1. Provide a 2-step analysis of the post (in ${uiLanguageStr}):
    - post_summary: What does this post/video actually state?
    - relevance_explanation: Why is this relevant to our offering and how does it create a sales opportunity?
 2. Generate a high-converting PUBLIC COMMENT for the platform (${activity.platform}) in ${postLanguageStr}:
-   - Specifically address the core message of the post/video with expert insight.
-   - Introduce our solution/methodology as the natural answer to the challenge discussed.
-   - Include an engaging inbound invitation to check out our approach/workflow or connect.
+   - Address the video/post topic with expert insight.
+   - Position our solution as the natural next step.
+   - Include a clear, non-spammy commercial invitation including our URL: ${landingPageUrl}
 3. Provide the exact TRANSLATION of the comment into ${uiLanguageStr}.
 4. Generate a personalized DIRECT MESSAGE (LinkedIn InMail / DM) in ${postLanguageStr}:
-   - Explicitly reference this specific post/video.
-   - 3-4 sentences, value-first, direct sales hook, invitation to a 10-minute peer exchange.
+   - Reference the post/video.
+   - Value-first pitch with direct hook and link to ${landingPageUrl}.
 5. Provide the exact TRANSLATION of the direct message into ${uiLanguageStr}.
 
 Return VALID JSON ONLY:
@@ -448,9 +459,9 @@ Return VALID JSON ONLY:
     "relevance_explanation": "Relevance explanation in ${uiLanguageStr}",
     "recommended_action": "comment"
   },
-  "comment": "Full comment text in ${postLanguageStr} ready to post...",
+  "comment": "Full comment text in ${postLanguageStr} with ${landingPageUrl} ready to post...",
   "comment_translation": "Übersetzung des Kommentars in ${uiLanguageStr} zur Prüfung...",
-  "direct_message": "Full direct message text in ${postLanguageStr} ready to send...",
+  "direct_message": "Full direct message text in ${postLanguageStr} with ${landingPageUrl} ready to send...",
   "direct_message_translation": "Übersetzung der Direktnachricht in ${uiLanguageStr} zur Prüfung...",
   "pitch_angle": "Strategic angle"
 }`;
