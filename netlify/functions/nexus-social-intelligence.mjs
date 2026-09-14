@@ -4,10 +4,10 @@ import * as cheerio from 'cheerio';
 // CONFIGURATION & API KEYS (Multi-Provider Support)
 // ============================================================================
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-22f7bd1485474ed3a1e6eab160b7ce4d';
-const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY || 'shutupfmT3TNb8dFpadtS2CeJpfkWhSz';
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || process.env.VITE_DEEPSEEK_API_KEY;
+const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
-const TAVILY_API_KEY = process.env.TAVILY_API_KEY || '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';
+const TAVILY_API_KEY = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY;
 
 const LANG_MAP = {
   de: 'German / Deutsch',
