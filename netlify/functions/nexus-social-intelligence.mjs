@@ -4,10 +4,20 @@ import crypto from 'crypto';
 const BROWSER_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-  'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7'
+  'Accept-Language': 'en-US,en;q=0.9,de-DE,de;q=0.8,fr;q=0.7,es;q=0.7,*;q=0.5'
 };
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = 6000) {
+const LANG_MAP = {
+  de: 'DEUTSCH (professionelles B2B-Deutsch)',
+  en: 'ENGLISH (fluent, compelling, high-level B2B business English)',
+  es: 'ESPAÑOL (español de negocios profesional y persuasivo)',
+  fr: 'FRANÇAIS (français d affaires professionnel et percutant)',
+  it: 'ITALIANO (italiano aziendale professionale e convincente)',
+  nl: 'NEDERLANDS (professioneel zakelijk Nederlands)',
+  el: 'ΕΛΛΗΝΙΚΑ (επαγγελματικά επιχειρηματικά ελληνικά)'
+};
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
   const controller = new AbortController();
   const abortId = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -40,7 +50,7 @@ async function callLLM(prompt, temperature = 0.4) {
         body: JSON.stringify({
           model: p.model,
           messages: [
-            { role: 'system', content: 'Du bist eine strukturierte B2B Social Intelligence Engine. Antworte IMMER in validem JSON ohne Markdown-Codeblöcke.' },
+            { role: 'system', content: 'You are a multi-language B2B Social Intelligence Engine. You always return valid JSON only, without markdown code blocks.' },
             { role: 'user', content: prompt }
           ],
           temperature,
@@ -136,7 +146,7 @@ async function searchWeb(query, options = {}) {
           max_results: options.maxResults || 6,
           include_answer: false
         })
-      }, 7000);
+      }, 8000);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.results)) {
@@ -166,10 +176,10 @@ async function getYouTubeActivities(companyName, youtubeProfile) {
         id: crypto.createHash('md5').update(item.url).digest('hex'),
         platform: 'youtube',
         type: 'video',
-        title: item.title?.replace(/ - YouTube$/i, '').trim() || 'Unternehmensvideo',
+        title: item.title?.replace(/ - YouTube$/i, '').trim() || 'Video',
         url: item.url,
         snippet: item.content || item.title || '',
-        date: item.published_date || 'Aktuell',
+        date: item.published_date || 'Recent',
         channel_name: companyName,
         verified: !!youtubeProfile?.verified
       });
@@ -186,10 +196,10 @@ async function getYouTubeActivities(companyName, youtubeProfile) {
           id: crypto.createHash('md5').update(item.url).digest('hex'),
           platform: 'youtube',
           type: 'video',
-          title: item.title?.replace(/ - YouTube$/i, '').trim() || 'Unternehmensvideo',
+          title: item.title?.replace(/ - YouTube$/i, '').trim() || 'Video',
           url: item.url,
           snippet: item.content || '',
-          date: item.published_date || 'Aktuell',
+          date: item.published_date || 'Recent',
           channel_name: companyName,
           verified: true
         });
@@ -206,7 +216,6 @@ async function getYouTubeActivities(companyName, youtubeProfile) {
 async function getLinkedInAndPublicActivities(companyName, linkedinProfile) {
   const activities = [];
 
-  // Nur echte, öffentlich auffindbare Beiträge/Pressemeldungen der Firma suchen
   const liQuery = `site:linkedin.com "${companyName}"`;
   const results = await searchWeb(liQuery, { maxResults: 4 });
 
@@ -221,10 +230,10 @@ async function getLinkedInAndPublicActivities(companyName, linkedinProfile) {
         id: crypto.createHash('md5').update(item.url).digest('hex'),
         platform: 'linkedin',
         type: 'post',
-        title: item.title?.replace(/ \| LinkedIn$/i, '').trim() || 'LinkedIn Beitrag',
+        title: item.title?.replace(/ \| LinkedIn$/i, '').trim() || 'LinkedIn Post',
         url: item.url,
         snippet: item.content || '',
-        date: item.published_date || 'Kürzlich',
+        date: item.published_date || 'Recent',
         author: companyName,
         verified: true
       });
@@ -235,28 +244,31 @@ async function getLinkedInAndPublicActivities(companyName, linkedinProfile) {
 }
 
 // ============================================================================
-// RELEVANCE SCORING & FILTERING VIA LLM
+// RELEVANCE SCORING & FILTERING VIA LLM (MULTILINGUAL)
 // ============================================================================
-async function scoreActivitiesWithLLM(activities, context) {
+async function scoreActivitiesWithLLM(activities, context, targetLang = 'de') {
   if (!activities || activities.length === 0) return [];
 
   const { companyName, trigger, offering } = context;
+  const langPrompt = LANG_MAP[targetLang] || LANG_MAP['de'];
 
-  const prompt = `Analysiere folgende reale Social-Media-Aktivitäten des Unternehmens "${companyName}".
-Vergleiche jede Aktivität mit dem geschäftlichen Kontext:
-- Trigger Event / Anlass: "${trigger?.title || trigger?.description || 'Expansion / Wachstum / Digitalisierung'}"
-- Eigenes Angebot (Offering): "${offering?.offering_name || offering?.positioning || 'B2B Lösung'}"
+  const prompt = `Analyze the following verified social media activities of "${companyName}".
+Context:
+- Trigger Event / Opportunity: "${trigger?.title || trigger?.description || 'Business growth / expansion / software needs'}"
+- Our Offering: "${offering?.offering_name || offering?.positioning || 'B2B Solution'}"
 
-Hier sind die Aktivitäten:
+LANGUAGE INSTRUCTION: Write all explanation fields in ${langPrompt}.
+
+Activities:
 ${JSON.stringify(activities.map(a => ({ id: a.id, platform: a.platform, title: a.title, snippet: a.snippet, date: a.date })), null, 2)}
 
-Bewerte jede Aktivität und gib ein JSON-Array zurück:
+Return a JSON array:
 [
   {
-    "id": "Aktivitäts-ID",
-    "relevance_score": 85, // Zahl 0 bis 100
-    "relevance_reason": "Kurze, prägnante Begründung des geschäftlichen Anlasses (1 Satz)",
-    "topic_summary": "Kurze Zusammenfassung des Themas (z. B. Neuer Standort Paris, Produkt-Release)"
+    "id": "Activity-ID",
+    "relevance_score": 85, // Integer 0 to 100
+    "relevance_reason": "Clear concise explanation of why this activity provides a sales opportunity (1 sentence)",
+    "topic_summary": "Short topic summary"
   }
 ]`;
 
@@ -268,7 +280,7 @@ Bewerte jede Aktivität und gib ein JSON-Array zurück:
         return {
           ...act,
           relevance_score: match?.relevance_score ?? 50,
-          relevance_reason: match?.relevance_reason ?? 'Öffentliche Unternehmensaktivität.',
+          relevance_reason: match?.relevance_reason ?? 'Verified public company activity.',
           topic_summary: match?.topic_summary ?? act.title
         };
       }).sort((a, b) => b.relevance_score - a.relevance_score);
@@ -281,45 +293,54 @@ Bewerte jede Aktivität und gib ein JSON-Array zurück:
 }
 
 // ============================================================================
-// OUTREACH GENERATOR (Comment + Direct Message)
+// OUTREACH GENERATOR (Comment + Direct Message — MULTILINGUAL)
 // ============================================================================
 async function generateSocialOutreach(params) {
-  const { activity, companyName, trigger, offering, contact } = params;
+  const { activity, companyName, trigger, offering, contact, targetLang = 'de', lang = 'de' } = params;
 
-  const prompt = `Du bist ein B2B Social Selling & Outreach Experte im "NeXus Revenue OS".
+  const activeLangKey = targetLang && targetLang !== 'auto' ? targetLang : (lang || 'de');
+  const targetLanguageStr = LANG_MAP[activeLangKey] || LANG_MAP['de'];
 
-KONTEXT:
-- Zielunternehmen: "${companyName}"
-- Ansprechpartner (falls bekannt): "${contact?.name || 'Entscheider'}" (${contact?.role || 'Führungskraft'})
-- Reale Social-Aktivität (${activity.platform}):
-  * Titel: "${activity.title}"
-  * Auszug/Inhalt: "${activity.snippet}"
-  * Datum: "${activity.date}"
+  const prompt = `You are an elite B2B Social Selling & Outreach Strategist in "NeXus Revenue OS".
+
+CONTEXT:
+- Target Company: "${companyName}"
+- Target Decision Maker: "${contact?.name || 'Executive'}" (${contact?.role || 'Leader'})
+- Verified Social Activity (${activity.platform}):
+  * Title: "${activity.title}"
+  * Excerpt/Content: "${activity.snippet}"
+  * Date: "${activity.date}"
   * URL: "${activity.url}"
-- Geschäfts-Trigger / Kaufsignal: "${trigger?.title || trigger?.description || 'Aktuelles Wachstum / Veränderung'}"
-- Unser Angebot / Offering: "${offering?.offering_name || 'B2B Sales Intelligence'}" — ${offering?.positioning || ''}
+- Intent Signal / Trigger Event: "${trigger?.title || trigger?.description || 'Expansion / Modernization'}"
+- Our Offering: "${offering?.offering_name || 'B2B Sales Intelligence'}" — ${offering?.positioning || ''}
 
-AUFGABE:
-1. Analysiere den Beitrag sachlich.
-2. Erstelle einen hochwertigen MEHRWERT-KOMMENTAR für die Plattform (${activity.platform}):
-   - Gehe direkt und spezifisch auf den Inhalt des Posts/Videos ein.
-   - Liefere fachlichen Mehrwert / Insights.
-   - Stelle einen natürlichen, unaufdringlichen Bezug zu den Herausforderungen des Themas her.
-   - KEINE plumpe Eigenwerbung, KEIN aggressiver Pitch ("Wir können Ihnen helfen..."), sondern fundierte Expertise.
-3. Erstelle eine kurze, persönliche DIREKTNACHRICHT (LinkedIn InMail / DM):
-   - Beziehe dich explizit auf genau diesen Beitrag/dieses Video.
-   - 3-4 Sätze, wertschätzend, direkter Anknüpfungspunkt, Einladung zum kurzen Erfahrungsaustausch.
+CRITICAL LANGUAGE REQUIREMENT:
+You MUST write all output fields (analysis, comment, direct_message, pitch_angle) strictly in:
+👉 ${targetLanguageStr} 👈
 
-Antworte NUR mit validem JSON:
+TASKS:
+1. Provide a 2-step analysis of the post:
+   - post_summary: What does this post/video actually state?
+   - relevance_explanation: Why is this relevant to our offering and the intent signal?
+2. Generate a high-value PUBLIC COMMENT for the platform (${activity.platform}):
+   - Directly and specifically address the topic of the post/video.
+   - Deliver valuable industry insights.
+   - Establish a natural, non-aggressive link to the challenges involved.
+   - NO spam, NO pushy sales pitch ("We can help you..."), but demonstrable competence.
+3. Generate a personalized DIRECT MESSAGE (LinkedIn InMail / DM):
+   - Explicitly reference this specific post/video.
+   - 3-4 sentences, respectful, clear hook, invitation to a brief peer exchange.
+
+Return VALID JSON ONLY:
 {
   "analysis": {
-    "post_summary": "Was sagt dieser Beitrag konkret aus?",
-    "relevance_explanation": "Warum ist dieser Inhalt eine wertvolle Anknüpfung für unser Angebot?",
+    "post_summary": "...",
+    "relevance_explanation": "...",
     "recommended_action": "comment"
   },
-  "comment": "Der vollständige, fertige Kommentartext...",
-  "direct_message": "Die vollständige, fertige Direktnachricht...",
-  "pitch_angle": "Strategischer Anknüpfungspunkt"
+  "comment": "Full comment text in ${activeLangKey}...",
+  "direct_message": "Full direct message text in ${activeLangKey}...",
+  "pitch_angle": "Strategic angle"
 }`;
 
   const result = await callLLM(prompt, 0.4);
@@ -336,7 +357,7 @@ export const handler = async (event) => {
 
   try {
     const body = event.body ? JSON.parse(event.body) : {};
-    const { action, companyName, website, trigger, offering, contact, activity } = body;
+    const { action, companyName, website, trigger, offering, contact, activity, targetLang, lang } = body;
 
     if (!companyName && !activity) {
       return {
@@ -345,6 +366,8 @@ export const handler = async (event) => {
         headers: { 'Content-Type': 'application/json' }
       };
     }
+
+    const activeLang = targetLang && targetLang !== 'auto' ? targetLang : (lang || 'de');
 
     // 1. ACTION: DISCOVER ACTIVITIES
     if (action === 'discover_activities') {
@@ -375,7 +398,7 @@ export const handler = async (event) => {
         companyName,
         trigger,
         offering
-      });
+      }, activeLang);
 
       return {
         statusCode: 200,
@@ -383,6 +406,7 @@ export const handler = async (event) => {
         body: JSON.stringify({
           companyName,
           website: profiles.website,
+          targetLang: activeLang,
           profiles: {
             linkedin: profiles.linkedin,
             youtube: profiles.youtube,
@@ -409,7 +433,9 @@ export const handler = async (event) => {
         companyName,
         trigger,
         offering,
-        contact
+        contact,
+        targetLang: activeLang,
+        lang: activeLang
       });
 
       return {

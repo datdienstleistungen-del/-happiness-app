@@ -89,7 +89,9 @@ export default function SalesWorkspacePage() {
         companyName: compName,
         website: fullContext?.company?.website || null,
         trigger: activeTrigger || (fullContext?.opportunity?.trigger_title ? { title: fullContext.opportunity.trigger_title } : null),
-        offering: fullContext?.offering || null
+        offering: fullContext?.offering || null,
+        targetLang: formData.targetLang || lang,
+        lang: lang
       });
       setSocialState(prev => ({
         ...prev,
@@ -134,7 +136,9 @@ export default function SalesWorkspacePage() {
         contact: foundContact || (fullContext?.contacts?.[0]?.nexus_contacts ? {
           name: `${fullContext.contacts[0].nexus_contacts.first_name || ''} ${fullContext.contacts[0].nexus_contacts.last_name || ''}`.trim(),
           role: fullContext.contacts[0].nexus_contacts.role
-        } : null)
+        } : null),
+        targetLang: formData.targetLang || lang,
+        lang: lang
       });
       setSocialState(prev => ({
         ...prev,
@@ -950,15 +954,44 @@ export default function SalesWorkspacePage() {
                           )}
                         </div>
                       </div>
-                      <button 
-                        onClick={() => loadSocialActivities(true)} 
-                        className="btn-secondary"
-                        disabled={socialState.loading}
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '6px 12px' }}
-                      >
-                        <RefreshCw size={13} className={socialState.loading ? 'btn-spinner' : ''} />
-                        {socialState.loading ? t('nexus.wsSearching') : 'Aktivitäten aktualisieren'}
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <select
+                          value={formData.targetLang || lang || 'de'}
+                          onChange={(e) => {
+                            const newL = e.target.value;
+                            setFormData(prev => ({ ...prev, targetLang: newL }));
+                            if (socialState.selectedActivity) {
+                              handleUseForOutreach(socialState.selectedActivity);
+                            }
+                          }}
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: '6px',
+                            border: '1px solid var(--border-light)',
+                            background: 'var(--bg-secondary)',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.85rem',
+                            fontWeight: 600
+                          }}
+                        >
+                          <option value="de">🇩🇪 Deutsch (DE)</option>
+                          <option value="en">🇺🇸 English (US/UK)</option>
+                          <option value="es">🇪🇸 Español (ES)</option>
+                          <option value="fr">🇫🇷 Français (FR)</option>
+                          <option value="it">🇮🇹 Italiano (IT)</option>
+                          <option value="nl">🇳🇱 Nederlands (NL)</option>
+                          <option value="el">🇬🇷 Ελληνικά (GR)</option>
+                        </select>
+                        <button 
+                          onClick={() => loadSocialActivities(true)} 
+                          className="btn-secondary"
+                          disabled={socialState.loading}
+                          style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '6px 12px' }}
+                        >
+                          <RefreshCw size={13} className={socialState.loading ? 'btn-spinner' : ''} />
+                          {socialState.loading ? t('nexus.wsSearching') : 'Aktivitäten aktualisieren'}
+                        </button>
+                      </div>
                     </div>
 
                     {/* 2. Error State */}
