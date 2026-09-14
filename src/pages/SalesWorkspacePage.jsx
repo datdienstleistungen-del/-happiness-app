@@ -208,9 +208,22 @@ export default function SalesWorkspacePage() {
   }
 
   useEffect(() => {
-    // Reset Kontakt-State beim Opportunity-Wechsel
+    // Reset Kontakt-State und Social-State beim Opportunity-Wechsel
     setFoundContact(null);
     setContactPersisted(false);
+    setSocialState({
+      loading: false,
+      loadedCompany: null,
+      profiles: null,
+      activities: [],
+      selectedActivity: null,
+      outreachData: null,
+      generatingOutreach: false,
+      activeTab: 'comment',
+      copiedComment: false,
+      copiedDm: false,
+      error: null
+    });
 
     if (activeOppId && user) {
       const loadFullContext = async () => {
