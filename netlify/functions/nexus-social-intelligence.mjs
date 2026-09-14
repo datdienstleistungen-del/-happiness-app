@@ -180,7 +180,6 @@ async function getYouTubeActivities(companyName, youtubeProfile) {
     for (const item of channelResults) {
       if (item.url && item.url.includes('youtube.com/watch')) {
         const text = ((item.title || '') + ' ' + (item.content || '')).toLowerCase();
-        // Check blacklist
         if (UNRELATED_TOPIC_BLACKLIST.some(b => text.includes(b))) continue;
 
         activities.push({
@@ -207,10 +206,7 @@ async function getYouTubeActivities(companyName, youtubeProfile) {
       if (!item.url || !item.url.includes('youtube.com/watch')) continue;
       const text = ((item.title || '') + ' ' + (item.content || '')).toLowerCase();
 
-      // Check blacklist
       if (UNRELATED_TOPIC_BLACKLIST.some(b => text.includes(b))) continue;
-
-      // Muss zwingend den Firmennamen im Titel oder Content enthalten
       if (!text.includes(compClean)) continue;
 
       activities.push({
@@ -237,7 +233,6 @@ async function getLinkedInAndPublicActivities(companyName, linkedinProfile) {
   const activities = [];
   const compClean = (companyName || '').toLowerCase().trim();
 
-  // Suche nach echten Posts der Unternehmensseite
   const liQuery = linkedinProfile?.url 
     ? `site:linkedin.com "${linkedinProfile.url}"` 
     : `site:linkedin.com/company "${companyName}"`;
@@ -249,7 +244,6 @@ async function getLinkedInAndPublicActivities(companyName, linkedinProfile) {
     const isPost = item.url.includes('/posts/') || item.url.includes('/pulse/') || item.url.includes('/feed/update/') || item.url.includes('/company/');
     const text = ((item.title || '') + ' ' + (item.content || '')).toLowerCase();
 
-    // Nur übernehmen, wenn es klar zum Unternehmen gehört
     if (text.includes(compClean) && isPost) {
       activities.push({
         id: crypto.createHash('md5').update(item.url).digest('hex'),
@@ -294,8 +288,8 @@ Return JSON Array ONLY:
 [
   {
     "id": "Activity-ID",
-    "is_valid_business_activity": true, // boolean
-    "relevance_score": 85, // 0 to 100
+    "is_valid_business_activity": true,
+    "relevance_score": 85,
     "relevance_reason": "1 sentence in ${langPrompt}",
     "topic_summary": "Short topic summary"
   }
@@ -331,15 +325,36 @@ Return JSON Array ONLY:
 }
 
 // ============================================================================
-// OUTREACH GENERATOR (Comment + Direct Message — MULTILINGUAL)
+// OUTREACH GENERATOR (Comment + Direct Message — AUTO LANGUAGE & SALES CTA)
 // ============================================================================
 async function generateSocialOutreach(params) {
-  const { activity, companyName, trigger, offering, contact, targetLang = 'de', lang = 'de' } = params;
+  const { activity, companyName, trigger, offering, contact, targetLang, lang } = params;
 
-  const activeLangKey = targetLang && targetLang !== 'auto' ? targetLang : (lang || 'de');
-  const targetLanguageStr = LANG_MAP[activeLangKey] || LANG_MAP['de'];
+  // 1. Auto-Detect language of source activity if targetLang is 'auto' or not explicitly chosen
+  let detectedLang = 'en';
+  const combinedText = ((activity.title || '') + ' ' + (activity.snippet || '')).toLowerCase();
+  
+  if (/[äöüß]/.test(combinedText) || /\b(und|der|die|das|wir|fuer|gmbh|unternehmen|vertrieb|schmerzpunkte)\b/.test(combinedText)) {
+    detectedLang = 'de';
+  } else if (/\b(le|la|les|des|pour|avec|nous|entreprise|solution)\b/.test(combinedText)) {
+    detectedLang = 'fr';
+  } else if (/\b(el|la|los|las|para|con|nosotros|empresa|ventas)\b/.test(combinedText)) {
+    detectedLang = 'es';
+  } else if (/\b(il|la|gli|per|con|noi|azienda|vendite)\b/.test(combinedText)) {
+    detectedLang = 'it';
+  } else if (/\b(het|de|een|voor|met|wij|bedrijf)\b/.test(combinedText)) {
+    detectedLang = 'nl';
+  }
 
-  const prompt = `You are an elite B2B Social Selling & Outreach Strategist in "NeXus Revenue OS".
+  const activeLangKey = (targetLang && targetLang !== 'auto') ? targetLang : (detectedLang || lang || 'en');
+  const targetLanguageStr = LANG_MAP[activeLangKey] || LANG_MAP['en'];
+
+  const prompt = `You are an elite B2B Social Selling & Revenue Conversion Strategist in "NeXus Revenue OS".
+
+COMMERCIAL SALES PURPOSE:
+We are engaging with this public post/video specifically as a B2B sales opportunity.
+The goal is to generate inbound interest and drive traffic/leads to our solution/landing page.
+Do NOT just write polite, passive praise. Build a consultative bridge to our offering!
 
 CONTEXT:
 - Target Company: "${companyName}"
@@ -350,24 +365,23 @@ CONTEXT:
   * Date: "${activity.date}"
   * URL: "${activity.url}"
 - Intent Signal / Trigger Event: "${trigger?.title || trigger?.description || 'Expansion / Modernization'}"
-- Our Offering: "${offering?.offering_name || 'B2B Sales Intelligence'}" — ${offering?.positioning || ''}
+- Our Offering: "${offering?.offering_name || 'NeXus Revenue OS'}" — ${offering?.positioning || 'B2B Sales Intelligence & Intent Detection'}
 
 CRITICAL LANGUAGE REQUIREMENT:
-You MUST write all output fields (analysis, comment, direct_message, pitch_angle) strictly in:
+The post is in ${activeLangKey.toUpperCase()}. You MUST write ALL output fields (analysis, comment, direct_message, pitch_angle) strictly in:
 👉 ${targetLanguageStr} 👈
 
 TASKS:
 1. Provide a 2-step analysis of the post:
    - post_summary: What does this post/video actually state?
-   - relevance_explanation: Why is this relevant to our offering and the intent signal?
-2. Generate a high-value PUBLIC COMMENT for the platform (${activity.platform}):
-   - Directly and specifically address the topic of the post/video.
-   - Deliver valuable industry insights.
-   - Establish a natural, non-aggressive link to the challenges involved.
-   - NO spam, NO pushy sales pitch ("We can help you..."), but demonstrable competence.
+   - relevance_explanation: Why is this relevant to our offering and how does it create a sales opportunity?
+2. Generate a high-converting PUBLIC COMMENT for the platform (${activity.platform}):
+   - Specifically address the core message of the post/video with expert insight.
+   - Introduce our solution/methodology as the natural answer to the challenge discussed.
+   - Include an engaging inbound invitation to check out our approach/workflow or connect (e.g. "We built an automated workflow around this at [Our Solution] – happy to share insights or connect with anyone tackling this!").
 3. Generate a personalized DIRECT MESSAGE (LinkedIn InMail / DM):
    - Explicitly reference this specific post/video.
-   - 3-4 sentences, respectful, clear hook, invitation to a brief peer exchange.
+   - 3-4 sentences, value-first, direct sales hook, invitation to a 10-minute peer exchange.
 
 Return VALID JSON ONLY:
 {
@@ -376,8 +390,8 @@ Return VALID JSON ONLY:
     "relevance_explanation": "...",
     "recommended_action": "comment"
   },
-  "comment": "Full comment text in ${activeLangKey}...",
-  "direct_message": "Full direct message text in ${activeLangKey}...",
+  "comment": "Full comment text in ${activeLangKey} with sales bridge...",
+  "direct_message": "Full direct message text in ${activeLangKey} with sales hook...",
   "pitch_angle": "Strategic angle"
 }`;
 
@@ -411,7 +425,6 @@ export const handler = async (event) => {
     if (action === 'discover_activities') {
       let resolvedWebsite = website;
       if (!resolvedWebsite) {
-        // Auto-Discover official website if not provided
         const cleanName = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
         const candidates = [`https://www.${cleanName}.com`, `https://www.${cleanName}.de`, `https://${cleanName}.com`, `https://${cleanName}.ai`, `https://${cleanName}.io`];
         for (const cd of candidates) {
@@ -471,7 +484,7 @@ export const handler = async (event) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           companyName,
-          website: profiles.website,
+          website: profiles.website || resolvedWebsite,
           targetLang: activeLang,
           profiles: {
             linkedin: profiles.linkedin,
@@ -500,8 +513,8 @@ export const handler = async (event) => {
         trigger,
         offering,
         contact,
-        targetLang: activeLang,
-        lang: activeLang
+        targetLang,
+        lang
       });
 
       return {

@@ -1131,7 +1131,7 @@ export default function SalesWorkspacePage() {
                                   }}
                                 />
 
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginTop: '12px', paddingBottom: '24px' }}>
                                   <button
                                     className="btn-primary"
                                     onClick={() => {
@@ -1145,7 +1145,7 @@ export default function SalesWorkspacePage() {
                                         setTimeout(() => setSocialState(prev => ({ ...prev, copiedDm: false })), 2500);
                                       }
                                     }}
-                                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '0.95rem' }}
                                   >
                                     {(socialState.activeTab === 'comment' ? socialState.copiedComment : socialState.copiedDm) ? (
                                       <><CheckCircle size={16} /> Kopiert!</>
@@ -1159,7 +1159,7 @@ export default function SalesWorkspacePage() {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="btn-secondary"
-                                    style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-koralle)', fontWeight: 600 }}
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', color: 'var(--color-koralle)', fontWeight: 600, fontSize: '0.95rem' }}
                                   >
                                     <ExternalLink size={16} /> Originalbeitrag öffnen & posten ↗
                                   </a>

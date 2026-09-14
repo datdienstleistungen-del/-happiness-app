@@ -640,3 +640,8 @@
   background: var(--color-koralle);
   color: white;
 }
+
+/* Assistant Spacing */
+.sales-workspace-page, .sales-workspace-crm, .social-outreach-suite {
+  padding-bottom: 90px;
+}
