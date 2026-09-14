@@ -1,0 +1,199 @@
+/* ==========================================================================
+   NeXus Intro Video Modal
+   Cinematic glassmorphic presentation overlay
+   ========================================================================== */
+
+.nexus-intro-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(8, 10, 15, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: nexusFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes nexusFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.nexus-intro-card {
+  background: #0D1117;
+  border: 1px solid rgba(21, 93, 252, 0.35);
+  box-shadow: 0 0 50px rgba(21, 93, 252, 0.25), 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  border-radius: 16px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+@media (min-width: 640px) {
+  .nexus-intro-card {
+    max-width: 420px;
+  }
+}
+
+.nexus-intro-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(18, 24, 38, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nexus-intro-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #60A5FA;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.nexus-intro-sparkle {
+  color: #38BDF8;
+  animation: spinSlow 6s linear infinite;
+}
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.nexus-intro-close-btn {
+  background: transparent;
+  border: none;
+  color: #94A3B8;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.nexus-intro-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+}
+
+.nexus-intro-screen {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 484 / 848;
+  background: #000;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.nexus-intro-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.nexus-intro-audio-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+
+.nexus-intro-audio-btn:hover {
+  background: #155DFC;
+  border-color: #3B82F6;
+  transform: scale(1.04);
+}
+
+.nexus-intro-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.nexus-intro-progress-bar {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  width: 100%;
+  position: relative;
+}
+
+.nexus-intro-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #155DFC, #38BDF8);
+  transition: width 0.1s linear;
+}
+
+.nexus-intro-footer {
+  padding: 10px 14px;
+  background: #0D1117;
+  display: flex;
+  justify-content: center;
+}
+
+.nexus-intro-cta-btn {
+  width: 100%;
+  background: #155DFC;
+  color: #FFFFFF;
+  border: none;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nexus-intro-cta-btn:hover {
+  background: #1D4ED8;
+  box-shadow: 0 4px 12px rgba(21, 93, 252, 0.4);
+}

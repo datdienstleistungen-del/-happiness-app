@@ -12,9 +12,13 @@ import { useAuth } from '../context/AuthContext'
 import { useLanguage, LANGUAGES } from '../i18n/translations'
 import { NEXUS_LANDING_TRANSLATIONS } from '../i18n/nexusLandingTranslations'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
+import NexusIntroModal from '../components/NexusIntroModal'
 import './NexusLandingPage.css'
 
 export default function NexusLandingPage() {
+  const [showIntroModal, setShowIntroModal] = useState(() => {
+    return sessionStorage.getItem('nexus_intro_viewed') !== 'true'
+  })
   const navigate = useNavigate()
   const { user } = useAuth()
   const { lang, setLang } = useLanguage()
@@ -186,6 +190,10 @@ export default function NexusLandingPage() {
 
   return (
     <div className="nexus-lp-wrapper">
+      <NexusIntroModal 
+        isOpen={showIntroModal} 
+        onClose={() => setShowIntroModal(false)} 
+      />
       
       {/* Top Header Navigation */}
       <header className="nexus-lp-header">
@@ -239,9 +247,20 @@ export default function NexusLandingPage() {
 
       {/* Hero Section */}
       <section className="nexus-lp-hero">
-        <div className="nexus-lp-hero-badge">
-          <span className="nexus-lp-pulse-dot"></span>
-          <span>{t.hero.badge}</span>
+        <div className="nexus-lp-hero-badge-group">
+          <div className="nexus-lp-hero-badge">
+            <span className="nexus-lp-pulse-dot"></span>
+            <span>{t.hero.badge}</span>
+          </div>
+          <button 
+            type="button"
+            className="nexus-lp-hero-video-trigger"
+            onClick={() => setShowIntroModal(true)}
+            title="15s Intro-Video ansehen"
+          >
+            <Play size={12} fill="currentColor" />
+            <span>15s Intro ansehen</span>
+          </button>
         </div>
 
         <h1 className="nexus-lp-hero-title">
