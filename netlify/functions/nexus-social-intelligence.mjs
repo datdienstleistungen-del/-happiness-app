@@ -467,20 +467,22 @@ Return VALID JSON ONLY in this format:
 async function generateSocialOutreach(params) {
   const { activity, companyName, trigger, offering, contact, targetPostLang, targetLang, uiLang, lang } = params;
 
-  // 1. Auto-Detect language of source activity
+  // 1. Auto-Detect language of source activity strictly from original title
   let detectedLang = 'en';
-  const combinedText = ((activity.title || '') + ' ' + (activity.snippet || '')).toLowerCase();
+  const titleText = (activity.title || '').toLowerCase();
   
-  if (/[äöüß]/.test(combinedText) || /\b(und|der|die|das|wir|fuer|gmbh|unternehmen|vertrieb|schmerzpunkte|kunden|erfolg|beratung)\b/.test(combinedText)) {
+  if (/[äöüß]/.test(titleText) || /\b(und|der|die|das|wir|fuer|gmbh|unternehmen|vertrieb|schmerzpunkte|kunden|erfolg|beratung|anleitung|erfahrungen)\b/i.test(titleText)) {
     detectedLang = 'de';
-  } else if (/\b(le|la|les|des|pour|avec|nous|entreprise|solution|gestion|connaissance)\b/.test(combinedText)) {
+  } else if (/\b(le|la|les|des|pour|avec|nous|entreprise|solution|gestion|connaissance|avis|comment)\b/i.test(titleText)) {
     detectedLang = 'fr';
-  } else if (/\b(el|la|los|las|para|con|nosotros|empresa|ventas|conocimiento)\b/.test(combinedText)) {
+  } else if (/\b(el|la|los|las|para|con|nosotros|empresa|ventas|conocimiento|como|guia)\b/i.test(titleText)) {
     detectedLang = 'es';
-  } else if (/\b(il|la|gli|per|con|noi|azienda|vendite|conoscenza)\b/.test(combinedText)) {
+  } else if (/\b(il|la|gli|per|con|noi|azienda|vendite|conoscenza|recensione)\b/i.test(titleText)) {
     detectedLang = 'it';
-  } else if (/\b(het|de|een|voor|met|wij|bedrijf|kennis)\b/.test(combinedText)) {
+  } else if (/\b(het|de|een|voor|met|wij|bedrijf|kennis|ervaringen)\b/i.test(titleText)) {
     detectedLang = 'nl';
+  } else {
+    detectedLang = 'en';
   }
 
   // Determine post language: use explicit targetPostLang if set and !== 'auto', else detected source language
