@@ -1,4 +1,4 @@
-const CACHE_NAME = 'happiness-v3';
+const CACHE_NAME = 'nexus-v1';
 const PRECACHE = ['/', '/index.html'];
 
 self.addEventListener('install', (e) => {

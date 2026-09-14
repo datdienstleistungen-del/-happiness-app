@@ -1,14 +1,17 @@
 {
-  "name": "NeXus Sales Intelligence",
+  "name": "NeXus Revenue OS",
   "short_name": "NeXus",
   "description": "Das KI-gestützte B2B Revenue OS. Automatische Lead-Generierung, intelligente Kontaktrecherche und personalisierte Erstansprache.",
-  "id": "nexus-sales-intelligence",
+  "id": "nexus-revenue-os",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#085041",
   "orientation": "portrait",
-  "categories": ["social", "lifestyle"],
+  "categories": [
+    "business",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "/favicon.svg",
