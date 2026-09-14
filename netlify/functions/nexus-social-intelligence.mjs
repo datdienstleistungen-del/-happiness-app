@@ -7,6 +7,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || process.env.VITE_DEEPSEEK_API_KEY;
 const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
 const TAVILY_API_KEY = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY;
 
 const LANG_MAP = {
@@ -55,6 +56,39 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 7000) {
 // MULTI-PROVIDER LLM CALLER (DeepSeek -> Gemini -> Mistral -> OpenRouter)
 // ============================================================================
 async function callLLM(prompt, temperature = 0.3) {
+  // 0. Try Groq (Super fast & active)
+  if (GROQ_API_KEY) {
+    const groqModels = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b'];
+    for (const m of groqModels) {
+      try {
+        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: m,
+            messages: [
+              { role: 'system', content: 'You are an elite B2B sales copywriter and strategist. Output valid JSON only.' },
+              { role: 'user', content: prompt }
+            ],
+            temperature,
+            response_format: { type: 'json_object' }
+          })
+        }, 6000);
+
+        if (res.ok) {
+          const data = await res.json();
+          const text = data.choices?.[0]?.message?.content;
+          if (text) {
+            const cleaned = text.replace(/^\s*```json\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+            return JSON.parse(cleaned);
+          }
+        }
+      } catch (e) {
+        console.warn(`[Social Intelligence] Groq ${m} error:`, e.message);
+      }
+    }
+  }
+
   // 1. Try DeepSeek (super reliable for JSON format)
   if (DEEPSEEK_API_KEY) {
     try {
