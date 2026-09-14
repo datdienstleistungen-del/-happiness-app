@@ -298,7 +298,7 @@ ${message}`
       // Try providers in order: Mistral -> Groq -> OpenRouter -> DeepSeek
       const leadProviders = [
         { name: 'mistral', url: 'https://api.mistral.ai/v1/chat/completions', key: process.env.MISTRAL_API_KEY, model: 'mistral-small-latest' },
-        { name: 'groq', url: 'https://api.groq.com/openai/v1/chat/completions', key: process.env.GROQ_API_KEY, model: 'llama-3.3-70b-versatile' },
+        { name: 'groq', url: 'https://api.groq.com/openai/v1/chat/completions', key: process.env.GROQ_API_KEY, model: 'qwen/qwen3.8-27b' },
         { name: 'openrouter', url: 'https://openrouter.ai/api/v1/chat/completions', key: process.env.OPENROUTER_API_KEY, model: 'google/gemma-4-26b-a4b-it:free' },
         { name: 'deepseek', url: 'https://api.deepseek.com/chat/completions', key: process.env.DEEPSEEK_API_KEY, model: 'deepseek-chat' },
       ]
@@ -628,7 +628,7 @@ ${message}`
               method: 'POST',
               headers: { 'Authorization': `Bearer ${textApiKey}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile',
+                model: 'qwen/qwen3.8-27b',
                 messages: buildMessages(historyLimit, true),
                 temperature: 0.1,
                 max_tokens: 4096
@@ -684,7 +684,7 @@ ${message}`
             method: 'POST',
             headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              model: 'llama-3.3-70b-versatile',
+              model: 'qwen/qwen3.8-27b',
               messages: buildMessages(historyLimit, true),
               temperature: reqTemperature,
               max_tokens: 4096,
@@ -697,7 +697,7 @@ ${message}`
             aiResponse = groqData.choices?.[0]?.message?.content || ''
             usage = groqData.usage
             provider = 'groq'
-            modelName = 'llama-3.3-70b-versatile'
+            modelName = 'qwen/qwen3.8-27b'
             success = true
           } else {
             const groqData = await groqRes.json().catch(() => ({}))

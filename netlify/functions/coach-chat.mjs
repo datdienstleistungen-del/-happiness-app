@@ -101,7 +101,7 @@ async function tryGroq(messages) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'qwen/qwen3.8-27b',
         messages,
         temperature: 0.7,
         max_tokens: 1024
@@ -415,7 +415,7 @@ export const handler = async (event) => {
 
       // Execute Fallback Chain
       // 1. OpenAI (GPT-4o) if image is present
-      // 2. Groq (llama-3.3-70b-versatile)
+      // 2. Groq (qwen/qwen3.8-27b)
       // 3. OpenRouter (google/gemma-4-26b-a4b-it:free)
       // 4. Mistral API (mistral-small-latest)
       // 5. DeepSeek API (deepseek-chat)

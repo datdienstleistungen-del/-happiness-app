@@ -4,6 +4,7 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY
 const supabase = createClient(supabaseUrl, supabaseKey)
 
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 const GROQ_API_KEY = process.env.GROQ_API_KEY
 const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY
@@ -88,6 +89,52 @@ Der Werbetext soll an passender Stelle im Drehbuch eingebaut werden — idealerw
   prompt += `\n\nAntworte NUR mit dem fertigen Drehbuch. Kein Markdown, keine Codeblöcke, kein Vorwort.`
 
   return prompt
+}
+
+
+async function tryGemini(systemPrompt) {
+  if (!GEMINI_API_KEY) return null
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: systemPrompt }] }],
+        generationConfig: { temperature: 0.5 }
+      })
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || null
+  } catch (e) {
+    console.error('[generate-script] Gemini failed:', e.message)
+    return null
+  }
+}
+
+async function tryDeepSeek(systemPrompt) {
+  if (!DEEPSEEK_API_KEY) return null
+  try {
+    const res = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${DEEPSEEK_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          { role: 'system', content: 'Du bist ein preisgekrönter Regisseur und Copywriter für Video-Skripte.' },
+          { role: 'user', content: systemPrompt }
+        ],
+        temperature: 0.5
+      })
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.choices?.[0]?.message?.content || null
+  } catch (e) {
+    console.error('[generate-script] DeepSeek failed:', e.message)
+    return null
+  }
 }
 
 async function tryGroq(systemPrompt) {

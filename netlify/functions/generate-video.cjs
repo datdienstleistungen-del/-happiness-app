@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_tArx0o4FeYQ3HthZ7h7hCQ_fTJslkMa'
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || ''
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -97,7 +97,7 @@ Output: Nur valides JSON.`
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'qwen/qwen3.8-27b',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage }

@@ -1,6 +1,6 @@
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || ''
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_tArx0o4FeYQ3HthZ7h7hCQ_fTJslkMa'
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || ''
 const PEXELS_API_KEY = process.env.PEXELS_API_KEY
 
 const DEFAULT_STOCK = [
@@ -124,7 +124,7 @@ Nur valides JSON ausgeben.`
       name: 'groq',
       url: 'https://api.groq.com/openai/v1/chat/completions',
       key: groqKey,
-      model: 'llama-3.3-70b-versatile'
+      model: 'qwen/qwen3.8-27b'
     })
   }
 

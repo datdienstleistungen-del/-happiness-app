@@ -379,7 +379,7 @@ export default function TikTokVideoPage() {
       } else if (msg.includes('fetch') || msg.includes('network')) {
         setError(t.errorNetwork)
       } else {
-        setError(err.error || t.errorGeneric)
+        setError(msg || t.errorGeneric)
       }
     } finally {
       setLoading(false)
