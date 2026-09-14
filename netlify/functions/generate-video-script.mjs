@@ -217,30 +217,6 @@ async function tryOpenRouter(systemPrompt) {
   }
 }
 
-async function tryDeepSeek(systemPrompt) {
-  if (!DEEPSEEK_API_KEY) return null
-  try {
-    const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${DEEPSEEK_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: 'Erstelle das Drehbuch basierend auf der Szenen-Analyse.' }
-        ],
-        temperature: 0.5,
-        max_tokens: 4096
-      })
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.choices?.[0]?.message?.content || null
-  } catch (e) {
-    console.error('[generate-script] DeepSeek failed:', e.message)
-    return null
-  }
-}
 
 async function checkGuestRateLimit(visitorId, clientIp) {
   if (!visitorId) return { allowed: false, error: 'visitor_id ist erforderlich im Gast-Modus' }
