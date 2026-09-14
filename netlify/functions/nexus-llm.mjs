@@ -316,83 +316,84 @@ export const handler = async (event) => {
       isAdmin = user.email && ADMIN_EMAILS.includes(user.email);
     }
 
-    // Premium-Tier-Check: is_premium + premium_tier
-    let isPremium = false;
-    let premiumTier = 'free';
-    try {
-      const { res: settingsRes } = await fetchWithTimeout(`${supabaseUrl}/rest/v1/ai_settings?user_id=eq.${user.id}&select=is_premium,premium_tier`, {
-        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` }
-      }, 10000);
-      if (settingsRes.ok) {
-        const settingsData = await settingsRes.json();
-        isPremium = settingsData[0]?.is_premium === true;
-        premiumTier = settingsData[0]?.premium_tier || 'free';
-      }
-    } catch(e) {}
-
-    // 2. Rate Limiting Check
-    console.log("[NEXUS] Fetching API usage");
-    const TIER_LIMITS = { free: 5, pro: 100, enterprise: 500 };
-    const MAX_REQUESTS = isAdmin ? Infinity : (TIER_LIMITS[premiumTier] || 5);
-    const today = new Date().toISOString().split('T')[0];
-    
-    // SELECT: User-JWT (RLS erlaubt SELECT auf eigene Zeile)
-    let usageRes, uAbortId, uRaceId;
-    try {
-      ({ res: usageRes, abortId: uAbortId, raceId: uRaceId } = await fetchWithTimeout(`${supabaseUrl}/rest/v1/nexus_api_usage?user_id=eq.${user.id}&select=*`, {
-        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` }
-      }, 15000));
-    } catch(e) {
-      console.log("[NEXUS] Usage fetch failed:", e.message);
-      return { statusCode: 500, body: JSON.stringify({ error: "Usage timeout" }) };
-    }
-
-    if (!usageRes.ok) {
-      await usageRes.text().catch(e => {}); // Body konsumieren
-      clearTimeout(uAbortId); clearTimeout(uRaceId);
-      return { statusCode: 500, body: JSON.stringify({ error: "DB usage error" }) };
-    }
-    
-    let usageTimer;
-    const usageData = await Promise.race([
-      usageRes.json(),
-      new Promise((_, reject) => { usageTimer = setTimeout(() => reject(new Error('Usage json timeout')), 15000); })
-    ]).catch(e => []);
-    clearTimeout(uAbortId); clearTimeout(uRaceId); clearTimeout(usageTimer);
-    
-    const usage = usageData.length > 0 ? usageData[0] : null;
-    
-    // Admin: Kein Rate-Limit, aber Usage trotzdem tracken
-    if (!usage) {
-      console.log("[NEXUS] Inserting usage (service key)");
+    // Premium-Tier-Check & Rate Limiting (nur für eingeloggte User)
+    if (user && user.id) {
+      let isPremium = false;
+      let premiumTier = 'free';
       try {
-        const { res: iRes, abortId: iAbort, raceId: iRace } = await fetchWithTimeout(`${supabaseUrl}/rest/v1/nexus_api_usage`, {
-          method: 'POST',
-          headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-          body: JSON.stringify({ user_id: user.id, requests_today: 1, last_request_date: today })
-        }, 15000);
-        await iRes.text().catch(e => {}); // Immer konsumieren
-        clearTimeout(iAbort); clearTimeout(iRace);
+        const { res: settingsRes } = await fetchWithTimeout(`${supabaseUrl}/rest/v1/ai_settings?user_id=eq.${user.id}&select=is_premium,premium_tier`, {
+          headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` }
+        }, 10000);
+        if (settingsRes.ok) {
+          const settingsData = await settingsRes.json();
+          isPremium = settingsData[0]?.is_premium === true;
+          premiumTier = settingsData[0]?.premium_tier || 'free';
+        }
       } catch(e) {}
-    } else {
-      let newCount = usage.requests_today;
-      if (usage.last_request_date !== today) newCount = 1; else newCount += 1;
+
+      console.log("[NEXUS] Fetching API usage");
+      const TIER_LIMITS = { free: 5, pro: 100, enterprise: 500 };
+      const MAX_REQUESTS = isAdmin ? Infinity : (TIER_LIMITS[premiumTier] || 5);
+      const today = new Date().toISOString().split('T')[0];
       
-      // Admin: Kein Limit, aber Usage tracken
-      if (!isAdmin && newCount > MAX_REQUESTS) {
-        return { statusCode: 429, body: JSON.stringify({ error: "Rate limit exceeded." }) };
+      // SELECT: User-JWT (RLS erlaubt SELECT auf eigene Zeile)
+      let usageRes, uAbortId, uRaceId;
+      try {
+        ({ res: usageRes, abortId: uAbortId, raceId: uRaceId } = await fetchWithTimeout(`${supabaseUrl}/rest/v1/nexus_api_usage?user_id=eq.${user.id}&select=*`, {
+          headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` }
+        }, 15000));
+      } catch(e) {
+        console.log("[NEXUS] Usage fetch failed:", e.message);
+        return { statusCode: 500, body: JSON.stringify({ error: "Usage timeout" }) };
+      }
+
+      if (!usageRes.ok) {
+        await usageRes.text().catch(e => {}); // Body konsumieren
+        clearTimeout(uAbortId); clearTimeout(uRaceId);
+        return { statusCode: 500, body: JSON.stringify({ error: "DB usage error" }) };
       }
       
-      console.log("[NEXUS] Updating usage (service key)");
-      try {
-        const { res: uRes, abortId: upAbort, raceId: upRace } = await fetchWithTimeout(`${supabaseUrl}/rest/v1/nexus_api_usage?user_id=eq.${user.id}`, {
-          method: 'PATCH',
-          headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-          body: JSON.stringify({ requests_today: newCount, last_request_date: today })
-        }, 15000);
-        await uRes.text().catch(e => {}); // Immer konsumieren
-        clearTimeout(upAbort); clearTimeout(upRace);
-      } catch(e) {}
+      let usageTimer;
+      const usageData = await Promise.race([
+        usageRes.json(),
+        new Promise((_, reject) => { usageTimer = setTimeout(() => reject(new Error('Usage json timeout')), 15000); })
+      ]).catch(e => []);
+      clearTimeout(uAbortId); clearTimeout(uRaceId); clearTimeout(usageTimer);
+      
+      const usage = usageData.length > 0 ? usageData[0] : null;
+      
+      // Admin: Kein Rate-Limit, aber Usage trotzdem tracken
+      if (!usage) {
+        console.log("[NEXUS] Inserting usage (service key)");
+        try {
+          const { res: iRes, abortId: iAbort, raceId: iRace } = await fetchWithTimeout(`${supabaseUrl}/rest/v1/nexus_api_usage`, {
+            method: 'POST',
+            headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ user_id: user.id, requests_today: 1, last_request_date: today })
+          }, 15000);
+          await iRes.text().catch(e => {}); // Immer konsumieren
+          clearTimeout(iAbort); clearTimeout(iRace);
+        } catch(e) {}
+      } else {
+        let newCount = usage.requests_today;
+        if (usage.last_request_date !== today) newCount = 1; else newCount += 1;
+        
+        // Admin: Kein Limit, aber Usage tracken
+        if (!isAdmin && newCount > MAX_REQUESTS) {
+          return { statusCode: 429, body: JSON.stringify({ error: "Rate limit exceeded." }) };
+        }
+        
+        console.log("[NEXUS] Updating usage (service key)");
+        try {
+          const { res: uRes, abortId: upAbort, raceId: upRace } = await fetchWithTimeout(`${supabaseUrl}/rest/v1/nexus_api_usage?user_id=eq.${user.id}`, {
+            method: 'PATCH',
+            headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ requests_today: newCount, last_request_date: today })
+          }, 15000);
+          await uRes.text().catch(e => {}); // Immer konsumieren
+          clearTimeout(upAbort); clearTimeout(upRace);
+        } catch(e) {}
+      }
     }
     
 
