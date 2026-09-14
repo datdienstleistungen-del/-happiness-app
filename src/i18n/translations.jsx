@@ -8,6 +8,11 @@ const translations = {
       "terms": "AGB"
     },
     "nexus": {
+      "wsSocialPostLang": "Sprache des Posts:",
+      "wsSocialTranslationReview": "🇩🇪 Übersetzung zur Kontrolle:",
+      "wsSocialCopyPost": "In die Zwischenablage kopieren",
+      "wsSocialCopiedPost": "In die Zwischenablage kopiert!",
+      "wsSocialOriginalPost": "Originalbeitrag öffnen & posten",
       "wsSocialPresence": "Social-Präsenz",
       "wsSocialActivities": "Letzte Aktivitäten & Content",
       "wsSocialNoActivities": "Für dieses Unternehmen konnten aktuell keine verifizierten öffentlichen Social-Aktivitäten gefunden werden.",

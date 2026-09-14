@@ -1,321 +1,368 @@
+import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
-import crypto from 'crypto';
 
-const BROWSER_HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-  'Accept-Language': 'en-US,en;q=0.9,de-DE,de;q=0.8,*;q=0.5'
-};
+// ============================================================================
+// CONFIGURATION & API KEYS
+// ============================================================================
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || process.env.VITE_YOUTUBE_API_KEY;
 
 const LANG_MAP = {
-  de: 'DEUTSCH (professionelles B2B-Deutsch)',
-  en: 'ENGLISH (fluent, compelling, high-level B2B business English)',
-  es: 'ESPAÑOL (español de negocios profesional y persuasivo)',
-  fr: 'FRANÇAIS (français d affaires professionnel et percutant)',
-  it: 'ITALIANO (italiano aziendale professionale e convincente)',
-  nl: 'NEDERLANDS (professioneel zakelijk Nederlands)',
-  el: 'ΕΛΛΗΝΙΚΑ (επαγγελματικά επιχειρηματικά ελληνικά)'
+  de: 'German / Deutsch',
+  en: 'English',
+  es: 'Spanish / Español',
+  fr: 'French / Français',
+  it: 'Italian / Italiano',
+  nl: 'Dutch / Nederlands',
+  el: 'Greek / Ελληνικά'
 };
 
-// Entertainment / Gaming / Pop-culture blacklist keywords
-const UNRELATED_TOPIC_BLACKLIST = [
-  'star wars', 'bad batch', 'gaming', 'gameplay', 'trailer', 'movie', 'film', 
-  'anime', 'manga', 'minecraft', 'fortnite', 'roblox', 'podcast episode', 
-  'reaction', 'unboxing', 'comedy', 'sketch', 'streamer', 'twitch', 'music video'
-];
+const LANG_NAMES = {
+  de: 'Deutsch',
+  en: 'English',
+  es: 'Español',
+  fr: 'Français',
+  it: 'Italiano',
+  nl: 'Nederlands',
+  el: 'Ελληνικά'
+};
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
-  const controller = new AbortController();
-  const abortId = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
-    clearTimeout(abortId);
-    return res;
-  } catch (e) {
-    clearTimeout(abortId);
-    throw e;
-  }
-}
+const BROWSER_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7'
+};
 
 // ============================================================================
-// LLM CALL (DeepSeek → Mistral → OpenRouter → OpenAI)
+// LLM HELPER (Gemini Flash)
 // ============================================================================
 async function callLLM(prompt, temperature = 0.3) {
-  const providers = [
-    { url: 'https://api.deepseek.com/chat/completions', key: process.env.DEEPSEEK_API_KEY, model: 'deepseek-chat' },
-    { url: 'https://api.mistral.ai/v1/chat/completions', key: process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY, model: 'mistral-small-latest' },
-    { url: 'https://openrouter.ai/api/v1/chat/completions', key: process.env.OPENROUTER_API_KEY, model: 'google/gemma-4-26b-a4b-it:free' },
-    { url: 'https://api.openai.com/v1/chat/completions', key: process.env.OPENAI_API_KEY, model: 'gpt-4o-mini' }
-  ];
-
-  for (const p of providers) {
-    if (!p.key) continue;
-    try {
-      const res = await fetchWithTimeout(p.url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${p.key}` },
-        body: JSON.stringify({
-          model: p.model,
-          messages: [
-            { role: 'system', content: 'You are a multi-language B2B Social Intelligence Engine. You strictly verify provenance and avoid false positives. Return valid JSON only.' },
-            { role: 'user', content: prompt }
-          ],
-          temperature,
-          max_tokens: 1800
-        })
-      }, 9000);
-
-      if (!res.ok) continue;
-      const data = await res.json();
-      const text = data.choices?.[0]?.message?.content || '';
-      const cleaned = text.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
-      try {
-        return JSON.parse(cleaned);
-      } catch (e) {
-        return { raw: text };
-      }
-    } catch (e) {
-      continue;
-    }
+  if (!GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY is not set');
   }
-  return null;
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature,
+        responseMimeType: 'application/json'
+      }
+    })
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gemini API Error (${res.status}): ${errText}`);
+  }
+
+  const data = await res.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error('Empty LLM response');
+
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    const cleaned = text.replace(/^```json
+?/, '').replace(/
+?```$/, '').trim();
+    return JSON.parse(cleaned);
+  }
 }
 
 // ============================================================================
-// SOCIAL PROFILES EXTRACTION (Website Crawling)
+// TIMEOUT FETCH WRAPPER
+// ============================================================================
+async function fetchWithTimeout(url, options = {}, timeoutMs = 6000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return response;
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
+  }
+}
+
+// ============================================================================
+// WEB SEARCH HELPER (Tavily or Fallback)
+// ============================================================================
+async function searchWeb(query, options = {}) {
+  const { maxResults = 5 } = options;
+
+  if (TAVILY_API_KEY) {
+    try {
+      const res = await fetchWithTimeout('https://api.tavily.com/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          api_key: TAVILY_API_KEY,
+          query,
+          search_depth: 'basic',
+          max_results: maxResults,
+          include_domains: options.includeDomains,
+          exclude_domains: options.excludeDomains
+        })
+      }, 5000);
+
+      if (res.ok) {
+        const data = await res.json();
+        return (data.results || []).map(r => ({
+          title: r.title,
+          url: r.url,
+          snippet: r.content,
+          date: r.published_date || null
+        }));
+      }
+    } catch (e) {
+      console.warn('[Social Intelligence] Tavily search error:', e.message);
+    }
+  }
+
+  return [];
+}
+
+// ============================================================================
+// STEP 1: EXTRACT OFFICIAL SOCIAL LINKS FROM COMPANY WEBSITE
 // ============================================================================
 async function extractSocialProfilesFromWebsite(websiteUrl) {
   const profiles = {
+    website: websiteUrl,
     linkedin: null,
     youtube: null,
     twitter: null,
-    website: websiteUrl || null
+    github: null
   };
 
   if (!websiteUrl) return profiles;
 
-  let targetUrl = websiteUrl.trim();
+  let targetUrl = websiteUrl;
   if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
     targetUrl = 'https://' + targetUrl;
   }
 
   try {
     const res = await fetchWithTimeout(targetUrl, { headers: BROWSER_HEADERS }, 5000);
-    if (res.ok) {
-      const html = await res.text();
-      const $ = cheerio.load(html);
+    if (!res.ok) return profiles;
 
-      $('a[href]').each((_, el) => {
-        const href = $(el).attr('href')?.trim();
-        if (!href) return;
+    const html = await res.text();
+    const $ = cheerio.load(html);
 
-        // LinkedIn Company Page
-        if (/linkedin\.com\/company\/[a-zA-Z0-9_-]+/i.test(href) && !profiles.linkedin) {
-          const match = href.match(/https?:\/\/(www\.)?linkedin\.com\/company\/[a-zA-Z0-9_-]+/i);
-          if (match) profiles.linkedin = { url: match[0], verified: true, source: 'website_link' };
-        }
-        // YouTube Channel
-        if (/youtube\.com\/(@|channel\/|c\/|user\/)[a-zA-Z0-9_.-]+/i.test(href) && !profiles.youtube) {
-          const match = href.match(/https?:\/\/(www\.)?youtube\.com\/(@|channel\/|c\/|user\/)[a-zA-Z0-9_.-]+/i);
-          if (match) profiles.youtube = { url: match[0], verified: true, source: 'website_link' };
-        }
-        // Twitter / X Profile
-        if (/(twitter\.com|x\.com)\/[a-zA-Z0-9_]+/i.test(href) && !profiles.twitter) {
-          const match = href.match(/https?:\/\/(www\.)?(twitter\.com|x\.com)\/[a-zA-Z0-9_]+/i);
-          if (match && !/intent|share/i.test(match[0])) {
-            profiles.twitter = { url: match[0], verified: true, source: 'website_link' };
-          }
-        }
-      });
-    }
-  } catch (e) {
-    console.warn(`[Social Discovery] Crawl failed for ${targetUrl}:`, e.message);
+    $('a').each((_, el) => {
+      const href = $(el).attr('href');
+      if (!href) return;
+
+      const trimmed = href.trim();
+
+      // LinkedIn Company Profile
+      if (trimmed.includes('linkedin.com/company/') && !profiles.linkedin) {
+        const cleanLi = trimmed.split('?')[0].replace(/\/+$/, '');
+        profiles.linkedin = { url: cleanLi, verified: true, source: 'website' };
+      }
+
+      // YouTube Channel
+      if ((trimmed.includes('youtube.com/@') || trimmed.includes('youtube.com/channel/') || trimmed.includes('youtube.com/c/')) && !profiles.youtube) {
+        const cleanYt = trimmed.split('?')[0].replace(/\/+$/, '');
+        profiles.youtube = { url: cleanYt, verified: true, source: 'website' };
+      }
+
+      // Twitter / X
+      if ((trimmed.includes('twitter.com/') || trimmed.includes('x.com/')) && !profiles.twitter) {
+        const cleanTw = trimmed.split('?')[0].replace(/\/+$/, '');
+        profiles.twitter = { url: cleanTw, verified: true, source: 'website' };
+      }
+
+      // GitHub
+      if (trimmed.includes('github.com/') && !profiles.github && !trimmed.includes('github.com/features')) {
+        const cleanGh = trimmed.split('?')[0].replace(/\/+$/, '');
+        profiles.github = { url: cleanGh, verified: true, source: 'website' };
+      }
+    });
+
+  } catch (err) {
+    console.warn('[Social Intelligence] Error crawling website for social links:', err.message);
   }
 
   return profiles;
 }
 
 // ============================================================================
-// SEARCH ENGINE DISCOVERY (Tavily)
+// STEP 2: YOUTUBE ACTIVITY DISCOVERY & VERIFICATION
 // ============================================================================
-async function searchWeb(query, options = {}) {
-  const tavilyKey = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY;
-  if (tavilyKey) {
+async function getYouTubeActivities(companyName, verifiedYtProfile) {
+  const activities = [];
+
+  // A. If verified YouTube channel from official site
+  if (verifiedYtProfile?.url) {
+    let handleOrPath = '';
+    const match = verifiedYtProfile.url.match(/youtube.com\/(@[a-zA-Z0-9_.-]+|channel\/[a-zA-Z0-9_.-]+|c\/[a-zA-Z0-9_.-]+)/i);
+    if (match) {
+      handleOrPath = match[1];
+    }
+
     try {
-      const res = await fetchWithTimeout('https://api.tavily.com/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          api_key: tavilyKey,
-          query,
-          search_depth: 'advanced',
-          max_results: options.maxResults || 5,
-          include_answer: false
-        })
-      }, 8000);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.results)) {
-          return data.results;
+      const results = await searchWeb(`site:youtube.com "${handleOrPath || companyName}" watch`, { maxResults: 5 });
+      for (const r of results) {
+        if (r.url.includes('youtube.com/watch')) {
+          activities.push({
+            platform: 'youtube',
+            type: 'video',
+            url: r.url,
+            title: r.title ? r.title.replace(' - YouTube', '').trim() : 'Offizielles Video',
+            snippet: r.snippet || '',
+            date: r.date || 'Aktuell',
+            channelUrl: verifiedYtProfile.url,
+            verifiedChannel: true
+          });
         }
       }
     } catch (e) {
-      console.warn('[Social Search] Tavily search error:', e.message);
+      console.warn('[Social Intelligence] Error searching verified channel videos:', e.message);
     }
   }
-  return [];
+
+  // B. Targeted official search if no activities yet
+  if (activities.length === 0) {
+    try {
+      const results = await searchWeb(`site:youtube.com inurl:watch "${companyName}" (keynote OR demo OR announcement OR interview OR product)`, { maxResults: 4 });
+      for (const r of results) {
+        if (r.url.includes('youtube.com/watch') && !activities.some(a => a.url === r.url)) {
+          activities.push({
+            platform: 'youtube',
+            type: 'video',
+            url: r.url,
+            title: r.title ? r.title.replace(' - YouTube', '').trim() : 'Produktvideo / Keynote',
+            snippet: r.snippet || '',
+            date: r.date || 'Aktuell',
+            channelUrl: null,
+            verifiedChannel: false
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('[Social Intelligence] Error finding general YouTube videos:', e.message);
+    }
+  }
+
+  return activities;
 }
 
 // ============================================================================
-// YOUTUBE ACTIVITY RETRIEVAL (STRICT VERIFICATION)
+// STEP 3: LINKEDIN & PUBLIC POST DISCOVERY
 // ============================================================================
-async function getYouTubeActivities(companyName, youtubeProfile) {
+async function getLinkedInAndPublicActivities(companyName, verifiedLiProfile) {
   const activities = [];
-  const compClean = (companyName || '').toLowerCase().trim();
 
-  // 1. Wenn ein offizieller YouTube-Kanal über die Website verifiziert ist:
-  if (youtubeProfile?.url) {
-    const channelQuery = `site:youtube.com inurl:watch "${youtubeProfile.url}"`;
-    const channelResults = await searchWeb(channelQuery, { maxResults: 4 });
-    for (const item of channelResults) {
-      if (item.url && item.url.includes('youtube.com/watch')) {
-        const text = ((item.title || '') + ' ' + (item.content || '')).toLowerCase();
-        if (UNRELATED_TOPIC_BLACKLIST.some(b => text.includes(b))) continue;
+  // Add verified company profile
+  if (verifiedLiProfile?.url) {
+    activities.push({
+      platform: 'linkedin',
+      type: 'profile',
+      url: verifiedLiProfile.url,
+      title: `Offizielles LinkedIn-Profil: ${companyName}`,
+      snippet: `Verifiziertes Unternehmensprofil auf LinkedIn für Direktansprache und Kontakt-Recherche.`,
+      date: 'Profil',
+      verifiedChannel: true
+    });
+  }
 
+  // Search for official articles / updates / PR announcements
+  try {
+    const results = await searchWeb(`site:linkedin.com/pulse OR site:linkedin.com/posts "${companyName}"`, { maxResults: 3 });
+    for (const r of results) {
+      if ((r.url.includes('linkedin.com/pulse/') || r.url.includes('linkedin.com/posts/')) && !activities.some(a => a.url === r.url)) {
         activities.push({
-          id: crypto.createHash('md5').update(item.url).digest('hex'),
-          platform: 'youtube',
-          type: 'video',
-          title: item.title?.replace(/ - YouTube$/i, '').trim() || 'Video',
-          url: item.url,
-          snippet: item.content || '',
-          date: item.published_date || 'Recent',
-          channel_name: companyName,
-          verified: true
+          platform: 'linkedin',
+          type: 'post',
+          url: r.url,
+          title: r.title ? r.title.replace(' | LinkedIn', '').trim() : `LinkedIn Update ${companyName}`,
+          snippet: r.snippet || '',
+          date: r.date || 'Kürzlich',
+          verifiedChannel: false
         });
       }
     }
-  }
-
-  // 2. Gezielte Suche nach Videos des Unternehmens mit strenger Relevanzprüfung:
-  if (activities.length === 0) {
-    const targetedQuery = `site:youtube.com inurl:watch "${companyName}" (software OR platform OR webinar OR presentation OR demo OR enterprise OR business OR b2b)`;
-    const results = await searchWeb(targetedQuery, { maxResults: 4 });
-
-    for (const item of results) {
-      if (!item.url || !item.url.includes('youtube.com/watch')) continue;
-      const text = ((item.title || '') + ' ' + (item.content || '')).toLowerCase();
-
-      if (UNRELATED_TOPIC_BLACKLIST.some(b => text.includes(b))) continue;
-      if (!text.includes(compClean)) continue;
-
-      activities.push({
-        id: crypto.createHash('md5').update(item.url).digest('hex'),
-        platform: 'youtube',
-        type: 'video',
-        title: item.title?.replace(/ - YouTube$/i, '').trim() || 'Video',
-        url: item.url,
-        snippet: item.content || item.title || '',
-        date: item.published_date || 'Recent',
-        channel_name: companyName,
-        verified: false
-      });
-    }
+  } catch (e) {
+    console.warn('[Social Intelligence] Error finding LinkedIn posts:', e.message);
   }
 
   return activities;
 }
 
 // ============================================================================
-// LINKEDIN & PUBLIC ACTIVITY RETRIEVAL (STRICT VERIFICATION)
+// STEP 4: LLM RELEVANCE SCORING & QUALITY FILTERING
 // ============================================================================
-async function getLinkedInAndPublicActivities(companyName, linkedinProfile) {
-  const activities = [];
-  const compClean = (companyName || '').toLowerCase().trim();
+const UNRELATED_TOPIC_BLACKLIST = [
+  'star wars', 'fortnite', 'minecraft', 'gameplay', 'walkthrough episode',
+  'anime episode', 'movie full', 'soundtrack ost', 'let\'s play', 'reaction video'
+];
 
-  const liQuery = linkedinProfile?.url 
-    ? `site:linkedin.com "${linkedinProfile.url}"` 
-    : `site:linkedin.com/company "${companyName}"`;
-
-  const results = await searchWeb(liQuery, { maxResults: 4 });
-
-  for (const item of results) {
-    if (!item.url) continue;
-    const isPost = item.url.includes('/posts/') || item.url.includes('/pulse/') || item.url.includes('/feed/update/') || item.url.includes('/company/');
-    const text = ((item.title || '') + ' ' + (item.content || '')).toLowerCase();
-
-    if (text.includes(compClean) && isPost) {
-      activities.push({
-        id: crypto.createHash('md5').update(item.url).digest('hex'),
-        platform: 'linkedin',
-        type: item.url.includes('/company/') ? 'company_profile' : 'post',
-        title: item.title?.replace(/ \| LinkedIn$/i, '').trim() || 'LinkedIn Update',
-        url: item.url,
-        snippet: item.content || '',
-        date: item.published_date || 'Recent',
-        author: companyName,
-        verified: !!linkedinProfile?.verified
-      });
-    }
-  }
-
-  return activities;
-}
-
-// ============================================================================
-// RELEVANCE SCORING & ENTERTAINMENT FILTERING VIA LLM
-// ============================================================================
-async function scoreActivitiesWithLLM(activities, context, targetLang = 'de') {
+async function scoreActivitiesWithLLM(activities, context, activeLangKey = 'de') {
   if (!activities || activities.length === 0) return [];
 
-  const { companyName, trigger, offering } = context;
-  const langPrompt = LANG_MAP[targetLang] || LANG_MAP['de'];
+  const targetLangStr = LANG_MAP[activeLangKey] || LANG_MAP['de'];
 
-  const prompt = `You are a strict B2B Sales Intelligence Verification Auditor.
-Target Company: "${companyName}"
-Opportunity Trigger: "${trigger?.title || trigger?.description || 'B2B Sales expansion / business update'}"
-Offering: "${offering?.offering_name || offering?.positioning || 'B2B Solution'}"
+  // Preliminary filter: remove obvious spam
+  const filtered = activities.filter(a => {
+    const lower = (a.title + ' ' + a.snippet).toLowerCase();
+    return !UNRELATED_TOPIC_BLACKLIST.some(bad => lower.includes(bad));
+  });
 
-CRITICAL VERIFICATION RULES:
-1. Is this activity genuinely related to the target company "${companyName}" and a legitimate business/corporate context?
-2. If this is entertainment, gaming, pop-culture, movie reviews, Star Wars, a random unrelated person, or a false keyword match: YOU MUST SET is_valid_business_activity: false and relevance_score: 0.
-3. If valid: Calculate a relevance_score (0 to 100) and write a 1-sentence relevance_reason in ${langPrompt}.
+  if (filtered.length === 0) return [];
 
-Activities to review:
-${JSON.stringify(activities.map(a => ({ id: a.id, platform: a.platform, title: a.title, snippet: a.snippet, date: a.date })), null, 2)}
+  const prompt = `You are an elite B2B Sales Research Auditor.
+Evaluate the following social activities for target company "${context.companyName}".
 
-Return JSON Array ONLY:
-[
-  {
-    "id": "Activity-ID",
-    "is_valid_business_activity": true,
-    "relevance_score": 85,
-    "relevance_reason": "1 sentence in ${langPrompt}",
-    "topic_summary": "Short topic summary"
-  }
-]`;
+Target Offering Context:
+${context.offering ? JSON.stringify(context.offering) : 'B2B Sales Software / Services'}
+
+Target Trigger / Signal Context:
+${context.trigger ? JSON.stringify(context.trigger) : 'Expansion / Modernization'}
+
+LANGUAGE REQUIREMENT:
+All explanation strings (relevance_reason, summary) MUST be in: ${targetLangStr}.
+
+ACTIVITIES TO EVALUATE:
+${JSON.stringify(filtered, null, 2)}
+
+TASK:
+1. Filter out any completely unrelated noise (e.g. video games, pop culture, wrong companies with identical names).
+2. For each relevant activity, assign a relevance_score (0-100) based on how strong of a sales conversation hook it provides.
+3. Provide a brief 1-sentence relevance_reason in ${targetLangStr}.
+
+Return VALID JSON ONLY in this format:
+{
+  "evaluated_activities": [
+    {
+      "url": "exact URL from input",
+      "platform": "youtube or linkedin",
+      "type": "video or post or profile",
+      "title": "Cleaned title",
+      "snippet": "Short excerpt",
+      "date": "Date string",
+      "relevance_score": 85,
+      "relevance_reason": "Kurze Begründung auf ${targetLangStr}",
+      "is_verified": true
+    }
+  ]
+}`;
 
   try {
-    const scored = await callLLM(prompt, 0.2);
-    if (Array.isArray(scored)) {
-      return activities
-        .map(act => {
-          const match = scored.find(s => s.id === act.id);
-          const isValid = match ? match.is_valid_business_activity !== false : true;
-          const score = match?.relevance_score ?? 50;
-          return {
-            ...act,
-            is_valid_business_activity: isValid,
-            relevance_score: score,
-            relevance_reason: match?.relevance_reason ?? 'Öffentliche Unternehmensaktivität.',
-            topic_summary: match?.topic_summary ?? act.title
-          };
-        })
-        .filter(act => act.is_valid_business_activity && act.relevance_score >= 40)
-        .sort((a, b) => b.relevance_score - a.relevance_score);
+    const evaluation = await callLLM(prompt, 0.2);
+    if (evaluation?.evaluated_activities?.length > 0) {
+      return evaluation.evaluated_activities
+        .filter(item => item.relevance_score > 30 || item.type === 'profile')
+        .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0));
     }
-  } catch (e) {
-    console.warn('[Social Scoring] LLM scoring failed:', e.message);
+  } catch (err) {
+    console.warn('[Social Intelligence] LLM scoring fallback:', err.message);
   }
 
   return activities.filter(a => {
@@ -325,35 +372,41 @@ Return JSON Array ONLY:
 }
 
 // ============================================================================
-// OUTREACH GENERATOR (Comment + Direct Message — AUTO LANGUAGE & SALES CTA)
+// STEP 5: OUTREACH GENERATOR (Comment + Direct Message — AUTO POST LANG + REVIEW TRANSLATION)
 // ============================================================================
 async function generateSocialOutreach(params) {
-  const { activity, companyName, trigger, offering, contact, targetLang, lang } = params;
+  const { activity, companyName, trigger, offering, contact, targetPostLang, targetLang, uiLang, lang } = params;
 
-  // 1. Auto-Detect language of source activity if targetLang is 'auto' or not explicitly chosen
+  // 1. Auto-Detect language of source activity
   let detectedLang = 'en';
   const combinedText = ((activity.title || '') + ' ' + (activity.snippet || '')).toLowerCase();
   
-  if (/[äöüß]/.test(combinedText) || /\b(und|der|die|das|wir|fuer|gmbh|unternehmen|vertrieb|schmerzpunkte)\b/.test(combinedText)) {
+  if (/[äöüß]/.test(combinedText) || /\b(und|der|die|das|wir|fuer|gmbh|unternehmen|vertrieb|schmerzpunkte|kunden|erfolg)\b/.test(combinedText)) {
     detectedLang = 'de';
-  } else if (/\b(le|la|les|des|pour|avec|nous|entreprise|solution)\b/.test(combinedText)) {
+  } else if (/\b(le|la|les|des|pour|avec|nous|entreprise|solution|gestion|connaissance)\b/.test(combinedText)) {
     detectedLang = 'fr';
-  } else if (/\b(el|la|los|las|para|con|nosotros|empresa|ventas)\b/.test(combinedText)) {
+  } else if (/\b(el|la|los|las|para|con|nosotros|empresa|ventas|conocimiento)\b/.test(combinedText)) {
     detectedLang = 'es';
-  } else if (/\b(il|la|gli|per|con|noi|azienda|vendite)\b/.test(combinedText)) {
+  } else if (/\b(il|la|gli|per|con|noi|azienda|vendite|conoscenza)\b/.test(combinedText)) {
     detectedLang = 'it';
-  } else if (/\b(het|de|een|voor|met|wij|bedrijf)\b/.test(combinedText)) {
+  } else if (/\b(het|de|een|voor|met|wij|bedrijf|kennis)\b/.test(combinedText)) {
     detectedLang = 'nl';
   }
 
-  const activeLangKey = (targetLang && targetLang !== 'auto') ? targetLang : (detectedLang || lang || 'en');
-  const targetLanguageStr = LANG_MAP[activeLangKey] || LANG_MAP['en'];
+  // Determine post language (default to detected source language unless explicitly overridden)
+  const explicitPostLang = (targetPostLang && targetPostLang !== 'auto') ? targetPostLang : (targetLang && targetLang !== 'auto' && targetLang !== uiLang ? targetLang : null);
+  const postLangKey = explicitPostLang || detectedLang;
+  const userUiLangKey = uiLang || lang || 'de';
+
+  const postLanguageStr = LANG_MAP[postLangKey] || LANG_MAP['en'];
+  const postLangDisplayName = LANG_NAMES[postLangKey] || 'English';
+  const uiLanguageStr = LANG_MAP[userUiLangKey] || LANG_MAP['de'];
 
   const prompt = `You are an elite B2B Social Selling & Revenue Conversion Strategist in "NeXus Revenue OS".
 
 COMMERCIAL SALES PURPOSE:
 We are engaging with this public post/video specifically as a B2B sales opportunity.
-The goal is to generate inbound interest and drive traffic/leads to our solution/landing page.
+The goal is to generate inbound interest and drive qualified decision-makers to our solution/landing page.
 Do NOT just write polite, passive praise. Build a consultative bridge to our offering!
 
 CONTEXT:
@@ -367,36 +420,48 @@ CONTEXT:
 - Intent Signal / Trigger Event: "${trigger?.title || trigger?.description || 'Expansion / Modernization'}"
 - Our Offering: "${offering?.offering_name || 'NeXus Revenue OS'}" — ${offering?.positioning || 'B2B Sales Intelligence & Intent Detection'}
 
-CRITICAL LANGUAGE REQUIREMENT:
-The post is in ${activeLangKey.toUpperCase()}. You MUST write ALL output fields (analysis, comment, direct_message, pitch_angle) strictly in:
-👉 ${targetLanguageStr} 👈
+STRICT DUAL-LANGUAGE RULES:
+1. "comment" and "direct_message" MUST be written in the POST LANGUAGE: 👉 ${postLanguageStr} 👈 (e.g. English for English videos so it can be posted directly).
+2. "comment_translation", "direct_message_translation", and all "analysis" fields (post_summary, relevance_explanation) MUST be written in the USER'S UI LANGUAGE: 👉 ${uiLanguageStr} 👈 (so the user can review and understand everything in their native language before posting).
 
 TASKS:
-1. Provide a 2-step analysis of the post:
+1. Provide a 2-step analysis of the post (in ${uiLanguageStr}):
    - post_summary: What does this post/video actually state?
    - relevance_explanation: Why is this relevant to our offering and how does it create a sales opportunity?
-2. Generate a high-converting PUBLIC COMMENT for the platform (${activity.platform}):
+2. Generate a high-converting PUBLIC COMMENT for the platform (${activity.platform}) in ${postLanguageStr}:
    - Specifically address the core message of the post/video with expert insight.
    - Introduce our solution/methodology as the natural answer to the challenge discussed.
-   - Include an engaging inbound invitation to check out our approach/workflow or connect (e.g. "We built an automated workflow around this at [Our Solution] – happy to share insights or connect with anyone tackling this!").
-3. Generate a personalized DIRECT MESSAGE (LinkedIn InMail / DM):
+   - Include an engaging inbound invitation to check out our approach/workflow or connect.
+3. Provide the exact TRANSLATION of the comment into ${uiLanguageStr}.
+4. Generate a personalized DIRECT MESSAGE (LinkedIn InMail / DM) in ${postLanguageStr}:
    - Explicitly reference this specific post/video.
    - 3-4 sentences, value-first, direct sales hook, invitation to a 10-minute peer exchange.
+5. Provide the exact TRANSLATION of the direct message into ${uiLanguageStr}.
 
 Return VALID JSON ONLY:
 {
+  "post_lang": "${postLangKey}",
+  "post_lang_label": "${postLangDisplayName}",
+  "ui_lang": "${userUiLangKey}",
   "analysis": {
-    "post_summary": "...",
-    "relevance_explanation": "...",
+    "post_summary": "Summary in ${uiLanguageStr}",
+    "relevance_explanation": "Relevance explanation in ${uiLanguageStr}",
     "recommended_action": "comment"
   },
-  "comment": "Full comment text in ${activeLangKey} with sales bridge...",
-  "direct_message": "Full direct message text in ${activeLangKey} with sales hook...",
+  "comment": "Full comment text in ${postLanguageStr} ready to post...",
+  "comment_translation": "Übersetzung des Kommentars in ${uiLanguageStr} zur Prüfung...",
+  "direct_message": "Full direct message text in ${postLanguageStr} ready to send...",
+  "direct_message_translation": "Übersetzung der Direktnachricht in ${uiLanguageStr} zur Prüfung...",
   "pitch_angle": "Strategic angle"
 }`;
 
   const result = await callLLM(prompt, 0.4);
-  return result;
+  return {
+    ...result,
+    post_lang: postLangKey,
+    post_lang_label: postLangDisplayName,
+    ui_lang: userUiLangKey
+  };
 }
 
 // ============================================================================
@@ -409,7 +474,7 @@ export const handler = async (event) => {
 
   try {
     const body = event.body ? JSON.parse(event.body) : {};
-    const { action, companyName, website, trigger, offering, contact, activity, targetLang, lang } = body;
+    const { action, companyName, website, trigger, offering, contact, activity, targetPostLang, targetLang, uiLang, lang } = body;
 
     if (!companyName && !activity) {
       return {
@@ -419,7 +484,7 @@ export const handler = async (event) => {
       };
     }
 
-    const activeLang = targetLang && targetLang !== 'auto' ? targetLang : (lang || 'de');
+    const activeLang = uiLang || lang || 'de';
 
     // 1. ACTION: DISCOVER ACTIVITIES
     if (action === 'discover_activities') {
@@ -513,8 +578,10 @@ export const handler = async (event) => {
         trigger,
         offering,
         contact,
+        targetPostLang,
         targetLang,
-        lang
+        uiLang: activeLang,
+        lang: activeLang
       });
 
       return {

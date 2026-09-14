@@ -116,7 +116,7 @@ export default function SalesWorkspacePage() {
     }
   }, [selectedMode, fullContext?.company?.name, formData.company]);
 
-  const handleUseForOutreach = async (activity) => {
+  const handleUseForOutreach = async (activity, targetPostLang = 'auto') => {
     setSocialState(prev => ({
       ...prev,
       selectedActivity: activity,
@@ -137,8 +137,9 @@ export default function SalesWorkspacePage() {
           name: `${fullContext.contacts[0].nexus_contacts.first_name || ''} ${fullContext.contacts[0].nexus_contacts.last_name || ''}`.trim(),
           role: fullContext.contacts[0].nexus_contacts.role
         } : null),
-        targetLang: formData.targetLang || lang,
-        lang: lang
+        targetPostLang: targetPostLang,
+        uiLang: lang || 'de',
+        lang: lang || 'de'
       });
       setSocialState(prev => ({
         ...prev,
@@ -1088,50 +1089,110 @@ export default function SalesWorkspacePage() {
 
                             {/* Outreach Tabs (Comment vs Direct Message) */}
                             <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '10px', padding: '20px' }}>
-                              <div className="social-outreach-preview-tabs">
-                                <button 
-                                  className={`social-outreach-tab-btn ${socialState.activeTab === 'comment' ? 'active' : ''}`}
-                                  onClick={() => setSocialState(prev => ({ ...prev, activeTab: 'comment' }))}
-                                >
-                                  💬 {t('nexus.wsSocialCommentTab') || 'Mehrwert-Kommentar'}
-                                </button>
-                                <button 
-                                  className={`social-outreach-tab-btn ${socialState.activeTab === 'direct_message' ? 'active' : ''}`}
-                                  onClick={() => setSocialState(prev => ({ ...prev, activeTab: 'direct_message' }))}
-                                >
-                                  ✉️ {t('nexus.wsSocialDmTab') || 'Direktnachricht (InMail / DM)'}
-                                </button>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid var(--border-light)', paddingBottom: '14px' }}>
+                                <div className="social-outreach-preview-tabs" style={{ margin: 0 }}>
+                                  <button 
+                                    className={`social-outreach-tab-btn ${socialState.activeTab === 'comment' ? 'active' : ''}`}
+                                    onClick={() => setSocialState(prev => ({ ...prev, activeTab: 'comment' }))}
+                                  >
+                                    💬 {t('nexus.wsSocialCommentTab') || 'Mehrwert-Kommentar'}
+                                  </button>
+                                  <button 
+                                    className={`social-outreach-tab-btn ${socialState.activeTab === 'direct_message' ? 'active' : ''}`}
+                                    onClick={() => setSocialState(prev => ({ ...prev, activeTab: 'direct_message' }))}
+                                  >
+                                    ✉️ {t('nexus.wsSocialDmTab') || 'Direktnachricht (InMail / DM)'}
+                                  </button>
+                                </div>
+
+                                {/* Post Language Selector */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                    {t('nexus.wsSocialPostLang') || 'Sprache des Posts:'}
+                                  </span>
+                                  <select
+                                    value={socialState.outreachData.post_lang || 'en'}
+                                    onChange={(e) => handleUseForOutreach(socialState.selectedActivity, e.target.value)}
+                                    style={{
+                                      padding: '5px 10px',
+                                      borderRadius: '6px',
+                                      border: '1px solid var(--border-light)',
+                                      background: 'var(--bg)',
+                                      color: 'var(--text-primary)',
+                                      fontSize: '0.85rem',
+                                      cursor: 'pointer',
+                                      fontWeight: 600
+                                    }}
+                                  >
+                                    <option value="en">🇬🇧 Englisch (English)</option>
+                                    <option value="de">🇩🇪 Deutsch</option>
+                                    <option value="fr">🇫🇷 Français</option>
+                                    <option value="es">🇪🇸 Español</option>
+                                    <option value="it">🇮🇹 Italiano</option>
+                                    <option value="nl">🇳🇱 Nederlands</option>
+                                    <option value="el">🇬🇷 Ελληνικά</option>
+                                  </select>
+                                </div>
                               </div>
 
                               <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                                <textarea
-                                  value={socialState.activeTab === 'comment' ? (socialState.outreachData.comment || '') : (socialState.outreachData.direct_message || '')}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-                                    setSocialState(prev => ({
-                                      ...prev,
-                                      outreachData: {
-                                        ...prev.outreachData,
-                                        [prev.activeTab === 'comment' ? 'comment' : 'direct_message']: val
-                                      }
-                                    }));
-                                  }}
-                                  rows={6}
-                                  style={{
-                                    width: '100%',
-                                    padding: '12px 14px',
-                                    borderRadius: '8px',
-                                    border: '1px solid var(--border-light)',
-                                    background: 'var(--bg)',
-                                    color: 'var(--text-primary)',
-                                    fontFamily: 'inherit',
-                                    fontSize: '0.95rem',
-                                    lineHeight: 1.5,
-                                    resize: 'vertical'
-                                  }}
-                                />
+                                <div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                    <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                      📝 {socialState.activeTab === 'comment' ? 'Zu postender Kommentar' : 'Zu versendende Direktnachricht'} ({socialState.outreachData.post_lang_label || 'Englisch'}):
+                                    </label>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--color-koralle)', fontWeight: 600 }}>
+                                      ✨ Formatiert für {socialState.selectedActivity.platform?.toUpperCase()}
+                                    </span>
+                                  </div>
+                                  <textarea
+                                    value={socialState.activeTab === 'comment' ? (socialState.outreachData.comment || '') : (socialState.outreachData.direct_message || '')}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setSocialState(prev => ({
+                                        ...prev,
+                                        outreachData: {
+                                          ...prev.outreachData,
+                                          [prev.activeTab === 'comment' ? 'comment' : 'direct_message']: val
+                                        }
+                                      }));
+                                    }}
+                                    rows={6}
+                                    style={{
+                                      width: '100%',
+                                      padding: '12px 14px',
+                                      borderRadius: '8px',
+                                      border: '1px solid var(--border-light)',
+                                      background: 'var(--bg)',
+                                      color: 'var(--text-primary)',
+                                      fontFamily: 'inherit',
+                                      fontSize: '0.95rem',
+                                      lineHeight: 1.5,
+                                      resize: 'vertical'
+                                    }}
+                                  />
+                                </div>
 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginTop: '12px', paddingBottom: '24px' }}>
+                                {/* Review / Translation Box in User UI Language */}
+                                {(socialState.outreachData.comment_translation || socialState.outreachData.direct_message_translation) && (
+                                  <div style={{
+                                    background: 'rgba(255, 127, 80, 0.05)',
+                                    border: '1px dashed var(--border-light)',
+                                    borderRadius: '8px',
+                                    padding: '12px 16px'
+                                  }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                        {t('nexus.wsSocialTranslationReview') || '🇩🇪 Übersetzung zur Kontrolle:'}
+                                      </span>
+                                    </div>
+                                    <p style={{ margin: 0, fontSize: '0.88rem', lineHeight: 1.5, color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                                      {socialState.activeTab === 'comment' ? socialState.outreachData.comment_translation : socialState.outreachData.direct_message_translation}
+                                    </p>
+                                  </div>
+                                )}
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginTop: '8px', paddingBottom: '24px' }}>
                                   <button
                                     className="btn-primary"
                                     onClick={() => {
@@ -1148,9 +1209,9 @@ export default function SalesWorkspacePage() {
                                     style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '0.95rem' }}
                                   >
                                     {(socialState.activeTab === 'comment' ? socialState.copiedComment : socialState.copiedDm) ? (
-                                      <><CheckCircle size={16} /> Kopiert!</>
+                                      <><CheckCircle size={16} /> {t('nexus.wsSocialCopiedPost') || 'Kopiert!'}</>
                                     ) : (
-                                      <><Copy size={16} /> In die Zwischenablage kopieren</>
+                                      <><Copy size={16} /> {t('nexus.wsSocialCopyPost') || 'In die Zwischenablage kopieren'} ({socialState.outreachData.post_lang_label || 'Englisch'})</>
                                     )}
                                   </button>
 
@@ -1161,7 +1222,7 @@ export default function SalesWorkspacePage() {
                                     className="btn-secondary"
                                     style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', color: 'var(--color-koralle)', fontWeight: 600, fontSize: '0.95rem' }}
                                   >
-                                    <ExternalLink size={16} /> Originalbeitrag öffnen & posten ↗
+                                    <ExternalLink size={16} /> {t('nexus.wsSocialOriginalPost') || 'Originalbeitrag öffnen & posten'} ↗
                                   </a>
                                 </div>
                               </div>
