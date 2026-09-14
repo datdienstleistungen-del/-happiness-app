@@ -16,18 +16,20 @@ import NexusIntroModal from '../components/NexusIntroModal'
 import './NexusLandingPage.css'
 
 export default function NexusLandingPage() {
-  const [showIntroModal, setShowIntroModal] = useState(() => {
-    // Strictly trigger on first visit ever for this browser/device
-    try {
-      return localStorage.getItem('nexus_first_visit_seen') !== 'true'
-    } catch (e) {
-      return false
-    }
-  })
+  const [showIntroModal, setShowIntroModal] = useState(false)
   const navigate = useNavigate()
   const { user } = useAuth()
   const { lang, setLang } = useLanguage()
   const testSectionRef = useRef(null)
+
+  // Auto-trigger video intro for non-registered / unauthenticated visitors
+  React.useEffect(() => {
+    if (!user) {
+      setShowIntroModal(true)
+    } else {
+      setShowIntroModal(false)
+    }
+  }, [user])
 
   // Resolve active language dictionary
   const t = NEXUS_LANDING_TRANSLATIONS[lang] || NEXUS_LANDING_TRANSLATIONS.en || NEXUS_LANDING_TRANSLATIONS.de
