@@ -409,7 +409,29 @@ export const handler = async (event) => {
 
     // 1. ACTION: DISCOVER ACTIVITIES
     if (action === 'discover_activities') {
-      let profiles = await extractSocialProfilesFromWebsite(website);
+      let resolvedWebsite = website;
+      if (!resolvedWebsite) {
+        // Auto-Discover official website if not provided
+        const cleanName = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const candidates = [`https://www.${cleanName}.com`, `https://www.${cleanName}.de`, `https://${cleanName}.com`, `https://${cleanName}.ai`, `https://${cleanName}.io`];
+        for (const cd of candidates) {
+          try {
+            const headRes = await fetchWithTimeout(cd, { method: 'HEAD', headers: BROWSER_HEADERS }, 2500);
+            if (headRes.ok) {
+              resolvedWebsite = cd;
+              break;
+            }
+          } catch(e) {}
+        }
+        if (!resolvedWebsite) {
+          const domRes = await searchWeb(`"${companyName}" official website homepage`, { maxResults: 1 });
+          if (domRes.length > 0 && domRes[0].url) {
+            resolvedWebsite = domRes[0].url;
+          }
+        }
+      }
+
+      let profiles = await extractSocialProfilesFromWebsite(resolvedWebsite);
 
       if (!profiles.linkedin) {
         const liRes = await searchWeb(`site:linkedin.com/company "${companyName}"`, { maxResults: 1 });
@@ -419,9 +441,15 @@ export const handler = async (event) => {
       }
 
       if (!profiles.youtube) {
-        const ytRes = await searchWeb(`site:youtube.com "${companyName}" official`, { maxResults: 1 });
-        if (ytRes.length > 0 && (ytRes[0].url.includes('youtube.com/@') || ytRes[0].url.includes('youtube.com/channel/'))) {
-          profiles.youtube = { url: ytRes[0].url, verified: false, source: 'search' };
+        const ytRes = await searchWeb(`site:youtube.com (inurl:@ OR inurl:channel OR inurl:c) "${companyName}"`, { maxResults: 3 });
+        for (const item of ytRes) {
+          if (item.url && (item.url.includes('youtube.com/@') || item.url.includes('youtube.com/channel/') || item.url.includes('youtube.com/c/'))) {
+            const match = item.url.match(/https?:\/\/(www\.)?youtube\.com\/(@|channel\/|c\/|user\/)[a-zA-Z0-9_.-]+/i);
+            if (match) {
+              profiles.youtube = { url: match[0], verified: false, source: 'search' };
+              break;
+            }
+          }
         }
       }
 
