@@ -17,7 +17,12 @@ import './NexusLandingPage.css'
 
 export default function NexusLandingPage() {
   const [showIntroModal, setShowIntroModal] = useState(() => {
-    return sessionStorage.getItem('nexus_intro_viewed') !== 'true'
+    // Strictly trigger on first visit ever for this browser/device
+    try {
+      return localStorage.getItem('nexus_first_visit_seen') !== 'true'
+    } catch (e) {
+      return false
+    }
   })
   const navigate = useNavigate()
   const { user } = useAuth()

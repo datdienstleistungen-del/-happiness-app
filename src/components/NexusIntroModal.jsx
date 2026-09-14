@@ -6,16 +6,22 @@ import './NexusIntroModal.css'
 export default function NexusIntroModal({ isOpen, onClose }) {
   const [isMuted, setIsMuted] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [isFadingOut, setIsFadingOut] = useState(false)
+  const [fadeSpeed, setFadeSpeed] = useState('slow') // 'slow' (1.2s end of video) or 'fast' (0.3s click skip)
   const videoRef = useRef(null)
+  const fadingTriggeredRef = useRef(false)
 
   useEffect(() => {
     if (isOpen) {
+      setIsFadingOut(false)
+      fadingTriggeredRef.current = false
       if (typeof trackNexusEvent === 'function') {
         trackNexusEvent('nexus_intro_video_opened')
       }
       if (videoRef.current) {
         videoRef.current.currentTime = 0
         videoRef.current.muted = isMuted
+        videoRef.current.volume = 1.0
         videoRef.current.play().catch(() => {
           if (videoRef.current) {
             videoRef.current.muted = true
@@ -31,21 +37,67 @@ export default function NexusIntroModal({ isOpen, onClose }) {
 
   const handleTimeUpdate = () => {
     if (videoRef.current && videoRef.current.duration) {
-      const pct = (videoRef.current.currentTime / videoRef.current.duration) * 100
+      const cur = videoRef.current.currentTime
+      const dur = videoRef.current.duration
+      const pct = (cur / dur) * 100
       setProgress(pct)
+
+      // Start smooth audio & video fade-out 1.2s before the video concludes
+      const timeLeft = dur - cur
+      if (timeLeft <= 1.2 && !fadingTriggeredRef.current) {
+        fadingTriggeredRef.current = true
+        startSlowFadeOut()
+      }
     }
+  }
+
+  const startSlowFadeOut = () => {
+    setFadeSpeed('slow')
+    setIsFadingOut(true)
+
+    // Smooth audio fade down
+    if (videoRef.current && !videoRef.current.muted) {
+      const startVol = videoRef.current.volume || 1.0
+      const fadeInterval = setInterval(() => {
+        if (videoRef.current && videoRef.current.volume > 0.05) {
+          videoRef.current.volume = Math.max(0, videoRef.current.volume - 0.1)
+        } else {
+          clearInterval(fadeInterval)
+        }
+      }, 100)
+    }
+
+    setTimeout(() => {
+      completeDismissal()
+    }, 1200)
+  }
+
+  const completeDismissal = () => {
+    try {
+      localStorage.setItem('nexus_first_visit_seen', 'true')
+      sessionStorage.setItem('nexus_intro_viewed', 'true')
+    } catch (e) {}
+    onClose()
+  }
+
+  const handleSkipClose = (e) => {
+    if (e) e.stopPropagation()
+    if (fadingTriggeredRef.current) return
+    fadingTriggeredRef.current = true
+    setFadeSpeed('fast')
+    setIsFadingOut(true)
+    setTimeout(() => {
+      completeDismissal()
+    }, 350)
   }
 
   const handleVideoEnded = () => {
     if (typeof trackNexusEvent === 'function') {
       trackNexusEvent('nexus_intro_video_completed')
     }
-    handleClose()
-  }
-
-  const handleClose = () => {
-    sessionStorage.setItem('nexus_intro_viewed', 'true')
-    onClose()
+    if (!isFadingOut) {
+      completeDismissal()
+    }
   }
 
   const toggleSound = (e) => {
@@ -57,12 +109,11 @@ export default function NexusIntroModal({ isOpen, onClose }) {
     }
   }
 
-  const handleVideoClick = () => {
-    handleClose()
-  }
-
   return (
-    <div className="nexus-intro-overlay" onClick={handleClose}>
+    <div 
+      className={`nexus-intro-overlay ${isFadingOut ? (fadeSpeed === 'slow' ? 'fading-out-slow' : 'fading-out-fast') : ''}`} 
+      onClick={handleSkipClose}
+    >
       <div className="nexus-intro-card" onClick={(e) => e.stopPropagation()}>
         
         {/* Top Header Bar */}
@@ -73,7 +124,7 @@ export default function NexusIntroModal({ isOpen, onClose }) {
           </div>
           <button 
             className="nexus-intro-close-btn" 
-            onClick={handleClose}
+            onClick={handleSkipClose}
             title="Schließen & zu NeXus"
           >
             <X size={18} />
@@ -81,7 +132,7 @@ export default function NexusIntroModal({ isOpen, onClose }) {
         </div>
 
         {/* Video Screen Container */}
-        <div className="nexus-intro-screen" onClick={handleVideoClick} title="Klicken zum Überspringen">
+        <div className="nexus-intro-screen" onClick={handleSkipClose} title="Klicken zum Überspringen">
           <video
             ref={videoRef}
             src="/videos/nexus-intro.mp4"
@@ -115,7 +166,7 @@ export default function NexusIntroModal({ isOpen, onClose }) {
 
           {/* Bottom Click Hint Overlay */}
           <div className="nexus-intro-hint">
-            <span>Klick ins Video zum Überspringen</span>
+            <span>Klick zum Überspringen</span>
             <ArrowRight size={13} />
           </div>
         </div>
@@ -130,7 +181,7 @@ export default function NexusIntroModal({ isOpen, onClose }) {
 
         {/* Action Footer */}
         <div className="nexus-intro-footer">
-          <button type="button" className="nexus-intro-cta-btn" onClick={handleClose}>
+          <button type="button" className="nexus-intro-cta-btn" onClick={handleSkipClose}>
             <span>Direkt zur Plattform</span>
             <ArrowRight size={15} />
           </button>
