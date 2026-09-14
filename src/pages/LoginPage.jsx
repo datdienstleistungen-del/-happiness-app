@@ -39,12 +39,7 @@ export default function LoginPage() {
         <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
           <img src="/favicon.svg" alt="NeXus" style={{ width: '40px', height: '40px' }} />
         </div>
-        <h1 style={{ textAlign: 'center', fontSize: '1.5rem', marginBottom: '5px' }}>NeXus Intelligence</h1>
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <span style={{ background: '#ff4d4f', color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' }}>
-            LOKALER TEST-SERVER
-          </span>
-        </div>
+        <h1 style={{ textAlign: 'center', fontSize: '1.5rem', marginBottom: '10px' }}>NeXus Revenue OS</h1>
         <p className="subtitle">{t('auth.loginSubtitle')}</p>
 
         <form onSubmit={handleSubmit}>
