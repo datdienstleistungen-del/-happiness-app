@@ -4,7 +4,7 @@ import {
   Radar, Target, TrendingUp, ShieldCheck, ArrowRight, Zap, 
   Activity, CheckCircle2, Clock, Sparkles, Building2, 
   Send, RefreshCw, Lock, Globe, MessageSquare, ChevronRight,
-  FileCheck, Search, Users, Flame, Shield, Check, Terminal, ExternalLink
+  FileCheck, Search, Users, Flame, Shield, Check, Terminal, ExternalLink, Play
 } from 'lucide-react'
 import { callNexusAI, runResearchPipeline } from '../lib/nexus-ai'
 import { trackNexusEvent, trackUpgradeClick } from '../lib/nexus-analytics'
