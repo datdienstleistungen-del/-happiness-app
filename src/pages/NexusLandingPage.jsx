@@ -13,10 +13,13 @@ import { useLanguage, LANGUAGES } from '../i18n/translations'
 import { NEXUS_LANDING_TRANSLATIONS } from '../i18n/nexusLandingTranslations'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import NexusIntroModal from '../components/NexusIntroModal'
+import NexusVideoHubModal from '../components/NexusVideoHubModal'
+import NexusVideoBubble from '../components/NexusVideoBubble'
 import './NexusLandingPage.css'
 
 export default function NexusLandingPage() {
   const [showIntroModal, setShowIntroModal] = useState(false)
+  const [showVideoHubModal, setShowVideoHubModal] = useState(false)
   const navigate = useNavigate()
   const { user } = useAuth()
   const { lang, setLang } = useLanguage()
@@ -262,11 +265,11 @@ export default function NexusLandingPage() {
           <button 
             type="button"
             className="nexus-lp-hero-video-trigger"
-            onClick={() => setShowIntroModal(true)}
-            title="15s Intro-Video ansehen"
+            onClick={() => setShowVideoHubModal(true)}
+            title="NeXus Video Showcase ansehen"
           >
             <Play size={12} fill="currentColor" />
-            <span>15s Intro ansehen</span>
+            <span>Video Showcase (Demos)</span>
           </button>
         </div>
 
@@ -707,6 +710,15 @@ export default function NexusLandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Floating Video Story Bubble Trigger */}
+      <NexusVideoBubble onClick={() => setShowVideoHubModal(true)} />
+
+      {/* Multi-Video Story Player & Value Bridge Modal */}
+      <NexusVideoHubModal 
+        isOpen={showVideoHubModal} 
+        onClose={() => setShowVideoHubModal(false)} 
+      />
 
     </div>
   )
