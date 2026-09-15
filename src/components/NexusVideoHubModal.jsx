@@ -10,6 +10,26 @@ import './NexusVideoHubModal.css'
 
 export const NEXUS_VIDEO_STORAGE = [
   {
+    id: 'enterprise-videostore',
+    title: 'Enterprise Revenue OS & Video Store',
+    titleDE: 'Enterprise Revenue OS & Video Store',
+    desc: 'Why 90% of B2B outreach fails and how buying signals turn intent into closed revenue.',
+    descDE: 'Warum 90% der B2B-Kaltaquise scheitert und wie Kaufsignale Intent in Umsatz verwandeln.',
+    src: '/videos/nexus-enterprise-edition.mp4',
+    poster: '/videos/nexus-enterprise-poster.jpg',
+    tagDE: 'Enterprise Flagship'
+  },
+  {
+    id: 'founder-nightshift',
+    title: 'Founder Night Shift & Live Radar',
+    titleDE: '145 Kaufsignale über Nacht',
+    desc: 'Autonomous 24/7 signal research while you sleep.',
+    descDE: 'Autonome Signal-Recherche über Nacht – 145 Live-Leads auf Autopilot.',
+    src: '/videos/nexus-founder-nightshift.mp4',
+    poster: '/videos/nexus-founder-poster.jpg',
+    tagDE: 'Founder Case'
+  },
+  {
     id: 'b2b-outreach',
     title: 'Stop Cold Email Spam',
     titleDE: 'Schluss mit Spam-Mails',
