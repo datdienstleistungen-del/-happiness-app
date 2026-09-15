@@ -108,23 +108,27 @@
   position: relative;
   width: 100%;
   aspect-ratio: 9 / 16;
-  max-height: 560px;
-  background: #000;
+  max-height: 600px;
+  background: #020617;
   overflow: hidden;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .nexus-videohub-video {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
+  background: #020617;
 }
 
-/* Controls */
+/* Controls - Positioned at bottom right to never overlap top subtitles */
 .nexus-videohub-controls {
   position: absolute;
-  top: 14px;
+  bottom: 14px;
   right: 14px;
   display: flex;
   gap: 8px;
