@@ -4,6 +4,7 @@ import {
   Volume2, VolumeX, X, Play, Pause, ChevronLeft, ChevronRight, 
   Sparkles, Search, Video, ArrowRight, Lightbulb, CheckCircle2 
 } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 import { trackNexusEvent } from '../lib/nexus-analytics'
 import './NexusVideoHubModal.css'
 
@@ -32,6 +33,7 @@ export const NEXUS_VIDEO_STORAGE = [
 
 export default function NexusVideoHubModal({ isOpen, onClose, initialVideoIndex = 0 }) {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [currentIndex, setCurrentIndex] = useState(initialVideoIndex)
   const [isMuted, setIsMuted] = useState(false)
   const [isPlaying, setIsPlaying] = useState(true)
@@ -124,7 +126,11 @@ export default function NexusVideoHubModal({ isOpen, onClose, initialVideoIndex 
 
   const handleNavigateTool = (path) => {
     onClose()
-    navigate(path)
+    if (!user) {
+      navigate('/register')
+    } else {
+      navigate(path)
+    }
   }
 
   return (
@@ -207,7 +213,7 @@ export default function NexusVideoHubModal({ isOpen, onClose, initialVideoIndex 
             <div className="nexus-videohub-bridge-card" onClick={(e) => e.stopPropagation()}>
               <div className="nexus-videohub-bridge-badge">
                 <Lightbulb size={16} className="nexus-bridge-icon" />
-                <span>Warum diese Videos?</span>
+                <span>Warum dieses Video?</span>
               </div>
 
               <h4 className="nexus-videohub-bridge-title">
@@ -225,7 +231,7 @@ export default function NexusVideoHubModal({ isOpen, onClose, initialVideoIndex 
                   onClick={() => handleNavigateTool('/video-finder')}
                 >
                   <Search size={15} />
-                  <span>Mitbewerber-Videos durchsuchen</span>
+                  <span>{user ? 'Mitbewerber-Videos durchsuchen' : 'Kostenlos registrieren & Tool nutzen'}</span>
                 </button>
 
                 <button 
@@ -234,7 +240,7 @@ export default function NexusVideoHubModal({ isOpen, onClose, initialVideoIndex 
                   onClick={() => handleNavigateTool('/capcut-studio')}
                 >
                   <Video size={15} />
-                  <span>Eigenes Video-Skript erstellen</span>
+                  <span>{user ? 'Eigenes Video-Skript erstellen' : 'Kostenlos registrieren & Skripte erstellen'}</span>
                 </button>
 
                 <button 
