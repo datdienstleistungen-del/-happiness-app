@@ -24,28 +24,35 @@ async function fetchWithTimeout(url, options, timeoutMs = 4000) {
 async function tryGroq(messages, temperature = 0.3) {
   const key = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY
   if (!key) return null
-  try {
-    const { res, abortId, raceId } = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'groq/compound',
-        messages,
-        temperature,
-        max_tokens: 4096
-      })
-    }, 15000)
-    if (!res.ok) { 
-      const errText = await res.text().catch(e => {}); 
-      clearTimeout(abortId); clearTimeout(raceId); 
-      throw new Error(`Groq API Error (${res.status}): ${errText}`);
+  const models = ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'groq/compound', 'openai/gpt-oss-20b']
+  for (const model of models) {
+    try {
+      console.log(`[NEXUS] Trying Groq model: ${model}`)
+      const { res, abortId, raceId } = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature,
+          max_tokens: 4096
+        })
+      }, 15000)
+      if (!res.ok) {
+        clearTimeout(abortId); clearTimeout(raceId);
+        continue
+      }
+      const data = await res.json()
+      clearTimeout(abortId); clearTimeout(raceId);
+      const text = data.choices?.[0]?.message?.content
+      if (text) {
+        return { text, provider: 'groq', model }
+      }
+    } catch (e) {
+      console.warn(`[NEXUS] Groq ${model} error:`, e.message)
     }
-    const data = await res.json()
-    clearTimeout(abortId); clearTimeout(raceId);
-    return { text: data.choices?.[0]?.message?.content || null, provider: 'groq', model: 'groq/compound' }
-  } catch (e) {
-    throw new Error(`Groq Fehler: ${e.message}`);
   }
+  return null
 }
 
 async function tryOpenRouter(messages, temperature = 0.3) {
@@ -91,27 +98,20 @@ async function tryMistral(messages, temperature = 0.3) {
     }, 15000)
     console.log("[NEXUS] Mistral fetch done", res.status);
     if (!res.ok) {
-      const errText = await res.text()
       clearTimeout(abortId); clearTimeout(raceId);
-      console.error(`Mistral API Error (${res.status}):`, errText)
-      if (res.status === 429) {
-        throw new Error('Mistral Rate Limit erreicht (Zu groÃŸer Text oder zu viele Anfragen).')
-      }
+      console.warn(`Mistral API Error (${res.status}) - falling back`);
       return null
     }
     
     let streamTimer;
-    console.log("[NEXUS] Mistral json read start");
     const data = await Promise.race([
       res.json(),
       new Promise((_, reject) => { streamTimer = setTimeout(() => reject(new Error('Stream timeout')), 15000); })
     ])
     clearTimeout(abortId); clearTimeout(raceId); clearTimeout(streamTimer);
-    console.log("[NEXUS] Mistral json read done");
     return { text: data.choices?.[0]?.message?.content || null, provider: 'mistral', model: 'mistral-small-latest' }
   } catch (e) { 
-    console.error('Mistral Exception:', e.message)
-    if (e.message.includes('Rate Limit')) throw e
+    console.warn('Mistral Exception - falling back:', e.message)
     return null 
   }
 }
@@ -158,27 +158,26 @@ async function tryDeepSeek(messages, temperature = 0.3) {
 
 async function callAI(messages, temperature = 0.3) {
   const providers = [
-    () => tryDeepSeek(messages, temperature),
+    () => tryGroq(messages, temperature),
     () => tryMistral(messages, temperature),
     () => tryOpenRouter(messages, temperature),
+    () => tryDeepSeek(messages, temperature),
     () => tryOpenAI(messages, temperature),
   ]
   let lastError = null;
   for (const tryProvider of providers) {
     try {
-      console.log(`[NEXUS] Trying provider loop step`);
       const result = await tryProvider()
       if (result && result.text) {
-        console.log(`[NEXUS] Provider returned successfully`);
+        console.log(`[NEXUS] Provider ${result.provider} (${result.model}) returned successfully`);
         return result
       }
     } catch (e) {
       console.warn('Provider failed with exception:', e.message);
       lastError = e;
-      // continue to next provider
     }
   }
-  throw lastError || new Error("KI antwortet nicht rechtzeitig (Rate Limit oder Ãœberlastung). Bitte warte kurz und versuche es erneut.");
+  throw lastError || new Error("KI antwortet nicht rechtzeitig. Bitte warte kurz und versuche es erneut.");
 }
 
 // â"€â"€ Web Search mit Fallback-Kette: DuckDuckGo -> SearXNG -> Brave â"€â"€
