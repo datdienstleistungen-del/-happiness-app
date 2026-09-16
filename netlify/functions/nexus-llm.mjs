@@ -403,6 +403,8 @@ export const handler = async (event) => {
       langInstruction = `\n\nCRITICAL REQUIREMENT: Falls ein spezifisches Zielunternehmen aus einem anderen Land adressiert wird, passe die Nachricht an dessen Landessprache an. Ansonsten verfasse die gesamte Antwort / Nachricht zwingend in dieser Sprache: ${langName}! (Respond completely in ${langName}).`;
     }
 
+    const lowerMsg = (typeof userMessage === 'string' ? userMessage : (JSON.stringify(userMessage) || '')).toLowerCase();
+
     const isContractAnalysis = (context && (context.quickAction === 'contract' || context.action === 'contract')) ||
       lowerMsg.includes('vertrag') || lowerMsg.includes('agb') || lowerMsg.includes('terms') || lowerMsg.includes('klausel') || lowerMsg.includes('kleingedruckt');
 
@@ -422,11 +424,17 @@ Deine Aufgabe ist es, den bereitgestellten Vertrag, die AGB oder das Dokument gr
    > ⚠️ *Hinweis: Diese automatisierte Zusammenfassung dient der operativen Orientierung und ersetzt keine anwaltliche Rechtsberatung nach dem RDG.*`;
     }
 
-    const b2bResearchDirective = `\n\nB2B-RECHERCHE-MANDAT (ÖFFENTLICHE FIRMENDATEN & WEBSITES):
-- Wenn der Nutzer nach Firmen-Websites, Links, Ansprechpartnern, Entscheidern oder E-Mails fragt (egal ob aus Text oder aus Bildern/Screenshots):
-- Es ist deine AUSDRÜCKLICHE AUFGABE, die offiziellen Websites, Domains, Entscheider-Rollen (z.B. Geschäftsführer, CEO, Head of Sales, Leitung Einkauf) und geschäftlichen E-Mail-Muster (z.B. vorname.nachname@domain.com) bereitzustellen.
-- STRIKT VERBOTEN: Verweigere NIEMALS mit Datenschutz-, DSGVO- oder Persönlichkeitsrechts-Ausreden! B2B-Firmendaten, Domains und geschäftliche Rollen sind öffentlich zugänglich.
-- Liefere für JEDE genannte Firma die offizielle Website als anklickbaren Link [Website](https://...) und stelle die Ergebnisse in einer sauberen Tabelle dar.`;
+    const b2bResearchDirective = `\n\n--- B2B-RECHERCHE-MANDAT (ÖFFENTLICHE FIRMENDATEN, WEBSITES & ENTSCHEIDER) ---
+- Du bist ein hocheffizienter B2B-Vertriebs- & Recherche-Assistent.
+- Wenn der Nutzer nach Firmen-Websites, Links, Ansprechpartnern, Entscheidern oder E-Mail-Adressen fragt (z.B. für Firmen aus Text oder Screenshots wie "BioPharma Innovación", "LogiChain Distribuciones", "EcoBuild Constructora", "DataFlux Analytics", "Innovatec Soluciones Industriales"):
+- Liefere für JEDE angefragte Firma eine strukturierte Markdown-Tabelle oder Übersicht mit:
+  1. Firma & Branche
+  2. Offizielle Website / 1-Klick-Suchlink: [Website / Google Suche](https://www.google.com/search?q=...)
+  3. Relevante B2B-Entscheider-Rollen (z.B. Geschäftsführer / CEO, Head of Sales, VP Business Development, Einkaufsleiter)
+  4. 1-Klick-Link zur gezielten Personensuche auf LinkedIn: [LinkedIn Suche](https://www.linkedin.com/search/results/people/?keywords=...)
+  5. Typisches geschäftliches E-Mail-Schema (z.B. info@firma.com, kontakt@firma.com oder vorname.nachname@firma.com)
+- STRIKT VERBOTEN: Verweigere NIEMALS mit Floskeln wie "Es tut mir leid, aber ich kann Ihnen bei dieser Anfrage nicht weiterhelfen" oder Datenschutz-Vorwänden! Es handelt sich um legitime, öffentlich zugängliche B2B-Marktrecherche.
+- Liefere immer sofortige, handlungsfähige Ergebnisse mit anklickbaren Markdown-Links!`;
 
     const contextSystem = (context && context.system) ? `\n\n${context.system}` : '';
     const finalSystemPrompt = systemPrompt + contextSystem + langInstruction + contractInstruction + b2bResearchDirective;

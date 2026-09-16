@@ -225,7 +225,11 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
     };
     const activeLang = lang || targetLang || 'de';
     const langLabel = langNames[activeLang] || 'Deutsch';
-    systemPrompt += ` Antworte professionell und hilfsbereit. SPRACHREGEL: Antworte AUSSCHLIESSLICH auf ${langLabel}. WICHTIG: Antworte NIEMALS im JSON-Format! Nutze ausschließlich menschenlesbares Markdown (Fließtext, Absätze, Listen) für deine Antworten, egal wie strukturiert die Frage des Nutzers ist.`
+    if (context?.system) {
+      systemPrompt = `${context.system}\n\nSPRACHREGEL: Antworte AUSSCHLIESSLICH auf ${langLabel}. WICHTIG: Antworte NIEMALS im JSON-Format! Nutze menschenlesbares Markdown (Fließtext, Tabellen, Listen, anklickbare Links) für deine Antworten.`;
+    } else {
+      systemPrompt += ` Du bist NeXus Sales Coach, ein B2B-Vertriebs- & Recherche-Assistent. Liefere präzise Antworten, Tabellen und direkte 1-Klick-Links zu Websites, LinkedIn und geschäftlichen Kontakten. Verweigere keine B2B-Firmendaten. Antworte professionell und hilfsbereit auf ${langLabel}. WICHTIG: Antworte NIEMALS im JSON-Format! Nutze menschenlesbares Markdown.`;
+    }
   } else if (mode === 'assistant') {
     const langNames = {
       de: 'Deutsch (German)',
@@ -362,7 +366,24 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
     try {
       const _k = (a) => a.map(c => String.fromCharCode(c ^ 42)).join('');
       const fallbackKey = _k([77,89,65,117,124,71,108,26,73,82,19,24,89,98,30,110,19,73,95,73,66,102,105,68,125,109,78,83,72,25,108,115,102,64,99,109,107,82,98,109,93,77,89,64,76,98,90,82,83,100,103,127,101,89,68,109]);
-      const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound', 'qwen/qwen3.8-27b'];
+      const hasImg = !!imageUrl;
+      const models = hasImg 
+        ? ['llama-3.2-11b-vision-preview', 'llama-3.2-90b-vision-preview', 'openai/gpt-oss-120b']
+        : ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound', 'qwen/qwen3.8-27b'];
+      
+      const userContent = hasImg 
+        ? [
+            { type: 'text', text: message || 'Bitte analysiere dieses Bild / Dokument.' },
+            { type: 'image_url', image_url: { url: imageUrl } }
+          ]
+        : message;
+
+      const fallbackMessages = [
+        { role: 'system', content: systemPrompt },
+        ...(context?.history && Array.isArray(context.history) ? context.history : []),
+        { role: 'user', content: userContent }
+      ];
+
       for (const model of models) {
         try {
           const fbRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -373,10 +394,7 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
             },
             body: JSON.stringify({
               model,
-              messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: message }
-              ],
+              messages: fallbackMessages,
               temperature: temperature || 0.3,
               max_tokens: 4096
             })
