@@ -24,6 +24,7 @@ export default function NexusLandingPage() {
   const { user } = useAuth()
   const { lang, setLang } = useLanguage()
   const testSectionRef = useRef(null)
+  const tourVideoRef = useRef(null)
 
   // Do not auto-trigger intrusive popup modals on initial page load to prevent bounces
   React.useEffect(() => {
@@ -194,6 +195,22 @@ export default function NexusLandingPage() {
     }, 50)
   }
 
+  const scrollToTour = (autoPlay = true) => {
+    const tourSection = document.getElementById('tour')
+    if (tourSection) {
+      tourSection.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      if (autoPlay) {
+        setTimeout(() => {
+          const video = document.getElementById('nexus-sightseeing-video')
+          if (video) {
+            video.currentTime = 0
+            video.play().catch(err => console.log('Autoplay hint:', err))
+          }
+        }, 500)
+      }
+    }
+  }
+
   return (
     <div className="nexus-lp-wrapper">
       <NexusIntroModal 
@@ -212,7 +229,7 @@ export default function NexusLandingPage() {
 
         <nav className="nexus-lp-nav">
           <button className="nexus-lp-nav-link" onClick={() => scrollToTest(false)}>{t.nav.liveTest}</button>
-          <a href="#tour" className="nexus-lp-nav-link">{t.nav.tour || 'Sightseeing Tour'}</a>
+          <a href="#tour" className="nexus-lp-nav-link" onClick={(e) => { e.preventDefault(); scrollToTour(true); }}>{t.nav.tour || 'Sightseeing Tour'}</a>
           <a href="#how-it-works" className="nexus-lp-nav-link">{t.nav.howItWorks}</a>
           <a href="#compliance" className="nexus-lp-nav-link">{t.nav.compliance}</a>
         </nav>
@@ -262,7 +279,7 @@ export default function NexusLandingPage() {
           <button 
             type="button"
             className="nexus-lp-hero-video-trigger"
-            onClick={() => setShowVideoHubModal(true)}
+            onClick={() => scrollToTour(true)}
             title={t.hero?.videoTrigger || 'Sightseeing Tour (Video)'}
           >
             <Play size={12} fill="currentColor" />
@@ -700,6 +717,8 @@ export default function NexusLandingPage() {
           <div className="nexus-tour-video-card">
             <div className="nexus-tour-video-wrapper">
               <video 
+                id="nexus-sightseeing-video"
+                ref={tourVideoRef}
                 src="/videos/nexus-walkthrough-tour.mp4" 
                 poster="/videos/nexus-tour-poster.jpg"
                 controls
@@ -796,7 +815,7 @@ export default function NexusLandingPage() {
       </footer>
 
       {/* Floating Video Story Bubble Trigger */}
-      <NexusVideoBubble onClick={() => setShowVideoHubModal(true)} />
+      <NexusVideoBubble onClick={() => scrollToTour(true)} />
 
       {/* Multi-Video Story Player & Value Bridge Modal */}
       <NexusVideoHubModal 
