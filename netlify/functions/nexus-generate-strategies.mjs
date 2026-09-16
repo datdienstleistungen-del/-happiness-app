@@ -1,20 +1,13 @@
 
 
-async function fetchWithTimeout(url, options, timeoutMs = 12000) {
+async function fetchWithTimeout(url, options, timeoutMs = 20000) {
   const controller = new AbortController();
-  const abortId = setTimeout(() => controller.abort(), timeoutMs);
-  let raceId;
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await Promise.race([
-      fetch(url, { ...options, signal: controller.signal }),
-      new Promise((_, reject) => {
-        raceId = setTimeout(() => reject(new Error('Fetch timeout race')), timeoutMs);
-      })
-    ]);
-    return { res, abortId, raceId };
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    return { res, timer };
   } catch (err) {
-    clearTimeout(abortId);
-    clearTimeout(raceId);
+    clearTimeout(timer);
     throw err;
   }
 }
@@ -28,22 +21,24 @@ async function callAI(messages, { temperature = 0.7, max_tokens = 4096, jsonMode
   // 1. Groq
   const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ;
   if (groqKey) {
-    const models = ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'groq/compound', 'openai/gpt-oss-20b'];
+    const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound', 'qwen/qwen3.8-27b'];
     for (const model of models) {
       try {
         const payload = { model, messages, temperature, max_tokens };
         if (jsonMode) payload.response_format = { type: 'json_object' };
-        const { res, abortId, raceId } = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+        const { res, timer } = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
-        }, 15000);
-        clearTimeout(abortId); clearTimeout(raceId);
-        if (res.ok) {
-          const data = await res.json();
-          const text = data.choices?.[0]?.message?.content;
-          if (text) return { text, provider: 'groq', model };
+        }, 20000);
+        if (!res.ok) {
+          clearTimeout(timer);
+          continue;
         }
+        const data = await res.json();
+        clearTimeout(timer);
+        const text = data.choices?.[0]?.message?.content;
+        if (text) return { text, provider: 'groq', model };
       } catch (e) {
         console.warn(`[Groq Error ${model}]:`, e.message);
       }
@@ -51,19 +46,21 @@ async function callAI(messages, { temperature = 0.7, max_tokens = 4096, jsonMode
   }
 
   // 2. Mistral
-  const mistralKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
+  const mistralKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY || BACKUP_MISTRAL;
   if (mistralKey) {
     try {
       const payload = { model: 'mistral-small-latest', messages, temperature, max_tokens };
       if (jsonMode) payload.response_format = { type: 'json_object' };
-      const { res, abortId, raceId } = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
+      const { res, timer } = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${mistralKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       }, 15000);
-      clearTimeout(abortId); clearTimeout(raceId);
-      if (res.ok) {
+      if (!res.ok) {
+        clearTimeout(timer);
+      } else {
         const data = await res.json();
+        clearTimeout(timer);
         const text = data.choices?.[0]?.message?.content;
         if (text) return { text, provider: 'mistral', model: 'mistral-small-latest' };
       }
@@ -73,12 +70,12 @@ async function callAI(messages, { temperature = 0.7, max_tokens = 4096, jsonMode
   }
 
   // 3. OpenRouter
-  const openrouterKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
+  const openrouterKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY || BACKUP_OPENROUTER;
   if (openrouterKey) {
     const models = ['google/gemma-4-26b-a4b-it:free', 'meta-llama/llama-3.3-70b-instruct:free'];
     for (const model of models) {
       try {
-        const { res, abortId, raceId } = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
+        const { res, timer } = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${openrouterKey}`,
@@ -88,56 +85,38 @@ async function callAI(messages, { temperature = 0.7, max_tokens = 4096, jsonMode
           },
           body: JSON.stringify({ model, messages, temperature, max_tokens })
         }, 15000);
-        clearTimeout(abortId); clearTimeout(raceId);
-        if (res.ok) {
-          const data = await res.json();
-          const text = data.choices?.[0]?.message?.content;
-          if (text) return { text, provider: 'openrouter', model };
+        if (!res.ok) {
+          clearTimeout(timer);
+          continue;
         }
+        const data = await res.json();
+        clearTimeout(timer);
+        const text = data.choices?.[0]?.message?.content;
+        if (text) return { text, provider: 'openrouter', model };
       } catch (e) {
         console.warn(`[OpenRouter Error ${model}]:`, e.message);
       }
     }
   }
 
-  // 4. DeepSeek
-  const deepseekKey = process.env.DEEPSEEK_API_KEY;
-  if (deepseekKey) {
-    try {
-      const payload = { model: 'deepseek-chat', messages, temperature, max_tokens };
-      if (jsonMode) payload.response_format = { type: 'json_object' };
-      const { res, abortId, raceId } = await fetchWithTimeout('https://api.deepseek.com/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${deepseekKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }, 15000);
-      clearTimeout(abortId); clearTimeout(raceId);
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return { text, provider: 'deepseek', model: 'deepseek-chat' };
-      }
-    } catch (e) {
-      console.warn('[DeepSeek Error]:', e.message);
-    }
-  }
-
-  // 5. OpenAI
+  // 4. OpenAI
   const openaiKey = process.env.OPENAI_API_KEY;
   if (openaiKey) {
     try {
       const payload = { model: 'gpt-4o-mini', messages, temperature, max_tokens };
       if (jsonMode) payload.response_format = { type: 'json_object' };
-      const { res, abortId, raceId } = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
+      const { res, timer } = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       }, 15000);
-      clearTimeout(abortId); clearTimeout(raceId);
       if (res.ok) {
         const data = await res.json();
+        clearTimeout(timer);
         const text = data.choices?.[0]?.message?.content;
         if (text) return { text, provider: 'openai', model: 'gpt-4o-mini' };
+      } else {
+        clearTimeout(timer);
       }
     } catch (e) {
       console.warn('[OpenAI Error]:', e.message);

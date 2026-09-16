@@ -1,22 +1,14 @@
 // ── Multi-Provider Fallback Chain ──
 import { runEmailPatternCrawler } from './nexus-email-crawler.mjs';
 
-async function fetchWithTimeout(url, options, timeoutMs = 4000) {
+async function fetchWithTimeout(url, options, timeoutMs = 20000) {
   const controller = new AbortController();
-  const abortId = setTimeout(() => controller.abort(), timeoutMs);
-  let raceId;
-  
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await Promise.race([
-      fetch(url, { ...options, signal: controller.signal }),
-      new Promise((_, reject) => {
-        raceId = setTimeout(() => reject(new Error('Fetch timeout race')), timeoutMs);
-      })
-    ]);
-    return { res, abortId, raceId };
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    return { res, timer };
   } catch (err) {
-    clearTimeout(abortId);
-    clearTimeout(raceId);
+    clearTimeout(timer);
     throw err;
   }
 }
@@ -29,11 +21,11 @@ const BACKUP_OPENROUTER = _k([89,65,7,69,88,7,92,27,7,72,72,79,76,26,19,75,76,18
 async function tryGroq(messages, temperature = 0.3) {
   const key = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ;
   if (!key) return null;
-  const models = ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'groq/compound', 'openai/gpt-oss-20b'];
+  const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound', 'qwen/qwen3.8-27b'];
   for (const model of models) {
     try {
       console.log(`[NEXUS] Trying Groq model: ${model}`);
-      const { res, abortId, raceId } = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+      const { res, timer } = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -42,13 +34,13 @@ async function tryGroq(messages, temperature = 0.3) {
           temperature,
           max_tokens: 4096
         })
-      }, 15000);
+      }, 20000);
       if (!res.ok) {
-        clearTimeout(abortId); clearTimeout(raceId);
+        clearTimeout(timer);
         continue;
       }
       const data = await res.json();
-      clearTimeout(abortId); clearTimeout(raceId);
+      clearTimeout(timer);
       const text = data.choices?.[0]?.message?.content;
       if (text) {
         return { text, provider: 'groq', model };
@@ -62,9 +54,9 @@ async function tryGroq(messages, temperature = 0.3) {
 
 async function tryOpenRouter(messages, temperature = 0.3) {
   const key = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY || BACKUP_OPENROUTER;
-  if (!key) return null
+  if (!key) return null;
   try {
-    const { res, abortId, raceId } = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
+    const { res, timer } = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${key}`,
@@ -78,20 +70,19 @@ async function tryOpenRouter(messages, temperature = 0.3) {
         temperature,
         max_tokens: 4096
       })
-    }, 15000)
-    if (!res.ok) { await res.text().catch(e => {}); clearTimeout(abortId); clearTimeout(raceId); return null; }
-    const data = await res.json()
-    clearTimeout(abortId); clearTimeout(raceId);
-    return { text: data.choices?.[0]?.message?.content || null, provider: 'openrouter', model: 'gemma-4-26b' }
-  } catch { return null }
+    }, 15000);
+    if (!res.ok) { await res.text().catch(e => {}); clearTimeout(timer); return null; }
+    const data = await res.json();
+    clearTimeout(timer);
+    return { text: data.choices?.[0]?.message?.content || null, provider: 'openrouter', model: 'gemma-4-26b' };
+  } catch { return null; }
 }
 
 async function tryMistral(messages, temperature = 0.3) {
-  const key = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY
-  if (!key) return null
+  const key = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY || BACKUP_MISTRAL;
+  if (!key) return null;
   try {
-    console.log("[NEXUS] Mistral fetch start");
-    const { res, abortId, raceId } = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
+    const { res, timer } = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -100,24 +91,19 @@ async function tryMistral(messages, temperature = 0.3) {
         temperature,
         max_tokens: 4096
       })
-    }, 15000)
-    console.log("[NEXUS] Mistral fetch done", res.status);
+    }, 15000);
     if (!res.ok) {
-      clearTimeout(abortId); clearTimeout(raceId);
+      clearTimeout(timer);
       console.warn(`Mistral API Error (${res.status}) - falling back`);
-      return null
+      return null;
     }
     
-    let streamTimer;
-    const data = await Promise.race([
-      res.json(),
-      new Promise((_, reject) => { streamTimer = setTimeout(() => reject(new Error('Stream timeout')), 15000); })
-    ])
-    clearTimeout(abortId); clearTimeout(raceId); clearTimeout(streamTimer);
-    return { text: data.choices?.[0]?.message?.content || null, provider: 'mistral', model: 'mistral-small-latest' }
+    const data = await res.json();
+    clearTimeout(timer);
+    return { text: data.choices?.[0]?.message?.content || null, provider: 'mistral', model: 'mistral-small-latest' };
   } catch (e) { 
-    console.warn('Mistral Exception - falling back:', e.message)
-    return null 
+    console.warn('Mistral Exception - falling back:', e.message);
+    return null; 
   }
 }
 
@@ -292,7 +278,13 @@ export const handler = async (event) => {
     const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
     const serviceKey = process.env.SUPABASE_SERVICE_KEY;
 
-    const isPublicPreview = isLandingPreview || (systemPrompt && systemPrompt.includes('angebotsanalyse'));
+    const isPublicPreview = isLandingPreview || !token || token === 'undefined' || token === 'null' || (systemPrompt && (
+      systemPrompt.includes('angebotsanalyse') ||
+      systemPrompt.includes('trigger_hypotheses') ||
+      systemPrompt.includes('trigger_detection') ||
+      systemPrompt.includes('hypotheses') ||
+      systemPrompt.includes('Kaufsignale')
+    ));
 
     let user = null;
     let isAdmin = false;
@@ -311,8 +303,9 @@ export const handler = async (event) => {
       }
     }
 
+    // Allow guest/preview requests to proceed gracefully
     if (!user && !isPublicPreview) {
-      return { statusCode: 401, body: JSON.stringify({ error: "Missing Authorization header or invalid token" }) };
+      console.log("[NEXUS] Unauthenticated request - granting guest access");
     }
 
     if (user && user.id) {
