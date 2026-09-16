@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useRef } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { 
   Target, Send, ShieldAlert, Sparkles, Trash2, ArrowRight, ArrowUp, 
   Check, RefreshCw, Paperclip, X, FileText, TrendingUp, Users, 
