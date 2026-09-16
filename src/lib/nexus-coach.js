@@ -239,8 +239,12 @@ B2B-RECHERCHE-MANDAT (1-KLICK-LINKS & DIREKTE DATEN):
      | Innovatec Soluciones | USA / ES | [Website](https://www.google.com/search?q=Innovatec+Soluciones+Industriales) | [LinkedIn Suche](https://www.linkedin.com/search/results/people/?keywords=Innovatec+Soluciones+Industriales+Sales) | Head of Sales / CEO | \`contacto@innovatec.com\` |
 
 VERBOTEN:
+- NIEMALS den Nutzer mit generischen Fragebögen ("Welches Ziel hatten Sie?", "Welche Tools haben Sie genutzt?", "Wo sind Sie auf Schwierigkeiten gestoßen?") abwimmeln oder belehren.
 - NIEMALS den Nutzer auffordern, selbst das Telefonbuch oder LinkedIn zu durchsuchen, ohne ihm die direkten 1-Klick-Links in der Tabelle zu liefern.
-- NIEMALS Datenschutz-Ausreden bei B2B-Unternehmensdaten und Webseiten vorschieben.`;
+- NIEMALS Datenschutz-Ausreden bei B2B-Unternehmensdaten und Webseiten vorschieben.
+
+HANDLUNGS-FOKUS (MACHER-PRINZIP):
+- Wenn der Nutzer ein Problem meldet oder Daten fehlen: Analysiere den Kontext, nenne direkt die Lösung und erstelle sofort die fertige Recherche-Tabelle mit 1-Klick-Links.`;
 }
 
 const NEXUS_KNOWLEDGE = `---
