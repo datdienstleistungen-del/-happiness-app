@@ -175,14 +175,14 @@ async function callAI(messages, temperature = 0.3) {
 
 async function tryDuckDuckGo(query) {
   try {
-    const { res, abortId, raceId } = await fetchWithTimeout(
+    const { res, timer } = await fetchWithTimeout(
       `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
       { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NeXusBot/1.0)' } },
       8000
     );
-    if (!res.ok) { clearTimeout(abortId); clearTimeout(raceId); return null; }
+    if (!res.ok) { clearTimeout(timer); return null; }
     const html = await res.text();
-    clearTimeout(abortId); clearTimeout(raceId);
+    clearTimeout(timer);
     
     const results = [];
     const regex = /<a[^>]+class="result__a"[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
@@ -204,14 +204,14 @@ async function trySearXNG(query) {
   const instances = ['https://searx.be', 'https://search.bus-hit.me', 'https://searxng.site'];
   for (const base of instances) {
     try {
-      const { res, abortId, raceId } = await fetchWithTimeout(
+      const { res, timer } = await fetchWithTimeout(
         `${base}/search?q=${encodeURIComponent(query)}&format=json&categories=general`,
         { headers: { 'Accept': 'application/json' } },
         8000
       );
-      if (!res.ok) { clearTimeout(abortId); clearTimeout(raceId); continue; }
+      if (!res.ok) { clearTimeout(timer); continue; }
       const data = await res.json();
-      clearTimeout(abortId); clearTimeout(raceId);
+      clearTimeout(timer);
       if (data.results && data.results.length > 0) {
         return data.results.slice(0, 5).map(r => ({ url: r.url, title: r.title, snippet: r.content || '' }));
       }
@@ -226,14 +226,14 @@ async function tryBraveSearch(query) {
   const key = process.env.BRAVE_API_KEY;
   if (!key) return null;
   try {
-    const { res, abortId, raceId } = await fetchWithTimeout(
+    const { res, timer } = await fetchWithTimeout(
       `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=5`,
       { headers: { 'Accept': 'application/json', 'Accept-Encoding': 'gzip', 'X-Subscription-Token': key } },
       8000
     );
-    if (!res.ok) { clearTimeout(abortId); clearTimeout(raceId); return null; }
+    if (!res.ok) { clearTimeout(timer); return null; }
     const data = await res.json();
-    clearTimeout(abortId); clearTimeout(raceId);
+    clearTimeout(timer);
     if (data.web && data.web.results && data.web.results.length > 0) {
       return data.web.results.slice(0, 5).map(r => ({ url: r.url, title: r.title, snippet: r.description || '' }));
     }
