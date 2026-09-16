@@ -1,14 +1,21 @@
 import React from 'react'
 import { Play, Sparkles } from 'lucide-react'
+import { useLanguage } from '../i18n/translations'
+import { NEXUS_LANDING_TRANSLATIONS } from '../i18n/nexusLandingTranslations'
 import './NexusVideoBubble.css'
 
 export default function NexusVideoBubble({ onClick }) {
+  const { lang } = useLanguage()
+  const t = NEXUS_LANDING_TRANSLATIONS[lang] || NEXUS_LANDING_TRANSLATIONS.en || NEXUS_LANDING_TRANSLATIONS.de
+  const bubbleTag = t.bubble?.tag || (lang === 'de' ? 'Sightseeing-Tour 🌟' : 'Sightseeing Tour 🌟')
+  const bubbleTitle = t.bubble?.title || (lang === 'de' ? 'Video-Rundgang ansehen' : 'Watch Video Walkthrough')
+
   return (
     <button 
       type="button"
       className="nexus-video-bubble"
       onClick={onClick}
-      title="NeXus Sightseeing-Tour ansehen (Video-Rundgang)"
+      title={bubbleTitle}
     >
       <div className="nexus-bubble-pulse-ring" />
       <div className="nexus-bubble-inner">
@@ -21,9 +28,9 @@ export default function NexusVideoBubble({ onClick }) {
         <div className="nexus-bubble-content">
           <span className="nexus-bubble-tag">
             <Sparkles size={11} />
-            <span>Sightseeing-Tour 🌟</span>
+            <span>{bubbleTag}</span>
           </span>
-          <span className="nexus-bubble-title">Video-Rundgang ansehen</span>
+          <span className="nexus-bubble-title">{bubbleTitle}</span>
         </div>
       </div>
     </button>

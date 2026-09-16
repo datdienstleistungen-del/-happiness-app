@@ -5,6 +5,7 @@ import {
   Sparkles, Search, Video, ArrowRight, Lightbulb, CheckCircle2 
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../i18n/translations'
 import { trackNexusEvent } from '../lib/nexus-analytics'
 import './NexusVideoHubModal.css'
 
@@ -64,6 +65,8 @@ export const NEXUS_VIDEO_STORAGE = [
 export default function NexusVideoHubModal({ isOpen, onClose, initialVideoIndex = 0 }) {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { lang } = useLanguage()
+  const isDe = lang === 'de'
   const [currentIndex, setCurrentIndex] = useState(initialVideoIndex)
   const [isMuted, setIsMuted] = useState(false)
   const [isPlaying, setIsPlaying] = useState(true)
@@ -289,8 +292,8 @@ export default function NexusVideoHubModal({ isOpen, onClose, initialVideoIndex 
         {/* Video Footer Info */}
         <div className="nexus-videohub-footer">
           <div className="nexus-videohub-meta">
-            <h3 className="nexus-videohub-meta-title">{activeVideo.titleDE}</h3>
-            <p className="nexus-videohub-meta-desc">{activeVideo.descDE}</p>
+            <h3 className="nexus-videohub-meta-title">{isDe ? activeVideo.titleDE : activeVideo.title}</h3>
+            <p className="nexus-videohub-meta-desc">{isDe ? activeVideo.descDE : activeVideo.desc}</p>
           </div>
           
           <button 
@@ -298,7 +301,7 @@ export default function NexusVideoHubModal({ isOpen, onClose, initialVideoIndex 
             className="nexus-videohub-action-btn"
             onClick={() => setShowBridgePopup(true)}
           >
-            <span>Tools entdecken</span>
+            <span>{isDe ? 'Tools entdecken' : 'Explore Tools'}</span>
             <ArrowRight size={14} />
           </button>
         </div>

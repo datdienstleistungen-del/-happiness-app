@@ -263,10 +263,10 @@ export default function NexusLandingPage() {
             type="button"
             className="nexus-lp-hero-video-trigger"
             onClick={() => setShowVideoHubModal(true)}
-            title={lang === 'de' ? 'NeXus Sightseeing-Tour (Video-Rundgang) ansehen' : 'Watch NeXus Sightseeing Tour'}
+            title={t.hero?.videoTrigger || 'Sightseeing Tour (Video)'}
           >
             <Play size={12} fill="currentColor" />
-            <span>{lang === 'de' ? 'Sightseeing-Tour (Video)' : 'Sightseeing Tour (Video)'}</span>
+            <span>{t.hero?.videoTrigger || 'Sightseeing Tour (Video)'}</span>
           </button>
         </div>
 
@@ -290,8 +290,8 @@ export default function NexusLandingPage() {
               onClick={() => setIsCustomMode(true)}
             >
               <Zap size={14} className="nexus-lp-tab-icon" />
-              <span>{lang === 'de' ? 'Eigenes B2B-Angebot testen' : 'Test your own offer'}</span>
-              <span className="nexus-lp-tab-pill">{lang === 'de' ? 'Live' : 'Live'}</span>
+              <span>{t.custom?.tabLive || 'Test your offer'}</span>
+              <span className="nexus-lp-tab-pill">Live</span>
             </button>
             <button 
               type="button" 
@@ -299,7 +299,7 @@ export default function NexusLandingPage() {
               onClick={() => setIsCustomMode(false)}
             >
               <Building2 size={14} className="nexus-lp-tab-icon" />
-              <span>{lang === 'de' ? 'Live-Beispiel / Case Study' : 'View live example'}</span>
+              <span>{t.custom?.tabExample || 'Case Study'}</span>
             </button>
           </div>
 
@@ -429,15 +429,15 @@ export default function NexusLandingPage() {
                 <div className="nexus-lp-trust-strip">
                   <span className="trust-item">
                     <ShieldCheck size={14} className="text-emerald-500" />
-                    <span>100% DSGVO-konform</span>
+                    <span>{t.custom?.trustGdpr || '100% DSGVO-konform'}</span>
                   </span>
                   <span className="trust-item">
                     <Zap size={14} className="text-amber-500" />
-                    <span>Live-Ergebnis in 5 Sek.</span>
+                    <span>{t.custom?.trustSpeed || 'Live-Ergebnis in 5 Sek.'}</span>
                   </span>
                   <span className="trust-item">
                     <Check size={14} className="text-blue-500" />
-                    <span>Keine Registrierung erforderlich</span>
+                    <span>{t.custom?.trustNoCard || 'Keine Registrierung erforderlich'}</span>
                   </span>
                 </div>
               </form>

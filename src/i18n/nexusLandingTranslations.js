@@ -7,12 +7,13 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "toDashboard": "Zum Dashboard",
       "login": "Anmelden",
       "testFree": "Kostenlos testen",
-      "tour": "Sightseeing-Tour"
+      "tour": "Sightseeing Tour"
     },
     "hero": {
       "badge": "B2B Sales Intelligence & Kaufsignal-Radar",
       "title": "Finde B2B-Kunden im exakten Moment des Kaufbedarfs.",
-      "subtitle": "Vergiss veraltete Kontaktdatenbanken und Kaltakquise. NeXus scannt das Web in Echtzeit nach Intent-Signalen, verifiziert relevante Entscheider auf öffentlich zugänglichen Quellen und generiert signalbezogene Erstansprachen."
+      "subtitle": "Vergiss veraltete Kontaktdatenbanken und Kaltakquise. NeXus scannt das Web in Echtzeit nach Intent-Signalen, verifiziert relevante Entscheider auf öffentlich zugänglichen Quellen und generiert signalbezogene Erstansprachen.",
+      "videoTrigger": "Sightseeing-Tour (Video)"
     },
     "showcase": {
       "badge": "⚡ BEISPIEL: So arbeitet NeXus",
@@ -65,7 +66,12 @@ export const NEXUS_LANDING_TRANSLATIONS = {
           "label": "IT-Security & DSGVO",
           "angebot": "Automatisierte Pentests und DSGVO-Compliance-Audits für den Mittelstand"
         }
-      ]
+      ],
+      "tabLive": "Eigenes B2B-Angebot testen",
+      "tabExample": "Live-Beispiel / Case Study",
+      "trustGdpr": "100% DSGVO-konform",
+      "trustSpeed": "Live-Ergebnis in 5 Sek.",
+      "trustNoCard": "Keine Registrierung erforderlich"
     },
     "loading": {
       "running": "NeXus Live-Analyse läuft...",
@@ -197,6 +203,10 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         }
       ],
       "cta": "Jetzt NeXus selbst ausprobieren ⚡"
+    },
+    "bubble": {
+      "tag": "Sightseeing-Tour 🌟",
+      "title": "Video-Rundgang ansehen"
     }
   },
   "en": {
@@ -212,7 +222,8 @@ export const NEXUS_LANDING_TRANSLATIONS = {
     "hero": {
       "badge": "B2B Sales Intelligence & Intent Signal Radar",
       "title": "Target B2B buyers at the exact moment of commercial intent.",
-      "subtitle": "Stop wasting hours on stale lead lists and cold outreach. NeXus continuously monitors real-time market triggers, verifies decision-makers across public records, and drafts high-converting outreach angles."
+      "subtitle": "Stop wasting hours on stale lead lists and cold outreach. NeXus continuously monitors real-time market triggers, verifies decision-makers across public records, and drafts high-converting outreach angles.",
+      "videoTrigger": "Sightseeing Tour (Video)"
     },
     "showcase": {
       "badge": "⚡ SHOWCASE: How NeXus Works",
@@ -265,7 +276,12 @@ export const NEXUS_LANDING_TRANSLATIONS = {
           "label": "Cybersecurity & Privacy",
           "angebot": "Automated penetration testing and security compliance audits for mid-market firms"
         }
-      ]
+      ],
+      "tabLive": "Test your own B2B offer",
+      "tabExample": "Live Example / Case Study",
+      "trustGdpr": "100% GDPR Compliant",
+      "trustSpeed": "Live result in 5s",
+      "trustNoCard": "No registration required"
     },
     "loading": {
       "running": "NeXus Live Intelligence in progress...",
@@ -397,6 +413,10 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         }
       ],
       "cta": "Try NeXus Live for Free ⚡"
+    },
+    "bubble": {
+      "tag": "Sightseeing Tour 🌟",
+      "title": "Watch Video Walkthrough"
     }
   },
   "es": {
@@ -412,7 +432,8 @@ export const NEXUS_LANDING_TRANSLATIONS = {
     "hero": {
       "badge": "Inteligencia de Ventas B2B y Radar de Señales de Intención",
       "title": "Encuentra clientes B2B en el momento exacto de su intención de compra.",
-      "subtitle": "Olvídate de bases de datos obsoletas y llamadas en frío. NeXus escanea la web en tiempo real en busca de señales de compra, verifica a los tomadores de decisiones en fuentes públicas y genera mensajes personalizados."
+      "subtitle": "Olvídate de bases de datos obsoletas y llamadas en frío. NeXus escanea la web en tiempo real en busca de señales de compra, verifica a los tomadores de decisiones en fuentes públicas y genera mensajes personalizados.",
+      "videoTrigger": "Sightseeing Tour (Video)"
     },
     "showcase": {
       "badge": "⚡ EJEMPLO: Cómo funciona NeXus",
@@ -465,7 +486,12 @@ export const NEXUS_LANDING_TRANSLATIONS = {
           "label": "Ciberseguridad y RGPD",
           "angebot": "Pruebas de penetración automatizadas y auditorías de cumplimiento normativo"
         }
-      ]
+      ],
+      "tabLive": "Probar mi oferta B2B",
+      "tabExample": "Ejemplo en vivo / Caso de estudio",
+      "trustGdpr": "100% compatible con RGPD",
+      "trustSpeed": "Resultado en vivo en 5s",
+      "trustNoCard": "Sin registro previo"
     },
     "loading": {
       "running": "Análisis en vivo de NeXus en curso...",
@@ -597,6 +623,10 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         }
       ],
       "cta": "Probar NeXus Gratis ⚡"
+    },
+    "bubble": {
+      "tag": "Sightseeing Tour 🌟",
+      "title": "Ver recorrido en video"
     }
   },
   "fr": {
@@ -612,7 +642,8 @@ export const NEXUS_LANDING_TRANSLATIONS = {
     "hero": {
       "badge": "Intelligence Commerciale B2B & Radar de Signaux d'Achat",
       "title": "Identifiez les prospects B2B prêts à acheter au moment exact de leur besoin.",
-      "subtitle": "Oubliez les bases de données obsolètes et le démarchage à froid. NeXus scanne le Web en temps réel pour détecter les signaux d'achat, vérifie les décideurs sur des sources publiques et génère des approches hyper-ciblées."
+      "subtitle": "Oubliez les bases de données obsolètes et le démarchage à froid. NeXus scanne le Web en temps réel pour détecter les signaux d'achat, vérifie les décideurs sur des sources publiques et génère des approches hyper-ciblées.",
+      "videoTrigger": "Sightseeing Tour (Vidéo)"
     },
     "showcase": {
       "badge": "⚡ EXEMPLE : Comment fonctionne NeXus",
@@ -665,7 +696,12 @@ export const NEXUS_LANDING_TRANSLATIONS = {
           "label": "Cybersécurité & RGPD",
           "angebot": "Tests d'intrusion automatisés et audits de conformité RGPD pour les PME"
         }
-      ]
+      ],
+      "tabLive": "Tester votre offre B2B",
+      "tabExample": "Exemple en direct / Étude de cas",
+      "trustGdpr": "100% conforme RGPD",
+      "trustSpeed": "Résultat en 5s",
+      "trustNoCard": "Aucune inscription requise"
     },
     "loading": {
       "running": "Analyse NeXus en direct en cours...",
@@ -797,6 +833,10 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         }
       ],
       "cta": "Essayer NeXus Gratuitement ⚡"
+    },
+    "bubble": {
+      "tag": "Sightseeing Tour 🌟",
+      "title": "Voir la visite guidée"
     }
   },
   "it": {
@@ -812,7 +852,8 @@ export const NEXUS_LANDING_TRANSLATIONS = {
     "hero": {
       "badge": "B2B Sales Intelligence e Radar dei Segnali d'Acquisto",
       "title": "Trova clienti B2B nel momento esatto del bisogno d'acquisto.",
-      "subtitle": "Dimentica database obsoleti e chiamate a freddo. NeXus scansiona il Web in tempo reale alla ricerca di segnali d'intento commerciale, verifica i decision maker su fonti pubbliche e genera outreach contestuali."
+      "subtitle": "Dimentica database obsoleti e chiamate a freddo. NeXus scansiona il Web in tempo reale alla ricerca di segnali d'intento commerciale, verifica i decision maker su fonti pubbliche e genera outreach contestuali.",
+      "videoTrigger": "Sightseeing Tour (Video)"
     },
     "showcase": {
       "badge": "⚡ ESEMPIO: Come funziona NeXus",
@@ -865,7 +906,12 @@ export const NEXUS_LANDING_TRANSLATIONS = {
           "label": "Cybersecurity & GDPR",
           "angebot": "Penetration test automatizzati e audit di conformità GDPR per le PMI"
         }
-      ]
+      ],
+      "tabLive": "Testa la tua offerta B2B",
+      "tabExample": "Esempio dal vivo / Case Study",
+      "trustGdpr": "100% conforme al GDPR",
+      "trustSpeed": "Risultato in 5s",
+      "trustNoCard": "Nessuna registrazione richiesta"
     },
     "loading": {
       "running": "Analisi live di NeXus in corso...",
@@ -997,6 +1043,10 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         }
       ],
       "cta": "Prova NeXus Gratis ⚡"
+    },
+    "bubble": {
+      "tag": "Sightseeing Tour 🌟",
+      "title": "Guarda il tour video"
     }
   },
   "nl": {
@@ -1012,7 +1062,8 @@ export const NEXUS_LANDING_TRANSLATIONS = {
     "hero": {
       "badge": "B2B Sales Intelligence & Koopsignalen Radar",
       "title": "Vind B2B-klanten op het exacte moment van hun koopbehoefte.",
-      "subtitle": "Vergeet verouderde databases en koude acquisitie. NeXus scant het web in realtime op koopsignalen, verifieert beslissers via openbare bronnen en genereert gerichte outreach."
+      "subtitle": "Vergeet verouderde databases en koude acquisitie. NeXus scant het web in realtime op koopsignalen, verifieert beslissers via openbare bronnen en genereert gerichte outreach.",
+      "videoTrigger": "Sightseeing Tour (Video)"
     },
     "showcase": {
       "badge": "⚡ VOORBEELD: Hoe NeXus werkt",
@@ -1065,7 +1116,12 @@ export const NEXUS_LANDING_TRANSLATIONS = {
           "label": "Cybersecurity & AVG",
           "angebot": "Geautomatiseerde pentests en AVG-compliance audits voor het mkb"
         }
-      ]
+      ],
+      "tabLive": "Test je eigen B2B-aanbod",
+      "tabExample": "Live voorbeeld / Case Study",
+      "trustGdpr": "100% AVG-conform",
+      "trustSpeed": "Live resultaat in 5s",
+      "trustNoCard": "Geen registratie vereist"
     },
     "loading": {
       "running": "NeXus live-analyse wordt uitgevoerd...",
@@ -1197,6 +1253,10 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         }
       ],
       "cta": "Probeer NeXus Gratis ⚡"
+    },
+    "bubble": {
+      "tag": "Sightseeing Tour 🌟",
+      "title": "Bekijk videorondleiding"
     }
   },
   "el": {
@@ -1212,7 +1272,8 @@ export const NEXUS_LANDING_TRANSLATIONS = {
     "hero": {
       "badge": "B2B Sales Intelligence & Ραντάρ Σημάτων Αγοράς",
       "title": "Βρείτε πελάτες B2B την ακριβή στιγμή της αγοραστικής ανάγκης.",
-      "subtitle": "Ξεχάστε τις παλιές βάσεις δεδομένων και το cold calling. Το NeXus σαρώνει τον ιστό σε πραγματικό χρόνο για σήματα αγοράς, επαληθεύει τους υπεύθυνους λήψης αποφάσεων και δημιουργεί εξατομικευμένη προσέγγιση."
+      "subtitle": "Ξεχάστε τις παλιές βάσεις δεδομένων και το cold calling. Το NeXus σαρώνει τον ιστό σε πραγματικό χρόνο για σήματα αγοράς, επαληθεύει τους υπεύθυνους λήψης αποφάσεων και δημιουργεί εξατομικευμένη προσέγγιση.",
+      "videoTrigger": "Sightseeing Tour (Βίντεο)"
     },
     "showcase": {
       "badge": "⚡ ΠΑΡΑΔΕΙΓΜΑ: Πώς λειτουργεί το NeXus",
@@ -1265,7 +1326,12 @@ export const NEXUS_LANDING_TRANSLATIONS = {
           "label": "Κυβερνοασφάλεια & GDPR",
           "angebot": "Αυτοματοποιημένα penetration tests και έλεγχοι συμμόρφωσης GDPR για μικρομεσαίες επιχειρήσεις"
         }
-      ]
+      ],
+      "tabLive": "Δοκιμάστε την προσφορά σας",
+      "tabExample": "Ζωντανό παράδειγμα",
+      "trustGdpr": "100% συμβατό με GDPR",
+      "trustSpeed": "Αποτέλεσμα σε 5 δευτ.",
+      "trustNoCard": "Δεν απαιτείται εγγραφή"
     },
     "loading": {
       "running": "Ζωντανή ανάλυση NeXus σε εξέλιξη...",
@@ -1397,6 +1463,10 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         }
       ],
       "cta": "Δοκιμάστε το NeXus Δωρεάν ⚡"
+    },
+    "bubble": {
+      "tag": "Sightseeing Tour 🌟",
+      "title": "Δείτε την περιήγηση βίντεο"
     }
   }
 };
