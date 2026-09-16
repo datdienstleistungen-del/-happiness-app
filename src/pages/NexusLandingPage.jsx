@@ -25,14 +25,10 @@ export default function NexusLandingPage() {
   const { lang, setLang } = useLanguage()
   const testSectionRef = useRef(null)
 
-  // Auto-trigger video intro for non-registered / unauthenticated visitors
+  // Do not auto-trigger intrusive popup modals on initial page load to prevent bounces
   React.useEffect(() => {
-    if (!user) {
-      setShowIntroModal(true)
-    } else {
-      setShowIntroModal(false)
-    }
-  }, [user])
+    setShowIntroModal(false)
+  }, [])
 
   // Resolve active language dictionary
   const t = NEXUS_LANDING_TRANSLATIONS[lang] || NEXUS_LANDING_TRANSLATIONS.en || NEXUS_LANDING_TRANSLATIONS.de
@@ -216,6 +212,7 @@ export default function NexusLandingPage() {
 
         <nav className="nexus-lp-nav">
           <button className="nexus-lp-nav-link" onClick={() => scrollToTest(false)}>{t.nav.liveTest}</button>
+          <a href="#tour" className="nexus-lp-nav-link">{t.nav.tour || 'Sightseeing Tour'}</a>
           <a href="#how-it-works" className="nexus-lp-nav-link">{t.nav.howItWorks}</a>
           <a href="#compliance" className="nexus-lp-nav-link">{t.nav.compliance}</a>
         </nav>
@@ -655,6 +652,61 @@ export default function NexusLandingPage() {
           </div>
         </div>
       </section>
+ 
+      {/* 88-Second Interactive Sightseeing Tour Section */}
+      {t.sightseeing && (
+        <section id="tour" className="nexus-sightseeing-section animate-fade-in">
+          <div className="nexus-sightseeing-header">
+            <div className="nexus-sightseeing-badge">
+              <Sparkles size={13} className="text-[#155DFC]" />
+              <span>{t.sightseeing.badge}</span>
+            </div>
+            <h2 className="nexus-sightseeing-title">{t.sightseeing.title}</h2>
+            <p className="nexus-sightseeing-subtitle">{t.sightseeing.subtitle}</p>
+          </div>
+
+          <div className="nexus-tour-video-card">
+            <div className="nexus-tour-video-wrapper">
+              <video 
+                src="/videos/nexus-walkthrough-tour.mp4" 
+                poster="/videos/nexus-tour-poster.jpg"
+                controls
+                playsInline
+                preload="metadata"
+                className="nexus-tour-video-element"
+                title={t.sightseeing.title}
+              >
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          </div>
+
+          {/* Chapter navigation badges */}
+          {t.sightseeing.chapters && t.sightseeing.chapters.length > 0 && (
+            <div className="nexus-tour-chapters-bar">
+              {t.sightseeing.chapters.map((ch, idx) => (
+                <div className="nexus-tour-chapter-pill" key={idx}>
+                  <span className="pill-num">{ch.num}</span>
+                  <span className="pill-name">{ch.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Direct CTA */}
+          <div className="nexus-tour-cta-wrap">
+            <button 
+              type="button" 
+              className="nexus-tour-action-btn"
+              onClick={() => scrollToTest(true)}
+            >
+              <span>{t.sightseeing.cta}</span>
+              <ArrowRight size={17} />
+            </button>
+            <span className="nexus-tour-duration-hint">{t.sightseeing.duration}</span>
+          </div>
+        </section>
+      )}
 
       {/* 3-Step Workflow Section */}
       <section id="how-it-works" className="nexus-workflow-section">

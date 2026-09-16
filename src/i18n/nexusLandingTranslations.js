@@ -6,7 +6,8 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "compliance": "DSGVO & Sicherheit",
       "toDashboard": "Zum Dashboard",
       "login": "Anmelden",
-      "testFree": "Kostenlos testen"
+      "testFree": "Kostenlos testen",
+      "tour": "Sightseeing-Tour"
     },
     "hero": {
       "badge": "B2B Sales Intelligence & Kaufsignal-Radar",
@@ -163,6 +164,39 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "impressum": "Impressum",
       "privacy": "Datenschutz",
       "terms": "AGB"
+    },
+    "sightseeing": {
+      "badge": "⚡ 88-SEKUNDEN SIGHTSEEING-TOUR",
+      "title": "NeXus Revenue OS live im Rundgang",
+      "subtitle": "Erlebe den gesamten B2B-Workflow in 88 Sekunden: Von der 1-Satz-Angebotsanalyse über autonome Kaufsignale bis zum psychologischen Outreach und Video-Drehbuch.",
+      "duration": "88 Sek. • Vollständiger Rundgang",
+      "chapters": [
+        {
+          "num": "01",
+          "name": "Dashboard"
+        },
+        {
+          "num": "02",
+          "name": "Angebotsanalyse"
+        },
+        {
+          "num": "03",
+          "name": "Lead Radar"
+        },
+        {
+          "num": "04",
+          "name": "Sales Workspace"
+        },
+        {
+          "num": "05",
+          "name": "AI Deal Coach"
+        },
+        {
+          "num": "06",
+          "name": "Video Studio"
+        }
+      ],
+      "cta": "Jetzt NeXus selbst ausprobieren ⚡"
     }
   },
   "en": {
@@ -172,7 +206,8 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "compliance": "Compliance & Security",
       "toDashboard": "To Dashboard",
       "login": "Sign In",
-      "testFree": "Try Free"
+      "testFree": "Try Free",
+      "tour": "Sightseeing Tour"
     },
     "hero": {
       "badge": "B2B Sales Intelligence & Intent Signal Radar",
@@ -329,6 +364,39 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "impressum": "Legal Notice",
       "privacy": "Privacy Policy",
       "terms": "Terms of Service"
+    },
+    "sightseeing": {
+      "badge": "⚡ 88-SECOND SIGHTSEEING TOUR",
+      "title": "Experience NeXus Revenue OS in Action",
+      "subtitle": "Watch the complete end-to-end B2B sales workflow in 88 seconds: from 1-sentence offering analysis to autonomous buying signals, verified decision-makers, and automated video campaigns.",
+      "duration": "88 Seconds • Full Walkthrough",
+      "chapters": [
+        {
+          "num": "01",
+          "name": "Dashboard"
+        },
+        {
+          "num": "02",
+          "name": "Offering Analysis"
+        },
+        {
+          "num": "03",
+          "name": "Lead Radar"
+        },
+        {
+          "num": "04",
+          "name": "Sales Workspace"
+        },
+        {
+          "num": "05",
+          "name": "AI Deal Coach"
+        },
+        {
+          "num": "06",
+          "name": "Video Studio"
+        }
+      ],
+      "cta": "Try NeXus Live for Free ⚡"
     }
   },
   "es": {
@@ -338,7 +406,8 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "compliance": "Seguridad y RGPD",
       "toDashboard": "Al Panel",
       "login": "Iniciar sesión",
-      "testFree": "Probar gratis"
+      "testFree": "Probar gratis",
+      "tour": "Tour"
     },
     "hero": {
       "badge": "Inteligencia de Ventas B2B y Radar de Señales de Intención",
@@ -495,6 +564,39 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "impressum": "Aviso Legal",
       "privacy": "Privacidad",
       "terms": "Términos de servicio"
+    },
+    "sightseeing": {
+      "badge": "⚡ TOUR SIGHTSEEING DE 88 SEGUNDOS",
+      "title": "Descubre NeXus Revenue OS en Acción",
+      "subtitle": "Observa el flujo de trabajo B2B completo en 88 segundos: desde el análisis de oferta en una frase hasta señales de compra autónomas y campañas de video.",
+      "duration": "88 Segundos • Recorrido Completo",
+      "chapters": [
+        {
+          "num": "01",
+          "name": "Dashboard"
+        },
+        {
+          "num": "02",
+          "name": "Análisis de Oferta"
+        },
+        {
+          "num": "03",
+          "name": "Lead Radar"
+        },
+        {
+          "num": "04",
+          "name": "Espacio de Ventas"
+        },
+        {
+          "num": "05",
+          "name": "Coach de Ventas IA"
+        },
+        {
+          "num": "06",
+          "name": "Estudio de Video"
+        }
+      ],
+      "cta": "Probar NeXus Gratis ⚡"
     }
   },
   "fr": {
@@ -504,7 +606,8 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "compliance": "RGPD & Sécurité",
       "toDashboard": "Tableau de bord",
       "login": "Connexion",
-      "testFree": "Essai gratuit"
+      "testFree": "Essai gratuit",
+      "tour": "Tour"
     },
     "hero": {
       "badge": "Intelligence Commerciale B2B & Radar de Signaux d'Achat",
@@ -661,6 +764,39 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "impressum": "Mentions légales",
       "privacy": "Confidentialité",
       "terms": "Conditions d'utilisation"
+    },
+    "sightseeing": {
+      "badge": "⚡ VISITE GUIDÉE DE 88 SECONDES",
+      "title": "Découvrez NeXus Revenue OS en Action",
+      "subtitle": "Visualisez l'ensemble du workflow commercial B2B en 88 secondes : de l'analyse d'offre en une phrase aux signaux d'achat autonomes et aux campagnes vidéo.",
+      "duration": "88 Secondes • Visite Complète",
+      "chapters": [
+        {
+          "num": "01",
+          "name": "Tableau de Bord"
+        },
+        {
+          "num": "02",
+          "name": "Analyse d'Offre"
+        },
+        {
+          "num": "03",
+          "name": "Lead Radar"
+        },
+        {
+          "num": "04",
+          "name": "Espace Commercial"
+        },
+        {
+          "num": "05",
+          "name": "Coach IA"
+        },
+        {
+          "num": "06",
+          "name": "Studio Vidéo"
+        }
+      ],
+      "cta": "Essayer NeXus Gratuitement ⚡"
     }
   },
   "it": {
@@ -670,7 +806,8 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "compliance": "GDPR & Sicurezza",
       "toDashboard": "Alla Dashboard",
       "login": "Accedi",
-      "testFree": "Prova gratis"
+      "testFree": "Prova gratis",
+      "tour": "Tour"
     },
     "hero": {
       "badge": "B2B Sales Intelligence e Radar dei Segnali d'Acquisto",
@@ -827,6 +964,39 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "impressum": "Note legali",
       "privacy": "Privacy",
       "terms": "Termini di servizio"
+    },
+    "sightseeing": {
+      "badge": "⚡ TOUR GUIDATO IN 88 SECONDI",
+      "title": "Scopri NeXus Revenue OS in Azione",
+      "subtitle": "Guarda l'intero workflow di vendita B2B in 88 secondi: dall'analisi dell'offerta in 1 frase ai segnali di acquisto autonomi e alle campagne video.",
+      "duration": "88 Secondi • Tour Completo",
+      "chapters": [
+        {
+          "num": "01",
+          "name": "Dashboard"
+        },
+        {
+          "num": "02",
+          "name": "Analisi Offerta"
+        },
+        {
+          "num": "03",
+          "name": "Lead Radar"
+        },
+        {
+          "num": "04",
+          "name": "Area Vendite"
+        },
+        {
+          "num": "05",
+          "name": "AI Coach"
+        },
+        {
+          "num": "06",
+          "name": "Video Studio"
+        }
+      ],
+      "cta": "Prova NeXus Gratis ⚡"
     }
   },
   "nl": {
@@ -836,7 +1006,8 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "compliance": "AVG & Beveiliging",
       "toDashboard": "Naar Dashboard",
       "login": "Inloggen",
-      "testFree": "Gratis testen"
+      "testFree": "Gratis testen",
+      "tour": "Tour"
     },
     "hero": {
       "badge": "B2B Sales Intelligence & Koopsignalen Radar",
@@ -993,6 +1164,39 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "impressum": "Colofon",
       "privacy": "Privacybeleid",
       "terms": "Voorwaarden"
+    },
+    "sightseeing": {
+      "badge": "⚡ 88-SECONDEN SIGHTSEEING TOUR",
+      "title": "Ervaar NeXus Revenue OS in Actie",
+      "subtitle": "Bekijk de volledige B2B-verkoopworkflow in 88 seconden: van 1-zin aanbodanalyse tot autonome koopsignalen en geautomatiseerde videocampagnes.",
+      "duration": "88 Seconden • Volledige Tour",
+      "chapters": [
+        {
+          "num": "01",
+          "name": "Dashboard"
+        },
+        {
+          "num": "02",
+          "name": "Aanbodanalyse"
+        },
+        {
+          "num": "03",
+          "name": "Lead Radar"
+        },
+        {
+          "num": "04",
+          "name": "Sales Workspace"
+        },
+        {
+          "num": "05",
+          "name": "AI Deal Coach"
+        },
+        {
+          "num": "06",
+          "name": "Video Studio"
+        }
+      ],
+      "cta": "Probeer NeXus Gratis ⚡"
     }
   },
   "el": {
@@ -1002,7 +1206,8 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "compliance": "GDPR & Ασφάλεια",
       "toDashboard": "Στον πίνακα ελέγχου",
       "login": "Σύνδεση",
-      "testFree": "Δωρεάν δοκιμή"
+      "testFree": "Δωρεάν δοκιμή",
+      "tour": "Tour"
     },
     "hero": {
       "badge": "B2B Sales Intelligence & Ραντάρ Σημάτων Αγοράς",
@@ -1159,6 +1364,39 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "impressum": "Νομικά",
       "privacy": "Προστασία Δεδομένων",
       "terms": "Όροι χρήσης"
+    },
+    "sightseeing": {
+      "badge": "⚡ ΠΕΡΙΗΓΗΣΗ 88 ΔΕΥΤΕΡΟΛΕΠΤΩΝ",
+      "title": "Δείτε το NeXus Revenue OS σε Δράση",
+      "subtitle": "Παρακολουθήστε ολόκληρη τη ροή εργασιών πωλήσεων B2B σε 88 δευτερόλεπτα: από την ανάλυση προσφοράς 1 πρότασης έως τα αυτόνομα σήματα αγοράς και τις καμπάνιες βίντεο.",
+      "duration": "88 Δευτερόλεπτα • Πλήρης Περιήγηση",
+      "chapters": [
+        {
+          "num": "01",
+          "name": "Dashboard"
+        },
+        {
+          "num": "02",
+          "name": "Ανάλυση Προσφοράς"
+        },
+        {
+          "num": "03",
+          "name": "Lead Radar"
+        },
+        {
+          "num": "04",
+          "name": "Χώρος Πωλήσεων"
+        },
+        {
+          "num": "05",
+          "name": "AI Deal Coach"
+        },
+        {
+          "num": "06",
+          "name": "Video Studio"
+        }
+      ],
+      "cta": "Δοκιμάστε το NeXus Δωρεάν ⚡"
     }
   }
 };
