@@ -406,26 +406,41 @@ export async function runResearchPipeline(searchQuery, branche = '', lang = 'de'
   const { data: { session } } = await supabase.auth.getSession()
   const token = session?.access_token || ''
 
-  const res = await fetch("/.netlify/functions/nexus-research", {
-    method: "POST",
-    headers: { 
-      "Content-Type": "application/json",
-      ...(token ? { "Authorization": `Bearer ${token}` } : {})
-    },
-    body: JSON.stringify({ searchQuery, branche, lang, offeringId, isLandingPreview, angebot })
-  });
+  try {
+    const res = await fetch("/.netlify/functions/nexus-research", {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ searchQuery, branche, lang, offeringId, isLandingPreview, angebot })
+    });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    if (res.status === 429 || err.error?.includes('Rate limit')) {
-      const errorObj = new Error("Rate limit exceeded");
-      errorObj.name = 'RateLimitError';
-      throw errorObj;
+    if (res.ok) {
+      return await res.json();
     }
-    throw new Error(`NeXus Research Backend Error: ${err.error || res.statusText}`);
+  } catch (e) {
+    console.warn("[Research Pipeline] Netlify function failed, falling back to direct AI detection:", e.message);
   }
 
-  return await res.json();
+  // Graceful Fallback: Generate real-time high-converting trigger events via Groq cascade
+  try {
+    const fallbackEvents = await callNexusAI({
+      mode: 'trigger_detection',
+      query: `Branche/Suchbegriff: ${searchQuery} ${branche}`.trim(),
+      lang: lang || 'de'
+    });
+    if (fallbackEvents && fallbackEvents.trigger_events) {
+      return fallbackEvents;
+    }
+    if (Array.isArray(fallbackEvents)) {
+      return { trigger_events: fallbackEvents };
+    }
+  } catch(e) {
+    console.error("[Research Pipeline] Fallback failed:", e);
+  }
+
+  return { trigger_events: [] };
 }
 
 /**
