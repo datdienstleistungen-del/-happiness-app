@@ -6,7 +6,7 @@ import {
   Layers, Zap, ShieldCheck, Globe
 } from 'lucide-react'
 import { callNexusAI } from '../lib/nexus-ai'
-import { createOffering, generateSignalStrategies } from '../lib/nexus-db'
+import { createOffering, generateSignalStrategies, createOrUpdateFilterProfile } from '../lib/nexus-db'
 import { trackOfferingAnalyzed } from '../lib/nexus-analytics'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import SignalStrategiesManager from '../components/nexus/SignalStrategiesManager'
@@ -183,17 +183,31 @@ export default function AngebotsanalysePage() {
         throw new Error('Das Angebot konnte nicht in der Datenbank gespeichert werden.')
       }
 
-      // Automatically generate initial signal strategies from AI understanding
+      // Automatically generate initial signal strategies & V3 Filter Profile
       try {
+        const triggers = analysisResult?.trigger_events || analysisResult?.relevante_trigger || []
         const aiUnderstanding = {
           offering_name: savedOffering.offering_name,
           target_audience: savedOffering.target_audience,
           positioning: savedOffering.positioning,
-          demand_contexts: analysisResult?.trigger_events || analysisResult?.relevante_trigger || []
+          demand_contexts: triggers
         }
         await generateSignalStrategies(savedOffering.id, aiUnderstanding, null, lang || 'de')
+
+        // V3 Multi-Tenant Filter Profile anlegen
+        const keywords = [
+          ...savedOffering.offering_name.split(/\s+/).filter(w => w.length > 3),
+          ...savedOffering.target_audience.split(/[,/\s]+/).filter(w => w.length > 3),
+          ...(Array.isArray(triggers) ? triggers.map(t => typeof t === 'string' ? t : (t.signal || t.event || '')).filter(Boolean) : [])
+        ].slice(0, 15);
+
+        await createOrUpdateFilterProfile(user.id, savedOffering.id, {
+          targetKeywords: keywords,
+          negativeKeywords: ['Stellenangebot', 'Bewerbung', 'Praktikum', 'Aktienkurs', 'free download'],
+          industry: savedOffering.target_audience
+        });
       } catch (stratErr) {
-        console.warn('[Angebotsanalyse] Strategy generation notice:', stratErr.message)
+        console.warn('[Angebotsanalyse] Strategy / Filter generation notice:', stratErr.message)
       }
 
       // Clear session storage if present

@@ -527,5 +527,79 @@ export async function wipeAllUserData(userId) {
   await supabase.from('nexus_contacts').delete().eq('user_id', userId);
   await supabase.from('nexus_generated_content').delete().eq('user_id', userId);
   await supabase.from('nexus_activities').delete().eq('user_id', userId);
+  await supabase.from('nexus_filter_profiles').delete().eq('user_id', userId);
+  await supabase.from('nexus_qualified_triggers').delete().eq('user_id', userId);
   return true;
+}
+
+// -----------------------------------------------------------------------------
+// 9. V3 MULTI-TENANT CRAWLER PIPELINE HELPERS
+// -----------------------------------------------------------------------------
+
+export async function createOrUpdateFilterProfile(userId, offeringId, { targetKeywords = [], negativeKeywords = [], industry = '' }) {
+  const { data: existing } = await supabase
+    .from('nexus_filter_profiles')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('offering_id', offeringId)
+    .single();
+
+  if (existing) {
+    const { data, error } = await supabase
+      .from('nexus_filter_profiles')
+      .update({
+        target_keywords: targetKeywords,
+        negative_keywords: negativeKeywords,
+        industry: industry,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existing.id)
+      .select()
+      .single();
+    if (error) console.warn('[NeXus DB] Update filter profile error:', error.message);
+    return data;
+  } else {
+    const { data, error } = await supabase
+      .from('nexus_filter_profiles')
+      .insert({
+        user_id: userId,
+        offering_id: offeringId,
+        target_keywords: targetKeywords,
+        negative_keywords: negativeKeywords,
+        industry: industry
+      })
+      .select()
+      .single();
+    if (error) console.warn('[NeXus DB] Create filter profile error:', error.message);
+    return data;
+  }
+}
+
+export async function getFilterProfileByOffering(offeringId) {
+  const { data, error } = await supabase
+    .from('nexus_filter_profiles')
+    .select('*')
+    .eq('offering_id', offeringId)
+    .single();
+  return error ? null : data;
+}
+
+export async function getQualifiedTriggers(userId, limit = 50) {
+  const { data, error } = await supabase
+    .from('nexus_qualified_triggers')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  return error ? [] : data;
+}
+
+export async function updateQualifiedTriggerStatus(triggerId, status) {
+  const { data, error } = await supabase
+    .from('nexus_qualified_triggers')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', triggerId)
+    .select()
+    .single();
+  return error ? null : data;
 }
