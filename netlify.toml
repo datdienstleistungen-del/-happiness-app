@@ -12,6 +12,9 @@
 [functions."cron-evaluate"]
   schedule = "*/15 * * * *"
 
+[functions."nexus-radar-feeder"]
+  schedule = "@hourly"
+
 [build.environment]
   NODE_VERSION = "22"
 

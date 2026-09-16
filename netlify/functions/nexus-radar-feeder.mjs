@@ -1,8 +1,6 @@
 // netlify/functions/nexus-radar-feeder.mjs
 // 24/7 Autonomous B2B Trigger Radar & Link Dispatcher on Netlify Cloud (100% Free)
 
-import { schedule } from '@netlify/functions'
-
 const TARGET_DESTINATION_URL = 'https://nexus-hit.netlify.app'
 
 // Legal & Compliance Checker (DSGVO Art. 6 f, UWG § 7 Protection)
@@ -97,6 +95,4 @@ async function handler(event, context) {
   }
 }
 
-// Schedule: Runs automatically every hour in the cloud (100% Free)
-export const scheduledHandler = schedule('@hourly', handler)
 export { handler }
