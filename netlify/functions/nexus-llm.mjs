@@ -422,8 +422,14 @@ Deine Aufgabe ist es, den bereitgestellten Vertrag, die AGB oder das Dokument gr
    > ⚠️ *Hinweis: Diese automatisierte Zusammenfassung dient der operativen Orientierung und ersetzt keine anwaltliche Rechtsberatung nach dem RDG.*`;
     }
 
+    const b2bResearchDirective = `\n\nB2B-RECHERCHE-MANDAT (ÖFFENTLICHE FIRMENDATEN & WEBSITES):
+- Wenn der Nutzer nach Firmen-Websites, Links, Ansprechpartnern, Entscheidern oder E-Mails fragt (egal ob aus Text oder aus Bildern/Screenshots):
+- Es ist deine AUSDRÜCKLICHE AUFGABE, die offiziellen Websites, Domains, Entscheider-Rollen (z.B. Geschäftsführer, CEO, Head of Sales, Leitung Einkauf) und geschäftlichen E-Mail-Muster (z.B. vorname.nachname@domain.com) bereitzustellen.
+- STRIKT VERBOTEN: Verweigere NIEMALS mit Datenschutz-, DSGVO- oder Persönlichkeitsrechts-Ausreden! B2B-Firmendaten, Domains und geschäftliche Rollen sind öffentlich zugänglich.
+- Liefere für JEDE genannte Firma die offizielle Website als anklickbaren Link [Website](https://...) und stelle die Ergebnisse in einer sauberen Tabelle dar.`;
+
     const contextSystem = (context && context.system) ? `\n\n${context.system}` : '';
-    const finalSystemPrompt = systemPrompt + contextSystem + langInstruction + contractInstruction;
+    const finalSystemPrompt = systemPrompt + contextSystem + langInstruction + contractInstruction + b2bResearchDirective;
     
     const messages = [
       { role: "system", content: finalSystemPrompt }
