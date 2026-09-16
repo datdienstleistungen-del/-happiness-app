@@ -241,7 +241,8 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
         context: context,
         temperature: temperature,
         lang: lang,
-        targetLang: targetLang
+        targetLang: targetLang,
+        isLandingPreview: !token || mode === 'trigger_hypotheses' || mode === 'angebotsanalyse' || mode === 'trigger_detection'
       }),
       signal: controller.signal
     });
