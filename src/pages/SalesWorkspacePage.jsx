@@ -508,30 +508,31 @@ export default function SalesWorkspacePage() {
 
       setResult(resultData)
       
-      // Auto-Save Contact if manually typed and not in DB
-      if (formData.ansprechpartner && formData.ansprechpartner !== 'Kein verlässlicher Ansprechpartner gefunden' && formData.ansprechpartner !== 'Fehler bei der Kontaktrecherche') {
+      // Auto-Save Contact if manually typed and linked to an opportunity
+      if (user && activeOppId && fullContext?.company_id && formData.ansprechpartner && formData.ansprechpartner !== 'Kein verlässlicher Ansprechpartner gefunden' && formData.ansprechpartner !== 'Fehler bei der Kontaktrecherche') {
         if (!fullContext?.contacts || fullContext.contacts.length === 0) {
-            try {
-              await db.saveOpportunityContact(user.id, fullContext.company_id, activeOppId, formData.ansprechpartner, '', 'manual', 100);
-            } catch(e) { console.error("Auto-save contact error", e) }
+          try {
+            await db.saveOpportunityContact(user.id, fullContext.company_id, activeOppId, formData.ansprechpartner, '', 'manual', 100);
+          } catch(e) { console.error("Auto-save contact error", e) }
         }
       }
       
-      // Auto-Save: In die Historie wegspeichern
+      // Auto-Save: In die Historie wegspeichern (nur wenn eine aktive Opportunity vorliegt)
       if (activeOppId && user) {
-        const saved = await db.saveGeneratedContent(user.id, activeOppId, selectedMode, resultData)
-        if (saved) {
-          // Füge es direkt der Historie hinzu (ohne kompletten Reload)
-          setHistoryItems(prev => [{ ...saved, _type: 'content' }, ...prev])
-        }
+        try {
+          const saved = await db.saveGeneratedContent(user.id, activeOppId, selectedMode, resultData)
+          if (saved) {
+            setHistoryItems(prev => [{ ...saved, _type: 'content' }, ...prev])
+          }
+        } catch(e) { console.error("Auto-save content error", e) }
       }
     } catch (err) {
       console.error('Sales Workspace Fehler:', err)
       const errorMsg = err.message || '';
-      if (errorMsg.includes('Mistral') || errorMsg.includes('Timeout') || errorMsg.includes('NeXus')) {
+      if (errorMsg.includes('Mistral') || errorMsg.includes('Timeout') || errorMsg.includes('NeXus') || errorMsg.includes('KI')) {
         setError(errorMsg.replace('NeXus AI Error: ', ''));
       } else {
-        setError('Fehler bei der Generierung. Bitte versuche es erneut.')
+        setError(`Fehler bei der Generierung: ${errorMsg || 'Bitte versuche es erneut.'}`)
       }
     } finally {
       setLoading(false)
