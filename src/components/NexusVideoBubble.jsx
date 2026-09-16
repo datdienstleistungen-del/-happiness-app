@@ -8,22 +8,22 @@ export default function NexusVideoBubble({ onClick }) {
       type="button"
       className="nexus-video-bubble"
       onClick={onClick}
-      title="NeXus Video Showcase (15s Demos)"
+      title="NeXus Sightseeing-Tour ansehen (Video-Rundgang)"
     >
       <div className="nexus-bubble-pulse-ring" />
       <div className="nexus-bubble-inner">
         <div className="nexus-bubble-thumb">
-          <img src="/videos/nexus-b2b-outreach-poster.jpg" alt="Video Showcase" />
+          <img src="/videos/nexus-tour-poster.jpg" alt="NeXus Sightseeing Tour" />
           <div className="nexus-bubble-play-overlay">
-            <Play size={15} fill="#ffffff" color="#ffffff" />
+            <Play size={16} fill="#ffffff" color="#ffffff" />
           </div>
         </div>
         <div className="nexus-bubble-content">
           <span className="nexus-bubble-tag">
             <Sparkles size={11} />
-            <span>Video Showcase</span>
+            <span>Sightseeing-Tour 🌟</span>
           </span>
-          <span className="nexus-bubble-title">2 B2B Demos ansehen</span>
+          <span className="nexus-bubble-title">Video-Rundgang ansehen</span>
         </div>
       </div>
     </button>

@@ -263,10 +263,10 @@ export default function NexusLandingPage() {
             type="button"
             className="nexus-lp-hero-video-trigger"
             onClick={() => setShowVideoHubModal(true)}
-            title="NeXus Video Showcase ansehen"
+            title={lang === 'de' ? 'NeXus Sightseeing-Tour (Video-Rundgang) ansehen' : 'Watch NeXus Sightseeing Tour'}
           >
             <Play size={12} fill="currentColor" />
-            <span>Video Showcase (Demos)</span>
+            <span>{lang === 'de' ? 'Sightseeing-Tour (Video)' : 'Sightseeing Tour (Video)'}</span>
           </button>
         </div>
 

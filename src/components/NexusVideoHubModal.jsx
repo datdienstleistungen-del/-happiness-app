@@ -10,6 +10,16 @@ import './NexusVideoHubModal.css'
 
 export const NEXUS_VIDEO_STORAGE = [
   {
+    id: 'sightseeing-tour',
+    title: 'NeXus Sightseeing Tour & Walkthrough',
+    titleDE: 'NeXus Sightseeing-Tour (Video-Rundgang)',
+    desc: 'Interactive walkthrough of NeXus Revenue OS: Intent Radar, Lead Qualification & Sales Coach.',
+    descDE: '60-Sekunden Rundgang durch NeXus: Live-Radar, Lead-Qualifizierung & Sales Coach.',
+    src: '/videos/nexus-walkthrough-tour.mp4',
+    poster: '/videos/nexus-tour-poster.jpg',
+    tagDE: 'Sightseeing Tour ⭐'
+  },
+  {
     id: 'enterprise-videostore',
     title: 'Enterprise Revenue OS & Video Store',
     titleDE: 'Enterprise Revenue OS & Video Store',
