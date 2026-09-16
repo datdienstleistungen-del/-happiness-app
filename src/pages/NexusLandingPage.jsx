@@ -33,8 +33,8 @@ export default function NexusLandingPage() {
   // Resolve active language dictionary
   const t = NEXUS_LANDING_TRANSLATIONS[lang] || NEXUS_LANDING_TRANSLATIONS.en || NEXUS_LANDING_TRANSLATIONS.de
   
-  // Interactive Live Demo state
-  const [isCustomMode, setIsCustomMode] = useState(false)
+  // Interactive Live Demo state (Default: true for instant interactive engagement)
+  const [isCustomMode, setIsCustomMode] = useState(true)
   const [angebot, setAngebot] = useState('')
   const [branche, setBranche] = useState(lang === 'de' ? 'B2B & Technologie' : 'B2B & Technology')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -282,8 +282,29 @@ export default function NexusLandingPage() {
             LIVE TEST BOX (Show Don't Tell vs Magic Input)
             ========================================================================= */}
         <div className="nexus-lp-test-card" ref={testSectionRef} id="live-test">
+          {/* Mode Switcher Tabs */}
+          <div className="nexus-lp-tab-switcher">
+            <button 
+              type="button" 
+              className={`nexus-lp-tab-btn ${isCustomMode ? 'active' : ''}`}
+              onClick={() => setIsCustomMode(true)}
+            >
+              <Zap size={14} className="nexus-lp-tab-icon" />
+              <span>{lang === 'de' ? 'Eigenes B2B-Angebot testen' : 'Test your own offer'}</span>
+              <span className="nexus-lp-tab-pill">{lang === 'de' ? 'Live' : 'Live'}</span>
+            </button>
+            <button 
+              type="button" 
+              className={`nexus-lp-tab-btn ${!isCustomMode ? 'active' : ''}`}
+              onClick={() => setIsCustomMode(false)}
+            >
+              <Building2 size={14} className="nexus-lp-tab-icon" />
+              <span>{lang === 'de' ? 'Live-Beispiel / Case Study' : 'View live example'}</span>
+            </button>
+          </div>
+
           {!isCustomMode ? (
-            /* ================= ZUSTAND 1: VORSCHAU-MODUS (STANDARD) ================= */
+            /* ================= ZUSTAND 1: VORSCHAU-MODUS ================= */
             <div className="demo-preview-mode animate-fade-in">
               <div className="demo-intro-badge">
                 <Sparkles size={14} className="text-[#155DFC]" />
@@ -349,12 +370,8 @@ export default function NexusLandingPage() {
               </button>
             </div>
           ) : (
-            /* ================= ZUSTAND 2: CUSTOM-MODUS (BEI KLICK) ================= */
+            /* ================= ZUSTAND 2: CUSTOM-MODUS (STANDARD) ================= */
             <div className="custom-input-mode animate-fade-in">
-              <button type="button" className="back-to-preview-link" onClick={() => setIsCustomMode(false)}>
-                {t.custom.backToPreview}
-              </button>
-              
               <div className="nexus-lp-test-header">
                 <Sparkles size={20} className="text-[#155DFC]" />
                 <div>
@@ -377,7 +394,6 @@ export default function NexusLandingPage() {
                     value={angebot}
                     onChange={(e) => setAngebot(e.target.value)}
                     disabled={isAnalyzing}
-                    autoFocus
                   />
 
                   {/* Inspiration Chips */}
@@ -406,7 +422,23 @@ export default function NexusLandingPage() {
                     disabled={isAnalyzing || !angebot.trim()}
                   >
                     <span>{t.custom.submitBtn}</span>
+                    <ArrowRight size={16} />
                   </button>
+                </div>
+
+                <div className="nexus-lp-trust-strip">
+                  <span className="trust-item">
+                    <ShieldCheck size={14} className="text-emerald-500" />
+                    <span>100% DSGVO-konform</span>
+                  </span>
+                  <span className="trust-item">
+                    <Zap size={14} className="text-amber-500" />
+                    <span>Live-Ergebnis in 5 Sek.</span>
+                  </span>
+                  <span className="trust-item">
+                    <Check size={14} className="text-blue-500" />
+                    <span>Keine Registrierung erforderlich</span>
+                  </span>
                 </div>
               </form>
 
