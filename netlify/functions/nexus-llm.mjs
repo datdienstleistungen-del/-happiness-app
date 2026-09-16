@@ -18,10 +18,12 @@ const BACKUP_GROQ = _k([77,89,65,117,124,71,108,26,73,82,19,24,89,98,30,110,19,7
 const BACKUP_MISTRAL = _k([89,66,95,94,95,90,76,71,126,25,126,100,72,18,78,108,90,75,78,94,121,24,105,79,96,90,76,65,125,66,121,80]);
 const BACKUP_OPENROUTER = _k([89,65,7,69,88,7,92,27,7,72,72,79,76,26,19,75,76,18,28,75,76,27,18,75,31,29,28,28,24,27,79,79,24,78,76,19,76,31,19,78,25,76,30,78,28,26,79,26,25,27,78,78,26,27,78,31,30,28,28,72,79,24,24,29,79,24,18,79,29,31,19,19,27]);
 
-async function tryGroq(messages, temperature = 0.3) {
+async function tryGroq(messages, temperature = 0.3, hasImage = false) {
   const key = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ;
   if (!key) return null;
-  const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound', 'qwen/qwen3.8-27b'];
+  const models = hasImage 
+    ? ['llama-3.2-11b-vision-preview', 'llama-3.2-90b-vision-preview', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b']
+    : ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound', 'qwen/qwen3.8-27b'];
   for (const model of models) {
     try {
       console.log(`[NEXUS] Trying Groq model: ${model}`);
@@ -147,14 +149,22 @@ async function tryDeepSeek(messages, temperature = 0.3) {
   } catch { return null }
 }
 
-async function callAI(messages, temperature = 0.3) {
-  const providers = [
-    () => tryGroq(messages, temperature),
-    () => tryMistral(messages, temperature),
-    () => tryOpenRouter(messages, temperature),
-    () => tryDeepSeek(messages, temperature),
-    () => tryOpenAI(messages, temperature),
-  ]
+async function callAI(messages, temperature = 0.3, hasImage = false) {
+  const providers = hasImage 
+    ? [
+        () => tryOpenAI(messages, temperature),
+        () => tryGroq(messages, temperature, true),
+        () => tryOpenRouter(messages, temperature),
+        () => tryMistral(messages, temperature),
+        () => tryDeepSeek(messages, temperature)
+      ]
+    : [
+        () => tryGroq(messages, temperature, false),
+        () => tryMistral(messages, temperature),
+        () => tryOpenRouter(messages, temperature),
+        () => tryDeepSeek(messages, temperature),
+        () => tryOpenAI(messages, temperature),
+      ];
   let lastError = null;
   for (const tryProvider of providers) {
     try {
@@ -270,7 +280,9 @@ export const handler = async (event) => {
 
   try {
     const body = event.body ? JSON.parse(event.body) : {};
-    const { systemPrompt, userMessage, context, temperature, lang, targetLang, isLandingPreview } = body;
+    const { systemPrompt, userMessage, context, temperature, lang, targetLang, isLandingPreview, imageUrl, image_url } = body;
+    const attachedImageUrl = imageUrl || image_url || (context && (context.imageUrl || context.image_url)) || null;
+    const hasImage = !!attachedImageUrl;
 
     const authHeader = (event.headers && (event.headers.authorization || event.headers.Authorization)) || '';
     const token = authHeader ? authHeader.replace('Bearer ', '').trim() : '';
@@ -391,8 +403,27 @@ export const handler = async (event) => {
       langInstruction = `\n\nCRITICAL REQUIREMENT: Falls ein spezifisches Zielunternehmen aus einem anderen Land adressiert wird, passe die Nachricht an dessen Landessprache an. Ansonsten verfasse die gesamte Antwort / Nachricht zwingend in dieser Sprache: ${langName}! (Respond completely in ${langName}).`;
     }
 
+    const isContractAnalysis = (context && (context.quickAction === 'contract' || context.action === 'contract')) ||
+      lowerMsg.includes('vertrag') || lowerMsg.includes('agb') || lowerMsg.includes('terms') || lowerMsg.includes('klausel') || lowerMsg.includes('kleingedruckt');
+
+    let contractInstruction = '';
+    if (isContractAnalysis) {
+      contractInstruction = `\n\n--- SPEZIAL-MODUS: VERTRAGS- & AGB-ANALYSE (RED FLAG SCANNER) ---
+Deine Aufgabe ist es, den bereitgestellten Vertrag, die AGB oder das Dokument gründlich und verständlich auf Risiken zu prüfen:
+1. 📌 EXECUTIVE SUMMARY: Was ist der Kern des Dokuments und welche Hauptpflichten entstehen? (3-5 klare Aufzählungspunkte).
+2. 🚩 RED-FLAG-RADAR: Gibt es gefährliche, unübliche oder einseitige Klauseln?
+   • Versteckte automatische Vertragsverlängerungen & überlange Kündigungsfristen
+   • Einseitige Haftungsverschiebungen / Haftungsausschlüsse
+   • Versteckte Gebühren, Nachberechnungen oder Preiserhöhungsklauseln
+   • Einseitige Kündigungs- oder Leistungsänderungsrechte
+   • Ungewöhnliche Gerichtsstände oder Schiedsgerichtsklauseln
+3. 💡 VERHANDLUNGS-TIPPS: Was sollte vor der Unterschrift gestrichen oder nachverhandelt werden?
+4. ⚖️ RECHTLICHER DISCLAIMER (Zwingend am Ende anhängen):
+   > ⚠️ *Hinweis: Diese automatisierte Zusammenfassung dient der operativen Orientierung und ersetzt keine anwaltliche Rechtsberatung nach dem RDG.*`;
+    }
+
     const contextSystem = (context && context.system) ? `\n\n${context.system}` : '';
-    const finalSystemPrompt = systemPrompt + contextSystem + langInstruction;
+    const finalSystemPrompt = systemPrompt + contextSystem + langInstruction + contractInstruction;
     
     const messages = [
       { role: "system", content: finalSystemPrompt }
@@ -402,14 +433,23 @@ export const handler = async (event) => {
       context.history.forEach(msg => messages.push({ role: msg.role, content: msg.content }));
     }
     
-    messages.push({ role: "user", content: userMessage });
+    if (hasImage) {
+      messages.push({
+        role: "user",
+        content: [
+          { type: "text", text: userMessage || "Bitte analysiere dieses angehängte Bild / Dokument gründlich im NeXus-Vertriebs- und Recherche-Kontext." },
+          { type: "image_url", image_url: { url: attachedImageUrl } }
+        ]
+      });
+    } else {
+      messages.push({ role: "user", content: userMessage });
+    }
 
     // --- WEB SEARCH & STANDALONE EMAIL CRAWLER: Auto-Suche & Crawler bei Bedarf ---
-    const lowerMsg = (userMessage || '').toLowerCase();
     const isContactMode = systemPrompt ? (systemPrompt.includes('Recherche-Agent') || systemPrompt.includes('Coach')) : false;
     const searchTriggers = ['website', 'url', 'homepage', 'link', 'ansprechpartner', 'ceo', 
       'geschäftsführer', 'head of', 'wer ist', 'kontakt', 'linkedin', 'firmensitz', 'adresse', 'email', 'e-mail', 'mail'];
-    const needsSearch = isContactMode || searchTriggers.some(t => lowerMsg.includes(t));
+    const needsSearch = !hasImage && (isContactMode || searchTriggers.some(t => lowerMsg.includes(t)));
     
     if (needsSearch) {
       // Firma aus Context oder Nachricht extrahieren
@@ -471,8 +511,8 @@ Meine Frage: ${userMessage}`;
     }
     // --- END WEB SEARCH & STANDALONE EMAIL CRAWLER ---
 
-    console.log("[NEXUS] Starting callAI loop");
-    const result = await callAI(messages, temperature || 0.3);
+    console.log("[NEXUS] Starting callAI loop (hasImage=" + hasImage + ")");
+    const result = await callAI(messages, temperature || 0.3, hasImage);
     console.log("[NEXUS] callAI loop done");
 
     if (!result || !result.text) {

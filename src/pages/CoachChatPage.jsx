@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { Target, Send, ShieldAlert, Sparkles, Trash2, ArrowRight, ArrowUp, Check, RefreshCw, Paperclip, X, FileText, TrendingUp, Users, AlertCircle, MessageSquare, ArrowLeft } from 'lucide-react'
+import { 
+  Target, Send, ShieldAlert, Sparkles, Trash2, ArrowRight, ArrowUp, 
+  Check, RefreshCw, Paperclip, X, FileText, TrendingUp, Users, 
+  AlertCircle, MessageSquare, ArrowLeft, FileCheck, Image as ImageIcon
+} from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -35,14 +37,18 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
     { id: 'einwand', label: t('nexus.coach.actionObjection', 'Einwand behandeln'), icon: AlertCircle, placeholder: t('nexus.coach.phObjection', 'Was sagt der Kunde? z.B. "Ist zu teuer"...') },
     { id: 'followup', label: t('nexus.coach.actionFollowup', 'Follow-Up Vorschlag'), icon: TrendingUp, placeholder: t('nexus.coach.phFollowup', 'Was war die letzte Aktion mit diesem Lead?') },
     { id: 'analyse', label: t('nexus.coach.actionAnalyze', 'Lead analysieren'), icon: Users, placeholder: t('nexus.coach.phAnalyze', 'Firmenname, Branche, was weißt du über das Unternehmen?') },
+    { id: 'contract', label: t('nexus.coach.actionContract', 'Vertrag & AGB prüfen'), icon: FileCheck, placeholder: t('nexus.coach.phContract', 'Füge den Vertragstext ein oder lade einen Screenshot/PDF hoch...') },
   ]
   
   const [message, setMessage] = useState('')
+  const [attachment, setAttachment] = useState(null)
+  const [isDragging, setIsDragging] = useState(false)
   const [chatHistory, setChatHistory] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [activeQuickAction, setActiveQuickAction] = useState(null)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const fileInputRef = useRef(null)
   
   // Finde den spezifischen Lead (Opportunity) und seine Trigger
   // Wenn keine leadId: Nimm die letzte Opportunity aus der Pipeline
@@ -83,23 +89,134 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
       : 'NeXus Coach - Sales Intelligence'
   }, [currentLead])
 
+  const handlePaste = (e) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile()
+        if (file) {
+          e.preventDefault()
+          const reader = new FileReader()
+          reader.onload = (event) => {
+            setAttachment({
+              file,
+              dataUrl: event.target.result,
+              name: file.name || `Screenshot_${new Date().toLocaleTimeString().replace(/:/g, '-')}.png`,
+              type: 'image'
+            })
+          }
+          reader.readAsDataURL(file)
+          break
+        }
+      }
+    }
+  }
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        setAttachment({
+          file,
+          dataUrl: event.target.result,
+          name: file.name,
+          type: 'image'
+        })
+      }
+      reader.readAsDataURL(file)
+    } else if (file.type === 'text/plain' || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const textContent = event.target.result
+        setMessage(prev => prev ? `${prev}\n\n[Dokument: ${file.name}]\n${textContent}` : `[Dokument: ${file.name}]\n${textContent}`)
+      }
+      reader.readAsText(file)
+    } else {
+      // PDF or other documents as Data URL
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        setAttachment({
+          file,
+          dataUrl: event.target.result,
+          name: file.name,
+          type: 'doc'
+        })
+      }
+      reader.readAsDataURL(file)
+    }
+    e.target.value = ''
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer?.files?.[0]
+    if (!file) return
+
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        setAttachment({
+          file,
+          dataUrl: event.target.result,
+          name: file.name,
+          type: 'image'
+        })
+      }
+      reader.readAsDataURL(file)
+    } else if (file.type === 'text/plain' || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const textContent = event.target.result
+        setMessage(prev => prev ? `${prev}\n\n[Dokument: ${file.name}]\n${textContent}` : `[Dokument: ${file.name}]\n${textContent}`)
+      }
+      reader.readAsText(file)
+    }
+  }
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      if (message.trim() && !loading) {
+      if ((message.trim() || attachment) && !loading) {
         handleSend(e)
       }
     }
   }
 
   const handleSend = async (e) => {
-    e.preventDefault()
-    if (!message.trim() || loading) return
+    if (e) e.preventDefault()
+    if ((!message.trim() && !attachment) || loading) return
 
     setError('')
-    const userMsg = { role: 'user', content: message }
+    const currentAttachment = attachment
+    const currentMsgText = message.trim() || (currentAttachment ? (lang === 'de' ? 'Bitte analysiere dieses angehängte Bild / Dokument.' : 'Please analyze this attached image / document.') : '')
+    
+    const userMsg = { 
+      role: 'user', 
+      content: currentMsgText,
+      attachment: currentAttachment?.dataUrl || null,
+      fileName: currentAttachment?.name || null,
+      attachmentType: currentAttachment?.type || null
+    }
+
     setChatHistory(prev => [...prev, userMsg])
     setMessage('')
+    setAttachment(null)
     setActiveQuickAction(null)
     setLoading(true)
 
@@ -111,29 +228,23 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
         triggers: leadTriggers,
       })
 
-      // --- DEBUG: Was landet tatsächlich im Context? ---
-      console.log('[NeXusCoach] Context Debug:', {
-        hasContext: !!context,
-        companyName: context?.company?.name,
-        hasOffering: !!context?.offering,
-        offeringName: context?.offering?.name,
-        triggerCount: context?.triggers?.length,
-        contactCount: context?.contacts?.length,
-        hasResearch: !!context?.research,
-        activityCount: context?.activities?.length,
-        opportunityStage: context?.opportunity?.stage,
-      })
-
       // --- SYSTEM-PROMPT: Saubere Trennung ---
       const systemContext = buildCoachSystemPrompt(context, activeQuickAction, lang || 'de')
+      const recentHistory = chatHistory.slice(-4)
 
-      // --- DEBUG: Was steht im Prompt? ---
-      const contextSection = systemContext.split('--- AKTUELLER KONTEXT')[1]?.split('---')[0] || 'KEIN KONTEXT GEFUNDEN'
-      console.log('[NeXusCoach] Prompt-Kontext:', contextSection.substring(0, 500))
-      console.log('[NeXusCoach] System-Prompt Länge:', systemContext.length, 'Zeichen')
-
-      const recentHistory = chatHistory.slice(-4);
-      const response = await callNexusAI('chat', message, { system: systemContext, history: recentHistory }, 0.5, lang || 'de')
+      const response = await callNexusAI({
+        mode: 'chat',
+        message: currentMsgText,
+        context: {
+          system: systemContext,
+          history: recentHistory,
+          quickAction: activeQuickAction,
+          imageUrl: currentAttachment?.dataUrl || null
+        },
+        imageUrl: currentAttachment?.dataUrl || null,
+        temperature: 0.5,
+        lang: lang || 'de'
+      })
       
       if (response) {
         let textContent = ''
@@ -151,9 +262,10 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
       if (err.name === 'RateLimitError') {
         setShowUpgradeModal(true)
       } else {
-        // Falls ein Timeout oder API-Absturz passiert, Text zurück ins Eingabefeld retten!
+        // Falls ein Timeout oder API-Absturz passiert, Text & Anhang zurückretten
         setError(`Fehler beim Senden: ${err.message || 'Timeout'}. Dein Text wurde zur Sicherheit wiederhergestellt.`)
-        setMessage(userMsg.content)
+        setMessage(currentMsgText)
+        if (currentAttachment) setAttachment(currentAttachment)
       }
       setChatHistory(prev => prev.slice(0, -1))
     } finally {
@@ -167,7 +279,13 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
   }
 
   return (
-    <div className="nexus-coach-container" style={onClose ? { height: '100%', borderLeft: '1px solid var(--border-light)' } : {}}>
+    <div 
+      className={`nexus-coach-container ${isDragging ? 'dragging' : ''}`} 
+      style={onClose ? { height: '100%', borderLeft: '1px solid var(--border-light)' } : {}}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <header className="nexus-coach-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button
@@ -212,7 +330,7 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
             <h2>{currentLead ? `Coach: ${currentLead.nexus_companies?.name || 'Lead'}` : t('nexus.coach.welcomeTitle', 'Willkommen beim NeXus Sales Coach')}</h2>
             <p>{currentLead 
               ? `${t('nexus.coach.helpPrefix', 'Ich helfe dir beim Verkauf an')} ${currentLead.nexus_companies?.name || 'diesen Lead'}. ${t('nexus.coach.chooseAction', 'Wähle eine Aktion oder stelle mir eine Frage.')}`
-              : t('nexus.coach.generalHelp', 'Ich helfe dir bei der Vertriebsoptimierung. Wähle eine Aktion oder stelle mir eine Frage.')
+              : t('nexus.coach.generalHelp', 'Ich helfe dir bei Vertriebsoptimierung, Lead-Recherche & AGB-Checks. Füge Text, Screenshots (Strg+V) oder Dokumente ein.')
             }</p>
             
             {currentLead && (
@@ -248,6 +366,11 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
             {chatHistory.map((msg, index) => (
               <div key={index} className={`nexus-msg ${msg.role}`}>
                 <div className="nexus-msg-content">
+                  {msg.attachment && (
+                    <div className="nexus-msg-attachment">
+                      <img src={msg.attachment} alt={msg.fileName || 'Attachment'} />
+                    </div>
+                  )}
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
               </div>
@@ -280,19 +403,66 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
               </button>
             ))}
           </div>
+
+          {/* Attachment Preview Bar */}
+          {attachment && (
+            <div className="nexus-coach-attachment-preview">
+              <div className="nexus-coach-preview-info">
+                {attachment.type === 'image' ? (
+                  <img src={attachment.dataUrl} alt="Preview" className="nexus-coach-preview-thumb" />
+                ) : (
+                  <div className="nexus-coach-preview-doc-icon">
+                    <FileText size={20} />
+                  </div>
+                )}
+                <span className="nexus-coach-preview-name">{attachment.name}</span>
+              </div>
+              <button 
+                type="button" 
+                className="nexus-coach-preview-remove" 
+                onClick={() => setAttachment(null)}
+                title="Anhang entfernen"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
+
           <form onSubmit={handleSend} className="nexus-coach-input-bar" style={{ alignItems: 'flex-end' }}>
+            {/* Hidden File Input */}
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileSelect} 
+              accept="image/*,.pdf,.txt,.md" 
+              style={{ display: 'none' }} 
+            />
+
+            {/* Attachment Button */}
+            <button 
+              type="button" 
+              className="nexus-coach-attach-btn" 
+              onClick={() => fileInputRef.current?.click()} 
+              title="Bild oder Dokument anhängen (oder Strg+V einfügen)"
+            >
+              <Paperclip size={18} />
+            </button>
+
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               placeholder={activeQuickAction 
                 ? SALES_QUICK_ACTIONS.find(a => a.id === activeQuickAction)?.placeholder
-                : t('nexus.coach.inputPlaceholder', 'Stelle eine Vertriebsfrage... (Shift+Enter für neue Zeile)')}
+                : (attachment 
+                    ? t('nexus.coach.attachmentReady', 'Stelle eine Frage zu diesem Bild/Dokument oder drücke Enter...')
+                    : t('nexus.coach.inputPlaceholder', 'Frage stellen, Screenshot per Strg+V einfügen oder Datei anhängen...'))}
               disabled={loading}
               rows={2}
               style={{ flex: 1, resize: 'vertical', minHeight: '44px', maxHeight: '150px', padding: '10px 14px', borderRadius: '8px', border: 'none', background: 'transparent', color: 'var(--text-primary)', fontSize: '0.95rem', outline: 'none' }}
             />
-            <button type="submit" disabled={loading || !message.trim()} style={{ marginBottom: '6px' }}>
+            <button type="submit" disabled={loading || (!message.trim() && !attachment)} style={{ marginBottom: '6px' }}>
               <ArrowUp size={20} />
             </button>
           </form>

@@ -21,6 +21,7 @@ import { supabase } from './supabase.js'
 export async function callNexusAI(modeOrParams, message = null, context = null, temperature = 0.3, lang = 'de') {
   let mode, params
   let targetLang = null
+  let imageUrl = null
   
   // Handle both object and parameter-based calls
   if (typeof modeOrParams === 'object' && modeOrParams !== null) {
@@ -28,7 +29,8 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
     mode = modeOrParams.mode
     lang = modeOrParams.lang || lang || 'de'
     targetLang = modeOrParams.targetLang || lang
-    const { mode: _, targetLang: __, lang: ___, ...rest } = modeOrParams
+    imageUrl = modeOrParams.imageUrl || modeOrParams.image_url || modeOrParams.context?.imageUrl || modeOrParams.context?.image_url || null
+    const { mode: _, targetLang: __, lang: ___, imageUrl: ____, image_url: _____, ...rest } = modeOrParams
     
     // Build message from available params
     if (rest.message) {
@@ -62,6 +64,7 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
   } else {
     mode = modeOrParams
     targetLang = lang || 'de'
+    imageUrl = context?.imageUrl || context?.image_url || null
   }
 
   // =========================================================================
@@ -326,6 +329,7 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
         temperature: temperature,
         lang: lang,
         targetLang: targetLang,
+        imageUrl: imageUrl,
         isLandingPreview: !token || mode === 'trigger_hypotheses' || mode === 'angebotsanalyse' || mode === 'trigger_detection'
       }),
       signal: controller.signal
