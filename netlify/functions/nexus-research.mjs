@@ -1,5 +1,147 @@
 import crypto from 'crypto';
 
+async function fetchWithTimeout(url, options, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const abortId = setTimeout(() => controller.abort(), timeoutMs);
+  let raceId;
+  try {
+    const res = await Promise.race([
+      fetch(url, { ...options, signal: controller.signal }),
+      new Promise((_, reject) => {
+        raceId = setTimeout(() => reject(new Error('Fetch timeout race')), timeoutMs);
+      })
+    ]);
+    return { res, abortId, raceId };
+  } catch (err) {
+    clearTimeout(abortId);
+    clearTimeout(raceId);
+    throw err;
+  }
+}
+
+async function callAI(messages, { temperature = 0.3, max_tokens = 4096, jsonMode = false } = {}) {
+  // 1. Groq (High Speed & Free)
+  const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
+  if (groqKey) {
+    const models = ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'groq/compound', 'openai/gpt-oss-20b'];
+    for (const model of models) {
+      try {
+        const payload = { model, messages, temperature, max_tokens };
+        if (jsonMode) payload.response_format = { type: 'json_object' };
+        const { res, abortId, raceId } = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }, 15000);
+        clearTimeout(abortId); clearTimeout(raceId);
+        if (res.ok) {
+          const data = await res.json();
+          const text = data.choices?.[0]?.message?.content;
+          if (text) return { text, provider: 'groq', model };
+        }
+      } catch (e) {
+        console.warn(`[Groq Error ${model}]:`, e.message);
+      }
+    }
+  }
+
+  // 2. Mistral
+  const mistralKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
+  if (mistralKey) {
+    try {
+      const payload = { model: 'mistral-small-latest', messages, temperature, max_tokens };
+      if (jsonMode) payload.response_format = { type: 'json_object' };
+      const { res, abortId, raceId } = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${mistralKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }, 15000);
+      clearTimeout(abortId); clearTimeout(raceId);
+      if (res.ok) {
+        const data = await res.json();
+        const text = data.choices?.[0]?.message?.content;
+        if (text) return { text, provider: 'mistral', model: 'mistral-small-latest' };
+      }
+    } catch (e) {
+      console.warn('[Mistral Error]:', e.message);
+    }
+  }
+
+  // 3. OpenRouter
+  const openrouterKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
+  if (openrouterKey) {
+    const models = ['google/gemma-4-26b-a4b-it:free', 'meta-llama/llama-3.3-70b-instruct:free', 'mistralai/mistral-small-24b-instruct-2501:free'];
+    for (const model of models) {
+      try {
+        const { res, abortId, raceId } = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openrouterKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://nexus-hit.netlify.app',
+            'X-Title': 'NeXus Research'
+          },
+          body: JSON.stringify({ model, messages, temperature, max_tokens })
+        }, 15000);
+        clearTimeout(abortId); clearTimeout(raceId);
+        if (res.ok) {
+          const data = await res.json();
+          const text = data.choices?.[0]?.message?.content;
+          if (text) return { text, provider: 'openrouter', model };
+        }
+      } catch (e) {
+        console.warn(`[OpenRouter Error ${model}]:`, e.message);
+      }
+    }
+  }
+
+  // 4. DeepSeek
+  const deepseekKey = process.env.DEEPSEEK_API_KEY;
+  if (deepseekKey) {
+    try {
+      const payload = { model: 'deepseek-chat', messages, temperature, max_tokens };
+      if (jsonMode) payload.response_format = { type: 'json_object' };
+      const { res, abortId, raceId } = await fetchWithTimeout('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${deepseekKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }, 15000);
+      clearTimeout(abortId); clearTimeout(raceId);
+      if (res.ok) {
+        const data = await res.json();
+        const text = data.choices?.[0]?.message?.content;
+        if (text) return { text, provider: 'deepseek', model: 'deepseek-chat' };
+      }
+    } catch (e) {
+      console.warn('[DeepSeek Error]:', e.message);
+    }
+  }
+
+  // 5. OpenAI
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (openaiKey) {
+    try {
+      const payload = { model: 'gpt-4o-mini', messages, temperature, max_tokens };
+      if (jsonMode) payload.response_format = { type: 'json_object' };
+      const { res, abortId, raceId } = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }, 15000);
+      clearTimeout(abortId); clearTimeout(raceId);
+      if (res.ok) {
+        const data = await res.json();
+        const text = data.choices?.[0]?.message?.content;
+        if (text) return { text, provider: 'openai', model: 'gpt-4o-mini' };
+      }
+    } catch (e) {
+      console.warn('[OpenAI Error]:', e.message);
+    }
+  }
+
+  throw new Error('Alle KI-Provider sind derzeit ausgelastet oder nicht erreichbar. Bitte versuche es in wenigen Augenblicken erneut.');
+}
+
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
@@ -124,52 +266,31 @@ export const handler = async (event) => {
     }
 
     const tavilyKey = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY;
-    const mistralKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
-
     if (!tavilyKey) {
       return { statusCode: 500, body: JSON.stringify({ error: "Tavily API Key fehlt im Backend" }) };
-    }
-    if (!mistralKey) {
-      return { statusCode: 500, body: JSON.stringify({ error: "Mistral API Key fehlt im Backend" }) };
     }
 
     // --- STUFE 1: Auto-Korrektur (Tippfehler) ---
     let correctedQuery = searchQuery;
     let correctedBranche = branche || '';
-    const deepseekKey = process.env.DEEPSEEK_API_KEY;
-    const llmUrl = 'https://api.deepseek.com/chat/completions';
-    const llmKey = deepseekKey || mistralKey;
-    const llmModel = deepseekKey ? 'deepseek-chat' : 'mistral-small-latest';
     
     try {
-      const spellcheckRes = await fetch(llmUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${llmKey}` },
-        body: JSON.stringify({
-          model: llmModel,
-          messages: [{ 
-            role: "system", 
-            content: "Du bist eine Rechtschreibkorrektur-Engine. Der User übergibt dir Suchbegriffe. Deine EINZIGE Aufgabe ist es, Tippfehler zu korrigieren. Gib NUR die korrigierten Begriffe zurück, exakt so wie sie sind, ohne Erklärungen, ohne Anführungszeichen und ohne zusätzliche Wörter. Wenn keine Fehler drin sind, gib sie 1:1 zurück."
-          }, { 
-            role: "user", 
-            content: `${searchQuery} ${branche || ''}`
-          }],
-          temperature: 0.0,
-          max_tokens: 50
-        })
-      });
+      const spellData = await callAI([{ 
+        role: "system", 
+        content: "Du bist eine Rechtschreibkorrektur-Engine. Der User übergibt dir Suchbegriffe. Deine EINZIGE Aufgabe ist es, Tippfehler zu korrigieren. Gib NUR die korrigierten Begriffe zurück, exakt so wie sie sind, ohne Erklärungen, ohne Anführungszeichen und ohne zusätzliche Wörter. Wenn keine Fehler drin sind, gib sie 1:1 zurück."
+      }, { 
+        role: "user", 
+        content: `${searchQuery} ${branche || ''}`
+      }], { temperature: 0.0, max_tokens: 50 });
       
-      if (spellcheckRes.ok) {
-        const spellData = await spellcheckRes.json();
-        const cleaned = spellData.choices[0]?.message?.content?.trim();
-        if (cleaned) {
-          correctedQuery = cleaned;
-          correctedBranche = '';
-          console.log(`[Auto-Correct] Original: "${searchQuery} ${branche || ''}" -> Korrigiert: "${correctedQuery}"`);
-        }
+      const cleaned = spellData?.text?.trim();
+      if (cleaned) {
+        correctedQuery = cleaned;
+        correctedBranche = '';
+        console.log(`[Auto-Correct] Original: "${searchQuery} ${branche || ''}" -> Korrigiert: "${correctedQuery}"`);
       }
     } catch (e) {
-      console.warn("Fehler bei der Auto-Korrektur, nutze Original-Query:", e);
+      console.warn("Fehler bei der Auto-Korrektur, nutze Original-Query:", e.message);
     }
 
     // --- STUFE 2: Tavily Deep Search ---
@@ -237,7 +358,7 @@ export const handler = async (event) => {
 
     // --- STUFE 4.6: SYNC DB INSERT (Phase A Inbox) ---
     let hitIdMap = {}; 
-    if (offeringId && user.id) {
+    if (offeringId && user && user.id) {
       try {
         const rowsToInsert = safeResults.map(r => {
           const hash = crypto.createHash('md5').update(r.url || '').digest('hex');
@@ -323,32 +444,12 @@ export const handler = async (event) => {
       ]
     }`;
 
-    const triggerLlmUrl = 'https://api.deepseek.com/chat/completions';
-    const triggerLlmKey = deepseekKey || mistralKey;
-    const triggerLlmModel = deepseekKey ? 'deepseek-chat' : 'mistral-small-latest';
-    
-    const triggerRes = await fetch(triggerLlmUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${triggerLlmKey}`
-      },
-      body: JSON.stringify({
-        model: triggerLlmModel,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Web-Recherche Ergebnisse:\n\n${webContext}` }
-        ],
-        temperature: 0.3
-      })
-    });
-    
-    if (!triggerRes.ok) {
-      throw new Error(`LLM API Error beim Extrahieren der Live-Trigger: ${triggerRes.statusText}`);
-    }
+    const triggerLlmResult = await callAI([
+      { role: "system", content: systemPrompt },
+      { role: "user", content: `Web-Recherche Ergebnisse:\n\n${webContext}` }
+    ], { temperature: 0.3, max_tokens: 4096 });
 
-    const triggerData = await triggerRes.json();
-    let content = triggerData.choices[0].message.content;
+    let content = triggerLlmResult.text;
     
     // Markdown JSON-Blöcke bereinigen, falls Mistral sie hinzufügt
     content = content.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
