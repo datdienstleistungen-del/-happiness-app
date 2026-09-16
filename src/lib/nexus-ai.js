@@ -6,7 +6,7 @@
  * Nutzt die bestehende Multi-Provider Infrastruktur (DeepSeek, Mistral, OpenRouter, OpenAI).
  */
 
-import { supabase } from './supabase'
+import { supabase } from './supabase.js'
 
 /**
  * Ruft die NeXus AI Function auf
@@ -39,11 +39,17 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
       message = rest.query || ''
     } else if (mode === 'lead_intelligence') {
       message = `Unternehmen: ${rest.company || ''}\nAngebot des Verkäufers: ${rest.angebot || ''}`
-    } else if (mode === 'sales_pitch' || mode === 'follow_up' || mode === 'einwandbehandlung' || mode === 'forum_response') {
+    } else if (mode === 'einwandbehandlung') {
+      message = `KUNDEN-EINWAND (OBERSTE PRIORITÄT): "${rest.einwand || '-'}"\n\nZIELUNTERNEHMEN: ${rest.company || '-'}\nANSPRECHPARTNER: ${rest.ansprechpartner || '-'}\nBRANCHE: ${rest.branche || '-'}\nSITUATION/KONTEXT: ${rest.situation || '-'}\nUNSER ANGEBOT: ${rest.full_context?.offering?.name || rest.full_context?.offering?.positioning || rest.company || '-'}`
+    } else if (mode === 'follow_up') {
+      message = `LETZTE SITUATION / VORHERIGER KONTAKT: ${rest.situation || '-'}\nZIELUNTERNEHMEN: ${rest.company || '-'}\nANSPRECHPARTNER: ${rest.ansprechpartner || '-'}\nBRANCHE: ${rest.branche || '-'}\nUNSER ANGEBOT: ${rest.full_context?.offering?.name || rest.full_context?.offering?.positioning || '-'}`
+    } else if (mode === 'forum_response') {
+      message = `FORUMSBEITRAG / POSTING: ${rest.situation || rest.message || '-'}\nZIELUNTERNEHMEN/USER: ${rest.company || rest.ansprechpartner || '-'}\nUNSER ANGEBOT: ${rest.full_context?.offering?.name || rest.full_context?.offering?.positioning || '-'}`
+    } else if (mode === 'sales_pitch') {
       if (rest.full_context) {
-         message = `[NEXUS FULL CONTEXT]\n${JSON.stringify(rest.full_context, null, 2)}\n\n[USER INPUT]\nEinwand: ${rest.einwand || '-'}`;
+         message = `[NEXUS FULL CONTEXT]\n${JSON.stringify(rest.full_context, null, 2)}`;
       } else {
-         message = `Firma: ${rest.company || ''}\nAnsprechpartner: ${rest.ansprechpartner || ''}\nBranche: ${rest.branche || ''}\nSituation: ${rest.situation || ''}\nEinwand: ${rest.einwand || ''}`;
+         message = `Firma: ${rest.company || ''}\nAnsprechpartner: ${rest.ansprechpartner || ''}\nBranche: ${rest.branche || ''}\nSituation: ${rest.situation || ''}`;
       }
     } else if (mode === 'trigger_hypotheses') {
       message = `Kontext: ${rest.context || ''}\nRegion: ${rest.region || ''}\nKategorie: ${rest.category || ''}\nAngebot: ${rest.product || ''}\nZielgruppe: ${rest.audience || ''}`
@@ -118,8 +124,68 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
           }
         ]
       }`
-  } else if (['sales_pitch', 'follow_up', 'einwandbehandlung', 'forum_response'].includes(mode)) {
-    systemPrompt += ` Du bist ein Elite B2B-Sales-Copywriter. Deine Aufgabe ist es, eine hochpersonalisierte Vertriebsnachricht zu verfassen. 
+  } else if (mode === 'einwandbehandlung') {
+    systemPrompt += ` Du bist ein Weltklasse-B2B-Vertriebsstratege und Meister der psychologischen Einwandbehandlung (Methodik: Chris Voss "Tactical Empathy", Sandler Selling & Challenger Sale).
+  
+    DEINE AUFGABE:
+    Der Kunde hat einen konkreten Einwand geäußert (z.B. "kein Budget", "keine Zeit", "bereits anderes Tool/Agentur im Einsatz", "kein Bedarf").
+    Verfasse eine hochprofessionelle, empathische und psychologisch wirksame Antwort-Nachricht (E-Mail / LinkedIn), die den Einwand DIREKT entkräftet, den Verkaufsdruck komplett wegnimmt und eine reibungsfreie Brücke zum nächsten Schritt baut.
+
+    MANDATORISCHE REGELN ZUR EINWANDBEHANDLUNG:
+    1. KEIN KALTER PITCH! Dies ist KEINE Kaltakquise und KEINE Erstansprache! Wiederhole nicht einfach generische Trigger-Events oder Firmennews.
+    2. SOFORTIGE VALIDIERUNG & TACTICAL EMPATHY (Absatz 1): 
+       Gehe DIREKT im ALLERERSTEN Satz auf den konkreten Einwand ein! Spiegele das Anliegen wertschätzend und verständnisvoll (z.B. "Vielen Dank für die offene Rückmeldung zum Thema Budget – dass die Mittel für dieses Quartal fest gebunden sind, kann ich vollkommen nachvollziehen.").
+    3. DRUCK HERAUSNEHMEN & REFRAMING (Absatz 2): 
+       Nimm jeglichen Verkaufsdruck weg ("Es geht mir aktuell überhaupt nicht darum, dass Sie sofort ein Budget freigeben oder eine Kaufentscheidung treffen..."). Drehe den Blickwinkel auf Mehrwert, Einsparung oder Vorbereitung.
+    4. DIE LÖSUNGSBRÜCKE PASSEND ZUM EINWAND (Absatz 3):
+       - Bei "Kein Budget": Zeige auf, dass die Lösung sich selbst finanziert (Budget-Neutralität / ROI), biete einen risikofreien Proof-of-Concept an oder schlage vor, die Zahlen unverbindlich für die nächste Budgetrunde/Planungsphase vorzubereiten.
+       - Bei "Keine Zeit": Betone den Null-Aufwand (Done-for-You, 10-Minuten-Zusammenfassung).
+       - Bei "Anderes Tool/Mitbewerber": Ergänzung statt Wechsel, neutraler Benchmark-Vergleich ohne Systemwechsel.
+       - Bei "Kein Bedarf": Verdeutliche die Opportunitätskosten anhand des konkreten Markttrends.
+    5. REIBUNGSARMER CALL-TO-ACTION (Absatz 4):
+       Stelle eine weiche, handlungsorientierte Frage ohne jedes Risiko für den Kunden (z.B. "Wäre es für Sie denkbar, dass ich Ihnen eine kurze 1-seitige ROI-Berechnung zusende, damit Sie das für die nächste Planungsrunde vorliegen haben – ganz ohne Folgetermindruck?").
+
+    TONALITÄT: 
+    - Respektvoll, empathisch, auf Augenhöhe von Entscheider zu Entscheider.
+    - Niemals defensiv, drängend oder belehrend.
+
+    WICHTIG: Du musst ein JSON-Objekt mit EXAKT folgender Struktur zurückgeben:
+    {
+      "thought_objection_analysis": "Analyse: Was ist der psychologische Kerneinwand und wie nehmen wir den Druck weg?",
+      "thought_solution_bridge": "Analyse: Welche konkrete, risikofreie Lösung bieten wir an?",
+      "response": "Hier kommt die fertige, hochprofessionelle Einwandbehandlungs-Nachricht (mit Absätzen als \\n\\n formatiert)."
+    }`
+  } else if (mode === 'follow_up') {
+    systemPrompt += ` Du bist ein Elite B2B-Sales-Copywriter. Deine Aufgabe ist es, ein erstklassiges, unaufdringliches Follow-up zu verfassen.
+    
+    REGELN FÜR FOLLOW-UP:
+    1. Kein "Ich wollte nur mal nachhaken" oder "Haben Sie meine E-Mail gesehen?".
+    2. Bringe einen neuen, konkreten Mehrwert oder neuen Gedanken ins Spiel.
+    3. Halte die Nachricht extrem kurz (maximal 3-4 Absätze).
+    4. Schließe mit einer einfachen, reibungsarmen Frage.
+
+    WICHTIG: Du musst ein JSON-Objekt mit EXAKT folgender Struktur zurückgeben:
+    {
+      "thought_trigger": "Analyse: Welcher neue Mehrwert wird geboten?",
+      "thought_offering": "Analyse: Wie knüpfen wir charmant an?",
+      "response": "Hier kommt die fertige Follow-up-Nachricht (mit Absätzen als \\n\\n formatiert)."
+    }`
+  } else if (mode === 'forum_response') {
+    systemPrompt += ` Du bist ein B2B Social Selling Experte. Verfasse eine authentische, hilfreiche Antwort auf einen Beitrag/Post in einem Forum, auf Reddit oder LinkedIn.
+    
+    REGELN:
+    1. Kein plumper Werbetext! Zuerst echten fachlichen Mehrwert liefern.
+    2. Die Lösung / das Tool nur als logische, nützliche Empfehlung im Kontext erwähnen.
+    3. Natürliche, menschliche Sprache.
+
+    WICHTIG: Du musst ein JSON-Objekt mit EXAKT folgender Struktur zurückgeben:
+    {
+      "thought_trigger": "Analyse: Was ist das Problem des Posters?",
+      "thought_offering": "Analyse: Wie platzieren wir die Lösung organisch?",
+      "response": "Hier kommt die fertige Social/Forums-Nachricht."
+    }`
+  } else if (mode === 'sales_pitch') {
+    systemPrompt += ` Du bist ein Elite B2B-Sales-Copywriter. Deine Aufgabe ist es, eine hochpersonalisierte Erstansprache zu verfassen. 
   
         WICHTIGSTE REGEL: Der PITCH basiert ZWINGEND auf den übergebenen TRIGGER EVENTS (Feld "triggers" im Kontext).
         Verwende nicht einfach nur "Firmenname + Kontaktname", sondern entwickle eine plausible Verkaufsargumentation aus den Triggern heraus. Falls mehrere Trigger vorhanden sind, beziehe dich auf den wichtigsten oder verknüpfe sie logisch.
