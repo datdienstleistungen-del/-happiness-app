@@ -274,6 +274,106 @@
   color: #0284c7;
 }
 
+/* Chat Markdown Links */
+.nexus-chat-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #0284c7;
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 2px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  word-break: break-all;
+}
+
+.nexus-msg.user .nexus-chat-link {
+  color: #ffffff;
+  text-decoration-color: rgba(255, 255, 255, 0.7);
+}
+
+.nexus-chat-link:hover {
+  color: #0369a1;
+  text-decoration-color: #0369a1;
+  transform: translateY(-1px);
+}
+
+.nexus-chat-link-icon {
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+/* Chat Markdown Tables */
+.nexus-chat-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin: 0.85rem 0;
+  border-radius: 8px;
+  border: 1px solid var(--border, #e2e8f0);
+  background: var(--bg, #ffffff);
+}
+
+.nexus-chat-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.88rem;
+}
+
+.nexus-chat-table th {
+  background: var(--bg-secondary, #f8fafc);
+  color: var(--text, #0f172a);
+  font-weight: 700;
+  padding: 8px 12px;
+  border-bottom: 2px solid var(--border, #e2e8f0);
+  white-space: nowrap;
+}
+
+.nexus-chat-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-light, #f1f5f9);
+  color: var(--text, #334155);
+  vertical-align: top;
+}
+
+.nexus-chat-table tr:last-child td {
+  border-bottom: none;
+}
+
+.nexus-chat-table tr:hover td {
+  background: rgba(14, 165, 233, 0.04);
+}
+
+/* Chat Blockquotes & Red Flags */
+.nexus-msg-content blockquote {
+  margin: 0.75rem 0;
+  padding: 0.6rem 1rem;
+  border-left: 4px solid #ef4444;
+  background: #fef2f2;
+  color: #991b1b;
+  border-radius: 0 8px 8px 0;
+  font-size: 0.9rem;
+}
+
+.nexus-msg-content pre {
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 10px 14px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  margin: 0.75rem 0;
+}
+
+.nexus-msg-content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85em;
+  background: rgba(0, 0, 0, 0.06);
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
 /* Typing Indicator */
 .nexus-typing {
   display: flex;

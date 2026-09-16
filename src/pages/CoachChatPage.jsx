@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { 
   Target, Send, ShieldAlert, Sparkles, Trash2, ArrowRight, ArrowUp, 
   Check, RefreshCw, Paperclip, X, FileText, TrendingUp, Users, 
-  AlertCircle, MessageSquare, ArrowLeft, FileCheck, Image as ImageIcon
+  AlertCircle, MessageSquare, ArrowLeft, FileCheck, Image as ImageIcon, ExternalLink
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useLead } from '../context/LeadContext'
@@ -373,7 +374,32 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
                       <img src={msg.attachment} alt={msg.fileName || 'Attachment'} />
                     </div>
                   )}
-                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      a: ({ href, children, ...props }) => (
+                        <a 
+                          href={href} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="nexus-chat-link"
+                          {...props}
+                        >
+                          <span>{children}</span>
+                          <ExternalLink size={12} className="nexus-chat-link-icon" />
+                        </a>
+                      ),
+                      table: ({ children, ...props }) => (
+                        <div className="nexus-chat-table-wrapper">
+                          <table className="nexus-chat-table" {...props}>
+                            {children}
+                          </table>
+                        </div>
+                      )
+                    }}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
                 </div>
               </div>
             ))}
