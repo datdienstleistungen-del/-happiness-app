@@ -287,6 +287,23 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
     }`
   }
 
+  // Multi-Language Enforcement for all analysis, generation & pitch modes
+  const langNames = {
+    de: 'Deutsch (German)',
+    en: 'Englisch (English - US)',
+    es: 'Spanisch (Spanish)',
+    fr: 'Französisch (French)',
+    it: 'Italienisch (Italian)',
+    nl: 'Niederländisch (Dutch)',
+    el: 'Griechisch (Greek)'
+  };
+  const activeLangCode = lang || targetLang || 'de';
+  const activeLangName = langNames[activeLangCode] || 'Deutsch';
+
+  if (mode !== 'chat' && mode !== 'assistant') {
+    systemPrompt += `\n\nSPRACH-VORGABE (MANDATORISCH): Verfasse alle Text-Inhalte, Beschreibungen, Analysen, Begründungen, Pitches, Hypothesen und Werte im JSON zu 100% in der Sprache: ${activeLangName}. Die JSON-Keys bleiben im vorgegebenen Schema, aber alle textuellen Werte MÜSSEN auf ${activeLangName} formuliert sein.`;
+  }
+
   const { data: { session } } = await supabase.auth.getSession()
   const token = session?.access_token || ''
 
