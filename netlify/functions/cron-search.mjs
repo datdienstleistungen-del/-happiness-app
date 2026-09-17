@@ -1,5 +1,43 @@
 import crypto from 'crypto';
 
+async function searchDuckDuckGo(query, maxResults = 5) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    const res = await fetch(
+      `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
+      { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }, signal: controller.signal }
+    );
+    clearTimeout(timer);
+    if (!res.ok) return [];
+    const html = await res.text();
+    const results = [];
+    const linkRegex = /<a[^>]+class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+    let match;
+    while ((match = linkRegex.exec(html)) !== null && results.length < maxResults) {
+      const href = match[1];
+      const title = match[2].replace(/<[^>]*>/g, '').trim();
+      let url = null;
+      if (href.includes('uddg=')) {
+        const uddgMatch = href.match(/uddg=([^&]*)/);
+        if (uddgMatch) url = decodeURIComponent(uddgMatch[1]);
+      } else if (href.startsWith('http')) {
+        url = href;
+      }
+      const snippetRegex = /<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
+      snippetRegex.lastIndex = match.index + match[0].length;
+      const snippetMatch = snippetRegex.exec(html);
+      const snippet = snippetMatch ? snippetMatch[1].replace(/<[^>]*>/g, '').trim() : '';
+      if (url && title) {
+        results.push({ url, title, content: snippet, published_date: new Date().toISOString() });
+      }
+    }
+    return results;
+  } catch (e) {
+    return [];
+  }
+}
+
 export async function handler(event, context) {
   // 1. Setup & Environment
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
@@ -17,9 +55,13 @@ export async function handler(event, context) {
       authToken = authData.access_token;
     }
   }
-  const tavilyApiKey = process.env.TAVILY_API_KEY;
+  const tavilyKeys = [
+    process.env.TAVILY_API_KEY,
+    process.env.TAVILY_API_KEY_2,
+    process.env.VITE_TAVILY_API_KEY
+  ].filter(Boolean);
 
-  if (!supabaseUrl || !supabaseKey || !tavilyApiKey) {
+  if (!supabaseUrl || !supabaseKey) {
     return { statusCode: 500, body: JSON.stringify({ error: "Missing config for B1 Search Cron" }) };
   }
 
@@ -90,24 +132,45 @@ export async function handler(event, context) {
       console.log(`B1 Cron: Starte Tavily Search für Offering ${offering.id} (${searchQueries.length} Queries)`);
 
       try {
-        // 4. Tavily Deep Search (Datengewinnung) — eine Suche pro Query
+        // 4. Tavily Deep Search (Datengewinnung mit Multi-Key Failover & DuckDuckGo Fallback)
         const allResults = [];
         for (const query of searchQueries.slice(0, 5)) { // Max 5 Queries pro Offering (Netlify Timeout)
-          const tavilyRes = await fetch('https://api.tavily.com/search', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              api_key: tavilyApiKey,
-              query: query,
-              search_depth: "advanced",
-              include_raw_content: true,
-              max_results: 5,
-              days_back: 7
-            })
-          });
-          if (tavilyRes.ok) {
-            const data = await tavilyRes.json();
-            allResults.push(...(data.results || []));
+          let searchDone = false;
+
+          // Versuche Tavily Keys
+          for (const key of tavilyKeys) {
+            try {
+              const tavilyRes = await fetch('https://api.tavily.com/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  api_key: key,
+                  query: query,
+                  search_depth: "advanced",
+                  include_raw_content: true,
+                  max_results: 5,
+                  days_back: 7
+                })
+              });
+              if (tavilyRes.ok) {
+                const data = await tavilyRes.json();
+                if (data && data.results && data.results.length > 0) {
+                  allResults.push(...data.results.map(r => ({ ...r, _source: 'Tavily Deep Search (B1 Cron)' })));
+                  searchDone = true;
+                  break;
+                }
+              }
+            } catch (err) {}
+          }
+
+          // Fallback auf DuckDuckGo wenn Tavily Keys erschöpft sind
+          if (!searchDone) {
+            try {
+              const ddg = await searchDuckDuckGo(query, 5);
+              if (ddg && ddg.length > 0) {
+                allResults.push(...ddg.map(r => ({ ...r, _source: 'DuckDuckGo Search (B1 Fallback)' })));
+              }
+            } catch (ddgErr) {}
           }
         }
 
@@ -119,9 +182,9 @@ export async function handler(event, context) {
             offering_id: offering.id,
             url: r.url,
             url_hash: hash,
-            source: 'Tavily Deep Search (B1 Cron)',
+            source: r._source || 'Tavily Deep Search (B1 Cron)',
             title: r.title || '',
-            raw_content: r.content || '',
+            raw_content: r.content || r.snippet || '',
             published_at: r.published_date || null,
             status: 'pending'
           };

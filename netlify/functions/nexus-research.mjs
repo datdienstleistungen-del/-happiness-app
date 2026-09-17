@@ -18,6 +18,43 @@ const BACKUP_MISTRAL = _k([89,66,95,94,95,90,76,71,126,25,126,100,72,18,78,108,9
 const BACKUP_OPENROUTER = _k([89,65,7,69,88,7,92,27,7,72,72,79,76,26,19,75,76,18,28,75,76,27,18,75,31,29,28,28,24,27,79,79,24,78,76,19,76,31,19,78,25,76,30,78,28,26,79,26,25,27,78,78,26,27,78,31,30,28,28,72,79,24,24,29,79,24,18,79,29,31,19,19,27]);
 const BACKUP_TAVILY = _k([94,92,70,83,7,78,79,92,7,30,97,88,123,100,103,7,126,107,76,77,30,125,114,121,96,108,111,121,31,28,102,98,25,123,112,29,111,104,67,27,19,100,64,94,126,92,26,28,121,104,70,112,83,109,71,105,83,27]);
 
+async function searchDuckDuckGo(query, maxResults = 10) {
+  try {
+    const { res, timer } = await fetchWithTimeout(
+      `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
+      { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } },
+      8000
+    );
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const html = await res.text();
+    const results = [];
+    const linkRegex = /<a[^>]+class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+    let match;
+    while ((match = linkRegex.exec(html)) !== null && results.length < maxResults) {
+      const href = match[1];
+      const title = match[2].replace(/<[^>]*>/g, '').trim();
+      let url = null;
+      if (href.includes('uddg=')) {
+        const uddgMatch = href.match(/uddg=([^&]*)/);
+        if (uddgMatch) url = decodeURIComponent(uddgMatch[1]);
+      } else if (href.startsWith('http')) {
+        url = href;
+      }
+      const snippetRegex = /<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
+      snippetRegex.lastIndex = match.index + match[0].length;
+      const snippetMatch = snippetRegex.exec(html);
+      const snippet = snippetMatch ? snippetMatch[1].replace(/<[^>]*>/g, '').trim() : '';
+      if (url && title) {
+        results.push({ url, title, snippet });
+      }
+    }
+    return results.length > 0 ? results : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 async function callAI(messages, { temperature = 0.3, max_tokens = 4096, jsonMode = false } = {}) {
   // 1. Groq (High Speed & Free)
   const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ;
@@ -250,53 +287,69 @@ export const handler = async (event) => {
       searchQuery = `${branche || ''} ${angebot ? angebot.slice(0, 80) : ''} Expansion Investition Modernisierung`.trim();
     }
 
-    const tavilyKey = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY || BACKUP_TAVILY;
-    if (!tavilyKey) {
-      return { statusCode: 500, body: JSON.stringify({ error: "Tavily API Key fehlt im Backend" }) };
-    }
+    // Multi-key Tavily with failover & DuckDuckGo fallback
+    const tavilyKeys = [
+      process.env.TAVILY_API_KEY,
+      process.env.TAVILY_API_KEY_2,
+      process.env.VITE_TAVILY_API_KEY,
+      BACKUP_TAVILY
+    ].filter(Boolean);
 
-    // --- STUFE 1: Auto-Korrektur (Tippfehler) ---
-    let correctedQuery = searchQuery;
-    let correctedBranche = branche || '';
-    
-    try {
-      const spellData = await callAI([{ 
-        role: "system", 
-        content: "Du bist eine Rechtschreibkorrektur-Engine. Der User übergibt dir Suchbegriffe. Deine EINZIGE Aufgabe ist es, Tippfehler zu korrigieren. Gib NUR die korrigierten Begriffe zurück, exakt so wie sie sind, ohne Erklärungen, ohne Anführungszeichen und ohne zusätzliche Wörter. Wenn keine Fehler drin sind, gib sie 1:1 zurück."
-      }, { 
-        role: "user", 
-        content: `${searchQuery} ${branche || ''}`
-      }], { temperature: 0.0, max_tokens: 50 });
-      
-      const cleaned = spellData?.text?.trim();
-      if (cleaned) {
-        correctedQuery = cleaned;
-        correctedBranche = '';
-        console.log(`[Auto-Correct] Original: "${searchQuery} ${branche || ''}" -> Korrigiert: "${correctedQuery}"`);
+    let tavilyData = null;
+    let searchSource = 'Tavily Deep Search';
+
+    for (const key of tavilyKeys) {
+      try {
+        const tavilyRes = await fetch("https://api.tavily.com/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            api_key: key,
+            query: `${correctedQuery} ${correctedBranche} Unternehmen Deutschland`,
+            search_depth: "advanced",
+            include_answer: false,
+            max_results: 10,
+            topic: "news",
+            days: 14
+          })
+        });
+
+        if (tavilyRes.ok) {
+          const data = await tavilyRes.json();
+          if (data && data.results && data.results.length > 0) {
+            tavilyData = data;
+            break;
+          }
+        } else {
+          console.warn(`[nexus-research] Tavily Key ${key.substring(0, 8)}... meldet Status ${tavilyRes.status}, wechsle auf nächsten Key...`);
+        }
+      } catch (keyErr) {
+        console.warn(`[nexus-research] Tavily Fetch Error:`, keyErr.message);
       }
-    } catch (e) {
-      console.warn("Fehler bei der Auto-Korrektur, nutze Original-Query:", e.message);
     }
 
-    // --- STUFE 2: Tavily Deep Search ---
-    const tavilyRes = await fetch("https://api.tavily.com/search", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        api_key: tavilyKey,
-        query: `${correctedQuery} ${correctedBranche} Unternehmen Deutschland`,
-        search_depth: "advanced",
-        include_answer: false,
-        max_results: 10,
-        topic: "news",
-        days: 14
-      })
-    });
+    // Ultimativer Fallback: DuckDuckGo falls alle Tavily Keys erschöpft sind
+    if (!tavilyData || !tavilyData.results || tavilyData.results.length === 0) {
+      console.log(`[nexus-research] Alle Tavily Keys erschöpft/nicht verfügbar. Aktiviere DuckDuckGo Fallback-Suche...`);
+      try {
+        const ddgResults = await searchDuckDuckGo(`${correctedQuery} ${correctedBranche} Unternehmen Deutschland`, 10);
+        if (ddgResults && ddgResults.length > 0) {
+          tavilyData = {
+            results: ddgResults.map(r => ({
+              url: r.url,
+              title: r.title,
+              content: r.snippet,
+              published_date: new Date().toISOString()
+            }))
+          };
+          searchSource = 'DuckDuckGo Search (Fallback)';
+        }
+      } catch (ddgErr) {
+        console.warn(`[nexus-research] DuckDuckGo Fallback Error:`, ddgErr.message);
+      }
+    }
 
-    if (!tavilyRes.ok) throw new Error(`Tavily API Error: ${tavilyRes.statusText}`);
-    const tavilyData = await tavilyRes.json();
-    
-    if (!tavilyData.results || tavilyData.results.length === 0) {
+    if (!tavilyData || !tavilyData.results || tavilyData.results.length === 0) {
       return {
         statusCode: 200,
         body: JSON.stringify({ trigger_events: [] }),
