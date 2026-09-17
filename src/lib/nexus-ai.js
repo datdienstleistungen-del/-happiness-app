@@ -522,7 +522,14 @@ export async function runResearchPipeline(searchQuery, branche = '', lang = 'de'
     });
 
     if (res.ok) {
-      return await res.json();
+      const data = await res.json();
+      if (data && data.status === 'temporarily_unavailable') {
+        return data;
+      }
+      if (data && data.trigger_events) {
+        return data;
+      }
+      return data;
     }
   } catch (e) {
     console.warn("[Research Pipeline] Netlify function failed, falling back to direct AI detection:", e.message);

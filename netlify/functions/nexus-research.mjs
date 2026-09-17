@@ -164,10 +164,43 @@ async function callAI(messages, { temperature = 0.3, max_tokens = 4096, jsonMode
   throw new Error('Alle KI-Provider sind derzeit ausgelastet oder nicht erreichbar. Bitte versuche es in wenigen Augenblicken erneut.');
 }
 
+let inFlightResearch = 0;
+const MAX_CONCURRENT_RESEARCH = 20;
+
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
+
+  // ── 0. Kill-Switch & Concurrency Guards (Launch Day Safety) ──
+  const isResearchEnabled = process.env.NEXUS_RESEARCH_ENABLED !== 'false';
+  if (!isResearchEnabled) {
+    console.log('[nexus-research] Kill-Switch active (NEXUS_RESEARCH_ENABLED=false). Returning graceful paused response.');
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        status: "temporarily_unavailable",
+        message: "NeXus is experiencing high demand right now. Research is temporarily paused. Please try again shortly.",
+        trigger_events: []
+      })
+    };
+  }
+
+  if (inFlightResearch >= MAX_CONCURRENT_RESEARCH) {
+    console.warn(`[nexus-research] Concurrency limit reached (${inFlightResearch}/${MAX_CONCURRENT_RESEARCH}). Returning graceful busy state.`);
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        status: "temporarily_unavailable",
+        message: "NeXus is experiencing high demand right now. Research capacity is temporarily full. Please try again shortly.",
+        trigger_events: []
+      })
+    };
+  }
+
+  inFlightResearch++;
 
   try {
     const body = event.body ? JSON.parse(event.body) : {};
@@ -179,7 +212,8 @@ export const handler = async (event) => {
 
     let user = null;
     let isPreview = isLandingPreview === true;
-    const authHeader = event.headers.authorization || event.headers.Authorization;
+    const reqHeaders = event.headers || {};
+    const authHeader = reqHeaders.authorization || reqHeaders.Authorization;
     const token = authHeader ? authHeader.replace('Bearer ', '').trim() : '';
 
     if (token && token !== 'undefined' && token !== 'null' && supabaseUrl && supabaseKey) {
@@ -287,6 +321,8 @@ export const handler = async (event) => {
       searchQuery = `${branche || ''} ${angebot ? angebot.slice(0, 80) : ''} Expansion Investition Modernisierung`.trim();
     }
 
+    const effectiveQuery = `${searchQuery || ''} ${branche || ''} Unternehmen Deutschland`.trim();
+
     // Multi-key Tavily with failover & DuckDuckGo fallback
     const tavilyKeys = [
       process.env.TAVILY_API_KEY,
@@ -305,7 +341,7 @@ export const handler = async (event) => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             api_key: key,
-            query: `${correctedQuery} ${correctedBranche} Unternehmen Deutschland`,
+            query: effectiveQuery,
             search_depth: "advanced",
             include_answer: false,
             max_results: 10,
@@ -332,7 +368,7 @@ export const handler = async (event) => {
     if (!tavilyData || !tavilyData.results || tavilyData.results.length === 0) {
       console.log(`[nexus-research] Alle Tavily Keys erschöpft/nicht verfügbar. Aktiviere DuckDuckGo Fallback-Suche...`);
       try {
-        const ddgResults = await searchDuckDuckGo(`${correctedQuery} ${correctedBranche} Unternehmen Deutschland`, 10);
+        const ddgResults = await searchDuckDuckGo(effectiveQuery, 10);
         if (ddgResults && ddgResults.length > 0) {
           tavilyData = {
             results: ddgResults.map(r => ({
@@ -502,7 +538,7 @@ export const handler = async (event) => {
           const fallbackSource = safeResults[idx % safeResults.length];
           return {
             ...t,
-            branche: t.branche || correctedBranche || 'B2B / Mittelstand',
+            branche: t.branche || branche || 'B2B / Mittelstand',
             relevanz: t.relevanz || t.bewertung || 'Hohe Passgenauigkeit für das analysierte Leistungsportfolio.',
             ansprechpartner: t.ansprechpartner || 'Geschäftsführung / Vorstand',
             position: t.position || 'Geschäftsleitung / Entscheidungsbefugt',
@@ -545,9 +581,15 @@ export const handler = async (event) => {
   } catch (error) {
     console.error("Backend Research Error:", error);
     return {
-      statusCode: 500,
-      body: JSON.stringify({ error: error.message }),
+      statusCode: 200,
+      body: JSON.stringify({ 
+        status: "error",
+        message: error.message || "NeXus Research temporarily unavailable.",
+        trigger_events: [] 
+      }),
       headers: { "Content-Type": "application/json" }
     };
+  } finally {
+    inFlightResearch = Math.max(0, inFlightResearch - 1);
   }
 };
