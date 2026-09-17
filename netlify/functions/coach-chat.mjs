@@ -93,61 +93,69 @@ async function tryOpenAIGpt4o(messages) {
 async function tryGroq(messages) {
   const key = process.env.GROQ_API_KEY
   if (!key) return null
-  try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${key}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'qwen/qwen3.8-27b',
-        messages,
-        temperature: 0.7,
-        max_tokens: 1024
+  const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound-mini', 'groq/compound', 'qwen/qwen3.8-27b']
+  for (const model of models) {
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature: 0.7,
+          max_tokens: 1024
+        })
       })
-    })
-    if (!res.ok) {
-      console.warn(`[LLM-Groq] Response not ok: ${res.status}`)
-      return null
+      if (res.ok) {
+        const data = await res.json()
+        const content = data.choices?.[0]?.message?.content
+        if (content) return content
+      } else {
+        console.warn(`[LLM-Groq] ${model} response not ok: ${res.status}`)
+      }
+    } catch (e) {
+      console.error(`[LLM-Groq] ${model} error:`, e.message)
     }
-    const data = await res.json()
-    return data.choices?.[0]?.message?.content || null
-  } catch (e) {
-    console.error('[LLM-Groq] Error:', e.message)
-    return null
   }
+  return null
 }
 
 async function tryOpenRouterGemma(messages) {
   const key = process.env.OPENROUTER_API_KEY
   if (!key) return null
-  try {
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${key}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://nexus-hit.netlify.app',
-        'X-Title': 'Happiness Coach Chat'
-      },
-      body: JSON.stringify({
-        model: 'google/gemma-4-26b-a4b-it:free',
-        messages,
-        temperature: 0.7,
-        max_tokens: 1024
+  const models = ['openrouter/free', 'google/gemma-4-26b-a4b-it:free', 'nvidia/nemotron-3.5-lightning:free']
+  for (const model of models) {
+    try {
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://nexus-hit.netlify.app',
+          'X-Title': 'Happiness Coach Chat'
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature: 0.7,
+          max_tokens: 1024
+        })
       })
-    })
-    if (!res.ok) {
-      console.warn(`[LLM-OpenRouterGemma] Response not ok: ${res.status}`)
-      return null
+      if (res.ok) {
+        const data = await res.json()
+        const content = data.choices?.[0]?.message?.content
+        if (content) return content
+      } else {
+        console.warn(`[LLM-OpenRouter] ${model} response not ok: ${res.status}`)
+      }
+    } catch (e) {
+      console.error(`[LLM-OpenRouter] ${model} error:`, e.message)
     }
-    const data = await res.json()
-    return data.choices?.[0]?.message?.content || null
-  } catch (e) {
-    console.error('[LLM-OpenRouterGemma] Error:', e.message)
-    return null
   }
+  return null
 }
 
 async function tryMistral(messages) {

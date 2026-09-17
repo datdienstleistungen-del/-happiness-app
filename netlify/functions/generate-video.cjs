@@ -90,34 +90,41 @@ Output: Nur valides JSON.`
       ? `Erstelle ein ${template}-Video auf ${langName}.`
       : `Erstelle ein Video zu: "${prompt}" auf ${langName}.`
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'qwen/qwen3.8-27b',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userMessage }
-        ],
-        max_tokens: 1024,
-        temperature: 0.8
-      })
-    })
+    const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound-mini', 'qwen/qwen3.8-27b']
+    let aiResponse = ''
+    for (const model of models) {
+      try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userMessage }
+            ],
+            max_tokens: 1024,
+            temperature: 0.8
+          })
+        })
 
-    if (!response.ok) {
-      const error = await response.text()
-      console.error('Groq API error:', error)
+        if (response.ok) {
+          const data = await response.json()
+          aiResponse = data.choices[0]?.message?.content || '[]'
+          if (aiResponse) break
+        }
+      } catch (e) {}
+    }
+
+    if (!aiResponse) {
       return {
         statusCode: 500,
         body: JSON.stringify({ error: 'AI service temporarily unavailable' })
       }
     }
-
-    const data = await response.json()
-    const aiResponse = data.choices[0]?.message?.content || '[]'
 
     let scenes
     try {

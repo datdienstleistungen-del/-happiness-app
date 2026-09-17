@@ -679,74 +679,82 @@ ${message}`
       // Stage 0: Groq (Primary because it is extremely fast and avoids Netlify 10s timeout)
       const groqKey = process.env.GROQ_API_KEY
       if (groqKey) {
-        try {
-          const groqRes = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: 'qwen/qwen3.8-27b',
-              messages: buildMessages(historyLimit, true),
-              temperature: reqTemperature,
-              max_tokens: 4096,
-              ...(reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {})
-            })
-          }, 8000)
-          if (groqRes.ok) {
-            const groqData = await groqRes.json()
-            console.log('Antwort von:', 'groq-llama-3.3')
-            aiResponse = groqData.choices?.[0]?.message?.content || ''
-            usage = groqData.usage
-            provider = 'groq'
-            modelName = 'qwen/qwen3.8-27b'
-            success = true
-          } else {
-            const groqData = await groqRes.json().catch(() => ({}))
-            providerErrors.push(`Groq: ${groqData?.error?.message || 'Unknown Error'} (HTTP ${groqRes.status})`)
+        const groqModels = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound-mini', 'groq/compound', 'qwen/qwen3.8-27b']
+        for (const model of groqModels) {
+          try {
+            const groqRes = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                model,
+                messages: buildMessages(historyLimit, true),
+                temperature: reqTemperature,
+                max_tokens: Math.min(reqMaxTokens || 2048, 2048),
+                ...(reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {})
+              })
+            }, 8000)
+            if (groqRes.ok) {
+              const groqData = await groqRes.json()
+              console.log('Antwort von Groq:', model)
+              aiResponse = groqData.choices?.[0]?.message?.content || ''
+              usage = groqData.usage
+              provider = 'groq'
+              modelName = model
+              success = true
+              break
+            } else {
+              const groqData = await groqRes.json().catch(() => ({}))
+              providerErrors.push(`Groq (${model}): ${groqData?.error?.message || 'Unknown Error'} (HTTP ${groqRes.status})`)
+            }
+          } catch (err) {
+            providerErrors.push(`Groq (${model}): ${err.message}`)
           }
-        } catch (err) {
-          providerErrors.push(`Groq: ${err.message}`)
         }
       }
 
       // Stage 1: OpenRouter (kostenlos - primär, übersprungen bei Skript-Audit wegen Latenz)
       const orKey = process.env.OPENROUTER_API_KEY
       if (!success && orKey && !isScriptAudit) {
-        try {
-          const orRes = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${orKey}`,
-              'Content-Type': 'application/json',
-              'HTTP-Referer': 'https://nexus-hit.netlify.app',
-              'X-Title': 'Happiness'
-            },
-            body: JSON.stringify({
-              model: 'google/gemma-4-26b-a4b-it:free',
-              messages: buildMessages(historyLimit),
-              temperature: reqTemperature,
-              max_tokens: 4096,
-              ...(reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {})
-            })
-          }, 45000)
-          if (orRes.ok) {
-            const orData = await orRes.json()
-            console.log('Antwort von:', 'openrouter-free')
-            aiResponse = orData.choices?.[0]?.message?.content || ''
-            usage = orData.usage
-            provider = 'openrouter'
-            modelName = 'google/gemma-4-26b-a4b-it:free'
-            success = true
-          } else {
-            const orData = await orRes.json().catch(() => ({}))
-            const errMsg = orData?.error?.message || JSON.stringify(orData)
-            providerErrors.push(`OpenRouter: ${errMsg} (HTTP ${orRes.status})`)
-            console.warn('OpenRouter free failed, status:', orRes.status, 'message:', errMsg)
+        const orModels = ['openrouter/free', 'google/gemma-4-26b-a4b-it:free', 'nvidia/nemotron-3.5-lightning:free']
+        for (const model of orModels) {
+          try {
+            const orRes = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${orKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://nexus-hit.netlify.app',
+                'X-Title': 'Happiness'
+              },
+              body: JSON.stringify({
+                model,
+                messages: buildMessages(historyLimit),
+                temperature: reqTemperature,
+                max_tokens: 2048,
+                ...(reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {})
+              })
+            }, 25000)
+            if (orRes.ok) {
+              const orData = await orRes.json()
+              console.log('Antwort von OpenRouter:', model)
+              aiResponse = orData.choices?.[0]?.message?.content || ''
+              usage = orData.usage
+              provider = 'openrouter'
+              modelName = model
+              success = true
+              break
+            } else {
+              const orData = await orRes.json().catch(() => ({}))
+              const errMsg = orData?.error?.message || JSON.stringify(orData)
+              providerErrors.push(`OpenRouter (${model}): ${errMsg} (HTTP ${orRes.status})`)
+              console.warn(`OpenRouter (${model}) failed, status:`, orRes.status, 'message:', errMsg)
+            }
+          } catch (err) {
+            providerErrors.push(`OpenRouter (${model}): ${err.message}`)
+            console.warn(`OpenRouter (${model}) fetch failed:`, err.message)
           }
-        } catch (err) {
-          providerErrors.push(`OpenRouter: ${err.message}`)
-          console.warn('OpenRouter fetch failed:', err.message)
         }
-      } else {
+      } else if (!success && !orKey) {
         providerErrors.push('OpenRouter: OPENROUTER_API_KEY not configured')
         console.warn('OPENROUTER_API_KEY not configured, skipping to Mistral')
       }

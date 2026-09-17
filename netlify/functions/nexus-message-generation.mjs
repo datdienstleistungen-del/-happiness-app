@@ -47,9 +47,11 @@ async function callLLM(prompt, temperature = 0.7) {
 
   const providers = [
     { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'openai/gpt-oss-120b' },
+    { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'openai/gpt-oss-20b' },
+    { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'groq/compound-mini' },
     { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'qwen/qwen3.8-27b' },
     { url: 'https://api.mistral.ai/v1/chat/completions', key: mistralKey, model: 'mistral-small-latest' },
-    { url: 'https://openrouter.ai/api/v1/chat/completions', key: openrouterKey, model: 'google/gemma-4-26b-a4b-it:free' },
+    { url: 'https://openrouter.ai/api/v1/chat/completions', key: openrouterKey, model: 'openrouter/free' },
     { url: 'https://api.deepseek.com/chat/completions', key: process.env.DEEPSEEK_API_KEY, model: 'deepseek-chat' },
     { url: 'https://api.openai.com/v1/chat/completions', key: process.env.OPENAI_API_KEY, model: 'gpt-4o-mini' }
   ];

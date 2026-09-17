@@ -132,7 +132,7 @@ export async function handler(event) {
 
   // 1. Try Groq (Ultra fast: 0.1s response time, 100% active models)
   if (!recipeData && GROQ_API_KEY) {
-    const groqModels = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'qwen/qwen3.6-27b', 'openai/gpt-oss-20b'];
+    const groqModels = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound-mini', 'groq/compound', 'qwen/qwen3.8-27b'];
     for (const m of groqModels) {
       try {
         console.log(`[CAPCUT-RECIPE] Trying Groq model ${m}...`);

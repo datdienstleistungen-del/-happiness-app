@@ -369,7 +369,7 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
       const hasImg = !!imageUrl;
       const models = hasImg 
         ? ['llama-3.2-11b-vision-preview', 'llama-3.2-90b-vision-preview', 'openai/gpt-oss-120b']
-        : ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound', 'qwen/qwen3.8-27b'];
+        : ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound-mini', 'groq/compound', 'qwen/qwen3.8-27b'];
       
       const userContent = hasImg 
         ? [

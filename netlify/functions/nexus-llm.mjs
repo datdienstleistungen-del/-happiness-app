@@ -23,7 +23,7 @@ async function tryGroq(messages, temperature = 0.3, hasImage = false) {
   if (!key) return null;
   const models = hasImage 
     ? ['llama-3.2-11b-vision-preview', 'llama-3.2-90b-vision-preview', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b']
-    : ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound', 'qwen/qwen3.8-27b'];
+    : ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound-mini', 'groq/compound', 'qwen/qwen3.8-27b'];
   for (const model of models) {
     try {
       console.log(`[NEXUS] Trying Groq model: ${model}`);
@@ -34,7 +34,7 @@ async function tryGroq(messages, temperature = 0.3, hasImage = false) {
           model,
           messages,
           temperature,
-          max_tokens: 4096
+          max_tokens: 2048
         })
       }, 20000);
       if (!res.ok) {
@@ -57,27 +57,36 @@ async function tryGroq(messages, temperature = 0.3, hasImage = false) {
 async function tryOpenRouter(messages, temperature = 0.3) {
   const key = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY || BACKUP_OPENROUTER;
   if (!key) return null;
-  try {
-    const { res, timer } = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${key}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://nexus-hit.netlify.app',
-        'X-Title': 'NeXus Sales Intelligence'
-      },
-      body: JSON.stringify({
-        model: 'google/gemma-4-26b-a4b-it:free',
-        messages,
-        temperature,
-        max_tokens: 4096
-      })
-    }, 15000);
-    if (!res.ok) { await res.text().catch(e => {}); clearTimeout(timer); return null; }
-    const data = await res.json();
-    clearTimeout(timer);
-    return { text: data.choices?.[0]?.message?.content || null, provider: 'openrouter', model: 'gemma-4-26b' };
-  } catch { return null; }
+  const models = ['openrouter/free', 'google/gemma-4-26b-a4b-it:free', 'nvidia/nemotron-3.5-lightning:free'];
+  for (const model of models) {
+    try {
+      const { res, timer } = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://nexus-hit.netlify.app',
+          'X-Title': 'NeXus Sales Intelligence'
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature,
+          max_tokens: 2048
+        })
+      }, 15000);
+      if (!res.ok) { await res.text().catch(e => {}); clearTimeout(timer); continue; }
+      const data = await res.json();
+      clearTimeout(timer);
+      const text = data.choices?.[0]?.message?.content;
+      if (text) {
+        return { text, provider: 'openrouter', model };
+      }
+    } catch (e) {
+      console.warn(`[NEXUS] OpenRouter ${model} error:`, e.message);
+    }
+  }
+  return null;
 }
 
 async function tryMistral(messages, temperature = 0.3) {
