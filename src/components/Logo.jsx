@@ -1,10 +1,12 @@
+import React from 'react'
 import './Logo.css'
 
 const COLORS = [
-  'var(--color-petrol)',
-  'var(--color-koralle)',
-  'var(--color-amber)',
-  'var(--color-mint)',
+  '#0d5e42', // Dark Green (N)
+  '#ea580c', // Coral/Orange (e)
+  '#b45309', // Amber/Gold (X)
+  '#10b981', // Mint/Emerald (u)
+  '#0d5e42', // Dark Green (s)
 ];
 
 export function BrandWord({ fontSize = 'inherit', fontWeight = 'inherit' }) {
@@ -19,7 +21,6 @@ export function BrandWord({ fontSize = 'inherit', fontWeight = 'inherit' }) {
 }
 
 export function renderBrandText(text) {
-  // Support both old "Happiness" and new "NeXus" brand references
   let parts = text.split('NeXus');
   if (parts.length === 1) parts = text.split('Happiness');
   if (parts.length === 1) return text;
@@ -32,43 +33,67 @@ export function renderBrandText(text) {
   );
 }
 
-export default function Logo() {
+export default function Logo({ size = 'default', showSubtitle = true }) {
+  const isSmall = size === 'small';
+  const iconSize = isSmall ? 28 : 34;
+  
   const letters = [
-    { char: 'N', color: 'var(--color-petrol)' },
-    { char: 'e', color: 'var(--color-koralle)' },
-    { char: 'X', color: 'var(--color-amber)' },
-    { char: 'u', color: 'var(--color-mint)' },
-    { char: 's', color: 'var(--color-petrol)' },
+    { char: 'N', color: '#0d5e42' },
+    { char: 'e', color: '#ea580c' },
+    { char: 'X', color: '#b45309' },
+    { char: 'u', color: '#10b981' },
+    { char: 's', color: '#0d5e42' },
   ];
+
   return (
-    <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: '1.05' }}>
-      <span style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.2px' }}>
-        {letters.map((l, i) => (
-          <span key={i} style={{ color: l.color }}>{l.char}</span>
-        ))}
-      </span>
-      <span style={{ fontSize: '8.5px', color: '#6b7280', letterSpacing: '0.4px', textTransform: 'uppercase', fontWeight: 700, marginTop: '2px' }}>
-        Revenue OS
-      </span>
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', userSelect: 'none' }}>
+      {/* Official Green App Icon */}
+      <div
+        style={{
+          width: `${iconSize}px`,
+          height: `${iconSize}px`,
+          backgroundColor: '#0d5e42',
+          borderRadius: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#ffffff',
+          fontWeight: 900,
+          fontSize: isSmall ? '16px' : '20px',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          boxShadow: '0 2px 8px rgba(13, 94, 66, 0.25)',
+          flexShrink: 0
+        }}
+      >
+        N
+      </div>
+
+      {/* Official Typography */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: '1.05' }}>
+        <span style={{ fontSize: isSmall ? '19px' : '23px', fontWeight: 900, letterSpacing: '-0.3px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+          {letters.map((l, i) => (
+            <span key={i} style={{ color: l.color }}>{l.char}</span>
+          ))}
+        </span>
+        {showSubtitle && (
+          <span style={{ fontSize: isSmall ? '7.5px' : '8.5px', color: '#475569', letterSpacing: '0.6px', textTransform: 'uppercase', fontWeight: 800, marginTop: '2px' }}>
+            REVENUE OS
+          </span>
+        )}
+      </div>
     </div>
   );
 }
 
 export function VerticalLogo({ size = 'large' }) {
   return (
-    <div className={`hit-logo-vertical ${size}`}>
-      <div className="logo-row">
-        <span className="letter-cap cap-h" style={{ color: 'var(--color-petrol)' }}>N</span>
-        <span className="letter-small">eXus</span>
-      </div>
-      <div className="logo-row">
-        <span className="letter-cap cap-i" style={{ color: 'var(--color-koralle)' }}>O</span>
-        <span className="letter-small">perating</span>
-      </div>
-      <div className="logo-row">
-        <span className="letter-cap cap-t" style={{ color: 'var(--color-amber)' }}>S</span>
-        <span className="letter-small">ystem</span>
-      </div>
+    <div className={`hit-logo-vertical ${size}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+      <img
+        src="/nexus-logo-official.png"
+        alt="NeXus Revenue OS"
+        style={{ maxHeight: '60px', width: 'auto', objectFit: 'contain' }}
+        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+      />
     </div>
   );
 }

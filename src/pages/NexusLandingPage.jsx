@@ -15,6 +15,7 @@ import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import NexusIntroModal from '../components/NexusIntroModal'
 import NexusVideoHubModal from '../components/NexusVideoHubModal'
 import NexusVideoBubble from '../components/NexusVideoBubble'
+import RedditSplitHero from '../components/nexus/landing/RedditSplitHero'
 import './NexusLandingPage.css'
 
 export default function NexusLandingPage() {
@@ -269,31 +270,11 @@ export default function NexusLandingPage() {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="nexus-lp-hero">
-        <div className="nexus-lp-hero-badge-group">
-          <div className="nexus-lp-hero-badge">
-            <span className="nexus-lp-pulse-dot"></span>
-            <span>{t.hero.badge}</span>
-          </div>
-          <button 
-            type="button"
-            className="nexus-lp-hero-video-trigger"
-            onClick={() => scrollToTour(true)}
-            title={t.hero?.videoTrigger || 'Sightseeing Tour (Video)'}
-          >
-            <Play size={12} fill="currentColor" />
-            <span>{t.hero?.videoTrigger || 'Sightseeing Tour (Video)'}</span>
-          </button>
-        </div>
+      {/* Main High-Converting Reddit-Style Split Hero with IP-Guarded 24h Pass */}
+      <RedditSplitHero onOpenAuth={() => navigate('/login')} />
 
-        <h1 className="nexus-lp-hero-title">
-          {t.hero.title}
-        </h1>
-
-        <p className="nexus-lp-hero-subtitle">
-          {t.hero.subtitle}
-        </p>
+      {/* Deep Interactive Test & Showcase Section */}
+      <section className="nexus-lp-hero" style={{ paddingTop: '0px' }}>
 
         {/* =========================================================================
             LIVE TEST BOX (Show Don't Tell vs Magic Input)
