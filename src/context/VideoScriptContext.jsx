@@ -4,12 +4,15 @@ const VideoScriptContext = createContext()
 
 export function VideoScriptProvider({ children }) {
   const [scriptStep, setScriptStep] = useState(1)
+  const [scriptMode, setScriptMode] = useState('followup_optimizer') // 'followup_optimizer' | 'standard'
   const [scriptVideoUrl, setScriptVideoUrl] = useState('')
   const [scriptVideoFile, setScriptVideoFile] = useState(null)
   const [scriptVideoPreview, setScriptVideoPreview] = useState(null)
-  const [scriptInputMode, setScriptInputMode] = useState('url')
-  const [scriptSelectedGenre, setScriptSelectedGenre] = useState(null)
-  const [scriptUserPremise, setScriptUserPremise] = useState('')
+  const [scriptAnalyticsImages, setScriptAnalyticsImages] = useState([]) // Screenshots of TikTok analytics (data URLs)
+  const [scriptAnalyticsNotes, setScriptAnalyticsNotes] = useState('')
+  const [scriptInputMode, setScriptInputMode] = useState('upload')
+  const [scriptSelectedGenre, setScriptSelectedGenre] = useState('followup_tiktok_optimizer')
+  const [scriptUserPremise, setUserPremise] = useState('')
   const [scriptAdText, setScriptAdText] = useState('')
   const [scriptSceneAnalysis, setScriptSceneAnalysis] = useState(null)
   const [scriptGeneratedScript, setScriptGeneratedScript] = useState('')
@@ -19,12 +22,15 @@ export function VideoScriptProvider({ children }) {
 
   const value = {
     scriptStep, setScriptStep,
+    scriptMode, setScriptMode,
     scriptVideoUrl, setScriptVideoUrl,
     scriptVideoFile, setScriptVideoFile,
     scriptVideoPreview, setScriptVideoPreview,
+    scriptAnalyticsImages, setScriptAnalyticsImages,
+    scriptAnalyticsNotes, setScriptAnalyticsNotes,
     scriptInputMode, setScriptInputMode,
     scriptSelectedGenre, setScriptSelectedGenre,
-    scriptUserPremise, setScriptUserPremise,
+    scriptUserPremise, setUserPremise,
     scriptAdText, setScriptAdText,
     scriptSceneAnalysis, setScriptSceneAnalysis,
     scriptGeneratedScript, setScriptGeneratedScript,

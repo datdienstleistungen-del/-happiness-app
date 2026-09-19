@@ -1,6 +1,10 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Upload, Film, Copy, Check, ArrowRight, Loader, AlertCircle, FileVideo, Link as LinkIcon, Sparkles } from 'lucide-react'
+import { 
+  Upload, Film, Copy, Check, ArrowRight, Loader, AlertCircle, FileVideo, 
+  Link as LinkIcon, Sparkles, Image as ImageIcon, Trash2, TrendingUp, 
+  Users, Zap, MessageSquare, Play, RefreshCw, Layers
+} from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useVideoScript } from '../context/VideoScriptContext'
 import AuthModal from '../components/AuthModal'
@@ -17,13 +21,29 @@ function getOrCreateVisitorId() {
 }
 
 const GENRES = [
-  { id: 'comedy_prank', emoji: '', label: 'Comedy / Prank', desc: 'Unterhaltung, Pointen, Reaktionen' },
-  { id: 'werbevideo_marketing', emoji: '', label: 'Werbevideo', desc: 'Marketing, Produkt, Call-to-Action' },
-  { id: 'lernvideo_kinder', emoji: '', label: 'Lernvideo (Kinder)', desc: 'Einfach, spielerisch, freundlich' },
-  { id: 'lernvideo_erwachsene', emoji: '', label: 'Lernvideo (Erwachsene)', desc: 'Informativ, strukturiert, sachlich' }
+  { id: 'followup_tiktok_optimizer', emoji: '🚀', label: 'Folge-Video & TikTok Optimizer', desc: 'Demografie- & Algorithmus-Fokus für Part 2' },
+  { id: 'comedy_prank', emoji: '🎭', label: 'Comedy / Prank', desc: 'Unterhaltung, Pointen, Reaktionen' },
+  { id: 'werbevideo_marketing', emoji: '📢', label: 'Werbevideo', desc: 'Marketing, Produkt, Call-to-Action' },
+  { id: 'lernvideo_kinder', emoji: '🧸', label: 'Lernvideo (Kinder)', desc: 'Einfach, spielerisch, freundlich' },
+  { id: 'lernvideo_erwachsene', emoji: '🎓', label: 'Lernvideo (Erwachsene)', desc: 'Informativ, strukturiert, sachlich' }
 ]
 
-async function extractFramesFromVideo(videoSrc, maxFrames = 6) {
+const QUICK_PREMISE_SUGGESTIONS = [
+  {
+    title: '👩‍💼 Frauen 25–45 B2B-Start',
+    text: 'Zielgruppe Frauen 25–45: Zeigen, wie man sich mit NeXus als Freelancerin ohne Startkapital und nur mit dem Smartphone ein stabiles B2B-Nebeneinkommen aufbaut.'
+  },
+  {
+    title: '🔥 Viraler Follow-up (Part 2)',
+    text: 'Follow-up: Ihr habt Part 1 eskalieren lassen! Hier ist die exakte 3-Schritte-Anleitung, wie NeXus Kaufsignale im Markt scannt und sofort verwertbare Leads liefert.'
+  },
+  {
+    title: '⚡ 30s Live-Beweis / Demo',
+    text: 'Live-Beweis: Zeigen, wie man in 30 Sekunden verdeckte Marktchancen (Expansionen, Finanzierungen) findet, bevor die Konkurrenz überhaupt davon weiß.'
+  }
+]
+
+async function extractFramesFromVideo(videoSrc, maxFrames = 4) {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video')
     video.crossOrigin = 'anonymous'
@@ -79,314 +99,24 @@ export default function VideoScriptPage() {
   const navigate = useNavigate()
   const { t, lang } = useLanguage()
   const fileInputRef = useRef(null)
-  const videoRef = useRef(null)
-
-  const getTxt = (key) => {
-    const dict = {
-      de: {
-        uploadHint: 'Klicke hier, um ein Video auszuwählen',
-        uploadFormats: 'MP4, WebM, MOV — max. 60 Sek.',
-        removeFile: 'Entfernen',
-        analyzing: 'Video wird analysiert...',
-        extracting: 'Frames werden extrahiert...',
-        generating: 'Hooks werden generiert...',
-        writing: 'Drehbuch wird geschrieben...',
-        noHooks: 'Keine Hooks geladen. Versuche es erneut.',
-        back: '← Zurück',
-        genreLabel: 'Genre auswählen',
-        premiseLabel: 'Hast du eine bestimmte Idee / Prämisse? (optional)',
-        premisePlaceholder: 'z.B. "Es geht um einen Trick, den viele nicht kennen" oder "Reaktion auf etwas Überraschendes"',
-        adLabel: 'Werbung / Call-to-Action (optional)',
-        adPlaceholder: 'z.B. "Besuche uns unter www.beispiel.de — 20% Rabatt mit Code HAPPY20" oder "Lade jetzt die App herunter"',
-        adHint: 'Dieser Text wird 1:1 im Drehbuch verwendet (als TTS-Stimme oder Text-Overlay)',
-        btnHooks: 'Hooks generieren',
-        chooseHook: 'Wähle deinen Hook (Sekunde 0:00-0:01)',
-        hooksHint: 'Wähle oder kopiere den stärksten Hook für dein Video.',
-        quickActionTitle: ' Einfache Schnell-Aktionen pro Hook-Idee:',
-        quickAction1: 'Klicke auf " Hook kopieren", um die Idee sofort in die Zwischenablage zu kopieren.',
-        quickAction2: 'Klicke auf " Drehbuch generieren", um sofort das vollständige Skript schreiben zu lassen.',
-        selected: 'Ausgewählt',
-        select: 'Auswählen',
-        copyHook: 'Hook kopieren',
-        continueWithHook: 'Mit diesem Hook weiter → Drehbuch generieren',
-        sendToCapCut: ' An CapCut Studio senden',
-        authTitle: 'Melde dich an, um fortzufahren',
-        visual: 'Szenen-Bild',
-        text: 'Text',
-        audio: 'Audio',
-        analyzeBtn: 'Video analysieren',
-        comedyLabel: 'Comedy / Prank',
-        comedyDesc: 'Unterhaltung, Pointen, Reaktionen',
-        adGenreLabel: 'Werbevideo',
-        adGenreDesc: 'Marketing, Produkt, Call-to-Action',
-        kidsLabel: 'Lernvideo (Kinder)',
-        kidsDesc: 'Einfach, spielerisch, freundlich',
-        adultsLabel: 'Lernvideo (Erwachsene)',
-        adultsDesc: 'Informativ, strukturiert, sachlich'
-      },
-      en: {
-        uploadHint: 'Click here to select a video',
-        uploadFormats: 'MP4, WebM, MOV — max. 60 sec.',
-        removeFile: 'Remove',
-        analyzing: 'Analyzing video...',
-        extracting: 'Extracting frames...',
-        generating: 'Generating hooks...',
-        writing: 'Writing script...',
-        noHooks: 'No hooks loaded. Try again.',
-        back: '← Back',
-        genreLabel: 'Select Genre',
-        premiseLabel: 'Do you have a specific idea / premise? (optional)',
-        premisePlaceholder: 'e.g. "It\'s about a trick that many don\'t know" or "Reaction to something surprising"',
-        adLabel: 'Advertisement / Call-to-Action (optional)',
-        adPlaceholder: 'e.g. "Visit us at www.example.com — 20% discount with code HAPPY20" or "Download the app now"',
-        adHint: 'This text is used 1:1 in the script (as TTS voice or text overlay)',
-        btnHooks: 'Generate Hooks',
-        chooseHook: 'Choose your Hook (second 0:00-0:01)',
-        hooksHint: 'Select or copy the strongest hook for your video.',
-        quickActionTitle: ' Quick actions per hook idea:',
-        quickAction1: 'Click " Copy Hook" to copy the idea to your clipboard immediately.',
-        quickAction2: 'Click " Write Script" to write the full script immediately.',
-        selected: 'Selected',
-        select: 'Select',
-        copyHook: 'Copy Hook',
-        continueWithHook: 'Continue with this hook → Write Script',
-        sendToCapCut: ' Send to CapCut Studio',
-        authTitle: 'Log in to continue',
-        visual: 'Visual',
-        text: 'Text',
-        audio: 'Audio',
-        analyzeBtn: 'Analyze video',
-        comedyLabel: 'Comedy / Prank',
-        comedyDesc: 'Entertainment, punchlines, reactions',
-        adGenreLabel: 'Promotional Video',
-        adGenreDesc: 'Marketing, product, call-to-action',
-        kidsLabel: 'Educational Video (Kids)',
-        kidsDesc: 'Simple, playful, friendly',
-        adultsLabel: 'Educational Video (Adults)',
-        adultsDesc: 'Informative, structured, factual'
-      },
-      nl: {
-        uploadHint: 'Klik hier om een video te selecteren',
-        uploadFormats: 'MP4, WebM, MOV — max. 60 sec.',
-        removeFile: 'Verwijderen',
-        analyzing: 'Video analyseren...',
-        extracting: 'Frames extraheren...',
-        generating: 'Hooks genereren...',
-        writing: 'Script schrijven...',
-        noHooks: 'Geen hooks geladen. Probeer het opnieuw.',
-        back: '← Terug',
-        genreLabel: 'Genre selecteren',
-        premiseLabel: 'Heb je een specifiek idee / uitgangspunt? (optioneel)',
-        premisePlaceholder: 'bijv. "Het gaat over een truc die velen niet kennen" of "Reactie op iets verrassends"',
-        adLabel: 'Advertentie / Call-to-Action (optioneel)',
-        adPlaceholder: 'bijv. "Bezoek ons op www.voorbeeld.nl — 20% korting met code HAPPY20" of "Download nu de app"',
-        adHint: 'Deze tekst wordt 1:1 in het script gebruikt (als TTS-stem of tekst-overlay)',
-        btnHooks: 'Hooks genereren',
-        chooseHook: 'Kies je Hook (seconde 0:00-0:01)',
-        hooksHint: 'Selecteer of kopieer de sterkste hook voor je video.',
-        quickActionTitle: ' Snelle acties per hook-idee:',
-        quickAction1: 'Klik op " Hook kopiëren" om het idee direct naar je klembord te kopiëren.',
-        quickAction2: 'Klik op " Script schrijven" om direct het volledige script te laten schrijven.',
-        selected: 'Geselecteerd',
-        select: 'Selecteren',
-        copyHook: 'Hook kopiëren',
-        continueWithHook: 'Doorgaan met deze hook → Script schrijven',
-        sendToCapCut: ' Naar CapCut Studio sturen',
-        authTitle: 'Meld je aan om door te gaan',
-        visual: 'Visueel',
-        text: 'Tekst',
-        audio: 'Audio',
-        analyzeBtn: 'Video analyseren',
-        comedyLabel: 'Comedy / Prank',
-        comedyDesc: 'Entertainment, punchlines, reacties',
-        adGenreLabel: 'Promotievideo',
-        adGenreDesc: 'Marketing, product, call-to-action',
-        kidsLabel: 'Educatieve video (kinderen)',
-        kidsDesc: 'Eenvoudig, speels, vriendelijk',
-        adultsLabel: 'Educatieve video (volwassenen)',
-        adultsDesc: 'Informatief, gestructureerd, feitelijk'
-      },
-      es: {
-        uploadHint: 'Haz clic aquí para seleccionar un video',
-        uploadFormats: 'MP4, WebM, MOV — máx. 60 seg.',
-        removeFile: 'Eliminar',
-        analyzing: 'Analizando video...',
-        extracting: 'Extrayendo fotogramas...',
-        generating: 'Generando ganchos...',
-        writing: 'Escribiendo guion...',
-        noHooks: 'No se cargaron ganchos. Intente de nuevo.',
-        back: '← Volver',
-        genreLabel: 'Seleccionar género',
-        premiseLabel: '¿Tienes alguna idea / premisa específica? (opcional)',
-        premisePlaceholder: 'ej. "Se trata de un truco que muchos no conocen" o "Reacción a algo sorprendente"',
-        adLabel: 'Anuncio / Llamada a la acción (opcional)',
-        adPlaceholder: 'ej. "Visítenos en www.ejemplo.com — 20% de descuento con el código HAPPY20" o "Descarga la aplicación ahora"',
-        adHint: 'Este texto se utilizará 1:1 en el guion (como voz TTS o superposición de texto)',
-        btnHooks: 'Generar Ganchos',
-        chooseHook: 'Elige tu gancho (segundo 0:00-0:01)',
-        hooksHint: 'Selecciona o copia el gancho más fuerte para tu video.',
-        quickActionTitle: ' Acciones rápidas por idea de gancho:',
-        quickAction1: 'Haz clic en " Copiar gancho" para copiar la idea al portapapeles de inmediato.',
-        quickAction2: 'Haz clic en " Crear guion" para escribir el guion completo de inmediato.',
-        selected: 'Seleccionado',
-        select: 'Seleccionar',
-        copyHook: 'Copiar gancho',
-        continueWithHook: 'Continuar con este gancho → Generar guion',
-        sendToCapCut: ' Enviar a CapCut Studio',
-        authTitle: 'Inicia sesión para continuar',
-        visual: 'Visual',
-        text: 'Texto',
-        audio: 'Audio',
-        analyzeBtn: 'Analizar video',
-        comedyLabel: 'Comedia / Broma',
-        comedyDesc: 'Entretenimiento, chistes, reacciones',
-        adGenreLabel: 'Video Promocional',
-        adGenreDesc: 'Marketing, producto, llamada a la acción',
-        kidsLabel: 'Video Educativo (Niños)',
-        kidsDesc: 'Simple, lúdico, amigable',
-        adultsLabel: 'Video Educativo (Adultos)',
-        adultsDesc: 'Informativo, estructurado, objetivo'
-      },
-      fr: {
-        uploadHint: 'Cliquez ici pour sélectionner une vidéo',
-        uploadFormats: 'MP4, WebM, MOV — max. 60 s.',
-        removeFile: 'Supprimer',
-        analyzing: 'Analyse de la vidéo...',
-        extracting: 'Extraction des images...',
-        generating: 'Génération des accroches...',
-        writing: 'Rédaction du script...',
-        noHooks: 'Aucune accroche chargée. Réessayez.',
-        back: '← Retour',
-        genreLabel: 'Sélectionner le genre',
-        premiseLabel: 'Avez-vous une idée / prémisse spécifique ? (optionnel)',
-        premisePlaceholder: 'ex. "Il s\'agit d\'une astuce que beaucoup ignorent" ou "Réaction à quelque chose de surprenant"',
-        adLabel: 'Publicité / Appel à l\'action (optionnel)',
-        adPlaceholder: 'ex. "Visitez-nous sur www.exemple.com — 20% de réduction avec le code HAPPY20" ou "Téléchargez l\'application maintenant"',
-        adHint: 'Ce texte sera utilisé 1:1 dans le script (comme voix TTS ou incrustation de texte)',
-        btnHooks: 'Générer des accroches',
-        chooseHook: 'Choisissez votre accroche (seconde 0:00-0:01)',
-        hooksHint: 'Sélectionnez ou copiez l\'accroche la plus forte pour votre vidéo.',
-        quickActionTitle: ' Actions rapides par idée d\'accroche :',
-        quickAction1: 'Cliquez sur " Copier l\'accroche" pour copier l\'idée dans le presse-papiers immédiatement.',
-        quickAction2: 'Cliquez sur " Créer le script" pour rédiger le script complet immédiatement.',
-        selected: 'Sélectionné',
-        select: 'Sélectionner',
-        copyHook: 'Copier l\'accroche',
-        continueWithHook: 'Continuer avec cette accroche → Créer le script',
-        sendToCapCut: ' Envoyer à CapCut Studio',
-        authTitle: 'Connectez-vous pour continuer',
-        visual: 'Visuel',
-        text: 'Texte',
-        audio: 'Audio',
-        analyzeBtn: 'Analyser la vidéo',
-        comedyLabel: 'Comédie / Blague',
-        comedyDesc: 'Divertissement, chutes, réactions',
-        adGenreLabel: 'Vidéo Promotionnelle',
-        adGenreDesc: 'Marketing, produit, appel à l\'action',
-        kidsLabel: 'Vidéo Éducative (Enfants)',
-        kidsDesc: 'Simple, ludique, amical',
-        adultsLabel: 'Vidéo Éducative (Adultes)',
-        adultsDesc: 'Informatif, structuré, factuel'
-      },
-      it: {
-        uploadHint: 'Clicca qui per selezionare un video',
-        uploadFormats: 'MP4, WebM, MOV — max. 60 sec.',
-        removeFile: 'Rimuovi',
-        analyzing: 'Analisi del video...',
-        extracting: 'Estrazione dei fotogrammi...',
-        generating: 'Generazione dei ganci...',
-        writing: 'Scrittura del copione...',
-        noHooks: 'Nessun gancio caricato. Riprova.',
-        back: '← Indietro',
-        genreLabel: 'Seleziona genere',
-        premiseLabel: 'Hai un\'idea / premessa specifica? (opzionale)',
-        premisePlaceholder: 'es. "Si tratta di un trucco che molti non conoscono" o "Reazione a qualcosa di sorprendente"',
-        adLabel: 'Annuncio / Call-to-Action (opzionale)',
-        adPlaceholder: 'es. "Visitaci su www.esempio.com — 20% di sconto con il codice HAPPY20" o "Scarica l\'app ora"',
-        adHint: 'Questo testo verrà utilizzato 1:1 nel copione (come voce TTS o sovrapposizione di testo)',
-        btnHooks: 'Genera Ganci',
-        chooseHook: 'Scegli il tuo Gancio (secondo 0:00-0:01)',
-        hooksHint: 'Seleziona o copia il gancio più forte per il tuo video.',
-        quickActionTitle: ' Azioni rapide per idea di gancio:',
-        quickAction1: 'Clicca su " Copia gancio" per copiare l\'idea negli appunti immediatamente.',
-        quickAction2: 'Clicca su " Crea copione" per scrivere il copione completo immediatamente.',
-        selected: 'Selezionato',
-        select: 'Seleziona',
-        copyHook: 'Copia gancio',
-        continueWithHook: 'Continua con questo gancio → Genera copione',
-        sendToCapCut: ' Invia a CapCut Studio',
-        authTitle: 'Accedi per continuare',
-        visual: 'Visuale',
-        text: 'Testo',
-        audio: 'Audio',
-        analyzeBtn: 'Analizza video',
-        comedyLabel: 'Commedia / Scherzo',
-        comedyDesc: 'Intrattenimento, battute, reazioni',
-        adGenreLabel: 'Video Promozionale',
-        adGenreDesc: 'Marketing, prodotto, call-to-action',
-        kidsLabel: 'Video Educativo (Bambini)',
-        kidsDesc: 'Semplice, giocoso, amichevole',
-        adultsLabel: 'Video Educativo (Adulti)',
-        adultsDesc: 'Informativo, strutturato, oggettivo'
-      },
-      el: {
-        uploadHint: 'Κάντε κλικ εδώ για να επιλέξετε βίντεο',
-        uploadFormats: 'MP4, WebM, MOV — έως 60 δευτ.',
-        removeFile: 'Κατάργηση',
-        analyzing: 'Ανάλυση βίντεο...',
-        extracting: 'Εξαγωγή καρέ...',
-        generating: 'Δημιουργία hooks...',
-        writing: 'Συγγραφή σεναρίου...',
-        noHooks: 'Δεν φορτώθηκαν hooks. Δοκιμάστε ξανά.',
-        back: '← Επιστροφή',
-        genreLabel: 'Επιλέξτε είδος',
-        premiseLabel: 'Έχετε κάποια συγκεκριμένη ιδέα / υπόθεση; (προαιρετικά)',
-        premisePlaceholder: 'π.χ. "Πρόκειται για ένα κόλπο που πολλοί δεν γνωρίζουν" ή "Αντίδραση σε κάτι αναπάντεχο"',
-        adLabel: 'Διαφήμιση / Call-to-Action (προαιρετικά)',
-        adPlaceholder: 'π.χ. "Επισκεφθείτε μας στο www.example.com — έκπτωση 20% με τον κωδικό HAPPY20" ή "Κατεβάστε την εφαρμογή τώρα"',
-        adHint: 'Αυτό το κείμενο θα χρησιμοποιηθεί 1:1 στο σενάριο (ως φωνή TTS ή επικάλυψη κειμένου)',
-        btnHooks: 'Δημιουργία Hooks',
-        chooseHook: 'Επιλέξτε το Hook σας (δευτερόλεπτο 0:00-0:01)',
-        hooksHint: 'Επιλέξτε ή αντιγράψτε το πιο δυνατό hook για το βίντεό σας.',
-        quickActionTitle: ' Γρήγορες ενέργειες ανά ιδέα hook:',
-        quickAction1: 'Κάντε κλικ στο " Αντιγραφή hook" για να αντιγράψετε την ιδέα στο πρόχειρο αμέσως.',
-        quickAction2: 'Κάντε κλικ στο " Δημιουργία σεναρίου" για να γραφτεί το πλήρες σενάριο αμέσως.',
-        selected: 'Επιλέχθηκε',
-        select: 'Επιλογή',
-        copyHook: 'Αντιγραφή hook',
-        continueWithHook: 'Συνέχεια με αυτό το hook → Δημιουργία σεναρίου',
-        sendToCapCut: ' Αποστολή στο CapCut Studio',
-        authTitle: 'Συνδεθείτε για να συνεχίσετε',
-        visual: 'Οπτικό',
-        text: 'Κείμενο',
-        audio: 'Ήχος',
-        analyzeBtn: 'Ανάλυση βίντεο',
-        comedyLabel: 'Κωμωδία / Φάρσα',
-        comedyDesc: 'Ψυχαγωγία, ατάκες, αντιδράσεις',
-        adGenreLabel: 'Προωθητικό Βίντεο',
-        adGenreDesc: 'Μάρκετινγκ, προϊόν, call-to-action',
-        kidsLabel: 'Εκπαιδευτικό Βίντεο (Παιδιά)',
-        kidsDesc: 'Απλό, παιχνιδιάρικο, φιλικό',
-        adultsLabel: 'Εκπαιδευτικό Βίντεο (Ενήλικες)',
-        adultsDesc: 'Ενημερωτικό, δομημένο, αντικειμενικό'
-      }
-    }
-    return dict[lang]?.[key] || dict['en']?.[key] || key
-  }
+  const analyticsInputRef = useRef(null)
 
   const {
     scriptStep: step, setScriptStep: setStep,
+    scriptMode: mode = 'followup_optimizer', setScriptMode: setMode,
     scriptVideoUrl: videoUrl, setScriptVideoUrl: setVideoUrl,
     scriptVideoFile: videoFile, setScriptVideoFile: setVideoFile,
     scriptVideoPreview: videoPreview, setScriptVideoPreview: setVideoPreview,
+    scriptAnalyticsImages: analyticsImages = [], setScriptAnalyticsImages: setAnalyticsImages,
+    scriptAnalyticsNotes: analyticsNotes = '', setScriptAnalyticsNotes: setAnalyticsNotes,
     scriptInputMode: inputMode, setScriptInputMode: setInputMode,
-    scriptSelectedGenre: selectedGenre, setScriptSelectedGenre: setSelectedGenre,
+    scriptSelectedGenre: selectedGenre = 'followup_tiktok_optimizer', setScriptSelectedGenre: setSelectedGenre,
     scriptUserPremise: userPremise, setScriptUserPremise: setUserPremise,
     scriptAdText: adText, setScriptAdText: setAdText,
     scriptSceneAnalysis: sceneAnalysis, setScriptSceneAnalysis: setSceneAnalysis,
     scriptGeneratedScript: generatedScript, setScriptGeneratedScript: setGeneratedScript,
     scriptId, setScriptId,
-    scriptHooks: hooks, setScriptHooks: setHooks,
+    scriptHooks: hooks = [], setScriptHooks: setHooks,
     scriptSelectedHook: selectedHook, setScriptSelectedHook: setSelectedHook
   } = useVideoScript()
 
@@ -396,6 +126,50 @@ export default function VideoScriptPage() {
   const [statusText, setStatusText] = useState('')
   const [hooksLoading, setHooksLoading] = useState(false)
   const [authModalOpen, setAuthModalOpen] = useState(false)
+  const [pasteNotification, setPasteNotification] = useState('')
+
+  // Global Paste Listener (Ctrl+V anywhere on page)
+  useEffect(() => {
+    const handleGlobalPaste = (e) => {
+      const targetTag = e.target?.tagName?.toLowerCase()
+      const isInput = targetTag === 'input' || targetTag === 'textarea'
+
+      const items = e.clipboardData?.items
+      if (!items) return
+
+      let hasImage = false
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type && items[i].type.indexOf('image') !== -1) {
+          hasImage = true
+          const file = items[i].getAsFile()
+          if (file) {
+            const reader = new FileReader()
+            reader.onload = (event) => {
+              const dataUrl = event.target.result
+              setAnalyticsImages(prev => {
+                const current = Array.isArray(prev) ? prev : []
+                if (current.length >= 5) {
+                  setError('Maximal 5 Analytics-Screenshots möglich.')
+                  return current
+                }
+                return [...current, dataUrl]
+              })
+              setPasteNotification('📸 Screenshot aus der Zwischenablage eingefügt!')
+              setTimeout(() => setPasteNotification(''), 3000)
+            }
+            reader.readAsDataURL(file)
+          }
+        }
+      }
+
+      if (hasImage && !isInput) {
+        e.preventDefault()
+      }
+    }
+
+    window.addEventListener('paste', handleGlobalPaste)
+    return () => window.removeEventListener('paste', handleGlobalPaste)
+  }, [setAnalyticsImages])
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0]
@@ -406,6 +180,29 @@ export default function VideoScriptPage() {
     setError('')
   }
 
+  const handleAnalyticsFileSelect = (e) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+
+    files.forEach(file => {
+      if (!file.type.startsWith('image/')) return
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        setAnalyticsImages(prev => {
+          const current = Array.isArray(prev) ? prev : []
+          if (current.length >= 5) return current
+          return [...current, event.target.result]
+        })
+      }
+      reader.readAsDataURL(file)
+    })
+    setError('')
+  }
+
+  const handleRemoveAnalyticsImage = (index) => {
+    setAnalyticsImages(prev => (prev || []).filter((_, i) => i !== index))
+  }
+
   const handleUrlChange = (val) => {
     setVideoUrl(val)
     setVideoFile(null)
@@ -413,16 +210,101 @@ export default function VideoScriptPage() {
     setError('')
   }
 
+  // 1-Click Complete Pipeline for Follow-up & TikTok Optimization
+  const handleGenerateFollowUpScript = async () => {
+    if (!videoUrl && !videoFile && (!analyticsImages || analyticsImages.length === 0) && !userPremise) {
+      setError('Bitte füge mindestens ein Video, einen Analytics-Screenshot oder deinen Wunsch fürs Folge-Video ein.')
+      return
+    }
+
+    setStep(5)
+    setError('')
+    setStatusText('1/3: Video-Frames & Analytics werden analysiert...')
+
+    try {
+      let frames = []
+      if (videoUrl || videoFile) {
+        try {
+          const source = videoUrl || videoFile
+          frames = await extractFramesFromVideo(source, 3)
+        } catch (err) {
+          console.warn('[VideoScript] Frame extraction fallback:', err.message)
+        }
+      }
+
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token || ''
+
+      setStatusText('2/3: Zielgruppen- & Algorithmus-Muster werden erkannt...')
+
+      // Step A: Vision & Analytics Analysis
+      let analysisResult = { beats: [], analytics_insights: {} }
+      if (frames.length > 0 || (analyticsImages && analyticsImages.length > 0)) {
+        const analyzeRes = await fetch('/api/analyze-video-scene', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+          },
+          body: JSON.stringify({
+            frames: frames.length > 0 ? frames : undefined,
+            analytics_images: analyticsImages && analyticsImages.length > 0 ? analyticsImages : undefined,
+            video_filename: videoFile?.name || videoUrl || 'video',
+            visitor_id: getOrCreateVisitorId()
+          })
+        })
+
+        if (analyzeRes.ok) {
+          const analyzeData = await analyzeRes.json()
+          analysisResult = analyzeData.scene_analysis || analysisResult
+          setSceneAnalysis(analysisResult)
+        }
+      }
+
+      setStatusText('3/3: ByteDance-optimiertes CapCut Master-Drehbuch wird geschrieben...')
+
+      // Step B: Script Generation with Follow-up Strategy
+      const scriptRes = await fetch('/api/generate-video-script', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({
+          scene_analysis: analysisResult,
+          content_goal: 'followup_tiktok_optimizer',
+          user_premise: userPremise || 'Folge-Video zu Teil 1 mit Fokus auf hohe Verweildauer und Zielgruppen-Conversion',
+          ad_text: analyticsNotes ? `TikTok-Zusatzdaten / Vorgaben: ${analyticsNotes}` : undefined,
+          video_filename: videoFile?.name || 'video',
+          visitor_id: getOrCreateVisitorId()
+        })
+      })
+
+      const scriptData = await scriptRes.json()
+      if (!scriptRes.ok) {
+        throw new Error(scriptData.error || 'Drehbuch-Generierung fehlgeschlagen.')
+      }
+
+      setGeneratedScript(scriptData.script)
+      setScriptId(scriptData.script_id || null)
+      setStep(6)
+    } catch (e) {
+      console.error('[VideoScript] Follow-up flow error:', e.message)
+      setError(e.message || 'Fehler bei der automatischen Generierung.')
+      setStep(1)
+    }
+  }
+
+  // Classic Step-by-Step Flow (For Standard Mode)
   const handleStartAnalysis = async () => {
     if (!videoUrl && !videoFile) {
-      setError(t('videoScript.errorUrlOrFile'))
+      setError('Bitte wähle eine Videodatei oder gib eine Video-URL ein.')
       return
     }
     setStep(3)
     setStatusText('Frames werden extrahiert...')
 
     try {
-      // Step 1: Extract frames in browser
       const source = videoUrl || videoFile
       const frames = await extractFramesFromVideo(source, 3)
 
@@ -430,20 +312,10 @@ export default function VideoScriptPage() {
         throw new Error('Keine Frames aus dem Video extrahiert werden.')
       }
 
-      const totalSize = frames.reduce((sum, f) => sum + f.length, 0)
-      console.log(`[VideoScript] ${frames.length} frames, total: ${(totalSize / 1024 / 1024).toFixed(1)}MB, each: ${(totalSize / frames.length / 1024).toFixed(0)}KB`)
-      console.log('[VideoScript] Frame 0 preview:', frames[0]?.substring(0, 80))
-
-      if (totalSize > 4 * 1024 * 1024) {
-        throw new Error('Video ist zu groß für die automatische Analyse. Bitte versuche ein kürzeres Video (< 30 Sek.).')
-      }
-
       setStatusText(`Video wird analysiert (${frames.length} Frames)...`)
 
-      // Step 2: Send frames to analyze function
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token || ''
-      console.log('[VideoScript] Auth token present:', !!token)
 
       const res = await fetch('/api/analyze-video-scene', {
         method: 'POST',
@@ -453,24 +325,20 @@ export default function VideoScriptPage() {
         },
         body: JSON.stringify({
           frames,
+          analytics_images: analyticsImages.length > 0 ? analyticsImages : undefined,
           video_filename: videoFile?.name || videoUrl || 'video',
           visitor_id: getOrCreateVisitorId()
         })
       })
 
       const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Analyse fehlgeschlagen')
 
-      console.log('[VideoScript] API response:', res.status, JSON.stringify(data).substring(0, 500))
-
-      if (!res.ok) {
-        const detail = data.details ? `\n${data.details}` : ''
-        throw new Error((data.error || 'Analyse fehlgeschlagen') + detail)
-      }
       setSceneAnalysis(data.scene_analysis)
       setStep(2)
     } catch (e) {
       console.error('[VideoScript] Analysis error:', e.message)
-      setError(t('videoScript.errorAnalysis'))
+      setError('Fehler bei der Video-Analyse.')
       setStep(1)
     }
   }
@@ -504,7 +372,6 @@ export default function VideoScriptPage() {
       })
 
       const data = await res.json()
-
       if (!res.ok) throw new Error(data.error || 'Hook-Generierung fehlgeschlagen')
 
       if (data.hooks && data.hooks.length > 0) {
@@ -514,7 +381,7 @@ export default function VideoScriptPage() {
       }
     } catch (e) {
       console.error('[VideoScript] Hook generation error:', e.message)
-      setError(t('videoScript.errorGeneric'))
+      setError('Fehler bei der Hook-Generierung.')
       setStep(2)
     } finally {
       setHooksLoading(false)
@@ -523,21 +390,15 @@ export default function VideoScriptPage() {
 
   const handleCopyHookText = async (hook, index) => {
     const textToCopy = `Hook #${index + 1} (${hook.trigger || ''})
-️ Szenen-Bild: ${hook.visual || ''}
- Text: ${hook.text || ''}
- Audio: ${hook.audio || ''}`
+🖼️ Szenen-Bild: ${hook.visual || ''}
+💬 Text: ${hook.text || ''}
+🔊 Audio: ${hook.audio || ''}`
 
     try {
       await navigator.clipboard.writeText(textToCopy)
       setCopiedHookIndex(index)
       setTimeout(() => setCopiedHookIndex(null), 2500)
     } catch {
-      const textarea = document.createElement('textarea')
-      textarea.value = textToCopy
-      document.body.appendChild(textarea)
-      textarea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textarea)
       setCopiedHookIndex(index)
       setTimeout(() => setCopiedHookIndex(null), 2500)
     }
@@ -545,10 +406,10 @@ export default function VideoScriptPage() {
 
   const handleSelectHookAndContinue = () => {
     if (selectedHook === null) return
-    handleGenerateScript(selectedHook)
+    handleGenerateClassicScript(selectedHook)
   }
 
-  const handleGenerateScript = async (hookIdx = selectedHook) => {
+  const handleGenerateClassicScript = async (hookIdx = selectedHook) => {
     if (!selectedGenre || !sceneAnalysis) return
 
     setStep(5)
@@ -577,7 +438,6 @@ export default function VideoScriptPage() {
       })
 
       const data = await res.json()
-
       if (!res.ok) throw new Error(data.error || 'Generierung fehlgeschlagen')
 
       setGeneratedScript(data.script)
@@ -585,7 +445,7 @@ export default function VideoScriptPage() {
       setStep(6)
     } catch (e) {
       console.error('[VideoScript] Generation error:', e.message)
-      setError(t('videoScript.errorGeneration'))
+      setError('Fehler bei der Drehbuch-Generierung.')
       setStep(2)
     }
   }
@@ -608,7 +468,6 @@ export default function VideoScriptPage() {
       if (error) throw error
       if (data && data[0]) {
         setScriptId(data[0].id)
-        console.log('[VideoScript] Script saved to DB successfully under ID:', data[0].id)
         return data[0].id
       }
     } catch (e) {
@@ -640,12 +499,6 @@ export default function VideoScriptPage() {
       setCopied(true)
       setTimeout(() => setCopied(false), 2500)
     } catch {
-      const textarea = document.createElement('textarea')
-      textarea.value = generatedScript
-      document.body.appendChild(textarea)
-      textarea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textarea)
       setCopied(true)
       setTimeout(() => setCopied(false), 2500)
     }
@@ -656,7 +509,9 @@ export default function VideoScriptPage() {
     setVideoUrl('')
     setVideoFile(null)
     setVideoPreview(null)
-    setSelectedGenre(null)
+    setAnalyticsImages([])
+    setAnalyticsNotes('')
+    setSelectedGenre('followup_tiktok_optimizer')
     setUserPremise('')
     setAdText('')
     setSceneAnalysis(null)
@@ -670,26 +525,37 @@ export default function VideoScriptPage() {
 
   return (
     <div className="vsp-page">
+      {/* Studio Header & Mode Selector */}
       <div className="vsp-header">
-        <h1>{t('videoScript.title')}</h1>
-        <p>{t('videoScript.subtitle')}</p>
+        <div className="vsp-badge-tag">⚡ NeXus Video & Algorithm Studio</div>
+        <h1>{mode === 'followup_optimizer' ? 'Folge-Video & TikTok-Algorithmus Studio' : 'Klassisches Video-Drehbuch Studio'}</h1>
+        <p>
+          {mode === 'followup_optimizer' 
+            ? 'Packe dein altes Video und TikTok-Analytics rein — NeXus analysiert beides und erstellt das virale Folge-Drehbuch für CapCut.'
+            : 'Generiere professionelle Drehbücher und Hooks aus Rohmaterial für CapCut.'}
+        </p>
+
+        <div className="vsp-studio-tabs">
+          <button 
+            className={`vsp-studio-tab ${mode === 'followup_optimizer' ? 'active' : ''}`}
+            onClick={() => { setMode('followup_optimizer'); setSelectedGenre('followup_tiktok_optimizer'); }}
+          >
+            <Sparkles size={16} /> Folge-Video & Analytics Optimizer (Part 2)
+          </button>
+          <button 
+            className={`vsp-studio-tab ${mode === 'standard' ? 'active' : ''}`}
+            onClick={() => { setMode('standard'); setSelectedGenre('werbevideo_marketing'); }}
+          >
+            <Film size={16} /> Klassisches Drehbuch aus Rohmaterial
+          </button>
+        </div>
       </div>
 
-      {/* Step indicator */}
-      <div className="vsp-steps">
-        <div className={`vsp-step ${step >= 1 ? 'active' : ''} ${step > 1 ? 'done' : ''}`}>
-          <span>1</span> {t('videoScript.stepVideo')}
+      {pasteNotification && (
+        <div className="vsp-paste-alert">
+          <Check size={16} /> {pasteNotification}
         </div>
-        <div className={`vsp-step ${step >= 2 ? 'active' : ''} ${step > 2 ? 'done' : ''}`}>
-          <span>2</span> {t('videoScript.stepGenre')}
-        </div>
-        <div className={`vsp-step ${step >= 3 ? 'active' : ''} ${step > 3 ? 'done' : ''}`}>
-          <span>3</span> Hook
-        </div>
-        <div className={`vsp-step ${step >= 5 ? 'active' : ''} ${step > 5 ? 'done' : ''}`}>
-          <span>4</span> {t('videoScript.stepScript')}
-        </div>
-      </div>
+      )}
 
       {error && (
         <div className="vsp-error">
@@ -699,251 +565,435 @@ export default function VideoScriptPage() {
         </div>
       )}
 
-      {/* STEP 1: Video Input */}
-      {step === 1 && (
-        <div className="vsp-input-section">
-          <div className="vsp-mode-toggle">
-            <button
-              className={`vsp-mode-btn ${inputMode === 'url' ? 'active' : ''}`}
-              onClick={() => setInputMode('url')}
-            >
-              <LinkIcon size={16} /> {t('videoScript.urlMode')}
-            </button>
-            <button
-              className={`vsp-mode-btn ${inputMode === 'upload' ? 'active' : ''}`}
-              onClick={() => setInputMode('upload')}
-            >
-              <Upload size={16} /> {t('videoScript.uploadMode')}
-            </button>
+      {/* ========================================================================= */}
+      {/* MODE 1: FOLGE-VIDEO & TIKTOK ALGORITHM OPTIMIZER (STEP 1)                */}
+      {/* ========================================================================= */}
+      {mode === 'followup_optimizer' && step === 1 && (
+        <div className="vsp-optimizer-layout">
+          {/* Card 1: Altes Video */}
+          <div className="vsp-card">
+            <div className="vsp-card-head">
+              <div className="vsp-card-num">1</div>
+              <div>
+                <h3>Bisheriges Video einfügen</h3>
+                <p>MP4/MOV hochladen oder Video-Link einfügen</p>
+              </div>
+            </div>
+
+            <div className="vsp-mode-toggle" style={{ marginBottom: '12px' }}>
+              <button
+                className={`vsp-mode-btn ${inputMode === 'upload' ? 'active' : ''}`}
+                onClick={() => setInputMode('upload')}
+              >
+                <Upload size={14} /> Video-Datei hochladen
+              </button>
+              <button
+                className={`vsp-mode-btn ${inputMode === 'url' ? 'active' : ''}`}
+                onClick={() => setInputMode('url')}
+              >
+                <LinkIcon size={14} /> Video-URL
+              </button>
+            </div>
+
+            {inputMode === 'url' ? (
+              <div className="vsp-field">
+                <input
+                  type="url"
+                  value={videoUrl}
+                  onChange={(e) => handleUrlChange(e.target.value)}
+                  placeholder="https://... (TikTok oder direkter Video-Link)"
+                />
+              </div>
+            ) : (
+              <div
+                className="vsp-upload-zone vsp-upload-compact"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="video/*"
+                  onChange={handleFileSelect}
+                  style={{ display: 'none' }}
+                />
+                {videoPreview ? (
+                  <div className="vsp-upload-preview">
+                    <FileVideo size={28} />
+                    <span>{videoFile?.name}</span>
+                    <button onClick={(e) => { e.stopPropagation(); setVideoFile(null); setVideoPreview(null); }}>
+                      Entfernen
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <Upload size={28} className="vsp-upload-icon" />
+                    <p style={{ fontSize: '13px', fontWeight: '600' }}>Video auswählen oder hier ablegen</p>
+                    <span>MP4, WebM, MOV</span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
-          {inputMode === 'url' ? (
-            <div className="vsp-field">
-              <label>Video-URL</label>
-              <input
-                type="url"
-                value={videoUrl}
-                onChange={(e) => handleUrlChange(e.target.value)}
-                placeholder={t('videoScript.urlPlaceholder')}
-              />
-              <span className="vsp-hint">{t('videoScript.urlHint')}</span>
+          {/* Card 2: TikTok Analytics (Paste anywhere support) */}
+          <div className="vsp-card">
+            <div className="vsp-card-head">
+              <div className="vsp-card-num">2</div>
+              <div>
+                <h3>TikTok Analytics & Demografie</h3>
+                <p>Screenshots der Statistiken per <strong>Strg+V (Paste)</strong> oder Klick einfügen</p>
+              </div>
             </div>
-          ) : (
-            <div
-              className="vsp-upload-zone"
-              onClick={() => fileInputRef.current?.click()}
+
+            <div 
+              className="vsp-analytics-dropzone"
+              onClick={() => analyticsInputRef.current?.click()}
             >
               <input
-                ref={fileInputRef}
+                ref={analyticsInputRef}
                 type="file"
-                accept="video/*"
-                onChange={handleFileSelect}
+                accept="image/*"
+                multiple
+                onChange={handleAnalyticsFileSelect}
                 style={{ display: 'none' }}
               />
-              {videoPreview ? (
-                <div className="vsp-upload-preview">
-                  <FileVideo size={32} />
-                  <span>{videoFile?.name}</span>
-                  <button onClick={(e) => { e.stopPropagation(); setVideoFile(null); setVideoPreview(null); }}>
-                    {getTxt('removeFile')}
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <Upload size={40} className="vsp-upload-icon" />
-                  <p>{getTxt('uploadHint')}</p>
-                  <span>{getTxt('uploadFormats')}</span>
-                </>
-              )}
-            </div>
-          )}
-
-          {(videoUrl || videoFile) && (
-            <button className="vsp-btn vsp-btn-primary" onClick={handleStartAnalysis}>
-              <ArrowRight size={16} /> {getTxt('analyzeBtn')}
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* STEP 2: Genre Selection */}
-      {step === 2 && sceneAnalysis && (
-        <div className="vsp-genre-section">
-          <p className="vsp-analysis-ok">
-            <Check size={16} /> {lang === 'nl' ? `Video geanalyseerd — ${sceneAnalysis.beats?.length || 0} scènes gedetecteerd` : lang === 'de' ? `Video analysiert — ${sceneAnalysis.beats?.length || 0} Szenen erkannt` : `Video analyzed — ${sceneAnalysis.beats?.length || 0} scenes detected`}
-          </p>
-
-          <div className="vsp-genre-grid">
-            {GENRES.map(g => (
-              <button
-                key={g.id}
-                className={`vsp-genre-card ${selectedGenre === g.id ? 'active' : ''}`}
-                onClick={() => setSelectedGenre(g.id)}
-              >
-                <span className="vsp-genre-emoji">{g.emoji}</span>
-                <strong>{
-                  g.id === 'comedy_prank' ? getTxt('comedyLabel') :
-                  g.id === 'werbevideo_marketing' ? getTxt('adGenreLabel') :
-                  g.id === 'lernvideo_kinder' ? getTxt('kidsLabel') :
-                  getTxt('adultsLabel')
-                }</strong>
-                <span className="vsp-genre-desc">{
-                  g.id === 'comedy_prank' ? getTxt('comedyDesc') :
-                  g.id === 'werbevideo_marketing' ? getTxt('adGenreDesc') :
-                  g.id === 'lernvideo_kinder' ? getTxt('kidsDesc') :
-                  getTxt('adultsDesc')
-                }</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="vsp-field">
-            <label>{getTxt('premiseLabel')}</label>
-            <textarea
-              value={userPremise}
-              onChange={(e) => setUserPremise(e.target.value)}
-              placeholder={getTxt('premisePlaceholder')}
-              rows={3}
-            />
-          </div>
-
-          <div className="vsp-field">
-            <label>{getTxt('adLabel')}</label>
-            <textarea
-              value={adText}
-              onChange={(e) => setAdText(e.target.value)}
-              placeholder={getTxt('adPlaceholder')}
-              rows={3}
-            />
-            <span className="vsp-hint">{getTxt('adHint')}</span>
-          </div>
-
-          {selectedGenre && (
-            <button className="vsp-btn vsp-btn-primary" onClick={handleGenerateHooks}>
-              <Film size={16} /> {getTxt('btnHooks')}
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* STEP 3: Hook Selection */}
-      {step === 3 && (
-        <div className="vsp-hooks-section">
-          {hooksLoading ? (
-            <div className="vsp-loading">
-              <Loader size={32} className="vsp-spinner" />
-              <p>{statusText === 'Frames werden extrahiert...' ? getTxt('extracting') : statusText === 'Hooks werden generiert...' ? getTxt('generating') : statusText}</p>
-            </div>
-          ) : hooks.length > 0 ? (
-            <>
-              <h3>{getTxt('chooseHook')}</h3>
-              <p className="vsp-hooks-hint">{getTxt('hooksHint')}</p>
-
-              <div className="vsp-desc-intro" style={{ marginBottom: '1.5rem', background: '#e8f4f4', borderColor: '#085041', color: '#085041', fontSize: '13.5px' }}>
-                 <strong>{getTxt('quickActionTitle')}</strong>
-                <ul style={{ margin: '8px 0 0 16px', padding: 0 }}>
-                  <li>{getTxt('quickAction1')}</li>
-                  <li>{getTxt('quickAction2')}</li>
-                </ul>
+              <div className="vsp-dropzone-content">
+                <ImageIcon size={28} className="vsp-analytics-icon" />
+                <p><strong>Screenshot(s) per Strg+V einfügen</strong> oder Datei wählen</p>
+                <span>Demografie, Alter/Geschlecht, Views & Retention-Kurve</span>
               </div>
+            </div>
 
-              <div className="vsp-hooks-grid">
-                {hooks.map((hook, i) => (
-                  <div
-                    key={i}
-                    className={`vsp-hook-card ${selectedHook === i ? 'active' : ''}`}
-                    onClick={() => setSelectedHook(i)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <div className="vsp-hook-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <div className="vsp-hook-number" style={{ margin: 0, fontWeight: '800' }}>Hook #{i + 1}</div>
-                      <div className="vsp-hook-select-indicator" style={{ fontSize: '12px', fontWeight: '600' }}>
-                        {selectedHook === i ? (
-                          <span className="vsp-indicator-selected" style={{ background: '#e8f4f4', color: '#085041', border: '1px solid #085041', padding: '3px 8px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <Check size={12} /> {getTxt('selected')}
-                          </span>
-                        ) : (
-                          <span className="vsp-indicator-unselected" style={{ background: '#f3f4f6', color: '#666', border: '1px solid #d1d5db', padding: '3px 8px', borderRadius: '12px' }}>
-                            {getTxt('select')}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="vsp-hook-trigger">{hook.trigger}</div>
-                    <div className="vsp-hook-visual">
-                      <strong>️ {getTxt('visual')}:</strong> {hook.visual}
-                    </div>
-                    <div className="vsp-hook-text">
-                      <strong> {getTxt('text')}:</strong> {hook.text}
-                    </div>
-                    <div className="vsp-hook-audio">
-                      <strong> {getTxt('audio')}:</strong> {hook.audio}
-                    </div>
-
-                    <div className="vsp-hook-card-actions" style={{ display: 'flex', gap: '8px', marginTop: '16px', borderTop: '1px solid #eee', paddingTop: '12px' }} onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        className="vsp-btn vsp-btn-secondary" 
-                        onClick={(e) => { e.stopPropagation(); handleCopyHookText(hook, i); }}
-                        style={{ padding: '8px 12px', fontSize: '12px', flex: 1, justifyContent: 'center' }}
-                      >
-                        {copiedHookIndex === i ? (
-                          <><Check size={14} /> {t('videoScript.copiedBtn')}</>
-                        ) : (
-                          <><Copy size={14} /> {getTxt('copyHook')}</>
-                        )}
-                      </button>
-                      <button 
-                        className="vsp-btn vsp-btn-primary" 
-                        onClick={(e) => { e.stopPropagation(); setSelectedHook(i); handleGenerateScript(i); }}
-                        style={{ padding: '8px 12px', fontSize: '12px', flex: 1, justifyContent: 'center' }}
-                      >
-                        <Sparkles size={14} /> {t('videoScript.generateBtn')}
-                      </button>
-                    </div>
+            {analyticsImages && analyticsImages.length > 0 && (
+              <div className="vsp-analytics-preview-grid">
+                {analyticsImages.map((img, idx) => (
+                  <div key={idx} className="vsp-analytics-thumb-wrap">
+                    <img src={img} alt={`Analytics ${idx + 1}`} className="vsp-analytics-thumb" />
+                    <button 
+                      className="vsp-thumb-delete" 
+                      onClick={(e) => { e.stopPropagation(); handleRemoveAnalyticsImage(idx); }}
+                      title="Entfernen"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                    <span className="vsp-thumb-label">Statistik #{idx + 1}</span>
                   </div>
                 ))}
               </div>
+            )}
 
-              {selectedHook !== null && (
-                <button className="vsp-btn vsp-btn-primary" onClick={handleSelectHookAndContinue} style={{ marginTop: '1.5rem', width: '100%', justifyContent: 'center' }}>
-                  <ArrowRight size={16} /> {getTxt('continueWithHook')}
+            <div className="vsp-field" style={{ marginTop: '12px' }}>
+              <label>Zusätzliche Analytics-Notizen (optional)</label>
+              <input
+                type="text"
+                value={analyticsNotes}
+                onChange={(e) => setAnalyticsNotes(e.target.value)}
+                placeholder="z.B. 72% Frauen 25–34 Jahre, starker Einstieg aber Drop-off bei Sek. 14"
+              />
+            </div>
+          </div>
+
+          {/* Card 3: Ziel / Wunsch fürs Folge-Video */}
+          <div className="vsp-card">
+            <div className="vsp-card-head">
+              <div className="vsp-card-num">3</div>
+              <div>
+                <h3>Was erwartest du vom Folge-Video?</h3>
+                <p>Beschreibe dein Thema, Angebot oder die Kernbotschaft für Part 2</p>
+              </div>
+            </div>
+
+            <div className="vsp-field">
+              <textarea
+                value={userPremise}
+                onChange={(e) => setUserPremise(e.target.value)}
+                placeholder="z.B. Ihr habt das letzte Video eskalieren lassen! Jetzt zeigen wir speziell für Frauen 25–45, wie man mit NeXus als Freelancerin ohne großes Startkapital B2B-Kunden gewinnt und mit dem Smartphone startet..."
+                rows={4}
+              />
+            </div>
+
+            <div className="vsp-preset-chips">
+              <span className="vsp-chips-label">💡 Schnell-Vorschläge:</span>
+              {QUICK_PREMISE_SUGGESTIONS.map((preset, pIdx) => (
+                <button
+                  key={pIdx}
+                  type="button"
+                  className="vsp-chip-btn"
+                  onClick={() => setUserPremise(preset.text)}
+                >
+                  {preset.title}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Card 4: ByteDance Algorithmus Engine Status */}
+          <div className="vsp-algorithm-banner">
+            <div className="vsp-algo-head">
+              <Zap size={20} className="vsp-algo-icon" />
+              <strong>Aktive ByteDance / TikTok Algorithmus-Hebel:</strong>
+            </div>
+            <div className="vsp-algo-grid">
+              <div className="vsp-algo-item">
+                <TrendingUp size={16} />
+                <div>
+                  <strong>0–3s Scrollstopper</strong>
+                  <span>Aggressiver Hook abgestimmt auf Zielgruppe</span>
+                </div>
+              </div>
+              <div className="vsp-algo-item">
+                <Play size={16} />
+                <div>
+                  <strong>Retention-Curve Booster</strong>
+                  <span>Spannungsbogen in Sek. 8–12 gegen Absprünge</span>
+                </div>
+              </div>
+              <div className="vsp-algo-item">
+                <MessageSquare size={16} />
+                <div>
+                  <strong>ByteDance Loop CTA</strong>
+                  <span>Kommentar- & Interaktions-Trigger am Ende</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Big Action Button */}
+          <button 
+            className="vsp-btn vsp-btn-primary vsp-btn-hero"
+            onClick={handleGenerateFollowUpScript}
+          >
+            <Sparkles size={18} /> Folge-Drehbuch mit KI & Algorithmus generieren
+          </button>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODE 2: CLASSIC STEPPING FLOW (FOR STANDARD MODE)                       */}
+      {/* ========================================================================= */}
+      {mode === 'standard' && (
+        <>
+          <div className="vsp-steps">
+            <div className={`vsp-step ${step >= 1 ? 'active' : ''} ${step > 1 ? 'done' : ''}`}>
+              <span>1</span> Video
+            </div>
+            <div className={`vsp-step ${step >= 2 ? 'active' : ''} ${step > 2 ? 'done' : ''}`}>
+              <span>2</span> Genre
+            </div>
+            <div className={`vsp-step ${step >= 3 ? 'active' : ''} ${step > 3 ? 'done' : ''}`}>
+              <span>3</span> Hook
+            </div>
+            <div className={`vsp-step ${step >= 5 ? 'active' : ''} ${step > 5 ? 'done' : ''}`}>
+              <span>4</span> Drehbuch
+            </div>
+          </div>
+
+          {/* STEP 1: Video Input */}
+          {step === 1 && (
+            <div className="vsp-input-section">
+              <div className="vsp-mode-toggle">
+                <button
+                  className={`vsp-mode-btn ${inputMode === 'url' ? 'active' : ''}`}
+                  onClick={() => setInputMode('url')}
+                >
+                  <LinkIcon size={16} /> URL eingeben
+                </button>
+                <button
+                  className={`vsp-mode-btn ${inputMode === 'upload' ? 'active' : ''}`}
+                  onClick={() => setInputMode('upload')}
+                >
+                  <Upload size={16} /> Video hochladen
+                </button>
+              </div>
+
+              {inputMode === 'url' ? (
+                <div className="vsp-field">
+                  <label>Video-URL</label>
+                  <input
+                    type="url"
+                    value={videoUrl}
+                    onChange={(e) => handleUrlChange(e.target.value)}
+                    placeholder="https://... Video-URL"
+                  />
+                </div>
+              ) : (
+                <div
+                  className="vsp-upload-zone"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="video/*"
+                    onChange={handleFileSelect}
+                    style={{ display: 'none' }}
+                  />
+                  {videoPreview ? (
+                    <div className="vsp-upload-preview">
+                      <FileVideo size={32} />
+                      <span>{videoFile?.name}</span>
+                      <button onClick={(e) => { e.stopPropagation(); setVideoFile(null); setVideoPreview(null); }}>
+                        Entfernen
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload size={40} className="vsp-upload-icon" />
+                      <p>Klicke hier, um ein Video auszuwählen</p>
+                      <span>MP4, WebM, MOV — max. 60 Sek.</span>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {(videoUrl || videoFile) && (
+                <button className="vsp-btn vsp-btn-primary" onClick={handleStartAnalysis}>
+                  <ArrowRight size={16} /> Video analysieren
                 </button>
               )}
-            </>
-          ) : (
-            <div className="vsp-loading">
-              <Loader size={32} className="vsp-spinner" />
-              <p>{getTxt('noHooks')}</p>
-              <button className="vsp-btn vsp-btn-secondary" onClick={() => setStep(2)}>{getTxt('back')}</button>
             </div>
           )}
+
+          {/* STEP 2: Genre Selection */}
+          {step === 2 && sceneAnalysis && (
+            <div className="vsp-genre-section">
+              <p className="vsp-analysis-ok">
+                <Check size={16} /> Video analysiert — {sceneAnalysis.beats?.length || 0} Szenen erkannt
+              </p>
+
+              <div className="vsp-genre-grid">
+                {GENRES.map(g => (
+                  <button
+                    key={g.id}
+                    className={`vsp-genre-card ${selectedGenre === g.id ? 'active' : ''}`}
+                    onClick={() => setSelectedGenre(g.id)}
+                  >
+                    <span className="vsp-genre-emoji">{g.emoji}</span>
+                    <strong>{g.label}</strong>
+                    <span className="vsp-genre-desc">{g.desc}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="vsp-field">
+                <label>Hast du eine bestimmte Idee / Prämisse? (optional)</label>
+                <textarea
+                  value={userPremise}
+                  onChange={(e) => setUserPremise(e.target.value)}
+                  placeholder="z.B. Es geht um einen Trick, den viele nicht kennen..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="vsp-field">
+                <label>Werbung / Call-to-Action (optional)</label>
+                <textarea
+                  value={adText}
+                  onChange={(e) => setAdText(e.target.value)}
+                  placeholder="z.B. Besuche www.nexus.de — Starte dein B2B Business"
+                  rows={3}
+                />
+              </div>
+
+              {selectedGenre && (
+                <button className="vsp-btn vsp-btn-primary" onClick={handleGenerateHooks}>
+                  <Film size={16} /> Hooks generieren
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* STEP 3: Hook Selection */}
+          {step === 3 && (
+            <div className="vsp-hooks-section">
+              {hooksLoading ? (
+                <div className="vsp-loading">
+                  <Loader size={32} className="vsp-spinner" />
+                  <p>{statusText}</p>
+                </div>
+              ) : hooks.length > 0 ? (
+                <>
+                  <h3>Wähle deinen Hook (Sekunde 0:00-0:01)</h3>
+                  <div className="vsp-hooks-grid">
+                    {hooks.map((hook, i) => (
+                      <div
+                        key={i}
+                        className={`vsp-hook-card ${selectedHook === i ? 'active' : ''}`}
+                        onClick={() => setSelectedHook(i)}
+                      >
+                        <div className="vsp-hook-card-header">
+                          <div className="vsp-hook-number">Hook #{i + 1}</div>
+                          {selectedHook === i ? (
+                            <span className="vsp-indicator-selected"><Check size={12} /> Ausgewählt</span>
+                          ) : (
+                            <span className="vsp-indicator-unselected">Auswählen</span>
+                          )}
+                        </div>
+                        <div className="vsp-hook-trigger">{hook.trigger}</div>
+                        <div className="vsp-hook-visual"><strong>🖼️ Bild:</strong> {hook.visual}</div>
+                        <div className="vsp-hook-text"><strong>💬 Text:</strong> {hook.text}</div>
+                        <div className="vsp-hook-audio"><strong>🔊 Audio:</strong> {hook.audio}</div>
+
+                        <div className="vsp-hook-card-actions" onClick={(e) => e.stopPropagation()}>
+                          <button 
+                            className="vsp-btn vsp-btn-secondary" 
+                            onClick={(e) => { e.stopPropagation(); handleCopyHookText(hook, i); }}
+                          >
+                            {copiedHookIndex === i ? <><Check size={14} /> Kopiert</> : <><Copy size={14} /> Hook kopieren</>}
+                          </button>
+                          <button 
+                            className="vsp-btn vsp-btn-primary" 
+                            onClick={(e) => { e.stopPropagation(); setSelectedHook(i); handleGenerateClassicScript(i); }}
+                          >
+                            <Sparkles size={14} /> Drehbuch generieren
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {selectedHook !== null && (
+                    <button className="vsp-btn vsp-btn-primary" onClick={handleSelectHookAndContinue} style={{ marginTop: '1.5rem', width: '100%', justifyContent: 'center' }}>
+                      <ArrowRight size={16} /> Mit diesem Hook weiter → Drehbuch generieren
+                    </button>
+                  )}
+                </>
+              ) : (
+                <div className="vsp-loading">
+                  <Loader size={32} className="vsp-spinner" />
+                  <p>Keine Hooks geladen.</p>
+                  <button className="vsp-btn vsp-btn-secondary" onClick={() => setStep(2)}>← Zurück</button>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ========================================================================= */}
+      {/* LOADING STATES (STEPS 4 & 5)                                             */}
+      {/* ========================================================================= */}
+      {(step === 4 || step === 5) && (
+        <div className="vsp-loading-card">
+          <Loader size={36} className="vsp-spinner" />
+          <h3>KI-Studio arbeitet...</h3>
+          <p>{statusText || 'Drehbuch wird geschrieben...'}</p>
+          <div className="vsp-progress-bar">
+            <div className="vsp-progress-fill"></div>
+          </div>
         </div>
       )}
 
-      {/* STEP 4: Analyzing */}
-      {step === 4 && (
-        <div className="vsp-loading">
-          <Loader size={32} className="vsp-spinner" />
-          <p>{statusText === 'Frames werden extrahiert...' ? getTxt('extracting') : statusText === 'Video wird analysiert...' ? getTxt('analyzing') : statusText}</p>
-        </div>
-      )}
-
-      {/* STEP 5: Generating */}
-      {step === 5 && (
-        <div className="vsp-loading">
-          <Loader size={32} className="vsp-spinner" />
-          <p>{statusText === 'Drehbuch wird geschrieben...' ? getTxt('writing') : statusText}</p>
-        </div>
-      )}
-
-      {/* STEP 6: Result */}
+      {/* ========================================================================= */}
+      {/* STEP 6: DREHBUCH & CAPCUT RESULT                                         */}
+      {/* ========================================================================= */}
       {step === 6 && generatedScript && (
         <div className="vsp-result">
           <div className="vsp-result-header">
-            <Check size={20} className="vsp-result-check" />
+            <Check size={24} className="vsp-result-check" />
             <div>
-              <h3>{t('videoScript.scriptReady')}</h3>
-              <p>{t('videoScript.scriptHint')}</p>
+              <h3>🚀 Dein Algorithmus-optimiertes Drehbuch ist fertig!</h3>
+              <p>Szene für Szene mit Visuals, Voiceover, Overlays und ByteDance-Hashtags formatiert.</p>
             </div>
           </div>
 
@@ -951,20 +1001,19 @@ export default function VideoScriptPage() {
             <pre>{generatedScript}</pre>
           </div>
 
-          <div className="vsp-result-actions" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '1.5rem' }}>
+          <div className="vsp-result-actions">
             <button 
-              className="vsp-btn vsp-btn-primary" 
+              className="vsp-btn vsp-btn-primary vsp-btn-large" 
               onClick={handleSendToCapCut}
-              style={{ width: '100%', justifyContent: 'center', padding: '12px' }}
             >
-              {getTxt('sendToCapCut')}
+              <Film size={18} /> An CapCut Studio senden
             </button>
-            <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
-              <button className="vsp-btn vsp-btn-copy" onClick={handleCopy} style={{ flex: 1, justifyContent: 'center' }}>
-                {copied ? <><Check size={16} /> {t('videoScript.copiedBtn')}</> : <><Copy size={16} /> {t('videoScript.copyBtn')}</>}
+            <div className="vsp-result-secondary-row">
+              <button className="vsp-btn vsp-btn-copy" onClick={handleCopy}>
+                {copied ? <><Check size={16} /> Drehbuch kopiert!</> : <><Copy size={16} /> Ganzes Drehbuch kopieren</>}
               </button>
-              <button className="vsp-btn vsp-btn-secondary" onClick={handleReset} style={{ flex: 1, justifyContent: 'center' }}>
-                {t('videoScript.newVideo')}
+              <button className="vsp-btn vsp-btn-secondary" onClick={handleReset}>
+                <RefreshCw size={16} /> Neues Drehbuch erstellen
               </button>
             </div>
           </div>
@@ -975,7 +1024,7 @@ export default function VideoScriptPage() {
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         onSuccess={handleAuthSuccess}
-        title={getTxt('authTitle')}
+        title="Melde dich an, um fortzufahren"
       />
     </div>
   )

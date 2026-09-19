@@ -17,6 +17,7 @@ const CORS_HEADERS = {
 }
 
 const GENRE_DESCRIPTIONS = {
+  followup_tiktok_optimizer: 'Folge-Video & TikTok-Algorithmus Optimizer (Part 2)',
   comedy_prank: 'Comedy / Prank',
   werbevideo_marketing: 'Werbevideo / Marketing',
   lernvideo_kinder: 'Lernvideo für Kinder',
@@ -24,6 +25,13 @@ const GENRE_DESCRIPTIONS = {
 }
 
 const GENRE_ADDITIONS = {
+  followup_tiktok_optimizer: `Ziel: Maximale TikTok / ByteDance Algorithmus-Verteilung und hohe Retention für die Zielgruppe.
+Struktur:
+- 0:00-0:03 (Scroll-Stopper Hook): Aggressiver Hook, sofortiges Neugier- oder Widerspruch-Signal, direkt auf die Zielgruppe zugeschnitten.
+- 0:03-0:08 (Problem / Identifikation): Emotionaler Einstieg und Bezug zum vorigen Erfolg/Thema.
+- 0:08-0:18 (NeXus Solution & Live-Mehrwert): Klare, nachvollziehbare Demonstration des Nutzens.
+- 0:18-0:25 (Social Proof / Low-Barrier Start): Barrieren abbauen (Smartphone reicht, kein Startkapital nötig).
+- 0:25-0:30 (ByteDance Loop CTA): Kommentar-Loop oder Neugier-Trigger für maximale organische Ausspielung.`,
   comedy_prank: `Ton: überraschend, pointiert, Kontrast zwischen echter Emotion und erfundenem Kontext.
 Struktur: Setup → Wendepunkt → Payoff → kurzer Ausklang.
 Sound-Effekte an Pointen setzen.
@@ -43,50 +51,80 @@ function buildSystemPrompt(sceneAnalysis, contentGoal, userPremise, adText, sele
   const genreDesc = GENRE_DESCRIPTIONS[contentGoal] || contentGoal
   const genreAddition = GENRE_ADDITIONS[contentGoal] || ''
 
-  let prompt = `Du erstellst ein zeitgetaggtes Drehbuch für CapCut EditPilot basierend auf folgender Szenen-Analyse:
+  let prompt = `Du bist ein hochkarätiger Video-Regisseur, TikTok-Algorithmus-Stratege (ByteDance Retention Engine) und CapCut-Drehbuch-Experte.
+Erstelle ein zeitgetaggtes, produktionsreifes Meister-Drehbuch für CapCut basierend auf folgender Szenen- & Analytics-Analyse:
 
 ${JSON.stringify(sceneAnalysis, null, 2)}
 
-WICHTIGE REGEL: EditPilot kann aktuell keinen echten Lip-Sync auf neu generierten Dialog erzeugen. Formuliere daher NIEMALS Anweisungen wie "Lippen synchron animieren". Löse gesprochene Inhalte stattdessen über:
-- Untertitel/Text-Overlay
-- TTS-Offscreen-Stimme
-- Reaktions-Cuts und Zooms`
+WICHTIGE REGELN FÜR CAPCUT:
+1. Keine Lip-Sync Anweisungen. Löse gesprochene Inhalte über TTS-Offscreen-Stimme oder Text-Overlays.
+2. Formatiere jede Szene mit exaktem Zeitabschnitt, Visuellem Bild-Prompt (für CapCut KI-Bild/Video), Gesprochenem Text (Offscreen TTS), Text-Overlay und Sound-Effekt.
+
+Format des fertigen Drehbuchs:
+=========================================
+🎯 STRATEGIE & ZIELGRUPPEN-BRIEFING
+- Zielgruppe: [Demografie / Pain Points]
+- ByteDance-Hebel: [0-3s Hook-Stop, Retention-Curve, Comment-Loop]
+
+🎬 CAPCUT MASTER DREHBUCH (Timeline):
+
+[0:00 - 0:03] Szene 1: Der Hook & Scroll-Stopper
+- 🖼️ Visueller Prompt (CapCut): [Exakte Bild/Video-Beschreibung]
+- 🎙️ Sprecher / Voiceover (TTS): "[Genauer gesprochener Satz]"
+- 💬 Text-Overlay: "[Großer, auffälliger Text im Bild]"
+- 🔊 Sound / SFX: "[Sound-Effekt]"
+
+[0:03 - 0:08] Szene 2: Das Problem & die Chance
+- 🖼️ Visueller Prompt (CapCut): [Exakte Beschreibung]
+- 🎙️ Sprecher / Voiceover (TTS): "[Genauer gesprochener Satz]"
+- 💬 Text-Overlay: "[Text-Overlay]"
+- 🔊 Sound / SFX: "[Sound-Effekt]"
+
+[0:08 - 0:18] Szene 3: Die NeXus-Lösung & der Hebel
+- 🖼️ Visueller Prompt (CapCut): [Exakte Beschreibung]
+- 🎙️ Sprecher / Voiceover (TTS): "[Genauer gesprochener Satz]"
+- 💬 Text-Overlay: "[Text-Overlay]"
+- 🔊 Sound / SFX: "[Sound-Effekt]"
+
+[0:18 - 0:25] Szene 4: Transformation & Low-Barrier Start
+- 🖼️ Visueller Prompt (CapCut): [Exakte Beschreibung]
+- 🎙️ Sprecher / Voiceover (TTS): "[Genauer gesprochener Satz]"
+- 💬 Text-Overlay: "[Text-Overlay]"
+- 🔊 Sound / SFX: "[Sound-Effekt]"
+
+[0:25 - 0:30] Szene 5: ByteDance Loop Call-to-Action
+- 🖼️ Visueller Prompt (CapCut): [Exakte Beschreibung]
+- 🎙️ Sprecher / Voiceover (TTS): "[Genauer gesprochener Satz]"
+- 💬 Text-Overlay: "[Text-Overlay]"
+- 🔊 Sound / SFX: "[Sound-Effekt]"
+
+📱 TIKTOK CAPTION & HASHTAG-CLUSTER:
+Caption: [Viraler Begleittext mit Neugier-Trigger]
+Hashtags: [Relevante Nischen- und Trend-Hashtags]
+
+✂️ CAPCUT BATCH PROMPT (Zum direkten Kopieren in CapCut EditPilot / Studio):
+[Kompakter 1-Klick Textblock aller Szenen]`
 
   if (selectedHook) {
     prompt += `\n\nWICHTIG — DER USER HAT FOLGENDEN HOOK AUSGEWÄHLT. Das Drehbuch MUSS mit diesem Hook beginnen (Sekunde 0:00-0:01):
 - Visuelles Bild: ${selectedHook.visual}
 - Text-Overlay: "${selectedHook.text}"
 - Audio: ${selectedHook.audio}
-- Psychologischer Trigger: ${selectedHook.trigger}
-
-Der Hook ist die ERSTE Sekunde. Direkt danach kommt der Rest des Drehbuchs.`
+- Psychologischer Trigger: ${selectedHook.trigger}`
   }
 
-  prompt += `\n\nGib das Drehbuch in diesem Format aus, direkt copy-paste-fähig für den EditPilot-Chat in CapCut:
-
-Bearbeite dieses Video als ${genreDesc}. Timeline:
-
-[Zeitabschnitt]
-[Was passieren soll: Dialog/Text-Overlay/Sound/Cut/Emotion]
-
-...
-
-Allgemein:
-- Untertitel automatisch mit einblenden, wo Text/Dialog vorkommt
-- ${genreAddition}`
-
   if (userPremise) {
-    prompt += `\n\nWICHTIG — Das Drehbuch MUSS sich inhaltlich um diese Idee/Prämisse des Users drehen: "${userPremise}". Die erkannten Videoszenen dienen nur als visueller Hintergrund, der gesprochene Text und die Botschaft müssen deiner Prämisse folgen.`
+    prompt += `\n\nWICHTIG — STRATEGISCHER WUNSCH DES USERS FÜR DAS FOLGE-VIDEO:
+"${userPremise}"
+Das Drehbuch MUSS exakt diesem inhaltlichen Ziel folgen!`
   }
 
   if (adText) {
-    prompt += `\n\nWICHTIG — FOLGENDER WERBETEXT MUSS IM DREHBUCH VORKOMMEN (1:1 als TTS-Offscreen-Stimme oder Text-Overlay einbauen):
-"${adText}"
-
-Der Werbetext soll an passender Stelle im Drehbuch eingebaut werden — idealerweise als TTS-Offscreen-Stimme oder großes Text-Overlay. Er darf nicht verändert oder paraphrasiert werden.`
+    prompt += `\n\nWICHTIG — FOLGENDER TEXT MUSS EINGEBAUT WERDEN:
+"${adText}"`
   }
 
-  prompt += `\n\nAntworte NUR mit dem fertigen Drehbuch. Kein Markdown, keine Codeblöcke, kein Vorwort.`
+  prompt += `\n\nAllgemeine Richtlinien:\n- ${genreAddition}\n\nAntworte direkt mit dem formatierten Drehbuch. Keine umschweifenden Erklärungen davor oder danach.`
 
   return prompt
 }
@@ -298,7 +336,7 @@ export const handler = async (event) => {
       }
     }
 
-    if (!['comedy_prank', 'werbevideo_marketing', 'lernvideo_kinder', 'lernvideo_erwachsene'].includes(content_goal)) {
+    if (!['followup_tiktok_optimizer', 'comedy_prank', 'werbevideo_marketing', 'lernvideo_kinder', 'lernvideo_erwachsene'].includes(content_goal)) {
       return {
         statusCode: 400,
         headers: CORS_HEADERS,
