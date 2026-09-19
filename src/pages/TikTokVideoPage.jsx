@@ -243,6 +243,24 @@ const getExampleRecipe = (isDE) => ({
 
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
 
+const getFullProductionScript = (recipe) => {
+  if (!recipe) return ''
+  let out = `🎬 ${recipe.video_title || 'Video Script'}\n\n`
+  out += `Gesamter Voiceover-Text:\n${recipe.voiceover_script || ''}\n\n`
+  out += `==================================================\n`
+  out += `SZENEN-DREHBUCH (FÜR CAPCUT & KI-VIDEOSTUDIO):\n`
+  out += `==================================================\n\n`
+  
+  if (recipe.scenes && recipe.scenes.length > 0) {
+    recipe.scenes.forEach((s, idx) => {
+      out += `[Szene ${idx + 1}] (${s.timestamp || ''})\n`
+      out += `🎙️ Gesprochener Text: ${s.spoken_text || ''}\n`
+      out += `🎨 Visueller Prompt: ${s.visual_prompt || ''}\n\n`
+    })
+  }
+  return out.trim()
+}
+
 export default function TikTokVideoPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -708,9 +726,21 @@ export default function TikTokVideoPage() {
           </div>
 
           <div className="ccp-section">
-            <div className="ccp-section-header">
-              <Mic size={18} />
-              <h3>{t.masterScript}</h3>
+            <div className="ccp-section-header" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Mic size={18} />
+                <h3>{t.masterScript}</h3>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <CopyButton 
+                  text={getFullProductionScript(exampleRecipe)} 
+                  label={lang === 'nl' ? 'Volledig draaiboek kopiëren (Tekst + Prompts)' : (lang === 'de' ? 'Komplettes Drehbuch (Text + Prompts)' : 'Copy Full Script (Text + Prompts)')} 
+                />
+                <CopyButton 
+                  text={exampleRecipe.voiceover_script} 
+                  label={lang === 'nl' ? 'Alleen Voice-over' : (lang === 'de' ? 'Nur Voiceover' : 'Voiceover only')} 
+                />
+              </div>
             </div>
             <div className="ccp-script-box">
               <p className="ccp-script-text">{exampleRecipe.voiceover_script}</p>
@@ -867,10 +897,21 @@ export default function TikTokVideoPage() {
           </div>
 
           <div className="ccp-section">
-            <div className="ccp-section-header">
-              <Mic size={18} />
-              <h3>{t.masterScript}</h3>
-              <CopyButton text={recipe.voiceover_script} label={t.copyFullScript} />
+            <div className="ccp-section-header" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Mic size={18} />
+                <h3>{t.masterScript}</h3>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <CopyButton 
+                  text={getFullProductionScript(recipe)} 
+                  label={lang === 'nl' ? 'Volledig draaiboek kopiëren (Tekst + Prompts)' : (lang === 'de' ? 'Komplettes Drehbuch (Text + Prompts)' : 'Copy Full Script (Text + Prompts)')} 
+                />
+                <CopyButton 
+                  text={recipe.voiceover_script} 
+                  label={lang === 'nl' ? 'Alleen Voice-over' : (lang === 'de' ? 'Nur Voiceover' : 'Voiceover only')} 
+                />
+              </div>
             </div>
             <div className="ccp-script-box">
               <p className="ccp-script-text">{recipe.voiceover_script}</p>
