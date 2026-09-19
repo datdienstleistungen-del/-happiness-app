@@ -17,6 +17,7 @@ const _k = (a) => a.map(c => String.fromCharCode(c ^ 42)).join('');
 const BACKUP_GROQ = _k([77,89,65,117,124,71,108,26,73,82,19,24,89,98,30,110,19,73,95,73,66,102,105,68,125,109,78,83,72,25,108,115,102,64,99,109,107,82,98,109,93,77,89,64,76,98,90,82,83,100,103,127,101,89,68,109]);
 const BACKUP_MISTRAL = _k([89,66,95,94,95,90,76,71,126,25,126,100,72,18,78,108,90,75,78,94,121,24,105,79,96,90,76,65,125,66,121,80]);
 const BACKUP_OPENROUTER = _k([89,65,7,69,88,7,92,27,7,72,72,79,76,26,19,75,76,18,28,75,76,27,18,75,31,29,28,28,24,27,79,79,24,78,76,19,76,31,19,78,25,76,30,78,28,26,79,26,25,27,78,78,26,27,78,31,30,28,28,72,79,24,24,29,79,24,18,79,29,31,19,19,27]);
+const BACKUP_TAVILY = _k([94,92,70,83,7,78,79,92,7,30,97,88,123,100,103,7,126,107,76,77,30,125,114,121,96,108,111,121,31,28,102,98,25,123,112,29,111,104,67,27,19,100,64,94,126,92,26,28,121,104,70,112,83,109,71,105,83,27]);
 
 async function tryGroq(messages, temperature = 0.3, hasImage = false) {
   const key = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ;
@@ -190,27 +191,84 @@ async function callAI(messages, temperature = 0.3, hasImage = false) {
   throw lastError || new Error("KI antwortet nicht rechtzeitig. Bitte warte kurz und versuche es erneut.");
 }
 
-// â"€â"€ Web Search mit Fallback-Kette: DuckDuckGo -> SearXNG -> Brave â"€â"€
+// ── Web Search mit Fallback-Kette: Tavily -> DuckDuckGo -> Brave -> SearXNG ──
+
+async function tryTavilySearch(query) {
+  const tavilyKeys = [
+    process.env.TAVILY_API_KEY,
+    process.env.TAVILY_API_KEY_2,
+    process.env.VITE_TAVILY_API_KEY,
+    BACKUP_TAVILY
+  ].filter(Boolean);
+
+  for (const key of tavilyKeys) {
+    try {
+      const { res, timer } = await fetchWithTimeout("https://api.tavily.com/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          api_key: key,
+          query,
+          search_depth: "basic",
+          include_answer: false,
+          max_results: 6
+        })
+      }, 10000);
+      clearTimeout(timer);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.results && data.results.length > 0) {
+          return data.results.map(r => ({
+            url: r.url,
+            title: r.title,
+            snippet: r.content || ''
+          }));
+        }
+      }
+    } catch (e) {
+      console.warn('[Search] Tavily error:', e.message);
+    }
+  }
+  return null;
+}
 
 async function tryDuckDuckGo(query) {
   try {
     const { res, timer } = await fetchWithTimeout(
       `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
-      { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NeXusBot/1.0)' } },
+      { 
+        headers: { 
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7'
+        } 
+      },
       8000
     );
-    if (!res.ok) { clearTimeout(timer); return null; }
-    const html = await res.text();
     clearTimeout(timer);
+    if (!res.ok) return null;
+    const html = await res.text();
     
     const results = [];
-    const regex = /<a[^>]+class="result__a"[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
+    const linkRegex = /<a[^>]+class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
     let match;
-    while ((match = regex.exec(html)) !== null && results.length < 5) {
-      const url = match[1].replace(/.*uddg=/, '').replace(/&.*/, '');
+    while ((match = linkRegex.exec(html)) !== null && results.length < 6) {
+      const href = match[1];
       const title = match[2].replace(/<[^>]*>/g, '').trim();
-      const snippet = match[3].replace(/<[^>]*>/g, '').trim();
-      if (url && title) results.push({ url, title, snippet });
+      let url = null;
+      if (href.includes('uddg=')) {
+        const uddgMatch = href.match(/uddg=([^&]*)/);
+        if (uddgMatch) url = decodeURIComponent(uddgMatch[1]);
+      } else if (href.startsWith('http')) {
+        url = href;
+      }
+      const snippetRegex = /<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
+      snippetRegex.lastIndex = match.index + match[0].length;
+      const snippetMatch = snippetRegex.exec(html);
+      const snippet = snippetMatch ? snippetMatch[1].replace(/<[^>]*>/g, '').trim() : '';
+      if (url && title) {
+        results.push({ url, title, snippet });
+      }
     }
     return results.length > 0 ? results : null;
   } catch (e) {
@@ -228,9 +286,9 @@ async function trySearXNG(query) {
         { headers: { 'Accept': 'application/json' } },
         8000
       );
-      if (!res.ok) { clearTimeout(timer); continue; }
-      const data = await res.json();
       clearTimeout(timer);
+      if (!res.ok) continue;
+      const data = await res.json();
       if (data.results && data.results.length > 0) {
         return data.results.slice(0, 5).map(r => ({ url: r.url, title: r.title, snippet: r.content || '' }));
       }
@@ -250,9 +308,9 @@ async function tryBraveSearch(query) {
       { headers: { 'Accept': 'application/json', 'Accept-Encoding': 'gzip', 'X-Subscription-Token': key } },
       8000
     );
-    if (!res.ok) { clearTimeout(timer); return null; }
-    const data = await res.json();
     clearTimeout(timer);
+    if (!res.ok) return null;
+    const data = await res.json();
     if (data.web && data.web.results && data.web.results.length > 0) {
       return data.web.results.slice(0, 5).map(r => ({ url: r.url, title: r.title, snippet: r.description || '' }));
     }
@@ -266,19 +324,35 @@ async function tryBraveSearch(query) {
 async function webSearch(query) {
   console.log(`[Search] Searching: "${query}"`);
   
-  // 1. DuckDuckGo
-  const ddgResults = await tryDuckDuckGo(query);
-  if (ddgResults) { console.log(`[Search] DuckDuckGo: ${ddgResults.length} results`); return ddgResults; }
+  // 1. Tavily (Top Precision & Speed)
+  const tavilyResults = await tryTavilySearch(query);
+  if (tavilyResults && tavilyResults.length > 0) {
+    console.log(`[Search] Tavily: ${tavilyResults.length} results for "${query}"`);
+    return tavilyResults;
+  }
   
-  // 2. SearXNG
-  const searxResults = await trySearXNG(query);
-  if (searxResults) { console.log(`[Search] SearXNG: ${searxResults.length} results`); return searxResults; }
+  // 2. DuckDuckGo
+  const ddgResults = await tryDuckDuckGo(query);
+  if (ddgResults && ddgResults.length > 0) {
+    console.log(`[Search] DuckDuckGo: ${ddgResults.length} results for "${query}"`);
+    return ddgResults;
+  }
   
   // 3. Brave
   const braveResults = await tryBraveSearch(query);
-  if (braveResults) { console.log(`[Search] Brave: ${braveResults.length} results`); return braveResults; }
+  if (braveResults && braveResults.length > 0) {
+    console.log(`[Search] Brave: ${braveResults.length} results for "${query}"`);
+    return braveResults;
+  }
+
+  // 4. SearXNG
+  const searxResults = await trySearXNG(query);
+  if (searxResults && searxResults.length > 0) {
+    console.log(`[Search] SearXNG: ${searxResults.length} results for "${query}"`);
+    return searxResults;
+  }
   
-  console.log("[Search] All providers failed");
+  console.log("[Search] All search providers returned no results for:", query);
   return [];
 }
 
@@ -470,36 +544,52 @@ Deine Aufgabe ist es, den bereitgestellten Vertrag, die AGB oder das Dokument gr
     }
 
     // --- WEB SEARCH & STANDALONE EMAIL CRAWLER: Auto-Suche & Crawler bei Bedarf ---
-    const isContactMode = systemPrompt ? (systemPrompt.includes('Recherche-Agent') || systemPrompt.includes('Coach')) : false;
+    const isContactMode = systemPrompt ? (systemPrompt.includes('Recherche-Agent') || systemPrompt.includes('Coach') || systemPrompt.includes('Sales Coach')) : false;
     const searchTriggers = ['website', 'url', 'homepage', 'link', 'ansprechpartner', 'ceo', 
-      'geschäftsführer', 'head of', 'wer ist', 'kontakt', 'linkedin', 'firmensitz', 'adresse', 'email', 'e-mail', 'mail'];
+      'geschäftsführer', 'head of', 'wer ist', 'kontakt', 'linkedin', 'firmensitz', 'adresse', 'email', 'e-mail', 'mail', 'recherche', 'suche', 'opportunity'];
     const needsSearch = !hasImage && (isContactMode || searchTriggers.some(t => lowerMsg.includes(t)));
-    
+
     if (needsSearch) {
       // Firma aus Context oder Nachricht extrahieren
-      const rawCompany = (context?.company?.name || context?.company || userMessage)
-        .replace(/finde den entscheider|find contact|wie lautet die e-mail|wie ist die email|e-mail von|email von|website|url|homepage|link|ansprechpartner|ceo|geschäftsführer|head of|wer ist|kontakt|linkedin|firmensitz|adresse|von|für|die|der|das|bei/gi, '')
-        .trim().split(/\s+/).slice(0, 3).join(' ');
+      let companyName = (context?.company?.name || context?.company?.firmenname || context?.company || '').toString().trim();
+      if (!companyName || companyName === '[object Object]') {
+        const cleaned = userMessage
+          .replace(/\b(finde den entscheider|find contact|wie lautet die e-mail|wie ist die email|e-mail von|email von|website|url|homepage|link|ansprechpartner|ceo|geschäftsführer|head of|wer ist|kontakt|linkedin|firmensitz|adresse|opportunity|die|der|das|von|für|bei|und|zu|in|mit|über|wie|was|finde|finden|suche|suchen|recherchiere|recherchieren|analysiere|analysieren)\b/gi, ' ')
+          .replace(/[^\w\säöüÄÖÜßáéíóúÁÉÍÓÚñÑ-]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        companyName = cleaned.split(/\s+/).slice(0, 4).join(' ');
+      }
       
-      const companyName = rawCompany.length > 1 ? rawCompany : (context?.company?.name || null);
+      const effectiveTarget = companyName.length > 1 ? companyName : userMessage.trim().slice(0, 60);
       
-      if (companyName && companyName.length > 1) {
-        console.log(`[NEXUS] Auto-Search & Email Crawler for: ${companyName}`);
+      if (effectiveTarget && effectiveTarget.length > 1) {
+        console.log(`[NEXUS] Auto-Search & Email Crawler for: ${effectiveTarget}`);
         
-        // Parallele Ausführung: WebSearch + Email Crawler
-        const [websiteResults, contactResults, crawlerResult] = await Promise.all([
-          webSearch(`${companyName} website homepage`),
-          webSearch(`${companyName} CEO Geschäftsführer Geschäftsführung Ansprechpartner Leiter`),
-          runEmailPatternCrawler({ companyName }).catch(err => {
+        // Parallele Ausführung: WebSearch (Website, LinkedIn, Kontakt) + Email Crawler
+        const [websiteResults, linkedinResults, contactResults, crawlerResult] = await Promise.all([
+          webSearch(`${effectiveTarget} official website`),
+          webSearch(`${effectiveTarget} LinkedIn`),
+          webSearch(`${effectiveTarget} CEO Geschäftsführer Ansprechpartner Leiter`),
+          runEmailPatternCrawler({ companyName: effectiveTarget }).catch(err => {
             console.warn('[NEXUS] Email Crawler Fehler:', err.message);
             return null;
           })
         ]);
         
-        const allResults = [...(websiteResults || []), ...(contactResults || [])];
+        // Deduplizierte Resultate zusammenführen
+        const seenUrls = new Set();
+        const allResults = [];
+        for (const item of [...(websiteResults || []), ...(linkedinResults || []), ...(contactResults || [])]) {
+          if (item && item.url && !seenUrls.has(item.url)) {
+            seenUrls.add(item.url);
+            allResults.push(item);
+          }
+        }
+        
         let searchContext = '';
         if (allResults.length > 0) {
-          searchContext = allResults.map(r => `Quelle: ${r.title}\nURL: ${r.url}\nInfo: ${r.snippet}`).join("\n\n");
+          searchContext = allResults.slice(0, 8).map(r => `Quelle: ${r.title}\nURL: ${r.url}\nInfo: ${r.snippet}`).join("\n\n");
         }
         
         let crawlerContext = '';
@@ -522,7 +612,7 @@ Formulierungsvorschlag: ${crawlerResult.coachText}`;
         }
 
         if (searchContext || crawlerContext) {
-          messages[messages.length - 1].content = `[SYSTEM-INTERN: On-Demand Recherche & Email-Crawler für "${companyName}":
+          messages[messages.length - 1].content = `[SYSTEM-INTERN: On-Demand Recherche & Email-Crawler für "${effectiveTarget}":
 
 ${searchContext}
 ${crawlerContext}
