@@ -59,7 +59,7 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
   ]
   
   const [message, setMessage] = useState('')
-  const [attachment, setAttachment] = useState(null)
+  const [attachments, setAttachments] = useState([])
   const [isDragging, setIsDragging] = useState(false)
   const [chatHistory, setChatHistory] = useState([])
   const [loading, setLoading] = useState(false)
@@ -127,55 +127,64 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
           e.preventDefault()
           const reader = new FileReader()
           reader.onload = (event) => {
-            setAttachment({
-              file,
-              dataUrl: event.target.result,
-              name: file.name || `Screenshot_${new Date().toLocaleTimeString().replace(/:/g, '-')}.png`,
-              type: 'image'
+            setAttachments(prev => {
+              if (prev.length >= 5) return prev
+              return [...prev, {
+                file,
+                dataUrl: event.target.result,
+                name: file.name || `Screenshot_${new Date().toLocaleTimeString().replace(/:/g, '-')}_${prev.length + 1}.png`,
+                type: 'image'
+              }]
             })
           }
           reader.readAsDataURL(file)
-          break
         }
       }
     }
   }
 
   const handleFileSelect = (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
 
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        setAttachment({
-          file,
-          dataUrl: event.target.result,
-          name: file.name,
-          type: 'image'
-        })
+    files.forEach(file => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          setAttachments(prev => {
+            if (prev.length >= 5) return prev
+            return [...prev, {
+              file,
+              dataUrl: event.target.result,
+              name: file.name,
+              type: 'image'
+            }]
+          })
+        }
+        reader.readAsDataURL(file)
+      } else if (file.type === 'text/plain' || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          const textContent = event.target.result
+          setMessage(prev => prev ? `${prev}\n\n[Dokument: ${file.name}]\n${textContent}` : `[Dokument: ${file.name}]\n${textContent}`)
+        }
+        reader.readAsText(file)
+      } else {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          setAttachments(prev => {
+            if (prev.length >= 5) return prev
+            return [...prev, {
+              file,
+              dataUrl: event.target.result,
+              name: file.name,
+              type: 'doc'
+            }]
+          })
+        }
+        reader.readAsDataURL(file)
       }
-      reader.readAsDataURL(file)
-    } else if (file.type === 'text/plain' || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        const textContent = event.target.result
-        setMessage(prev => prev ? `${prev}\n\n[Dokument: ${file.name}]\n${textContent}` : `[Dokument: ${file.name}]\n${textContent}`)
-      }
-      reader.readAsText(file)
-    } else {
-      // PDF or other documents as Data URL
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        setAttachment({
-          file,
-          dataUrl: event.target.result,
-          name: file.name,
-          type: 'doc'
-        })
-      }
-      reader.readAsDataURL(file)
-    }
+    })
     e.target.value = ''
   }
 
@@ -192,28 +201,33 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
   const handleDrop = (e) => {
     e.preventDefault()
     setIsDragging(false)
-    const file = e.dataTransfer?.files?.[0]
-    if (!file) return
+    const files = Array.from(e.dataTransfer?.files || [])
+    if (files.length === 0) return
 
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        setAttachment({
-          file,
-          dataUrl: event.target.result,
-          name: file.name,
-          type: 'image'
-        })
+    files.forEach(file => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          setAttachments(prev => {
+            if (prev.length >= 5) return prev
+            return [...prev, {
+              file,
+              dataUrl: event.target.result,
+              name: file.name,
+              type: 'image'
+            }]
+          })
+        }
+        reader.readAsDataURL(file)
+      } else if (file.type === 'text/plain' || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          const textContent = event.target.result
+          setMessage(prev => prev ? `${prev}\n\n[Dokument: ${file.name}]\n${textContent}` : `[Dokument: ${file.name}]\n${textContent}`)
+        }
+        reader.readAsText(file)
       }
-      reader.readAsDataURL(file)
-    } else if (file.type === 'text/plain' || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        const textContent = event.target.result
-        setMessage(prev => prev ? `${prev}\n\n[Dokument: ${file.name}]\n${textContent}` : `[Dokument: ${file.name}]\n${textContent}`)
-      }
-      reader.readAsText(file)
-    }
+    })
   }
 
   // Cleanup voice on unmount
@@ -368,7 +382,7 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      if ((message.trim() || attachment) && !loading) {
+      if ((message.trim() || attachments.length > 0) && !loading) {
         handleSend(e)
       }
     }
@@ -376,7 +390,7 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
 
   const handleSend = async (e) => {
     if (e) e.preventDefault()
-    if ((!message.trim() && !attachment) || loading) return
+    if ((!message.trim() && attachments.length === 0) || loading) return
 
     if (isListening && recognitionRef.current) {
       recognitionRef.current.stop()
@@ -384,20 +398,21 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
     }
 
     setError('')
-    const currentAttachment = attachment
-    const currentMsgText = message.trim() || (currentAttachment ? (lang === 'de' ? 'Bitte analysiere dieses angehängte Bild / Dokument.' : 'Please analyze this attached image / document.') : '')
+    const currentAttachments = [...attachments]
+    const currentMsgText = message.trim() || (currentAttachments.length > 0 ? (lang === 'de' ? `Bitte analysiere diese ${currentAttachments.length} angehängten Bilder / Dokumente / Video-Frames.` : `Please analyze these ${currentAttachments.length} attached images / documents.`) : '')
     
     const userMsg = { 
       role: 'user', 
       content: currentMsgText,
-      attachment: currentAttachment?.dataUrl || null,
-      fileName: currentAttachment?.name || null,
-      attachmentType: currentAttachment?.type || null
+      attachments: currentAttachments,
+      attachment: currentAttachments[0]?.dataUrl || null,
+      fileName: currentAttachments[0]?.name || null,
+      attachmentType: currentAttachments[0]?.type || null
     }
 
     setChatHistory(prev => [...prev, userMsg])
     setMessage('')
-    setAttachment(null)
+    setAttachments([])
     setActiveQuickAction(null)
     setLoading(true)
 
@@ -413,6 +428,8 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
       const systemContext = buildCoachSystemPrompt(context, activeQuickAction, lang || 'de')
       const recentHistory = chatHistory.slice(-4)
 
+      const imageUrls = currentAttachments.filter(a => a.type === 'image').map(a => a.dataUrl)
+
       const response = await callNexusAI({
         mode: 'chat',
         message: currentMsgText,
@@ -420,9 +437,11 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
           system: systemContext,
           history: recentHistory,
           quickAction: activeQuickAction,
-          imageUrl: currentAttachment?.dataUrl || null
+          imageUrls: imageUrls.length > 0 ? imageUrls : null,
+          imageUrl: imageUrls[0] || null
         },
-        imageUrl: currentAttachment?.dataUrl || null,
+        imageUrls: imageUrls.length > 0 ? imageUrls : null,
+        imageUrl: imageUrls[0] || null,
         temperature: 0.5,
         lang: lang || 'de'
       })
@@ -454,7 +473,7 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
         // Falls ein Timeout oder API-Absturz passiert, Text & Anhang zurückretten
         setError(`Fehler beim Senden: ${err.message || 'Timeout'}. Dein Text wurde zur Sicherheit wiederhergestellt.`)
         setMessage(currentMsgText)
-        if (currentAttachment) setAttachment(currentAttachment)
+        if (currentAttachments.length > 0) setAttachments(currentAttachments)
       }
       setChatHistory(prev => prev.slice(0, -1))
     } finally {
@@ -569,11 +588,28 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
             {chatHistory.map((msg, index) => (
               <div key={index} className={`nexus-msg ${msg.role}`}>
                 <div className="nexus-msg-content">
-                  {msg.attachment && (
+                  {/* Multi-Attachments Rendering */}
+                  {msg.attachments && msg.attachments.length > 0 ? (
+                    <div className="nexus-msg-attachments-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                      {msg.attachments.map((att, attIdx) => (
+                        att.type === 'image' ? (
+                          <div key={attIdx} className="nexus-msg-attachment">
+                            <img src={att.dataUrl} alt={att.name || `Attachment ${attIdx + 1}`} />
+                          </div>
+                        ) : (
+                          <div key={attIdx} className="nexus-coach-preview-doc-icon" style={{ borderRadius: '6px', padding: '6px' }}>
+                            <FileText size={20} />
+                            <span style={{ fontSize: '0.75rem', marginLeft: '4px' }}>{att.name}</span>
+                          </div>
+                        )
+                      ))}
+                    </div>
+                  ) : msg.attachment ? (
                     <div className="nexus-msg-attachment">
                       <img src={msg.attachment} alt={msg.fileName || 'Attachment'} />
                     </div>
-                  )}
+                  ) : null}
+
                   <ReactMarkdown 
                     remarkPlugins={[remarkGfm]}
                     components={{
@@ -657,27 +693,31 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
             ))}
           </div>
 
-          {/* Attachment Preview Bar */}
-          {attachment && (
-            <div className="nexus-coach-attachment-preview">
-              <div className="nexus-coach-preview-info">
-                {attachment.type === 'image' ? (
-                  <img src={attachment.dataUrl} alt="Preview" className="nexus-coach-preview-thumb" />
-                ) : (
-                  <div className="nexus-coach-preview-doc-icon">
-                    <FileText size={20} />
+          {/* Multiple Attachments Preview Bar */}
+          {attachments.length > 0 && (
+            <div className="nexus-coach-attachments-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+              {attachments.map((att, attIdx) => (
+                <div key={attIdx} className="nexus-coach-attachment-preview" style={{ marginBottom: 0 }}>
+                  <div className="nexus-coach-preview-info">
+                    {att.type === 'image' ? (
+                      <img src={att.dataUrl} alt="Preview" className="nexus-coach-preview-thumb" />
+                    ) : (
+                      <div className="nexus-coach-preview-doc-icon">
+                        <FileText size={20} />
+                      </div>
+                    )}
+                    <span className="nexus-coach-preview-name">{att.name}</span>
                   </div>
-                )}
-                <span className="nexus-coach-preview-name">{attachment.name}</span>
-              </div>
-              <button 
-                type="button" 
-                className="nexus-coach-preview-remove" 
-                onClick={() => setAttachment(null)}
-                title="Anhang entfernen"
-              >
-                <X size={16} />
-              </button>
+                  <button 
+                    type="button" 
+                    className="nexus-coach-preview-remove" 
+                    onClick={() => setAttachments(prev => prev.filter((_, i) => i !== attIdx))}
+                    title="Anhang entfernen"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
 
@@ -688,6 +728,7 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
               ref={fileInputRef} 
               onChange={handleFileSelect} 
               accept="image/*,.pdf,.txt,.md" 
+              multiple
               style={{ display: 'none' }} 
             />
 
@@ -696,7 +737,7 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
               type="button" 
               className="nexus-coach-attach-btn" 
               onClick={() => fileInputRef.current?.click()} 
-              title="Bild oder Dokument anhängen (oder Strg+V einfügen)"
+              title="Bilder oder Dokumente anhängen (bis zu 5 Screenshots/Frames per Strg+V)"
             >
               <Paperclip size={18} />
             </button>
@@ -720,14 +761,14 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
                 ? "🎙️ Höre zu... sprich jetzt frei ins Mikrofon..."
                 : (activeQuickAction 
                     ? SALES_QUICK_ACTIONS.find(a => a.id === activeQuickAction)?.placeholder
-                    : (attachment 
-                        ? t('nexus.coach.attachmentReady', 'Stelle eine Frage zu diesem Bild/Dokument oder drücke Enter...')
-                        : t('nexus.coach.inputPlaceholder', 'Frage stellen, Screenshot per Strg+V einfügen, sprechen oder Datei anhängen...')))}
+                    : (attachments.length > 0 
+                        ? `${attachments.length} Bild(er)/Frame(s) bereit. Stelle eine Frage dazu oder drücke Enter...`
+                        : t('nexus.coach.inputPlaceholder', 'Frage stellen, Screenshots/Frames per Strg+V einfügen, sprechen oder Datei anhängen...')))}
               disabled={loading}
               rows={2}
               style={{ flex: 1, resize: 'vertical', minHeight: '44px', maxHeight: '150px', padding: '10px 14px', borderRadius: '8px', border: 'none', background: 'transparent', color: 'var(--text-primary)', fontSize: '0.95rem', outline: 'none' }}
             />
-            <button type="submit" disabled={loading || (!message.trim() && !attachment)} style={{ marginBottom: '6px' }}>
+            <button type="submit" disabled={loading || (!message.trim() && attachments.length === 0)} style={{ marginBottom: '6px' }}>
               <ArrowUp size={20} />
             </button>
           </form>

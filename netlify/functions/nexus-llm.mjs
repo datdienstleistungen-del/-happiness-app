@@ -363,9 +363,16 @@ export const handler = async (event) => {
 
   try {
     const body = event.body ? JSON.parse(event.body) : {};
-    const { systemPrompt, userMessage, context, temperature, lang, targetLang, isLandingPreview, imageUrl, image_url } = body;
-    const attachedImageUrl = imageUrl || image_url || (context && (context.imageUrl || context.image_url)) || null;
-    const hasImage = !!attachedImageUrl;
+    const { systemPrompt, userMessage, context, temperature, lang, targetLang, isLandingPreview, imageUrl, image_url, imageUrls, image_urls } = body;
+    let attachedImages = [];
+    if (Array.isArray(imageUrls) && imageUrls.length > 0) attachedImages = imageUrls;
+    else if (Array.isArray(image_urls) && image_urls.length > 0) attachedImages = image_urls;
+    else if (Array.isArray(context?.imageUrls) && context.imageUrls.length > 0) attachedImages = context.imageUrls;
+    else if (Array.isArray(context?.image_urls) && context.image_urls.length > 0) attachedImages = context.image_urls;
+    else if (imageUrl || image_url || context?.imageUrl || context?.image_url) {
+      attachedImages = [imageUrl || image_url || context?.imageUrl || context?.image_url];
+    }
+    const hasImage = attachedImages.length > 0;
 
     const authHeader = (event.headers && (event.headers.authorization || event.headers.Authorization)) || '';
     const token = authHeader ? authHeader.replace('Bearer ', '').trim() : '';
@@ -532,12 +539,15 @@ Deine Aufgabe ist es, den bereitgestellten Vertrag, die AGB oder das Dokument gr
     }
     
     if (hasImage) {
+      const contentArray = [
+        { type: "text", text: userMessage || "Bitte analysiere diese angehängten Bilder / Dokumente / Video-Frames gründlich im NeXus-Vertriebs-, Content- und Video-Kontext." }
+      ];
+      attachedImages.forEach(imgUrl => {
+        if (imgUrl) contentArray.push({ type: "image_url", image_url: { url: imgUrl } });
+      });
       messages.push({
         role: "user",
-        content: [
-          { type: "text", text: userMessage || "Bitte analysiere dieses angehängte Bild / Dokument gründlich im NeXus-Vertriebs- und Recherche-Kontext." },
-          { type: "image_url", image_url: { url: attachedImageUrl } }
-        ]
+        content: contentArray
       });
     } else {
       messages.push({ role: "user", content: userMessage });

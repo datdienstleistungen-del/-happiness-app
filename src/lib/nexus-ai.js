@@ -30,7 +30,8 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
     lang = modeOrParams.lang || lang || 'de'
     targetLang = modeOrParams.targetLang || lang
     imageUrl = modeOrParams.imageUrl || modeOrParams.image_url || modeOrParams.context?.imageUrl || modeOrParams.context?.image_url || null
-    const { mode: _, targetLang: __, lang: ___, imageUrl: ____, image_url: _____, ...rest } = modeOrParams
+    const imageUrls = modeOrParams.imageUrls || modeOrParams.image_urls || modeOrParams.context?.imageUrls || modeOrParams.context?.image_urls || (imageUrl ? [imageUrl] : null)
+    const { mode: _, targetLang: __, lang: ___, imageUrl: ____, image_url: _____, imageUrls: ______, image_urls: _______, ...rest } = modeOrParams
     
     // Build message from available params
     if (rest.message) {
@@ -334,6 +335,7 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
         lang: lang,
         targetLang: targetLang,
         imageUrl: imageUrl,
+        imageUrls: (typeof imageUrls !== 'undefined' && imageUrls) ? imageUrls : (imageUrl ? [imageUrl] : (context?.imageUrls || null)),
         isLandingPreview: !token || mode === 'trigger_hypotheses' || mode === 'angebotsanalyse' || mode === 'trigger_detection'
       }),
       signal: controller.signal
