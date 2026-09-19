@@ -681,12 +681,13 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 8px;
   margin-top: 8px;
   padding-top: 6px;
   border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-.nexus-msg-speak-btn {
+.nexus-msg-action-btn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -701,16 +702,26 @@
   transition: all 0.15s ease;
 }
 
-.nexus-msg-speak-btn:hover {
+.nexus-msg-action-btn:hover {
   background: #f0f9ff;
   color: #0284c7;
   border-color: #bae6fd;
 }
 
-.nexus-msg-speak-btn.speaking {
+.nexus-msg-action-btn.speaking {
   background: #e0f2fe;
   color: #0369a1;
   border-color: #7dd3fc;
+}
+
+.nexus-msg-action-btn.copied {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #86efac;
+}
+
+.nexus-copy-check {
+  color: #16a34a;
 }
 
 .nexus-audio-bars {

@@ -4,7 +4,7 @@ import {
   Target, Send, ShieldAlert, Sparkles, Trash2, ArrowRight, ArrowUp, 
   Check, RefreshCw, Paperclip, X, FileText, TrendingUp, Users, 
   AlertCircle, MessageSquare, ArrowLeft, FileCheck, Image as ImageIcon, ExternalLink,
-  Mic, MicOff, Volume2, VolumeX, Radio
+  Mic, MicOff, Volume2, VolumeX, Radio, Copy
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -68,9 +68,10 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const fileInputRef = useRef(null)
   
-  // Voice & Audio States
+  // Voice & Audio & Copy States
   const [isListening, setIsListening] = useState(false)
   const [speakingIndex, setSpeakingIndex] = useState(null)
+  const [copiedIndex, setCopiedIndex] = useState(null)
   const [autoVoice, setAutoVoice] = useState(() => {
     return localStorage.getItem('nexus_coach_autovoice') === 'true'
   })
@@ -352,6 +353,18 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
     window.speechSynthesis.speak(utterance)
   }
 
+  const handleCopyText = async (text, index) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedIndex(index)
+      setTimeout(() => {
+        setCopiedIndex(prev => (prev === index ? null : prev))
+      }, 2000)
+    } catch (err) {
+      console.error('Failed to copy text:', err)
+    }
+  }
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -592,7 +605,17 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
                     <div className="nexus-msg-footer-bar">
                       <button
                         type="button"
-                        className={`nexus-msg-speak-btn ${speakingIndex === index ? 'speaking' : ''}`}
+                        className={`nexus-msg-action-btn ${copiedIndex === index ? 'copied' : ''}`}
+                        onClick={() => handleCopyText(msg.content, index)}
+                        title="Text / Entwurf in Zwischenablage kopieren"
+                      >
+                        {copiedIndex === index ? <Check size={14} className="nexus-copy-check" /> : <Copy size={14} />}
+                        <span>{copiedIndex === index ? "Kopiert!" : "Kopieren"}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={`nexus-msg-action-btn ${speakingIndex === index ? 'speaking' : ''}`}
                         onClick={() => speakText(msg.content, index)}
                         title={speakingIndex === index ? "Sprachausgabe stoppen" : "Antwort vorlesen"}
                       >
