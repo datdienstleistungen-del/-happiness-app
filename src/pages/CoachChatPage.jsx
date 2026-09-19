@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { 
   Target, Send, ShieldAlert, Sparkles, Trash2, ArrowRight, ArrowUp, 
   Check, RefreshCw, Paperclip, X, FileText, TrendingUp, Users, 
-  AlertCircle, MessageSquare, ArrowLeft, FileCheck, Image as ImageIcon, ExternalLink
+  AlertCircle, MessageSquare, ArrowLeft, FileCheck, Image as ImageIcon, ExternalLink,
+  Mic, MicOff, Volume2, VolumeX, Radio
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -23,6 +24,20 @@ function getOrCreateVisitorId() {
     localStorage.setItem('nexus_visitor_id', vid)
   }
   return vid
+}
+
+function cleanTextForSpeech(text) {
+  if (!text) return ''
+  return text
+    .replace(/```[\s\S]*?```/g, ' Code-Block weggelassen. ')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/##SEARCH##\([^)]+\)/g, '')
+    .replace(/\|[^\n]+\|/g, '') // remove markdown tables
+    .replace(/[#*_~`>-]/g, '')
+    .replace(/https?:\/\/[^\s]+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 export default function CoachChatPage({ embeddedLeadId, onClose }) {
@@ -52,6 +67,14 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
   const [activeQuickAction, setActiveQuickAction] = useState(null)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const fileInputRef = useRef(null)
+  
+  // Voice & Audio States
+  const [isListening, setIsListening] = useState(false)
+  const [speakingIndex, setSpeakingIndex] = useState(null)
+  const [autoVoice, setAutoVoice] = useState(() => {
+    return localStorage.getItem('nexus_coach_autovoice') === 'true'
+  })
+  const recognitionRef = useRef(null)
   
   // Finde den spezifischen Lead (Opportunity) und seine Trigger
   // Wenn keine leadId: Nimm die letzte Opportunity aus der Pipeline
@@ -192,6 +215,143 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
     }
   }
 
+  // Cleanup voice on unmount
+  useEffect(() => {
+    return () => {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel()
+      }
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+    }
+  }, [])
+
+  const toggleAutoVoice = () => {
+    const next = !autoVoice
+    setAutoVoice(next)
+    localStorage.setItem('nexus_coach_autovoice', String(next))
+    if (!next && window.speechSynthesis) {
+      window.speechSynthesis.cancel()
+      setSpeakingIndex(null)
+    }
+  }
+
+  const toggleListening = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      alert('Spracherkennung wird von deinem Browser nicht unterstützt. Bitte verwende Google Chrome, Microsoft Edge oder Safari.')
+      return
+    }
+
+    if (isListening) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+      setIsListening(false)
+      return
+    }
+
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel()
+      setSpeakingIndex(null)
+    }
+
+    try {
+      const rec = new SpeechRecognition()
+      rec.continuous = false
+      rec.interimResults = true
+      
+      const langMap = {
+        de: 'de-DE',
+        en: 'en-US',
+        es: 'es-ES',
+        fr: 'fr-FR',
+        it: 'it-IT',
+        nl: 'nl-NL',
+        el: 'el-GR'
+      }
+      rec.lang = langMap[lang] || 'de-DE'
+
+      rec.onstart = () => {
+        setIsListening(true)
+      }
+
+      rec.onresult = (event) => {
+        let finalTranscript = ''
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript
+          }
+        }
+        if (finalTranscript) {
+          setMessage(prev => prev ? `${prev} ${finalTranscript.trim()}` : finalTranscript.trim())
+        }
+      }
+
+      rec.onerror = (e) => {
+        console.warn('[CoachChat] Speech recognition error:', e.error)
+        setIsListening(false)
+      }
+
+      rec.onend = () => {
+        setIsListening(false)
+      }
+
+      recognitionRef.current = rec
+      rec.start()
+    } catch (err) {
+      console.error('[CoachChat] Failed to start speech recognition:', err)
+      setIsListening(false)
+    }
+  }
+
+  const speakText = (text, index) => {
+    if (!window.speechSynthesis) {
+      alert('Sprachausgabe wird in diesem Browser nicht unterstützt.')
+      return
+    }
+
+    if (speakingIndex === index) {
+      window.speechSynthesis.cancel()
+      setSpeakingIndex(null)
+      return
+    }
+
+    window.speechSynthesis.cancel()
+    const clean = cleanTextForSpeech(text)
+    if (!clean) return
+
+    const utterance = new SpeechSynthesisUtterance(clean)
+    const langMap = {
+      de: 'de-DE',
+      en: 'en-US',
+      es: 'es-ES',
+      fr: 'fr-FR',
+      it: 'it-IT',
+      nl: 'nl-NL',
+      el: 'el-GR'
+    }
+    utterance.lang = langMap[lang] || 'de-DE'
+    utterance.rate = 1.05
+    utterance.pitch = 1.0
+
+    const voices = window.speechSynthesis.getVoices()
+    const voice = voices.find(v => v.lang.startsWith(langMap[lang] || 'de') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Neural') || v.default)) ||
+                  voices.find(v => v.lang.startsWith(langMap[lang] || 'de'))
+    if (voice) utterance.voice = voice
+
+    utterance.onend = () => {
+      setSpeakingIndex(null)
+    }
+    utterance.onerror = () => {
+      setSpeakingIndex(null)
+    }
+
+    setSpeakingIndex(index)
+    window.speechSynthesis.speak(utterance)
+  }
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -204,6 +364,11 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
   const handleSend = async (e) => {
     if (e) e.preventDefault()
     if ((!message.trim() && !attachment) || loading) return
+
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop()
+      setIsListening(false)
+    }
 
     setError('')
     const currentAttachment = attachment
@@ -256,7 +421,15 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
         } else if (typeof response === 'object') {
           textContent = response.response || response.message || response.answer || response.content || JSON.stringify(response)
         }
-        setChatHistory(prev => [...prev, { role: 'assistant', content: textContent }])
+        setChatHistory(prev => {
+          const next = [...prev, { role: 'assistant', content: textContent }]
+          if (autoVoice) {
+            setTimeout(() => {
+              speakText(textContent, next.length - 1)
+            }, 100)
+          }
+          return next
+        })
       } else {
         throw new Error('Leere Antwort vom Server')
       }
@@ -305,23 +478,37 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
             <div className="nexus-coach-info">
               <h1>{currentLead ? `Coach: ${currentLead.nexus_companies?.name}` : 'NeXus Sales Coach'}</h1>
               <span className="nexus-coach-subtitle">
-                {currentLead ? `Lead Intelligence für ${currentLead.nexus_companies?.industry || 'Unbekannte Branche'}` : 'Dein Vertriebsassistent'}
+                {currentLead ? `Lead Intelligence für ${currentLead.nexus_companies?.industry || 'Unbekannte Branche'}` : 'Dein Vertriebs- & Content-Coach'}
               </span>
             </div>
           </div>
         </div>
-        {chatHistory.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button 
-            className="nexus-coach-clear-btn" 
-            onClick={() => {
-              if (window.confirm('Gesprächsverlauf löschen?')) {
-                setChatHistory([])
-              }
-            }}
+            className={`nexus-coach-voice-toggle ${autoVoice ? 'active' : ''}`}
+            onClick={toggleAutoVoice}
+            title={autoVoice ? "Automatische Sprachausgabe: Aktiv (Klicken zum Ausschalten)" : "Automatische Sprachausgabe: Aus (Klicken zum Einschalten)"}
           >
-            <Trash2 size={16} />
+            {autoVoice ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            <span>{autoVoice ? 'Voice An' : 'Voice Aus'}</span>
           </button>
-        )}
+
+          {chatHistory.length > 0 && (
+            <button 
+              className="nexus-coach-clear-btn" 
+              onClick={() => {
+                if (window.confirm('Gesprächsverlauf löschen?')) {
+                  if (window.speechSynthesis) window.speechSynthesis.cancel()
+                  setSpeakingIndex(null)
+                  setChatHistory([])
+                }
+              }}
+              title="Verlauf löschen"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+        </div>
       </header>
 
       <main className="nexus-coach-main">
@@ -400,6 +587,21 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
                   >
                     {msg.content}
                   </ReactMarkdown>
+                  
+                  {msg.role === 'assistant' && (
+                    <div className="nexus-msg-footer-bar">
+                      <button
+                        type="button"
+                        className={`nexus-msg-speak-btn ${speakingIndex === index ? 'speaking' : ''}`}
+                        onClick={() => speakText(msg.content, index)}
+                        title={speakingIndex === index ? "Sprachausgabe stoppen" : "Antwort vorlesen"}
+                      >
+                        {speakingIndex === index ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                        <span>{speakingIndex === index ? "Stopp" : "Vorlesen"}</span>
+                        {speakingIndex === index && <span className="nexus-audio-bars"><span></span><span></span><span></span></span>}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -476,16 +678,28 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
               <Paperclip size={18} />
             </button>
 
+            {/* Microphone / Speech-to-Text Button */}
+            <button 
+              type="button" 
+              className={`nexus-coach-mic-btn ${isListening ? 'listening' : ''}`} 
+              onClick={toggleListening} 
+              title={isListening ? "Spracherkennung beenden (Höre zu...)" : "Spracheingabe starten (Mikrofon)"}
+            >
+              {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+            </button>
+
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
-              placeholder={activeQuickAction 
-                ? SALES_QUICK_ACTIONS.find(a => a.id === activeQuickAction)?.placeholder
-                : (attachment 
-                    ? t('nexus.coach.attachmentReady', 'Stelle eine Frage zu diesem Bild/Dokument oder drücke Enter...')
-                    : t('nexus.coach.inputPlaceholder', 'Frage stellen, Screenshot per Strg+V einfügen oder Datei anhängen...'))}
+              placeholder={isListening 
+                ? "🎙️ Höre zu... sprich jetzt frei ins Mikrofon..."
+                : (activeQuickAction 
+                    ? SALES_QUICK_ACTIONS.find(a => a.id === activeQuickAction)?.placeholder
+                    : (attachment 
+                        ? t('nexus.coach.attachmentReady', 'Stelle eine Frage zu diesem Bild/Dokument oder drücke Enter...')
+                        : t('nexus.coach.inputPlaceholder', 'Frage stellen, Screenshot per Strg+V einfügen, sprechen oder Datei anhängen...')))}
               disabled={loading}
               rows={2}
               style={{ flex: 1, resize: 'vertical', minHeight: '44px', maxHeight: '150px', padding: '10px 14px', borderRadius: '8px', border: 'none', background: 'transparent', color: 'var(--text-primary)', fontSize: '0.95rem', outline: 'none' }}
