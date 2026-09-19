@@ -141,12 +141,50 @@ export default function SalesWorkspacePage() {
         uiLang: lang || 'de',
         lang: lang || 'de'
       });
+      // 1. In State setzen
       setSocialState(prev => ({
         ...prev,
         generatingOutreach: false,
         outreachData: res
       }));
-      trackSocialOutreachGenerated(activity.platform, fullContext?.company?.name || formData.company, res.post_lang);
+
+      const compName = fullContext?.company?.name || formData.company;
+      const oppKey = activeOppId || fullContext?.opportunity?.id || compName;
+
+      // 2. Im localStorage sichern (bleibt erhalten, wenn man zu LinkedIn wechselt)
+      if (oppKey) {
+        try {
+          localStorage.setItem(`nexus_social_outreach_${oppKey}`, JSON.stringify({
+            activity,
+            outreachData: res,
+            savedAt: new Date().toISOString()
+          }));
+        } catch (e) {}
+      }
+
+      // 3. Dauerhaft in der Opportunity-Historie (Supabase activities) speichern
+      const oppId = activeOppId || fullContext?.opportunity?.id;
+      if (oppId && user?.id) {
+        try {
+          await supabase.from('nexus_activities').insert({
+            opportunity_id: oppId,
+            user_id: user.id,
+            activity_type: 'social_reachout',
+            description: `Social Outreach (${activity.platform?.toUpperCase() || 'Social'}): ${res.comment || res.direct_message || 'Nachricht generiert'}`,
+            metadata: {
+              platform: activity.platform,
+              url: activity.url,
+              comment: res.comment,
+              direct_message: res.direct_message,
+              strategy: res.strategy
+            }
+          });
+        } catch (e) {
+          console.warn('[SocialOutreach] Save activity failed:', e.message);
+        }
+      }
+
+      trackSocialOutreachGenerated(activity.platform, compName, res.post_lang);
     } catch (err) {
       console.error("Error generating outreach:", err);
       setSocialState(prev => ({ ...prev, generatingOutreach: false, error: err.message }));
@@ -275,6 +313,24 @@ export default function SalesWorkspacePage() {
             ...(genData).map(g => ({ ...g, _type: 'content' }))
           ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
           setHistoryItems(combined);
+
+          // Wiederherstellung des letzten Social Reachout aus localStorage
+          const oppKey = activeOppId || ctx.opportunity?.id || companyName;
+          try {
+            const savedSocial = localStorage.getItem(`nexus_social_outreach_${oppKey}`);
+            if (savedSocial) {
+              const parsed = JSON.parse(savedSocial);
+              if (parsed && parsed.outreachData) {
+                setSocialState(prev => ({
+                  ...prev,
+                  loadedCompany: companyName,
+                  selectedActivity: parsed.activity || null,
+                  outreachData: parsed.outreachData,
+                  activities: parsed.activity ? [parsed.activity] : prev.activities
+                }));
+              }
+            }
+          } catch(e) {}
 
           // Automatische Kontaktsuche im Hintergrund, falls kein Kontakt vorhanden ist
           if (!existingContact && companyName) {
@@ -906,6 +962,31 @@ export default function SalesWorkspacePage() {
                              return contentToRender;
                           })()}
                         </div>
+                      ) : item.activity_type === 'social_reachout' && item.metadata ? (
+                        <div style={{ fontSize: '0.9rem', marginTop: '6px', padding: '10px', background: 'var(--bg-card)', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <span style={{ fontWeight: 600, color: 'var(--color-koralle)', fontSize: '0.8rem' }}>
+                              Plattform: {item.metadata.platform?.toUpperCase() || 'SOCIAL'}
+                            </span>
+                            {item.metadata.url && (
+                              <a href={item.metadata.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: 'var(--color-koralle)', textDecoration: 'none' }}>
+                                Original-Post ↗
+                              </a>
+                            )}
+                          </div>
+                          {item.metadata.comment && (
+                            <div style={{ marginBottom: '6px' }}>
+                              <strong style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Öffentlicher Kommentar:</strong>
+                              <p style={{ margin: '4px 0', whiteSpace: 'pre-wrap' }}>{item.metadata.comment}</p>
+                            </div>
+                          )}
+                          {item.metadata.direct_message && (
+                            <div>
+                              <strong style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Direktnachricht (DM):</strong>
+                              <p style={{ margin: '4px 0', whiteSpace: 'pre-wrap' }}>{item.metadata.direct_message}</p>
+                            </div>
+                          )}
+                        </div>
                       ) : null}
                     </div>
                   ))
@@ -915,7 +996,24 @@ export default function SalesWorkspacePage() {
 
             {/* Tab: Aktion (Layout angepasst, damit Formular breiter ist) */}
             {activeTab === 'aktion' && (
-              <div className="tab-content-aktion" style={{ display: 'flex', flexDirection: 'column', gap: '24px', flex: 1 }}>
+              <div className="tab-content-aktion" style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}>
+                
+                {/* Social Outreach Erinnerungs-Banner */}
+                {socialState.outreachData && selectedMode !== 'forum_response' && (
+                  <div style={{ padding: '10px 14px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                    <div style={{ fontSize: '0.85rem' }}>
+                      <strong style={{ color: 'var(--color-koralle)' }}>📢 Gespeicherter Social Outreach vorhanden:</strong>{' '}
+                      {socialState.outreachData.comment ? `Kommentar: "${socialState.outreachData.comment.slice(0, 90)}..."` : (socialState.outreachData.direct_message ? `DM: "${socialState.outreachData.direct_message.slice(0, 90)}..."` : 'Nachricht verfasst')}
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => setSelectedMode('forum_response')}
+                      style={{ fontSize: '0.8rem', background: 'transparent', color: 'var(--color-koralle)', border: '1px solid var(--color-koralle)', borderRadius: '4px', padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    >
+                      Im Social Reachout ansehen ↗
+                    </button>
+                  </div>
+                )}
                 <div className="sales-workspace-actions" style={{ width: '100%' }}>
                   <h3 style={{ marginTop: 0 }}>{t('nexus.selectMode')}</h3>
                   <div className="mode-list" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
