@@ -136,11 +136,49 @@ export default function App() {
     setProfile(null)
   }
 
+  async function signInWithGoogle() {
+    return await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/nexus/dashboard`
+      }
+    })
+  }
+
+  async function signInWithPassword(email, password) {
+    return await supabase.auth.signInWithPassword({ email, password })
+  }
+
+  async function signUp(email, password, name) {
+    const cleanUser = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '') || 'user'
+    const username = `${cleanUser}_${Math.floor(1000 + Math.random() * 9000)}`
+    return await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name: name || cleanUser,
+          username: username
+        },
+        emailRedirectTo: `${window.location.origin}/nexus/dashboard`
+      }
+    })
+  }
+
   useOneSignal(user)
 
   return (
     <LanguageProvider>
-      <AuthContext.Provider value={{ user, profile, loading, fetchProfile, signOut }}>
+      <AuthContext.Provider value={{
+        user,
+        profile,
+        loading,
+        fetchProfile,
+        signOut,
+        signInWithGoogle,
+        signInWithPassword,
+        signUp
+      }}>
         <VideoFinderProvider>
           <VideoScriptProvider>
             <CapCutProvider>

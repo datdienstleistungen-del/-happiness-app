@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../context/AuthContext'
 import { fetchFreePassStatus, formatRemainingTime } from '../../../lib/nexus-free-pass'
@@ -10,8 +10,10 @@ import {
 
 export default function RedditSplitHero({ onOpenAuth }) {
   const navigate = useNavigate()
-  const { user, signInWithGoogle } = useAuth()
+  const { user, signInWithGoogle, signUp, signInWithPassword } = useAuth()
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [authError, setAuthError] = useState('')
   const [loading, setLoading] = useState(false)
   const [passData, setPassData] = useState({ remaining_seconds: 86400, is_active: true, is_expired: false })
   const [demoStep, setDemoStep] = useState(0) // 0: initial, 1: scanned, 2: pitch shown
@@ -39,23 +41,64 @@ export default function RedditSplitHero({ onOpenAuth }) {
   const handleGoogleLogin = async () => {
     try {
       setLoading(true)
+      setAuthError('')
       if (signInWithGoogle) {
-        await signInWithGoogle()
+        const { error } = await signInWithGoogle()
+        if (error) setAuthError(error.message)
       } else {
         onOpenAuth?.('google')
       }
     } catch (err) {
       console.error(err)
-      onOpenAuth?.('google')
+      setAuthError(err.message)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleEmailSubmit = (e) => {
+  const handleDirectAuth = async (e) => {
     e.preventDefault()
     if (!email) return
-    navigate(`/register?email=${encodeURIComponent(email)}`)
+    setAuthError('')
+    
+    // If no password entered yet, redirect to register page with prefilled email
+    if (!password) {
+      navigate(`/register?email=${encodeURIComponent(email)}`)
+      return
+    }
+
+    if (password.length < 6) {
+      setAuthError(isDe ? 'Passwort muss mind. 6 Zeichen lang sein.' : 'Password must be at least 6 characters.')
+      return
+    }
+
+    try {
+      setLoading(true)
+      // Try signing up first
+      const { data, error: upError } = await signUp(email, password)
+      
+      if (upError) {
+        // If already exists, attempt instant password login
+        if (upError.message.includes('already registered')) {
+          const { error: inError } = await signInWithPassword(email, password)
+          if (!inError) {
+            navigate('/nexus/dashboard')
+            return
+          } else {
+            setAuthError(isDe ? 'Falsches Passwort für dieses Konto.' : 'Incorrect password for this account.')
+            return
+          }
+        }
+        setAuthError(upError.message)
+        return
+      }
+
+      navigate('/nexus/dashboard')
+    } catch (err) {
+      setAuthError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleCopyPitch = () => {
@@ -380,24 +423,60 @@ export default function RedditSplitHero({ onOpenAuth }) {
               <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
             </div>
 
+            {authError && (
+              <div style={{
+                background: '#fee2e2',
+                color: '#b91c1c',
+                padding: '10px 14px',
+                borderRadius: '10px',
+                fontSize: '13px',
+                fontWeight: 600,
+                marginBottom: '14px',
+                border: '1px solid #fecaca'
+              }}>
+                {authError}
+              </div>
+            )}
+
             {/* Email Form */}
-            <form onSubmit={handleEmailSubmit}>
-              <div style={{ marginBottom: '14px' }}>
+            <form onSubmit={handleDirectAuth}>
+              <div style={{ marginBottom: '12px' }}>
                 <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                  {isDe ? 'Deine E-Mail-Adresse' : 'Your email address'}
+                  {isDe ? 'Deine geschäftliche E-Mail' : 'Your work email'}
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={isDe ? 'z. B. name@beispiel.de' : 'e.g. name@gmail.com'}
+                  placeholder={isDe ? 'z. B. name@firma.de' : 'e.g. name@company.com'}
                   required
                   style={{
                     width: '100%',
-                    padding: '13px 14px',
+                    padding: '12px 14px',
                     borderRadius: '12px',
                     border: '1px solid #cbd5e1',
-                    fontSize: '15px',
+                    fontSize: '14.5px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  {isDe ? 'Passwort (mind. 6 Zeichen)' : 'Password (min. 6 characters)'}
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={isDe ? '••••••••' : '••••••••'}
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px',
+                    borderRadius: '12px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '14.5px',
                     outline: 'none',
                     boxSizing: 'border-box'
                   }}
@@ -406,6 +485,7 @@ export default function RedditSplitHero({ onOpenAuth }) {
 
               <button
                 type="submit"
+                disabled={loading}
                 style={{
                   width: '100%',
                   background: 'linear-gradient(135deg, #0d5e42 0%, #064e3b 100%)',
@@ -415,17 +495,18 @@ export default function RedditSplitHero({ onOpenAuth }) {
                   padding: '14px',
                   fontSize: '15.5px',
                   fontWeight: 800,
-                  cursor: 'pointer',
+                  cursor: loading ? 'wait' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px',
                   boxShadow: '0 4px 14px rgba(13, 94, 66, 0.35)',
-                  transition: 'transform 0.1s ease'
+                  transition: 'transform 0.1s ease',
+                  opacity: loading ? 0.8 : 1
                 }}
               >
                 <Zap size={18} />
-                <span>{isDe ? 'Jetzt 5 Deals sichern (Kostenlos)' : 'Claim 5 Free Deals (Get Started)'}</span>
+                <span>{loading ? (isDe ? 'Einen Moment...' : 'One moment...') : (isDe ? 'Jetzt 5 Deals sichern (Kostenlos)' : 'Claim 5 Free Deals (Get Started)')}</span>
               </button>
             </form>
 
