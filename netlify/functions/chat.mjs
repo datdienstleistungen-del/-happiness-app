@@ -298,8 +298,8 @@ ${message}`
       // Try providers in order: Mistral -> Groq -> OpenRouter -> DeepSeek
       const leadProviders = [
         { name: 'mistral', url: 'https://api.mistral.ai/v1/chat/completions', key: process.env.MISTRAL_API_KEY, model: 'mistral-small-latest' },
-        { name: 'groq', url: 'https://api.groq.com/openai/v1/chat/completions', key: process.env.GROQ_API_KEY, model: 'qwen/qwen3.8-27b' },
-        { name: 'openrouter', url: 'https://openrouter.ai/api/v1/chat/completions', key: process.env.OPENROUTER_API_KEY, model: 'google/gemma-4-26b-a4b-it:free' },
+        { name: 'groq', url: 'https://api.groq.com/openai/v1/chat/completions', key: process.env.GROQ_API_KEY, model: 'llama-3.1-8b-instant' },
+        { name: 'openrouter', url: 'https://openrouter.ai/api/v1/chat/completions', key: process.env.OPENROUTER_API_KEY, model: 'meta-llama/llama-3.3-70b-instruct:free' },
         { name: 'deepseek', url: 'https://api.deepseek.com/chat/completions', key: process.env.DEEPSEEK_API_KEY, model: 'deepseek-chat' },
       ]
 
@@ -628,7 +628,7 @@ ${message}`
               method: 'POST',
               headers: { 'Authorization': `Bearer ${textApiKey}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                model: 'qwen/qwen3.8-27b',
+                model: 'llama-3.1-8b-instant',
                 messages: buildMessages(historyLimit, true),
                 temperature: 0.1,
                 max_tokens: 4096
@@ -640,7 +640,7 @@ ${message}`
               aiResponse = fallbackData.choices?.[0]?.message?.content || 'Entschuldigung, ich konnte keine Antwort generieren.'
               usage = fallbackData.usage
               provider = 'groq'
-              modelName = 'openai/gpt-oss-20b'
+              modelName = 'llama-3.1-8b-instant'
               return {
                 statusCode: 200,
                 headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
@@ -679,7 +679,7 @@ ${message}`
       // Stage 0: Groq (Primary because it is extremely fast and avoids Netlify 10s timeout)
       const groqKey = process.env.GROQ_API_KEY
       if (groqKey) {
-        const groqModels = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound-mini', 'groq/compound', 'qwen/qwen3.8-27b']
+        const groqModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it']
         for (const model of groqModels) {
           try {
             const groqRes = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -715,7 +715,7 @@ ${message}`
       // Stage 1: OpenRouter (kostenlos - primär, übersprungen bei Skript-Audit wegen Latenz)
       const orKey = process.env.OPENROUTER_API_KEY
       if (!success && orKey && !isScriptAudit) {
-        const orModels = ['openrouter/free', 'google/gemma-4-26b-a4b-it:free', 'nvidia/nemotron-3.5-lightning:free']
+        const orModels = ['meta-llama/llama-3.3-70b-instruct:free', 'meta-llama/llama-3.1-8b-instruct:free', 'mistralai/mistral-7b-instruct:free', 'google/gemini-2.0-flash-exp:free', 'deepseek/deepseek-chat']
         for (const model of orModels) {
           try {
             const orRes = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {

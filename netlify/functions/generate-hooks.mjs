@@ -139,7 +139,7 @@ NUR das JSON Array. Kein Text davor oder danach. Kein markdown.`
           method: 'POST',
           headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: 'openai/gpt-oss-120b',
+            model: 'llama-3.3-70b-versatile',
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.8,
             max_tokens: 2048

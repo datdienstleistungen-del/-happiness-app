@@ -46,12 +46,11 @@ async function callLLM(prompt, temperature = 0.7) {
   const openrouterKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY || BACKUP_OPENROUTER;
 
   const providers = [
-    { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'openai/gpt-oss-120b' },
-    { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'openai/gpt-oss-20b' },
-    { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'groq/compound-mini' },
-    { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'qwen/qwen3.8-27b' },
+    { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'llama-3.3-70b-versatile' },
+    { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'llama-3.1-8b-instant' },
+    { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'mixtral-8x7b-32768' },
     { url: 'https://api.mistral.ai/v1/chat/completions', key: mistralKey, model: 'mistral-small-latest' },
-    { url: 'https://openrouter.ai/api/v1/chat/completions', key: openrouterKey, model: 'openrouter/free' },
+    { url: 'https://openrouter.ai/api/v1/chat/completions', key: openrouterKey, model: 'meta-llama/llama-3.3-70b-instruct:free' },
     { url: 'https://api.deepseek.com/chat/completions', key: process.env.DEEPSEEK_API_KEY, model: 'deepseek-chat' },
     { url: 'https://api.openai.com/v1/chat/completions', key: process.env.OPENAI_API_KEY, model: 'gpt-4o-mini' }
   ];

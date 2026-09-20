@@ -121,22 +121,22 @@ Nur valides JSON ausgeben.`
   const groqKey = process.env.GROQ_API_KEY
   if (groqKey) {
     providers.push({
-      name: 'groq-120b',
+      name: 'groq-70b',
       url: 'https://api.groq.com/openai/v1/chat/completions',
       key: groqKey,
-      model: 'openai/gpt-oss-120b'
+      model: 'llama-3.3-70b-versatile'
     })
     providers.push({
-      name: 'groq-20b',
+      name: 'groq-8b',
       url: 'https://api.groq.com/openai/v1/chat/completions',
       key: groqKey,
-      model: 'openai/gpt-oss-20b'
+      model: 'llama-3.1-8b-instant'
     })
     providers.push({
-      name: 'groq-qwen',
+      name: 'groq-mixtral',
       url: 'https://api.groq.com/openai/v1/chat/completions',
       key: groqKey,
-      model: 'qwen/qwen3.8-27b'
+      model: 'mixtral-8x7b-32768'
     })
   }
 
@@ -147,7 +147,7 @@ Nur valides JSON ausgeben.`
       name: 'openrouter',
       url: 'https://openrouter.ai/api/v1/chat/completions',
       key: orKey,
-      model: 'openrouter/free'
+      model: 'meta-llama/llama-3.3-70b-instruct:free'
     })
   }
 

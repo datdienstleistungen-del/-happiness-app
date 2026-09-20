@@ -59,7 +59,7 @@ async function callAI(messages, { temperature = 0.3, max_tokens = 4096, jsonMode
   // 1. Groq (High Speed & Free)
   const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ;
   if (groqKey) {
-    const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound-mini', 'groq/compound', 'qwen/qwen3.8-27b'];
+    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it'];
     for (const model of models) {
       try {
         const payload = { model, messages, temperature, max_tokens };
