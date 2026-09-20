@@ -320,7 +320,13 @@ export default function SalesWorkspacePage() {
             const savedSocial = localStorage.getItem(`nexus_social_outreach_${oppKey}`);
             if (savedSocial) {
               const parsed = JSON.parse(savedSocial);
-              if (parsed && parsed.outreachData) {
+              const badKeywords = ['weather channel', 'history channel', 'monarch watch', 'vpn tutorial', 'star wars', 'fortnite'];
+              const actText = ((parsed?.activity?.title || '') + ' ' + (parsed?.activity?.snippet || '')).toLowerCase();
+              const isInvalid = badKeywords.some(bad => actText.includes(bad));
+              
+              if (isInvalid) {
+                localStorage.removeItem(`nexus_social_outreach_${oppKey}`);
+              } else if (parsed && parsed.outreachData) {
                 setSocialState(prev => ({
                   ...prev,
                   loadedCompany: companyName,
