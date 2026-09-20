@@ -359,21 +359,29 @@ async function getYouTubeActivities(companyName, verifiedYtProfile) {
   }
 
   // B. Targeted official search if no activities yet
-  if (activities.length === 0) {
+  if (activities.length === 0 && companyName && companyName.length >= 2) {
     try {
-      const results = await searchWeb(`site:youtube.com inurl:watch "${companyName}" (keynote OR demo OR announcement OR interview OR product)`, { maxResults: 4 });
+      const results = await searchWeb(`site:youtube.com/watch "${companyName}"`, { maxResults: 4 });
+      const compLower = companyName.toLowerCase();
+      const compWords = compLower.split(/\s+/).filter(w => w.length > 2);
+      
       for (const r of results) {
-        if (r.url.includes('youtube.com/watch') && !activities.some(a => a.url === r.url)) {
-          activities.push({
-            platform: 'youtube',
-            type: 'video',
-            url: r.url,
-            title: r.title ? r.title.replace(' - YouTube', '').trim() : 'Produktvideo / Keynote',
-            snippet: r.snippet || '',
-            date: r.date || 'Aktuell',
-            channelUrl: null,
-            verifiedChannel: false
-          });
+        if (r.url && r.url.includes('youtube.com/watch') && !activities.some(a => a.url === r.url)) {
+          const text = ((r.title || '') + ' ' + (r.snippet || '')).toLowerCase();
+          // STRICT CHECK: The title or snippet MUST explicitly mention the company name or core distinctive words
+          const matchesCompany = text.includes(compLower) || (compWords.length > 0 && compWords.every(w => text.includes(w)));
+          if (matchesCompany) {
+            activities.push({
+              platform: 'youtube',
+              type: 'video',
+              url: r.url,
+              title: r.title ? r.title.replace(' - YouTube', '').trim() : 'Produktvideo / Keynote',
+              snippet: r.snippet || '',
+              date: r.date || 'Aktuell',
+              channelUrl: null,
+              verifiedChannel: false
+            });
+          }
         }
       }
     } catch (e) {
@@ -406,17 +414,21 @@ async function getLinkedInAndPublicActivities(companyName, verifiedLiProfile) {
   // Search for official articles / updates / PR announcements
   try {
     const results = await searchWeb(`site:linkedin.com/pulse OR site:linkedin.com/posts "${companyName}"`, { maxResults: 3 });
+    const compLower = (companyName || '').toLowerCase();
     for (const r of results) {
       if ((r.url.includes('linkedin.com/pulse/') || r.url.includes('linkedin.com/posts/')) && !activities.some(a => a.url === r.url)) {
-        activities.push({
-          platform: 'linkedin',
-          type: 'post',
-          url: r.url,
-          title: r.title ? r.title.replace(' | LinkedIn', '').trim() : `LinkedIn Update ${companyName}`,
-          snippet: r.snippet || '',
-          date: r.date || 'Kürzlich',
-          verifiedChannel: false
-        });
+        const text = ((r.title || '') + ' ' + (r.snippet || '')).toLowerCase();
+        if (compLower && text.includes(compLower)) {
+          activities.push({
+            platform: 'linkedin',
+            type: 'post',
+            url: r.url,
+            title: r.title ? r.title.replace(' | LinkedIn', '').trim() : `LinkedIn Update ${companyName}`,
+            snippet: r.snippet || '',
+            date: r.date || 'Kürzlich',
+            verifiedChannel: false
+          });
+        }
       }
     }
   } catch (e) {
@@ -431,7 +443,8 @@ async function getLinkedInAndPublicActivities(companyName, verifiedLiProfile) {
 // ============================================================================
 const UNRELATED_TOPIC_BLACKLIST = [
   'star wars', 'fortnite', 'minecraft', 'gameplay', 'walkthrough episode',
-  'anime episode', 'movie full', 'soundtrack ost', 'let\'s play', 'reaction video'
+  'anime episode', 'movie full', 'soundtrack ost', 'let\'s play', 'reaction video',
+  'weather channel', 'history channel', 'vpn tutorial', 'monarch watch'
 ];
 
 async function scoreActivitiesWithLLM(activities, context, activeLangKey = 'de') {
@@ -488,16 +501,20 @@ Return VALID JSON ONLY in this format:
     const evaluation = await callLLM(prompt, 0.2);
     if (evaluation?.evaluated_activities?.length > 0) {
       return evaluation.evaluated_activities
-        .filter(item => item.relevance_score > 30 || item.type === 'profile')
+        .filter(item => item.relevance_score >= 40 || item.type === 'profile')
         .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0));
     }
   } catch (err) {
     console.warn('[Social Intelligence] LLM scoring fallback:', err.message);
   }
 
+  const compLower = (context.companyName || '').toLowerCase();
   return activities.filter(a => {
-    const lower = (a.title + ' ' + a.snippet).toLowerCase();
-    return !UNRELATED_TOPIC_BLACKLIST.some(b => lower.includes(b));
+    if (a.verifiedChannel || a.type === 'profile') return true;
+    const text = (a.title + ' ' + a.snippet).toLowerCase();
+    const hasBlacklist = UNRELATED_TOPIC_BLACKLIST.some(b => text.includes(b));
+    const hasCompany = compLower && text.includes(compLower);
+    return !hasBlacklist && hasCompany;
   });
 }
 
