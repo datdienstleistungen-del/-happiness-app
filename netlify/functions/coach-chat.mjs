@@ -108,7 +108,7 @@ async function tryOpenAIGpt4o(messages) {
 async function tryGroq(messages) {
   const key = process.env.GROQ_API_KEY
   if (!key) return null
-  const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it']
+  const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound-mini', 'groq/compound', 'qwen/qwen3.8-27b']
   for (const model of models) {
     try {
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -141,7 +141,7 @@ async function tryGroq(messages) {
 async function tryOpenRouterGemma(messages) {
   const key = process.env.OPENROUTER_API_KEY
   if (!key) return null
-  const models = ['meta-llama/llama-3.3-70b-instruct:free', 'meta-llama/llama-3.1-8b-instruct:free', 'mistralai/mistral-7b-instruct:free', 'google/gemini-2.0-flash-exp:free', 'deepseek/deepseek-chat']
+  const models = ['nvidia/nemotron-3.5-lightning:free', 'openrouter/free', 'google/gemma-4-26b-a4b-it:free']
   for (const model of models) {
     try {
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {

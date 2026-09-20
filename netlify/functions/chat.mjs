@@ -640,7 +640,7 @@ ${message}`
               aiResponse = fallbackData.choices?.[0]?.message?.content || 'Entschuldigung, ich konnte keine Antwort generieren.'
               usage = fallbackData.usage
               provider = 'groq'
-              modelName = 'llama-3.1-8b-instant'
+              modelName = 'openai/gpt-oss-20b'
               return {
                 statusCode: 200,
                 headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
@@ -679,7 +679,7 @@ ${message}`
       // Stage 0: Groq (Primary because it is extremely fast and avoids Netlify 10s timeout)
       const groqKey = process.env.GROQ_API_KEY
       if (groqKey) {
-        const groqModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it']
+        const groqModels = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound-mini', 'groq/compound', 'qwen/qwen3.8-27b']
         for (const model of groqModels) {
           try {
             const groqRes = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
@@ -715,7 +715,7 @@ ${message}`
       // Stage 1: OpenRouter (kostenlos - primär, übersprungen bei Skript-Audit wegen Latenz)
       const orKey = process.env.OPENROUTER_API_KEY
       if (!success && orKey && !isScriptAudit) {
-        const orModels = ['meta-llama/llama-3.3-70b-instruct:free', 'meta-llama/llama-3.1-8b-instruct:free', 'mistralai/mistral-7b-instruct:free', 'google/gemini-2.0-flash-exp:free', 'deepseek/deepseek-chat']
+        const orModels = ['nvidia/nemotron-3.5-lightning:free', 'openrouter/free', 'google/gemma-4-26b-a4b-it:free']
         for (const model of orModels) {
           try {
             const orRes = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {

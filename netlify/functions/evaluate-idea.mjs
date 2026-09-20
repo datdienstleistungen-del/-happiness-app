@@ -84,7 +84,7 @@ async function tryGroq(systemPrompt) {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'openai/gpt-oss-120b',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: 'Bewerte diese Content-Idee.' }
@@ -139,7 +139,7 @@ async function tryOpenRouter(systemPrompt) {
         'X-Title': 'Happiness Idea Evaluation'
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-3.3-70b-instruct:free',
+        model: 'nvidia/nemotron-3.5-lightning:free',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: 'Bewerte diese Content-Idee.' }

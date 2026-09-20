@@ -23,8 +23,8 @@ async function tryGroq(messages, temperature = 0.3, hasImage = false) {
   const key = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ;
   if (!key) return null;
   const models = hasImage 
-    ? ['llama-3.2-11b-vision-preview', 'llama-3.2-90b-vision-preview']
-    : ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it'];
+    ? ['llama-3.2-11b-vision-preview', 'llama-3.2-90b-vision-preview', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b']
+    : ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound-mini', 'groq/compound', 'qwen/qwen3.8-27b'];
   for (const model of models) {
     try {
       console.log(`[NEXUS] Trying Groq model: ${model}`);
@@ -58,7 +58,7 @@ async function tryGroq(messages, temperature = 0.3, hasImage = false) {
 async function tryOpenRouter(messages, temperature = 0.3) {
   const key = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY || BACKUP_OPENROUTER;
   if (!key) return null;
-  const models = ['meta-llama/llama-3.3-70b-instruct:free', 'meta-llama/llama-3.1-8b-instruct:free', 'mistralai/mistral-7b-instruct:free', 'google/gemini-2.0-flash-exp:free', 'deepseek/deepseek-chat'];
+  const models = ['nvidia/nemotron-3.5-lightning:free', 'openrouter/free', 'google/gemma-4-26b-a4b-it:free'];
   for (const model of models) {
     try {
       const { res, timer } = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {

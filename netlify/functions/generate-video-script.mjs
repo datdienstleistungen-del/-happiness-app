@@ -182,7 +182,7 @@ async function tryGroq(systemPrompt) {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'openai/gpt-oss-120b',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: 'Erstelle das Drehbuch basierend auf der Szenen-Analyse.' }
@@ -237,7 +237,7 @@ async function tryOpenRouter(systemPrompt) {
         'X-Title': 'Happiness Video Script'
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-3.3-70b-instruct:free',
+        model: 'nvidia/nemotron-3.5-lightning:free',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: 'Erstelle das Drehbuch basierend auf der Szenen-Analyse.' }
