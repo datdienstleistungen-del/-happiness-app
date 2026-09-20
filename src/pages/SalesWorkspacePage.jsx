@@ -63,6 +63,37 @@ export default function SalesWorkspacePage() {
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false) // Nachricht wird generiert
   const [editedMessage, setEditedMessage] = useState('')
 
+  const [translatedIntelligence, setTranslatedIntelligence] = useState({})
+  const [translatingIntel, setTranslatingIntel] = useState(false)
+
+  const handleTranslateIntelligence = async () => {
+    if (translatingIntel) return
+    setTranslatingIntel(true)
+    try {
+      const textToTranslate = `ANGEBOT: ${fullContext?.offering?.offering_name || ''}\nPOSITIONIERUNG: ${fullContext?.offering?.positioning || ''}\nKAUFSIGNAL: ${activeTrigger?.content || ''}`
+      const res = await callNexusAI({
+        mode: 'chat',
+        message: `Übersetze folgenden spanischen/fremdsprachigen B2B-Kontext präzise und professionell auf Deutsch für einen deutschen Vertriebler. Gib ausschließlich valides JSON im Format {"offering_name": "...", "positioning": "...", "signal": "..."} zurück:\n\n${textToTranslate}`,
+        temperature: 0.1,
+        lang: 'de'
+      })
+      let parsed = res
+      if (typeof res === 'string') {
+        try {
+          const clean = res.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim()
+          parsed = JSON.parse(clean)
+        } catch(e) {
+          parsed = { signal: res }
+        }
+      }
+      setTranslatedIntelligence(parsed || {})
+    } catch(e) {
+      console.error('Translation error:', e)
+    } finally {
+      setTranslatingIntel(false)
+    }
+  }
+
   // --- NEXUS SOCIAL INTELLIGENCE STATE ---
   const [socialState, setSocialState] = useState({
     loading: false,
@@ -276,6 +307,7 @@ export default function SalesWorkspacePage() {
           
           setFullContext(ctx);
           setActiveOpp(ctx);
+          setTranslatedIntelligence({});
 
           const companyName = ctx.company?.name || '';
           const industry = ctx.company?.industry || '';
@@ -1725,21 +1757,100 @@ export default function SalesWorkspacePage() {
 
                     {/* 2. Offering */}
                     <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
-                      <h4 style={{ marginTop: 0, color: 'var(--color-koralle)' }}>Offering & Positioning</h4>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                        <h4 style={{ margin: 0, color: 'var(--color-koralle)' }}>Offering & Positioning</h4>
+                        <button
+                          type="button"
+                          onClick={handleTranslateIntelligence}
+                          disabled={translatingIntel}
+                          style={{
+                            background: 'rgba(255,255,255,0.06)',
+                            border: '1px solid var(--border-light)',
+                            borderRadius: '4px',
+                            padding: '4px 10px',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.8rem',
+                            cursor: translatingIntel ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          {translatingIntel ? '🔄 ' + t('nexus.wsTranslating') : '🇩🇪 ' + (translatedIntelligence?.offering_name ? 'Übersetzung aktualisieren' : t('nexus.wsTranslateDe'))}
+                        </button>
+                      </div>
+
                       <div style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>
-                        <strong>{t('nexus.wsOffering')}</strong> {fullContext.offering?.offering_name || '-'}<br/><br/>
+                        <strong>{t('nexus.wsOffering')}</strong>{' '}
+                        {translatedIntelligence?.offering_name ? (
+                          <>
+                            <span style={{ color: '#22c55e', fontWeight: 600 }}>{translatedIntelligence.offering_name}</span>
+                            <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '2px' }}>
+                              {t('nexus.wsOriginal')} {fullContext.offering?.offering_name || '-'}
+                            </span>
+                          </>
+                        ) : (
+                          fullContext.offering?.offering_name || '-'
+                        )}
+                        <br/><br/>
                         <strong>{t('nexus.wsPositioning')}</strong><br/>
-                        {fullContext.offering?.positioning || '-'}
+                        {translatedIntelligence?.positioning ? (
+                          <>
+                            <div style={{ color: '#22c55e', fontWeight: 500, marginBottom: '6px' }}>{translatedIntelligence.positioning}</div>
+                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                              {t('nexus.wsOriginal')} {fullContext.offering?.positioning || '-'}
+                            </div>
+                          </>
+                        ) : (
+                          fullContext.offering?.positioning || '-'
+                        )}
                       </div>
                     </div>
 
                     {/* 3. Trigger */}
                     {activeTrigger && (
                       <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
-                        <h4 style={{ marginTop: 0, color: 'var(--color-koralle)' }}>{t('nexus.wsTriggerSignal')}</h4>
-                        <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.5', margin: '0 0 16px 0', fontSize: '0.95rem' }}>
-                          {activeTrigger.content}
-                        </p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                          <h4 style={{ margin: 0, color: 'var(--color-koralle)' }}>{t('nexus.wsTriggerSignal')}</h4>
+                          {!translatedIntelligence?.signal && (
+                            <button
+                              type="button"
+                              onClick={handleTranslateIntelligence}
+                              disabled={translatingIntel}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--color-koralle)',
+                                fontSize: '0.8rem',
+                                cursor: translatingIntel ? 'not-allowed' : 'pointer',
+                                padding: '2px 6px',
+                                textDecoration: 'underline'
+                              }}
+                            >
+                              {translatingIntel ? t('nexus.wsTranslating') : '🇩🇪 ' + t('nexus.wsTranslateDe')}
+                            </button>
+                          )}
+                        </div>
+
+                        {translatedIntelligence?.signal ? (
+                          <div style={{ marginBottom: '16px' }}>
+                            <div style={{ background: 'rgba(34, 197, 94, 0.08)', border: '1px solid rgba(34, 197, 94, 0.25)', borderRadius: '6px', padding: '12px', marginBottom: '8px' }}>
+                              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#22c55e', marginBottom: '4px' }}>
+                                🇩🇪 DEUTSCHE ÜBERSETZUNG:
+                              </div>
+                              <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.5', margin: 0, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                                {translatedIntelligence.signal}
+                              </p>
+                            </div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                              <strong>{t('nexus.wsOriginal')}</strong> {activeTrigger.content}
+                            </div>
+                          </div>
+                        ) : (
+                          <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.5', margin: '0 0 16px 0', fontSize: '0.95rem' }}>
+                            {activeTrigger.content}
+                          </p>
+                        )}
                         
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                           <div>
