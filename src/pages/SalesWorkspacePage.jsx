@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import * as db from '../lib/nexus-db'
 import { useLanguage } from '../i18n/translations.jsx'
 import CoachChatPage from './CoachChatPage'
+import NexusLiveProgressBar from '../components/NexusLiveProgressBar'
 import { ContextHelpButton } from '../context/GuideContext'
 import './SalesWorkspacePage.css'
 
@@ -1122,15 +1123,19 @@ export default function SalesWorkspacePage() {
                       </div>
                     )}
 
-                    {/* 3. Loading State */}
+                    {/* 3. Loading State with Multi-Step Live Progress Bar */}
                     {socialState.loading && (
-                      <div style={{ padding: '36px', textAlign: 'center', background: 'var(--bg-card)', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
-                        <div className="btn-spinner" style={{ margin: '0 auto 16px', width: '28px', height: '28px' }}></div>
-                        <h4 style={{ margin: '0 0 8px 0' }}>{t('nexus.wsSocialSearching') || 'Recherchiere verifizierte Social-Aktivitäten...'}</h4>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>
-                          Untersuche verifizierte Kanäle (YouTube, LinkedIn) für {fullContext?.company?.name || formData.company}...
-                        </p>
-                      </div>
+                      <NexusLiveProgressBar
+                        title={`Recherchiere Social-Aktivitäten für ${fullContext?.company?.name || formData.company || 'Unternehmen'}...`}
+                        subtitle="Scanne offizielle Profile (LinkedIn, YouTube) & Web-Quellen nach aktuellen Kaufsignalen..."
+                        steps={[
+                          "Offizielle Unternehmenskanäle (Website, LinkedIn, YouTube) lokalisieren",
+                          "Neueste Beiträge, Pressemitteilungen & Videos analysieren",
+                          "Kaufsignale & Relevanz für dein Angebot prüfen",
+                          "Verifizierte Social-Aktivitäten aufbereiten"
+                        ]}
+                        estimatedDurationSec={4}
+                      />
                     )}
 
                     {/* 4. Detail View: Selected Activity & Generated Outreach */}
@@ -1170,15 +1175,19 @@ export default function SalesWorkspacePage() {
                           )}
                         </div>
 
-                        {/* Generating State */}
+                        {/* Generating State with Multi-Step Live Progress Bar */}
                         {socialState.generatingOutreach && (
-                          <div style={{ padding: '36px', textAlign: 'center', background: 'var(--bg-card)', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
-                            <div className="btn-spinner" style={{ margin: '0 auto 16px', width: '28px', height: '28px' }}></div>
-                            <h4 style={{ margin: '0 0 8px 0' }}>{t('nexus.wsSocialAnalyzing') || 'Analysiere Beitrag & erstelle Social Outreach...'}</h4>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>
-                              Erstelle fundierten Mehrwert-Kommentar und passgenaue Direktnachricht...
-                            </p>
-                          </div>
+                          <NexusLiveProgressBar
+                            title="Analysiere Beitrag & erstelle Social Outreach..."
+                            subtitle="Formuliere fundierten Mehrwert-Kommentar & passgenaue Direktnachricht..."
+                            steps={[
+                              "Beitrags-Inhalt & Kernaussage erfassen",
+                              "Spezifische Relevanz für dein Angebot ableiten",
+                              "Mehrwert-Kommentar nach B2B-Best-Practices formulieren",
+                              "Passgenaue Direktnachricht (InMail/DM) & Übersetzung vorbereiten"
+                            ]}
+                            estimatedDurationSec={3.5}
+                          />
                         )}
 
                         {/* Outreach Result */}
