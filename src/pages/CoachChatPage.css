@@ -677,6 +677,65 @@
   }
 }
 
+/* AI Polish & Spellcheck Button */
+.nexus-coach-polish-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: var(--bg-card);
+  color: #8b5cf6;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.nexus-coach-polish-btn:hover:not(:disabled) {
+  border-color: #8b5cf6;
+  color: #7c3aed;
+  background: #f5f3ff;
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+}
+
+.nexus-coach-polish-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.nexus-coach-polish-btn.polishing {
+  background: #ede9fe;
+  color: #7c3aed;
+  border-color: #a78bfa;
+}
+
+.nexus-coach-polish-btn.success {
+  background: #dcfce7;
+  color: #16a34a;
+  border-color: #86efac;
+  animation: polishSuccessPulse 0.6s ease;
+}
+
+@keyframes polishSuccessPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+.nexus-spin {
+  animation: nexusSpin 1s linear infinite;
+}
+
+@keyframes nexusSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .nexus-msg-footer-bar {
   display: flex;
   align-items: center;

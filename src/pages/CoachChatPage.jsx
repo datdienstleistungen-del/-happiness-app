@@ -14,6 +14,7 @@ import { useLead } from '../context/LeadContext'
 import { useLanguage } from '../i18n/translations'
 import { callNexusAI } from '../lib/nexus-ai'
 import { buildCoachContext, buildCoachSystemPrompt, getContextSummary } from '../lib/nexus-coach'
+import { polishText } from '../lib/nexus-polish'
 import UpgradeModal from '../components/UpgradeModal'
 import './CoachChatPage.css'
 
@@ -68,8 +69,13 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const fileInputRef = useRef(null)
   
-  // Voice & Audio & Copy States
+  // Voice & Speech-to-Text & Polish States
   const [isListening, setIsListening] = useState(false)
+  const isListeningRef = useRef(false)
+  const baseMessageRef = useRef('')
+  const accumulatedRef = useRef('')
+  const [isPolishing, setIsPolishing] = useState(false)
+  const [polishSuccess, setPolishSuccess] = useState(false)
   const [speakingIndex, setSpeakingIndex] = useState(null)
   const [copiedIndex, setCopiedIndex] = useState(null)
   const [autoVoice, setAutoVoice] = useState(() => {
@@ -252,18 +258,10 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
     }
   }
 
-  const toggleListening = () => {
+  const startListeningSession = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) {
       alert('Spracherkennung wird von deinem Browser nicht unterstützt. Bitte verwende Google Chrome, Microsoft Edge oder Safari.')
-      return
-    }
-
-    if (isListening) {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop()
-      }
-      setIsListening(false)
       return
     }
 
@@ -274,7 +272,7 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
 
     try {
       const rec = new SpeechRecognition()
-      rec.continuous = false
+      rec.continuous = true
       rec.interimResults = true
       
       const langMap = {
@@ -290,34 +288,105 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
 
       rec.onstart = () => {
         setIsListening(true)
+        isListeningRef.current = true
       }
 
       rec.onresult = (event) => {
-        let finalTranscript = ''
+        let interim = ''
+        let finalChunk = ''
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript
+            finalChunk += event.results[i][0].transcript
+          } else {
+            interim += event.results[i][0].transcript
           }
         }
-        if (finalTranscript) {
-          setMessage(prev => prev ? `${prev} ${finalTranscript.trim()}` : finalTranscript.trim())
+        if (finalChunk) {
+          accumulatedRef.current = accumulatedRef.current
+            ? `${accumulatedRef.current} ${finalChunk.trim()}`
+            : finalChunk.trim()
         }
+        const full = [baseMessageRef.current, accumulatedRef.current, interim]
+          .filter(Boolean)
+          .join(' ')
+          .replace(/\s+/g, ' ')
+        setMessage(full)
       }
 
       rec.onerror = (e) => {
         console.warn('[CoachChat] Speech recognition error:', e.error)
-        setIsListening(false)
+        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+          isListeningRef.current = false
+          setIsListening(false)
+        }
       }
 
       rec.onend = () => {
-        setIsListening(false)
+        // Continuous auto-restart if user hasn't pressed stop
+        if (isListeningRef.current) {
+          try {
+            rec.start()
+          } catch (err) {
+            setTimeout(() => {
+              if (isListeningRef.current) {
+                try { rec.start() } catch (e) {}
+              }
+            }, 300)
+          }
+        } else {
+          setIsListening(false)
+        }
       }
 
       recognitionRef.current = rec
       rec.start()
     } catch (err) {
       console.error('[CoachChat] Failed to start speech recognition:', err)
+      isListeningRef.current = false
       setIsListening(false)
+    }
+  }
+
+  const stopListeningSession = () => {
+    isListeningRef.current = false
+    setIsListening(false)
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop()
+      } catch (e) {}
+    }
+  }
+
+  const toggleListening = () => {
+    if (isListening) {
+      stopListeningSession()
+    } else {
+      baseMessageRef.current = message.trim()
+      accumulatedRef.current = ''
+      startListeningSession()
+    }
+  }
+
+  const handlePolishText = async () => {
+    if (!message.trim() || isPolishing) return
+    
+    // If currently dictating, stop voice first
+    if (isListening) {
+      stopListeningSession()
+    }
+
+    setIsPolishing(true)
+    try {
+      const polished = await polishText(message, lang)
+      if (polished && polished.trim()) {
+        setMessage(polished.trim())
+        setPolishSuccess(true)
+        setTimeout(() => setPolishSuccess(false), 3000)
+      }
+    } catch (err) {
+      console.error('[CoachChat] Polish error:', err)
+    } finally {
+      setIsPolishing(false)
     }
   }
 
@@ -392,9 +461,8 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
     if (e) e.preventDefault()
     if ((!message.trim() && attachments.length === 0) || loading) return
 
-    if (isListening && recognitionRef.current) {
-      recognitionRef.current.stop()
-      setIsListening(false)
+    if (isListening) {
+      stopListeningSession()
     }
 
     setError('')
@@ -747,9 +815,26 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
               type="button" 
               className={`nexus-coach-mic-btn ${isListening ? 'listening' : ''}`} 
               onClick={toggleListening} 
-              title={isListening ? "Spracherkennung beenden (Höre zu...)" : "Spracheingabe starten (Mikrofon)"}
+              title={isListening ? "Spracherkennung beenden (Höre zu...)" : "Spracheingabe starten (Mikrofon - läuft unterbrechungsfrei)"}
             >
               {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+            </button>
+
+            {/* AI Text Polish & Spellcheck Button */}
+            <button 
+              type="button" 
+              className={`nexus-coach-polish-btn ${isPolishing ? 'polishing' : ''} ${polishSuccess ? 'success' : ''}`} 
+              onClick={handlePolishText} 
+              disabled={isPolishing || !message.trim()}
+              title={polishSuccess ? "✨ Text & Rechtschreibung korrigiert!" : "✨ Rechtschreibung & Grammatik mit KI prüfen (Fehler beheben)"}
+            >
+              {isPolishing ? (
+                <RefreshCw size={18} className="nexus-spin" />
+              ) : polishSuccess ? (
+                <Check size={18} color="#10b981" />
+              ) : (
+                <Sparkles size={18} />
+              )}
             </button>
 
             <textarea
