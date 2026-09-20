@@ -261,8 +261,8 @@ export default function RedditSplitHero({ onOpenAuth }) {
                     <span style={{ fontWeight: 800, fontSize: '14px', color: '#0f172a' }}>TechLogistik International Ltd.</span>
                     <span style={{ display: 'block', fontSize: '12px', color: '#64748b' }}>{isDe ? 'Signal: Expansion & Neuausrichtung' : 'Signal: European Expansion & Hiring'}</span>
                   </div>
-                  <span style={{ background: '#dcfce7', color: '#166534', fontWeight: 900, fontSize: '13px', padding: '4px 10px', borderRadius: '8px' }}>
-                    {isDe ? '+450 $ Provision' : '+$450 Commission'}
+                  <span style={{ background: '#dcfce7', color: '#166534', fontWeight: 900, fontSize: '12.5px', padding: '4px 10px', borderRadius: '8px' }}>
+                    {isDe ? '🔥 Hohe Kaufbereitschaft' : '🔥 High Buyer Intent'}
                   </span>
                 </div>
 
@@ -292,22 +292,23 @@ export default function RedditSplitHero({ onOpenAuth }) {
                 )}
 
                 {demoStep === 2 && (
-                  <div style={{ marginTop: '10px', background: '#f8fafc', padding: '10px', borderRadius: '8px', borderLeft: '3px solid #0d5e42' }}>
-                    <div style={{ fontSize: '12px', color: '#334155', lineHeight: 1.4, marginBottom: '8px' }}>
+                  <div style={{ marginTop: '10px', background: '#f8fafc', padding: '12px', borderRadius: '10px', borderLeft: '3px solid #0d5e42' }}>
+                    <div style={{ fontSize: '12.5px', color: '#334155', lineHeight: 1.45, marginBottom: '10px' }}>
                       {isDe
-                        ? '„Hallo Herr Wagner, Glückwunsch zur Expansion! Wir haben gesehen, dass Sie für das Team noch B2B-Infrastruktur suchen. Hätten Sie nächste Woche 5 Min. für einen Austausch?“'
+                        ? '„Hallo Herr Wagner, Glückwunsch zur Expansion! Wir haben gesehen, dass Sie für das Team noch B2B-Infrastruktur suchen. Hätten Sie nächste Woche 5 Min. für einen kurzen Austausch?“'
                         : '"Hi Marcus, congrats on expanding into the UK! We noticed your new team is looking for B2B sales infrastructure. Would you be open for a quick 5-min chat next Tuesday?"'}
                     </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       <button
                         onClick={handleCopyPitch}
                         style={{
                           flex: 1,
+                          minWidth: '130px',
                           background: copied ? '#166534' : '#0f172a',
                           color: '#ffffff',
                           border: 'none',
-                          borderRadius: '6px',
-                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          padding: '8px 12px',
                           fontSize: '12px',
                           fontWeight: 700,
                           cursor: 'pointer',
@@ -321,8 +322,34 @@ export default function RedditSplitHero({ onOpenAuth }) {
                         {copied ? (isDe ? 'Kopiert!' : 'Copied!') : (isDe ? 'Pitch kopieren' : 'Copy Pitch')}
                       </button>
                       <button
+                        onClick={() => {
+                          const formEl = document.getElementById('nexus-auth-card')
+                          if (formEl) formEl.scrollIntoView({ behavior: 'smooth' })
+                        }}
+                        style={{
+                          flex: 1.5,
+                          minWidth: '180px',
+                          background: 'linear-gradient(135deg, #0d5e42 0%, #064e3b 100%)',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '8px 12px',
+                          fontSize: '12px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          boxShadow: '0 2px 8px rgba(13, 94, 66, 0.25)'
+                        }}
+                      >
+                        <Sparkles size={14} />
+                        {isDe ? '3. 5 Deals freischalten' : '3. Unlock 5 Free Deals'}
+                      </button>
+                      <button
                         onClick={() => setDemoStep(0)}
-                        style={{ background: 'transparent', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '6px 10px', fontSize: '11px', color: '#64748b', cursor: 'pointer' }}
+                        style={{ background: 'transparent', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 10px', fontSize: '11px', color: '#64748b', cursor: 'pointer' }}
                       >
                         Reset
                       </button>
@@ -341,17 +368,17 @@ export default function RedditSplitHero({ onOpenAuth }) {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#334155' }}>
               <CheckCircle2 size={18} color="#0d5e42" />
-              <span>{isDe ? 'Keine Vorkenntnisse oder Netzwerk erforderlich' : 'Zero sales experience or prior network required'}</span>
+              <span>{isDe ? 'Keine Vorkenntnisse oder Vertriebserfahrung erforderlich' : 'Zero sales experience or prior network required'}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#334155' }}>
               <CheckCircle2 size={18} color="#0d5e42" />
-              <span>{isDe ? '5 echte Kunden-Deals & Pitches sofort nach Start' : '5 instant client deals & pitches included right now'}</span>
+              <span>{isDe ? '5 echte B2B-Kaufsignale & fertige Pitches sofort inklusive' : '5 verified B2B buyer leads & instant pitches included'}</span>
             </div>
           </div>
         </div>
 
         {/* RIGHT COLUMN: Embedded Reddit-Style 1-Click Card */}
-        <div>
+        <div id="nexus-auth-card">
           <div
             style={{
               background: '#ffffff',
@@ -382,10 +409,10 @@ export default function RedditSplitHero({ onOpenAuth }) {
               </div>
               <div>
                 <h3 style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a', margin: 0 }}>
-                  {isDe ? 'Lass uns loslegen' : "Let's get started"}
+                  {isDe ? '5 kostenlose Deals freischalten' : 'Unlock 5 Free B2B Deals'}
                 </h3>
                 <span style={{ fontSize: '12.5px', color: '#64748b' }}>
-                  {isDe ? 'Kostenlos starten in unter 30 Sekunden' : 'Free access in under 30 seconds'}
+                  {isDe ? 'Trage deine E-Mail ein, um deinen 24h-Zugang zu sichern' : 'Enter your email to claim your 24h access pass'}
                 </span>
               </div>
             </div>
