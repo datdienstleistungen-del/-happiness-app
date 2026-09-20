@@ -138,6 +138,7 @@ const translations = {
       "wsModeEinwandLabel": "Einwandbehandlung",
       "wsModeEinwandDesc": "Auf Einwände reagieren",
       "wsModeForumLabel": "Social Outreach",
+      "wsModeForumDesc": "LinkedIn / Foren",
       "wsTabHistory": "Historie",
       "wsTabPitch": "Aktion (Pitch)",
       "wsTabAudit": "Intelligence Audit",
