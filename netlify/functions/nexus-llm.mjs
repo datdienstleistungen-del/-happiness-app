@@ -482,15 +482,18 @@ export const handler = async (event) => {
       el: 'Griechisch (Greek)'
     };
     
-    let finalLang = lang || 'de';
-    if (targetLang && targetLang !== 'auto') {
-      finalLang = targetLang;
-    }
-    const langName = languageNames[finalLang] || languageNames['de'];
-    
-    let langInstruction = `\n\nCRITICAL REQUIREMENT: Du musst deine gesamte Antwort / Nachricht zwingend in dieser Sprache verfassen: ${langName}! (Respond completely in ${langName}).`;
-    if (targetLang === 'auto') {
-      langInstruction = `\n\nCRITICAL REQUIREMENT: Falls ein spezifisches Zielunternehmen aus einem anderen Land adressiert wird, passe die Nachricht an dessen Landessprache an. Ansonsten verfasse die gesamte Antwort / Nachricht zwingend in dieser Sprache: ${langName}! (Respond completely in ${langName}).`;
+    const userLangCode = lang || 'de';
+    const userLangName = languageNames[userLangCode] || 'Deutsch';
+
+    let langInstruction = `\n\nCRITICAL LANGUAGE DIRECTIVE (MANDATORISCH & HÖCHSTE PRIORITÄT):
+- Du MUSST zu 100% auf ${userLangName} antworten!
+- Alle Erklärungen, Analysen, Coach-Antworten, Tabellen, Übersetzungen, Ratschläge und Begründungen MÜSSEN ZWINGEND auf ${userLangName} formuliert sein.
+- Selbst wenn im Text, in Screenshots oder in den Daten ausländische Firmen vorkommen (z.B. aus Uruguay, Spanien, Frankreich oder Lateinamerika): Dein Nutzer ist ein deutschsprachiger Vertriebler. Antworte ihm daher AUSSCHLIESSLICH auf ${userLangName}!
+- Übersetze fremdsprachige Firmenangaben und Kaufsignale für den Vertriebler automatisch und präzise auf ${userLangName}.`;
+
+    if (targetLang && targetLang !== 'auto' && targetLang !== userLangCode) {
+      const targetLangName = languageNames[targetLang] || targetLang;
+      langInstruction += `\n- HINWEIS ZUR PITCH-GENERIERUNG: Nur der eigentliche Entwurf des Anschreibens im "response"-Feld soll auf ${targetLangName} verfasst sein. Alle Denkprozesse, Begründungen und Erklärungen bleiben zwingend auf ${userLangName}.\n`;
     }
 
     const lowerMsg = (typeof userMessage === 'string' ? userMessage : (JSON.stringify(userMessage) || '')).toLowerCase();

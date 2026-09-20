@@ -66,16 +66,19 @@ export default function SalesWorkspacePage() {
   const [translatedIntelligence, setTranslatedIntelligence] = useState({})
   const [translatingIntel, setTranslatingIntel] = useState(false)
 
-  const handleTranslateIntelligence = async () => {
+  const handleTranslateIntelligence = async (overrideCtx = null, overrideTrigger = null) => {
     if (translatingIntel) return
     setTranslatingIntel(true)
     try {
-      const textToTranslate = `ANGEBOT: ${fullContext?.offering?.offering_name || ''}\nPOSITIONIERUNG: ${fullContext?.offering?.positioning || ''}\nKAUFSIGNAL: ${activeTrigger?.content || ''}`
+      const c = overrideCtx || fullContext
+      const t = overrideTrigger || activeTrigger
+      const textToTranslate = `ANGEBOT: ${c?.offering?.offering_name || ''}\nPOSITIONIERUNG: ${c?.offering?.positioning || ''}\nKAUFSIGNAL: ${t?.content || ''}`
       const res = await callNexusAI({
         mode: 'chat',
-        message: `Übersetze folgenden spanischen/fremdsprachigen B2B-Kontext präzise und professionell auf Deutsch für einen deutschen Vertriebler. Gib ausschließlich valides JSON im Format {"offering_name": "...", "positioning": "...", "signal": "..."} zurück:\n\n${textToTranslate}`,
+        message: `Du bist ein professioneller B2B-Übersetzer für deutsche Vertriebler. Übersetze folgenden spanischen/fremdsprachigen B2B-Kontext präzise und professionell auf Deutsch für einen deutschen Vertriebler. Gib ausschließlich valides JSON im Format {"offering_name": "...", "positioning": "...", "signal": "..."} zurück (ohne Markdown, nur JSON):\n\n${textToTranslate}`,
         temperature: 0.1,
-        lang: 'de'
+        lang: 'de',
+        targetLang: 'de'
       })
       let parsed = res
       if (typeof res === 'string') {
@@ -332,11 +335,18 @@ export default function SalesWorkspacePage() {
             branche: industry,
             situation: latestTrigger ? latestTrigger.content : '',
             ansprechpartner: contactName,
+            targetLang: lang || 'de',
             einwand: ''
           }));
           
           setResult(null);
           setActiveTab('aktion');
+
+          // Auto-Übersetzung für fremdsprachige Leads (z.B. Uruguay/Spanisch), wenn der Nutzer auf Deutsch arbeitet
+          const isForeign = /\b(de|la|el|en|y|que|los|las|por|con|para|una|un|es|del|al|empresa|innovación|desarrollo|soluciones|crecimiento|financiamiento|adquisición|nueva|nuevo|sede|sociedad|productos)\b/i.test((latestTrigger?.content || '') + ' ' + (ctx.offering?.positioning || ''));
+          if (isForeign && (lang || 'de') === 'de') {
+            handleTranslateIntelligence(ctx, latestTrigger);
+          }
 
           // Lade Historie
           const activities = ctx.activities || [];
@@ -1477,12 +1487,12 @@ export default function SalesWorkspacePage() {
                       <select
                         id="targetLang"
                         name="targetLang"
-                        value={formData.targetLang || 'auto'}
+                        value={formData.targetLang || (lang === 'de' ? 'de' : 'auto')}
                         onChange={handleInputChange}
                         style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-light)', background: 'var(--bg)', color: 'var(--text-primary)' }}
                       >
-                        <option value="auto">{t('nexus.wsFormLangAuto') || 'Automatisch (wie Website / Lead)'}</option>
                         <option value="de">{t('nexus.wsFormLangDe') || 'Deutsch (DE)'}</option>
+                        <option value="auto">{t('nexus.wsFormLangAuto') || 'Automatisch (wie Website / Lead)'}</option>
                         <option value="en">{t('nexus.wsFormLangEn') || 'Englisch (EN)'}</option>
                         <option value="es">{t('nexus.wsFormLangEs') || 'Spanisch (ES)'}</option>
                         <option value="fr">{t('nexus.wsFormLangFr') || 'Französisch (FR)'}</option>

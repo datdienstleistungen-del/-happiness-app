@@ -224,7 +224,7 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
       nl: 'Niederländisch (Dutch)',
       el: 'Griechisch (Greek)'
     };
-    const activeLang = lang || targetLang || 'de';
+    const activeLang = lang || 'de';
     const langLabel = langNames[activeLang] || 'Deutsch';
     if (context?.system) {
       systemPrompt = `${context.system}\n\nSPRACHREGEL: Antworte AUSSCHLIESSLICH auf ${langLabel}. WICHTIG: Antworte NIEMALS im JSON-Format! Nutze menschenlesbares Markdown (Fließtext, Tabellen, Listen, anklickbare Links) für deine Antworten.`;
@@ -241,7 +241,7 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
       nl: 'Niederländisch (Dutch)',
       el: 'Griechisch (Greek)'
     };
-    const activeLang = lang || targetLang || 'de';
+    const activeLang = lang || 'de';
     const langLabel = langNames[activeLang] || 'Deutsch';
 
     systemPrompt += ` Du bist der NeXus Assistant, der KI-Produktbegleiter für das 'NeXus Revenue OS'.
