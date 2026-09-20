@@ -63,9 +63,9 @@ export default function RegisterPage() {
 
       if (authError) {
         // If already registered, try signing in directly with the password
-        if (authError.message.includes('already registered')) {
-          const { error: loginError } = await signInWithPassword(formData.email, formData.password)
-          if (!loginError) {
+        if (authError.message.includes('already registered') || authError.message.includes('User already registered')) {
+          const { data: logData, error: loginError } = await signInWithPassword(formData.email, formData.password)
+          if (!loginError && logData?.session) {
             navigate('/nexus/dashboard')
             return
           }
@@ -75,12 +75,20 @@ export default function RegisterPage() {
         return
       }
 
-      // If Supabase returns session immediately (no confirmation needed)
+      // If Supabase returns session immediately
       if (data?.session) {
         navigate('/nexus/dashboard')
         return
       }
 
+      // Auto-login attempt immediately after signup
+      const { data: logData, error: logErr } = await signInWithPassword(formData.email, formData.password)
+      if (!logErr && logData?.session) {
+        navigate('/nexus/dashboard')
+        return
+      }
+
+      // Only show success/confirmation if email confirmation is strictly enforced
       setSuccess(true)
     } catch (err) {
       setError(err.message)

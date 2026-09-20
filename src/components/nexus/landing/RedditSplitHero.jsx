@@ -79,18 +79,26 @@ export default function RedditSplitHero({ onOpenAuth }) {
       
       if (upError) {
         // If already exists, attempt instant password login
-        if (upError.message.includes('already registered')) {
+        if (upError.message.includes('already registered') || upError.message.includes('User already registered')) {
           const { error: inError } = await signInWithPassword(email, password)
           if (!inError) {
             navigate('/nexus/dashboard')
             return
           } else {
-            setAuthError(isDe ? 'Falsches Passwort für dieses Konto.' : 'Incorrect password for this account.')
+            setAuthError(isDe ? 'Konto existiert bereits. Bitte richtiges Passwort eingeben oder über Google einloggen.' : 'Account already exists. Please enter your correct password or log in with Google.')
             return
           }
         }
         setAuthError(upError.message)
         return
+      }
+
+      // If signUp didn't return session immediately, run signInWithPassword to guarantee instant login
+      if (!data?.session) {
+        const { error: inError } = await signInWithPassword(email, password)
+        if (inError) {
+          console.warn('Auto sign-in fallback:', inError.message)
+        }
       }
 
       navigate('/nexus/dashboard')
