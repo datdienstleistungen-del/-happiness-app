@@ -204,7 +204,13 @@ export const handler = async (event) => {
 
   try {
     const body = event.body ? JSON.parse(event.body) : {};
-    const { searchQuery: rawSearchQuery, branche, lang, offeringId, isLandingPreview, angebot } = body;
+    const ctx = body.opportunityContext || {};
+    const rawSearchQuery = body.searchQuery || ctx.company?.name || (typeof ctx.company === 'string' ? ctx.company : '') || ctx.searchQuery || '';
+    const branche = body.branche || ctx.company?.industry || ctx.branche || '';
+    const lang = body.lang || ctx.lang || 'de';
+    const offeringId = body.offeringId || ctx.offering_id || ctx.offering?.id || null;
+    const isLandingPreview = body.isLandingPreview === true;
+    const angebot = body.angebot || ctx.offering?.offering_name || (typeof ctx.offering === 'string' ? ctx.offering : '') || ctx.angebot || '';
 
     const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
     const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;

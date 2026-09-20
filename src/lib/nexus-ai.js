@@ -36,10 +36,16 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
     // Build message from available params
     if (rest.message) {
       message = rest.message
+    } else if (rest.userMessage) {
+      message = rest.userMessage
+    } else if (rest.prompt) {
+      message = rest.prompt
     } else if (mode === 'angebotsanalyse') {
       message = `Analysiere folgendes Angebot:\n\nAngebot: ${rest.angebot || ''}\nBranche: ${rest.branche || ''}`
     } else if (mode === 'trigger_detection') {
-      message = rest.query || ''
+      message = rest.query || rest.searchQuery || ''
+    } else if (mode === 'find_contact') {
+      message = rest.userMessage || rest.searchContext || rest.message || `Firma: ${rest.company || ''}\nSuchergebnisse:\n${rest.context || JSON.stringify(rest)}`;
     } else if (mode === 'lead_intelligence') {
       message = `Unternehmen: ${rest.company || ''}\nAngebot des Verkäufers: ${rest.angebot || ''}`
     } else if (mode === 'einwandbehandlung') {
@@ -600,13 +606,27 @@ export async function runDeepResearch(opportunityContext) {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token || '';
 
+  const ctx = opportunityContext || {};
+  const searchQuery = typeof ctx === 'string' 
+    ? ctx 
+    : (ctx.company?.name || (typeof ctx.company === 'string' ? ctx.company : '') || ctx.searchQuery || '');
+  const branche = ctx.company?.industry || ctx.branche || '';
+  const offeringId = ctx.offering_id || ctx.offering?.id || null;
+  const angebot = ctx.offering?.offering_name || (typeof ctx.offering === 'string' ? ctx.offering : '') || ctx.angebot || '';
+
   const res = await fetch('/.netlify/functions/nexus-research', {
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({ opportunityContext })
+    body: JSON.stringify({ 
+      searchQuery,
+      branche,
+      offeringId,
+      angebot,
+      opportunityContext: ctx
+    })
   });
 
   if (!res.ok) throw new Error('Deep Research API failed');

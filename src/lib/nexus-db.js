@@ -11,12 +11,12 @@ import { supabase } from './supabase'
 // 1. ANALYSEN (Legacy / Core AI Brain)
 // -----------------------------------------------------------------------------
 
-export async function saveAnalysis({ angbot, branche, analyseResult, userId }) {
+export async function saveAnalysis({ angebot, angbot, branche, analyseResult, userId }) {
   const { data, error } = await supabase
     .from('nexus_analyses')
     .insert({
       user_id: userId,
-      angebot: angbot,
+      angebot: angebot || angbot,
       branche: branche,
       analyse_result: analyseResult,
       zielgruppe: analyseResult?.zielgruppe || null,

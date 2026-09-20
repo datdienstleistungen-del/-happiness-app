@@ -623,7 +623,7 @@ export default function SalesWorkspacePage() {
           opportunity: fullContext || null,
           research: fullContext?.research || [],
           offering: fullContext?.offering ? { name: fullContext.offering.offering_name, positioning: fullContext.offering.positioning } : null,
-          triggers: fullContext?.triggers ? fullContext.triggers.map(t => t.nexus_trigger_events).filter(Boolean) : (latestTrigger ? [latestTrigger] : []),
+          triggers: fullContext?.triggers ? fullContext.triggers.map(t => t.nexus_trigger_events).filter(Boolean) : (activeTrigger ? [activeTrigger] : []),
           company: fullContext?.company || formData.company,
           contact: fullContext?.contacts?.[0]?.nexus_contacts || formData.ansprechpartner,
           activities: fullContext?.activities || []
