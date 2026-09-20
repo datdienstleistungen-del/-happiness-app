@@ -553,11 +553,10 @@ Deine Aufgabe ist es, den bereitgestellten Vertrag, die AGB oder das Dokument gr
       messages.push({ role: "user", content: userMessage });
     }
 
-    // --- WEB SEARCH & STANDALONE EMAIL CRAWLER: Auto-Suche & Crawler bei Bedarf ---
-    const isContactMode = systemPrompt ? (systemPrompt.includes('Recherche-Agent') || systemPrompt.includes('Coach') || systemPrompt.includes('Sales Coach')) : false;
-    const searchTriggers = ['website', 'url', 'homepage', 'link', 'ansprechpartner', 'ceo', 
-      'geschäftsführer', 'head of', 'wer ist', 'kontakt', 'linkedin', 'firmensitz', 'adresse', 'email', 'e-mail', 'mail', 'recherche', 'suche', 'opportunity'];
-    const needsSearch = !hasImage && (isContactMode || searchTriggers.some(t => lowerMsg.includes(t)));
+    // --- WEB SEARCH & STANDALONE EMAIL CRAWLER: Nur bei gezielten Recherche-Anfragen ---
+    const isExplicitRechercheMode = systemPrompt && systemPrompt.includes('Recherche-Agent');
+    const searchTriggers = ['wer ist der geschäftsführer', 'wer ist ceo', 'ansprechpartner finden', 'entscheider finden', 'e-mail adresse von', 'kontakt von', 'recherchiere'];
+    const needsSearch = !hasImage && (isExplicitRechercheMode || searchTriggers.some(t => lowerMsg.includes(t)));
 
     if (needsSearch) {
       // Firma aus Context oder Nachricht extrahieren
@@ -576,16 +575,17 @@ Deine Aufgabe ist es, den bereitgestellten Vertrag, die AGB oder das Dokument gr
       if (effectiveTarget && effectiveTarget.length > 1) {
         console.log(`[NEXUS] Auto-Search & Email Crawler for: ${effectiveTarget}`);
         
-        // Parallele Ausführung: WebSearch (Website, LinkedIn, Kontakt) + Email Crawler
-        const [websiteResults, linkedinResults, contactResults, crawlerResult] = await Promise.all([
-          webSearch(`${effectiveTarget} official website`),
-          webSearch(`${effectiveTarget} LinkedIn`),
-          webSearch(`${effectiveTarget} CEO Geschäftsführer Ansprechpartner Leiter`),
-          runEmailPatternCrawler({ companyName: effectiveTarget }).catch(err => {
-            console.warn('[NEXUS] Email Crawler Fehler:', err.message);
-            return null;
-          })
+        // Parallele Ausführung mit maximal 3.5s Timeout
+        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 3500));
+        const searchTasks = Promise.all([
+          webSearch(`${effectiveTarget} official website`).catch(() => null),
+          webSearch(`${effectiveTarget} LinkedIn`).catch(() => null),
+          webSearch(`${effectiveTarget} CEO Geschäftsführer Ansprechpartner Leiter`).catch(() => null),
+          runEmailPatternCrawler({ companyName: effectiveTarget }).catch(() => null)
         ]);
+
+        const searchRes = await Promise.race([searchTasks, timeoutPromise]) || [null, null, null, null];
+        const [websiteResults, linkedinResults, contactResults, crawlerResult] = searchRes;
         
         // Deduplizierte Resultate zusammenführen
         const seenUrls = new Set();
