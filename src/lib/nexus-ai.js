@@ -293,6 +293,16 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
         }
       ]
     }`
+  } else if (mode === 'translate_intelligence') {
+    systemPrompt += ` Du bist ein hochpräziser B2B-Übersetzer für deutsche Vertriebler. Übersetze den übergebenen B2B-Kontext (Angebot, Positionierung, Kaufsignal) vollständig, professionell und flüssig auf Deutsch.
+    
+    WICHTIG: Antworte AUSSCHLIESSLICH im JSON-Format, ohne jeglichen Markdown-Text außen herum.
+    Du musst ein JSON-Objekt mit EXAKT folgender Struktur zurückgeben:
+    {
+      "offering_name": "Deutsche Übersetzung des Angebots",
+      "positioning": "Deutsche Übersetzung der Positionierung",
+      "signal": "Deutsche Übersetzung des Kaufsignals (nur die reine Übersetzung des Ereignisses/Signals, keine Tabellen, keine Meta-Texte)"
+    }`
   }
 
   // Multi-Language Enforcement for all analysis, generation & pitch modes

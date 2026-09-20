@@ -74,8 +74,8 @@ export default function SalesWorkspacePage() {
       const t = overrideTrigger || activeTrigger
       const textToTranslate = `ANGEBOT: ${c?.offering?.offering_name || ''}\nPOSITIONIERUNG: ${c?.offering?.positioning || ''}\nKAUFSIGNAL: ${t?.content || ''}`
       const res = await callNexusAI({
-        mode: 'chat',
-        message: `Du bist ein professioneller B2B-Übersetzer für deutsche Vertriebler. Übersetze folgenden spanischen/fremdsprachigen B2B-Kontext präzise und professionell auf Deutsch für einen deutschen Vertriebler. Gib ausschließlich valides JSON im Format {"offering_name": "...", "positioning": "...", "signal": "..."} zurück (ohne Markdown, nur JSON):\n\n${textToTranslate}`,
+        mode: 'translate_intelligence',
+        message: textToTranslate,
         temperature: 0.1,
         lang: 'de',
         targetLang: 'de'
@@ -86,7 +86,26 @@ export default function SalesWorkspacePage() {
           const clean = res.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim()
           parsed = JSON.parse(clean)
         } catch(e) {
-          parsed = { signal: res }
+          // Robust table / text extraction fallback if LLM returned markdown table
+          const offerMatch = res.match(/\|\s*\*{0,2}Angebot\*{0,2}\s*\|\s*([^|\n]+)/i) || res.match(/Angebot:\s*([^\n|]+)/i)
+          const posMatch = res.match(/\|\s*\*{0,2}Positionierung\*{0,2}\s*\|\s*([^|\n]+)/i) || res.match(/Positionierung:\s*([^\n|]+)/i)
+          const sigMatch = res.match(/\|\s*\*{0,2}Signal\*{0,2}\s*\|\s*([^|\n]+)/i) || res.match(/\|\s*\*{0,2}Kaufsignal\*{0,2}\s*\|\s*([^|\n]+)/i) || res.match(/Signal:\s*([^\n|]+)/i)
+          
+          let cleanSignal = sigMatch ? sigMatch[1].trim() : res
+          if (cleanSignal.includes('|') || cleanSignal.includes('Übersetzung')) {
+            const rows = res.split('\n').filter(line => line.includes('|') && !line.includes('---') && !line.includes('Feld') && !line.includes('Priorität'));
+            const sigRow = rows.find(r => /signal/i.test(r));
+            if (sigRow) {
+              const parts = sigRow.split('|').map(s => s.trim()).filter(Boolean);
+              if (parts.length >= 2) cleanSignal = parts[parts.length - 1];
+            }
+          }
+
+          parsed = {
+            offering_name: offerMatch ? offerMatch[1].trim() : '',
+            positioning: posMatch ? posMatch[1].trim() : '',
+            signal: cleanSignal
+          }
         }
       }
       setTranslatedIntelligence(parsed || {})
