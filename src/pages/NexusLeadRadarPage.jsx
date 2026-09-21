@@ -27,8 +27,16 @@ export default function NexusLeadRadarPage() {
       const oldTriggers = localStorage.getItem('nexus:radar_triggers')
       const oldSaved = localStorage.getItem('nexus:radar_saved_leads')
       
+      // Alte spanische / ausländische Test-Daten aus dem Cache entfernen
+      const sample = JSON.stringify(parsed || oldTriggers || '').toLowerCase()
+      if (sample.includes('biopharma') || sample.includes('logichain') || sample.includes('innovación') || sample.includes('soluciones industriales') || sample.includes('estadounidense')) {
+        localStorage.removeItem('nexus:radar_state')
+        localStorage.removeItem('nexus:radar_triggers')
+        localStorage.removeItem('nexus:radar_saved_leads')
+        return { triggers: [], savedLeads: [], manualQuery: '', hasSearched: false }
+      }
+
       // MIGRATION ERZWINGEN: Wenn wir noch alte Leads haben, aber der neue State leer ist
-      // (z.B. weil er fälschlicherweise durch einen Refresh leer angelegt wurde)
       if (oldTriggers && (!parsed || !parsed.triggers || parsed.triggers.length === 0)) {
         return {
           triggers: JSON.parse(oldTriggers),

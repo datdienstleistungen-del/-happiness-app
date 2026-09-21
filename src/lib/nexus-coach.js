@@ -236,9 +236,9 @@ B2B-RECHERCHE-MANDAT (1-KLICK-LINKS & DIREKTE DATEN):
      - **Entscheider-Rolle:** z.B. Head of Sales, Geschäftsführer, VP Business Development
      - **E-Mail-Muster:** z.B. \`vorname.nachname@domain.com\` oder \`kontakt@domain.com\`
   3. Beispiel für das Tabellen-Format:
-     | Firma | Land | Website / Suche | 1-Klick LinkedIn | Entscheider-Rolle | E-Mail-Muster |
+     | Firma & Standort | Land | Website / Suche | 1-Klick LinkedIn | Entscheider-Rolle | E-Mail-Muster |
      |---|---|---|---|---|---|
-     | Innovatec Soluciones | USA / ES | [Website](https://www.google.com/search?q=Innovatec+Soluciones+Industriales) | [LinkedIn Suche](https://www.linkedin.com/search/results/people/?keywords=Innovatec+Soluciones+Industriales+Sales) | Head of Sales / CEO | \`contacto@innovatec.com\` |
+     | TechNova Solutions GmbH (München) | DE | [Website](https://www.google.com/search?q=TechNova+Solutions+GmbH+Muenchen) | [LinkedIn Suche](https://www.linkedin.com/search/results/people/?keywords=TechNova+Solutions+Sales+CEO) | Head of Sales / Geschäftsführer | \`kontakt@technova-solutions.de\` |
 
 VERBOTEN:
 - NIEMALS den Nutzer mit generischen Fragebögen ("Welches Ziel hatten Sie?", "Welche Tools haben Sie genutzt?", "Wo sind Sie auf Schwierigkeiten gestoßen?") abwimmeln oder belehren.

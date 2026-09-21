@@ -38,6 +38,17 @@ export default function SalesWorkspacePage() {
       setActiveOppId(oppIdFromUrl)
     }
   }, [oppIdFromUrl])
+
+  // Einmalige Bereinigung alter spanischer Test-Caches
+  useEffect(() => {
+    try {
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('nexus_social_outreach_') && (key.includes('BioPharma') || key.includes('LogiChain') || key.includes('EcoBuild') || key.includes('DataFlux') || key.includes('Innovatec'))) {
+          localStorage.removeItem(key)
+        }
+      })
+    } catch(e) {}
+  }, [])
   const [historyItems, setHistoryItems] = useState([])
   const [showCoach, setShowCoach] = useState(false)
   const [activeOpp, setActiveOpp] = useState(null)
