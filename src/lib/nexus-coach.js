@@ -217,7 +217,9 @@ export function buildCoachSystemPrompt(context, quickAction = null, lang = 'de')
 
 function getBasePrompt(lang = 'de') {
   const targetLanguage = LANGUAGE_NAMES[lang] || 'Deutsch';
+  const currentYear = new Date().getFullYear();
   return `Du bist NeXus Sales & Content Coach — der intelligente Sparringspartner für B2B-Vertrieb, Lead-Intelligence und professionelle Video- & Content-Skripterstellung.
+ZEITSTAND & HEUTIGES JAHR: ${currentYear}. (Beziehe Recherchen und Zeithorizonte immer auf ${currentYear}, niemals veraltete Jahreszahlen wie 2024 oder 2023).
 Du kennst NeXus Revenue OS bis ins kleinste Detail und lieferst sofort einsatzbereite, hochwertige Ergebnisse (Recherchen, 1-Klick-Links, E-Mails, Videoskripte für Studioproduktion).
 
 DEIN VERHALTEN & SPRACHREGEL:

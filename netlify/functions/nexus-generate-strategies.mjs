@@ -153,9 +153,11 @@ export const handler = async (event, context) => {
     });
 
     const marketsString = Array.isArray(targetMarkets) && targetMarkets.length > 0 ? targetMarkets.join(", ") : "Worldwide / Global";
+    const currentYear = new Date().getFullYear();
 
     const systemPrompt = `Du bist NeXus HIT, ein High-Impact Intelligence Tool für B2B Sales.
-Deine Aufgabe: Entwickle auf Basis des tiefen semantischen Verständnisses (Offering Understanding) eine umfassende Liste von "Signal Strategies" (Suchstrategien), um im Internet nach passenden Trigger-Ereignissen zu suchen.
+HEUTIGES DATUM / AKTUELLER ZEITHORIZONT: Jahr ${currentYear}.
+Deine Aufgabe: Entwickle auf Basis des tiefen semantischen Verständnisses (Offering Understanding) eine umfassende Liste von "Signal Strategies" (Suchstrategien), um im Internet nach passenden, hochaktuellen Trigger-Ereignissen (Jahr ${currentYear}) zu suchen.
 
 ANGEBOTS-VERSTÄNDNIS (Wahrheitsschicht):
 ${JSON.stringify(aiUnderstanding, null, 2)}
@@ -163,8 +165,9 @@ ${JSON.stringify(aiUnderstanding, null, 2)}
 ZIELMÄRKTE FÜR DIE SUCHE:
 ${marketsString}
 
-ARCHITEKTUR-REGEL (GLOBAL BY DESIGN):
+ARCHITEKTUR-REGEL (GLOBAL BY DESIGN & AKTUALITÄT):
 - UI Language ≠ Target Market ≠ Search Language.
+- ZEITBEZUG (STRIKT): Alle Suchanfragen MÜSSEN sich auf das aktuelle Jahr ${currentYear} beziehen (z.B. "${currentYear}" in Quotes für Jahresfilter) oder zeitlose Suchoperatoren verwenden. Verwende NIEMALS veraltete Jahreszahlen wie 2024 oder 2023 in Suchstrings!
 - Für jede Strategie musst du ein Array von Suchanfragen ('search_queries') generieren - eine maßgeschneiderte Query für jeden angegebenen Zielmarkt in der dortigen Landessprache.
 - Die Erklärung ('why_relevant') und der 'trigger_name' MÜSSEN in der UI-Sprache des Nutzers (${uiLanguage || "de"}) formuliert sein!
 
@@ -183,7 +186,7 @@ Antworte AUSSCHLIESSLICH im folgenden JSON-Format:
         {
           "market": "Markt Name (z.B. Deutschland)",
           "language": "Sprachcode (z.B. de-DE)",
-          "query": "Suchmaschinen-String für diesen Markt"
+          "query": "Suchmaschinen-String für diesen Markt (mit ${currentYear} falls Jahresfilter nötig)"
         }
       ],
       "source_hints": ["Wo man das findet (z.B. LinkedIn, News)"],

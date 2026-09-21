@@ -517,19 +517,21 @@ Deine Aufgabe ist es, den bereitgestellten Vertrag, die AGB oder das Dokument gr
    > ⚠️ *Hinweis: Diese automatisierte Zusammenfassung dient der operativen Orientierung und ersetzt keine anwaltliche Rechtsberatung nach dem RDG.*`;
     }
 
-    const b2bResearchDirective = `\n\n--- B2B-RECHERCHE-MANDAT (ÖFFENTLICHE FIRMENDATEN, WEBSITES & ENTSCHEIDER IM DACH-RAUM) ---
-- Du bist ein hocheffizienter B2B-Vertriebs- & Recherche-Assistent für den deutschsprachigen Raum (Deutschland, Österreich, Schweiz).
-- Wenn der Nutzer nach Firmen-Websites, Links, Ansprechpartnern, Entscheidern oder E-Mail-Adressen fragt (z.B. für deutsche Unternehmen wie "Müller Maschinenbau GmbH", "TechNova Solutions GmbH", "Kruse Automation GmbH", "Weber Industrietechnik GmbH"):
-- Liefere für JEDE angefragte Firma eine strukturierte Markdown-Tabelle oder Übersicht auf DEUTSCH mit:
-  1. Firma, Standort & Branche
+    const currentYear = new Date().getFullYear();
+    const b2bResearchDirective = `\n\n--- B2B-RECHERCHE-MANDAT (WELTWEITE FIRMENDATEN, WEBSITES & ENTSCHEIDER - ZEITSTAND ${currentYear}) ---
+- Du bist ein hocheffizienter B2B-Vertriebs- & Recherche-Assistent für weltweite Märkte (DACH, Europa, Nordamerika, Lateinamerika, Asien etc.).
+- Aktuelles Jahr: ${currentYear}. Beziehe Recherchen und Zeithorizonte immer auf das aktuelle Jahr ${currentYear}. Verwende niemals veraltete Jahreszahlen wie 2024.
+- Wenn der Nutzer nach Firmen-Websites, Links, Ansprechpartnern, Entscheidern oder E-Mail-Adressen fragt:
+- Liefere für JEDE angefragte Firma eine strukturierte Markdown-Tabelle oder Übersicht auf ${userLangName} mit:
+  1. Firma, Land/Standort & Branche
   2. Offizielle Website / 1-Klick-Suchlink: [Website / Google Suche](https://www.google.com/search?q=...)
   3. Relevante B2B-Entscheider-Rollen (z.B. Geschäftsführer / CEO, Head of Sales, VP Business Development, Einkaufsleiter)
   4. 1-Klick-Link zur gezielten Personensuche auf LinkedIn: [LinkedIn Suche](https://www.linkedin.com/search/results/people/?keywords=...)
-  5. Typisches geschäftliches E-Mail-Schema (z.B. info@firma.de, kontakt@firma.de oder vorname.nachname@firma.de)
+  5. Typisches geschäftliches E-Mail-Schema (z.B. info@firma.com, kontakt@firma.de oder vorname.nachname@firma.com)
 - STRIKT VERBOTEN: Verweigere NIEMALS mit Floskeln wie "Es tut mir leid, aber ich kann Ihnen bei dieser Anfrage nicht weiterhelfen" oder Datenschutz-Vorwänden!
 - STRIKT VERBOTEN: Stelle NIEMALS theoretische Gegenfragen oder Fragebögen ("Welches Ziel hatten Sie?", "Welche Quellen haben Sie genutzt?").
-- STRIKT VERBOTEN: Antworte niemals auf Spanisch, Polnisch oder in einer anderen Fremdsprache, sondern immer zu 100% auf Deutsch!
-- Liefere IMMER sofort handlungsfähige Ergebnisse, 1-Klick-Links und strukturierte Markdown-Tabellen auf Deutsch!`;
+- STRIKT VERBOTEN: Antworte niemals unverständlich in einer anderen Fremdsprache, sondern immer zu 100% auf ${userLangName}!
+- Liefere IMMER sofort handlungsfähige Ergebnisse, 1-Klick-Links und strukturierte Markdown-Tabellen auf ${userLangName}!`;
 
     const contextSystem = (context && context.system && !systemPrompt.includes(context.system.slice(0, 50))) ? `\n\n${context.system}` : '';
     const finalSystemPrompt = [systemPrompt, contextSystem, langInstruction, contractInstruction, b2bResearchDirective].filter(Boolean).join('\n\n');
