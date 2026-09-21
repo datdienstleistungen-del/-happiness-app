@@ -327,7 +327,10 @@ export const handler = async (event) => {
       searchQuery = `${branche || ''} ${angebot ? angebot.slice(0, 80) : ''} Expansion Investition Modernisierung`.trim();
     }
 
-    const effectiveQuery = `${searchQuery || ''} ${branche || ''} Unternehmen Deutschland`.trim();
+    const isDe = (lang || 'de') === 'de';
+    const effectiveQuery = isDe
+      ? `${searchQuery || ''} ${branche || ''} Unternehmen Deutschland Standort Investition OR Expansion OR Neubau`.trim()
+      : `${searchQuery || ''} ${branche || ''} company expansion investment`.trim();
 
     // Multi-key Tavily with failover & DuckDuckGo fallback
     const tavilyKeys = [
@@ -487,7 +490,13 @@ export const handler = async (event) => {
     // --- STUFE 5: KI bewertet Relevanz ---
     const languageNames = { de: 'Deutsch (German)', en: 'Englisch (English)', es: 'Spanisch (Spanish)', fr: 'Französisch (French)', it: 'Italienisch (Italian)', nl: 'Niederländisch (Dutch)' };
     const langName = languageNames[lang] || 'Deutsch (German)';
-    const langInstruction = `\n\nCRITICAL REQUIREMENT: The user's language is ${langName}. All generated content MUST be written in ${langName}. Do not translate structural JSON keys (like "trigger_events", "firmenname", "signal", etc.), but write all their string values in ${langName}.`;
+    const langInstruction = isDe
+      ? `\n\nSPRACH- & REGIONS-VORGABE (MANDATORISCH):
+- Der Nutzer ist ein deutscher Vertriebler im DACH-Raum.
+- Alle ausgegebenen Werte im JSON (Signal, Bewertung, Relevanz, Psychologische Ansprache, Position, Branche) MÜSSEN ZWINGEND zu 100% auf Deutsch verfasst sein.
+- Bevorzuge echte Unternehmen mit Sitz oder Aktivitäten im DACH-Raum (Deutschland, Österreich, Schweiz).
+- Wenn ausländische Meldungen vorkommen, übersetze das Kaufsignal und die Relevanz präzise und vollständig auf Deutsch für den deutschen Vertriebler.`
+      : `\n\nCRITICAL REQUIREMENT: The user's language is ${langName}. All generated content MUST be written in ${langName}. Do not translate structural JSON keys (like "trigger_events", "firmenname", "signal", etc.), but write all their string values in ${langName}.`;
 
     const systemPrompt = `Du bist die Kern-Intelligenz der NeXus Research Engine und ein brillanter Verkaufspsychologe im B2B-Vertrieb.
     Hier ist ein roher Daten-Pool aus echten, topaktuellen Internet-Quellen zu folgenden Suchbegriffen: "${searchQuery}".

@@ -361,10 +361,20 @@ export default function SalesWorkspacePage() {
           setResult(null);
           setActiveTab('aktion');
 
-          // Auto-Übersetzung für fremdsprachige Leads (z.B. Uruguay/Spanisch), wenn der Nutzer auf Deutsch arbeitet
-          const isForeign = /\b(de|la|el|en|y|que|los|las|por|con|para|una|un|es|del|al|empresa|innovación|desarrollo|soluciones|crecimiento|financiamiento|adquisición|nueva|nuevo|sede|sociedad|productos)\b/i.test((latestTrigger?.content || '') + ' ' + (ctx.offering?.positioning || ''));
+          // Auto-Übersetzung für fremdsprachige Leads (z.B. Spanisch / Polnisch), wenn der Nutzer auf Deutsch arbeitet
+          const isForeign = /\b(empresa|innovación|desarrollo|soluciones|crecimiento|financiamiento|adquisición|nueva|nuevo|sede|sociedad|productos|fabricación|distribución|ventures|partnership|spółka|zarząd|inwestycje)\b/i.test((latestTrigger?.content || '') + ' ' + (ctx.offering?.positioning || ''));
           if (isForeign && (lang || 'de') === 'de') {
-            handleTranslateIntelligence(ctx, latestTrigger);
+            try {
+              callNexusAI({
+                mode: 'translate_intelligence',
+                lang: 'de',
+                message: `Angebot: ${ctx.offering?.offering_name || ''}\nPositionierung: ${ctx.offering?.positioning || ''}\nKaufsignal: ${latestTrigger?.content || ''}`
+              }).then(res => {
+                if (res && typeof res === 'object' && res.signal) {
+                  setFormData(p => ({ ...p, situation: res.signal }));
+                }
+              }).catch(() => {});
+            } catch(e) {}
           }
 
           // Lade Historie

@@ -530,8 +530,8 @@ Deine Aufgabe ist es, den bereitgestellten Vertrag, die AGB oder das Dokument gr
 - STRIKT VERBOTEN: Stelle NIEMALS theoretische Gegenfragen oder Fragebögen ("Welches Ziel hatten Sie?", "Welche Quellen haben Sie genutzt?").
 - Liefere IMMER sofort handlungsfähige Ergebnisse, 1-Klick-Links und strukturierte Markdown-Tabellen!`;
 
-    const contextSystem = (context && context.system) ? `\n\n${context.system}` : '';
-    const finalSystemPrompt = systemPrompt + contextSystem + langInstruction + contractInstruction + b2bResearchDirective;
+    const contextSystem = (context && context.system && !systemPrompt.includes(context.system.slice(0, 50))) ? `\n\n${context.system}` : '';
+    const finalSystemPrompt = [systemPrompt, contextSystem, langInstruction, contractInstruction, b2bResearchDirective].filter(Boolean).join('\n\n');
     
     const messages = [
       { role: "system", content: finalSystemPrompt }

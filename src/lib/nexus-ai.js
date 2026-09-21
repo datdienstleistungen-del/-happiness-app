@@ -321,11 +321,18 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
     nl: 'Niederländisch (Dutch)',
     el: 'Griechisch (Greek)'
   };
-  const activeLangCode = lang || targetLang || 'de';
-  const activeLangName = langNames[activeLangCode] || 'Deutsch';
+  const userLangCode = lang || 'de';
+  const userLangName = langNames[userLangCode] || 'Deutsch';
+  const isPitchMode = ['sales_pitch', 'follow_up', 'einwandbehandlung', 'forum_response'].includes(mode);
+  const effectiveTargetLangCode = (isPitchMode && targetLang && targetLang !== 'auto') ? targetLang : userLangCode;
+  const effectiveTargetLangName = langNames[effectiveTargetLangCode] || userLangName;
 
   if (mode !== 'chat' && mode !== 'assistant') {
-    systemPrompt += `\n\nSPRACH-VORGABE (MANDATORISCH): Verfasse alle Text-Inhalte, Beschreibungen, Analysen, Begründungen, Pitches, Hypothesen und Werte im JSON zu 100% in der Sprache: ${activeLangName}. Die JSON-Keys bleiben im vorgegebenen Schema, aber alle textuellen Werte MÜSSEN auf ${activeLangName} formuliert sein.`;
+    if (isPitchMode && effectiveTargetLangCode !== userLangCode) {
+      systemPrompt += `\n\nSPRACH-VORGABE (MANDATORISCH): Der Vertriebler/Nutzer arbeitet auf ${userLangName}. Alle internen Begründungen und Analysen ('thought_trigger', 'thought_offering') MÜSSEN ZWINGEND auf ${userLangName} verfasst sein! Das fertige Kunden-Anschreiben im Feld 'response' MUSS auf ${effectiveTargetLangName} verfasst sein.`;
+    } else {
+      systemPrompt += `\n\nSPRACH-VORGABE (MANDATORISCH): Verfasse alle Text-Inhalte, Beschreibungen, Analysen, Begründungen, Pitches, Hypothesen und Werte im JSON zu 100% in der Sprache: ${userLangName}. Die JSON-Keys bleiben im vorgegebenen Schema, aber alle textuellen Werte MÜSSEN auf ${userLangName} formuliert sein.`;
+    }
   }
 
   const { data: { session } } = await supabase.auth.getSession()
