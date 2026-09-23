@@ -38,6 +38,7 @@ const IdeenschmiedePage = lazy(() => import('../pages/IdeenschmiedePage'))
 const NexusLandingPage = lazy(() => import('../pages/NexusLandingPage'))
 const AngebotsanalysePage = lazy(() => import('../pages/AngebotsanalysePage'))
 const SalesWorkspacePage = lazy(() => import('../pages/SalesWorkspacePage'))
+const EventExplorerPage = lazy(() => import('../pages/EventExplorerPage'))
 const PlatformEngine = lazy(() => import('../pages/PlatformEngine'))
 const LandingPage = lazy(() => import('../pages/LandingPage'))
 const NexusDashboard = lazy(() => import('../pages/NexusDashboard'))
@@ -67,6 +68,7 @@ export default function AppRoutes() {
         <Route path="/nexus/dashboard" element={<ProtectedRoute><NexusDashboard /></ProtectedRoute>} />
         <Route path="/nexus/angebotsanalyse" element={<ProtectedRoute><AngebotsanalysePage /></ProtectedRoute>} />
         <Route path="/nexus/lead-radar" element={<ProtectedRoute><LeadRadarPage /></ProtectedRoute>} />
+        <Route path="/nexus/events" element={<ProtectedRoute><EventExplorerPage /></ProtectedRoute>} />
         <Route path="/nexus/sales-workspace" element={<ProtectedRoute><SalesWorkspacePage /></ProtectedRoute>} />
         <Route path="/landing" element={<LandingPage />} />
         <Route path="/dashboard" element={<ProtectedRoute><PlatformEngine /></ProtectedRoute>} />

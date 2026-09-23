@@ -603,3 +603,91 @@ export async function updateQualifiedTriggerStatus(triggerId, status) {
     .single();
   return error ? null : data;
 }
+
+// -----------------------------------------------------------------------------
+// 10. EVENT PIPELINE (Phase 0 — Business Events + Lead Packages)
+// -----------------------------------------------------------------------------
+
+export async function getEventTypes() {
+  const { data, error } = await supabase
+    .from('nexus_event_type_definitions')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order');
+  return error ? [] : data;
+}
+
+export async function createEvent(userId, eventData) {
+  const { data, error } = await supabase
+    .from('nexus_events')
+    .insert({ user_id: userId, ...eventData, updated_at: new Date().toISOString() })
+    .select()
+    .single();
+  if (error) { console.error('[NeXus DB] Create event error:', error.message); return null; }
+  return data;
+}
+
+export async function getEvents(userId, { status, eventType, limit = 50 } = {}) {
+  let query = supabase.from('nexus_events')
+    .select('*')
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (status) query = query.eq('verification_status', status);
+  if (eventType) query = query.eq('event_type', eventType);
+  const { data, error } = await query;
+  return error ? [] : data;
+}
+
+export async function getEventById(id) {
+  const { data, error } = await supabase
+    .from('nexus_events')
+    .select('*, nexus_companies(*)')
+    .eq('id', id)
+    .is('deleted_at', null)
+    .single();
+  return error ? null : data;
+}
+
+export async function updateEvent(id, updates) {
+  const { data, error } = await supabase
+    .from('nexus_events')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  return error ? null : data;
+}
+
+export async function createLeadPackage(userId, packageData) {
+  const { data, error } = await supabase
+    .from('nexus_lead_packages')
+    .insert({ user_id: userId, ...packageData, updated_at: new Date().toISOString() })
+    .select()
+    .single();
+  if (error) { console.error('[NeXus DB] Create lead package error:', error.message); return null; }
+  return data;
+}
+
+export async function getLeadPackages(userId, { status, limit = 50 } = {}) {
+  let query = supabase.from('nexus_lead_packages')
+    .select('*, nexus_events(event_type, title, company_name)')
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (status) query = query.eq('status', status);
+  const { data, error } = await query;
+  return error ? [] : data;
+}
+
+export async function getLeadPackageById(id) {
+  const { data, error } = await supabase
+    .from('nexus_lead_packages')
+    .select('*, nexus_events(*), nexus_companies(*)')
+    .eq('id', id)
+    .is('deleted_at', null)
+    .single();
+  return error ? null : data;
+}

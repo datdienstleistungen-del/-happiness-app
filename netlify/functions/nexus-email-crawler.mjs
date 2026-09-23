@@ -37,7 +37,11 @@ const NON_PERSON_WORDS = new Set([
   'in the', 'as the', 'for the', 'at the', 'bei der', 'seit dem', 'von der', 
   'aus der', 'mit der', 'the ceo', 'der ceo', 'die firma', 'das unternehmen',
   'magazine global', 'silicon valley', 'press release', 'news portal', 'career page',
-  'the founder', 'the co', 'executive director', 'board member', 'people also', 'view profile'
+  'the founder', 'the co', 'executive director', 'board member', 'people also', 'view profile',
+  'founder', 'co-founder', 'ceo', 'cto', 'cfo', 'coo', 'cio', 'cmo', 'cro',
+  'managing director', 'managing', 'director', 'head', 'vp', 'president',
+  'partner', 'inhaber', 'vorstand', 'geschäftsführer', 'geschäftsführung',
+  'chairman', 'owner', 'gründer', 'coo'
 ]);
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
@@ -77,11 +81,19 @@ export function cleanPersonName(raw) {
   name = name.replace(/^(?:Dr\.|Prof\.|Prof\. Dr\.|Dipl\.-[A-Za-z.]+|M\.Sc\.|B\.Sc\.)\s+/i, '');
   name = name.replace(/^[^A-ZÄÖÜa-zäöüß]+/, '').replace(/[^A-ZÄÖÜa-zäöüß]+$/, '').trim();
   
-  const words = name.split(/\s+/);
+  let words = name.split(/\s+/);
+  
+  // Filter out role words (Founder, CEO, etc.) that look like names
+  words = words.filter(w => {
+    const lower = w.toLowerCase();
+    return !NON_PERSON_WORDS.has(lower) && !/^(?:founder|co-founder|ceo|cto|cfo|coo|cio|cmo|cro|managing|director|head|vp|president|partner|inhaber|vorstand|geschäftsführer|geschäftsführung|chairman|owner|gründer)$/i.test(lower);
+  });
+  
   if (words.length >= 2 && words.length <= 4) {
     if (words.every(w => /^[A-ZÄÖÜ][a-zäöüß]+(?:-[A-ZÄÖÜ][a-zäöüß]+)?$/.test(w))) {
-      if (!NON_PERSON_WORDS.has(name.toLowerCase())) {
-        return name;
+      const filteredName = words.join(' ');
+      if (!NON_PERSON_WORDS.has(filteredName.toLowerCase())) {
+        return filteredName;
       }
     }
   }
