@@ -25,6 +25,7 @@ function cleanModelOutput(text) {
     .replace(/<\|tool_call_start\|>[\s\S]*?<\|tool_call_end\|>/gi, '')
     .replace(/<\|im_start\|>[\s\S]*?<\|im_end\|>/gi, '')
     .replace(/<\|[\s\S]*?\|>/g, '')
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
     .trim();
 }
 
@@ -33,7 +34,7 @@ async function tryGroq(messages, temperature = 0.3, hasImage = false) {
   if (!key) return null;
   const models = hasImage 
     ? ['llama-3.2-11b-vision-preview']
-    : ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    : ['qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'allam-2-7b'];
   for (const model of models) {
     try {
       console.log(`[NEXUS] Trying Groq model: ${model}`);
@@ -81,7 +82,7 @@ async function tryOpenRouter(messages, temperature = 0.3) {
           model,
           messages,
           temperature,
-          max_tokens: 2048
+          max_tokens: 4096
         })
       }, 7000);
       if (!res.ok) { await res.text().catch(e => {}); clearTimeout(timer); continue; }
@@ -182,10 +183,10 @@ async function callAI(messages, temperature = 0.3, hasImage = false) {
         () => tryDeepSeek(messages, temperature)
       ]
     : [
-        () => tryDeepSeek(messages, temperature),
+        () => tryOpenRouter(messages, temperature),
         () => tryMistral(messages, temperature),
         () => tryGroq(messages, temperature, false),
-        () => tryOpenRouter(messages, temperature),
+        () => tryDeepSeek(messages, temperature),
         () => tryOpenAI(messages, temperature),
       ];
   let lastError = null;
