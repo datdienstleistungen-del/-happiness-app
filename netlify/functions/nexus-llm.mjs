@@ -34,7 +34,7 @@ async function tryGroq(messages, temperature = 0.3, hasImage = false) {
   if (!key) return null;
   const models = hasImage 
     ? ['llama-3.2-11b-vision-preview']
-    : ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'gemma2-9b-it'];
+    : ['qwen/qwen3.8-27b', 'allam-2-7b'];
   for (const model of models) {
     try {
       console.log(`[NEXUS] Trying Groq model: ${model}`);
