@@ -34,7 +34,7 @@ async function tryGroq(messages, temperature = 0.3, hasImage = false) {
   if (!key) return null;
   const models = hasImage 
     ? ['llama-3.2-11b-vision-preview']
-    : ['qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'allam-2-7b'];
+    : ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'gemma2-9b-it'];
   for (const model of models) {
     try {
       console.log(`[NEXUS] Trying Groq model: ${model}`);
@@ -64,10 +64,12 @@ async function tryGroq(messages, temperature = 0.3, hasImage = false) {
   return null;
 }
 
-async function tryOpenRouter(messages, temperature = 0.3) {
+async function tryOpenRouter(messages, temperature = 0.3, hasImage = false) {
   const key = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY || BACKUP_OPENROUTER;
   if (!key) return null;
-  const models = ['nvidia/nemotron-3.5-lightning:free', 'openrouter/free', 'google/gemma-4-26b-a4b-it:free'];
+  const models = hasImage
+    ? ['google/gemma-4-26b-a4b-it:free', 'google/gemma-4-31b-it:free', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free']
+    : ['nvidia/nemotron-3.5-lightning:free', 'openrouter/free', 'google/gemma-4-26b-a4b-it:free'];
   for (const model of models) {
     try {
       const { res, timer } = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
@@ -176,14 +178,14 @@ async function tryDeepSeek(messages, temperature = 0.3) {
 async function callAI(messages, temperature = 0.3, hasImage = false) {
   const providers = hasImage 
     ? [
+        () => tryOpenRouter(messages, temperature, true),
         () => tryOpenAI(messages, temperature),
         () => tryGroq(messages, temperature, true),
-        () => tryOpenRouter(messages, temperature),
         () => tryMistral(messages, temperature),
         () => tryDeepSeek(messages, temperature)
       ]
     : [
-        () => tryOpenRouter(messages, temperature),
+        () => tryOpenRouter(messages, temperature, false),
         () => tryMistral(messages, temperature),
         () => tryGroq(messages, temperature, false),
         () => tryDeepSeek(messages, temperature),
