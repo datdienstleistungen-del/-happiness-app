@@ -19,12 +19,21 @@ const BACKUP_MISTRAL = _k([89,66,95,94,95,90,76,71,126,25,126,100,72,18,78,108,9
 const BACKUP_OPENROUTER = _k([89,65,7,69,88,7,92,27,7,72,72,79,76,26,19,75,76,18,28,75,76,27,18,75,31,29,28,28,24,27,79,79,24,78,76,19,76,31,19,78,25,76,30,78,28,26,79,26,25,27,78,78,26,27,78,31,30,28,28,72,79,24,24,29,79,24,18,79,29,31,19,19,27]);
 const BACKUP_TAVILY = _k([94,92,70,83,7,78,79,92,7,30,97,88,123,100,103,7,126,107,76,77,30,125,114,121,96,108,111,121,31,28,102,98,25,123,112,29,111,104,67,27,19,100,64,94,126,92,26,28,121,104,70,112,83,109,71,105,83,27]);
 
+function cleanModelOutput(text) {
+  if (!text || typeof text !== 'string') return text;
+  return text
+    .replace(/<\|tool_call_start\|>[\s\S]*?<\|tool_call_end\|>/gi, '')
+    .replace(/<\|im_start\|>[\s\S]*?<\|im_end\|>/gi, '')
+    .replace(/<\|[\s\S]*?\|>/g, '')
+    .trim();
+}
+
 async function tryGroq(messages, temperature = 0.3, hasImage = false) {
   const key = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ;
   if (!key) return null;
   const models = hasImage 
-    ? ['llama-3.2-11b-vision-preview', 'llama-3.2-90b-vision-preview', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b']
-    : ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound-mini', 'groq/compound', 'qwen/qwen3.8-27b'];
+    ? ['llama-3.2-11b-vision-preview', 'llama-3.2-90b-vision-preview']
+    : ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it'];
   for (const model of models) {
     try {
       console.log(`[NEXUS] Trying Groq model: ${model}`);
@@ -35,7 +44,7 @@ async function tryGroq(messages, temperature = 0.3, hasImage = false) {
           model,
           messages,
           temperature,
-          max_tokens: 2048
+          max_tokens: 3000
         })
       }, 20000);
       if (!res.ok) {
@@ -44,9 +53,9 @@ async function tryGroq(messages, temperature = 0.3, hasImage = false) {
       }
       const data = await res.json();
       clearTimeout(timer);
-      const text = data.choices?.[0]?.message?.content;
-      if (text) {
-        return { text, provider: 'groq', model };
+      const rawText = data.choices?.[0]?.message?.content;
+      if (rawText) {
+        return { text: cleanModelOutput(rawText), provider: 'groq', model };
       }
     } catch (e) {
       console.warn(`[NEXUS] Groq ${model} error:`, e.message);
@@ -79,9 +88,9 @@ async function tryOpenRouter(messages, temperature = 0.3) {
       if (!res.ok) { await res.text().catch(e => {}); clearTimeout(timer); continue; }
       const data = await res.json();
       clearTimeout(timer);
-      const text = data.choices?.[0]?.message?.content;
-      if (text) {
-        return { text, provider: 'openrouter', model };
+      const rawText = data.choices?.[0]?.message?.content;
+      if (rawText) {
+        return { text: cleanModelOutput(rawText), provider: 'openrouter', model };
       }
     } catch (e) {
       console.warn(`[NEXUS] OpenRouter ${model} error:`, e.message);
@@ -112,7 +121,8 @@ async function tryMistral(messages, temperature = 0.3) {
     
     const data = await res.json();
     clearTimeout(timer);
-    return { text: data.choices?.[0]?.message?.content || null, provider: 'mistral', model: 'mistral-small-latest' };
+    const rawText = data.choices?.[0]?.message?.content;
+    return { text: cleanModelOutput(rawText) || null, provider: 'mistral', model: 'mistral-small-latest' };
   } catch (e) { 
     console.warn('Mistral Exception - falling back:', e.message);
     return null; 
@@ -135,7 +145,8 @@ async function tryOpenAI(messages, temperature = 0.3) {
     })
     if (!res.ok) { await res.text().catch(e => {}); return null; }
     const data = await res.json()
-    return { text: data.choices?.[0]?.message?.content || null, provider: 'openai', model: 'gpt-4o-mini' }
+    const rawText = data.choices?.[0]?.message?.content;
+    return { text: cleanModelOutput(rawText) || null, provider: 'openai', model: 'gpt-4o-mini' }
   } catch { return null }
 }
 
@@ -155,7 +166,8 @@ async function tryDeepSeek(messages, temperature = 0.3) {
     })
     if (!res.ok) { await res.text().catch(e => {}); return null; }
     const data = await res.json()
-    return { text: data.choices?.[0]?.message?.content || null, provider: 'deepseek', model: 'deepseek-chat' }
+    const rawText = data.choices?.[0]?.message?.content;
+    return { text: cleanModelOutput(rawText) || null, provider: 'deepseek', model: 'deepseek-chat' }
   } catch { return null }
 }
 
@@ -519,19 +531,16 @@ Deine Aufgabe ist es, den bereitgestellten Vertrag, die AGB oder das Dokument gr
 
     const currentYear = new Date().getFullYear();
     const b2bResearchDirective = `\n\n--- B2B-RECHERCHE-MANDAT (WELTWEITE FIRMENDATEN, WEBSITES & ENTSCHEIDER - ZEITSTAND ${currentYear}) ---
-- Du bist ein hocheffizienter B2B-Vertriebs- & Recherche-Assistent für weltweite Märkte (DACH, Europa, Nordamerika, Lateinamerika, Asien etc.).
-- Aktuelles Jahr: ${currentYear}. Beziehe Recherchen und Zeithorizonte immer auf das aktuelle Jahr ${currentYear}. Verwende niemals veraltete Jahreszahlen wie 2024.
-- Wenn der Nutzer nach Firmen-Websites, Links, Ansprechpartnern, Entscheidern oder E-Mail-Adressen fragt:
-- Liefere für JEDE angefragte Firma eine strukturierte Markdown-Tabelle oder Übersicht auf ${userLangName} mit:
-  1. Firma, Land/Standort & Branche
-  2. Offizielle Website / 1-Klick-Suchlink: [Website / Google Suche](https://www.google.com/search?q=...)
-  3. Relevante B2B-Entscheider-Rollen (z.B. Geschäftsführer / CEO, Head of Sales, VP Business Development, Einkaufsleiter)
-  4. 1-Klick-Link zur gezielten Personensuche auf LinkedIn: [LinkedIn Suche](https://www.linkedin.com/search/results/people/?keywords=...)
-  5. Typisches geschäftliches E-Mail-Schema (z.B. info@firma.com, kontakt@firma.de oder vorname.nachname@firma.com)
-- STRIKT VERBOTEN: Verweigere NIEMALS mit Floskeln wie "Es tut mir leid, aber ich kann Ihnen bei dieser Anfrage nicht weiterhelfen" oder Datenschutz-Vorwänden!
-- STRIKT VERBOTEN: Stelle NIEMALS theoretische Gegenfragen oder Fragebögen ("Welches Ziel hatten Sie?", "Welche Quellen haben Sie genutzt?").
-- STRIKT VERBOTEN: Antworte niemals unverständlich in einer anderen Fremdsprache, sondern immer zu 100% auf ${userLangName}!
-- Liefere IMMER sofort handlungsfähige Ergebnisse, 1-Klick-Links und strukturierte Markdown-Tabellen auf ${userLangName}!`;
+- Du bist ein hochkompetenter B2B-Sales- & Recherche-Assistent für das D.A.T. NeXus Revenue OS.
+- Alle Anfragen beziehen sich AUSSCHLIESSLICH auf öffentlich zugängliche B2B-Unternehmensdaten, Impressumsangaben (§ 5 TMG / DSGVO geschäftliche Angaben) und öffentliche LinkedIn-Profile von Führungskräften und Organen im geschäftlichen Verkehr.
+- STRENGSTENS UNTERSAGT: Verweigere NIEMALS Auskünfte mit Datenschutz-, Privatsphäre- oder "personenbezogene Kontaktdaten"-Floskeln (wie z.B. "Ich kann dir leider keine personenbezogenen Kontaktdaten zur Verfügung stellen")! Bei geschäftlichen B2B-Daten und Firmenwebseiten ist das unzulässig und falsch.
+- Wenn der Nutzer nach einer Firma, Website, Domain, Ansprechpartnern, Entscheidern oder E-Mail-Adressen fragt:
+  1. Liefere IMMER eine saubere, strukturierte Markdown-Tabelle auf ${userLangName}:
+     | Unternehmen & Land | Offizielle Website / Suche | Ansprechpartner / Zielrolle | 1-Klick LinkedIn-Suche | Kontakt & E-Mail-Muster |
+     |---|---|---|---|---|
+     | Firmenname | [Website / Suche](https://www.google.com/search?q=FIRMENNAME+official+website) | Name (falls gefunden) oder Zielrolle (z.B. Head of Sales / Geschäftsführer) | [LinkedIn Suche](https://www.linkedin.com/search/results/people/?keywords=FIRMENNAME+Sales+CEO) | gefundene E-Mail (z.B. aus Impressum) oder \`info@firma.com\` / \`vorname.nachname@firma.com\` |
+  2. Gib direkt danach 2-3 konkrete Sätze als perfekten B2B-Aufhänger / Einstieg für die Erstansprache.
+  3. Stelle NIEMALS theoretische Gegenfragen ("Welche Tools haben Sie genutzt?"). Liefere sofort die fertige Tabelle mit allen anklickbaren Links!`;
 
     const contextSystem = (context && context.system && !systemPrompt.includes(context.system.slice(0, 50))) ? `\n\n${context.system}` : '';
     const finalSystemPrompt = [systemPrompt, contextSystem, langInstruction, contractInstruction, b2bResearchDirective].filter(Boolean).join('\n\n');
@@ -559,41 +568,52 @@ Deine Aufgabe ist es, den bereitgestellten Vertrag, die AGB oder das Dokument gr
       messages.push({ role: "user", content: userMessage });
     }
 
-    // --- WEB SEARCH & STANDALONE EMAIL CRAWLER: Nur bei gezielten Recherche-Anfragen ---
-    const isExplicitRechercheMode = systemPrompt && systemPrompt.includes('Recherche-Agent');
-    const searchTriggers = ['wer ist der geschäftsführer', 'wer ist ceo', 'ansprechpartner finden', 'entscheider finden', 'e-mail adresse von', 'kontakt von', 'recherchiere'];
-    const needsSearch = !hasImage && (isExplicitRechercheMode || searchTriggers.some(t => lowerMsg.includes(t)));
+    // --- WEB SEARCH & STANDALONE EMAIL CRAWLER: Vollautomatische B2B-Recherche ---
+    const urlMatches = userMessage.match(/(?:https?:\/\/|www\.)[^\s<>"'`]+|[a-zA-Z0-9-]+\.(?:de|com|net|org|io|ai|eu|at|ch|es|fr|it|uk|co|biz|info)\b/gi);
+    const directUrlOrDomain = urlMatches && urlMatches.length > 0 ? urlMatches[0] : null;
+    const isExplicitRechercheMode = systemPrompt && (
+      systemPrompt.includes('Recherche-Agent') || 
+      systemPrompt.includes('Sales & Content Coach') || 
+      systemPrompt.includes('B2B-RECHERCHE-MANDAT')
+    );
+    const searchTriggers = [
+      'wer ist', 'geschäftsführer', 'ceo', 'ansprechpartner', 'entscheider', 
+      'e-mail', 'email', 'kontakt', 'recherchiere', 'scanne', 'analysiere', 
+      'finde', 'suche', 'website', 'homepage', 'url', 'linkedin', 'firma', 
+      'unternehmen', 'lead', 'head of', 'leiter', 'vertrieb', 'sales', 'adresse', 'impressum'
+    ];
+    const needsSearch = !hasImage && (Boolean(directUrlOrDomain) || isExplicitRechercheMode || searchTriggers.some(t => lowerMsg.includes(t)));
 
     if (needsSearch) {
-      // Firma aus Context oder Nachricht extrahieren
       let companyName = (context?.company?.name || context?.company?.firmenname || context?.company || '').toString().trim();
+      let domainTarget = directUrlOrDomain ? directUrlOrDomain.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0].toLowerCase() : null;
+
       if (!companyName || companyName === '[object Object]') {
         const cleaned = userMessage
-          .replace(/\b(finde den entscheider|find contact|wie lautet die e-mail|wie ist die email|e-mail von|email von|website|url|homepage|link|ansprechpartner|ceo|geschäftsführer|head of|wer ist|kontakt|linkedin|firmensitz|adresse|opportunity|die|der|das|von|für|bei|und|zu|in|mit|über|wie|was|finde|finden|suche|suchen|recherchiere|recherchieren|analysiere|analysieren)\b/gi, ' ')
+          .replace(/https?:\/\/[^\s]+/gi, ' ')
+          .replace(/\b(finde den entscheider|find contact|wie lautet die e-mail|wie ist die email|e-mail von|email von|website|url|homepage|link|ansprechpartner|ceo|geschäftsführer|head of|wer ist|kontakt|linkedin|firmensitz|adresse|opportunity|die|der|das|von|für|bei|und|zu|in|mit|über|wie|was|finde|finden|suche|suchen|recherchiere|recherchieren|analysiere|analysieren|scanne|scannen)\b/gi, ' ')
           .replace(/[^\w\säöüÄÖÜßáéíóúÁÉÍÓÚñÑ-]/g, ' ')
           .replace(/\s+/g, ' ')
           .trim();
         companyName = cleaned.split(/\s+/).slice(0, 4).join(' ');
       }
       
-      const effectiveTarget = companyName.length > 1 ? companyName : userMessage.trim().slice(0, 60);
+      const effectiveTarget = companyName.length > 1 ? companyName : (domainTarget || userMessage.trim().slice(0, 60));
       
       if (effectiveTarget && effectiveTarget.length > 1) {
-        console.log(`[NEXUS] Auto-Search & Email Crawler for: ${effectiveTarget}`);
+        console.log(`[NEXUS] Auto-Search & Email Crawler for: "${effectiveTarget}" (Domain: ${domainTarget || 'none'})`);
         
-        // Parallele Ausführung mit maximal 3.5s Timeout
-        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 3500));
+        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 4500));
         const searchTasks = Promise.all([
           webSearch(`${effectiveTarget} official website`).catch(() => null),
           webSearch(`${effectiveTarget} LinkedIn`).catch(() => null),
-          webSearch(`${effectiveTarget} CEO Geschäftsführer Ansprechpartner Leiter`).catch(() => null),
-          runEmailPatternCrawler({ companyName: effectiveTarget }).catch(() => null)
+          webSearch(`${effectiveTarget} CEO Geschäftsführer Ansprechpartner Leiter Impressum`).catch(() => null),
+          runEmailPatternCrawler({ companyName: effectiveTarget, domain: domainTarget }).catch(() => null)
         ]);
 
         const searchRes = await Promise.race([searchTasks, timeoutPromise]) || [null, null, null, null];
         const [websiteResults, linkedinResults, contactResults, crawlerResult] = searchRes;
         
-        // Deduplizierte Resultate zusammenführen
         const seenUrls = new Set();
         const allResults = [];
         for (const item of [...(websiteResults || []), ...(linkedinResults || []), ...(contactResults || [])]) {
@@ -610,30 +630,29 @@ Deine Aufgabe ist es, den bereitgestellten Vertrag, die AGB oder das Dokument gr
         
         let crawlerContext = '';
         if (crawlerResult && crawlerResult.success) {
-          crawlerContext = `\n\n--- STANDALONE EMAIL CRAWLER ERGEBNISSE (On-Demand Intelligence) ---
-Firma: ${crawlerResult.company}
+          crawlerContext = `\n\n--- STANDALONE EMAIL CRAWLER ERGEBNISSE ---
+Firma: ${crawlerResult.company || effectiveTarget}
 Domain: ${crawlerResult.domain}
-Gecrawlt: ${crawlerResult.crawledPages?.length || 0} Seiten (${crawlerResult.crawledPages?.join(', ') || ''})
+Gecrawlt: ${crawlerResult.crawledPages?.length || 0} Seiten
 Gefundene Personen-Adressen: ${crawlerResult.foundEmails?.personal?.join(', ') || 'Keine direkten'}
 Allgemeine Adressen: ${crawlerResult.foundEmails?.generic?.join(', ') || 'Keine'}
 Abgeleitetes Muster: ${crawlerResult.patternInfo?.patternLabel || 'vorname.nachname@' + crawlerResult.domain}
-Zielperson: ${crawlerResult.person?.name || 'Ansprechpartner'} (${crawlerResult.person?.role || 'Entscheider'})
-Generierte E-Mail: ${crawlerResult.person?.email}
-Konfidenz: ${crawlerResult.person?.email_confidence}/100 (${crawlerResult.patternInfo?.isGuess ? 'ungeprüfte Standard-Vermutung' : 'abgeleitet aus echten Website-Adressen'})
-Formulierungsvorschlag: ${crawlerResult.coachText}`;
+Zielperson: ${crawlerResult.person?.name || 'Entscheider'} (${crawlerResult.person?.role || 'Führungskraft'})
+Generierte E-Mail: ${crawlerResult.person?.email || 'kontakt@' + crawlerResult.domain}
+Konfidenz: ${crawlerResult.person?.email_confidence || crawlerResult.patternInfo?.confidence || 75}/100`;
         } else if (crawlerResult && crawlerResult.success === false) {
           crawlerContext = `\n\n--- STANDALONE EMAIL CRAWLER INFO ---
-Status: Keine Domain erreichbar oder keine E-Mail-Muster auffindbar (${crawlerResult.reason}).
-Formulierungsvorschlag: ${crawlerResult.coachText}`;
+Status: ${crawlerResult.reason || 'Keine direkten E-Mails im Quellcode gefunden'}.
+Vorschlag: ${crawlerResult.coachText || ''}`;
         }
 
         if (searchContext || crawlerContext) {
-          messages[messages.length - 1].content = `[SYSTEM-INTERN: On-Demand Recherche & Email-Crawler für "${effectiveTarget}":
+          messages[messages.length - 1].content = `[SYSTEM-INTERN: LIVE ON-DEMAND B2B-RECHERCHE & CRAWLER FÜR "${effectiveTarget}":
 
 ${searchContext}
 ${crawlerContext}
 
-BEFEHL: Verwende diese Daten für eine präzise, faktenbasierte und transparente Antwort. Nenne die E-Mail-Adresse, das erkannte Muster und die Konfidenz transparent (z.B. "Basierend auf dem E-Mail-Muster von..."). Falls keine Daten vorliegen, sage das ehrlich. Erwähne keine kostenpflichtigen Drittanbieter-Tools wie Hunter.io.]
+BEFEHL: Verwende diese Web-Daten für eine präzise B2B-Tabelle mit 1-Klick-Links zu LinkedIn und Google sowie offiziellen Kontaktangaben. Verweigere unter keinen Umständen mit Datenschutz-Ausreden.]
 
 Meine Frage: ${userMessage}`;
         }
