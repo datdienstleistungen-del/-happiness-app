@@ -982,28 +982,28 @@ export default function SalesWorkspacePage() {
 
         {/* CRM Dashboard: Wird nur angezeigt, wenn ein Lead (oder Manuell) aktiv ist */}
         {activeOppId || formData.company ? (
-          <div className="sales-workspace-crm" style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '20px' }}>
+          <div className="sales-workspace-crm" style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '20px', background: 'var(--bg-card, #11141a)', border: '1px solid var(--border-medium, #1e232d)', borderRadius: '16px', padding: '24px', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)' }}>
             {/* Tabs & Status */}
-            <div className="crm-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px' }}>
+            <div className="crm-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light, #1e232d)', paddingBottom: '12px' }}>
               <div className="crm-tabs" style={{ display: 'flex', gap: '8px' }}>
                 <button 
                   className={`tab-btn ${activeTab === 'historie' ? 'active' : ''}`} 
                   onClick={() => setActiveTab('historie')}
-                  style={{ background: activeTab === 'historie' ? 'var(--color-koralle)' : 'transparent', color: activeTab === 'historie' ? 'white' : 'var(--text-primary)', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
+                  style={{ background: activeTab === 'historie' ? 'var(--accent-blue, #38bdf8)' : '#0e1015', color: activeTab === 'historie' ? '#050608' : 'var(--text-secondary, #94a3b8)', border: '1px solid var(--border-subtle, #1e232d)', padding: '8px 18px', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s ease' }}
                 >
                   {t('nexus.wsTabHistory')}
                 </button>
                 <button 
                   className={`tab-btn ${activeTab === 'aktion' ? 'active' : ''}`} 
                   onClick={() => setActiveTab('aktion')}
-                  style={{ background: activeTab === 'aktion' ? 'var(--color-koralle)' : 'transparent', color: activeTab === 'aktion' ? 'white' : 'var(--text-primary)', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
+                  style={{ background: activeTab === 'aktion' ? 'var(--accent-blue, #38bdf8)' : '#0e1015', color: activeTab === 'aktion' ? '#050608' : 'var(--text-secondary, #94a3b8)', border: '1px solid var(--border-subtle, #1e232d)', padding: '8px 18px', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s ease' }}
                 >
                   {t('nexus.wsTabPitch')}
                 </button>
                 <button 
                   className={`tab-btn ${activeTab === 'intelligence' ? 'active' : ''}`} 
                   onClick={() => setActiveTab('intelligence')}
-                  style={{ background: activeTab === 'intelligence' ? 'var(--color-koralle)' : 'transparent', color: activeTab === 'intelligence' ? 'white' : 'var(--text-primary)', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
+                  style={{ background: activeTab === 'intelligence' ? 'var(--accent-blue, #38bdf8)' : '#0e1015', color: activeTab === 'intelligence' ? '#050608' : 'var(--text-secondary, #94a3b8)', border: '1px solid var(--border-subtle, #1e232d)', padding: '8px 18px', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s ease' }}
                 >
                   {t('nexus.wsTabAudit')}
                 </button>
@@ -1012,7 +1012,7 @@ export default function SalesWorkspacePage() {
               {activeOpp && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                   {`${t('nexus.wsStage')}: `}
-                  <span style={{ background: 'var(--bg-secondary)', padding: '4px 12px', borderRadius: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  <span style={{ background: '#0a0c0f', border: '1px solid #1e232d', padding: '4px 12px', borderRadius: '12px', fontWeight: 600, color: 'var(--accent-blue, #38bdf8)' }}>
                     {activeOpp.pipeline_stage.toUpperCase()}
                   </span>
                 </div>
@@ -1023,18 +1023,35 @@ export default function SalesWorkspacePage() {
             {activeTab === 'historie' && (
               <div className="tab-content-historie" style={{ display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', paddingRight: '8px' }}>
                 {historyItems.length === 0 ? (
-                  <p style={{ color: 'var(--text-secondary)' }}>{t('nexus.wsNoHistory')}</p>
+                  <div style={{ padding: '32px', textAlign: 'center', background: '#0a0c0f', borderRadius: '12px', border: '1px solid #1e232d' }}>
+                    <p style={{ color: 'var(--text-secondary, #94a3b8)', margin: 0 }}>{t('nexus.wsNoHistory')}</p>
+                  </div>
                 ) : (
                   historyItems.map((item, idx) => (
-                    <div key={idx} style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                        <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                    <div key={idx} style={{ padding: '20px', background: '#0a0c0f', borderRadius: '12px', border: '1px solid #1e232d', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '0.85rem', color: '#94a3b8', borderBottom: '1px solid #1e232d', paddingBottom: '8px' }}>
+                        <span style={{ fontWeight: 'bold', color: 'var(--accent-blue, #38bdf8)', fontSize: '0.9rem' }}>
                           {item._type === 'content' ? t('nexus.wsGeneratedPitch') + ': ' + item.type : item.description}
                         </span>
-                        <span>{new Date(item.created_at).toLocaleString()}</span>
+                        <span style={{ color: '#64748b' }}>{new Date(item.created_at).toLocaleString()}</span>
                       </div>
                       {item._type === 'content' ? (
-                        <div style={{ fontSize: '0.9rem', whiteSpace: 'pre-wrap', color: 'var(--text-primary)' }}>
+                        <div 
+                          className="nexus-document-paper"
+                          style={{ 
+                            fontSize: '0.96rem', 
+                            lineHeight: 1.75, 
+                            whiteSpace: 'pre-wrap', 
+                            color: '#0f172a', 
+                            background: '#f8f6f0', 
+                            padding: '24px 28px', 
+                            borderRadius: '10px', 
+                            border: '1px solid #e2ded4',
+                            boxShadow: '0 6px 20px rgba(0, 0, 0, 0.4)',
+                            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                            letterSpacing: '-0.01em'
+                          }}
+                        >
                           {(() => {
                              let contentToRender = item.content;
                              if (typeof contentToRender === 'string') {
@@ -1052,27 +1069,31 @@ export default function SalesWorkspacePage() {
                           })()}
                         </div>
                       ) : item.activity_type === 'social_reachout' && item.metadata ? (
-                        <div style={{ fontSize: '0.9rem', marginTop: '6px', padding: '10px', background: 'var(--bg-card)', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                            <span style={{ fontWeight: 600, color: 'var(--color-koralle)', fontSize: '0.8rem' }}>
+                        <div style={{ fontSize: '0.95rem', marginTop: '10px', padding: '16px', background: '#11141a', borderRadius: '10px', border: '1px solid #1e232d' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <span style={{ fontWeight: 600, color: 'var(--accent-blue, #38bdf8)', fontSize: '0.85rem' }}>
                               Plattform: {item.metadata.platform?.toUpperCase() || 'SOCIAL'}
                             </span>
                             {item.metadata.url && (
-                              <a href={item.metadata.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.8rem', color: 'var(--color-koralle)', textDecoration: 'none' }}>
+                              <a href={item.metadata.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.85rem', color: 'var(--accent-blue, #38bdf8)', textDecoration: 'none' }}>
                                 Original-Post ↗
                               </a>
                             )}
                           </div>
                           {item.metadata.comment && (
-                            <div style={{ marginBottom: '6px' }}>
-                              <strong style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Öffentlicher Kommentar:</strong>
-                              <p style={{ margin: '4px 0', whiteSpace: 'pre-wrap' }}>{item.metadata.comment}</p>
+                            <div style={{ marginBottom: '12px' }}>
+                              <strong style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Öffentlicher Kommentar:</strong>
+                              <div style={{ margin: '6px 0', padding: '14px 18px', background: '#f8f6f0', color: '#0f172a', borderRadius: '8px', border: '1px solid #e2ded4', whiteSpace: 'pre-wrap', lineHeight: 1.65 }}>
+                                {item.metadata.comment}
+                              </div>
                             </div>
                           )}
                           {item.metadata.direct_message && (
                             <div>
-                              <strong style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Direktnachricht (DM):</strong>
-                              <p style={{ margin: '4px 0', whiteSpace: 'pre-wrap' }}>{item.metadata.direct_message}</p>
+                              <strong style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Direktnachricht (DM):</strong>
+                              <div style={{ margin: '6px 0', padding: '14px 18px', background: '#f8f6f0', color: '#0f172a', borderRadius: '8px', border: '1px solid #e2ded4', whiteSpace: 'pre-wrap', lineHeight: 1.65 }}>
+                                {item.metadata.direct_message}
+                              </div>
                             </div>
                           )}
                         </div>
@@ -1243,8 +1264,8 @@ export default function SalesWorkspacePage() {
                         </div>
 
                         {/* Mini Activity Header Card */}
-                        <div style={{ padding: '14px 18px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <div style={{ padding: '16px 20px', background: '#0a0c0f', borderRadius: '10px', border: '1px solid #1e232d' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                             <span className={`social-platform-tag ${socialState.selectedActivity.platform}`}>
                               {socialState.selectedActivity.platform === 'youtube' ? <Video size={14} /> : <Share2 size={14} />}
                               {socialState.selectedActivity.platform.toUpperCase()}
@@ -1372,13 +1393,14 @@ export default function SalesWorkspacePage() {
                                       width: '100%',
                                       padding: '12px 14px',
                                       borderRadius: '8px',
-                                      border: '1px solid var(--border-light)',
-                                      background: 'var(--bg)',
-                                      color: 'var(--text-primary)',
-                                      fontFamily: 'inherit',
-                                      fontSize: '0.95rem',
-                                      lineHeight: 1.5,
-                                      resize: 'vertical'
+                                      border: '1px solid #e2ded4',
+                                      background: '#f8f6f0',
+                                      color: '#0f172a',
+                                      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                                      fontSize: '0.96rem',
+                                      lineHeight: 1.7,
+                                      resize: 'vertical',
+                                      boxShadow: '0 4px 16px rgba(0,0,0,0.25)'
                                     }}
                                   />
                                 </div>
@@ -1577,7 +1599,7 @@ export default function SalesWorkspacePage() {
 
             {/* Tab: Intelligence */}
             {activeTab === 'intelligence' && (
-              <div className="tab-content-intelligence" style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+              <div className="tab-content-intelligence" style={{ padding: '20px', background: '#0a0c0f', borderRadius: '12px', border: '1px solid #1e232d' }}>
                 <h3 style={{ marginTop: 0, display: 'flex', alignItems: 'center' }}>
                   {t('nexus.wsAuditTitle')} <ContextHelpButton helpKey="lead_akte.opportunity" />
                 </h3>
@@ -1937,7 +1959,7 @@ export default function SalesWorkspacePage() {
                         </h4>
                         
                         {/* Contact Summary */}
-                        <div style={{ marginBottom: '12px', fontSize: '0.9rem', padding: '8px', background: 'var(--bg-secondary)', borderRadius: '4px' }}>
+                        <div style={{ marginBottom: '12px', fontSize: '0.9rem', padding: '12px 14px', background: '#0a0c0f', borderRadius: '8px', border: '1px solid #1e232d' }}>
                           <strong>{t('nexus.wsTo')}</strong> {foundContact.name}{' '}
                           {foundContact.role && <span>({foundContact.role})</span>}
                           <br/>
@@ -2001,13 +2023,16 @@ export default function SalesWorkspacePage() {
                                 rows={8}
                                 style={{
                                   width: '100%',
-                                  padding: '8px',
-                                  border: '1px solid var(--border-light)',
-                                  borderRadius: '4px',
-                                  fontSize: '0.9rem',
-                                  lineHeight: '1.5',
+                                  padding: '16px 20px',
+                                  border: '1px solid #e2ded4',
+                                  borderRadius: '8px',
+                                  fontSize: '0.96rem',
+                                  lineHeight: '1.7',
                                   resize: 'vertical',
-                                  fontFamily: 'inherit'
+                                  fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                                  background: '#f8f6f0',
+                                  color: '#0f172a',
+                                  boxShadow: '0 4px 16px rgba(0,0,0,0.25)'
                                 }}
                               />
                             </div>
