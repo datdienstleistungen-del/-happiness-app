@@ -75,10 +75,39 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
   }
 
   // =========================================================================
-  // SYSTEM PROMPT GENERATION
+  // SYSTEM PROMPT GENERATION (WITH TIMING-FILTER & SALES WINDOW ENGINE)
   // =========================================================================
   
-  let systemPrompt = "Du bist NeXus, ein B2B Sales Intelligence System."
+  const currentDate = new Date().toISOString().split('T')[0];
+  const currentYear = new Date().getFullYear();
+  const currentMonthYear = new Date().toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+
+  const salesWindowInstruction = `
+# MISSION & ROLE
+Du bist die zentrale Intelligence Engine für das "Nexus Sales Operation System". Deine Aufgabe ist es, B2B-Vertriebstrigger zu identifizieren, zu bewerten und ausschließlich solche Opportunities auszugeben, die HEUTE für den Vertrieb direkt bespielbar sind.
+
+# CORE RULE: THE SALES WINDOW (TIMING-FILTER)
+Ein faktisch korrekter Trigger ohne zeitliche Relevanz ist für den Vertrieb wertlos ("False Positive").
+- HEUTIGES DATUM: ${currentDate} (${currentMonthYear}, Jahr ${currentYear}).
+- ZULÄSSIGES ZEITFENSTER FÜR TRIGGER:
+  * GEPLANT / IN UMSETZUNG: Das Ereignis/Projekt findet in den nächsten 3 bis 12 Monaten statt.
+  * REZENT VERÖFFENTLICHT: Die Ankündigung/Baugenehmigung/Meldung ist maximal 90 Tage alt.
+- HARD REJECT (SOFORT VERWERFEN):
+  * Wenn das Ereignis (z. B. Eröffnung, Fertigstellung, M&A-Abschluss) bereits stattgefunden hat und LÄNGER ALS 90 TAGE zurückliegt.
+  * Achte auf historische Formulierungen wie: "eröffnete im vergangenen Jahr", "blickte zurück auf", "wurde vor 12 Monaten fertiggestellt", "bereits seit ${currentYear - 1} in Betrieb". Veraltete Eröffnungen oder abgeschlossene Bauprojekte sind False Positives!
+
+# GEWERK- UND PHASE-MATCHING
+- PHASE 1: Planung / Grundstückskauf / Baugenehmigung / GU-Suche --> STATUS: 🟢 TOP SALES TRIGGER (Maximaler Match für Neugeschäft & Ausschreibungen)
+- PHASE 2: Spatenstich / Baubeginn / Rohbau --> STATUS: 🟡 LAST MINUTE (Hoher Zeitdruck, nur noch direkte Vergabe möglich)
+- PHASE 3: Eröffnung / Inbetriebnahme / Banddurchschneiden --> STATUS: 🔴 ABGELAUFEN für Erstausstattung/Neubau (NUR als 🔵 SERVICE-TRIGGER zulassen, falls explizit Wartung/Reparatur im Bestand gesucht wird - ansonsten VERWERFEN).
+
+# OUTPUT-VALIDIERUNG
+1. [ ] Nachricht max. 90 Tage alt?
+2. [ ] Reales Ereignis in der Zukunft oder max. 90 Tage her?
+3. [ ] Reales Handlungsfenster für den Vertrieb heute (${currentYear}) vorhanden?
+Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
+
+  let systemPrompt = `Du bist NeXus, ein B2B Sales Intelligence System.\n${salesWindowInstruction}\n`
   if (mode !== 'chat') {
     systemPrompt += " Antworte IMMER in validem JSON ohne Markdown-Blöcke (kein ```json)."
   }
@@ -116,16 +145,16 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
         }
       }`
   } else if (mode === 'trigger_detection') {
-    systemPrompt += ` Du bist ein Radar für Kaufsignale im Markt. Erfinde 4-6 REALISTISCHE, aber fiktive B2B Firmennamen passend zur Zielgruppe, die aktuell ein absolut konkretes Trigger-Event aufweisen.
+    systemPrompt += ` Du bist ein Radar für Kaufsignale im Markt (${currentMonthYear}, Jahr ${currentYear}). Finde bzw. analysiere 4-6 REALISTISCHE B2B Trigger-Events passend zur Zielgruppe, die HEUTE ein hochaktuelles Timing-Fenster aufweisen (Zukunft oder max. 90 Tage alt, KEINE veralteten oder abgeschlossenen Projekte).
       
-      WICHTIG: Erfinde ECHTE, konkrete Ereignisse (z.B. "Ein Hotelneubau wurde gestern genehmigt", "Baugenehmigung für neue Produktionshalle erteilt", "Stellenanzeige für Konstrukteur veröffentlicht"). KEINE generischen Beschreibungen wie "Die Firma baut Treppen".
+      WICHTIG: Beachte den Timing-Filter und das Phasen-Matching!
       
       Du musst ein JSON-Objekt mit EXAKT folgender Struktur zurückgeben:
       {
         "trigger_events": [
           {
             "firmenname": "...",
-            "signal": "Was ist exakt passiert? (z.B. Baugenehmigung, Ausschreibung, Stellenanzeige)",
+            "signal": "Was ist exakt passiert? (z.B. Baugenehmigung für neues Logistikzentrum erhalten, Spatenstich geplant für Q4 ${currentYear})",
             "insight": "Warum ist dieses Signal relevant für unser Angebot?",
             "opportunity": "Welche konkrete Chance ergibt sich daraus?",
             "action": "Welche Aktion ist jetzt sinnvoll (z.B. Anruf beim Projektleiter)?",
@@ -394,7 +423,7 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
       const hasImg = !!imageUrl;
       const models = hasImg 
         ? ['llama-3.2-11b-vision-preview']
-        : ['qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'allam-2-7b'];
+        : ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'gemma2-9b-it'];
       
       const userContent = hasImg 
         ? [

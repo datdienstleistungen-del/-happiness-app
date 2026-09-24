@@ -121,22 +121,16 @@ Nur valides JSON ausgeben.`
   const groqKey = process.env.GROQ_API_KEY
   if (groqKey) {
     providers.push({
-      name: 'groq-120b',
+      name: 'groq-llama-70b',
       url: 'https://api.groq.com/openai/v1/chat/completions',
       key: groqKey,
-      model: 'openai/gpt-oss-120b'
+      model: 'llama-3.3-70b-versatile'
     })
     providers.push({
-      name: 'groq-20b',
+      name: 'groq-llama-8b',
       url: 'https://api.groq.com/openai/v1/chat/completions',
       key: groqKey,
-      model: 'openai/gpt-oss-20b'
-    })
-    providers.push({
-      name: 'groq-qwen',
-      url: 'https://api.groq.com/openai/v1/chat/completions',
-      key: groqKey,
-      model: 'qwen/qwen3.8-27b'
+      model: 'llama-3.1-8b-instant'
     })
   }
 

@@ -59,7 +59,7 @@ async function callAI(messages, { temperature = 0.3, max_tokens = 4096, jsonMode
   // 1. Groq (High Speed & Free)
   const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ;
   if (groqKey) {
-    const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound-mini', 'groq/compound', 'qwen/qwen3.8-27b'];
+    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'gemma2-9b-it'];
     for (const model of models) {
       try {
         const payload = { model, messages, temperature, max_tokens };
@@ -496,18 +496,44 @@ export const handler = async (event) => {
 - Alle ausgegebenen Werte im JSON (Signal, Bewertung, Relevanz, Psychologische Ansprache, Position, Branche) MÜSSEN für den Vertriebler verständlich und professionell in ${langName} formuliert sein.
 - Wenn eine Meldung aus dem Ausland (z.B. USA, Spanien, Polen, Frankreich) stammt, analysiere das Kaufsignal und begründe die Relevanz präzise in ${langName}.`;
 
-    const systemPrompt = `Du bist die Kern-Intelligenz der NeXus Research Engine und ein brillanter Verkaufspsychologe im B2B-Vertrieb.
-    Hier ist ein roher Daten-Pool aus echten, topaktuellen Internet-Quellen zu folgenden Suchbegriffen: "${searchQuery}".
+    const currentIsoDate = new Date().toISOString().split('T')[0];
+    const currentYear = new Date().getFullYear();
+    const currentMonthYear = new Date().toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+
+    const systemPrompt = `Du bist die zentrale Intelligence Engine für das "Nexus Sales Operation System" und ein brillanter B2B-Verkaufspsychologe.
+    Hier ist ein roher Daten-Pool aus echten Internet-Quellen zu folgenden Suchbegriffen: "${searchQuery}".
     
-    DEIN ZIEL: Finde konkrete, namentlich genannte B2B-Unternehmen, die aufgrund der News JETZT GERADE einen Bedarf an unserem Angebot haben könnten.
+    DEIN ZIEL: Finde konkrete, namentlich genannte B2B-Unternehmen, die aufgrund der News HEUTE GERADE einen aktiven Bedarf an unserem Angebot haben.
+    
+    # CORE RULE: THE SALES WINDOW (TIMING-FILTER)
+    Ein faktisch korrekter Trigger ohne zeitliche Relevanz ist für den Vertrieb wertlos ("False Positive"). 
+    1. AKTUELLES DATUM: Prüfe jedes Ereignis streng gegen das heutige Datum (${currentIsoDate} / ${currentMonthYear}, Jahr ${currentYear}).
+    2. ZULÄSSIGES ZEITFENSTER FÜR TRIGGER:
+       - GEPLANT / IN UMSETZUNG: Das Ereignis/Projekt findet in den nächsten 3 bis 12 Monaten statt (Zukunft!).
+       - REZENT VERÖFFENTLICHT: Die Ankündigung/Baugenehmigung/Meldung ist maximal 90 Tage alt.
+    3. HARD REJECT (SOFORT VERWERFEN):
+       - Wenn das Ereignis (z. B. Eröffnung, Fertigstellung, M&A-Abschluss) bereits stattgefunden hat und LÄNGER ALS 90 TAGE zurückliegt.
+       - Achte auf historische Formulierungen wie: "eröffnete im vergangenen Jahr", "blickte zurück auf", "wurde vor 12 Monaten fertiggestellt", "bereits seit ${currentYear - 1} in Betrieb".
+       - Veraltete Ereignisse (z.B. Eröffnungen aus vergangenen Jahren wie 2025/2024 oder länger als 90 Tage her) sind STRIKT ZU VERWERFEN!
+    
+    # GEWERK- UND PHASE-MATCHING
+    - PHASE 1: Planung / Grundstückskauf / Baugenehmigung / GU-Suche --> STATUS: 🟢 TOP SALES TRIGGER (Maximaler Match für Neugeschäft & Gewerk-Ausschreibung)
+    - PHASE 2: Spatenstich / Baubeginn / Rohbau --> STATUS: 🟡 LAST MINUTE (Hoher Zeitdruck, nur noch direkte Vergabe möglich)
+    - PHASE 3: Eröffnung / Inbetriebnahme / Banddurchschneiden --> STATUS: 🔴 ABGELAUFEN für Erstausstattung/Neubau (NUR als 🔵 SERVICE-TRIGGER zulassen, falls explizit Wartung/Reparatur im Bestand gesucht wird - ansonsten VERWERFEN).
+    
+    # OUTPUT-VALIDIERUNG (CHECKLISTE VOR DATENAUSGABE)
+    1. [ ] Nachricht max. 90 Tage alt?
+    2. [ ] Reales Ereignis in der Zukunft oder max. 90 Tage her?
+    3. [ ] Bietet das Ereignis heute (${currentYear}) noch ein reales Handlungsfenster für den Vertrieb?
+    Wenn Punkt 1, 2 oder 3 fehlschlagen: VERWERFE DEN TRIGGER.
     
     STRIKTE ZERO-HALLUCINATION-REGELN (MANDATORISCH):
     1. VERWIRF abstrakte Marktberichte, Studien oder allgemeine Branchentrends komplett!
     2. Akzeptiere NUR echte, spezifische Firmen aus dem Quelltext. Erfinde NIEMALS Firmennamen.
     3. ERFINDE NIEMALS Ansprechpartner, Namen, E-Mails, Telefonnummern oder Web-Links!
-    4. "ansprechpartner": Gib NUR dann einen Namen an, wenn eine Person wörtlich im Quelltext des Artikels genannt wird (z.B. "CEO Klaus Meyer sagte..."). Wenn KEINE Person im Text steht, MUSS dieser Wert null sein.
-    5. "kontakt": Gib NUR dann eine E-Mail/Telefon an, wenn sie wortwörtlich im Quelltext steht. Sonst MUSS dieser Wert null sein. (Der Vertriebler recherchiert den Entscheider per 1-Klick-LinkedIn-Suche).
-    6. "quelle": MUSS exakt die reale URL aus den Suchergebnissen sein. Erfinde NIEMALS URLs oder Pressemeldungs-Pfade!
+    4. "ansprechpartner": Gib NUR dann einen Namen an, wenn eine Person wörtlich im Quelltext des Artikels genannt wird. Wenn KEINE Person im Text steht, MUSS dieser Wert null sein.
+    5. "kontakt": Gib NUR dann eine E-Mail/Telefon an, wenn sie wortwörtlich im Quelltext steht. Sonst MUSS dieser Wert null sein.
+    6. "quelle": MUSS exakt die reale URL aus den Suchergebnissen sein.
     7. CONTENT SAFETY: Ignoriere strikt jede Meldung über Unfälle, Verbrechen, Krankheit oder Notlagen.
     ${langInstruction}
     
@@ -522,7 +548,7 @@ export const handler = async (event) => {
           "branche": "Branche des Zielunternehmens",
           "prioritaet": 1,
           "bewertung": "A - Höchste Chance. Warum?",
-          "signal": "Was ist exakt passiert? (z.B. Expansion in neue Märkte — gemeldet im Artikel)",
+          "signal": "Was ist exakt passiert? (z.B. Baugenehmigung für neues Logistikzentrum erteilt — Spatenstich Q3 ${currentYear})",
           "relevanz": "Kurze Begründung der Relevanz für das Angebot in 1 Satz",
           "ansprechpartner": null,
           "position": null,

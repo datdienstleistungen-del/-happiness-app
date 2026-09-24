@@ -64,7 +64,7 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 7000) {
 async function callLLM(prompt, temperature = 0.3) {
   // 0. Try Groq (Super fast & active)
   if (GROQ_API_KEY) {
-    const groqModels = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound-mini', 'groq/compound', 'qwen/qwen3.8-27b'];
+    const groqModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'gemma2-9b-it'];
     for (const m of groqModels) {
       try {
         const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
