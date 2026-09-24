@@ -377,7 +377,7 @@ export const handler = async (event) => {
 
   try {
     const body = event.body ? JSON.parse(event.body) : {};
-    const { systemPrompt, userMessage, context, temperature, lang, targetLang, isLandingPreview, imageUrl, image_url, imageUrls, image_urls } = body;
+    const { systemPrompt, userMessage, context, temperature, lang, targetLang, isLandingPreview, imageUrl, image_url, imageUrls, image_urls, mode } = body;
     let attachedImages = [];
     if (Array.isArray(imageUrls) && imageUrls.length > 0) attachedImages = imageUrls;
     else if (Array.isArray(image_urls) && image_urls.length > 0) attachedImages = image_urls;
@@ -584,8 +584,9 @@ Deine Aufgabe ist es, den bereitgestellten Vertrag, die AGB oder das Dokument gr
       'finde', 'suche', 'website', 'homepage', 'url', 'linkedin', 'firma', 
       'unternehmen', 'lead', 'head of', 'leiter', 'vertrieb', 'sales', 'adresse', 'impressum'
     ];
-    const isAngebotsanalyse = (systemPrompt || '').includes('B2B Vertriebsmodell') || (lowerMsg.includes('analysiere') && lowerMsg.includes('angebot'));
-    const needsSearch = !hasImage && !isAngebotsanalyse && (Boolean(directUrlOrDomain) || isExplicitRechercheMode || searchTriggers.some(t => lowerMsg.includes(t)));
+    const isAngebotsanalyse = mode === 'angebotsanalyse' || (systemPrompt || '').includes('B2B Vertriebsmodell') || (lowerMsg.includes('analysiere') && lowerMsg.includes('angebot'));
+    const isChatMode = mode === 'chat';
+    const needsSearch = !hasImage && !isChatMode && !isAngebotsanalyse && (Boolean(directUrlOrDomain) || isExplicitRechercheMode || searchTriggers.some(t => lowerMsg.includes(t)));
 
     if (needsSearch) {
       let companyName = (context?.company?.name || context?.company?.firmenname || context?.company || '').toString().trim();
