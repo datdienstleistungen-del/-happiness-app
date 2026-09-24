@@ -535,7 +535,7 @@ export default function NexusLeadRadarPage() {
                   display: 'inline-block',
                   marginBottom: '8px'
                 }}>
-                  {trigger.prioritaet === 1 ? '🔥 HOHE PRIORITÄT' : trigger.prioritaet === 2 ? '⚡ MITTLERE PRIORITÄT' : 'ℹ️ NIEDRIGE PRIORITÄT'}
+                  {trigger.prioritaet === 1 ? 'HOHE PRIORITÄT' : trigger.prioritaet === 2 ? 'MITTLERE PRIORITÄT' : 'NIEDRIGE PRIORITÄT'}
                 </div>
                 <h3 className="trigger-company">{trigger.company}</h3>
                 

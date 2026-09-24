@@ -1091,13 +1091,13 @@ export default function SalesWorkspacePage() {
                 {socialState.outreachData && selectedMode !== 'forum_response' && (
                   <div style={{ padding: '10px 14px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                     <div style={{ fontSize: '0.85rem' }}>
-                      <strong style={{ color: 'var(--color-koralle)' }}>📢 Gespeicherter Social Outreach vorhanden:</strong>{' '}
+                      <strong style={{ color: 'var(--accent-blue, #38bdf8)' }}>Gespeicherter Social Outreach vorhanden:</strong>{' '}
                       {socialState.outreachData.comment ? `Kommentar: "${socialState.outreachData.comment.slice(0, 90)}..."` : (socialState.outreachData.direct_message ? `DM: "${socialState.outreachData.direct_message.slice(0, 90)}..."` : 'Nachricht verfasst')}
                     </div>
                     <button 
                       type="button" 
                       onClick={() => setSelectedMode('forum_response')}
-                      style={{ fontSize: '0.8rem', background: 'transparent', color: 'var(--color-koralle)', border: '1px solid var(--color-koralle)', borderRadius: '4px', padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                      style={{ fontSize: '0.8rem', background: 'transparent', color: 'var(--accent-blue, #38bdf8)', border: '1px solid var(--accent-blue, #38bdf8)', borderRadius: '4px', padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}
                     >
                       Im Social Reachout ansehen ↗
                     </button>
@@ -1305,13 +1305,13 @@ export default function SalesWorkspacePage() {
                                     className={`social-outreach-tab-btn ${socialState.activeTab === 'comment' ? 'active' : ''}`}
                                     onClick={() => setSocialState(prev => ({ ...prev, activeTab: 'comment' }))}
                                   >
-                                    💬 {t('nexus.wsSocialCommentTab') || 'Mehrwert-Kommentar'}
+                                    {t('nexus.wsSocialCommentTab') || 'Mehrwert-Kommentar'}
                                   </button>
                                   <button 
                                     className={`social-outreach-tab-btn ${socialState.activeTab === 'direct_message' ? 'active' : ''}`}
                                     onClick={() => setSocialState(prev => ({ ...prev, activeTab: 'direct_message' }))}
                                   >
-                                    ✉️ {t('nexus.wsSocialDmTab') || 'Direktnachricht (InMail / DM)'}
+                                    {t('nexus.wsSocialDmTab') || 'Direktnachricht (InMail / DM)'}
                                   </button>
                                 </div>
 
@@ -1334,13 +1334,13 @@ export default function SalesWorkspacePage() {
                                       fontWeight: 600
                                     }}
                                   >
-                                    <option value="en">🇬🇧 Englisch (English)</option>
-                                    <option value="de">🇩🇪 Deutsch</option>
-                                    <option value="fr">🇫🇷 Français</option>
-                                    <option value="es">🇪🇸 Español</option>
-                                    <option value="it">🇮🇹 Italiano</option>
-                                    <option value="nl">🇳🇱 Nederlands</option>
-                                    <option value="el">🇬🇷 Ελληνικά</option>
+                                    <option value="en">Englisch (English)</option>
+                                    <option value="de">Deutsch</option>
+                                    <option value="fr">Français</option>
+                                    <option value="es">Español</option>
+                                    <option value="it">Italiano</option>
+                                    <option value="nl">Nederlands</option>
+                                    <option value="el">Ελληνικά</option>
                                   </select>
                                 </div>
                               </div>
@@ -1349,10 +1349,10 @@ export default function SalesWorkspacePage() {
                                 <div>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                                     <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                                      📝 {socialState.activeTab === 'comment' ? 'Zu postender Kommentar' : 'Zu versendende Direktnachricht'} ({socialState.outreachData.post_lang_label || 'Englisch'}):
+                                      {socialState.activeTab === 'comment' ? 'Zu postender Kommentar' : 'Zu versendende Direktnachricht'} ({socialState.outreachData.post_lang_label || 'Englisch'}):
                                     </label>
-                                    <span style={{ fontSize: '0.8rem', color: 'var(--color-koralle)', fontWeight: 600 }}>
-                                      ✨ Formatiert für {socialState.selectedActivity.platform?.toUpperCase()}
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--accent-blue, #38bdf8)', fontWeight: 600 }}>
+                                      Formatiert für {socialState.selectedActivity.platform?.toUpperCase()}
                                     </span>
                                   </div>
                                   <textarea
@@ -1826,7 +1826,7 @@ export default function SalesWorkspacePage() {
                             gap: '6px'
                           }}
                         >
-                          {translatingIntel ? '🔄 ' + t('nexus.wsTranslating') : '🇩🇪 ' + (translatedIntelligence?.offering_name ? 'Übersetzung aktualisieren' : t('nexus.wsTranslateDe'))}
+                          {translatingIntel ? t('nexus.wsTranslating') : (translatedIntelligence?.offering_name ? 'Übersetzung aktualisieren' : t('nexus.wsTranslateDe'))}
                         </button>
                       </div>
 

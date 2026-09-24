@@ -7,7 +7,7 @@ import './NexusVideoBubble.css'
 export default function NexusVideoBubble({ onClick }) {
   const { lang } = useLanguage()
   const t = NEXUS_LANDING_TRANSLATIONS[lang] || NEXUS_LANDING_TRANSLATIONS.en || NEXUS_LANDING_TRANSLATIONS.de
-  const bubbleTag = t.bubble?.tag || (lang === 'de' ? 'Sightseeing-Tour 🌟' : 'Sightseeing Tour 🌟')
+  const bubbleTag = t.bubble?.tag || (lang === 'de' ? 'Sightseeing-Tour' : 'Sightseeing Tour')
   const bubbleTitle = t.bubble?.title || (lang === 'de' ? 'Video-Rundgang ansehen' : 'Watch Video Walkthrough')
 
   return (

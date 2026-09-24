@@ -826,7 +826,7 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
               className={`nexus-coach-polish-btn ${isPolishing ? 'polishing' : ''} ${polishSuccess ? 'success' : ''}`} 
               onClick={handlePolishText} 
               disabled={isPolishing || !message.trim()}
-              title={polishSuccess ? "✨ Text & Rechtschreibung korrigiert!" : "✨ Rechtschreibung & Grammatik mit KI prüfen (Fehler beheben)"}
+              title={polishSuccess ? "Text & Rechtschreibung korrigiert!" : "Rechtschreibung & Grammatik mit KI prüfen (Fehler beheben)"}
             >
               {isPolishing ? (
                 <RefreshCw size={18} className="nexus-spin" />
@@ -843,7 +843,7 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
               placeholder={isListening 
-                ? "🎙️ Höre zu... sprich jetzt frei ins Mikrofon..."
+                ? "Höre zu... sprich jetzt frei ins Mikrofon..."
                 : (activeQuickAction 
                     ? SALES_QUICK_ACTIONS.find(a => a.id === activeQuickAction)?.placeholder
                     : (attachments.length > 0 

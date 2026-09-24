@@ -82,14 +82,14 @@
 }
 
 .guide-section.highlight {
-  background: rgba(16, 185, 129, 0.05);
+  background: rgba(56, 189, 248, 0.05);
   padding: 16px;
   border-radius: 8px;
-  border-left: 3px solid #10B981;
+  border-left: 3px solid var(--accent-blue, #38bdf8);
 }
 
 .guide-section.highlight h4 {
-  color: #10B981;
+  color: var(--accent-blue, #38bdf8);
 }
 
 .guide-modal-footer {

@@ -1,21 +1,10 @@
 import React from 'react'
 import './Logo.css'
 
-const COLORS = [
-  '#0d5e42', // Dark Green (N)
-  '#ea580c', // Coral/Orange (e)
-  '#b45309', // Amber/Gold (X)
-  '#10b981', // Mint/Emerald (u)
-  '#0d5e42', // Dark Green (s)
-];
-
 export function BrandWord({ fontSize = 'inherit', fontWeight = 'inherit' }) {
-  const word = 'NeXus';
   return (
-    <span style={{ fontSize, fontWeight }} className="brand-word">
-      {word.split('').map((char, i) => (
-        <span key={i} style={{ color: COLORS[i % COLORS.length] }}>{char}</span>
-      ))}
+    <span style={{ fontSize, fontWeight, color: '#f8fafc', letterSpacing: '-0.02em' }} className="brand-word">
+      NeXus
     </span>
   );
 }
@@ -33,54 +22,47 @@ export function renderBrandText(text) {
   );
 }
 
-export default function Logo({ size = 'default', showSubtitle = true }) {
+export default function Logo({ size = 'default', showSubtitle = true, iconOnly = false }) {
   const isSmall = size === 'small';
   const iconSize = isSmall ? 28 : 34;
-  
-  const letters = [
-    { char: 'N', color: '#0d5e42' },
-    { char: 'e', color: '#ea580c' },
-    { char: 'X', color: '#b45309' },
-    { char: 'u', color: '#10b981' },
-    { char: 's', color: '#0d5e42' },
-  ];
 
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', userSelect: 'none' }}>
-      {/* Official Green App Icon */}
+      {/* Dark Obsidian App Icon */}
       <div
         style={{
           width: `${iconSize}px`,
           height: `${iconSize}px`,
-          backgroundColor: '#0d5e42',
+          backgroundColor: '#11141a',
+          border: '1px solid #2d3544',
           borderRadius: '8px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#ffffff',
+          color: '#38bdf8',
           fontWeight: 900,
           fontSize: isSmall ? '16px' : '20px',
           fontFamily: 'system-ui, -apple-system, sans-serif',
-          boxShadow: '0 2px 8px rgba(13, 94, 66, 0.25)',
+          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.4)',
           flexShrink: 0
         }}
       >
         N
       </div>
 
-      {/* Official Typography */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: '1.05' }}>
-        <span style={{ fontSize: isSmall ? '19px' : '23px', fontWeight: 900, letterSpacing: '-0.3px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-          {letters.map((l, i) => (
-            <span key={i} style={{ color: l.color }}>{l.char}</span>
-          ))}
-        </span>
-        {showSubtitle && (
-          <span style={{ fontSize: isSmall ? '7.5px' : '8.5px', color: '#475569', letterSpacing: '0.6px', textTransform: 'uppercase', fontWeight: 800, marginTop: '2px' }}>
-            REVENUE OS
+      {/* Clean Typography */}
+      {!iconOnly && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: '1.05' }}>
+          <span style={{ fontSize: isSmall ? '18px' : '22px', fontWeight: 800, letterSpacing: '-0.02em', color: '#f8fafc', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            NeXus
           </span>
-        )}
-      </div>
+          {showSubtitle && (
+            <span style={{ fontSize: isSmall ? '7.5px' : '8.5px', color: '#38bdf8', letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 800, marginTop: '2px' }}>
+              B2B INTELLIGENCE
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -90,7 +72,7 @@ export function VerticalLogo({ size = 'large' }) {
     <div className={`hit-logo-vertical ${size}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
       <img
         src="/nexus-logo-official.png"
-        alt="NeXus Revenue OS"
+        alt="NeXus B2B Intelligence"
         style={{ maxHeight: '60px', width: 'auto', objectFit: 'contain' }}
         onError={(e) => { e.currentTarget.style.display = 'none'; }}
       />

@@ -501,12 +501,14 @@ export const handler = async (event) => {
     
     DEIN ZIEL: Finde konkrete, namentlich genannte B2B-Unternehmen, die aufgrund der News JETZT GERADE einen Bedarf an unserem Angebot haben könnten.
     
-    WICHTIGE REGELN:
+    STRIKTE ZERO-HALLUCINATION-REGELN (MANDATORISCH):
     1. VERWIRF abstrakte Marktberichte, Studien oder allgemeine Branchentrends komplett!
-    2. VERWIRF alles, was kein konkretes Endkunden-Unternehmen nennt.
-    3. Akzeptiere NUR echte, spezifische Firmen (Wachstum, Umzug, Investitionen, Förderungen, etc.).
-    4. CONTENT SAFETY (KRITISCH): Ignoriere strikt jede Meldung über Unfälle, Verbrechen, Krankheit oder Notlagen.
-    5. Erfinde NICHTS bei den Firmennamen. Nutze NUR die echten Firmennamen aus dem Text.
+    2. Akzeptiere NUR echte, spezifische Firmen aus dem Quelltext. Erfinde NIEMALS Firmennamen.
+    3. ERFINDE NIEMALS Ansprechpartner, Namen, E-Mails, Telefonnummern oder Web-Links!
+    4. "ansprechpartner": Gib NUR dann einen Namen an, wenn eine Person wörtlich im Quelltext des Artikels genannt wird (z.B. "CEO Klaus Meyer sagte..."). Wenn KEINE Person im Text steht, MUSS dieser Wert null sein.
+    5. "kontakt": Gib NUR dann eine E-Mail/Telefon an, wenn sie wortwörtlich im Quelltext steht. Sonst MUSS dieser Wert null sein. (Der Vertriebler recherchiert den Entscheider per 1-Klick-LinkedIn-Suche).
+    6. "quelle": MUSS exakt die reale URL aus den Suchergebnissen sein. Erfinde NIEMALS URLs oder Pressemeldungs-Pfade!
+    7. CONTENT SAFETY: Ignoriere strikt jede Meldung über Unfälle, Verbrechen, Krankheit oder Notlagen.
     ${langInstruction}
     
     DEINE AUFGABE: Werte die gefundenen Leads aus und SORTIERE SIE nach Priorität (1 ist der absolut beste Lead).
@@ -516,17 +518,17 @@ export const handler = async (event) => {
       "trigger_events": [
         {
           "hit_id": "Die exakte Hit-ID aus den Quelldaten (kopiere sie 1:1, falls 'none' dann weglassen)",
-          "firmenname": "Echter Firmenname aus dem Artikel",
+          "firmenname": "Echter Firmenname aus dem Quelltext",
           "branche": "Branche des Zielunternehmens",
           "prioritaet": 1,
           "bewertung": "A - Höchste Chance. Warum?",
-          "signal": "Was ist exakt passiert? (z.B. Expansion in neue Märkte — gemeldet am 10. September 2026)",
+          "signal": "Was ist exakt passiert? (z.B. Expansion in neue Märkte — gemeldet im Artikel)",
           "relevanz": "Kurze Begründung der Relevanz für das Angebot in 1 Satz",
-          "ansprechpartner": "Name des zuständigen Entscheiders oder Geschäftsführers (z.B. Dr. Michael Weber)",
-          "position": "Position / Rolle im Unternehmen (z.B. Geschäftsführer / Head of Operations)",
-          "kontakt": "E-Mail oder Telefon (z.B. kontakt@unternehmen.de / +49 89 ...)",
-          "quelle": "Offizielle Quell-URL aus den Suchergebnissen",
-          "psychologische_ansprache": "Wie muss der Vertriebler diesen Lead anschreiben?"
+          "ansprechpartner": null,
+          "position": null,
+          "kontakt": null,
+          "quelle": "Die exakte echte URL aus den Suchergebnissen",
+          "psychologische_ansprache": "Wie muss der Vertriebler dieses Signal vertrieblich ansprechen?"
         }
       ]
     }`;
@@ -548,15 +550,15 @@ export const handler = async (event) => {
       // Post-Processing: Quell-URLs absichern und Defaults setzen falls LLM Felder auslässt
       if (parsed.trigger_events && Array.isArray(parsed.trigger_events)) {
         parsed.trigger_events = parsed.trigger_events.map((t, idx) => {
-          const fallbackSource = safeResults[idx % safeResults.length];
+          const matchedSource = safeResults.find(r => r.url === t.quelle) || safeResults[idx % safeResults.length];
           return {
             ...t,
             branche: t.branche || branche || 'B2B / Mittelstand',
             relevanz: t.relevanz || t.bewertung || 'Hohe Passgenauigkeit für das analysierte Leistungsportfolio.',
-            ansprechpartner: t.ansprechpartner || 'Geschäftsführung / Vorstand',
-            position: t.position || 'Geschäftsleitung / Entscheidungsbefugt',
-            kontakt: t.kontakt || 'kontakt@' + ((t.firmenname || 'unternehmen').toLowerCase().replace(/[^a-z0-9]/g, '')) + '.de',
-            quelle: t.quelle || fallbackSource?.url || 'https://www.bundesanzeiger.de'
+            ansprechpartner: t.ansprechpartner && typeof t.ansprechpartner === 'string' && !t.ansprechpartner.includes('z.B.') ? t.ansprechpartner : null,
+            position: t.position && typeof t.position === 'string' && !t.position.includes('z.B.') ? t.position : null,
+            kontakt: t.kontakt && typeof t.kontakt === 'string' && !t.kontakt.includes('z.B.') && !t.kontakt.includes('unternehmen.de') ? t.kontakt : null,
+            quelle: matchedSource ? matchedSource.url : (t.quelle || 'https://www.bundesanzeiger.de')
           };
         });
 

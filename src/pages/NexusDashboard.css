@@ -1,7 +1,12 @@
+/* ==========================================================================
+   NEXUS DASHBOARD - OBSIDIAN B2B HIGH-END THEME
+   ========================================================================== */
+
 .nexus-dashboard {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 28px 32px 100px;
+  background: transparent;
 }
 
 .nexus-dashboard-loading {
@@ -11,14 +16,14 @@
   justify-content: center;
   min-height: 400px;
   gap: 16px;
-  color: var(--text-secondary);
+  color: var(--text-secondary, #94a3b8);
 }
 
 .nexus-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid var(--border-color);
-  border-top-color: var(--color-koralle);
+  border: 3px solid var(--border-subtle, #1e232d);
+  border-top-color: var(--accent-blue, #38bdf8);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -31,21 +36,23 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
   flex-wrap: wrap;
   gap: 16px;
 }
 
 .nexus-dashboard-welcome h1 {
-  font-size: 1.75rem;
+  font-size: 1.6rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text-primary, #f8fafc);
   margin: 0;
+  letter-spacing: -0.02em;
 }
 
 .nexus-dashboard-welcome p {
-  color: var(--text-secondary);
+  color: var(--text-secondary, #94a3b8);
   margin: 4px 0 0;
+  font-size: 0.95rem;
 }
 
 .nexus-btn-primary {
@@ -53,19 +60,19 @@
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  background: var(--color-koralle);
-  color: white;
+  background: var(--accent-blue, #38bdf8);
+  color: #050608;
   border: none;
   border-radius: 8px;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .nexus-btn-primary:hover {
-  background: #c24a28;
-  transform: translateY(-1px);
+  background: #7dd3fc;
+  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.25);
 }
 
 .nexus-btn-secondary {
@@ -74,25 +81,28 @@
   gap: 8px;
   padding: 10px 20px;
   background: transparent;
-  color: var(--color-koralle);
-  border: 1px solid var(--color-koralle);
+  color: var(--accent-blue, #38bdf8);
+  border: 1px solid var(--accent-blue, #38bdf8);
   border-radius: 8px;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .nexus-btn-secondary:hover {
-  background: var(--color-koralle);
-  color: white;
+  background: rgba(56, 189, 248, 0.1);
 }
+
+/* ==========================================================================
+   METRIC CARDS (OBSIDIAN)
+   ========================================================================== */
 
 .nexus-stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .nexus-stat-card {
@@ -100,15 +110,16 @@
   align-items: center;
   gap: 16px;
   padding: 20px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: var(--bg-card, #11141a);
+  border: 1px solid var(--border-subtle, #1e232d);
   border-radius: 12px;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .nexus-stat-card:hover {
-  border-color: var(--color-koralle);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border-color: var(--accent-blue, #38bdf8);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 
 .nexus-stat-icon {
@@ -117,7 +128,10 @@
   justify-content: center;
   width: 48px;
   height: 48px;
-  border-radius: 12px;
+  border-radius: 10px;
+  background: var(--bg-dark, #0a0c0f);
+  border: 1px solid var(--border-subtle, #1e232d);
+  color: var(--accent-blue, #38bdf8);
   flex-shrink: 0;
 }
 
@@ -129,25 +143,33 @@
 .nexus-stat-value {
   font-size: 1.75rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text-primary, #f8fafc);
   line-height: 1;
 }
 
 .nexus-stat-label {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  margin-top: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary, #94a3b8);
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
+/* ==========================================================================
+   QUICK ACTIONS
+   ========================================================================== */
+
 .nexus-section {
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .nexus-section h2 {
   font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: 700;
+  color: var(--text-primary, #f8fafc);
   margin: 0 0 16px;
+  letter-spacing: -0.01em;
 }
 
 .nexus-section-header {
@@ -167,10 +189,10 @@
   gap: 4px;
   padding: 6px 12px;
   background: transparent;
-  color: var(--color-koralle);
+  color: var(--accent-blue, #38bdf8);
   border: none;
   font-size: 0.85rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -189,16 +211,17 @@
   align-items: center;
   gap: 16px;
   padding: 20px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: var(--bg-card, #11141a);
+  border: 1px solid var(--border-subtle, #1e232d);
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .nexus-action-card:hover {
-  border-color: var(--color-koralle);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border-color: var(--accent-blue, #38bdf8);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
   transform: translateY(-2px);
 }
 
@@ -206,9 +229,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  background: var(--bg-dark, #0a0c0f);
+  border: 1px solid var(--border-subtle, #1e232d);
+  color: var(--accent-blue, #38bdf8);
   flex-shrink: 0;
 }
 
@@ -218,42 +244,48 @@
 
 .nexus-action-content h3 {
   font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: 700;
+  color: var(--text-primary, #f8fafc);
   margin: 0;
 }
 
 .nexus-action-content p {
   font-size: 0.85rem;
-  color: var(--text-secondary);
+  color: var(--text-secondary, #94a3b8);
   margin: 4px 0 0;
+  line-height: 1.4;
 }
 
 .nexus-action-arrow {
-  color: var(--text-secondary);
+  color: var(--text-muted, #64748b);
   flex-shrink: 0;
 }
+
+/* ==========================================================================
+   COLUMNS (ACTIVITY / LEADS)
+   ========================================================================== */
 
 .nexus-dashboard-columns {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 24px;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .nexus-column {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: var(--bg-card, #11141a);
+  border: 1px solid var(--border-medium, #1e232d);
   border-radius: 12px;
-  padding: 20px;
+  padding: 22px;
   margin: 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .nexus-trigger-list,
 .nexus-analyses-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .nexus-trigger-item,
@@ -261,20 +293,22 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
-  background: var(--bg-secondary);
+  padding: 12px 14px;
+  background: var(--bg-dark, #0a0c0f);
+  border: 1px solid var(--border-subtle, #1e232d);
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .nexus-trigger-item:hover,
 .nexus-analysis-item:hover {
-  background: var(--bg-tertiary);
+  background: var(--bg-card-hover, #171b24);
+  border-color: var(--accent-blue, #38bdf8);
 }
 
 .nexus-trigger-badge {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   flex-shrink: 0;
 }
 
@@ -287,43 +321,51 @@
 .nexus-analysis-content strong {
   display: block;
   font-size: 0.9rem;
-  color: var(--text-primary);
+  font-weight: 600;
+  color: var(--text-primary, #f8fafc);
 }
 
 .nexus-trigger-content p {
   font-size: 0.8rem;
-  color: var(--text-secondary);
+  color: var(--text-secondary, #94a3b8);
   margin: 2px 0;
 }
 
 .nexus-trigger-branche {
   font-size: 0.75rem;
-  color: var(--color-koralle);
-  background: var(--color-koralle-light);
+  font-weight: 600;
+  color: var(--accent-blue, #38bdf8);
+  background: rgba(56, 189, 248, 0.1);
   padding: 2px 8px;
   border-radius: 4px;
 }
 
 .nexus-analysis-content span {
   font-size: 0.8rem;
-  color: var(--text-secondary);
+  color: var(--text-secondary, #94a3b8);
 }
 
 .nexus-analysis-icon,
 .nexus-analysis-arrow {
+  color: var(--text-muted, #64748b);
   flex-shrink: 0;
 }
+
+/* ==========================================================================
+   AI COACH BANNER
+   ========================================================================== */
 
 .nexus-coach-teaser {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px;
-  background: linear-gradient(135deg, #FFF7ED 0%, #FEF3C7 100%);
-  border: 1px solid #F59E0B30;
+  padding: 22px 24px;
+  background: linear-gradient(135deg, #0a0c0f 0%, #11141a 100%);
+  border: 1px solid var(--border-medium, #1e232d);
   border-radius: 12px;
   gap: 16px;
   flex-wrap: wrap;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 .nexus-coach-content {
@@ -333,15 +375,15 @@
 }
 
 .nexus-coach-content h3 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary, #f8fafc);
   margin: 0;
 }
 
 .nexus-coach-content p {
   font-size: 0.85rem;
-  color: var(--text-secondary);
+  color: var(--text-secondary, #94a3b8);
   margin: 4px 0 0;
 }
 

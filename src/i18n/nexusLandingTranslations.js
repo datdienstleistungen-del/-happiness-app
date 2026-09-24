@@ -16,15 +16,15 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "videoTrigger": "Sightseeing-Tour (Video)"
     },
     "showcase": {
-      "badge": "⚡ BEISPIEL: So arbeitet NeXus",
+      "badge": "BEISPIEL: So arbeitet NeXus",
       "offerLabel": "Angebot:",
       "offerText": "„B2B Sales Intelligence & Intent-Signal-Akquise für wachsende Unternehmen“",
       "highIntent": "Kaufbereit: Hoher Intent",
-      "detectedSignal": "🎯 Erkanntes Signal:",
-      "decisionMaker": "👤 Relevanter Entscheider (Contact Intelligence):",
+      "detectedSignal": "Erkanntes Signal:",
+      "decisionMaker": "Relevanter Entscheider (Contact Intelligence):",
       "verified": "Verifiziert",
-      "approachLabel": "✉️ Signalbezogener Gesprächsansatz (Vorschau):",
-      "ctaButton": "✨ Das will ich für mein eigenes B2B-Angebot testen",
+      "approachLabel": "Signalbezogener Gesprächsansatz (Vorschau):",
+      "ctaButton": "Das will ich für mein eigenes B2B-Angebot testen",
       "demoResult": {
         "company": "D.A.T. Dienstleistungen",
         "industry": "B2B Sales Intelligence & Vertriebsberatung",
@@ -46,7 +46,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "magicLabel": "Was möchtest du verkaufen?",
       "magicPlaceholder": "z. B. Cloud-Telefonie für Steuerberater, B2B-Hundefutter für Tierarztpraxen, Vertriebssoftware für SaaS...",
       "inspiration": "Inspiration:",
-      "submitBtn": "NeXus Akquise-Maschine starten ⚡",
+      "submitBtn": "NeXus Akquise-Maschine starten ",
       "validationError": "Bitte beschreibe kurz, was du verkaufen möchtest.",
       "analysisError": "Analyse konnte nicht vollständig geladen werden. Bitte versuchen Sie es erneut.",
       "presets": [
@@ -79,31 +79,31 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         {
           "id": 1,
           "text": "Extrahiere Zielgruppe und Buyer Persona...",
-          "icon": "🧠"
+          "icon": "activity"
         },
         {
           "id": 2,
           "text": "Signal-Radar scannt den Markt nach Live-Kaufreizen...",
-          "icon": "🛰️"
+          "icon": "activity"
         },
         {
           "id": 3,
           "text": "Contact Intelligence verifiziert primäre Entscheider...",
-          "icon": "👤"
+          "icon": "activity"
         },
         {
           "id": 4,
           "text": "Signalbezogener Pitch wird für das Zielunternehmen kalibriert...",
-          "icon": "✉️"
+          "icon": "activity"
         }
       ]
     },
     "results": {
       "topbar": "Ergebnis der NeXus Akquise-Maschine",
-      "detectedSignal": "🎯 Erkanntes Signal:",
-      "decisionMaker": "👤 Entscheider (Contact Intelligence):",
+      "detectedSignal": "Erkanntes Signal:",
+      "decisionMaker": "Entscheider (Contact Intelligence):",
       "verified": "Verifiziert",
-      "pitchLabel": "✉️ Psychologischer Pitch (Bereit für Outreach):",
+      "pitchLabel": "Psychologischer Pitch (Bereit für Outreach):",
       "radarHitsBadge": "Live Signal-Radar Treffer im Markt",
       "radarHeading": "Echte Zielunternehmen mit aktuellem Kaufbedarf",
       "signalsFor": "NeXus hat aktuelle Meldungen und Signale ausgewertet für:",
@@ -172,7 +172,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "terms": "AGB"
     },
     "sightseeing": {
-      "badge": "⚡ 88-SEKUNDEN SIGHTSEEING-TOUR",
+      "badge": "88-SEKUNDEN SIGHTSEEING-TOUR",
       "title": "NeXus Revenue OS live im Rundgang",
       "subtitle": "Erlebe den gesamten B2B-Workflow in 88 Sekunden: Von der 1-Satz-Angebotsanalyse über autonome Kaufsignale bis zum psychologischen Outreach und Video-Drehbuch.",
       "duration": "88 Sek. • Vollständiger Rundgang",
@@ -202,10 +202,10 @@ export const NEXUS_LANDING_TRANSLATIONS = {
           "name": "Video Studio"
         }
       ],
-      "cta": "Jetzt NeXus selbst ausprobieren ⚡"
+      "cta": "Jetzt NeXus selbst ausprobieren "
     },
     "bubble": {
-      "tag": "Sightseeing-Tour 🌟",
+      "tag": "Sightseeing-Tour ",
       "title": "Video-Rundgang ansehen"
     }
   },
@@ -226,15 +226,15 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "videoTrigger": "Sightseeing Tour (Video)"
     },
     "showcase": {
-      "badge": "⚡ SHOWCASE: How NeXus Works",
+      "badge": "SHOWCASE: How NeXus Works",
       "offerLabel": "Offer / Solution:",
       "offerText": "“B2B Sales Intelligence & Intent Signal Acquisition for growing enterprises”",
       "highIntent": "High Buying Intent Detected",
-      "detectedSignal": "🎯 Detected Intent Signal:",
-      "decisionMaker": "👤 Verified Decision-Maker (Contact Intelligence):",
+      "detectedSignal": "Detected Intent Signal:",
+      "decisionMaker": "Verified Decision-Maker (Contact Intelligence):",
       "verified": "Verified",
-      "approachLabel": "✉️ Contextual Outreach Angle (Preview):",
-      "ctaButton": "✨ Test this for my own B2B product / service",
+      "approachLabel": "Contextual Outreach Angle (Preview):",
+      "ctaButton": "Test this for my own B2B product / service",
       "demoResult": {
         "company": "D.A.T. Dienstleistungen",
         "industry": "B2B Sales Intelligence & Revenue Operations",
@@ -256,7 +256,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "magicLabel": "What do you want to sell?",
       "magicPlaceholder": "e.g., Cloud VoIP telephony for CPA firms, Predictive maintenance IoT sensors for manufacturing, B2B CRM software for SaaS...",
       "inspiration": "Inspiration:",
-      "submitBtn": "Launch NeXus Revenue Engine ⚡",
+      "submitBtn": "Launch NeXus Revenue Engine ",
       "validationError": "Please briefly describe what you are offering.",
       "analysisError": "Analysis could not be completed. Please try again.",
       "presets": [
@@ -289,31 +289,31 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         {
           "id": 1,
           "text": "Extracting target audience & ideal buyer persona...",
-          "icon": "🧠"
+          "icon": "activity"
         },
         {
           "id": 2,
           "text": "Scanning market radar for live commercial buying triggers...",
-          "icon": "🛰️"
+          "icon": "activity"
         },
         {
           "id": 3,
           "text": "Contact Intelligence verifying key executive decision-makers...",
-          "icon": "👤"
+          "icon": "activity"
         },
         {
           "id": 4,
           "text": "Calibrating context-driven outreach pitch for target accounts...",
-          "icon": "✉️"
+          "icon": "activity"
         }
       ]
     },
     "results": {
       "topbar": "NeXus Revenue Engine Analysis Result",
-      "detectedSignal": "🎯 Detected Signal:",
-      "decisionMaker": "👤 Key Decision-Maker (Contact Intelligence):",
+      "detectedSignal": "Detected Signal:",
+      "decisionMaker": "Key Decision-Maker (Contact Intelligence):",
       "verified": "Verified",
-      "pitchLabel": "✉️ High-Converting Pitch (Ready for Outreach):",
+      "pitchLabel": "High-Converting Pitch (Ready for Outreach):",
       "radarHitsBadge": "Live Intent Signals in Your Market",
       "radarHeading": "High-Priority Accounts with Active Buying Triggers",
       "signalsFor": "NeXus evaluated real-time announcements & triggers for:",
@@ -382,7 +382,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "terms": "Terms of Service"
     },
     "sightseeing": {
-      "badge": "⚡ 88-SECOND SIGHTSEEING TOUR",
+      "badge": "88-SECOND SIGHTSEEING TOUR",
       "title": "Experience NeXus Revenue OS in Action",
       "subtitle": "Watch the complete end-to-end B2B sales workflow in 88 seconds: from 1-sentence offering analysis to autonomous buying signals, verified decision-makers, and automated video campaigns.",
       "duration": "88 Seconds • Full Walkthrough",
@@ -412,10 +412,10 @@ export const NEXUS_LANDING_TRANSLATIONS = {
           "name": "Video Studio"
         }
       ],
-      "cta": "Try NeXus Live for Free ⚡"
+      "cta": "Try NeXus Live for Free "
     },
     "bubble": {
-      "tag": "Sightseeing Tour 🌟",
+      "tag": "Sightseeing Tour ",
       "title": "Watch Video Walkthrough"
     }
   },
@@ -436,15 +436,15 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "videoTrigger": "Sightseeing Tour (Video)"
     },
     "showcase": {
-      "badge": "⚡ EJEMPLO: Cómo funciona NeXus",
+      "badge": "EJEMPLO: Cómo funciona NeXus",
       "offerLabel": "Oferta / Solución:",
       "offerText": "«Inteligencia de ventas B2B y radar de señales de compra para empresas en crecimiento»",
       "highIntent": "Alta intención de compra detectada",
-      "detectedSignal": "🎯 Señal de compra detectada:",
-      "decisionMaker": "👤 Tomador de decisiones verificado (Contact Intelligence):",
+      "detectedSignal": "Señal de compra detectada:",
+      "decisionMaker": "Tomador de decisiones verificado (Contact Intelligence):",
       "verified": "Verificado",
-      "approachLabel": "✉️ Enfoque comercial contextual (Vista previa):",
-      "ctaButton": "✨ Probar esto para mi propia oferta B2B",
+      "approachLabel": "Enfoque comercial contextual (Vista previa):",
+      "ctaButton": "Probar esto para mi propia oferta B2B",
       "demoResult": {
         "company": "D.A.T. Dienstleistungen",
         "industry": "Inteligencia de Ventas B2B y Consultoría Comercial",
@@ -466,7 +466,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "magicLabel": "¿Qué quieres vender?",
       "magicPlaceholder": "p. ej. Software de gestión para despachos de abogados, suministros veterinarios B2B, CRM para startups SaaS...",
       "inspiration": "Inspiración:",
-      "submitBtn": "Iniciar motor de adquisición NeXus ⚡",
+      "submitBtn": "Iniciar motor de adquisición NeXus ",
       "validationError": "Por favor, describe brevemente lo que quieres vender.",
       "analysisError": "No se pudo completar el análisis. Por favor, inténtalo de nuevo.",
       "presets": [
@@ -499,31 +499,31 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         {
           "id": 1,
           "text": "Extrayendo público objetivo y buyer persona...",
-          "icon": "🧠"
+          "icon": "activity"
         },
         {
           "id": 2,
           "text": "Radar escaneando el mercado en busca de señales de compra...",
-          "icon": "🛰️"
+          "icon": "activity"
         },
         {
           "id": 3,
           "text": "Contact Intelligence verificando directivos clave...",
-          "icon": "👤"
+          "icon": "activity"
         },
         {
           "id": 4,
           "text": "Calibrando propuesta comercial personalizada...",
-          "icon": "✉️"
+          "icon": "activity"
         }
       ]
     },
     "results": {
       "topbar": "Resultado del motor de adquisición NeXus",
-      "detectedSignal": "🎯 Señal detectada:",
-      "decisionMaker": "👤 Directivo clave (Contact Intelligence):",
+      "detectedSignal": "Señal detectada:",
+      "decisionMaker": "Directivo clave (Contact Intelligence):",
       "verified": "Verificado",
-      "pitchLabel": "✉️ Mensaje comercial listo para enviar:",
+      "pitchLabel": "Mensaje comercial listo para enviar:",
       "radarHitsBadge": "Señales de compra en vivo en tu mercado",
       "radarHeading": "Empresas objetivo con necesidad de compra activa",
       "signalsFor": "NeXus ha evaluado noticias y señales de intención para:",
@@ -592,7 +592,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "terms": "Términos de servicio"
     },
     "sightseeing": {
-      "badge": "⚡ TOUR SIGHTSEEING DE 88 SEGUNDOS",
+      "badge": "TOUR SIGHTSEEING DE 88 SEGUNDOS",
       "title": "Descubre NeXus Revenue OS en Acción",
       "subtitle": "Observa el flujo de trabajo B2B completo en 88 segundos: desde el análisis de oferta en una frase hasta señales de compra autónomas y campañas de video.",
       "duration": "88 Segundos • Recorrido Completo",
@@ -622,10 +622,10 @@ export const NEXUS_LANDING_TRANSLATIONS = {
           "name": "Estudio de Video"
         }
       ],
-      "cta": "Probar NeXus Gratis ⚡"
+      "cta": "Probar NeXus Gratis "
     },
     "bubble": {
-      "tag": "Sightseeing Tour 🌟",
+      "tag": "Sightseeing Tour ",
       "title": "Ver recorrido en video"
     }
   },
@@ -646,15 +646,15 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "videoTrigger": "Sightseeing Tour (Vidéo)"
     },
     "showcase": {
-      "badge": "⚡ EXEMPLE : Comment fonctionne NeXus",
+      "badge": "EXEMPLE : Comment fonctionne NeXus",
       "offerLabel": "Offre / Solution :",
       "offerText": "« Intelligence commerciale B2B et signaux d'achat en temps réel pour entreprises en croissance »",
       "highIntent": "Forte intention d'achat détectée",
-      "detectedSignal": "🎯 Signal d'achat détecté :",
-      "decisionMaker": "👤 Décideur vérifié (Contact Intelligence) :",
+      "detectedSignal": "Signal d'achat détecté :",
+      "decisionMaker": "Décideur vérifié (Contact Intelligence) :",
       "verified": "Vérifié",
-      "approachLabel": "✉️ Approche commerciale contextuelle (Aperçu) :",
-      "ctaButton": "✨ Tester cela pour ma propre offre B2B",
+      "approachLabel": "Approche commerciale contextuelle (Aperçu) :",
+      "ctaButton": "Tester cela pour ma propre offre B2B",
       "demoResult": {
         "company": "D.A.T. Dienstleistungen",
         "industry": "Intelligence Commerciale B2B & Revenue Operations",
@@ -676,7 +676,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "magicLabel": "Que souhaitez-vous vendre ?",
       "magicPlaceholder": "ex. Téléphonie cloud pour cabinets comptables, maintenance prédictive IoT pour l'industrie, logiciel CRM pour SaaS...",
       "inspiration": "Inspiration :",
-      "submitBtn": "Lancer le moteur NeXus ⚡",
+      "submitBtn": "Lancer le moteur NeXus ",
       "validationError": "Veuillez décrire brièvement ce que vous proposez.",
       "analysisError": "L'analyse n'a pas pu être complétée. Veuillez réessayer.",
       "presets": [
@@ -709,31 +709,31 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         {
           "id": 1,
           "text": "Extraction de la cible et du profil acheteur idéal...",
-          "icon": "🧠"
+          "icon": "activity"
         },
         {
           "id": 2,
           "text": "Scan du radar de marché pour détecter les signaux d'achat...",
-          "icon": "🛰️"
+          "icon": "activity"
         },
         {
           "id": 3,
           "text": "Contact Intelligence vérifie les décideurs clés...",
-          "icon": "👤"
+          "icon": "activity"
         },
         {
           "id": 4,
           "text": "Calibrage de l'approche commerciale pour le compte cible...",
-          "icon": "✉️"
+          "icon": "activity"
         }
       ]
     },
     "results": {
       "topbar": "Résultat du moteur d'acquisition NeXus",
-      "detectedSignal": "🎯 Signal détecté :",
-      "decisionMaker": "👤 Décideur clé (Contact Intelligence) :",
+      "detectedSignal": "Signal détecté :",
+      "decisionMaker": "Décideur clé (Contact Intelligence) :",
       "verified": "Vérifié",
-      "pitchLabel": "✉️ Message commercial à fort impact (Prêt pour l'envoi) :",
+      "pitchLabel": "Message commercial à fort impact (Prêt pour l'envoi) :",
       "radarHitsBadge": "Signaux d'achat en direct dans votre marché",
       "radarHeading": "Comptes cibles prioritaires avec besoin d'achat immédiat",
       "signalsFor": "NeXus a analysé les signaux et annonces en temps réel pour :",
@@ -802,7 +802,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "terms": "Conditions d'utilisation"
     },
     "sightseeing": {
-      "badge": "⚡ VISITE GUIDÉE DE 88 SECONDES",
+      "badge": "VISITE GUIDÉE DE 88 SECONDES",
       "title": "Découvrez NeXus Revenue OS en Action",
       "subtitle": "Visualisez l'ensemble du workflow commercial B2B en 88 secondes : de l'analyse d'offre en une phrase aux signaux d'achat autonomes et aux campagnes vidéo.",
       "duration": "88 Secondes • Visite Complète",
@@ -832,10 +832,10 @@ export const NEXUS_LANDING_TRANSLATIONS = {
           "name": "Studio Vidéo"
         }
       ],
-      "cta": "Essayer NeXus Gratuitement ⚡"
+      "cta": "Essayer NeXus Gratuitement "
     },
     "bubble": {
-      "tag": "Sightseeing Tour 🌟",
+      "tag": "Sightseeing Tour ",
       "title": "Voir la visite guidée"
     }
   },
@@ -856,15 +856,15 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "videoTrigger": "Sightseeing Tour (Video)"
     },
     "showcase": {
-      "badge": "⚡ ESEMPIO: Come funziona NeXus",
+      "badge": "ESEMPIO: Come funziona NeXus",
       "offerLabel": "Offerta / Soluzione:",
       "offerText": "“B2B Sales Intelligence e acquisizione basata su segnali d'intento per aziende in crescita”",
       "highIntent": "Alta intenzione d'acquisto rilevata",
-      "detectedSignal": "🎯 Segnale d'acquisto rilevato:",
-      "decisionMaker": "👤 Decision Maker Verificato (Contact Intelligence):",
+      "detectedSignal": "Segnale d'acquisto rilevato:",
+      "decisionMaker": "Decision Maker Verificato (Contact Intelligence):",
       "verified": "Verificato",
-      "approachLabel": "✉️ Proposta di outreach contestuale (Anteprima):",
-      "ctaButton": "✨ Prova questo per la mia offerta B2B",
+      "approachLabel": "Proposta di outreach contestuale (Anteprima):",
+      "ctaButton": "Prova questo per la mia offerta B2B",
       "demoResult": {
         "company": "D.A.T. Dienstleistungen",
         "industry": "B2B Sales Intelligence & Consulenza di Vendita",
@@ -886,7 +886,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "magicLabel": "Cosa vuoi vendere?",
       "magicPlaceholder": "es. Telefonia cloud per commercialisti, sensori IoT per la produzione industriale, software CRM per startup SaaS...",
       "inspiration": "Ispirazione:",
-      "submitBtn": "Avvia il motore NeXus ⚡",
+      "submitBtn": "Avvia il motore NeXus ",
       "validationError": "Descrivi brevemente cosa desideri vendere.",
       "analysisError": "Impossibile completare l'analisi. Per favore riprova.",
       "presets": [
@@ -919,31 +919,31 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         {
           "id": 1,
           "text": "Estrazione del target e della buyer persona...",
-          "icon": "🧠"
+          "icon": "activity"
         },
         {
           "id": 2,
           "text": "Radar dei segnali alla ricerca di intenti d'acquisto nel mercato...",
-          "icon": "🛰️"
+          "icon": "activity"
         },
         {
           "id": 3,
           "text": "Contact Intelligence verifica i decision maker principali...",
-          "icon": "👤"
+          "icon": "activity"
         },
         {
           "id": 4,
           "text": "Calibrazione del pitch contestuale per l'azienda target...",
-          "icon": "✉️"
+          "icon": "activity"
         }
       ]
     },
     "results": {
       "topbar": "Risultato del motore di acquisizione NeXus",
-      "detectedSignal": "🎯 Segnale rilevato:",
-      "decisionMaker": "👤 Decision Maker Principale (Contact Intelligence):",
+      "detectedSignal": "Segnale rilevato:",
+      "decisionMaker": "Decision Maker Principale (Contact Intelligence):",
       "verified": "Verificato",
-      "pitchLabel": "✉️ Pitch ad alta conversione (Pronto per l'outreach):",
+      "pitchLabel": "Pitch ad alta conversione (Pronto per l'outreach):",
       "radarHitsBadge": "Segnali di acquisto live nel tuo mercato",
       "radarHeading": "Aziende target con immediata esigenza d'acquisto",
       "signalsFor": "NeXus ha valutato notizie e segnali in tempo reale per:",
@@ -1012,7 +1012,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "terms": "Termini di servizio"
     },
     "sightseeing": {
-      "badge": "⚡ TOUR GUIDATO IN 88 SECONDI",
+      "badge": "TOUR GUIDATO IN 88 SECONDI",
       "title": "Scopri NeXus Revenue OS in Azione",
       "subtitle": "Guarda l'intero workflow di vendita B2B in 88 secondi: dall'analisi dell'offerta in 1 frase ai segnali di acquisto autonomi e alle campagne video.",
       "duration": "88 Secondi • Tour Completo",
@@ -1042,10 +1042,10 @@ export const NEXUS_LANDING_TRANSLATIONS = {
           "name": "Video Studio"
         }
       ],
-      "cta": "Prova NeXus Gratis ⚡"
+      "cta": "Prova NeXus Gratis "
     },
     "bubble": {
-      "tag": "Sightseeing Tour 🌟",
+      "tag": "Sightseeing Tour ",
       "title": "Guarda il tour video"
     }
   },
@@ -1066,15 +1066,15 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "videoTrigger": "Sightseeing Tour (Video)"
     },
     "showcase": {
-      "badge": "⚡ VOORBEELD: Hoe NeXus werkt",
+      "badge": "VOORBEELD: Hoe NeXus werkt",
       "offerLabel": "Aanbod / Oplossing:",
       "offerText": "„B2B Sales Intelligence & intent-gebaseerde acquisitie voor groeiende ondernemingen“",
       "highIntent": "Hoge koopintentie gedetecteerd",
-      "detectedSignal": "🎯 Gedetecteerd koopsignaal:",
-      "decisionMaker": "👤 Geverifieerde beslisser (Contact Intelligence):",
+      "detectedSignal": "Gedetecteerd koopsignaal:",
+      "decisionMaker": "Geverifieerde beslisser (Contact Intelligence):",
       "verified": "Geverifieerd",
-      "approachLabel": "✉️ Contextuele outreach pitch (Voorbeeld):",
-      "ctaButton": "✨ Test dit voor mijn eigen B2B-aanbod",
+      "approachLabel": "Contextuele outreach pitch (Voorbeeld):",
+      "ctaButton": "Test dit voor mijn eigen B2B-aanbod",
       "demoResult": {
         "company": "D.A.T. Dienstleistungen",
         "industry": "B2B Sales Intelligence & Commercieel Advies",
@@ -1096,7 +1096,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "magicLabel": "Wat wil je verkopen?",
       "magicPlaceholder": "bijv. Cloudtelefonie voor accountants, IoT-sensoren voor machinebouw, CRM-software voor SaaS...",
       "inspiration": "Inspiratie:",
-      "submitBtn": "Start NeXus Acquisitiemachine ⚡",
+      "submitBtn": "Start NeXus Acquisitiemachine ",
       "validationError": "Beschrijf kort wat je wilt verkopen.",
       "analysisError": "Analyse kon niet worden voltooid. Probeer het opnieuw.",
       "presets": [
@@ -1129,31 +1129,31 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         {
           "id": 1,
           "text": "Doelgroep en buyer persona extraheren...",
-          "icon": "🧠"
+          "icon": "activity"
         },
         {
           "id": 2,
           "text": "Signaalradar scant de markt op live koopsignalen...",
-          "icon": "🛰️"
+          "icon": "activity"
         },
         {
           "id": 3,
           "text": "Contact Intelligence verifieert primaire beslissers...",
-          "icon": "👤"
+          "icon": "activity"
         },
         {
           "id": 4,
           "text": "Contextuele outreach pitch kalibreren voor het doelbedrijf...",
-          "icon": "✉️"
+          "icon": "activity"
         }
       ]
     },
     "results": {
       "topbar": "Resultaat van de NeXus Acquisitiemotor",
-      "detectedSignal": "🎯 Gedetecteerd signaal:",
-      "decisionMaker": "👤 Belangrijkste beslisser (Contact Intelligence):",
+      "detectedSignal": "Gedetecteerd signaal:",
+      "decisionMaker": "Belangrijkste beslisser (Contact Intelligence):",
       "verified": "Geverifieerd",
-      "pitchLabel": "✉️ High-converting pitch (Klaar voor outreach):",
+      "pitchLabel": "High-converting pitch (Klaar voor outreach):",
       "radarHitsBadge": "Live koopsignalen in uw markt",
       "radarHeading": "Doelbedrijven met acute koopbehoefte",
       "signalsFor": "NeXus heeft realtime signalen en aankondigingen geanalyseerd voor:",
@@ -1222,7 +1222,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "terms": "Voorwaarden"
     },
     "sightseeing": {
-      "badge": "⚡ 88-SECONDEN SIGHTSEEING TOUR",
+      "badge": "88-SECONDEN SIGHTSEEING TOUR",
       "title": "Ervaar NeXus Revenue OS in Actie",
       "subtitle": "Bekijk de volledige B2B-verkoopworkflow in 88 seconden: van 1-zin aanbodanalyse tot autonome koopsignalen en geautomatiseerde videocampagnes.",
       "duration": "88 Seconden • Volledige Tour",
@@ -1252,10 +1252,10 @@ export const NEXUS_LANDING_TRANSLATIONS = {
           "name": "Video Studio"
         }
       ],
-      "cta": "Probeer NeXus Gratis ⚡"
+      "cta": "Probeer NeXus Gratis "
     },
     "bubble": {
-      "tag": "Sightseeing Tour 🌟",
+      "tag": "Sightseeing Tour ",
       "title": "Bekijk videorondleiding"
     }
   },
@@ -1276,15 +1276,15 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "videoTrigger": "Sightseeing Tour (Βίντεο)"
     },
     "showcase": {
-      "badge": "⚡ ΠΑΡΑΔΕΙΓΜΑ: Πώς λειτουργεί το NeXus",
+      "badge": "ΠΑΡΑΔΕΙΓΜΑ: Πώς λειτουργεί το NeXus",
       "offerLabel": "Προσφορά / Λύση:",
       "offerText": "«B2B Sales Intelligence & απόκτηση πελατών βάσει σημάτων πρόθεσης για επιχειρήσεις»",
       "highIntent": "Υψηλή πρόθεση αγοράς",
-      "detectedSignal": "🎯 Αναγνωρισμένο σήμα αγοράς:",
-      "decisionMaker": "👤 Επαληθευμένος υπεύθυνος (Contact Intelligence):",
+      "detectedSignal": "Αναγνωρισμένο σήμα αγοράς:",
+      "decisionMaker": "Επαληθευμένος υπεύθυνος (Contact Intelligence):",
       "verified": "Επαληθεύτηκε",
-      "approachLabel": "✉️ Προσέγγιση βάσει σήματος (Προεπισκόπηση):",
-      "ctaButton": "✨ Δοκιμάστε το για τη δική σας προσφορά B2B",
+      "approachLabel": "Προσέγγιση βάσει σήματος (Προεπισκόπηση):",
+      "ctaButton": "Δοκιμάστε το για τη δική σας προσφορά B2B",
       "demoResult": {
         "company": "D.A.T. Dienstleistungen",
         "industry": "B2B Sales Intelligence & Συμβουλευτική Πωλήσεων",
@@ -1306,7 +1306,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "magicLabel": "Τι θέλετε να πουλήσετε;",
       "magicPlaceholder": "π.χ. Cloud τηλεφωνία για λογιστικά γραφεία, αισθητήρες IoT για βιομηχανία, CRM για SaaS...",
       "inspiration": "Έμπνευση:",
-      "submitBtn": "Εκκίνηση μηχανής NeXus ⚡",
+      "submitBtn": "Εκκίνηση μηχανής NeXus ",
       "validationError": "Παρακαλώ περιγράψτε συνοπτικά τι θέλετε να πουλήσετε.",
       "analysisError": "Η ανάλυση δεν μπόρεσε να ολοκληρωθεί. Παρακαλώ δοκιμάστε ξανά.",
       "presets": [
@@ -1339,31 +1339,31 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         {
           "id": 1,
           "text": "Εξαγωγή κοινού και προφίλ αγοραστή...",
-          "icon": "🧠"
+          "icon": "activity"
         },
         {
           "id": 2,
           "text": "Το ραντάρ σημάτων σαρώνει την αγορά για αγοραστικές προθέσεις...",
-          "icon": "🛰️"
+          "icon": "activity"
         },
         {
           "id": 3,
           "text": "Η Contact Intelligence επαληθεύει τους βασικούς υπεύθυνους...",
-          "icon": "👤"
+          "icon": "activity"
         },
         {
           "id": 4,
           "text": "Βαθμονόμηση εξατομικευμένης προσέγγισης για την εταιρεία-στόχο...",
-          "icon": "✉️"
+          "icon": "activity"
         }
       ]
     },
     "results": {
       "topbar": "Αποτέλεσμα μηχανής NeXus",
-      "detectedSignal": "🎯 Αναγνωρισμένο σήμα:",
-      "decisionMaker": "👤 Υπεύθυνος λήψης αποφάσεων (Contact Intelligence):",
+      "detectedSignal": "Αναγνωρισμένο σήμα:",
+      "decisionMaker": "Υπεύθυνος λήψης αποφάσεων (Contact Intelligence):",
       "verified": "Επαληθεύτηκε",
-      "pitchLabel": "✉️ Προσέγγιση υψηλής μετατροπής (Έτοιμη για αποστολή):",
+      "pitchLabel": "Προσέγγιση υψηλής μετατροπής (Έτοιμη για αποστολή):",
       "radarHitsBadge": "Ζωντανά ευρήματα ραντάρ στην αγορά",
       "radarHeading": "Πραγματικές εταιρείες-στόχοι με ενεργή ανάγκη αγοράς",
       "signalsFor": "Το NeXus ανέλυσε ανακοινώσεις και σήματα για:",
@@ -1432,7 +1432,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
       "terms": "Όροι χρήσης"
     },
     "sightseeing": {
-      "badge": "⚡ ΠΕΡΙΗΓΗΣΗ 88 ΔΕΥΤΕΡΟΛΕΠΤΩΝ",
+      "badge": "ΠΕΡΙΗΓΗΣΗ 88 ΔΕΥΤΕΡΟΛΕΠΤΩΝ",
       "title": "Δείτε το NeXus Revenue OS σε Δράση",
       "subtitle": "Παρακολουθήστε ολόκληρη τη ροή εργασιών πωλήσεων B2B σε 88 δευτερόλεπτα: από την ανάλυση προσφοράς 1 πρότασης έως τα αυτόνομα σήματα αγοράς και τις καμπάνιες βίντεο.",
       "duration": "88 Δευτερόλεπτα • Πλήρης Περιήγηση",
@@ -1462,10 +1462,10 @@ export const NEXUS_LANDING_TRANSLATIONS = {
           "name": "Video Studio"
         }
       ],
-      "cta": "Δοκιμάστε το NeXus Δωρεάν ⚡"
+      "cta": "Δοκιμάστε το NeXus Δωρεάν "
     },
     "bubble": {
-      "tag": "Sightseeing Tour 🌟",
+      "tag": "Sightseeing Tour ",
       "title": "Δείτε την περιήγηση βίντεο"
     }
   }

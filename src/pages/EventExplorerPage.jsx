@@ -7,12 +7,21 @@ import * as db from '../lib/nexus-db'
 import { callEliteEnrichment } from '../lib/nexus-ai'
 import './EventExplorerPage.css'
 
+const DEFAULT_EVENT_TYPES = [
+  { id: 'leadership_change', event_key: 'leadership_change', label_de: 'Führungswechsel / C-Level', description_de: 'Neuer CEO, CTO, CIO oder VP eingestellt', icon: 'Crown' },
+  { id: 'funding_round', event_key: 'funding_round', label_de: 'Finanzierungsrunde / Kapitalerhöhung', description_de: 'Frisches Kapital für Expansion & Tool-Investitionen', icon: 'TrendingUp' },
+  { id: 'expansion_hiring', event_key: 'expansion_hiring', label_de: 'Expansion & Massen-Recruiting', description_de: 'Neuer Standort oder starkes Team-Wachstum', icon: 'Rocket' },
+  { id: 'merger_acquisition', event_key: 'merger_acquisition', label_de: 'Übernahme & M&A', description_de: 'Fusion, Akquisition oder System-Harmonisierung', icon: 'GitMerge' },
+  { id: 'compliance_audit', event_key: 'compliance_audit', label_de: 'Compliance / ESG / Regulatorik', description_de: 'Neue EU-Vorgaben, NIS-2, ISO-Zertifizierungen', icon: 'Shield' },
+  { id: 'software_switch', event_key: 'software_switch', label_de: 'Tool-Wechsel & IT-Modernisierung', description_de: 'Ablösung von Legacy-Systemen oder Cloud-Migration', icon: 'Package' }
+]
+
 export default function EventExplorerPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
 
-  const [eventTypes, setEventTypes] = useState([])
-  const [selectedType, setSelectedType] = useState(null)
+  const [eventTypes, setEventTypes] = useState(DEFAULT_EVENT_TYPES)
+  const [selectedType, setSelectedType] = useState(DEFAULT_EVENT_TYPES[0])
   const [region, setRegion] = useState('Deutschland')
   const [loading, setLoading] = useState(false)
   const [events, setEvents] = useState([])
@@ -29,7 +38,10 @@ export default function EventExplorerPage() {
 
   async function loadEventTypes() {
     const types = await db.getEventTypes()
-    setEventTypes(types)
+    if (types && types.length > 0) {
+      setEventTypes(types)
+      if (!selectedType) setSelectedType(types[0])
+    }
   }
 
   async function loadExistingEvents() {

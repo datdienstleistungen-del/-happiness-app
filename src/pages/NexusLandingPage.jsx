@@ -346,7 +346,7 @@ export default function NexusLandingPage() {
                       )}
                     </span>
                     <span className="contact-status-badge status-verified">
-                      <span className="dot-green">🟢</span> {t.showcase.verified}
+                      <span className="badge-dot-verified"></span> {t.showcase.verified}
                     </span>
                   </div>
                 </div>
@@ -517,7 +517,7 @@ export default function NexusLandingPage() {
                             )}
                           </span>
                           <span className="contact-status-badge status-verified">
-                            <span className="dot-green">🟢</span> {t.results.verified}
+                            <span className="badge-dot-verified"></span> {t.results.verified}
                           </span>
                         </div>
                       </div>

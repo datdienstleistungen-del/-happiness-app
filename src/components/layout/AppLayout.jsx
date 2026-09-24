@@ -94,8 +94,8 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
               style={{
                 fontSize: '9px',
                 fontWeight: '700',
-                background: 'var(--color-koralle, #d85a30)',
-                color: '#ffffff',
+                background: 'var(--accent-blue, #38bdf8)',
+                color: '#050608',
                 padding: '1px 5px',
                 borderRadius: '4px',
                 marginLeft: '6px',
@@ -117,8 +117,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
       <aside ref={sidebarRef} className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-header">
           <Link to="/" className="sidebar-brand" onClick={() => setMobileOpen(false)}>
-            <img src="/favicon.svg" alt="NeXus" style={{ width: '32px', height: '32px' }} />
-            {!collapsed && <Logo />}
+            <Logo iconOnly={collapsed} size={collapsed ? 'small' : 'default'} />
           </Link>
           <button className="sidebar-toggle" onClick={() => {
             if (window.innerWidth <= 768) {
@@ -133,7 +132,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
 
       <nav className="sidebar-nav">
         {!collapsed && (
-          <div className="sidebar-section-title" style={{ color: 'var(--color-koralle)', fontWeight: '700' }}>
+          <div className="sidebar-section-title" style={{ color: 'var(--accent-blue, #38bdf8)', fontWeight: '700' }}>
             {t('nexus.nav.nexus', 'NeXus')}
           </div>
         )}
@@ -199,7 +198,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
             </>
           ) : (
             <>
-              <div className="sidebar-avatar" onClick={() => navigate('/login')} style={{ cursor: 'pointer', background: 'var(--color-koralle, #d85a30)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="sidebar-avatar" onClick={() => navigate('/login')} style={{ cursor: 'pointer', background: 'var(--bg-card, #11141a)', border: '1px solid var(--border-medium, #2d3544)', color: 'var(--accent-blue, #38bdf8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <User size={16} />
               </div>
               {!collapsed && (
@@ -207,7 +206,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
                   <div className="sidebar-user-name">
                     {t('nexus.nav.guestMode', 'Gast-Modus')}
                   </div>
-                  <button className="sidebar-logout" onClick={() => navigate('/login')} style={{ color: 'var(--color-koralle, #d85a30)', fontWeight: 'bold' }}>{t('auth.login')}</button>
+                  <button className="sidebar-logout" onClick={() => navigate('/login')} style={{ color: 'var(--accent-blue, #38bdf8)', fontWeight: 'bold' }}>{t('auth.login')}</button>
                 </div>
               )}
             </>
@@ -278,7 +277,6 @@ export default function AppLayout({ children }) {
       {shouldShowPublicTopbar && (
         <nav className="public-topbar">
           <Link to="/" className="public-topbar-brand">
-                   <img src="/favicon.svg" alt="NeXus" style={{ width: '28px', height: '28px' }} />
             <Logo />
           </Link>
           <div className="public-topbar-links">

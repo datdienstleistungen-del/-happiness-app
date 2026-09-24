@@ -1,10 +1,12 @@
 .main-content {
   flex: 1;
   width: 100%;
+  background: transparent !important;
 }
 
 .main-content.full {
   width: 100%;
+  background: transparent !important;
 }
 
 .loading-screen {
@@ -501,10 +503,12 @@
 
 /* Sidebar */
 .sidebar {
-  width: 220px;
+  width: 240px;
   height: 100vh;
-  background: #ffffff;
-  border-right: 1px solid #e5e7eb;
+  background: rgba(10, 12, 15, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-right: 1px solid var(--border-subtle, #1e232d);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -512,6 +516,7 @@
   top: 0;
   z-index: 200;
   transition: width 0.3s ease;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
 }
 
 .sidebar.collapsed {
@@ -522,8 +527,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border-subtle, #1e232d);
+  background: var(--bg-darkest, #050608);
 }
 
 .sidebar-brand {
@@ -531,15 +537,16 @@
   align-items: center;
   gap: 10px;
   text-decoration: none !important;
-  color: #2d3436;
+  color: var(--text-primary, #f8fafc);
   font-weight: 700;
   font-size: 1.1rem;
+  letter-spacing: -0.01em;
 }
 
 .sidebar-toggle {
   background: none;
   border: none;
-  color: #636e72;
+  color: var(--text-muted, #64748b);
   font-size: 1.2rem;
   cursor: pointer;
   padding: 4px 8px;
@@ -548,38 +555,40 @@
 }
 
 .sidebar-toggle:hover {
-  background: #f3f4f6;
-  color: var(--primary);
+  background: var(--bg-card, #11141a);
+  color: var(--accent-blue, #38bdf8);
 }
 
 .sidebar-nav {
   flex: 1;
   overflow-y: auto;
-  padding: 12px 8px;
+  padding: 14px 10px;
 }
 
 .sidebar-link {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  color: #636e72;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: var(--text-secondary, #94a3b8);
   text-decoration: none !important;
-  transition: all 0.2s;
-  margin-bottom: 2px;
+  transition: all 0.2s ease;
+  margin-bottom: 3px;
+  font-weight: 500;
+  font-size: 0.9rem;
 }
 
 .sidebar-link:hover {
-  background: #f3f4f6;
-  color: #2d3436;
+  background: var(--bg-card-hover, #171b24);
+  color: var(--text-primary, #f8fafc);
 }
 
 .sidebar-link.active {
-  background: rgba(8, 80, 65, 0.12);
-  color: var(--primary);
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--accent-blue, #38bdf8);
+  border: 1px solid rgba(56, 189, 248, 0.25);
   font-weight: 600;
-  box-shadow: none;
 }
 
 .sidebar-icon {
@@ -598,22 +607,23 @@
 
 .sidebar-divider {
   height: 1px;
-  background: #e5e7eb;
-  margin: 8px 12px;
+  background: var(--border-subtle, #1e232d);
+  margin: 12px 14px;
 }
 
 .sidebar-section-title {
-  padding: 8px 12px 4px;
-  font-size: 0.75rem;
-  color: #6b7280;
-  font-weight: 600;
+  padding: 10px 14px 4px;
+  font-size: 0.72rem;
+  color: var(--text-muted, #64748b);
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.06em;
 }
 
 .sidebar-footer {
-  padding: 12px;
-  border-top: 1px solid #e5e7eb;
+  padding: 14px;
+  border-top: 1px solid var(--border-subtle, #1e232d);
+  background: var(--bg-darkest, #050608);
 }
 
 .sidebar-legal {
@@ -622,27 +632,27 @@
   gap: 8px;
   margin-bottom: 10px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-subtle, #1e232d);
 }
 
 .sidebar-legal-link {
-  font-size: 0.7rem;
-  color: #999;
+  font-size: 0.72rem;
+  color: var(--text-muted, #64748b);
   text-decoration: none;
   transition: color 0.2s;
 }
 
 .sidebar-legal-link:hover {
-  color: var(--primary);
+  color: var(--accent-blue, #38bdf8);
 }
 
 .sidebar-lang {
   width: 100%;
   padding: 8px 10px;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-input, #0e1015);
+  border: 1px solid var(--border-subtle, #1e232d);
   border-radius: 8px;
-  color: #2d3436;
+  color: var(--text-primary, #f8fafc);
   font-size: 0.85rem;
   margin-bottom: 12px;
   cursor: pointer;
@@ -658,12 +668,13 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--gradient);
+  background: var(--bg-card, #11141a);
+  border: 1px solid var(--border-medium, #2d3544);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-weight: 600;
+  color: var(--accent-blue, #38bdf8);
+  font-weight: 700;
   font-size: 0.9rem;
   flex-shrink: 0;
 }
@@ -674,17 +685,18 @@
 }
 
 .sidebar-user-name {
-  color: #2d3436;
+  color: var(--text-primary, #f8fafc);
   font-size: 0.85rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-weight: 600;
 }
 
 .sidebar-logout {
   background: none;
   border: none;
-  color: #e74c3c;
+  color: #f87171;
   font-size: 0.75rem;
   cursor: pointer;
   padding: 0;
@@ -695,10 +707,10 @@
 }
 
 .main-content.with-sidebar {
-  margin-left: 220px;
+  margin-left: 240px;
   transition: margin-left 0.3s ease;
   overflow-x: hidden;
-  max-width: calc(100vw - 220px);
+  max-width: calc(100vw - 240px);
 }
 
 .sidebar.collapsed ~ .main-content.with-sidebar {
@@ -1178,13 +1190,14 @@ textarea.form-input {
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-  color: #2d3436;
+  border: 1px solid var(--border-medium, #2d3544);
+  background: rgba(17, 20, 26, 0.9);
+  backdrop-filter: blur(12px);
+  color: var(--accent-blue, #38bdf8);
   cursor: pointer;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   transition: all 0.2s;
 }
 
@@ -1206,8 +1219,10 @@ textarea.form-input {
   left: 0;
   right: 0;
   height: 64px;
-  background: var(--bg-card);
-  border-top: 1px solid var(--border);
+  background: rgba(10, 12, 15, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border-subtle, #1e232d);
   z-index: 1000;
   padding: 0 8px;
   align-items: center;
@@ -1220,7 +1235,7 @@ textarea.form-input {
   align-items: center;
   gap: 2px;
   text-decoration: none;
-  color: var(--text-muted);
+  color: var(--text-muted, #64748b);
   font-size: 0.65rem;
   padding: 6px 12px;
   border-radius: 8px;
@@ -1228,7 +1243,7 @@ textarea.form-input {
 }
 
 .mobile-nav-link.active {
-  color: var(--primary);
+  color: var(--accent-blue, #38bdf8);
 }
 
 .mobile-nav-link span {

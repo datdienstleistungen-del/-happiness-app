@@ -39,11 +39,6 @@ export default function NexusDashboard() {
     setLoading(false)
   }
 
-  const handleAnalysisClick = async (offeringId) => {
-    // Navigate to sales workspace or analysis view
-    navigate('/nexus/sales-workspace')
-  }
-
   const handleReset = async () => {
     if (window.confirm(t('nexus.dashboard.devCleanSlateConfirm', 'Willst du wirklich ALLE deine NeXus-Daten (Angebote, Leads, Signale) löschen? Dies kann nicht rückgängig gemacht werden.'))) {
       setLoading(true)
@@ -58,21 +53,21 @@ export default function NexusDashboard() {
       title: t('nexus.dashboard.qaOfferingTitle', 'Angebotsanalyse'),
       description: t('nexus.dashboard.qaOfferingDesc', 'Beschreibe dein Angebot und erhalte dein Vertriebsmodell'),
       action: () => navigate('/nexus/angebotsanalyse'),
-      color: "#10B981"
+      color: "var(--accent-blue, #38bdf8)"
     },
     {
       icon: Radar,
       title: t('nexus.dashboard.qaRadarTitle', 'Lead Radar'),
       description: t('nexus.dashboard.qaRadarDesc', 'Finde Trigger Events und Kaufsignale'),
       action: () => navigate('/nexus/lead-radar'),
-      color: "#3B82F6"
+      color: "var(--accent-emerald, #10b981)"
     },
     {
       icon: Zap,
       title: t('nexus.dashboard.qaWorkspaceTitle', 'Sales Workspace'),
       description: t('nexus.dashboard.qaWorkspaceDesc', 'Generiere Nachrichten und verwalte Leads'),
       action: () => navigate('/nexus/sales-workspace'),
-      color: "#F59E0B"
+      color: "var(--accent-blue, #38bdf8)"
     }
   ]
 
@@ -107,7 +102,7 @@ export default function NexusDashboard() {
       {/* Stats Grid */}
       <div className="nexus-stats-grid">
         <Link to="/nexus/sales-workspace" className="nexus-stat-card" style={{ textDecoration: 'none', cursor: 'pointer' }}>
-          <div className="nexus-stat-icon" style={{ background: '#10B98120', color: '#10B981' }}>
+          <div className="nexus-stat-icon">
             <Zap size={24} />
           </div>
           <div className="nexus-stat-content">
@@ -117,7 +112,7 @@ export default function NexusDashboard() {
         </Link>
         
         <Link to="/nexus/lead-radar" className="nexus-stat-card" style={{ textDecoration: 'none', cursor: 'pointer' }}>
-          <div className="nexus-stat-icon" style={{ background: '#EF444420', color: '#EF4444' }}>
+          <div className="nexus-stat-icon" style={{ color: 'var(--accent-emerald, #10b981)' }}>
             <Radar size={24} />
           </div>
           <div className="nexus-stat-content">
@@ -127,7 +122,7 @@ export default function NexusDashboard() {
         </Link>
         
         <Link to="/nexus/lead-radar" className="nexus-stat-card" style={{ textDecoration: 'none', cursor: 'pointer' }}>
-          <div className="nexus-stat-icon" style={{ background: '#3B82F620', color: '#3B82F6' }}>
+          <div className="nexus-stat-icon">
             <Target size={24} />
           </div>
           <div className="nexus-stat-content">
@@ -137,7 +132,7 @@ export default function NexusDashboard() {
         </Link>
         
         <Link to="/nexus/angebotsanalyse" className="nexus-stat-card" style={{ textDecoration: 'none', cursor: 'pointer' }}>
-          <div className="nexus-stat-icon" style={{ background: '#F59E0B20', color: '#F59E0B' }}>
+          <div className="nexus-stat-icon" style={{ color: 'var(--accent-emerald, #10b981)' }}>
             <Users size={24} />
           </div>
           <div className="nexus-stat-content">
@@ -157,7 +152,7 @@ export default function NexusDashboard() {
               className="nexus-action-card"
               onClick={action.action}
             >
-              <div className="nexus-action-icon" style={{ background: `${action.color}20`, color: action.color }}>
+              <div className="nexus-action-icon" style={{ color: action.color }}>
                 <action.icon size={24} />
               </div>
               <div className="nexus-action-content">
@@ -221,11 +216,11 @@ export default function NexusDashboard() {
                   onClick={() => navigate('/nexus/lead-radar')}
                 >
                   <div className="nexus-analysis-icon">
-                    <Activity size={20} color="#3B82F6" />
+                    <Activity size={20} color="var(--accent-blue, #38bdf8)" />
                   </div>
                   <div className="nexus-analysis-content">
                     <strong>{hit.title || t('nexus.dashboard.unknownSignal', 'Unbekanntes Signal')}</strong>
-                    <span style={{color: hit.relevance_score >= 80 ? '#10B981' : 'var(--text-secondary)'}}>
+                    <span style={{color: hit.relevance_score >= 80 ? 'var(--accent-emerald, #10b981)' : 'var(--text-secondary)'}}>
                       {t('nexus.dashboard.score', 'Score')}: {hit.relevance_score} | {hit.trigger_type || t('nexus.dashboard.noTrigger', 'Kein Trigger extrahiert')}
                     </span>
                   </div>
@@ -244,7 +239,7 @@ export default function NexusDashboard() {
       {/* Coach Teaser */}
       <section className="nexus-coach-teaser">
         <div className="nexus-coach-content">
-          <Lightbulb size={32} color="#F59E0B" />
+          <Lightbulb size={32} color="var(--accent-blue, #38bdf8)" />
           <div>
             <h3>{t('nexus.dashboard.coachTitle', 'Brauchst du Hilfe bei deiner Strategie?')}</h3>
             <p>{t('nexus.dashboard.coachDesc', 'Der Coach unterstützt dich kontextbezogen bei allen Fragen zu NeXus und deinem Vertrieb.')}</p>
@@ -259,14 +254,14 @@ export default function NexusDashboard() {
       </section>
 
       {/* Danger Zone */}
-      <section style={{ marginTop: '40px', padding: '20px', border: '1px solid #EF444440', borderRadius: '12px', background: '#EF444410', textAlign: 'center' }}>
-        <h3 style={{ color: '#EF4444', marginBottom: '10px' }}>{t('nexus.dashboard.devCleanSlateTitle', 'Entwickler-Modus: Clean Slate')}</h3>
+      <section style={{ marginTop: '40px', padding: '20px', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.05)', textAlign: 'center' }}>
+        <h3 style={{ color: '#ef4444', marginBottom: '10px' }}>{t('nexus.dashboard.devCleanSlateTitle', 'Entwickler-Modus: Clean Slate')}</h3>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '15px', fontSize: '0.9rem' }}>
           {t('nexus.dashboard.devCleanSlateDesc', 'Löscht alle Analysen, Angebote, Signale und Leads, um das Tool von Grund auf neu zu testen.')}
         </p>
         <button 
           onClick={handleReset}
-          style={{ background: '#EF4444', color: 'white', padding: '8px 16px', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
+          style={{ background: '#ef4444', color: 'white', padding: '8px 16px', borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
         >
           {t('nexus.dashboard.devCleanSlateBtn', 'Alle Daten unwiderruflich löschen')}
         </button>

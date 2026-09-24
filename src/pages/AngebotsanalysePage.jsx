@@ -337,7 +337,7 @@ export default function AngebotsanalysePage() {
                 ) : (
                   <>
                     <Zap size={16} />
-                    <span>{t('nexus.offeringAnalysis.btnAnalyze', 'Angebot analysieren ⚡')}</span>
+                    <span>{t('nexus.offeringAnalysis.btnAnalyze', 'Angebot analysieren')}</span>
                   </>
                 )}
               </button>
@@ -358,7 +358,7 @@ export default function AngebotsanalysePage() {
           {analysisResult && (
             <div className="analysis-output-section animate-fade-in">
               <div className="analysis-output-badge">
-                <CheckCircle2 size={18} className="text-[#10B981]" />
+                <CheckCircle2 size={18} className="text-[#38bdf8]" color="#38bdf8" />
                 <h3>{t('nexus.offeringAnalysis.understoodTitle', 'NeXus hat dein Angebot verstanden')}</h3>
               </div>
 
@@ -452,7 +452,7 @@ export default function AngebotsanalysePage() {
           {/* Profile Switcher & Actions Top Bar */}
           <div className="profile-top-bar">
             <div className="profile-badge-row">
-              <span className="badge-active-indicator">{t('nexus.offeringAnalysis.activeTitle', '🟢 Aktives Angebot')}</span>
+              <span className="badge-active-indicator">{t('nexus.offeringAnalysis.activeTitle', 'Aktives Angebot')}</span>
               {offerings.length > 1 && (
                 <div className="profile-select-wrap">
                   <label htmlFor="profile-select">{t('nexus.offeringAnalysis.switchProfile', 'Profil wechseln:')}</label>
@@ -507,7 +507,7 @@ export default function AngebotsanalysePage() {
           {/* Next Steps CTA to Lead Radar */}
           <div className="pipeline-next-step-card">
             <div className="next-step-info">
-              <h4>{t('nexus.offeringAnalysis.readyRadar', '🎯 Bereit für den Lead Radar?')}</h4>
+              <h4>{t('nexus.offeringAnalysis.readyRadar', 'Bereit für den Lead Radar?')}</h4>
               <p>{t('nexus.offeringAnalysis.readyRadarDesc', 'Nutze die generierten Signal-Strategien deines Angebots, um akute Kaufreize im Markt in Echtzeit zu finden.')}</p>
             </div>
             <button 

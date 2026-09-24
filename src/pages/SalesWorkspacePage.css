@@ -1,38 +1,48 @@
+/* ==========================================================================
+   NEXUS SALES WORKSPACE - OBSIDIAN B2B HIGH-END THEME
+   ========================================================================== */
+
 .sales-workspace-page {
   max-width: 1440px;
   width: 100%;
   margin: 0 auto;
-  padding: 24px 32px;
+  padding: 28px 32px 100px;
 }
 
 .sales-workspace-header {
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .sales-workspace-header h1 {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text-primary, #f8fafc);
   margin: 0;
+  letter-spacing: -0.02em;
 }
 
 .sales-workspace-header p {
-  color: var(--text-secondary);
+  color: var(--text-secondary, #94a3b8);
   margin: 4px 0 0;
+  font-size: 0.95rem;
 }
 
 .sales-workspace-content {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 280px 1fr;
   gap: 24px;
 }
 
+/* ==========================================================================
+   PIPELINE QUEUE (LEFT SIDEBAR)
+   ========================================================================== */
+
 .sales-workspace-queue {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: var(--bg-card, #11141a);
+  border: 1px solid var(--border-medium, #1e232d);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
@@ -40,24 +50,25 @@
   position: sticky;
   top: 24px;
   overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 .queue-header {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 20px;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border-medium, #1e232d);
+  background: var(--bg-dark, #0a0c0f);
 }
 
 .queue-header h3 {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary, #94a3b8);
   margin: 0;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.08em;
 }
 
 .queue-list {
@@ -69,64 +80,107 @@
 
 .queue-item {
   padding: 16px 20px;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-subtle, #1e232d);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   border-left: 3px solid transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .queue-item:hover {
-  background: var(--bg-secondary);
+  background: var(--bg-card-hover, #171b24);
 }
 
 .queue-item.active {
-  background: rgba(239, 107, 75, 0.05);
-  border-left-color: var(--color-koralle);
+  background: rgba(56, 189, 248, 0.06);
+  border-left-color: var(--accent-blue, #38bdf8);
+}
+
+.queue-item-content {
+  flex: 1;
+  min-width: 0;
+  padding-right: 12px;
 }
 
 .queue-item h4 {
   font-size: 0.95rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-primary, #f8fafc);
   margin: 0 0 6px;
   line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .queue-stage {
   display: inline-block;
   font-size: 0.75rem;
-  color: var(--text-secondary);
-  background: var(--bg-secondary);
+  font-weight: 600;
+  color: var(--accent-blue, #38bdf8);
+  background: rgba(56, 189, 248, 0.1);
   padding: 2px 8px;
   border-radius: 4px;
-  text-transform: capitalize;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.delete-opp-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #64748b);
+  opacity: 0.4;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.queue-item:hover .delete-opp-btn {
+  opacity: 0.8;
+}
+
+.delete-opp-btn:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444 !important;
+  opacity: 1 !important;
 }
 
 .queue-empty {
-  padding: 32px 20px;
+  padding: 40px 20px;
   text-align: center;
-  color: var(--text-secondary);
+  color: var(--text-secondary, #94a3b8);
   font-size: 0.9rem;
   line-height: 1.5;
 }
 
+/* ==========================================================================
+   WORKSPACE ACTIONS & MODES
+   ========================================================================== */
+
 .sales-workspace-actions {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: var(--bg-card, #11141a);
+  border: 1px solid var(--border-medium, #1e232d);
   border-radius: 12px;
   padding: 20px;
   height: fit-content;
   position: sticky;
   top: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .sales-workspace-actions h3 {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary, #94a3b8);
   margin: 0 0 16px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.08em;
 }
 
 .mode-list {
@@ -146,21 +200,24 @@
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  color: var(--text-secondary, #94a3b8);
 }
 
 .mode-btn:hover {
-  background: var(--bg-secondary);
+  background: var(--bg-card-hover, #171b24);
+  color: var(--text-primary, #f8fafc);
 }
 
 .mode-btn.active {
-  background: var(--color-koralle);
-  color: white;
-  border-color: var(--color-koralle);
+  background: var(--accent-blue, #38bdf8);
+  color: #050608;
+  border-color: var(--accent-blue, #38bdf8);
+  font-weight: 600;
 }
 
 .mode-btn.active .mode-description {
-  color: rgba(255,255,255,0.8);
+  color: rgba(5, 6, 8, 0.8);
 }
 
 .mode-label {
@@ -172,8 +229,12 @@
 .mode-description {
   display: block;
   font-size: 0.75rem;
-  color: var(--text-secondary);
+  color: var(--text-muted, #64748b);
 }
+
+/* ==========================================================================
+   MAIN WORKSPACE PANEL
+   ========================================================================== */
 
 .sales-workspace-main {
   display: flex;
@@ -185,10 +246,11 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: var(--bg-card, #11141a);
+  border: 1px solid var(--border-medium, #1e232d);
   border-radius: 12px;
   padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .sales-form .form-group {
@@ -198,27 +260,30 @@
 }
 
 .sales-form label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-secondary, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .sales-form input,
 .sales-form textarea {
   padding: 12px 14px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-subtle, #1e232d);
   border-radius: 8px;
   font-size: 0.95rem;
   font-family: inherit;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  transition: border-color 0.2s;
+  background: var(--bg-input, #0e1015);
+  color: var(--text-primary, #f8fafc);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .sales-form input:focus,
 .sales-form textarea:focus {
   outline: none;
-  border-color: var(--color-koralle);
+  border-color: var(--accent-blue, #38bdf8);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
 }
 
 .sales-form textarea {
@@ -230,8 +295,9 @@
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  background: #FEE2E2;
-  color: #991B1B;
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.25);
   border-radius: 8px;
   font-size: 0.9rem;
 }
@@ -242,31 +308,33 @@
   justify-content: center;
   gap: 10px;
   padding: 14px 28px;
-  background: var(--color-koralle);
-  color: white;
+  background: var(--accent-blue, #38bdf8);
+  color: #050608;
   border: none;
   border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   align-self: flex-start;
+  letter-spacing: 0.02em;
 }
 
 .generate-btn:hover:not(:disabled) {
-  background: #c24a28;
+  background: #7dd3fc;
+  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.25);
 }
 
 .generate-btn:disabled {
-  opacity: 0.7;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .generate-btn .btn-spinner {
   width: 18px;
   height: 18px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: white;
+  border: 2px solid rgba(5, 6, 8, 0.2);
+  border-top-color: #050608;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -276,10 +344,11 @@
 }
 
 .sales-result {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: var(--bg-card, #11141a);
+  border: 1px solid var(--border-medium, #1e232d);
   border-radius: 12px;
   padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .result-header {
@@ -291,8 +360,8 @@
 
 .result-header h3 {
   font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: 700;
+  color: var(--text-primary, #f8fafc);
   margin: 0;
 }
 
@@ -300,28 +369,26 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 12px;
-  background: transparent;
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color);
+  padding: 8px 14px;
+  background: var(--bg-dark, #0a0c0f);
+  color: var(--text-secondary, #94a3b8);
+  border: 1px solid var(--border-subtle, #1e232d);
   border-radius: 6px;
   font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .copy-btn:hover {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-}
-
-.copy-btn:has(svg:last-child) {
-  color: #10B981;
-  border-color: #10B981;
+  background: var(--bg-card-hover, #171b24);
+  color: var(--text-primary, #f8fafc);
+  border-color: var(--border-medium, #2d3544);
 }
 
 .result-content {
-  background: var(--bg-secondary);
+  background: var(--bg-input, #0e1015);
+  border: 1px solid var(--border-subtle, #1e232d);
   border-radius: 8px;
   padding: 20px;
 }
@@ -331,8 +398,246 @@
   font-size: 0.95rem;
   line-height: 1.7;
   white-space: pre-wrap;
-  color: var(--text-primary);
+  color: var(--text-primary, #f8fafc);
   margin: 0;
+}
+
+.sales-workspace-empty-state {
+  background: var(--bg-card, #11141a);
+  border: 1px solid var(--border-medium, #1e232d);
+  border-radius: 12px;
+  padding: 64px 32px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 400px;
+}
+
+.sales-workspace-empty-state h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary, #f8fafc);
+  margin: 16px 0 8px;
+}
+
+.sales-workspace-empty-state p {
+  color: var(--text-secondary, #94a3b8);
+  margin: 0;
+}
+
+/* ==========================================================================
+   NEXUS SOCIAL OUTREACH SUITE (OBSIDIAN)
+   ========================================================================== */
+
+.social-outreach-suite {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.social-presence-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--bg-card, #11141a);
+  border: 1px solid var(--border-subtle, #1e232d);
+  border-radius: 8px;
+  padding: 14px 18px;
+}
+
+.social-presence-links {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.social-presence-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.social-presence-badge.linkedin {
+  background: rgba(10, 102, 194, 0.12);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.social-presence-badge.linkedin:hover {
+  background: rgba(10, 102, 194, 0.25);
+}
+
+.social-presence-badge.youtube {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.social-presence-badge.youtube:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.social-presence-badge.website {
+  background: var(--bg-dark, #0a0c0f);
+  color: var(--text-primary, #f8fafc);
+  border: 1px solid var(--border-subtle, #1e232d);
+}
+
+.social-presence-badge.website:hover {
+  border-color: var(--accent-blue, #38bdf8);
+}
+
+.social-presence-badge.unverified {
+  background: var(--bg-dark, #0a0c0f);
+  color: var(--text-muted, #64748b);
+  border: 1px dashed var(--border-subtle, #1e232d);
+  opacity: 0.6;
+}
+
+.social-activities-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.social-activity-card {
+  background: var(--bg-card, #11141a);
+  border: 1px solid var(--border-subtle, #1e232d);
+  border-radius: 10px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.social-activity-card:hover {
+  border-color: var(--accent-blue, #38bdf8);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.social-activity-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.social-platform-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.social-platform-tag.youtube {
+  color: #f87171;
+}
+
+.social-platform-tag.linkedin {
+  color: #38bdf8;
+}
+
+.social-activity-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary, #f8fafc);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.social-activity-snippet {
+  font-size: 0.9rem;
+  color: var(--text-secondary, #94a3b8);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.social-relevance-box {
+  background: rgba(16, 185, 129, 0.08);
+  border-left: 3px solid #10b981;
+  padding: 10px 14px;
+  border-radius: 0 6px 6px 0;
+  font-size: 0.85rem;
+  color: var(--text-primary, #f8fafc);
+}
+
+.social-activity-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.social-analysis-box {
+  background: var(--bg-card, #11141a);
+  border: 1px solid var(--border-subtle, #1e232d);
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.social-analysis-step {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.social-analysis-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent-blue, #38bdf8);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.social-outreach-preview-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-subtle, #1e232d);
+  padding-bottom: 8px;
+  margin-top: 12px;
+}
+
+.social-outreach-tab-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-secondary, #94a3b8);
+  transition: all 0.2s ease;
+}
+
+.social-outreach-tab-btn.active {
+  background: var(--accent-blue, #38bdf8);
+  color: #050608;
+}
+
+/* Assistant Spacing */
+.sales-workspace-page, .sales-workspace-crm, .social-outreach-suite {
+  padding-bottom: 90px;
 }
 
 @media (max-width: 1024px) {
@@ -367,31 +672,6 @@
   }
 }
 
-.sales-workspace-empty-state {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 64px 32px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  min-height: 400px;
-}
-
-.sales-workspace-empty-state h2 {
-  font-size: 1.25rem;
-  color: var(--text-primary);
-  margin: 16px 0 8px;
-}
-
-.sales-workspace-empty-state p {
-  color: var(--text-secondary);
-  margin: 0;
-}
-
 @media (max-width: 600px) {
   .sales-workspace-page {
     padding: 24px 16px;
@@ -400,248 +680,4 @@
   .generate-btn {
     width: 100%;
   }
-}
-
-.queue-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.queue-item-content {
-  flex: 1;
-  min-width: 0;
-  padding-right: 12px;
-}
-
-.delete-opp-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  opacity: 0.3;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.queue-item:hover .delete-opp-btn {
-  opacity: 0.7;
-}
-
-.delete-opp-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
-  color: #EF4444 !important;
-  opacity: 1 !important;
-}
-
-
-/* ==========================================================================
-   NEXUS SOCIAL OUTREACH SUITE
-   ========================================================================== */
-.social-outreach-suite {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  width: 100%;
-}
-
-.social-presence-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
-  padding: 14px 18px;
-}
-
-.social-presence-links {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.social-presence-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.2s;
-}
-
-.social-presence-badge.linkedin {
-  background: rgba(10, 102, 194, 0.1);
-  color: #0a66c2;
-  border: 1px solid rgba(10, 102, 194, 0.25);
-}
-.social-presence-badge.linkedin:hover {
-  background: rgba(10, 102, 194, 0.2);
-}
-
-.social-presence-badge.youtube {
-  background: rgba(255, 0, 0, 0.1);
-  color: #ff0000;
-  border: 1px solid rgba(255, 0, 0, 0.25);
-}
-.social-presence-badge.youtube:hover {
-  background: rgba(255, 0, 0, 0.2);
-}
-
-.social-presence-badge.website {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-light);
-}
-.social-presence-badge.website:hover {
-  border-color: var(--color-koralle);
-}
-
-.social-presence-badge.unverified {
-  background: var(--bg-secondary);
-  color: var(--text-muted);
-  border: 1px dashed var(--border-light);
-  opacity: 0.7;
-}
-
-.social-activities-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.social-activity-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
-  border-radius: 10px;
-  padding: 18px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
-}
-
-.social-activity-card:hover {
-  border-color: var(--color-koralle);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-}
-
-.social-activity-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.social-platform-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-
-.social-platform-tag.youtube {
-  color: #ff0000;
-}
-.social-platform-tag.linkedin {
-  color: #0a66c2;
-}
-
-.social-activity-title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.4;
-  margin: 0;
-}
-
-.social-activity-snippet {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  margin: 0;
-}
-
-.social-relevance-box {
-  background: rgba(16, 185, 129, 0.08);
-  border-left: 3px solid #10b981;
-  padding: 8px 12px;
-  border-radius: 0 6px 6px 0;
-  font-size: 0.85rem;
-  color: var(--text-primary);
-}
-
-.social-activity-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 4px;
-}
-
-.social-analysis-box {
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
-  border-radius: 10px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.social-analysis-step {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.social-analysis-label {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--color-koralle);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.social-outreach-preview-tabs {
-  display: flex;
-  gap: 8px;
-  border-bottom: 1px solid var(--border-light);
-  padding-bottom: 8px;
-  margin-top: 12px;
-}
-
-.social-outreach-tab-btn {
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: none;
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  background: transparent;
-  color: var(--text-secondary);
-  transition: all 0.2s;
-}
-
-.social-outreach-tab-btn.active {
-  background: var(--color-koralle);
-  color: white;
-}
-
-/* Assistant Spacing */
-.sales-workspace-page, .sales-workspace-crm, .social-outreach-suite {
-  padding-bottom: 90px;
 }

@@ -146,7 +146,7 @@ export default function RedditSplitHero({ onOpenAuth }) {
           </div>
           <div>
             <div style={{ fontWeight: 800, fontSize: '15px', letterSpacing: '-0.2px' }}>
-              {isDe ? '🎁 24-Stunden Gratis-Pass für dein Gerät aktiv!' : '🎁 24-Hour Free All-Access Pass Active on this Device!'}
+              {isDe ? '24-Stunden Gratis-Pass für dein Gerät aktiv!' : '24-Hour Free All-Access Pass Active on this Device!'}
             </div>
             <div style={{ fontSize: '12.5px', color: '#a7f3d0' }}>
               {isDe ? 'Teste die KI-Deal-Suche & alle Pitches 24h komplett kostenlos (0 €).' : 'Test live buyer signals & AI pitches for 24h at 100% $0 cost.'}
@@ -220,7 +220,7 @@ export default function RedditSplitHero({ onOpenAuth }) {
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <span style={{ fontSize: '13px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#0d5e42' }}>
-                {isDe ? '⚡ 10-Sekunden Live-Simulator' : '⚡ 10-Second Live Simulator'}
+                {isDe ? '10-Sekunden Live-Simulator' : '10-Second Live Simulator'}
               </span>
               <span style={{ fontSize: '12px', background: '#e0f2fe', color: '#0369a1', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
                 {isDe ? 'Kostenlos testen' : 'Try Free'}
@@ -262,7 +262,7 @@ export default function RedditSplitHero({ onOpenAuth }) {
                     <span style={{ display: 'block', fontSize: '12px', color: '#64748b' }}>{isDe ? 'Signal: Expansion & Neuausrichtung' : 'Signal: European Expansion & Hiring'}</span>
                   </div>
                   <span style={{ background: '#dcfce7', color: '#166534', fontWeight: 900, fontSize: '12.5px', padding: '4px 10px', borderRadius: '8px' }}>
-                    {isDe ? '🔥 Hohe Kaufbereitschaft' : '🔥 High Buyer Intent'}
+                    {isDe ? 'Hohe Kaufbereitschaft' : 'High Buyer Intent'}
                   </span>
                 </div>
 

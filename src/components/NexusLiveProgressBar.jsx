@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Loader2, CheckCircle2, Sparkles, Search, Globe, Filter } from 'lucide-react';
 
 /**
@@ -152,7 +152,7 @@ export default function NexusLiveProgressBar({
                 flexShrink: 0
               }}>
                 {isDone ? (
-                  <CheckCircle2 size={16} color="#10b981" />
+                  <CheckCircle2 size={16} color="#38bdf8" />
                 ) : isCurrent ? (
                   <Loader2 size={16} className="btn-spinner" color="#38bdf8" />
                 ) : (
