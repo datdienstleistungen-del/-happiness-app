@@ -584,7 +584,7 @@ Deine Aufgabe ist es, den bereitgestellten Vertrag, die AGB oder das Dokument gr
       'finde', 'suche', 'website', 'homepage', 'url', 'linkedin', 'firma', 
       'unternehmen', 'lead', 'head of', 'leiter', 'vertrieb', 'sales', 'adresse', 'impressum'
     ];
-    const needsSearch = !hasImage && (Boolean(directUrlOrDomain) || isExplicitRechercheMode || searchTriggers.some(t => lowerMsg.includes(t)));
+    const needsSearch = !hasImage && mode !== 'angebotsanalyse' && (Boolean(directUrlOrDomain) || isExplicitRechercheMode || searchTriggers.some(t => lowerMsg.includes(t)));
 
     if (needsSearch) {
       let companyName = (context?.company?.name || context?.company?.firmenname || context?.company || '').toString().trim();
