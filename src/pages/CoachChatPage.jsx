@@ -237,14 +237,13 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
   }
 
   // Cleanup voice on unmount
+  // Cleanup voice and recognition on unmount
   useEffect(() => {
     return () => {
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel()
       }
-      if (recognitionRef.current) {
-        recognitionRef.current.stop()
-      }
+      stopListeningSession()
     }
   }, [])
 
@@ -255,6 +254,24 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
     if (!next && window.speechSynthesis) {
       window.speechSynthesis.cancel()
       setSpeakingIndex(null)
+    }
+  }
+
+  const stopListeningSession = () => {
+    isListeningRef.current = false
+    setIsListening(false)
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onresult = null
+        recognitionRef.current.onend = null
+        recognitionRef.current.onerror = null
+        recognitionRef.current.onstart = null
+        recognitionRef.current.stop()
+      } catch (e) {}
+      try {
+        recognitionRef.current.abort()
+      } catch (e) {}
+      recognitionRef.current = null
     }
   }
 
@@ -270,91 +287,102 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
       setSpeakingIndex(null)
     }
 
-    try {
-      const rec = new SpeechRecognition()
-      rec.continuous = true
-      rec.interimResults = true
-      
-      const langMap = {
-        de: 'de-DE',
-        en: 'en-US',
-        es: 'es-ES',
-        fr: 'fr-FR',
-        it: 'it-IT',
-        nl: 'nl-NL',
-        el: 'el-GR'
-      }
-      rec.lang = langMap[lang] || 'de-DE'
+    stopListeningSession()
+    isListeningRef.current = true
+    setIsListening(true)
 
-      rec.onstart = () => {
-        setIsListening(true)
-        isListeningRef.current = true
-      }
+    const langMap = {
+      de: 'de-DE',
+      en: 'en-US',
+      es: 'es-ES',
+      fr: 'fr-FR',
+      it: 'it-IT',
+      nl: 'nl-NL',
+      el: 'el-GR'
+    }
 
-      rec.onresult = (event) => {
-        let interim = ''
-        let finalChunk = ''
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            finalChunk += event.results[i][0].transcript
-          } else {
-            interim += event.results[i][0].transcript
+    const createAndStartInstance = () => {
+      if (!isListeningRef.current) return
+
+      try {
+        const rec = new SpeechRecognition()
+        rec.continuous = true
+        rec.interimResults = true
+        rec.maxAlternatives = 1
+        rec.lang = langMap[lang] || 'de-DE'
+
+        rec.onstart = () => {
+          if (isListeningRef.current) {
+            setIsListening(true)
           }
         }
-        if (finalChunk) {
-          accumulatedRef.current = accumulatedRef.current
-            ? `${accumulatedRef.current} ${finalChunk.trim()}`
-            : finalChunk.trim()
-        }
-        const full = [baseMessageRef.current, accumulatedRef.current, interim]
-          .filter(Boolean)
-          .join(' ')
-          .replace(/\s+/g, ' ')
-        setMessage(full)
-      }
 
-      rec.onerror = (e) => {
-        console.warn('[CoachChat] Speech recognition error:', e.error)
-        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-          isListeningRef.current = false
-          setIsListening(false)
+        rec.onresult = (event) => {
+          if (!isListeningRef.current) return
+          let interim = ''
+          let finalChunk = ''
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            const transcript = event.results[i][0]?.transcript || ''
+            if (event.results[i].isFinal) {
+              finalChunk += transcript
+            } else {
+              interim += transcript
+            }
+          }
+          if (finalChunk.trim()) {
+            accumulatedRef.current = accumulatedRef.current
+              ? `${accumulatedRef.current} ${finalChunk.trim()}`
+              : finalChunk.trim()
+          }
+          const full = [baseMessageRef.current, accumulatedRef.current, interim.trim()]
+            .filter(Boolean)
+            .join(' ')
+            .replace(/\s+/g, ' ')
+          setMessage(full)
         }
-      }
 
-      rec.onend = () => {
-        // Continuous auto-restart if user hasn't pressed stop
-        if (isListeningRef.current) {
-          try {
-            rec.start()
-          } catch (err) {
+        rec.onerror = (e) => {
+          console.warn('[CoachChat] Speech recognition error event:', e.error)
+          if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+            isListeningRef.current = false
+            setIsListening(false)
+            alert('Mikrofonzugriff wurde im Browser verweigert. Bitte aktiviere das Mikrofon in deinen Browsereinstellungen.')
+          } else if (e.error === 'audio-capture') {
+            isListeningRef.current = false
+            setIsListening(false)
+            alert('Kein Mikrofon gefunden oder das Mikrofon wird von einem anderen Programm belegt.')
+          }
+        }
+
+        rec.onend = () => {
+          if (isListeningRef.current) {
+            try {
+              rec.onend = null
+              rec.onerror = null
+            } catch (e) {}
             setTimeout(() => {
               if (isListeningRef.current) {
-                try { rec.start() } catch (e) {}
+                createAndStartInstance()
               }
-            }, 300)
+            }, 150)
+          } else {
+            setIsListening(false)
           }
-        } else {
-          setIsListening(false)
+        }
+
+        recognitionRef.current = rec
+        rec.start()
+      } catch (err) {
+        console.warn('[CoachChat] Error starting fresh recognition instance:', err)
+        if (isListeningRef.current) {
+          setTimeout(() => {
+            if (isListeningRef.current) createAndStartInstance()
+          }, 300)
         }
       }
-
-      recognitionRef.current = rec
-      rec.start()
-    } catch (err) {
-      console.error('[CoachChat] Failed to start speech recognition:', err)
-      isListeningRef.current = false
-      setIsListening(false)
     }
-  }
 
-  const stopListeningSession = () => {
-    isListeningRef.current = false
-    setIsListening(false)
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop()
-      } catch (e) {}
-    }
+    createAndStartInstance()
   }
 
   const toggleListening = () => {

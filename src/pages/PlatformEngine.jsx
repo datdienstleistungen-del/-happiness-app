@@ -193,51 +193,56 @@ export default function PlatformEngine() {
     });
   }, [chatInput])
 
-  // Speech Recognition initialization
-  useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (SpeechRecognition) {
-      const rec = new SpeechRecognition()
-      rec.continuous = false
-      rec.lang = SPEECH_LANG_MAP[lang] || 'de-DE'
-      rec.interimResults = false
-
-      rec.onstart = () => {
-        setIsRecording(true)
-      }
-
-      rec.onresult = (event) => {
-        const transcript = event.results[0][0].transcript
-        if (phase === 'result') {
-          setChatInput(transcript)
-        } else {
-          setGoal(transcript)
-        }
-        setIsRecording(false)
-      }
-
-      rec.onerror = (e) => {
-        console.error('Speech recognition error', e)
-        setIsRecording(false)
-      }
-
-      rec.onend = () => {
-        setIsRecording(false)
-      }
-
-      setRecognition(rec)
-    }
-  }, [lang, phase])
-
   const toggleRecording = () => {
-    if (!recognition) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
       alert('Spracherkennung wird in diesem Browser nicht unterstützt.')
       return
     }
+
     if (isRecording) {
-      recognition.stop()
+      if (recognition) {
+        try { recognition.stop() } catch (e) {}
+        try { recognition.abort() } catch (e) {}
+      }
+      setIsRecording(false)
+      setRecognition(null)
     } else {
-      recognition.start()
+      try {
+        const rec = new SpeechRecognition()
+        rec.continuous = false
+        rec.lang = SPEECH_LANG_MAP[lang] || 'de-DE'
+        rec.interimResults = false
+
+        rec.onstart = () => {
+          setIsRecording(true)
+        }
+
+        rec.onresult = (event) => {
+          const transcript = event.results[0][0].transcript
+          if (phase === 'result') {
+            setChatInput(transcript)
+          } else {
+            setGoal(transcript)
+          }
+          setIsRecording(false)
+        }
+
+        rec.onerror = (e) => {
+          console.warn('Speech recognition error', e.error)
+          setIsRecording(false)
+        }
+
+        rec.onend = () => {
+          setIsRecording(false)
+        }
+
+        setRecognition(rec)
+        rec.start()
+      } catch (err) {
+        console.warn('Failed to start speech recognition:', err)
+        setIsRecording(false)
+      }
     }
   }
 
