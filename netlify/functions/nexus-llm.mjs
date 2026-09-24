@@ -32,8 +32,8 @@ async function tryGroq(messages, temperature = 0.3, hasImage = false) {
   const key = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ;
   if (!key) return null;
   const models = hasImage 
-    ? ['llama-3.2-11b-vision-preview', 'llama-3.2-90b-vision-preview']
-    : ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it'];
+    ? ['llama-3.2-11b-vision-preview']
+    : ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
   for (const model of models) {
     try {
       console.log(`[NEXUS] Trying Groq model: ${model}`);
@@ -46,7 +46,7 @@ async function tryGroq(messages, temperature = 0.3, hasImage = false) {
           temperature,
           max_tokens: 3000
         })
-      }, 20000);
+      }, 8000);
       if (!res.ok) {
         clearTimeout(timer);
         continue;
@@ -133,7 +133,7 @@ async function tryOpenAI(messages, temperature = 0.3) {
   const key = process.env.OPENAI_API_KEY
   if (!key) return null
   try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const { res, timer } = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -142,7 +142,8 @@ async function tryOpenAI(messages, temperature = 0.3) {
         temperature,
         max_tokens: 4096
       })
-    })
+    }, 12000)
+    clearTimeout(timer)
     if (!res.ok) { await res.text().catch(e => {}); return null; }
     const data = await res.json()
     const rawText = data.choices?.[0]?.message?.content;
@@ -154,7 +155,7 @@ async function tryDeepSeek(messages, temperature = 0.3) {
   const key = process.env.DEEPSEEK_API_KEY
   if (!key) return null
   try {
-    const res = await fetch('https://api.deepseek.com/chat/completions', {
+    const { res, timer } = await fetchWithTimeout('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -163,7 +164,8 @@ async function tryDeepSeek(messages, temperature = 0.3) {
         temperature,
         max_tokens: 4096
       })
-    })
+    }, 12000)
+    clearTimeout(timer)
     if (!res.ok) { await res.text().catch(e => {}); return null; }
     const data = await res.json()
     const rawText = data.choices?.[0]?.message?.content;
@@ -181,10 +183,10 @@ async function callAI(messages, temperature = 0.3, hasImage = false) {
         () => tryDeepSeek(messages, temperature)
       ]
     : [
-        () => tryGroq(messages, temperature, false),
-        () => tryMistral(messages, temperature),
-        () => tryOpenRouter(messages, temperature),
         () => tryDeepSeek(messages, temperature),
+        () => tryMistral(messages, temperature),
+        () => tryGroq(messages, temperature, false),
+        () => tryOpenRouter(messages, temperature),
         () => tryOpenAI(messages, temperature),
       ];
   let lastError = null;
