@@ -46,8 +46,7 @@ async function tryGroq(messages, temperature = 0.3, hasImage = false) {
           temperature,
           max_tokens: 3000
         })
-      }, 8000);
-      if (!res.ok) {
+      }, 8000);      if (!res.ok) {
         clearTimeout(timer);
         continue;
       }
@@ -84,7 +83,7 @@ async function tryOpenRouter(messages, temperature = 0.3) {
           temperature,
           max_tokens: 2048
         })
-      }, 15000);
+      }, 7000);
       if (!res.ok) { await res.text().catch(e => {}); clearTimeout(timer); continue; }
       const data = await res.json();
       clearTimeout(timer);
@@ -112,7 +111,7 @@ async function tryMistral(messages, temperature = 0.3) {
         temperature,
         max_tokens: 4096
       })
-    }, 15000);
+    }, 7000);
     if (!res.ok) {
       clearTimeout(timer);
       console.warn(`Mistral API Error (${res.status}) - falling back`);
@@ -142,7 +141,7 @@ async function tryOpenAI(messages, temperature = 0.3) {
         temperature,
         max_tokens: 4096
       })
-    }, 12000)
+    }, 7000)
     clearTimeout(timer)
     if (!res.ok) { await res.text().catch(e => {}); return null; }
     const data = await res.json()
@@ -164,7 +163,7 @@ async function tryDeepSeek(messages, temperature = 0.3) {
         temperature,
         max_tokens: 4096
       })
-    }, 12000)
+    }, 7000)
     clearTimeout(timer)
     if (!res.ok) { await res.text().catch(e => {}); return null; }
     const data = await res.json()
