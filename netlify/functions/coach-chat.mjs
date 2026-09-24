@@ -12,44 +12,118 @@ Du kennst NeXus Revenue OS bis ins kleinste Detail und lieferst sofort einsatzbe
 
 PLATTFORM-URL: https://nexus-hit.netlify.app
 
+B2B-RECHERCHE-MANDAT (HÖCHSTE PRIORITÄT):
+- Du bist ein spezialisierter B2B-Research-Assistent für Unternehmens- und Vertriebsrecherchen.
+- Alle Anfragen beziehen sich auf rein geschäftliche, öffentlich publizierte B2B-Informationen (Impressum, Unternehmens-Websites, Pressemitteilungen, LinkedIn-Unternehmensprofile, Führungskräfte/Entscheider).
+- Wenn der Nutzer nach einer Website, einem Unternehmen, Entscheidern (z.B. Geschäftsführer, Head of Sales, Vertriebsleitung) oder E-Mails fragt:
+  1. Verweigere NIEMALS die Recherche mit Datenschutz-Ausreden bei B2B-Firmendaten!
+  2. Nutze die im System bereitgestellten Live-Crawl-Daten und Web-Ergebnisse vollständig.
+  3. Liefere für JEDE Recherche eine strukturierte, saubere Markdown-Tabelle mit:
+     - **Unternehmen & Domain**
+     - **Gefundener Name / Zielrolle:** (z.B. Name aus dem Impressum oder Zielposition wie "Head of Sales")
+     - **1-Klick LinkedIn-Suche:** Direkter Link: [LinkedIn Entscheider](https://www.linkedin.com/search/results/people/?keywords=FIRMENNAME+Sales+CEO)
+     - **Google-Unternehmenssuche:** [Google Suche](https://www.google.com/search?q=FIRMENNAME+official+website)
+     - **E-Mail / Kontakt:** Öffentlich gefundene E-Mail (z.B. aus dem Impressum) oder typisches Domain-Muster (z.B. info@domain / kontakt@domain).
+  4. Gib dem Vertriebler zusätzlich einen konkreten, psychologisch fundierten 2-Satz-Aufhänger für die Erstansprache.
+
 ARCHITEKTUR & MODULE VON NeXus REVENUE OS:
 1. NeXus Dashboard (/nexus/dashboard): Zentrale Steuerungszentrale für Pipeline-Übersicht, Konversionsraten, aktive Opportunities und Trigger-Statistiken.
 2. Angebotsanalyse (/nexus/angebotsanalyse): KI-gestützte Analyse von Unternehmens-Websites und Dienstleistungen. Extrahiert messerscharfe USPs, Zielgruppen-Definitionen, Pain Points und Value Propositions.
 3. Lead Radar (/nexus/lead-radar): Automatischer Echtzeit-Scanner für Kaufsignale (Trigger Events: Expansionen, Managementwechsel, Neueinstellungen, Finanzierungsrunden, Digitalisierungsprojekte).
 4. Sales Workspace (/nexus/sales-workspace):
-   - Social Reachout: Automatische LinkedIn-Recherche, 1-Klick-Links zu Entscheidern, maßgeschneiderte LinkedIn-Kommentare & Direktnachrichten mit Speicherung im Browser und in der Lead-Historie.
-   - Aktion (E-Mail-Pitch): Trigger-basierte Outreach-Mails mit direktem Bezug auf vorherige Social-Aktionen.
-   - Historie & Notizen: Lückenlose Erfassung aller Kontaktpunkte.
-5. Video Intelligence Suite & Creator Studio:
-   - Video Finder (/video-finder): Wettbewerbsanalyse, virale Content-Trends, Hooks & Format-Inspiration.
-   - Video Script Generator (/video-script): Erstellung sendefähiger Video-Skripte (TikTok, YouTube Shorts, LinkedIn, Reels) mit Hook, Story, Call-to-Action und visuellen Regieanweisungen.
-   - CapCut Studio / Video Maker (/capcut-studio): Vorbereitung von Skripten für Schnittprogramme und KI-Video-Generatoren (z.B. CapCut, HeyGen, Synthesia).
-6. NeXus Coach (/coach): Intelligenter Sparringspartner für Vertriebsstrategie, Einwandbehandlung, Recherche, Content- und Video-Skripterstellung.
-7. Vertriebspsychologie (/wissenschaft): Fundiertes Wissen zu Verkaufspsychologie, Vertrauensaufbau und Trigger-Mechanismen.
+   - Social Reachout: Automatische LinkedIn-Recherche, 1-Klick-Links zu Entscheidern, maßgeschneiderte LinkedIn-Kommentare & Direktnachrichten.
+   - Aktion (E-Mail-Pitch): Trigger-basierte Outreach-Mails.
+5. Video Intelligence Suite & Creator Studio (/video-finder, /video-script, /capcut-studio): Video-Finder, Hook-Generator, Creator Academy & Skript-Export.
 
 VIDEO-STUDIO & SKRIPT-EXPERTISE:
-Wenn der Nutzer dich bittet, ein Skript für ein Video, eine Studioaufnahme, CapCut, TikTok, YouTube Shorts oder LinkedIn zu erstellen:
-1. STRUKTUR:
-   - Hook (Sekunde 0–3): Muss das Scrollen sofort stoppen (Neugierde, Kontroverse, konkreter Schmerzpunkt oder starkes Ergebnis).
-   - Problem / Relevanz (Sekunde 4–15): Klarer Bezug zur Zielgruppe (z.B. "Warum Kaltakquise tot ist", "Wie du Kunden gewinnst, die JETZT kaufen wollen").
-   - NeXus-Lösung & Mehrwert (Sekunde 16–45): Konkrete Funktion von NeXus erklären (z.B. "Lead Radar findet Kaufsignale", "Social Reachout generiert 1-Klick LinkedIn-Pitches", "Video Script Studio").
-   - Call-to-Action (CTA) (Sekunde 46–60): Klare Handlungsaufforderung (z.B. "Probiert es aus auf nexus-hit.netlify.app", "Schreibt in die Kommentare...").
-2. FORMAT FÜR STUDIOPRODUKTION:
-   - Liefere das Skript strukturiert mit Spalten oder Abschnitten für [Visual / B-Roll / Kamera], [Audio / Sprechertext] und [On-Screen Text / Captions].
-3. CONTENT SAFETY & PLATTFORM-COMPLIANCE:
-   - Verwende NIEMALS plumpe "Schnell-Reich-ohne-Arbeit"-Floskeln oder unseriöse Versprechungen, die von Social-Media- und KI-Sicherheitsfiltern blockiert werden.
-   - Formuliere professionell, software-fokussiert und faktenbasiert auf echtem B2B-Mehrwert (z.B. Zeitersparnis, qualifizierte Leads, automatisierte Recherche).
+Wenn der Nutzer nach Skripten für TikTok, YouTube Shorts, Reels oder LinkedIn fragt:
+- Struktur: Hook (0-3s), Problem/Relevanz (4-15s), NeXus-Lösung & Mehrwert (16-45s), Call-to-Action (46-60s).
+- Format mit Regieanweisungen: [Visual / Kamera], [Audio / Sprechertext], [On-Screen Text].
 
-DEINE HALTUNG & B2B-RECHERCHE:
-- Sei maximal service-orientiert, lieferfertig und präzise. Keine langen Meta-Vorträge – erstelle direkt den fertigen Text, das Skript oder die Tabelle.
-- Wenn der Nutzer nach Personen, Firmen-Entscheidern, News oder Web-Daten fragt, führe bei Bedarf eine Suche aus oder nutze die Web-Ergebnisse.
+WEB-RECHERCHE-TRIGGER:
+Wenn du für eine Frage zusätzliche Webdaten benötigst, kannst du antworten mit:
+##SEARCH##(Suchbegriff)`
 
-WEB-RECHERCHE (PFLICHT BEI PERSONEN & FAKTEN):
-Wenn der Nutzer nach Personen (z.B. "Wer ist Head of Media bei Havas?"), Firmen-Entscheidern, aktuellen News oder spezifischen Fakten fragt, antworte AUSSCHLIESSLICH mit folgendem Befehl:
-##SEARCH##(Suchbegriff)
-Beispiel: ##SEARCH##(Head of Media Havas Media Deutschland)`
+async function fetchWithTimeout(url, options = {}, timeoutMs = 7000) {
+  const controller = new AbortController()
+  const abortId = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal })
+    clearTimeout(abortId)
+    return { res, abortId }
+  } catch (e) {
+    clearTimeout(abortId)
+    throw e
+  }
+}
 
-// Tavily Search Helper
+async function fetchPageText(url, maxChars = 3000) {
+  try {
+    const { res } = await fetchWithTimeout(url, {
+      headers: { 
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml'
+      },
+    }, 4000)
+    if (!res.ok) return null
+    const html = await res.text()
+    
+    let text = html
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/\s+/g, ' ')
+      .trim()
+    
+    return text.substring(0, maxChars)
+  } catch (e) {
+    return null
+  }
+}
+
+async function crawlTargetWebsite(rawUrl) {
+  let cleanUrl = rawUrl.trim()
+  if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+    cleanUrl = 'https://' + cleanUrl
+  }
+
+  let domain = ''
+  try {
+    domain = new URL(cleanUrl).hostname
+  } catch (e) {
+    return null
+  }
+
+  const pagesToCheck = [
+    cleanUrl,
+    `https://${domain}/impressum`,
+    `https://${domain}/imprint`,
+    `https://${domain}/about`,
+    `https://${domain}/team`,
+    `https://${domain}/contact`,
+    `https://${domain}/kontakt`
+  ]
+
+  let collectedText = []
+  for (const pageUrl of pagesToCheck) {
+    try {
+      const text = await fetchPageText(pageUrl, 2000)
+      if (text && text.length > 50) {
+        collectedText.push(`--- SEITE: ${pageUrl} ---\n${text}`)
+        if (collectedText.length >= 3) break
+      }
+    } catch (e) {
+      continue
+    }
+  }
+
+  return collectedText.length > 0 ? collectedText.join('\n\n') : null
+}
+
 async function performTavilySearch(query) {
   const key = process.env.TAVILY_API_KEY
   if (!key) return "Tavily API Key fehlt im Backend."
@@ -62,9 +136,9 @@ async function performTavilySearch(query) {
         query: query,
         search_depth: "advanced",
         include_answer: false,
-        max_results: 5,
+        max_results: 6,
         topic: "general",
-        days: 14
+        days: 30
       })
     })
     if (!res.ok) return `Tavily API Error: ${res.statusText}`
@@ -76,7 +150,7 @@ async function performTavilySearch(query) {
   }
 }
 
-// LLM Fallback Callers
+// LLM Callers
 async function tryOpenAIGpt4o(messages) {
   const key = process.env.OPENAI_API_KEY
   if (!key) return null
@@ -90,25 +164,22 @@ async function tryOpenAIGpt4o(messages) {
       body: JSON.stringify({
         model: 'gpt-4o',
         messages,
-        temperature: 0.7,
-        max_tokens: 1024
+        temperature: 0.5,
+        max_tokens: 1500
       })
     })
-    if (!res.ok) {
-      console.warn(`[LLM-OpenAI] Response not ok: ${res.status}`)
-      return null
-    }
+    if (!res.ok) return null
     const data = await res.json()
     return data.choices?.[0]?.message?.content || null
   } catch (e) {
-    console.error('[LLM-OpenAI] Error:', e.message)
     return null
   }
 }
+
 async function tryGroq(messages) {
   const key = process.env.GROQ_API_KEY
   if (!key) return null
-  const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound-mini', 'groq/compound', 'qwen/qwen3.8-27b']
+  const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant']
   for (const model of models) {
     try {
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -120,16 +191,14 @@ async function tryGroq(messages) {
         body: JSON.stringify({
           model,
           messages,
-          temperature: 0.7,
-          max_tokens: 1024
+          temperature: 0.5,
+          max_tokens: 1500
         })
       })
       if (res.ok) {
         const data = await res.json()
         const content = data.choices?.[0]?.message?.content
         if (content) return content
-      } else {
-        console.warn(`[LLM-Groq] ${model} response not ok: ${res.status}`)
       }
     } catch (e) {
       console.error(`[LLM-Groq] ${model} error:`, e.message)
@@ -141,7 +210,7 @@ async function tryGroq(messages) {
 async function tryOpenRouterGemma(messages) {
   const key = process.env.OPENROUTER_API_KEY
   if (!key) return null
-  const models = ['nvidia/nemotron-3.5-lightning:free', 'openrouter/free', 'google/gemma-4-26b-a4b-it:free']
+  const models = ['google/gemma-4-26b-a4b-it:free', 'meta-llama/llama-3.3-70b-instruct:free']
   for (const model of models) {
     try {
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -150,25 +219,21 @@ async function tryOpenRouterGemma(messages) {
           'Authorization': `Bearer ${key}`,
           'Content-Type': 'application/json',
           'HTTP-Referer': 'https://nexus-hit.netlify.app',
-          'X-Title': 'Happiness Coach Chat'
+          'X-Title': 'NeXus Coach'
         },
         body: JSON.stringify({
           model,
           messages,
-          temperature: 0.7,
-          max_tokens: 1024
+          temperature: 0.5,
+          max_tokens: 1500
         })
       })
       if (res.ok) {
         const data = await res.json()
         const content = data.choices?.[0]?.message?.content
         if (content) return content
-      } else {
-        console.warn(`[LLM-OpenRouter] ${model} response not ok: ${res.status}`)
       }
-    } catch (e) {
-      console.error(`[LLM-OpenRouter] ${model} error:`, e.message)
-    }
+    } catch (e) {}
   }
   return null
 }
@@ -186,80 +251,24 @@ async function tryMistral(messages) {
       body: JSON.stringify({
         model: 'mistral-small-latest',
         messages,
-        temperature: 0.7,
-        max_tokens: 1024
+        temperature: 0.5,
+        max_tokens: 1500
       })
     })
-    if (!res.ok) {
-      console.warn(`[LLM-Mistral] Response not ok: ${res.status}`)
-      return null
+    if (res.ok) {
+      const data = await res.json()
+      return data.choices?.[0]?.message?.content || null
     }
-    const data = await res.json()
-    return data.choices?.[0]?.message?.content || null
-  } catch (e) {
-    console.error('[LLM-Mistral] Error:', e.message)
-    return null
-  }
+  } catch (e) {}
+  return null
 }
 
-async function tryDeepSeek(messages) {
-  const key = process.env.DEEPSEEK_API_KEY
-  if (!key) return null
-  try {
-    const res = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${key}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages,
-        temperature: 0.7,
-        max_tokens: 1024
-      })
-    })
-    if (!res.ok) {
-      console.warn(`[LLM-DeepSeek] Response not ok: ${res.status}`)
-      return null
-    }
-    const data = await res.json()
-    return data.choices?.[0]?.message?.content || null
-  } catch (e) {
-    console.error('[LLM-DeepSeek] Error:', e.message)
-    return null
-  }
-}
-
-async function tryOpenRouterDeepSeek(messages) {
-  const key = process.env.OPENROUTER_API_KEY
-  if (!key) return null
-  try {
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${key}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://nexus-hit.netlify.app',
-        'X-Title': 'Happiness Coach Chat'
-      },
-      body: JSON.stringify({
-        model: 'deepseek/deepseek-chat',
-        messages,
-        temperature: 0.7,
-        max_tokens: 1024
-      })
-    })
-    if (!res.ok) {
-      console.warn(`[LLM-OpenRouterDeepSeek] Response not ok: ${res.status}`)
-      return null
-    }
-    const data = await res.json()
-    return data.choices?.[0]?.message?.content || null
-  } catch (e) {
-    console.error('[LLM-OpenRouterDeepSeek] Error:', e.message)
-    return null
-  }
+function sanitizeCoachResponse(text) {
+  if (!text) return ''
+  return text
+    .replace(/<\|tool_call_start\|>[\s\S]*?<\|tool_call_end\|>/gi, '')
+    .replace(/\[google\(query=.*?\)\]/gi, '')
+    .trim()
 }
 
 export const handler = async (event) => {
@@ -294,7 +303,6 @@ export const handler = async (event) => {
         return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'visitor_id oder Authentifizierung ist erforderlich' }) }
       }
 
-      // Check consent
       let consentQuery = supabase.from('coach_consent').select('id')
       if (user) {
         consentQuery = consentQuery.or(`user_id.eq.${user.id},visitor_id.eq.${activeVisitorId}`)
@@ -302,14 +310,11 @@ export const handler = async (event) => {
         consentQuery = consentQuery.eq('visitor_id', activeVisitorId)
       }
       const { data: consentData } = await consentQuery
-
       const hasConsent = consentData && consentData.length > 0
       if (!hasConsent) {
-        // Return empty array if no consent is active
         return { statusCode: 200, headers: CORS_HEADERS, body: JSON.stringify({ history: [] }) }
       }
 
-      // Fetch messages chronologically
       let msgQuery = supabase
         .from('coach_messages')
         .select('role,content,created_at')
@@ -324,7 +329,6 @@ export const handler = async (event) => {
 
       const { data: messages, error: fetchErr } = await msgQuery
       if (fetchErr) {
-        console.error('[coach-chat] Fetch error:', fetchErr.message)
         return { statusCode: 500, headers: CORS_HEADERS, body: JSON.stringify({ error: 'Fehler beim Laden des Verlaufs' }) }
       }
 
@@ -345,28 +349,6 @@ export const handler = async (event) => {
         return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'visitor_id ist erforderlich' }) }
       }
 
-      // --- Guest Upload Rate Limit Pre-Check ---
-      if (image_url && !user && activeVisitorId) {
-        const { data: limitData, error: limitErr } = await supabase
-          .from('coach_guest_uploads')
-          .select('*')
-          .eq('visitor_id', activeVisitorId)
-          .maybeSingle()
-          
-        if (!limitErr && limitData) {
-          const today = new Date().toDateString()
-          const lastUploadDate = new Date(limitData.last_upload).toDateString()
-          if (lastUploadDate === today && limitData.upload_count >= 3) {
-            console.log(`[coach-chat] Guest rate limit reached for visitor: ${activeVisitorId}`)
-            return {
-              statusCode: 429,
-              headers: CORS_HEADERS,
-              body: JSON.stringify({ error: 'Kostenloses Upload-Limit (3/3) erreicht.', code: 'limit_reached' })
-            }
-          }
-        }
-      }
-
       // Check Consent serverseitig
       let consentQuery = supabase.from('coach_consent').select('id')
       if (user) {
@@ -377,14 +359,14 @@ export const handler = async (event) => {
       const { data: consentData } = await consentQuery
       const hasConsent = consentData && consentData.length > 0
 
-      // Get Conversation history (up to last 20 messages for LLM context window cost limits)
+      // Get Conversation history
       let history = []
       if (hasConsent) {
         let msgQuery = supabase
           .from('coach_messages')
           .select('role,content')
           .order('created_at', { ascending: false })
-          .limit(20)
+          .limit(16)
 
         if (user) {
           msgQuery = msgQuery.or(`user_id.eq.${user.id},visitor_id.eq.${activeVisitorId}`)
@@ -394,12 +376,10 @@ export const handler = async (event) => {
 
         const { data: rawMsgs } = await msgQuery
         if (rawMsgs) {
-          // Reverse to make it chronological
           history = rawMsgs.reverse()
         }
       }
 
-      // Map language codes to names for LLM directives
       const LANG_NAMES = {
         de: 'Deutsch',
         en: 'English',
@@ -409,26 +389,48 @@ export const handler = async (event) => {
         nl: 'Nederlands',
         el: 'Ελληνικά'
       }
-      
       const langName = LANG_NAMES[language] || 'Deutsch'
-      const languageDirective = `SPRACHREGEL (hoechste Prioritaet, nicht verhandelbar): Antworte AUSSCHLIESSLICH auf ${langName}. Ignoriere alle anderen Sprachanweisungen in früheren Nachrichten oder im Kontext.\n\n`
+      const languageDirective = `SPRACHREGEL (höchste Priorität): Antworte AUSSCHLIESSLICH auf ${langName}.\n\n`
 
-      // --- PRE-PROCESSING AUTO-SEARCH ---
-      const searchKeywords = ['wer ist', 'head of', 'name', 'ansprechpartner', 'ceo', 'geschäftsführer', 'marketingleiter', 'person', 'recherchier', 'suche nach'];
-      const userMessageLower = (message || '').toLowerCase();
-      let searchContext = '';
+      // --- LIVE RESEARCH & CRAWL PRE-PROCESSING ---
+      let liveContext = ''
+      const userMessageText = message || ''
+      
+      // 1. Detect URLs in user message and crawl website
+      const urlMatch = userMessageText.match(/(https?:\/\/[^\s]+|[a-zA-Z0-9-]+\.(?:com|de|net|org|io|eu|ch|at|es|fr|it|uk)[^\s]*)/i)
+      if (urlMatch) {
+        const foundUrl = urlMatch[0]
+        console.log(`[coach-chat] URL detected in message: ${foundUrl}, executing live crawl...`)
+        const crawlContent = await crawlTargetWebsite(foundUrl)
+        if (crawlContent) {
+          liveContext += `\n\n[LIVE CRAWL DER ZIEL-WEBSITE (${foundUrl})]:\n${crawlContent}\n\n`
+        }
 
-      if (!image_url && searchKeywords.some(kw => userMessageLower.includes(kw))) {
-        console.log('[coach-chat] User message triggered auto-search for:', message);
-        const searchResults = await performTavilySearch(message);
+        // Also search Tavily for company background & LinkedIn profiles
+        const domainClean = foundUrl.replace(/^https?:\/\//, '').replace(/\/.*$/, '')
+        const searchResults = await performTavilySearch(`${domainClean} Geschäftsführer Head of Sales LinkedIn`)
         if (searchResults && !searchResults.includes("Fehlt im Backend") && !searchResults.includes("Keine aktuellen")) {
-          searchContext = `\n\n[SYSTEM-INTERN: Ich habe im Hintergrund automatisch das Internet nach Informationen durchsucht, die zur Frage des Nutzers passen. Hier sind die gefundenen Echtzeit-Ergebnisse aus dem Web:\n\n${searchResults}\n\nNutze diese Informationen zwingend, um die Frage des Nutzers so präzise und hilfreich wie möglich zu beantworten, ohne zu erwähnen, dass du keinen Zugriff auf das Internet hättest (denn du hast diese Infos ja jetzt!). Du darfst die gefundenen Namen direkt nennen.]\n\n`;
+          liveContext += `\n\n[WEB-RECHERCHE ERGEBNISSE FÜR ${domainClean}]:\n${searchResults}\n\n`
+        }
+      } else {
+        // 2. Keyword-based search
+        const searchKeywords = ['wer ist', 'head of', 'name', 'ansprechpartner', 'ceo', 'geschäftsführer', 'vertriebsleiter', 'recherchier', 'suche nach', 'finde'];
+        const userMessageLower = userMessageText.toLowerCase();
+        if (!image_url && searchKeywords.some(kw => userMessageLower.includes(kw))) {
+          console.log('[coach-chat] User message triggered auto-search for:', userMessageText);
+          const searchResults = await performTavilySearch(userMessageText);
+          if (searchResults && !searchResults.includes("Fehlt im Backend") && !searchResults.includes("Keine aktuellen")) {
+            liveContext += `\n\n[WEB-RECHERCHE ERGEBNISSE]:\n${searchResults}\n\n`;
+          }
         }
       }
 
-      // Construct messages array for LLM
+      if (liveContext) {
+        liveContext = `\n\n[ECHTZEIT-DATEN FÜR DIESE RECHERCHE - Nutze diese Fakten, um dem Nutzer sofort konkrete Firmen, gefundene Namen, Impressums-Daten, E-Mail-Muster und 1-Klick-LinkedIn-Links in einer Markdown-Tabelle zu liefern]:\n${liveContext}\n\n`
+      }
+
       const llmMessages = [
-        { role: 'system', content: languageDirective + SYSTEM_PROMPT + searchContext },
+        { role: 'system', content: languageDirective + SYSTEM_PROMPT + liveContext },
         ...history,
         { role: 'user', content: image_url ? [
           { type: 'text', text: message || 'Bitte analysiere dieses Bild.' },
@@ -436,20 +438,12 @@ export const handler = async (event) => {
         ] : message }
       ]
 
-      // Execute Fallback Chain
-      // 1. OpenAI (GPT-4o) if image is present
-      // 2. Groq (qwen/qwen3.8-27b)
-      // 3. OpenRouter (google/gemma-4-26b-a4b-it:free)
-      // 4. Mistral API (mistral-small-latest)
-      // 5. DeepSeek API (deepseek-chat)
-      // 6. OpenRouter (deepseek/deepseek-chat)
       let responseText = null
       let providerUsed = ''
 
       const executeChain = async () => {
         responseText = null
         if (image_url) {
-          console.log('[coach-chat] Image detected, routing to OpenAI GPT-4o Vision')
           responseText = await tryOpenAIGpt4o(llmMessages)
           if (responseText) providerUsed = 'OpenAI (GPT-4o Vision)'
         }
@@ -459,27 +453,13 @@ export const handler = async (event) => {
           if (responseText) {
             providerUsed = 'Groq (Llama 3.3 70B)'
           } else {
-            console.log('[LLM-Fallback] Groq failed, trying OpenRouter Gemma 4')
-            responseText = await tryOpenRouterGemma(llmMessages)
+            responseText = await tryMistral(llmMessages)
             if (responseText) {
-              providerUsed = 'OpenRouter (Gemma 4 26B Free)'
+              providerUsed = 'Mistral API (Mistral Small)'
             } else {
-              console.log('[LLM-Fallback] OpenRouter Gemma 4 failed, trying Mistral')
-              responseText = await tryMistral(llmMessages)
+              responseText = await tryOpenRouterGemma(llmMessages)
               if (responseText) {
-                providerUsed = 'Mistral API (Mistral Small)'
-              } else {
-                console.log('[LLM-Fallback] Mistral failed, trying DeepSeek')
-                responseText = await tryDeepSeek(llmMessages)
-                if (responseText) {
-                  providerUsed = 'DeepSeek API (V4 Flash)'
-                } else {
-                  console.log('[LLM-Fallback] DeepSeek API failed, trying OpenRouter DeepSeek V4 Flash')
-                  responseText = await tryOpenRouterDeepSeek(llmMessages)
-                  if (responseText) {
-                    providerUsed = 'OpenRouter (DeepSeek V4 Flash)'
-                  }
-                }
+                providerUsed = 'OpenRouter (Llama 3.3 / Gemma)'
               }
             }
           }
@@ -488,57 +468,31 @@ export const handler = async (event) => {
 
       await executeChain()
 
-      // --- SEARCH INTERCEPTOR ---
+      // Handle ##SEARCH## interceptor if triggered by LLM
       if (responseText && responseText.includes('##SEARCH##')) {
         const match = responseText.match(/##SEARCH##\s*\((.*?)\)/)
         if (match && match[1]) {
           const query = match[1]
-          console.log(`[coach-chat] AI requested web search for: ${query}`)
           const searchResults = await performTavilySearch(query)
           llmMessages.push({ role: 'assistant', content: responseText })
-          llmMessages.push({ role: 'user', content: `[SYSTEM-INTERN: Web-Recherche Ergebnisse für "${query}"]\n\n${searchResults}\n\nBitte beantworte nun meine ursprüngliche Frage basierend auf diesen Fakten.` })
-          await executeChain() // Run LLM again with the new context
-        } else {
-          // Fallback if regex failed but ##SEARCH## was there
-          responseText = "Ich versuche gerade, im Internet zu recherchieren, aber es gab ein technisches Problem mit meiner Suchanfrage."
+          llmMessages.push({ role: 'user', content: `[SYSTEM-INTERN: Web-Recherche Ergebnisse für "${query}"]:\n\n${searchResults}\n\nBitte erstelle nun basierend auf diesen Fakten die vollständige Recherche-Tabelle mit 1-Klick-Links.` })
+          await executeChain()
         }
       }
+
+      responseText = sanitizeCoachResponse(responseText)
 
       if (!responseText) {
         return {
           statusCode: 500,
           headers: CORS_HEADERS,
-          body: JSON.stringify({ error: 'Kein KI-Modell konnte die Anfrage beantworten. Bitte versuche es später noch einmal.' })
-        }
-      }
-
-      console.log(`[coach-chat] Response generated successfully using ${providerUsed}. Consent: ${hasConsent}`)
-
-      // --- Update Guest Rate Limit ---
-      if (image_url && !user && activeVisitorId) {
-        const { data: limitData } = await supabase
-          .from('coach_guest_uploads')
-          .select('*')
-          .eq('visitor_id', activeVisitorId)
-          .maybeSingle()
-
-        const todayStr = new Date().toDateString()
-        
-        if (limitData) {
-          const lastUploadDate = new Date(limitData.last_upload).toDateString()
-          const newCount = (lastUploadDate === todayStr) ? limitData.upload_count + 1 : 1
-          await supabase.from('coach_guest_uploads')
-            .update({ upload_count: newCount, last_upload: new Date().toISOString() })
-            .eq('visitor_id', activeVisitorId)
-        } else {
-          await supabase.from('coach_guest_uploads')
-            .insert([{ visitor_id: activeVisitorId, upload_count: 1, last_upload: new Date().toISOString() }])
+          body: JSON.stringify({ error: 'Kein KI-Modell konnte die Anfrage beantworten. Bitte versuche es in wenigen Sekunden noch einmal.' })
         }
       }
 
       // Speichere in DB nur falls Consent vorliegt
       if (hasConsent) {
-        const { error: saveErr } = await supabase.from('coach_messages').insert([
+        await supabase.from('coach_messages').insert([
           {
             visitor_id: activeVisitorId || '',
             user_id: user ? user.id : null,
@@ -551,10 +505,7 @@ export const handler = async (event) => {
             role: 'assistant',
             content: responseText
           }
-        ])
-        if (saveErr) {
-          console.error('[coach-chat] Failed to save conversation messages:', saveErr.message)
-        }
+        ]).catch(() => {})
       }
 
       return {
