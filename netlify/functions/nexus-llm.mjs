@@ -179,15 +179,15 @@ async function callAI(messages, temperature = 0.3, hasImage = false) {
   const providers = hasImage 
     ? [
         () => tryOpenRouter(messages, temperature, true),
-        () => tryOpenAI(messages, temperature),
         () => tryGroq(messages, temperature, true),
         () => tryMistral(messages, temperature),
-        () => tryDeepSeek(messages, temperature)
+        () => tryDeepSeek(messages, temperature),
+        () => tryOpenAI(messages, temperature),
       ]
     : [
+        () => tryGroq(messages, temperature, false),
         () => tryOpenRouter(messages, temperature, false),
         () => tryMistral(messages, temperature),
-        () => tryGroq(messages, temperature, false),
         () => tryDeepSeek(messages, temperature),
         () => tryOpenAI(messages, temperature),
       ];

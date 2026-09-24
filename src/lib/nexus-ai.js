@@ -423,7 +423,7 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
       const hasImg = !!imageUrl;
       const models = hasImg 
         ? ['llama-3.2-11b-vision-preview']
-        : ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'gemma2-9b-it'];
+        : ['qwen/qwen3.8-27b', 'allam-2-7b'];
       
       const userContent = hasImg 
         ? [
