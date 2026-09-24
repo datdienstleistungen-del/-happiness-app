@@ -121,43 +121,41 @@ export default function RedditSplitHero({ onOpenAuth }) {
   return (
     <div style={{ width: '100%', maxWidth: '1240px', margin: '0 auto', padding: '24px 16px 48px' }}>
       
-      {/* Top Floating IP-Guarded Free Pass Banner */}
+      {/* Top Floating IP-Guarded Free Pass Banner (Obsidian B2B) */}
       <div
         style={{
-          background: passData.is_expired
-            ? 'linear-gradient(90deg, #374151 0%, #1f2937 100%)'
-            : 'linear-gradient(90deg, #064e3b 0%, #0d5e42 100%)',
-          color: '#ffffff',
+          background: 'linear-gradient(90deg, #0a0c0f 0%, #11141a 100%)',
+          color: '#f8fafc',
           borderRadius: '16px',
-          padding: '12px 20px',
+          padding: '14px 22px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: '12px',
           marginBottom: '32px',
-          boxShadow: '0 4px 20px rgba(13, 94, 66, 0.2)',
-          border: '1px solid rgba(16, 185, 129, 0.3)'
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)',
+          border: '1px solid #1e232d'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ background: 'rgba(255,255,255,0.2)', padding: '6px', borderRadius: '10px' }}>
-            <Gift size={20} color="#34d399" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ background: 'rgba(56, 189, 248, 0.15)', padding: '8px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Gift size={20} color="#38bdf8" />
           </div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: '15px', letterSpacing: '-0.2px' }}>
+            <div style={{ fontWeight: 800, fontSize: '15px', letterSpacing: '-0.2px', color: '#f8fafc' }}>
               {isDe ? '24-Stunden Gratis-Pass für dein Gerät aktiv!' : '24-Hour Free All-Access Pass Active on this Device!'}
             </div>
-            <div style={{ fontSize: '12.5px', color: '#a7f3d0' }}>
+            <div style={{ fontSize: '12.5px', color: '#94a3b8' }}>
               {isDe ? 'Teste die KI-Deal-Suche & alle Pitches 24h komplett kostenlos (0 €).' : 'Test live buyer signals & AI pitches for 24h at 100% $0 cost.'}
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.35)', padding: '6px 14px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.15)' }}>
-          <Clock size={16} color="#fbbf24" />
-          <span style={{ fontSize: '12px', color: '#d1d5db', fontWeight: 600 }}>{isDe ? 'Läuft ab in:' : 'Expires in:'}</span>
-          <span style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: '15px', color: passData.is_expired ? '#ef4444' : '#fef08a' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(5, 6, 8, 0.6)', padding: '6px 14px', borderRadius: '20px', border: '1px solid #1e232d' }}>
+          <Clock size={16} color="#38bdf8" />
+          <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>{isDe ? 'Läuft ab in:' : 'Expires in:'}</span>
+          <span style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: '15px', color: passData.is_expired ? '#ef4444' : '#38bdf8' }}>
             {formatRemainingTime(passData.remaining_seconds)}
           </span>
         </div>
@@ -174,7 +172,7 @@ export default function RedditSplitHero({ onOpenAuth }) {
       >
         {/* LEFT COLUMN: High-Impact Copy & Interactive 3-Step Simulator */}
         <div>
-          <div style={{ marginBottom: '16px' }}>
+          <div style={{ marginBottom: '20px' }}>
             <Logo size="default" />
           </div>
 
@@ -183,7 +181,7 @@ export default function RedditSplitHero({ onOpenAuth }) {
               fontSize: 'clamp(28px, 4vw, 44px)',
               fontWeight: 900,
               lineHeight: 1.15,
-              color: '#0f172a',
+              color: '#f8fafc',
               letterSpacing: '-0.8px',
               marginBottom: '16px'
             }}
@@ -196,7 +194,7 @@ export default function RedditSplitHero({ onOpenAuth }) {
           <p
             style={{
               fontSize: 'clamp(15px, 2vw, 18px)',
-              color: '#475569',
+              color: '#94a3b8',
               lineHeight: 1.5,
               marginBottom: '28px',
               maxWidth: '520px'
@@ -207,45 +205,48 @@ export default function RedditSplitHero({ onOpenAuth }) {
               : 'Global companies pay high commissions for qualified deals. NeXus scans the web for active buying signals and writes your winning outreach on autopilot.'}
           </p>
 
-          {/* Interactive 3-Step Live Demo Simulator */}
+          {/* Interactive 3-Step Live Demo Simulator (Obsidian Card) */}
           <div
             style={{
-              background: '#f8fafc',
-              border: '1px solid #e2e8f0',
+              background: 'rgba(17, 20, 26, 0.85)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid #1e232d',
               borderRadius: '20px',
               padding: '20px',
               marginBottom: '28px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#0d5e42' }}>
+              <span style={{ fontSize: '13px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#38bdf8' }}>
                 {isDe ? '10-Sekunden Live-Simulator' : '10-Second Live Simulator'}
               </span>
-              <span style={{ fontSize: '12px', background: '#e0f2fe', color: '#0369a1', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
+              <span style={{ fontSize: '12px', background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', padding: '2px 8px', borderRadius: '12px', fontWeight: 700, border: '1px solid rgba(56, 189, 248, 0.25)' }}>
                 {isDe ? 'Kostenlos testen' : 'Try Free'}
               </span>
             </div>
 
             {demoStep === 0 && (
               <div style={{ textAlign: 'center', padding: '14px 0' }}>
-                <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '12px' }}>
+                <p style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '12px' }}>
                   {isDe ? 'Probiere aus, wie einfach NeXus für dich Deals findet:' : 'See how fast NeXus finds high-paying deals for you:'}
                 </p>
                 <button
                   onClick={() => setDemoStep(1)}
                   style={{
-                    background: '#0d5e42',
-                    color: '#ffffff',
+                    background: '#38bdf8',
+                    color: '#050608',
                     border: 'none',
                     borderRadius: '12px',
-                    padding: '10px 20px',
-                    fontWeight: 700,
+                    padding: '11px 22px',
+                    fontWeight: 800,
                     fontSize: '14px',
                     cursor: 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '8px'
+                    gap: '8px',
+                    boxShadow: '0 4px 14px rgba(56, 189, 248, 0.25)'
                   }}
                 >
                   <Sparkles size={16} />
@@ -255,13 +256,13 @@ export default function RedditSplitHero({ onOpenAuth }) {
             )}
 
             {demoStep >= 1 && (
-              <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '14px', marginBottom: '10px' }}>
+              <div style={{ background: '#0a0c0f', border: '1px solid #1e232d', borderRadius: '12px', padding: '14px', marginBottom: '10px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
                   <div>
-                    <span style={{ fontWeight: 800, fontSize: '14px', color: '#0f172a' }}>TechLogistik International Ltd.</span>
-                    <span style={{ display: 'block', fontSize: '12px', color: '#64748b' }}>{isDe ? 'Signal: Expansion & Neuausrichtung' : 'Signal: European Expansion & Hiring'}</span>
+                    <span style={{ fontWeight: 800, fontSize: '14px', color: '#f8fafc' }}>TechLogistik International Ltd.</span>
+                    <span style={{ display: 'block', fontSize: '12px', color: '#94a3b8' }}>{isDe ? 'Signal: Expansion & Neuausrichtung' : 'Signal: European Expansion & Hiring'}</span>
                   </div>
-                  <span style={{ background: '#dcfce7', color: '#166534', fontWeight: 900, fontSize: '12.5px', padding: '4px 10px', borderRadius: '8px' }}>
+                  <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontWeight: 800, fontSize: '12px', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
                     {isDe ? 'Hohe Kaufbereitschaft' : 'High Buyer Intent'}
                   </span>
                 </div>
@@ -272,12 +273,12 @@ export default function RedditSplitHero({ onOpenAuth }) {
                     style={{
                       marginTop: '8px',
                       width: '100%',
-                      background: '#0284c7',
-                      color: '#ffffff',
+                      background: '#38bdf8',
+                      color: '#050608',
                       border: 'none',
                       borderRadius: '8px',
-                      padding: '8px 14px',
-                      fontWeight: 700,
+                      padding: '9px 14px',
+                      fontWeight: 800,
                       fontSize: '13px',
                       cursor: 'pointer',
                       display: 'flex',
@@ -292,8 +293,8 @@ export default function RedditSplitHero({ onOpenAuth }) {
                 )}
 
                 {demoStep === 2 && (
-                  <div style={{ marginTop: '10px', background: '#f8fafc', padding: '12px', borderRadius: '10px', borderLeft: '3px solid #0d5e42' }}>
-                    <div style={{ fontSize: '12.5px', color: '#334155', lineHeight: 1.45, marginBottom: '10px' }}>
+                  <div style={{ marginTop: '10px', background: '#11141a', padding: '12px', borderRadius: '10px', borderLeft: '3px solid #38bdf8' }}>
+                    <div style={{ fontSize: '12.5px', color: '#cbd5e1', lineHeight: 1.45, marginBottom: '10px' }}>
                       {isDe
                         ? '„Hallo Herr Wagner, Glückwunsch zur Expansion! Wir haben gesehen, dass Sie für das Team noch B2B-Infrastruktur suchen. Hätten Sie nächste Woche 5 Min. für einen kurzen Austausch?“'
                         : '"Hi Marcus, congrats on expanding into the UK! We noticed your new team is looking for B2B sales infrastructure. Would you be open for a quick 5-min chat next Tuesday?"'}
@@ -304,9 +305,9 @@ export default function RedditSplitHero({ onOpenAuth }) {
                         style={{
                           flex: 1,
                           minWidth: '130px',
-                          background: copied ? '#166534' : '#0f172a',
+                          background: copied ? '#0284c7' : '#1e232d',
                           color: '#ffffff',
-                          border: 'none',
+                          border: '1px solid #2d3544',
                           borderRadius: '8px',
                           padding: '8px 12px',
                           fontSize: '12px',
@@ -329,8 +330,8 @@ export default function RedditSplitHero({ onOpenAuth }) {
                         style={{
                           flex: 1.5,
                           minWidth: '180px',
-                          background: 'linear-gradient(135deg, #0d5e42 0%, #064e3b 100%)',
-                          color: '#ffffff',
+                          background: '#38bdf8',
+                          color: '#050608',
                           border: 'none',
                           borderRadius: '8px',
                           padding: '8px 12px',
@@ -341,7 +342,7 @@ export default function RedditSplitHero({ onOpenAuth }) {
                           alignItems: 'center',
                           justifyContent: 'center',
                           gap: '6px',
-                          boxShadow: '0 2px 8px rgba(13, 94, 66, 0.25)'
+                          boxShadow: '0 2px 8px rgba(56, 189, 248, 0.25)'
                         }}
                       >
                         <Sparkles size={14} />
@@ -349,7 +350,7 @@ export default function RedditSplitHero({ onOpenAuth }) {
                       </button>
                       <button
                         onClick={() => setDemoStep(0)}
-                        style={{ background: 'transparent', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 10px', fontSize: '11px', color: '#64748b', cursor: 'pointer' }}
+                        style={{ background: 'transparent', border: '1px solid #2d3544', borderRadius: '8px', padding: '8px 10px', fontSize: '11px', color: '#94a3b8', cursor: 'pointer' }}
                       >
                         Reset
                       </button>
@@ -361,31 +362,33 @@ export default function RedditSplitHero({ onOpenAuth }) {
           </div>
 
           {/* Value Checklist */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#334155' }}>
-              <CheckCircle2 size={18} color="#0d5e42" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#cbd5e1' }}>
+              <CheckCircle2 size={18} color="#38bdf8" />
               <span>{isDe ? 'Funktioniert komplett auf dem Smartphone (kein PC nötig)' : 'Works 100% on your smartphone from anywhere'}</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#334155' }}>
-              <CheckCircle2 size={18} color="#0d5e42" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#cbd5e1' }}>
+              <CheckCircle2 size={18} color="#38bdf8" />
               <span>{isDe ? 'Keine Vorkenntnisse oder Vertriebserfahrung erforderlich' : 'Zero sales experience or prior network required'}</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#334155' }}>
-              <CheckCircle2 size={18} color="#0d5e42" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#cbd5e1' }}>
+              <CheckCircle2 size={18} color="#38bdf8" />
               <span>{isDe ? '5 echte B2B-Kaufsignale & fertige Pitches sofort inklusive' : '5 verified B2B buyer leads & instant pitches included'}</span>
             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Embedded Reddit-Style 1-Click Card */}
+        {/* RIGHT COLUMN: Embedded Reddit-Style 1-Click Card (Obsidian Theme) */}
         <div id="nexus-auth-card">
           <div
             style={{
-              background: '#ffffff',
-              border: '1px solid #e2e8f0',
+              background: 'rgba(17, 20, 26, 0.92)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid #1e232d',
               borderRadius: '24px',
               padding: 'clamp(24px, 4vw, 36px)',
-              boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.08)',
+              boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.6)',
               position: 'relative'
             }}
           >
@@ -395,12 +398,13 @@ export default function RedditSplitHero({ onOpenAuth }) {
                 style={{
                   width: '40px',
                   height: '40px',
-                  backgroundColor: '#0d5e42',
+                  backgroundColor: '#0a0c0f',
+                  border: '1px solid #2d3544',
                   borderRadius: '10px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#ffffff',
+                  color: '#38bdf8',
                   fontWeight: 900,
                   fontSize: '22px'
                 }}
@@ -408,10 +412,10 @@ export default function RedditSplitHero({ onOpenAuth }) {
                 N
               </div>
               <div>
-                <h3 style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a', margin: 0 }}>
+                <h3 style={{ fontSize: '20px', fontWeight: 900, color: '#f8fafc', margin: 0 }}>
                   {isDe ? '5 kostenlose Deals freischalten' : 'Unlock 5 Free B2B Deals'}
                 </h3>
-                <span style={{ fontSize: '12.5px', color: '#64748b' }}>
+                <span style={{ fontSize: '12.5px', color: '#94a3b8' }}>
                   {isDe ? 'Trage deine E-Mail ein, um deinen 24h-Zugang zu sichern' : 'Enter your email to claim your 24h access pass'}
                 </span>
               </div>
@@ -423,8 +427,8 @@ export default function RedditSplitHero({ onOpenAuth }) {
               disabled={loading}
               style={{
                 width: '100%',
-                background: '#ffffff',
-                border: '1px solid #cbd5e1',
+                background: '#0a0c0f',
+                border: '1px solid #2d3544',
                 borderRadius: '14px',
                 padding: '13px 16px',
                 display: 'flex',
@@ -433,10 +437,10 @@ export default function RedditSplitHero({ onOpenAuth }) {
                 gap: '12px',
                 fontSize: '15px',
                 fontWeight: 700,
-                color: '#1e293b',
+                color: '#f8fafc',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
                 marginBottom: '18px'
               }}
             >
@@ -450,24 +454,24 @@ export default function RedditSplitHero({ onOpenAuth }) {
             </button>
 
             {/* Divider */}
-            <div style={{ display: 'flex', alignItems: 'center', margin: '16px 0', color: '#94a3b8' }}>
-              <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
+            <div style={{ display: 'flex', alignItems: 'center', margin: '16px 0', color: '#64748b' }}>
+              <div style={{ flex: 1, height: '1px', background: '#1e232d' }} />
               <span style={{ padding: '0 12px', fontSize: '11px', fontWeight: 800, letterSpacing: '0.5px' }}>
                 {isDe ? 'ODER MIT E-MAIL' : 'OR WITH EMAIL'}
               </span>
-              <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
+              <div style={{ flex: 1, height: '1px', background: '#1e232d' }} />
             </div>
 
             {authError && (
               <div style={{
-                background: '#fee2e2',
-                color: '#b91c1c',
+                background: 'rgba(239, 68, 68, 0.1)',
+                color: '#f87171',
                 padding: '10px 14px',
                 borderRadius: '10px',
                 fontSize: '13px',
                 fontWeight: 600,
                 marginBottom: '14px',
-                border: '1px solid #fecaca'
+                border: '1px solid rgba(239, 68, 68, 0.25)'
               }}>
                 {authError}
               </div>
@@ -476,7 +480,7 @@ export default function RedditSplitHero({ onOpenAuth }) {
             {/* Email Form */}
             <form onSubmit={handleDirectAuth}>
               <div style={{ marginBottom: '12px' }}>
-                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
                   {isDe ? 'Deine geschäftliche E-Mail' : 'Your work email'}
                 </label>
                 <input
@@ -489,7 +493,9 @@ export default function RedditSplitHero({ onOpenAuth }) {
                     width: '100%',
                     padding: '12px 14px',
                     borderRadius: '12px',
-                    border: '1px solid #cbd5e1',
+                    border: '1px solid #1e232d',
+                    background: '#0e1015',
+                    color: '#f8fafc',
                     fontSize: '14.5px',
                     outline: 'none',
                     boxSizing: 'border-box'
@@ -498,7 +504,7 @@ export default function RedditSplitHero({ onOpenAuth }) {
               </div>
 
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
                   {isDe ? 'Passwort (mind. 6 Zeichen)' : 'Password (min. 6 characters)'}
                 </label>
                 <input
@@ -510,7 +516,9 @@ export default function RedditSplitHero({ onOpenAuth }) {
                     width: '100%',
                     padding: '12px 14px',
                     borderRadius: '12px',
-                    border: '1px solid #cbd5e1',
+                    border: '1px solid #1e232d',
+                    background: '#0e1015',
+                    color: '#f8fafc',
                     fontSize: '14.5px',
                     outline: 'none',
                     boxSizing: 'border-box'
@@ -523,8 +531,8 @@ export default function RedditSplitHero({ onOpenAuth }) {
                 disabled={loading}
                 style={{
                   width: '100%',
-                  background: 'linear-gradient(135deg, #0d5e42 0%, #064e3b 100%)',
-                  color: '#ffffff',
+                  background: 'var(--accent-blue, #38bdf8)',
+                  color: '#050608',
                   border: 'none',
                   borderRadius: '14px',
                   padding: '14px',
@@ -535,8 +543,8 @@ export default function RedditSplitHero({ onOpenAuth }) {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px',
-                  boxShadow: '0 4px 14px rgba(13, 94, 66, 0.35)',
-                  transition: 'transform 0.1s ease',
+                  boxShadow: '0 4px 14px rgba(56, 189, 248, 0.25)',
+                  transition: 'all 0.2s ease',
                   opacity: loading ? 0.8 : 1
                 }}
               >
@@ -546,8 +554,8 @@ export default function RedditSplitHero({ onOpenAuth }) {
             </form>
 
             {/* Security & Reassurance */}
-            <div style={{ marginTop: '16px', textAlign: 'center', fontSize: '11.5px', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-              <ShieldCheck size={14} color="#10b981" />
+            <div style={{ marginTop: '16px', textAlign: 'center', fontSize: '11.5px', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              <ShieldCheck size={14} color="#38bdf8" />
               <span>{isDe ? '100 % kostenlos • Keine Kreditkarte • Sofortiger Zugriff' : '100% Free • No Credit Card Required • Instant Access'}</span>
             </div>
           </div>

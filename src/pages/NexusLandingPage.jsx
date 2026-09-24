@@ -16,6 +16,7 @@ import NexusIntroModal from '../components/NexusIntroModal'
 import NexusVideoHubModal from '../components/NexusVideoHubModal'
 import NexusVideoBubble from '../components/NexusVideoBubble'
 import RedditSplitHero from '../components/nexus/landing/RedditSplitHero'
+import Logo from '../components/Logo'
 import './NexusLandingPage.css'
 
 export default function NexusLandingPage() {
@@ -221,11 +222,8 @@ export default function NexusLandingPage() {
       
       {/* Top Header Navigation */}
       <header className="nexus-lp-header">
-        <div className="nexus-lp-brand" onClick={() => navigate('/')}>
-          <div className="nexus-lp-logo-box">
-            <Radar size={18} />
-          </div>
-          <span className="nexus-lp-brand-name">NeXus <span className="nexus-lp-brand-tag">Revenue OS</span></span>
+        <div className="nexus-lp-brand" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+          <Logo />
         </div>
 
         <nav className="nexus-lp-nav">
