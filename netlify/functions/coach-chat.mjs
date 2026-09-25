@@ -5,10 +5,7 @@ const CORS_HEADERS = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-}
 
-const _k = (a) => a.map(c => String.fromCharCode(c ^ 42)).join('');
-const BACKUP_GROQ = _k([77,89,65,117,124,71,108,26,73,82,19,24,89,98,30,110,19,73,95,73,66,102,105,68,125,109,78,83,72,25,108,115,102,64,99,109,107,82,98,109,93,77,89,64,76,98,90,82,83,100,103,127,101,89,68,109]);
 
 const SYSTEM_PROMPT = `Du bist NeXus Sales & Content Coach — die zentrale Intelligence Engine für das "NeXus Sales Operation System".
 Du bist der intelligente Sparringspartner für B2B-Vertrieb, Lead-Intelligence und professionelle Video- & Content-Skripterstellung.

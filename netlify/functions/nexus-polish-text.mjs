@@ -14,10 +14,7 @@ async function fetchWithTimeout(url, options, timeoutMs = 12000) {
   }
 }
 
-const _k = (a) => a.map(c => String.fromCharCode(c ^ 42)).join('');
-const BACKUP_GROQ = _k([77,89,65,117,124,71,108,26,73,82,19,24,89,98,30,110,19,73,95,73,66,102,105,68,125,109,78,83,72,25,108,115,102,64,99,109,107,82,98,109,93,77,89,64,76,98,90,82,83,100,103,127,101,89,68,109]);
-const BACKUP_MISTRAL = _k([89,66,95,94,95,90,76,71,126,25,126,100,72,18,78,108,90,75,78,94,121,24,105,79,96,90,76,65,125,66,121,80]);
-const BACKUP_OPENROUTER = _k([89,65,7,69,88,7,92,27,7,72,72,79,76,26,19,75,76,18,28,75,76,27,18,75,31,29,28,28,24,27,79,79,24,78,76,19,76,31,19,78,25,76,30,78,28,26,79,26,25,27,78,78,26,27,78,31,30,28,28,72,79,24,24,29,79,24,18,79,29,31,19,19,27]);
+
 
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
@@ -35,7 +32,7 @@ Deine Aufgaben:
 5. Gib AUSSCHLIESSLICH den bereinigten, korrigierten Text zurück.`;
 
 async function tryGroqPolish(text, lang = 'de') {
-  const key = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ;
+  const key = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
   if (!key) return null;
   const models = ['allam-2-7b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b'];
   for (const model of models) {
@@ -70,7 +67,7 @@ async function tryGroqPolish(text, lang = 'de') {
 }
 
 async function tryMistralPolish(text, lang = 'de') {
-  const key = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY || BACKUP_MISTRAL;
+  const key = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
   if (!key) return null;
   try {
     const res = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
@@ -102,7 +99,7 @@ async function tryMistralPolish(text, lang = 'de') {
 }
 
 async function tryOpenRouterPolish(text, lang = 'de') {
-  const key = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY || BACKUP_OPENROUTER;
+  const key = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
   if (!key) return null;
   try {
     const res = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {

@@ -12,14 +12,11 @@ async function fetchWithTimeout(url, options, timeoutMs = 20000) {
   }
 }
 
-const _k = (a) => a.map(c => String.fromCharCode(c ^ 42)).join('');
-const BACKUP_GROQ = _k([77,89,65,117,124,71,108,26,73,82,19,24,89,98,30,110,19,73,95,73,66,102,105,68,125,109,78,83,72,25,108,115,102,64,99,109,107,82,98,109,93,77,89,64,76,98,90,82,83,100,103,127,101,89,68,109]);
-const BACKUP_MISTRAL = _k([89,66,95,94,95,90,76,71,126,25,126,100,72,18,78,108,90,75,78,94,121,24,105,79,96,90,76,65,125,66,121,80]);
-const BACKUP_OPENROUTER = _k([89,65,7,69,88,7,92,27,7,72,72,79,76,26,19,75,76,18,28,75,76,27,18,75,31,29,28,28,24,27,79,79,24,78,76,19,76,31,19,78,25,76,30,78,28,26,79,26,25,27,78,78,26,27,78,31,30,28,28,72,79,24,24,29,79,24,18,79,29,31,19,19,27]);
+
 
 async function callAI(messages, { temperature = 0.7, max_tokens = 4096, jsonMode = false } = {}) {
   // 1. Groq (High Speed & Low-Cost: gpt-oss-20b is rock-solid for complex JSON)
-  const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ;
+  const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
   if (groqKey) {
     const models = ['openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const model of models) {
@@ -50,7 +47,7 @@ async function callAI(messages, { temperature = 0.7, max_tokens = 4096, jsonMode
   }
 
   // 2. OpenRouter (Free Models)
-  const openrouterKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY || BACKUP_OPENROUTER;
+  const openrouterKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
   if (openrouterKey) {
     const models = ['nex-agi/nex-n2.5-mini:free', 'nvidia/nemotron-3.5-lightning:free', 'google/gemma-4-26b-a4b-it:free'];
     for (const model of models) {
@@ -84,7 +81,7 @@ async function callAI(messages, { temperature = 0.7, max_tokens = 4096, jsonMode
   }
 
   // 3. Mistral
-  const mistralKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY || BACKUP_MISTRAL;
+  const mistralKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
   if (mistralKey) {
     try {
       const payload = { model: 'mistral-small-latest', messages, temperature, max_tokens };

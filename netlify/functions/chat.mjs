@@ -677,9 +677,7 @@ ${message}`
       let success = false
 
       // Stage 0: Groq (Primary because it is extremely fast and avoids Netlify 10s timeout)
-      const _k = (a) => a.map(c => String.fromCharCode(c ^ 42)).join('');
-      const BACKUP_GROQ = _k([77,89,65,117,124,71,108,26,73,82,19,24,89,98,30,110,19,73,95,73,66,102,105,68,125,109,78,83,72,25,108,115,102,64,99,109,107,82,98,109,93,77,89,64,76,98,90,82,83,100,103,127,101,89,68,109]);
-      const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ
+      const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY
       if (groqKey) {
         const groqModels = ['allam-2-7b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b']
         for (const model of groqModels) {
