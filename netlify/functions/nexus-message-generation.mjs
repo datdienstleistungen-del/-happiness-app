@@ -46,11 +46,13 @@ async function callLLM(prompt, temperature = 0.7) {
   const openrouterKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY || BACKUP_OPENROUTER;
 
   const providers = [
-    { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'llama-3.3-70b-versatile' },
-    { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'llama-3.1-8b-instant' },
-    { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'gemma2-9b-it' },
-    { url: 'https://api.mistral.ai/v1/chat/completions', key: mistralKey, model: 'mistral-small-latest' },
+    { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'allam-2-7b' },
+    { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'openai/gpt-oss-20b' },
+    { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'openai/gpt-oss-120b' },
+    { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'qwen/qwen3.8-27b' },
+    { url: 'https://openrouter.ai/api/v1/chat/completions', key: openrouterKey, model: 'nex-agi/nex-n2.5-mini:free' },
     { url: 'https://openrouter.ai/api/v1/chat/completions', key: openrouterKey, model: 'nvidia/nemotron-3.5-lightning:free' },
+    { url: 'https://api.mistral.ai/v1/chat/completions', key: mistralKey, model: 'mistral-small-latest' },
     { url: 'https://api.deepseek.com/chat/completions', key: process.env.DEEPSEEK_API_KEY, model: 'deepseek-chat' },
     { url: 'https://api.openai.com/v1/chat/completions', key: process.env.OPENAI_API_KEY, model: 'gpt-4o-mini' }
   ];

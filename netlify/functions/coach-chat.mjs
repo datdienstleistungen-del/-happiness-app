@@ -205,7 +205,7 @@ async function tryOpenAIGpt4o(messages) {
 async function tryGroq(messages) {
   const key = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ
   if (!key) return null
-  const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant']
+  const models = ['allam-2-7b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b']
   for (const model of models) {
     try {
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -221,6 +221,7 @@ async function tryGroq(messages) {
           max_tokens: 1500
         })
       })
+      if (res.status === 429) break
       if (res.ok) {
         const data = await res.json()
         const content = data.choices?.[0]?.message?.content
@@ -234,9 +235,9 @@ async function tryGroq(messages) {
 }
 
 async function tryOpenRouterGemma(messages) {
-  const key = process.env.OPENROUTER_API_KEY
+  const key = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY || BACKUP_OPENROUTER
   if (!key) return null
-  const models = ['google/gemma-4-26b-a4b-it:free', 'meta-llama/llama-3.3-70b-instruct:free']
+  const models = ['nex-agi/nex-n2.5-mini:free', 'nvidia/nemotron-3.5-lightning:free', 'google/gemma-4-26b-a4b-it:free']
   for (const model of models) {
     try {
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {

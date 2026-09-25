@@ -18,10 +18,10 @@ const BACKUP_MISTRAL = _k([89,66,95,94,95,90,76,71,126,25,126,100,72,18,78,108,9
 const BACKUP_OPENROUTER = _k([89,65,7,69,88,7,92,27,7,72,72,79,76,26,19,75,76,18,28,75,76,27,18,75,31,29,28,28,24,27,79,79,24,78,76,19,76,31,19,78,25,76,30,78,28,26,79,26,25,27,78,78,26,27,78,31,30,28,28,72,79,24,24,29,79,24,18,79,29,31,19,19,27]);
 
 async function callAI(messages, { temperature = 0.7, max_tokens = 4096, jsonMode = false } = {}) {
-  // 1. Groq
+  // 1. Groq (High Speed & Free/Low-Cost Priority)
   const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ;
   if (groqKey) {
-    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'gemma2-9b-it'];
+    const models = ['allam-2-7b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b'];
     for (const model of models) {
       try {
         const payload = { model, messages, temperature, max_tokens };
@@ -30,7 +30,11 @@ async function callAI(messages, { temperature = 0.7, max_tokens = 4096, jsonMode
           method: 'POST',
           headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
-        }, 20000);
+        }, 3000);
+        if (res.status === 429) {
+          clearTimeout(timer);
+          break; // Abort whole provider on 429
+        }
         if (!res.ok) {
           clearTimeout(timer);
           continue;
@@ -45,34 +49,10 @@ async function callAI(messages, { temperature = 0.7, max_tokens = 4096, jsonMode
     }
   }
 
-  // 2. Mistral
-  const mistralKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY || BACKUP_MISTRAL;
-  if (mistralKey) {
-    try {
-      const payload = { model: 'mistral-small-latest', messages, temperature, max_tokens };
-      if (jsonMode) payload.response_format = { type: 'json_object' };
-      const { res, timer } = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${mistralKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }, 15000);
-      if (!res.ok) {
-        clearTimeout(timer);
-      } else {
-        const data = await res.json();
-        clearTimeout(timer);
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return { text, provider: 'mistral', model: 'mistral-small-latest' };
-      }
-    } catch (e) {
-      console.warn('[Mistral Error]:', e.message);
-    }
-  }
-
-  // 3. OpenRouter
+  // 2. OpenRouter (Free Models)
   const openrouterKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY || BACKUP_OPENROUTER;
   if (openrouterKey) {
-    const models = ['google/gemma-4-26b-a4b-it:free', 'meta-llama/llama-3.3-70b-instruct:free'];
+    const models = ['nex-agi/nex-n2.5-mini:free', 'nvidia/nemotron-3.5-lightning:free', 'google/gemma-4-26b-a4b-it:free'];
     for (const model of models) {
       try {
         const { res, timer } = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
@@ -84,18 +64,46 @@ async function callAI(messages, { temperature = 0.7, max_tokens = 4096, jsonMode
             'X-Title': 'NeXus Strategies'
           },
           body: JSON.stringify({ model, messages, temperature, max_tokens })
-        }, 15000);
+        }, 3000);
+        if (res.status === 429) {
+          clearTimeout(timer);
+          break; // Abort whole provider on 429
+        }
         if (!res.ok) {
           clearTimeout(timer);
           continue;
         }
         const data = await res.json();
         clearTimeout(timer);
-        const text = data.choices?.[0]?.message?.content;
+        const text = data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning;
         if (text) return { text, provider: 'openrouter', model };
       } catch (e) {
         console.warn(`[OpenRouter Error ${model}]:`, e.message);
       }
+    }
+  }
+
+  // 3. Mistral
+  const mistralKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY || BACKUP_MISTRAL;
+  if (mistralKey) {
+    try {
+      const payload = { model: 'mistral-small-latest', messages, temperature, max_tokens };
+      if (jsonMode) payload.response_format = { type: 'json_object' };
+      const { res, timer } = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${mistralKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }, 3000);
+      if (res.ok) {
+        const data = await res.json();
+        clearTimeout(timer);
+        const text = data.choices?.[0]?.message?.content;
+        if (text) return { text, provider: 'mistral', model: 'mistral-small-latest' };
+      } else {
+        clearTimeout(timer);
+      }
+    } catch (e) {
+      console.warn('[Mistral Error]:', e.message);
     }
   }
 
@@ -109,7 +117,7 @@ async function callAI(messages, { temperature = 0.7, max_tokens = 4096, jsonMode
         method: 'POST',
         headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-      }, 15000);
+      }, 3000);
       if (res.ok) {
         const data = await res.json();
         clearTimeout(timer);
