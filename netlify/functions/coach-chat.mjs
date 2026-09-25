@@ -292,6 +292,18 @@ function sanitizeCoachResponse(text) {
     .trim()
 }
 
+function isResponseGarbage(text) {
+  if (!text || text.length < 20) return true
+  // Zu viele [SEARCH]-Tags = Modell hat nicht verstanden
+  const searchTags = (text.match(/\[SEARCH\]/gi) || []).length
+  if (searchTags > 2) return true
+  // Unicode-Replace-Characters = kaputter Output
+  if (text.includes('��') || text.includes('Ǭ') || text.includes('Ě')) return true
+  // Nur Sonderzeichen/Leerzeichen
+  if (text.replace(/[\s\W]/g, '').length < 10) return true
+  return false
+}
+
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: CORS_HEADERS, body: '' }
@@ -466,21 +478,26 @@ export const handler = async (event) => {
         responseText = null
         if (image_url) {
           responseText = await tryOpenAIGpt4o(llmMessages)
-          if (responseText) providerUsed = 'OpenAI (GPT-4o Vision)'
+          if (responseText && !isResponseGarbage(responseText)) providerUsed = 'OpenAI (GPT-4o Vision)'
+          else responseText = null
         }
 
         if (!responseText) {
           responseText = await tryGroq(llmMessages)
-          if (responseText) {
-            providerUsed = 'Groq (Llama 3.3 70B)'
+          if (responseText && !isResponseGarbage(responseText)) {
+            providerUsed = 'Groq (qwen/qwen3.8-27b)'
           } else {
+            responseText = null
             responseText = await tryMistral(llmMessages)
-            if (responseText) {
+            if (responseText && !isResponseGarbage(responseText)) {
               providerUsed = 'Mistral API (Mistral Small)'
             } else {
+              responseText = null
               responseText = await tryOpenRouterGemma(llmMessages)
-              if (responseText) {
-                providerUsed = 'OpenRouter (Llama 3.3 / Gemma)'
+              if (responseText && !isResponseGarbage(responseText)) {
+                providerUsed = 'OpenRouter (Gemma)'
+              } else {
+                responseText = null
               }
             }
           }
