@@ -30,7 +30,7 @@ async function callAI(messages, { temperature = 0.7, max_tokens = 4096, jsonMode
           method: 'POST',
           headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
-        }, 3000);
+        }, 7000);
         if (res.status === 429) {
           clearTimeout(timer);
           break; // Abort whole provider on 429
