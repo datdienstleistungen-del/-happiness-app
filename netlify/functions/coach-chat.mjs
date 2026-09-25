@@ -5,6 +5,7 @@ const CORS_HEADERS = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+}
 
 
 const SYSTEM_PROMPT = `Du bist NeXus Sales & Content Coach — die zentrale Intelligence Engine für das "NeXus Sales Operation System".
