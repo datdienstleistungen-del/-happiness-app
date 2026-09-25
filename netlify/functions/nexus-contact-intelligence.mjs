@@ -1169,7 +1169,8 @@ Wenn du KEINE klaren Personen findest, gib ein leeres Array zurück: []`;
     } catch(e) {}
   }
   
-  // Validate: must have name (2+ words), role, and evidence
+  // Validate: must have name (2+ words), role, and evidence + Grounding check
+  const cleanLower = cleanText.toLowerCase();
   return persons.filter(p => {
     if (!p.name || !p.role || !p.evidence) return false;
     const name = p.name.trim();
@@ -1185,13 +1186,23 @@ Wenn du KEINE klaren Personen findest, gib ein leeres Array zurück: []`;
     // Filter out generic/low-value roles
     const roleLower = role.toLowerCase();
     if (['mitarbeiter', 'employee', 'staff', 'team', 'member'].some(g => roleLower === g)) return false;
+
+    // Grounding Check (Anti-Halluzination): Name und Evidence-Zitat müssen wörtlich im Quelltext vorkommen
+    const nameInSource = cleanLower.includes(name.toLowerCase());
+    const evidenceSnippet = p.evidence.toLowerCase().substring(0, 30).trim();
+    const evidenceInSource = cleanLower.includes(evidenceSnippet);
+    if (!nameInSource || !evidenceInSource) {
+      console.warn(`[Contact Intelligence] Grounding-Check fehlgeschlagen für: "${name}" (Name im Quelltext: ${nameInSource}, Evidence im Quelltext: ${evidenceInSource})`);
+      return false;
+    }
+
     return true;
   }).map(p => ({
     name: p.name.trim(),
     role: p.role.trim(),
     department: (p.department || '').trim(),
     evidence: p.evidence.trim(),
-    confidence: 80
+    confidence: 85
   }));
 }
 

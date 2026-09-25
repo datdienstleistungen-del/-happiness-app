@@ -20,6 +20,8 @@
  * - Welcher Kunde ist interessiert?
  */
 
+import { GROQ_FREE_FIRST } from './nexus-models.mjs';
+
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
@@ -27,7 +29,7 @@ async function callLLM(messages, { temperature = 0.2, max_tokens = 1500 } = {}) 
   // 1. Groq (Free)
   const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
   if (groqKey) {
-    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
+    const models = GROQ_FREE_FIRST;
     for (const model of models) {
       try {
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {

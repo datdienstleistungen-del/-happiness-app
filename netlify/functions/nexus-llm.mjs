@@ -1,5 +1,6 @@
 // ── Multi-Provider Fallback Chain ──
 import { runEmailPatternCrawler } from './nexus-email-crawler.mjs';
+import { GROQ_FREE_FIRST, GROQ_VISION_MODELS, OPENROUTER_FREE_MODELS } from './nexus-models.mjs';
 
 async function fetchWithTimeout(url, options, timeoutMs = 20000) {
   const controller = new AbortController();
@@ -56,8 +57,8 @@ async function tryGroq(messages, temperature = 0.3, hasImage = false, signal = n
   if (!key) return null;
 
   const models = hasImage 
-    ? ['qwen/qwen3.8-27b']
-    : ['allam-2-7b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b'];
+    ? GROQ_VISION_MODELS
+    : GROQ_FREE_FIRST;
 
   for (const model of models) {
     const t0 = Date.now();
@@ -116,12 +117,12 @@ async function tryOpenRouter(messages, temperature = 0.3, hasImage = false, sign
     return null;
   }
 
-  const key = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY || BACKUP_OPENROUTER;
+  const key = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
   if (!key) return null;
 
   const models = hasImage
     ? ['google/gemma-4-26b-a4b-it:free', 'google/gemma-4-31b-it:free', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free']
-    : ['nex-agi/nex-n2.5-mini:free', 'nvidia/nemotron-3.5-lightning:free', 'google/gemma-4-26b-a4b-it:free'];
+    : OPENROUTER_FREE_MODELS;
 
   for (const model of models) {
     const t0 = Date.now();
@@ -255,8 +256,8 @@ async function tryDeepSeek(messages, temperature = 0.3, signal = null, testOptio
 
     const elapsed = Date.now() - t0;
 
-    if (res.status === 429) {
-      console.warn(`[NEXUS] DeepSeek [${tier}] returned HTTP 429 in ${elapsed}ms -> Aborting DeepSeek, switching to next provider.`);
+    if (res.status === 429 || res.status === 402) {
+      console.warn(`[NEXUS] DeepSeek [${tier}] returned HTTP ${res.status} (${res.status === 402 ? 'Insufficient Balance' : 'Rate Limited'}) in ${elapsed}ms -> Aborting DeepSeek, switching to next provider.`);
       return null;
     }
 

@@ -1,3 +1,5 @@
+import { GROQ_FREE_FIRST } from './nexus-models.mjs';
+
 export async function handler(event, context) {
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
@@ -106,7 +108,7 @@ Antworte strikt in JSON mit exakt diesen 6 Feldern:
 
         // 1. Groq (primary, free)
         if (groqKey) {
-          for (const model of ['qwen/qwen3.8-27b', 'allam-2-7b']) {
+          for (const model of GROQ_FREE_FIRST) {
             try {
               const gRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',

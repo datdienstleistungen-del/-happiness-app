@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { GROQ_JSON_HEAVY, OPENROUTER_FREE_MODELS, MISTRAL_DEFAULT_MODEL, OPENAI_DEFAULT_MODEL } from './nexus-models.mjs';
 
 async function fetchWithTimeout(url, options, timeoutMs = 20000) {
   const controller = new AbortController();
@@ -55,7 +56,7 @@ async function callAI(messages, { temperature = 0.3, max_tokens = 4096, jsonMode
   // 1. Groq (High Speed & Free/Low-Cost Priority)
   const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
   if (groqKey) {
-    const models = ['openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'allam-2-7b'];
+    const models = GROQ_JSON_HEAVY;
     for (const model of models) {
       try {
         const payload = { model, messages, temperature, max_tokens };
@@ -86,7 +87,7 @@ async function callAI(messages, { temperature = 0.3, max_tokens = 4096, jsonMode
   // 2. OpenRouter (Free Models)
   const openrouterKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
   if (openrouterKey) {
-    const models = ['nex-agi/nex-n2.5-mini:free', 'nvidia/nemotron-3.5-lightning:free', 'google/gemma-4-26b-a4b-it:free'];
+    const models = OPENROUTER_FREE_MODELS;
     for (const model of models) {
       try {
         const { res, timer } = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
@@ -121,7 +122,7 @@ async function callAI(messages, { temperature = 0.3, max_tokens = 4096, jsonMode
   const mistralKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
   if (mistralKey) {
     try {
-      const payload = { model: 'mistral-small-latest', messages, temperature, max_tokens };
+      const payload = { model: MISTRAL_DEFAULT_MODEL, messages, temperature, max_tokens };
       if (jsonMode) payload.response_format = { type: 'json_object' };
       const { res, timer } = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
         method: 'POST',
@@ -132,7 +133,7 @@ async function callAI(messages, { temperature = 0.3, max_tokens = 4096, jsonMode
         const data = await res.json();
         clearTimeout(timer);
         const text = data.choices?.[0]?.message?.content;
-        if (text) return { text, provider: 'mistral', model: 'mistral-small-latest' };
+        if (text) return { text, provider: 'mistral', model: MISTRAL_DEFAULT_MODEL };
       } else {
         clearTimeout(timer);
       }
@@ -145,7 +146,7 @@ async function callAI(messages, { temperature = 0.3, max_tokens = 4096, jsonMode
   const openaiKey = process.env.OPENAI_API_KEY;
   if (openaiKey) {
     try {
-      const payload = { model: 'gpt-4o-mini', messages, temperature, max_tokens };
+      const payload = { model: OPENAI_DEFAULT_MODEL, messages, temperature, max_tokens };
       if (jsonMode) payload.response_format = { type: 'json_object' };
       const { res, timer } = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
