@@ -27,7 +27,7 @@ async function callLLM(messages, { temperature = 0.2, max_tokens = 1500 } = {}) 
   // 1. Groq (Free)
   const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
   if (groqKey) {
-    const models = ['allam-2-7b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b'];
+    const models = ['qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const model of models) {
       try {
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {

@@ -69,7 +69,7 @@ Zeitraum: Letzte 30 Tage`
       method: 'POST',
       headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'openai/gpt-oss-20b',
+        model: 'qwen/qwen3.8-27b',
         messages,
         temperature: 0.3,
         max_tokens: 800,

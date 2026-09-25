@@ -15,11 +15,12 @@ export async function handler(event, context) {
     }
   }
   
-  // Konfigurierbarer AI Provider (Standard: mistral)
-  const aiProvider = process.env.BACKGROUND_AI_PROVIDER || 'mistral';
-  const aiKey = aiProvider === 'deepseek' ? process.env.DEEPSEEK_API_KEY : process.env.MISTRAL_API_KEY;
+  // AI Provider: Groq (primary, free) → Mistral → DeepSeek
+  const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
+  const mistralKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
+  const deepseekKey = process.env.DEEPSEEK_API_KEY;
 
-  if (!supabaseUrl || !supabaseKey || !aiKey) {
+  if (!supabaseUrl || !supabaseKey || (!groqKey && !mistralKey && !deepseekKey)) {
     return { statusCode: 500, body: JSON.stringify({ error: "Missing config for B2 Eval Cron" }) };
   }
 
@@ -100,33 +101,63 @@ Antworte strikt in JSON mit exakt diesen 6 Feldern:
 6. "domain": Die Web-Domain der gefundenen Firma, falls sie im Text erwähnt wird (z.B. "firma.de"). (oder null)`;
 
       try {
-        let aiResult;
-        if (aiProvider === 'deepseek') {
-          // DeepSeek API
-          const dsRes = await fetch('https://api.deepseek.com/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${aiKey}` },
-            body: JSON.stringify({
-              model: "deepseek-chat",
-              response_format: { type: "json_object" },
-              messages: [{ role: "system", content: "Du bist ein Vertriebsassistent. Antworte immer im JSON-Format." }, { role: "user", content: prompt }]
-            })
-          });
-          const dsData = await dsRes.json();
-          aiResult = JSON.parse(dsData.choices[0].message.content);
-        } else {
-          // Mistral API (Standard)
-          const mRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${aiKey}` },
-            body: JSON.stringify({
-              model: "mistral-small-latest",
-              response_format: { type: "json_object" },
-              messages: [{ role: "user", content: prompt }]
-            })
-          });
-          const mData = await mRes.json();
-          aiResult = JSON.parse(mData.choices[0].message.content);
+        let aiResult = null;
+        const llmMessages = [{ role: 'system', content: 'Du bist ein Vertriebsassistent. Antworte immer im JSON-Format.' }, { role: 'user', content: prompt }];
+
+        // 1. Groq (primary, free)
+        if (groqKey) {
+          for (const model of ['qwen/qwen3.8-27b', 'allam-2-7b']) {
+            try {
+              const gRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model, messages: llmMessages, temperature: 0.2, max_tokens: 1000, response_format: { type: 'json_object' } })
+              });
+              if (gRes.ok) {
+                const gData = await gRes.json();
+                aiResult = JSON.parse(gData.choices[0].message.content);
+                console.log(`B2 Cron: Groq ${model} OK`);
+                break;
+              }
+            } catch (e) { /* continue */ }
+          }
+        }
+
+        // 2. Mistral fallback
+        if (!aiResult && mistralKey) {
+          try {
+            const mRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${mistralKey}` },
+              body: JSON.stringify({ model: 'mistral-small-latest', messages: llmMessages, temperature: 0.2, max_tokens: 1000, response_format: { type: 'json_object' } })
+            });
+            if (mRes.ok) {
+              const mData = await mRes.json();
+              aiResult = JSON.parse(mData.choices[0].message.content);
+              console.log('B2 Cron: Mistral OK');
+            }
+          } catch (e) { /* continue */ }
+        }
+
+        // 3. DeepSeek fallback
+        if (!aiResult && deepseekKey) {
+          try {
+            const dsRes = await fetch('https://api.deepseek.com/v1/chat/completions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deepseekKey}` },
+              body: JSON.stringify({ model: 'deepseek-chat', messages: llmMessages, temperature: 0.2, max_tokens: 1000, response_format: { type: 'json_object' } })
+            });
+            if (dsRes.ok) {
+              const dsData = await dsRes.json();
+              aiResult = JSON.parse(dsData.choices[0].message.content);
+              console.log('B2 Cron: DeepSeek OK');
+            }
+          } catch (e) { /* continue */ }
+        }
+
+        if (!aiResult) {
+          console.warn(`B2 Cron: All providers failed for Hit ${hit.id}`);
+          continue;
         }
 
         console.log(`DEBUG: AI Result für Hit ${hit.id}:`, JSON.stringify(aiResult));
