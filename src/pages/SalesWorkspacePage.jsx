@@ -2012,6 +2012,37 @@ export default function SalesWorkspacePage() {
                               </div>
                             )}
                             
+                            {/* Grounding Warnings */}
+                            {generatedMessage.has_grounding_warnings && (
+                              <div style={{
+                                marginBottom: '12px',
+                                padding: '12px 16px',
+                                background: '#fef3c7',
+                                border: '1px solid #f59e0b',
+                                borderRadius: '8px',
+                                fontSize: '0.85rem'
+                              }}>
+                                <div style={{ fontWeight: 600, color: '#92400e', marginBottom: '8px' }}>
+                                  ⚠️ {t('nexus.wsGroundingWarning') || 'Qualitätswarnung: Nicht belegte Aussagen erkannt'}
+                                </div>
+                                <ul style={{ margin: 0, paddingLeft: '20px', color: '#92400e' }}>
+                                  {generatedMessage.grounding_warnings?.map((w, i) => (
+                                    <li key={i} style={{ marginBottom: '4px' }}>
+                                      {w.type === 'ungrounded_claim' && (
+                                        <span>"{w.claim.substring(0, 80)}..." — {w.reason}</span>
+                                      )}
+                                      {w.type === 'concrete_number' && (
+                                        <span>{t('nexus.wsConcreteNumber') || 'Konkrete Zahlen'}: {w.numbers.join(', ')} — {w.hasSource ? (t('nexus.wsWithSource') || 'mit Quellenbeleg') : (t('nexus.wsWithoutSource') || 'ohne Quellenbeleg')}</span>
+                                      )}
+                                    </li>
+                                  ))}
+                                </ul>
+                                <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#a16207' }}>
+                                  {t('nexus.wsGroundingHint') || 'Bitte überprüfen und manuell anpassen vor dem Versand.'}
+                                </div>
+                              </div>
+                            )}
+                            
                             {/* Message (editable) */}
                             <div style={{ marginBottom: '12px' }}>
                               <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.85rem', fontWeight: 600 }}>

@@ -232,6 +232,8 @@ async function tryMistral(messages, temperature = 0.3, signal = null, testOption
 }
 
 async function tryDeepSeek(messages, temperature = 0.3, signal = null, testOptions = {}) {
+  // GLOBAL SKIP: DeepSeek deaktiviert bis Guthaben aufgeladen (402 Insufficient Balance)
+  if (process.env.DEEPSEEK_ENABLED === 'false') return null;
   if (testOptions?.disable_deepseek || testOptions?.force_fail_providers?.includes('deepseek')) {
     return null;
   }

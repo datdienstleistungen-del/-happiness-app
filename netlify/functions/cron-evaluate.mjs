@@ -141,8 +141,8 @@ Antworte strikt in JSON mit exakt diesen 6 Feldern:
           } catch (e) { /* continue */ }
         }
 
-        // 3. DeepSeek fallback
-        if (!aiResult && deepseekKey) {
+        // 3. DeepSeek fallback (skip if disabled or no balance)
+        if (!aiResult && deepseekKey && process.env.DEEPSEEK_ENABLED !== 'false') {
           try {
             const dsRes = await fetch('https://api.deepseek.com/v1/chat/completions', {
               method: 'POST',

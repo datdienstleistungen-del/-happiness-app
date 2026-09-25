@@ -12,6 +12,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { checkTextGroundedInSource, checkMessageGroundedMechanical, detectConcreteNumbers } from './grounding-helpers.mjs';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
@@ -118,13 +119,14 @@ STRENGE REGELN:
 1. Verwende NUR Informationen aus dem obigen Kontext
 2. Erfinde KEINE Fakten über die Person oder das Unternehmen
 3. Erwähne KEINE Budgets, Probleme oder Entscheidungen, die nicht belegt sind
-4. Unterscheide FACT (was belegt ist) von INTERPRETATION (was du daraus ableitest)
-5. Die Nachricht soll kurz und natürlich sein (3-5 Sätze)
-6. Persönliche Anrede mit Name
-7. Konkreter Anlass = Trigger
-8. Verbindung zum Offering = was du anbietest
-9. Einfache Handlungsaufforderung (Gesprächsangebot)
-10. KEIN Marketing-Blabla, KEINE KI-Floskeln
+4. Erwähne KEINE konkreten Leistungszahlen (Prozente, Euro, Stückzahlen), es sei denn, sie sind explizit im Kontext belegt
+5. Unterscheide FACT (was belegt ist) von INTERPRETATION (was du daraus ableitest)
+6. Die Nachricht soll kurz und natürlich sein (3-5 Sätze)
+7. Persönliche Anrede mit Name
+8. Konkreter Anlass = Trigger
+9. Verbindung zum Offering = was du anbietest
+10. Einfache Handlungsaufforderung (Gesprächsangebot)
+11. KEIN Marketing-Blabla, KEINE KI-Floskeln
 
 STRUKTUR:
 1. Anrede (Name, Rolle)
@@ -199,6 +201,43 @@ export const handler = async (event) => {
     const interpretations = result.interpretations || [];
     const sources = result.sources || [];
     
+    // Grounding Check: Mechanisch — Nachricht in Sätze segmentieren, jeden gegen Evidence prüfen
+    // Läuft OHNE LLM-Input — das LLM kann diesen Check nicht umgehen
+    const evidenceText = contact?.evidence || '';
+    let groundingResults = [];
+    let groundingPassed = true;
+    if (message && evidenceText) {
+      const { allGrounded, results } = checkMessageGroundedMechanical(message, evidenceText);
+      groundingResults = results;
+      groundingPassed = allGrounded;
+      if (!allGrounded) {
+        const ungrounded = results.filter(r => !r.grounded).map(r => `"${r.sentence.substring(0, 60)}..." (${r.reason})`);
+        console.warn(`[MessageGen] Ungroundete Sätze: ${ungrounded.join(', ')}`);
+      }
+    }
+    
+    // Number Check: Warnung bei konkreten Leistungszahlen ohne Quellenbeleg
+    const { hasNumbers, numbers } = detectConcreteNumbers(message);
+    const numberWarning = hasNumbers ? { detected: true, numbers, hasSource: sources.length > 0 } : null;
+    
+    // Gesamt-Warning-Status
+    const hasGroundingWarnings = !groundingPassed || numberWarning?.detected;
+    const groundingWarnings = [];
+    if (!groundingPassed) {
+      groundingWarnings.push(...groundingResults.filter(r => !r.grounded).map(r => ({
+        type: 'ungrounded_claim',
+        claim: r.sentence,  // Satz statt LLM-self-declared claim
+        reason: r.reason
+      })));
+    }
+    if (numberWarning?.detected) {
+      groundingWarnings.push({
+        type: 'concrete_number',
+        numbers: numberWarning.numbers,
+        hasSource: numberWarning.hasSource
+      });
+    }
+    
     // DSGVO: Fester Widerspruchshinweis (nicht vom LLM veränderbar)
     const WIDERSPRUCHSHINWEIS = '\n\nFalls Sie keine weiteren Nachrichten dieser Art wünschen, lassen Sie es mich bitte kurz wissen.';
     
@@ -219,7 +258,10 @@ export const handler = async (event) => {
         sources,
         email_status: contact?.email_status || 'UNKNOWN',
         contact_name: contact.name,
-        contact_role: contact.role
+        contact_role: contact.role,
+        // Grounding-Flags für Frontend
+        has_grounding_warnings: hasGroundingWarnings,
+        grounding_warnings: groundingWarnings
       })
     };
     

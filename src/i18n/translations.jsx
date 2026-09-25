@@ -181,6 +181,11 @@ const translations = {
       "wsTranslateDe": "Auf Deutsch übersetzen",
       "wsTranslating": "Übersetze...",
       "wsOutreachSubject": "Betreff:",
+      "wsGroundingWarning": "Qualitätswarnung: Nicht belegte Aussagen erkannt",
+      "wsConcreteNumber": "Konkrete Zahlen",
+      "wsWithSource": "mit Quellenbeleg",
+      "wsWithoutSource": "ohne Quellenbeleg",
+      "wsGroundingHint": "Bitte überprüfen und manuell anpassen vor dem Versand.",
       "wsOriginal": "Original:",
       "guide": {
         "assistantTitle": "NeXus Assistent",
@@ -1008,6 +1013,11 @@ const translations = {
       "wsTranslateDe": "Translate to German",
       "wsTranslating": "Translating...",
       "wsOutreachSubject": "Subject:",
+      "wsGroundingWarning": "Quality Warning: Unverified claims detected",
+      "wsConcreteNumber": "Concrete numbers",
+      "wsWithSource": "with source",
+      "wsWithoutSource": "without source",
+      "wsGroundingHint": "Please review and manually adjust before sending.",
       "wsOriginal": "Original:",
       "guide": {
         "assistantTitle": "NeXus Assistant",

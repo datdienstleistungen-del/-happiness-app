@@ -14,6 +14,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { resolveCompanyWebsite, getGoogleCseQuotaStatus } from './nexus-domain-discovery.mjs';
+import { checkTextGroundedInSource } from './grounding-helpers.mjs';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
@@ -1188,11 +1189,10 @@ Wenn du KEINE klaren Personen findest, gib ein leeres Array zurück: []`;
     if (['mitarbeiter', 'employee', 'staff', 'team', 'member'].some(g => roleLower === g)) return false;
 
     // Grounding Check (Anti-Halluzination): Name und Evidence-Zitat müssen wörtlich im Quelltext vorkommen
-    const nameInSource = cleanLower.includes(name.toLowerCase());
-    const evidenceSnippet = p.evidence.toLowerCase().substring(0, 30).trim();
-    const evidenceInSource = cleanLower.includes(evidenceSnippet);
-    if (!nameInSource || !evidenceInSource) {
-      console.warn(`[Contact Intelligence] Grounding-Check fehlgeschlagen für: "${name}" (Name im Quelltext: ${nameInSource}, Evidence im Quelltext: ${evidenceInSource})`);
+    const nameResult = checkTextGroundedInSource(name, cleanText, { exactMatch: true });
+    const evidenceResult = checkTextGroundedInSource(p.evidence, cleanText, { exactMatch: false });
+    if (!nameResult.grounded || !evidenceResult.grounded) {
+      console.warn(`[ContactIntel] Grounding-Check fehlgeschlagen für: "${name}" (Name: ${nameResult.reason}, Evidence: ${evidenceResult.reason})`);
       return false;
     }
 
@@ -1304,11 +1304,12 @@ Nur relevante Kandidaten (Score > 40).`;
 
 async function callLLM(prompt, temperature = 0.3) {
   const providers = [
-    { url: 'https://api.deepseek.com/chat/completions', key: process.env.DEEPSEEK_API_KEY, model: 'deepseek-chat' },
+    { url: 'https://api.deepseek.com/chat/completions', key: process.env.DEEPSEEK_API_KEY, model: 'deepseek-chat', skipIf: process.env.DEEPSEEK_ENABLED === 'false' },
     { url: 'https://api.mistral.ai/v1/chat/completions', key: process.env.MISTRAL_API_KEY, model: 'mistral-small-latest' }
   ];
   
   for (const p of providers) {
+    if (p.skipIf) { console.log(`[callLLM] SKIP ${p.model}: disabled`); continue; }
     if (!p.key) { console.log(`[callLLM] SKIP ${p.model}: no API key`); continue; }
     try {
       console.log(`[callLLM] Trying ${p.model}...`);

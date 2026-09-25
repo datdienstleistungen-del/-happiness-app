@@ -88,7 +88,7 @@ async function fetchPageText(url, maxChars = 3000) {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml'
       },
-    }, 4000)
+    }, 3000)
     if (!res.ok) return null
     const html = await res.text()
     
@@ -124,12 +124,7 @@ async function crawlTargetWebsite(rawUrl) {
 
   const pagesToCheck = [
     cleanUrl,
-    `https://${domain}/impressum`,
-    `https://${domain}/imprint`,
-    `https://${domain}/about`,
-    `https://${domain}/team`,
-    `https://${domain}/contact`,
-    `https://${domain}/kontakt`
+    `https://${domain}/impressum`
   ]
 
   let collectedText = []
@@ -138,7 +133,7 @@ async function crawlTargetWebsite(rawUrl) {
       const text = await fetchPageText(pageUrl, 2000)
       if (text && text.length > 50) {
         collectedText.push(`--- SEITE: ${pageUrl} ---\n${text}`)
-        if (collectedText.length >= 3) break
+        if (collectedText.length >= 2) break
       }
     } catch (e) {
       continue
@@ -203,7 +198,7 @@ async function tryOpenAIGpt4o(messages) {
 async function tryGroq(messages) {
   const key = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ
   if (!key) return null
-  const models = ['allam-2-7b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b']
+  const models = ['qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'allam-2-7b', 'openai/gpt-oss-120b']
   for (const model of models) {
     try {
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {

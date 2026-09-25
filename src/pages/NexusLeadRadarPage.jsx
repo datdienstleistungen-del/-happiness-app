@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Radar, Search, ArrowRight, Building2, AlertCircle, RefreshCw, Briefcase, Globe, CheckCircle, Sparkles, User, Mail, Copy, HelpCircle } from 'lucide-react'
-import { callNexusAI, runResearchPipeline, callContactIntelligence } from '../lib/nexus-ai'
+import { callContactIntelligence } from '../lib/nexus-ai'
 import { trackRadarScan } from '../lib/nexus-analytics'
 import { supabase } from '../lib/supabase'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
@@ -58,6 +58,14 @@ export default function NexusLeadRadarPage() {
   const [isLoadingContact, setIsLoadingContact] = useState({}) // Format: { [companyName]: boolean }
   const [copiedEmail, setCopiedEmail] = useState(null)
 
+  // Chunked Scan State
+  const [scanJobId, setScanJobId] = useState(null)
+  const [scanStatus, setScanStatus] = useState(null) // null | 'starting' | 'running' | 'done' | 'error'
+  const [scanProgress, setScanProgress] = useState({ current: 0, total: 0 })
+  const [scanMessage, setScanMessage] = useState('')
+  const [scanResults, setScanResults] = useState([])
+  const scanPollingRef = useRef(null)
+
   // State Persistence: Save ALL state to localStorage on every change
   useEffect(() => {
     const stateToSave = { triggers, savedLeads, manualQuery, hasSearched, offeringId: activeOffering?.id || null }
@@ -72,9 +80,9 @@ export default function NexusLeadRadarPage() {
         setTriggers([])
         setSavedLeads([])
         setHasSearched(false)
-        generateTriggersFromOffering(activeOffering, true)
-      } else if (!loading && !hasSearched) {
-        generateTriggersFromOffering(activeOffering)
+        startChunkedScan()
+      } else if (!loading && !hasSearched && !scanStatus) {
+        startChunkedScan()
       }
     }
   }, [activeOffering?.id])
@@ -137,58 +145,19 @@ export default function NexusLeadRadarPage() {
     e.preventDefault()
     if (!manualQuery.trim()) return
 
-    setLoading(true)
-    setError(null)
-    setRawResult(null)
+    // Chunked Scan mit manueller Query starten
     setHasSearched(true)
-
-    try {
-      // Nutze die ECHTE Pipeline (Tavily + Mistral), keine Halluzinationen mehr!
-      const branche = (activeOffering?.target_audience || '').split(/[,(]/)[0].trim()
-      const result = await runResearchPipeline(
-        manualQuery, 
-        branche, 
-        lang,
-        activeOffering?.id
-      )
-
-      setRawResult(result)
-      const parsed = parseTriggerResult(result)
-      setTriggers(parsed)
-      setShowManualSearch(false)
-    } catch (err) {
-      console.error('Lead Radar Fehler:', err)
-      if (err.name === 'RateLimitError') {
-        setShowUpgradeModal(true)
-      } else {
-        setError('Fehler bei der Suche. Bitte versuche es erneut.')
-      }
-    } finally {
-      setLoading(false)
-    }
+    setShowManualSearch(false)
+    startChunkedScan()
   }
 
   const handleWizardComplete = async (data) => {
     setWizardOpen(false)
-    setLoading(true)
-    setError(null)
     setTriggers([])
     
-    try {
-      // Nutze die vom Wizard generierten, hochspezifischen Trigger-Keywords für die Tavily-Suche
-      const result = await runResearchPipeline(data.customNiche, data.audienceProfile, lang, activeOffering?.id)
-      const parsed = parseTriggerResult(result)
-      setTriggers(parsed)
-    } catch (err) {
-      console.error('Wizard Radar Fehler:', err)
-      if (err.name === 'RateLimitError') {
-        setShowUpgradeModal(true)
-      } else {
-        setError(`Fehler bei der Radar-Analyse: ${err?.message || 'Unbekannt'}. Bitte versuche es erneut.`)
-      }
-    } finally {
-      setLoading(false)
-    }
+    // Wizard-Query als manuelle Query verwenden
+    setManualQuery(data.customNiche || data.audienceProfile || '')
+    startChunkedScan()
   }
 
   const parseTriggerResult = (result) => {
@@ -431,6 +400,162 @@ export default function NexusLeadRadarPage() {
     }
   }
 
+  // ============================================================================
+  // CHUNKED SCAN: Start + Polling
+  // ============================================================================
+
+  const startChunkedScan = async () => {
+    if (!activeOffering) return
+
+    // Sofort-Feedback: Button deaktivieren, Lade-Zustand anzeigen
+    setScanStatus('starting')
+    setScanMessage('Suche wird gestartet...')
+    setScanProgress({ current: 0, total: 0 })
+    setScanResults([])
+    setError(null)
+    setTriggers([])
+
+    try {
+      const branche = (activeOffering.target_audience || '').split(/[,(]/)[0].trim()
+      const query = manualQuery || `${activeOffering.offering_name || ''} ${branche}`.trim()
+
+      const res = await fetch('/.netlify/functions/nexus-radar-scan-start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        },
+        body: JSON.stringify({
+          offering_id: activeOffering.id,
+          query,
+          branche
+        })
+      })
+
+      const data = await res.json()
+
+      if (data.status === 'already_running') {
+        // Bestehenden Job übernehmen
+        setScanJobId(data.job_id)
+        setScanStatus('running')
+        startPolling(data.job_id)
+        return
+      }
+
+      if (data.status === 'no_results') {
+        setScanStatus(null)
+        setScanMessage('')
+        setError(data.message || 'Keine Kandidaten-URLs gefunden.')
+        return
+      }
+
+      if (data.job_id) {
+        setScanJobId(data.job_id)
+        setScanStatus('running')
+        setScanProgress({ current: 0, total: data.total_steps })
+        startPolling(data.job_id)
+      }
+    } catch (e) {
+      console.error('[ScanStart] Error:', e)
+      setScanStatus(null)
+      setError('Scan konnte nicht gestartet werden.')
+    }
+  }
+
+  const startPolling = (jobId) => {
+    // Altes Polling stoppen
+    if (scanPollingRef.current) {
+      clearInterval(scanPollingRef.current)
+    }
+
+    scanPollingRef.current = setInterval(async () => {
+      try {
+        const res = await fetch('/.netlify/functions/nexus-radar-scan-step', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          },
+          body: JSON.stringify({ job_id: jobId })
+        })
+
+        const data = await res.json()
+
+        // State updaten
+        setScanProgress({ current: data.current_step, total: data.total_steps })
+        setScanMessage(data.last_message || '')
+        setScanResults(data.partial_results || [])
+
+        if (data.status === 'done') {
+          clearInterval(scanPollingRef.current)
+          scanPollingRef.current = null
+          setScanStatus('done')
+
+          // Trigger aus partial_results extrahieren
+          const allTriggers = (data.partial_results || []).flatMap(r =>
+            (r.triggers || []).map(t => ({
+              company: t.firmenname || 'Unbekanntes Unternehmen',
+              prioritaet: t.prioritaet || 99,
+              bewertung: t.bewertung || '',
+              signal: t.signal || '',
+              psychologische_ansprache: t.psychologische_ansprache || '',
+              quelle: t.quelle || r.url || 'KI-Analyse',
+              ansprechpartner: {
+                name: t.ansprechpartner || null,
+                rolle: t.position || null,
+                email: t.kontakt || null,
+                email_status: t.kontakt ? 'FOUND' : 'UNKNOWN',
+                confidence: null,
+                source_url: t.quelle || r.url || null
+              }
+            }))
+          ).sort((a, b) => a.prioritaet - b.prioritaet)
+
+          setTriggers(allTriggers)
+        }
+
+        if (data.status === 'error') {
+          clearInterval(scanPollingRef.current)
+          scanPollingRef.current = null
+          setScanStatus('error')
+          setError(data.error_message || 'Scan abgebrochen.')
+
+          // Was bisher gefunden wurde, trotzdem anzeigen
+          const partialTriggers = (data.partial_results || []).flatMap(r =>
+            (r.triggers || []).map(t => ({
+              company: t.firmenname || 'Unbekanntes Unternehmen',
+              prioritaet: t.prioritaet || 99,
+              bewertung: t.bewertung || '',
+              signal: t.signal || '',
+              psychologische_ansprache: t.psychologische_ansprache || '',
+              quelle: t.quelle || r.url || 'KI-Analyse',
+              ansprechpartner: {
+                name: t.ansprechpartner || null,
+                rolle: t.position || null,
+                email: t.kontakt || null,
+                email_status: t.kontakt ? 'FOUND' : 'UNKNOWN',
+                confidence: null,
+                source_url: t.quelle || r.url || null
+              }
+            }))
+          )
+          if (partialTriggers.length > 0) setTriggers(partialTriggers)
+        }
+      } catch (e) {
+        console.error('[ScanStep] Polling error:', e)
+      }
+    }, 500) // Alle 500ms pollen
+  }
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (scanPollingRef.current) {
+        clearInterval(scanPollingRef.current)
+      }
+    }
+  }, [])
+
   return (
     <div className="lead-radar-page">
       <header className="page-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
@@ -460,13 +585,13 @@ export default function NexusLeadRadarPage() {
                   localStorage.removeItem('nexus:radar_state')
                   localStorage.removeItem('nexus:radar_triggers')
                   setTriggers([])
-                  generateTriggersFromOffering(activeOffering, true)
+                  startChunkedScan()
                 }} 
                 style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px' }}
-                disabled={loading}
+                disabled={loading || scanStatus === 'starting' || scanStatus === 'running'}
                 title="Ergebnisse verwerfen und eine frische Live-Recherche starten"
               >
-                <RefreshCw size={15} className={loading ? 'spinning' : ''} /> {t('nexus.rescan', 'Radar neu scannen')}
+                <RefreshCw size={15} className={loading || scanStatus === 'starting' || scanStatus === 'running' ? 'spinning' : ''} /> {t('nexus.rescan', 'Radar neu scannen')}
               </button>
             )}
             <button className="btn-primary" onClick={() => setWizardOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -494,11 +619,62 @@ export default function NexusLeadRadarPage() {
         </div>
       )}
 
-      {/* Loading state */}
-      {loading && (
+      {/* Loading state (old pipeline) */}
+      {loading && !scanStatus && (
         <div className="lead-radar-loading">
           <div className="nexus-spinner"></div>
           <p>{t('nexus.scanning')} "{activeOffering?.offering_name}"...</p>
+        </div>
+      )}
+
+      {/* Chunked Scan Progress */}
+      {(scanStatus === 'starting' || scanStatus === 'running') && (
+        <div style={{
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--border-light)',
+          borderRadius: '12px',
+          padding: '20px 24px',
+          marginTop: '20px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+            {/* Pulsierender Punkt */}
+            <div style={{
+              width: '10px',
+              height: '10px',
+              borderRadius: '50%',
+              background: '#3B82F6',
+              animation: 'pulse 1.5s ease-in-out infinite'
+            }} />
+            <span style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+              {scanMessage || 'Suche läuft...'}
+            </span>
+          </div>
+          
+          {/* Fortschrittsbalken */}
+          {scanProgress.total > 0 && (
+            <div style={{ marginBottom: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                <span>Schritt {scanProgress.current} von {scanProgress.total}</span>
+                <span>{Math.round((scanProgress.current / scanProgress.total) * 100)}%</span>
+              </div>
+              <div style={{ height: '6px', background: 'var(--border-light)', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  background: 'linear-gradient(90deg, #3B82F6, #8B5CF6)',
+                  borderRadius: '3px',
+                  transition: 'width 0.3s ease',
+                  width: `${(scanProgress.current / scanProgress.total) * 100}%`
+                }} />
+              </div>
+            </div>
+          )}
+
+          {/* Fundene bisher */}
+          {scanResults.length > 0 && (
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '8px' }}>
+              {scanResults.filter(r => r.triggers?.length > 0).length} Quellen mit Signalen gefunden
+            </div>
+          )}
         </div>
       )}
       
@@ -512,7 +688,7 @@ export default function NexusLeadRadarPage() {
         <div className="error-message">
           <AlertCircle size={16} />
           {error}
-          <button onClick={() => { setError(null); generateTriggersFromOffering(activeOffering, true) }}>
+          <button onClick={() => { setError(null); setScanStatus(null); startChunkedScan() }}>
             <RefreshCw size={14} /> {t('nexus.rescan')}
           </button>
         </div>

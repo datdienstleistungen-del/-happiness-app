@@ -47,9 +47,9 @@ async function callLLM(messages, { temperature = 0.2, max_tokens = 1500 } = {}) 
     }
   }
 
-  // 2. DeepSeek
+  // 2. DeepSeek (skip if disabled or no balance)
   const dsKey = process.env.DEEPSEEK_API_KEY;
-  if (dsKey) {
+  if (dsKey && process.env.DEEPSEEK_ENABLED !== 'false') {
     try {
       const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
