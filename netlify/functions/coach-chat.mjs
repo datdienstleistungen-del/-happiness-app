@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { checkTextGroundedInSource, detectConcreteNumbers } from './grounding-helpers.mjs'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const CORS_HEADERS = {
@@ -507,6 +508,38 @@ export const handler = async (event) => {
           statusCode: 500,
           headers: CORS_HEADERS,
           body: JSON.stringify({ error: 'Kein KI-Modell konnte die Anfrage beantworten. Bitte versuche es in wenigen Sekunden noch einmal.' })
+        }
+      }
+
+      // --- GROUNDING CHECK: Halluzinationen in Response erkennen ---
+      if (liveContext && responseText) {
+        const groundingWarnings = []
+
+        // 1. E-Mail-Adressen extrahieren und prüfen
+        const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g
+        const emails = responseText.match(emailRegex) || []
+        for (const email of emails) {
+          const grounded = checkTextGroundedInSource(email, liveContext)
+          if (!grounded.grounded) {
+            groundingWarnings.push(`E-Mail "${email}" nicht in Quellen belegt`)
+          }
+        }
+
+        // 2. Konkrete Zahlen prüfen (Prozente, Euro)
+        const { hasNumbers, numbers } = detectConcreteNumbers(responseText)
+        if (hasNumbers) {
+          for (const num of numbers) {
+            const grounded = checkTextGroundedInSource(num, liveContext)
+            if (!grounded.grounded) {
+              groundingWarnings.push(`Zahl "${num}" nicht in Quellen belegt`)
+            }
+          }
+        }
+
+        // 3. Bei Warnungen: Hinweis an Response anhängen
+        if (groundingWarnings.length > 0) {
+          console.warn(`[coach-chat] Grounding warnings:`, groundingWarnings)
+          responseText += `\n\n---\n⚠️ **Hinweis:** Folgende Aussagen konnten nicht anhand der verfügbaren Quellen verifiziert werden:\n${groundingWarnings.map(w => `- ${w}`).join('\n')}\nBitte gegenprüfen bevor du diese Informationen verwendest.`
         }
       }
 
