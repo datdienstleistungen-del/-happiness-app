@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { checkTextGroundedInSource, detectConcreteNumbers } from './grounding-helpers.mjs'
+import { GROQ_COACH } from './nexus-models.mjs'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const CORS_HEADERS = {
@@ -199,7 +200,7 @@ async function tryOpenAIGpt4o(messages) {
 async function tryGroq(messages) {
   const key = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ
   if (!key) return null
-  const models = ['qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'allam-2-7b', 'openai/gpt-oss-120b']
+  const models = GROQ_COACH
   for (const model of models) {
     try {
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
