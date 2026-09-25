@@ -27,37 +27,27 @@ export default function NexusLeadRadarPage() {
       const oldTriggers = localStorage.getItem('nexus:radar_triggers')
       const oldSaved = localStorage.getItem('nexus:radar_saved_leads')
       
-      // Alte spanische / ausländische Test-Daten aus dem Cache entfernen
+      // Alte spanische / veraltete / FERCAM Test-Daten aus dem Cache entfernen
       const sample = JSON.stringify(parsed || oldTriggers || '').toLowerCase()
-      if (sample.includes('biopharma') || sample.includes('logichain') || sample.includes('innovación') || sample.includes('soluciones industriales') || sample.includes('estadounidense')) {
+      if (sample.includes('biopharma') || sample.includes('logichain') || sample.includes('innovación') || sample.includes('soluciones industriales') || sample.includes('estadounidense') || sample.includes('fercam') || sample.includes('troisdorf')) {
         localStorage.removeItem('nexus:radar_state')
         localStorage.removeItem('nexus:radar_triggers')
         localStorage.removeItem('nexus:radar_saved_leads')
-        return { triggers: [], savedLeads: [], manualQuery: '', hasSearched: false }
-      }
-
-      // MIGRATION ERZWINGEN: Wenn wir noch alte Leads haben, aber der neue State leer ist
-      if (oldTriggers && (!parsed || !parsed.triggers || parsed.triggers.length === 0)) {
-        return {
-          triggers: JSON.parse(oldTriggers),
-          savedLeads: oldSaved ? JSON.parse(oldSaved) : [],
-          manualQuery: '',
-          hasSearched: true
-        }
+        return { triggers: [], savedLeads: [], manualQuery: '', hasSearched: false, offeringId: null }
       }
 
       if (parsed) return parsed
 
-      return { triggers: [], savedLeads: [], manualQuery: '', hasSearched: false }
+      return { triggers: [], savedLeads: [], manualQuery: '', hasSearched: false, offeringId: null }
     } catch {
-      return { triggers: [], savedLeads: [], manualQuery: '', hasSearched: false }
+      return { triggers: [], savedLeads: [], manualQuery: '', hasSearched: false, offeringId: null }
     }
   })
   
-  const [triggers, setTriggers] = useState(radarState.triggers)
-  const [savedLeads, setSavedLeads] = useState(radarState.savedLeads)
-  const [manualQuery, setManualQuery] = useState(radarState.manualQuery)
-  const [hasSearched, setHasSearched] = useState(radarState.hasSearched)
+  const [triggers, setTriggers] = useState(radarState.triggers || [])
+  const [savedLeads, setSavedLeads] = useState(radarState.savedLeads || [])
+  const [manualQuery, setManualQuery] = useState(radarState.manualQuery || '')
+  const [hasSearched, setHasSearched] = useState(radarState.hasSearched || false)
   
   const [rawResult, setRawResult] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -70,23 +60,33 @@ export default function NexusLeadRadarPage() {
 
   // State Persistence: Save ALL state to localStorage on every change
   useEffect(() => {
-    const stateToSave = { triggers, savedLeads, manualQuery, hasSearched }
+    const stateToSave = { triggers, savedLeads, manualQuery, hasSearched, offeringId: activeOffering?.id || null }
     localStorage.setItem('nexus:radar_state', JSON.stringify(stateToSave))
-  }, [triggers, savedLeads, manualQuery, hasSearched])
+  }, [triggers, savedLeads, manualQuery, hasSearched, activeOffering?.id])
 
-  // Automatisch Trigger-Suche starten, sobald ein Offering aktiv ist UND noch nie gesucht wurde
+  // Automatisch Trigger-Suche starten, sobald ein Offering aktiv ist oder gewechselt wurde
   useEffect(() => {
-    if (activeOffering && !loading && !hasSearched) {
-      generateTriggersFromOffering(activeOffering)
+    if (activeOffering) {
+      if (radarState?.offeringId && radarState.offeringId !== activeOffering.id) {
+        // Altes Offering gewechselt -> Frischer Scan für das neue Angebot!
+        setTriggers([])
+        setSavedLeads([])
+        setHasSearched(false)
+        generateTriggersFromOffering(activeOffering, true)
+      } else if (!loading && !hasSearched) {
+        generateTriggersFromOffering(activeOffering)
+      }
     }
-  }, [activeOffering]) // trigger-Abhängigkeit absichtlich weggelassen, entscheidet nur hasSearched
+  }, [activeOffering?.id])
 
-  const generateTriggersFromOffering = async (offering) => {
+  const generateTriggersFromOffering = async (offering, force = false) => {
+    if (!offering) return
     setLoading(true)
     setError(null)
     setHasSearched(true)
-    // WICHTIG: Alte Triggers NICHT löschen (setTriggers([])), damit sie nicht im LocalStorage
-    // überschrieben werden, falls der Nutzer während der Ladezeit die Seite verlässt!
+    if (force) {
+      setTriggers([])
+    }
 
     try {
       // Bevorzugt: Signal-Strategien aus DB (generiert von nexus-generate-strategies)
@@ -452,9 +452,27 @@ export default function NexusLeadRadarPage() {
               }
             </p>
           </div>
-          <button className="btn-primary" onClick={() => setWizardOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Sparkles size={16} /> {t('nexus.setupAssistant', 'Setup-Assistent')}
-          </button>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {activeOffering && (
+              <button 
+                className="btn-secondary" 
+                onClick={() => {
+                  localStorage.removeItem('nexus:radar_state')
+                  localStorage.removeItem('nexus:radar_triggers')
+                  setTriggers([])
+                  generateTriggersFromOffering(activeOffering, true)
+                }} 
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px' }}
+                disabled={loading}
+                title="Ergebnisse verwerfen und eine frische Live-Recherche starten"
+              >
+                <RefreshCw size={15} className={loading ? 'spinning' : ''} /> {t('nexus.rescan', 'Radar neu scannen')}
+              </button>
+            )}
+            <button className="btn-primary" onClick={() => setWizardOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Sparkles size={16} /> {t('nexus.setupAssistant', 'Setup-Assistent')}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -494,7 +512,7 @@ export default function NexusLeadRadarPage() {
         <div className="error-message">
           <AlertCircle size={16} />
           {error}
-          <button onClick={() => { setError(null); generateTriggersFromOffering(activeOffering) }}>
+          <button onClick={() => { setError(null); generateTriggersFromOffering(activeOffering, true) }}>
             <RefreshCw size={14} /> {t('nexus.rescan')}
           </button>
         </div>
@@ -508,7 +526,7 @@ export default function NexusLeadRadarPage() {
           <button 
             className="btn-primary" 
             style={{ marginTop: '15px' }}
-            onClick={() => { setError(null); generateTriggersFromOffering(activeOffering) }}
+            onClick={() => { setError(null); generateTriggersFromOffering(activeOffering, true) }}
           >
             <RefreshCw size={14} style={{ marginRight: '8px' }} />
             {t('nexus.rescan', 'Nochmal scannen')}
@@ -519,8 +537,21 @@ export default function NexusLeadRadarPage() {
       {/* Results */}
       {triggers.length > 0 && !loading && (
         <div className="lead-radar-results">
-          <div className="results-header">
+          <div className="results-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2>{triggers.length} {t('nexus.signalsFound')}</h2>
+            <button 
+              className="btn-secondary"
+              onClick={() => {
+                localStorage.removeItem('nexus:radar_state')
+                localStorage.removeItem('nexus:radar_triggers')
+                setTriggers([])
+                generateTriggersFromOffering(activeOffering, true)
+              }}
+              style={{ fontSize: '0.85rem', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              disabled={loading}
+            >
+              <RefreshCw size={13} className={loading ? 'spinning' : ''} /> {t('nexus.rescan', 'Neu scannen')}
+            </button>
           </div>
           <div className="triggers-list">
             {triggers.map((trigger, index) => (
