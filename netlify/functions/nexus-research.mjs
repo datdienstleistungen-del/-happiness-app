@@ -59,7 +59,7 @@ async function callAI(messages, { temperature = 0.3, max_tokens = 4096, jsonMode
   // 1. Groq (High Speed & Free/Low-Cost Priority)
   const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ;
   if (groqKey) {
-    const models = ['allam-2-7b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b'];
+    const models = ['openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const model of models) {
       try {
         const payload = { model, messages, temperature, max_tokens };
@@ -335,10 +335,19 @@ export const handler = async (event) => {
       searchQuery = `${branche || ''} ${angebot ? angebot.slice(0, 80) : ''} Expansion Investition Modernisierung`.trim();
     }
 
-    const isDe = (lang || 'de') === 'de';
-    const effectiveQuery = searchQuery
-      ? `${searchQuery} expansion investment growth`.trim()
-      : `${branche || ''} ${angebot ? angebot.slice(0, 80) : ''} B2B companies expansion investment partnership`.trim();
+    // Intelligent Query Cleaning: Extract core keywords rather than raw multi-sentence descriptions
+    const cleanCore = (searchQuery || `${branche || ''} ${angebot || ''}`)
+      .replace(/ich möchte|ein neues|verkaufen|cloudbasierte|dienstleistung|angebot|software für|unsere|kunden/gi, ' ')
+      .replace(/[^\w\säöüÄÖÜß-]/g, ' ')
+      .trim();
+    const coreWords = cleanCore.split(/\s+/).filter(w => w.length > 2);
+    const compactKeywords = coreWords.slice(0, 4).join(' ') || 'IT B2B Unternehmen';
+
+    const searchQueriesToTry = [
+      searchQuery ? `${searchQuery.slice(0, 60)}` : '',
+      `${compactKeywords} Expansion Investition Wachstum`,
+      branche ? `${branche} Neugeschäft Expansion` : 'Mittelstand Expansion Wachstum'
+    ].filter(Boolean);
 
     // Multi-key Tavily with failover & DuckDuckGo fallback
     const tavilyKeys = [
@@ -351,54 +360,82 @@ export const handler = async (event) => {
     let tavilyData = null;
     let searchSource = 'Tavily Deep Search';
 
-    for (const key of tavilyKeys) {
-      try {
-        const tavilyRes = await fetch("https://api.tavily.com/search", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            api_key: key,
-            query: effectiveQuery,
-            search_depth: "advanced",
-            include_answer: false,
-            max_results: 10,
-            topic: "news",
-            days: 14
-          })
-        });
+    for (const q of searchQueriesToTry) {
+      if (tavilyData && tavilyData.results && tavilyData.results.length > 0) break;
 
-        if (tavilyRes.ok) {
-          const data = await tavilyRes.json();
-          if (data && data.results && data.results.length > 0) {
-            tavilyData = data;
-            break;
+      for (const key of tavilyKeys) {
+        try {
+          // Versuche zuerst topic: news (30 Tage)
+          let tavilyRes = await fetch("https://api.tavily.com/search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              api_key: key,
+              query: q,
+              search_depth: "advanced",
+              include_answer: false,
+              max_results: 10,
+              topic: "news",
+              days: 30
+            })
+          });
+
+          if (tavilyRes.ok) {
+            const data = await tavilyRes.json();
+            if (data && data.results && data.results.length > 0) {
+              tavilyData = data;
+              break;
+            }
           }
-        } else {
-          console.warn(`[nexus-research] Tavily Key ${key.substring(0, 8)}... meldet Status ${tavilyRes.status}, wechsle auf nächsten Key...`);
+
+          // Wenn 0 News-Ergebnisse: Versuche topic: general (findet immer aktuelle Web-Signale)
+          tavilyRes = await fetch("https://api.tavily.com/search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              api_key: key,
+              query: `${q} 2026`,
+              search_depth: "advanced",
+              include_answer: false,
+              max_results: 10,
+              topic: "general"
+            })
+          });
+
+          if (tavilyRes.ok) {
+            const data = await tavilyRes.json();
+            if (data && data.results && data.results.length > 0) {
+              tavilyData = data;
+              break;
+            }
+          }
+        } catch (keyErr) {
+          console.warn(`[nexus-research] Tavily Fetch Error:`, keyErr.message);
         }
-      } catch (keyErr) {
-        console.warn(`[nexus-research] Tavily Fetch Error:`, keyErr.message);
       }
     }
 
     // Ultimativer Fallback: DuckDuckGo falls alle Tavily Keys erschöpft sind
     if (!tavilyData || !tavilyData.results || tavilyData.results.length === 0) {
       console.log(`[nexus-research] Alle Tavily Keys erschöpft/nicht verfügbar. Aktiviere DuckDuckGo Fallback-Suche...`);
-      try {
-        const ddgResults = await searchDuckDuckGo(effectiveQuery, 10);
-        if (ddgResults && ddgResults.length > 0) {
-          tavilyData = {
-            results: ddgResults.map(r => ({
-              url: r.url,
-              title: r.title,
-              content: r.snippet,
-              published_date: new Date().toISOString()
-            }))
-          };
-          searchSource = 'DuckDuckGo Search (Fallback)';
+      for (const q of searchQueriesToTry) {
+        try {
+          const ddgResults = await searchDuckDuckGo(q, 10);
+          if (ddgResults && ddgResults.length > 0) {
+            tavilyData = {
+              results: ddgResults.map(r => ({
+                url: r.url,
+                title: r.title,
+                content: r.snippet,
+                published_date: new Date().toISOString()
+              }))
+            };
+            searchSource = 'DuckDuckGo Search (Fallback)';
+            break;
+          }
+        } catch (ddgErr) {
+          console.warn(`[nexus-research] DuckDuckGo Fallback Error:`, ddgErr.message);
         }
-      } catch (ddgErr) {
-        console.warn(`[nexus-research] DuckDuckGo Fallback Error:`, ddgErr.message);
       }
     }
 
