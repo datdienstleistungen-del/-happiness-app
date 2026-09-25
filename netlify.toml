@@ -5,10 +5,12 @@
 
 [functions]
   node_bundler = "esbuild"
-  timeout = 26
 
 [functions."cron-search"]
   schedule = "*/15 * * * *"
+
+[functions."coach-chat"]
+  timeout = 26
 
 [functions."cron-evaluate"]
   schedule = "*/15 * * * *"
