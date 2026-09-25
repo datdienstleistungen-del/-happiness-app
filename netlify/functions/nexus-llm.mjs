@@ -163,7 +163,7 @@ async function tryOpenRouter(messages, temperature = 0.3, hasImage = false, sign
       }
 
       const data = await res.json();
-      const rawText = data.choices?.[0]?.message?.content;
+      const rawText = data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning;
       if (rawText) {
         console.log(`[NEXUS] OpenRouter (${model}) [${tier}] succeeded in ${elapsed}ms`);
         return { text: cleanModelOutput(rawText), provider: 'openrouter', model, tier, durationMs: elapsed };
