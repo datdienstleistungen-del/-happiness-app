@@ -18,10 +18,10 @@ const BACKUP_MISTRAL = _k([89,66,95,94,95,90,76,71,126,25,126,100,72,18,78,108,9
 const BACKUP_OPENROUTER = _k([89,65,7,69,88,7,92,27,7,72,72,79,76,26,19,75,76,18,28,75,76,27,18,75,31,29,28,28,24,27,79,79,24,78,76,19,76,31,19,78,25,76,30,78,28,26,79,26,25,27,78,78,26,27,78,31,30,28,28,72,79,24,24,29,79,24,18,79,29,31,19,19,27]);
 
 async function callAI(messages, { temperature = 0.7, max_tokens = 4096, jsonMode = false } = {}) {
-  // 1. Groq (High Speed & Free/Low-Cost Priority)
+  // 1. Groq (High Speed & Low-Cost: gpt-oss-20b is rock-solid for complex JSON)
   const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ;
   if (groqKey) {
-    const models = ['allam-2-7b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b'];
+    const models = ['openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'allam-2-7b'];
     for (const model of models) {
       try {
         const payload = { model, messages, temperature, max_tokens };
@@ -64,7 +64,7 @@ async function callAI(messages, { temperature = 0.7, max_tokens = 4096, jsonMode
             'X-Title': 'NeXus Strategies'
           },
           body: JSON.stringify({ model, messages, temperature, max_tokens })
-        }, 3000);
+        }, 5000);
         if (res.status === 429) {
           clearTimeout(timer);
           break; // Abort whole provider on 429
@@ -93,7 +93,7 @@ async function callAI(messages, { temperature = 0.7, max_tokens = 4096, jsonMode
         method: 'POST',
         headers: { 'Authorization': `Bearer ${mistralKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-      }, 3000);
+      }, 5000);
       if (res.ok) {
         const data = await res.json();
         clearTimeout(timer);
@@ -117,7 +117,7 @@ async function callAI(messages, { temperature = 0.7, max_tokens = 4096, jsonMode
         method: 'POST',
         headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-      }, 3000);
+      }, 5000);
       if (res.ok) {
         const data = await res.json();
         clearTimeout(timer);
@@ -212,11 +212,40 @@ Antworte AUSSCHLIESSLICH im folgenden JSON-Format:
       return { statusCode: 500, body: JSON.stringify({ error: "Invalid JSON from AI" }) };
     }
 
-    if (!parsed.strategies || !Array.isArray(parsed.strategies)) {
-      return { statusCode: 500, body: JSON.stringify({ error: "AI generated no valid strategies array." }) };
+    let rawStrategies = [];
+    if (Array.isArray(parsed)) {
+      rawStrategies = parsed;
+    } else if (Array.isArray(parsed.strategies)) {
+      rawStrategies = parsed.strategies;
+    } else if (Array.isArray(parsed.signal_strategies)) {
+      rawStrategies = parsed.signal_strategies;
+    } else if (Array.isArray(parsed.data)) {
+      rawStrategies = parsed.data;
+    } else {
+      for (const val of Object.values(parsed)) {
+        if (Array.isArray(val) && val.length > 0) {
+          rawStrategies = val;
+          break;
+        }
+      }
     }
 
-    const validStrategies = parsed.strategies.filter(s => s.signal_category && s.trigger_name && s.why_relevant);
+    const validStrategies = rawStrategies.map(s => {
+      const category = s.signal_category || s.category || s.type || 'expansion';
+      const triggerName = s.trigger_name || s.name || s.trigger || s.title || 'Signal Trigger';
+      const whyRelevant = s.why_relevant || s.why || s.relevance || s.reason || s.explanation || 'Relevanter B2B Vertriebs-Trigger';
+      const queries = s.search_queries || s.queries || (s.query ? [{ market: 'Global', language: 'de', query: s.query }] : []);
+      const sources = s.source_hints || s.sources || s.hints || ['Web & LinkedIn'];
+
+      return {
+        signal_category: category,
+        trigger_name: triggerName,
+        why_relevant: whyRelevant,
+        search_queries: queries,
+        source_hints: sources
+      };
+    }).filter(s => s.trigger_name && s.why_relevant);
+
     if (validStrategies.length === 0) {
       return { statusCode: 500, body: JSON.stringify({ error: "AI generated no valid strategies." }) };
     }
