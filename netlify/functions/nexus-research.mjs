@@ -68,7 +68,7 @@ async function callAI(messages, { temperature = 0.3, max_tokens = 4096, jsonMode
           method: 'POST',
           headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
-        }, 3000);
+        }, 6500);
         if (res.status === 429) {
           clearTimeout(timer);
           break; // Abort whole provider on 429
@@ -102,7 +102,7 @@ async function callAI(messages, { temperature = 0.3, max_tokens = 4096, jsonMode
             'X-Title': 'NeXus Research'
           },
           body: JSON.stringify({ model, messages, temperature, max_tokens })
-        }, 3000);
+        }, 6500);
         if (res.status === 429) {
           clearTimeout(timer);
           break; // Abort whole provider on 429
@@ -131,7 +131,7 @@ async function callAI(messages, { temperature = 0.3, max_tokens = 4096, jsonMode
         method: 'POST',
         headers: { 'Authorization': `Bearer ${mistralKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-      }, 3000);
+      }, 6500);
       if (res.ok) {
         const data = await res.json();
         clearTimeout(timer);
@@ -155,7 +155,7 @@ async function callAI(messages, { temperature = 0.3, max_tokens = 4096, jsonMode
         method: 'POST',
         headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-      }, 3000);
+      }, 6500);
       if (res.ok) {
         const data = await res.json();
         clearTimeout(timer);
@@ -335,19 +335,31 @@ export const handler = async (event) => {
       searchQuery = `${branche || ''} ${angebot ? angebot.slice(0, 80) : ''} Expansion Investition Modernisierung`.trim();
     }
 
-    // Intelligent Query Cleaning: Extract core keywords rather than raw multi-sentence descriptions
-    const cleanCore = (searchQuery || `${branche || ''} ${angebot || ''}`)
-      .replace(/ich möchte|ein neues|verkaufen|cloudbasierte|dienstleistung|angebot|software für|unsere|kunden/gi, ' ')
-      .replace(/[^\w\säöüÄÖÜß-]/g, ' ')
-      .trim();
-    const coreWords = cleanCore.split(/\s+/).filter(w => w.length > 2);
-    const compactKeywords = coreWords.slice(0, 4).join(' ') || 'IT B2B Unternehmen';
+    // Intelligent Buyer & Market Search Queries: Target companies experiencing buying events
+    const contextText = `${searchQuery || ''} ${branche || ''} ${angebot || ''}`.toLowerCase();
+    const searchQueriesToTry = [];
+    
+    if (contextText.includes('it') || contextText.includes('software') || contextText.includes('crm') || contextText.includes('cloud') || contextText.includes('saas') || contextText.includes('tech')) {
+      searchQueriesToTry.push('IT-Dienstleister OR Softwarehaus OR IT-Systemhaus expandiert ODER Übernahme ODER Wachstum');
+      searchQueriesToTry.push('IT-Systemhaus expandiert ODER neue Niederlassung ODER Übernahme');
+      searchQueriesToTry.push('Softwareunternehmen Wachstum Finanzierung Neugeschäft');
+    } else if (contextText.includes('logistik') || contextText.includes('transport') || contextText.includes('spedition')) {
+      searchQueriesToTry.push('Logistikunternehmen OR Spedition neue Niederlassung ODER Expansion ODER Übernahme');
+      searchQueriesToTry.push('Transportlogistik Lagerneubau Expansion Investition');
+    } else if (contextText.includes('bau') || contextText.includes('halle') || contextText.includes('immobilie')) {
+      searchQueriesToTry.push('Gewerbebau Neubau Logistikzentrum Spatenstich Baugenehmigung');
+      searchQueriesToTry.push('Industriebau Hallenbau Spatenstich Expansion');
+    } else if (contextText.includes('beratung') || contextText.includes('consulting') || contextText.includes('agentur')) {
+      searchQueriesToTry.push('Unternehmensberatung Agentur Fusion ODER Expansion ODER Übernahme');
+    } else if (branche && branche !== 'B2B Entscheider') {
+      searchQueriesToTry.push(`${branche} expandiert ODER Übernahme ODER Wachstum ODER Neueröffnung`);
+    }
 
-    const searchQueriesToTry = [
-      searchQuery ? `${searchQuery.slice(0, 60)}` : '',
-      `${compactKeywords} Expansion Investition Wachstum`,
-      branche ? `${branche} Neugeschäft Expansion` : 'Mittelstand Expansion Wachstum'
-    ].filter(Boolean);
+    if (searchQuery && searchQuery.length < 80 && !searchQuery.toLowerCase().includes('cloudbasierte')) {
+      searchQueriesToTry.unshift(searchQuery);
+    }
+    
+    searchQueriesToTry.push('Mittelstand Unternehmen Expansion ODER Übernahme ODER Investition');
 
     // Multi-key Tavily with failover & DuckDuckGo fallback
     const tavilyKeys = [
@@ -360,12 +372,18 @@ export const handler = async (event) => {
     let tavilyData = null;
     let searchSource = 'Tavily Deep Search';
 
+    const B2B_NEWS_DOMAINS = [
+      'pressebox.de', 'openpr.de', 'it-business.de', 'crn.de', 'handelsblatt.com', 
+      'wiwo.de', 'unternehmensboerse.de', 'northdata.de', 'bundesanzeiger.de',
+      'heise.de', 'golem.de', 'computerwoche.de'
+    ];
+
     for (const q of searchQueriesToTry) {
       if (tavilyData && tavilyData.results && tavilyData.results.length > 0) break;
 
       for (const key of tavilyKeys) {
         try {
-          // Versuche zuerst topic: news (30 Tage)
+          // 1. Priorität: Gezielte Suche auf B2B- & Wirtschafts-Nachrichtenportalen
           let tavilyRes = await fetch("https://api.tavily.com/search", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -375,8 +393,7 @@ export const handler = async (event) => {
               search_depth: "advanced",
               include_answer: false,
               max_results: 10,
-              topic: "news",
-              days: 30
+              include_domains: B2B_NEWS_DOMAINS
             })
           });
 
@@ -388,7 +405,7 @@ export const handler = async (event) => {
             }
           }
 
-          // Wenn 0 News-Ergebnisse: Versuche topic: general (findet immer aktuelle Web-Signale)
+          // 2. Priorität: Allgemeine Web-Suche
           tavilyRes = await fetch("https://api.tavily.com/search", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -439,7 +456,9 @@ export const handler = async (event) => {
       }
     }
 
+    console.log('[nexus-research] tavilyData count:', tavilyData?.results?.length);
     if (!tavilyData || !tavilyData.results || tavilyData.results.length === 0) {
+      console.log('[nexus-research] Returning early due to empty tavilyData');
       return {
         statusCode: 200,
         body: JSON.stringify({ trigger_events: [] }),
@@ -448,7 +467,6 @@ export const handler = async (event) => {
     }
 
     // --- STUFE 4.5: CONTENT SAFETY & BLACKLIST FILTERING ---
-    // (Verhindert, dass sensible, private oder medizinische Notlagen in den Coach fließen)
     const BANNED_DOMAINS = [
       'gofundme.com', 'reddit.com/r/medical', 'reddit.com/r/askdocs', 'reddit.com/r/suicidewatch',
       'reddit.com/r/depression', 'reddit.com/r/relationship_advice', 'webmd.com', 'healthline.com'
@@ -476,7 +494,9 @@ export const handler = async (event) => {
       return true;
     });
 
+    console.log('[nexus-research] safeResults count:', safeResults.length);
     if (safeResults.length === 0) {
+      console.log('[nexus-research] Returning early due to empty safeResults');
       return {
         statusCode: 200,
         body: JSON.stringify({ trigger_events: [] }),
@@ -546,45 +566,28 @@ export const handler = async (event) => {
     const currentMonthYear = new Date().toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
 
     const systemPrompt = `Du bist die zentrale Intelligence Engine für das "Nexus Sales Operation System" und ein brillanter B2B-Verkaufspsychologe.
-    Hier ist ein roher Daten-Pool aus echten Internet-Quellen zu folgenden Suchbegriffen: "${searchQuery}".
+    Hier ist ein Daten-Pool aus echten Internet- und Wirtschaftsquellen zu folgenden Suchbegriffen: "${searchQuery}".
+    Angebot / Kontext des Nutzers: "${angebot || searchQuery || 'B2B Software & Services'}" (Branche/Zielgruppe: "${branche || 'B2B'}").
     
-    DEIN ZIEL: Finde konkrete, namentlich genannte B2B-Unternehmen, die aufgrund der News HEUTE GERADE einen aktiven Bedarf an unserem Angebot haben.
+    DEIN ZIEL: Finde konkrete, namentlich genannte B2B-Unternehmen aus den Web-Ergebnissen, die aufgrund der aktuellen News/Signale HEUTE einen aktiven Bedarf an unserem Angebot haben.
     
-    # CORE RULE: THE SALES WINDOW (TIMING-FILTER)
-    Ein faktisch korrekter Trigger ohne zeitliche Relevanz ist für den Vertrieb wertlos ("False Positive"). 
-    1. AKTUELLES DATUM: Prüfe jedes Ereignis streng gegen das heutige Datum (${currentIsoDate} / ${currentMonthYear}, Jahr ${currentYear}).
-    2. ZULÄSSIGES ZEITFENSTER FÜR TRIGGER:
-       - GEPLANT / IN UMSETZUNG: Das Ereignis/Projekt findet in den nächsten 3 bis 12 Monaten statt (Zukunft!).
-       - REZENT VERÖFFENTLICHT: Die Ankündigung/Baugenehmigung/Meldung ist maximal 90 Tage alt.
-    3. HARD REJECT (SOFORT VERWERFEN):
-       - Wenn das Ereignis (z. B. Eröffnung, Fertigstellung, M&A-Abschluss) bereits stattgefunden hat und LÄNGER ALS 90 TAGE zurückliegt.
-       - Achte auf historische Formulierungen wie: "eröffnete im vergangenen Jahr", "blickte zurück auf", "wurde vor 12 Monaten fertiggestellt", "bereits seit ${currentYear - 1} in Betrieb".
-       - Veraltete Ereignisse (z.B. Eröffnungen aus vergangenen Jahren wie 2025/2024 oder länger als 90 Tage her) sind STRIKT ZU VERWERFEN!
+    # KAUFSIGNAL-KATEGORIEN (TRIGGER TYPES):
+    1. EXPANSION & WACHSTUM: Eröffnung neuer Standorte, Internationalisierung, Umsatzwachstum, Personalaufbau, Skalierung.
+    2. FÜHRUNGS- & STRATEGIEWECHSEL: Neuer Geschäftsführer, neuer Vertriebsleiter, Reorganisation, Neuausrichtung.
+    3. M&A & INVESTITIONEN: Übernahmen, Fusionen, Finanzierungsrunden, Investitionsprogramme, Modernisierungen.
+    4. SYSTEMWECHSEL & DIGITALISIERUNG: Ablösung alter Systeme, Tool-Wechsel, Digitalisierungsprojekte, Prozessoptimierung.
+    5. NEUES PRODUKT / PROJEKTE: Neue Produktlinien, Großaufträge, neue Marktsegmente.
     
-    # GEWERK- UND PHASE-MATCHING
-    - PHASE 1: Planung / Grundstückskauf / Baugenehmigung / GU-Suche --> STATUS: 🟢 TOP SALES TRIGGER (Maximaler Match für Neugeschäft & Gewerk-Ausschreibung)
-    - PHASE 2: Spatenstich / Baubeginn / Rohbau --> STATUS: 🟡 LAST MINUTE (Hoher Zeitdruck, nur noch direkte Vergabe möglich)
-    - PHASE 3: Eröffnung / Inbetriebnahme / Banddurchschneiden --> STATUS: 🔴 ABGELAUFEN für Erstausstattung/Neubau (NUR als 🔵 SERVICE-TRIGGER zulassen, falls explizit Wartung/Reparatur im Bestand gesucht wird - ansonsten VERWERFEN).
-    
-    # OUTPUT-VALIDIERUNG (CHECKLISTE VOR DATENAUSGABE)
-    1. [ ] Nachricht max. 90 Tage alt?
-    2. [ ] Reales Ereignis in der Zukunft oder max. 90 Tage her?
-    3. [ ] Bietet das Ereignis heute (${currentYear}) noch ein reales Handlungsfenster für den Vertrieb?
-    Wenn Punkt 1, 2 oder 3 fehlschlagen: VERWERFE DEN TRIGGER.
-    
-    STRIKTE ZERO-HALLUCINATION-REGELN (MANDATORISCH):
-    1. VERWIRF abstrakte Marktberichte, Studien oder allgemeine Branchentrends komplett!
-    2. Akzeptiere NUR echte, spezifische Firmen aus dem Quelltext. Erfinde NIEMALS Firmennamen.
-    3. ERFINDE NIEMALS Ansprechpartner, Namen, E-Mails, Telefonnummern oder Web-Links!
-    4. "ansprechpartner": Gib NUR dann einen Namen an, wenn eine Person wörtlich im Quelltext des Artikels genannt wird. Wenn KEINE Person im Text steht, MUSS dieser Wert null sein.
-    5. "kontakt": Gib NUR dann eine E-Mail/Telefon an, wenn sie wortwörtlich im Quelltext steht. Sonst MUSS dieser Wert null sein.
-    6. "quelle": MUSS exakt die reale URL aus den Suchergebnissen sein.
-    7. CONTENT SAFETY: Ignoriere strikt jede Meldung über Unfälle, Verbrechen, Krankheit oder Notlagen.
+    # STRIKTE REGELN:
+    1. AKZEPTIERE NUR ECHTE UNTERNEHMEN: Nutze ausschließlich reale Firmennamen, die explizit in den Web-Ergebnissen genannt werden. Erfinde NIEMALS Firmen.
+    2. MATCHING ZUM ANGEBOT: Erkläre präzise, warum dieses Ereignis eine Verkaufschance für das analysierte Angebot ("${angebot || searchQuery}") darstellt.
+    3. KEINE HALLUZINIERTEN KONTAKTE: "ansprechpartner" und "kontakt" dürfen NUR befüllt werden, wenn sie wörtlich im Quelltext stehen. Sonst MUSS der Wert null sein.
+    4. QUELLEN: "quelle" MUSS die echte URL aus dem Quelltext sein.
     ${langInstruction}
     
     DEINE AUFGABE: Werte die gefundenen Leads aus und SORTIERE SIE nach Priorität (1 ist der absolut beste Lead).
     
-    Für jede echte Chance musst du exakt folgendes JSON-Objekt-Format zurückgeben:
+    Gib ein JSON-Objekt mit EXAKT folgender Struktur zurück:
     {
       "trigger_events": [
         {
@@ -593,7 +596,7 @@ export const handler = async (event) => {
           "branche": "Branche des Zielunternehmens",
           "prioritaet": 1,
           "bewertung": "A - Höchste Chance. Warum?",
-          "signal": "Was ist exakt passiert? (z.B. Baugenehmigung für neues Logistikzentrum erteilt — Spatenstich Q3 ${currentYear})",
+          "signal": "Was ist konkret passiert? (z.B. Senacor übernimmt Finanteq zur Expansion; Bechtle wächst stark im Cloud-Bereich)",
           "relevanz": "Kurze Begründung der Relevanz für das Angebot in 1 Satz",
           "ansprechpartner": null,
           "position": null,
@@ -604,19 +607,22 @@ export const handler = async (event) => {
       ]
     }`;
 
+    console.log('[nexus-research] Calling LLM with webContext length:', webContext.length);
     const triggerLlmResult = await callAI([
       { role: "system", content: systemPrompt },
       { role: "user", content: `Web-Recherche Ergebnisse:\n\n${webContext}` }
-    ], { temperature: 0.3, max_tokens: 4096 });
+    ], { temperature: 0.3, max_tokens: 4096, jsonMode: true });
 
     let content = triggerLlmResult.text;
+    console.log('[nexus-research] LLM raw content:\n', content);
     
-    // Markdown JSON-Blöcke bereinigen, falls Mistral sie hinzufügt
+    // Markdown JSON-Blöcke bereinigen, falls nötig
     content = content.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
     
-    let parsed;
+    let parsed = { trigger_events: [] };
     try {
       parsed = JSON.parse(content);
+      console.log('[nexus-research] Parsed trigger_events count:', parsed.trigger_events?.length);
       
       // Post-Processing: Quell-URLs absichern und Defaults setzen falls LLM Felder auslässt
       if (parsed.trigger_events && Array.isArray(parsed.trigger_events)) {
