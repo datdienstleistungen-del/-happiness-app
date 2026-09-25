@@ -204,6 +204,33 @@ async function callAI(messages, temperature = 0.3, hasImage = false) {
       lastError = e;
     }
   }
+
+  // Image fallback: strip images, retry with text-only providers
+  if (hasImage) {
+    console.log('[NEXUS] All vision providers failed, falling back to text-only');
+    const textMessages = messages.map(m => {
+      if (Array.isArray(m.content)) {
+        return { ...m, content: m.content.filter(c => c.type === 'text').map(c => c.text).join('\n') };
+      }
+      return m;
+    });
+    const textProviders = [
+      () => tryGroq(textMessages, temperature, false),
+      () => tryOpenRouter(textMessages, temperature, false),
+      () => tryMistral(textMessages, temperature),
+      () => tryDeepSeek(textMessages, temperature),
+      () => tryOpenAI(textMessages, temperature),
+    ];
+    for (const tryProvider of textProviders) {
+      try {
+        const result = await tryProvider()
+        if (result && result.text) {
+          console.log(`[NEXUS] Text-only fallback: ${result.provider} (${result.model})`);
+          return { ...result, text: result.text + '\n\n*[Hinweis: Bildanalyse nicht verfügbar — reine Textanalyse]*' };
+        }
+      } catch (e) {}
+    }
+  }
   throw lastError || new Error("KI antwortet nicht rechtzeitig. Bitte warte kurz und versuche es erneut.");
 }
 
