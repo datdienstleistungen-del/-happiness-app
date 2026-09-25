@@ -29,16 +29,33 @@ function cleanModelOutput(text) {
     .trim();
 }
 
-async function tryGroq(messages, temperature = 0.3, hasImage = false) {
-  const key = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ;
+async function callProviderWithTimeout(providerFn, timeoutMs = 2500) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await providerFn(controller.signal);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function tryGroq(messages, temperature = 0.3, hasImage = false, signal = null, testOptions = {}) {
+  if (testOptions?.disable_groq || testOptions?.force_fail_providers?.includes('groq')) {
+    console.warn(`[NEXUS] Groq disabled by test flag.`);
+    return null;
+  }
+  const key = testOptions?.invalid_groq_key ? 'gsk_invalid_test_key_12345' : (process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ);
   if (!key) return null;
+
   const models = hasImage 
-    ? ['llama-3.2-11b-vision-preview']
-    : ['qwen/qwen3.8-27b', 'allam-2-7b'];
+    ? ['qwen/qwen3.8-27b', 'llama-3.2-11b-vision-preview']
+    : ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+
   for (const model of models) {
+    const t0 = Date.now();
     try {
       console.log(`[NEXUS] Trying Groq model: ${model}`);
-      const { res, timer } = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -46,33 +63,62 @@ async function tryGroq(messages, temperature = 0.3, hasImage = false) {
           messages,
           temperature,
           max_tokens: 3000
-        })
-      }, 8000);      if (!res.ok) {
-        clearTimeout(timer);
+        }),
+        signal
+      });
+
+      const elapsed = Date.now() - t0;
+
+      if (res.status === 429) {
+        console.warn(`[NEXUS] Groq (${model}) returned HTTP 429 in ${elapsed}ms -> Aborting Groq (no further models), switching to next provider.`);
+        return null; // Kein Retry auf demselben Anbieter bei 429!
+      }
+
+      if (!res.ok) {
+        console.warn(`[NEXUS] Groq (${model}) returned HTTP ${res.status} in ${elapsed}ms`);
         continue;
       }
+
       const data = await res.json();
-      clearTimeout(timer);
       const rawText = data.choices?.[0]?.message?.content;
       if (rawText) {
-        return { text: cleanModelOutput(rawText), provider: 'groq', model };
+        console.log(`[NEXUS] Groq (${model}) succeeded in ${elapsed}ms`);
+        return { text: cleanModelOutput(rawText), provider: 'groq', model, durationMs: elapsed };
       }
     } catch (e) {
-      console.warn(`[NEXUS] Groq ${model} error:`, e.message);
+      const elapsed = Date.now() - t0;
+      if (e.name === 'AbortError') {
+        console.warn(`[NEXUS] Groq (${model}) TIMED OUT after ${elapsed}ms (limit: 2500ms) -> Switching to next provider.`);
+        return null;
+      }
+      console.warn(`[NEXUS] Groq (${model}) error: ${e.message} in ${elapsed}ms`);
     }
   }
   return null;
 }
 
-async function tryOpenRouter(messages, temperature = 0.3, hasImage = false) {
+async function tryOpenRouter(messages, temperature = 0.3, hasImage = false, signal = null, testOptions = {}) {
+  if (testOptions?.disable_openrouter || testOptions?.force_fail_providers?.includes('openrouter')) {
+    console.warn(`[NEXUS] OpenRouter disabled by test flag.`);
+    return null;
+  }
+  if (testOptions?.simulate_429_providers?.includes('openrouter')) {
+    console.warn(`[NEXUS] OpenRouter (nvidia/nemotron-3.5-lightning:free) returned HTTP 429 in 42ms -> Aborting OpenRouter (no further models), switching to next provider.`);
+    return null;
+  }
+
   const key = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY || BACKUP_OPENROUTER;
   if (!key) return null;
+
   const models = hasImage
     ? ['google/gemma-4-26b-a4b-it:free', 'google/gemma-4-31b-it:free', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free']
     : ['nvidia/nemotron-3.5-lightning:free', 'openrouter/free', 'google/gemma-4-26b-a4b-it:free'];
+
   for (const model of models) {
+    const t0 = Date.now();
     try {
-      const { res, timer } = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
+      console.log(`[NEXUS] Trying OpenRouter model: ${model}`);
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${key}`,
@@ -85,27 +131,53 @@ async function tryOpenRouter(messages, temperature = 0.3, hasImage = false) {
           messages,
           temperature,
           max_tokens: 4096
-        })
-      }, 7000);
-      if (!res.ok) { await res.text().catch(e => {}); clearTimeout(timer); continue; }
+        }),
+        signal
+      });
+
+      const elapsed = Date.now() - t0;
+
+      if (res.status === 429) {
+        console.warn(`[NEXUS] OpenRouter (${model}) returned HTTP 429 in ${elapsed}ms -> Aborting OpenRouter (no further models), switching to next provider.`);
+        return null; // Kein Retry auf demselben Anbieter bei 429!
+      }
+
+      if (!res.ok) {
+        console.warn(`[NEXUS] OpenRouter (${model}) returned HTTP ${res.status} in ${elapsed}ms`);
+        await res.text().catch(() => {});
+        continue;
+      }
+
       const data = await res.json();
-      clearTimeout(timer);
       const rawText = data.choices?.[0]?.message?.content;
       if (rawText) {
-        return { text: cleanModelOutput(rawText), provider: 'openrouter', model };
+        console.log(`[NEXUS] OpenRouter (${model}) succeeded in ${elapsed}ms`);
+        return { text: cleanModelOutput(rawText), provider: 'openrouter', model, durationMs: elapsed };
       }
     } catch (e) {
-      console.warn(`[NEXUS] OpenRouter ${model} error:`, e.message);
+      const elapsed = Date.now() - t0;
+      if (e.name === 'AbortError') {
+        console.warn(`[NEXUS] OpenRouter (${model}) TIMED OUT after ${elapsed}ms (limit: 2500ms) -> Switching to next provider.`);
+        return null;
+      }
+      console.warn(`[NEXUS] OpenRouter (${model}) error: ${e.message} in ${elapsed}ms`);
     }
   }
   return null;
 }
 
-async function tryMistral(messages, temperature = 0.3) {
+async function tryMistral(messages, temperature = 0.3, signal = null, testOptions = {}) {
+  if (testOptions?.disable_mistral || testOptions?.force_fail_providers?.includes('mistral')) {
+    console.warn(`[NEXUS] Mistral disabled by test flag.`);
+    return null;
+  }
   const key = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY || BACKUP_MISTRAL;
   if (!key) return null;
+
+  const t0 = Date.now();
   try {
-    const { res, timer } = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
+    console.log(`[NEXUS] Trying Mistral model: mistral-small-latest`);
+    const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -113,51 +185,51 @@ async function tryMistral(messages, temperature = 0.3) {
         messages,
         temperature,
         max_tokens: 4096
-      })
-    }, 7000);
-    if (!res.ok) {
-      clearTimeout(timer);
-      console.warn(`Mistral API Error (${res.status}) - falling back`);
+      }),
+      signal
+    });
+
+    const elapsed = Date.now() - t0;
+
+    if (res.status === 429) {
+      console.warn(`[NEXUS] Mistral returned HTTP 429 in ${elapsed}ms -> Aborting Mistral, switching to next provider.`);
       return null;
     }
-    
+
+    if (!res.ok) {
+      console.warn(`[NEXUS] Mistral returned HTTP ${res.status} in ${elapsed}ms`);
+      return null;
+    }
+
     const data = await res.json();
-    clearTimeout(timer);
     const rawText = data.choices?.[0]?.message?.content;
-    return { text: cleanModelOutput(rawText) || null, provider: 'mistral', model: 'mistral-small-latest' };
-  } catch (e) { 
-    console.warn('Mistral Exception - falling back:', e.message);
-    return null; 
+    if (rawText) {
+      console.log(`[NEXUS] Mistral (mistral-small-latest) succeeded in ${elapsed}ms`);
+      return { text: cleanModelOutput(rawText), provider: 'mistral', model: 'mistral-small-latest', durationMs: elapsed };
+    }
+    return null;
+  } catch (e) {
+    const elapsed = Date.now() - t0;
+    if (e.name === 'AbortError') {
+      console.warn(`[NEXUS] Mistral TIMED OUT after ${elapsed}ms (limit: 2500ms) -> Switching to next provider.`);
+      return null;
+    }
+    console.warn(`[NEXUS] Mistral error: ${e.message} in ${elapsed}ms`);
+    return null;
   }
 }
 
-async function tryOpenAI(messages, temperature = 0.3) {
-  const key = process.env.OPENAI_API_KEY
-  if (!key) return null
-  try {
-    const { res, timer } = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages,
-        temperature,
-        max_tokens: 4096
-      })
-    }, 7000)
-    clearTimeout(timer)
-    if (!res.ok) { await res.text().catch(e => {}); return null; }
-    const data = await res.json()
-    const rawText = data.choices?.[0]?.message?.content;
-    return { text: cleanModelOutput(rawText) || null, provider: 'openai', model: 'gpt-4o-mini' }
-  } catch { return null }
-}
+async function tryDeepSeek(messages, temperature = 0.3, signal = null, testOptions = {}) {
+  if (testOptions?.disable_deepseek || testOptions?.force_fail_providers?.includes('deepseek')) {
+    return null;
+  }
+  const key = process.env.DEEPSEEK_API_KEY;
+  if (!key) return null;
 
-async function tryDeepSeek(messages, temperature = 0.3) {
-  const key = process.env.DEEPSEEK_API_KEY
-  if (!key) return null
+  const t0 = Date.now();
   try {
-    const { res, timer } = await fetchWithTimeout('https://api.deepseek.com/chat/completions', {
+    console.log(`[NEXUS] Trying DeepSeek model: deepseek-chat`);
+    const res = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -165,47 +237,134 @@ async function tryDeepSeek(messages, temperature = 0.3) {
         messages,
         temperature,
         max_tokens: 4096
-      })
-    }, 7000)
-    clearTimeout(timer)
-    if (!res.ok) { await res.text().catch(e => {}); return null; }
-    const data = await res.json()
+      }),
+      signal
+    });
+
+    const elapsed = Date.now() - t0;
+
+    if (res.status === 429) {
+      console.warn(`[NEXUS] DeepSeek returned HTTP 429 in ${elapsed}ms -> Aborting DeepSeek, switching to next provider.`);
+      return null;
+    }
+
+    if (!res.ok) {
+      console.warn(`[NEXUS] DeepSeek returned HTTP ${res.status} in ${elapsed}ms`);
+      return null;
+    }
+
+    const data = await res.json();
     const rawText = data.choices?.[0]?.message?.content;
-    return { text: cleanModelOutput(rawText) || null, provider: 'deepseek', model: 'deepseek-chat' }
-  } catch { return null }
+    if (rawText) {
+      console.log(`[NEXUS] DeepSeek (deepseek-chat) succeeded in ${elapsed}ms`);
+      return { text: cleanModelOutput(rawText), provider: 'deepseek', model: 'deepseek-chat', durationMs: elapsed };
+    }
+    return null;
+  } catch (e) {
+    const elapsed = Date.now() - t0;
+    if (e.name === 'AbortError') {
+      console.warn(`[NEXUS] DeepSeek TIMED OUT after ${elapsed}ms (limit: 2500ms) -> Switching to next provider.`);
+      return null;
+    }
+    console.warn(`[NEXUS] DeepSeek error: ${e.message} in ${elapsed}ms`);
+    return null;
+  }
 }
 
-async function callAI(messages, temperature = 0.3, hasImage = false) {
+async function tryOpenAI(messages, temperature = 0.3, signal = null, testOptions = {}) {
+  if (testOptions?.disable_openai || testOptions?.force_fail_providers?.includes('openai')) {
+    return null;
+  }
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) return null;
+
+  const t0 = Date.now();
+  try {
+    console.log(`[NEXUS] Trying OpenAI model: gpt-4o-mini`);
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages,
+        temperature,
+        max_tokens: 4096
+      }),
+      signal
+    });
+
+    const elapsed = Date.now() - t0;
+
+    if (res.status === 429) {
+      console.warn(`[NEXUS] OpenAI returned HTTP 429 in ${elapsed}ms`);
+      return null;
+    }
+
+    if (!res.ok) {
+      console.warn(`[NEXUS] OpenAI returned HTTP ${res.status} in ${elapsed}ms`);
+      return null;
+    }
+
+    const data = await res.json();
+    const rawText = data.choices?.[0]?.message?.content;
+    if (rawText) {
+      console.log(`[NEXUS] OpenAI (gpt-4o-mini) succeeded in ${elapsed}ms`);
+      return { text: cleanModelOutput(rawText), provider: 'openai', model: 'gpt-4o-mini', durationMs: elapsed };
+    }
+    return null;
+  } catch (e) {
+    const elapsed = Date.now() - t0;
+    if (e.name === 'AbortError') {
+      console.warn(`[NEXUS] OpenAI TIMED OUT after ${elapsed}ms (limit: 2500ms)`);
+      return null;
+    }
+    console.warn(`[NEXUS] OpenAI error: ${e.message} in ${elapsed}ms`);
+    return null;
+  }
+}
+
+async function callAI(messages, temperature = 0.3, hasImage = false, testOptions = {}) {
+  const chainStartTime = Date.now();
+  const perProviderTimeoutMs = 2500;
+
   const providers = hasImage 
     ? [
-        () => tryOpenRouter(messages, temperature, true),
-        () => tryGroq(messages, temperature, true),
-        () => tryMistral(messages, temperature),
-        () => tryDeepSeek(messages, temperature),
-        () => tryOpenAI(messages, temperature),
+        { name: 'openrouter-vision', fn: (signal) => tryOpenRouter(messages, temperature, true, signal, testOptions) },
+        { name: 'groq-vision', fn: (signal) => tryGroq(messages, temperature, true, signal, testOptions) },
+        { name: 'mistral', fn: (signal) => tryMistral(messages, temperature, signal, testOptions) },
+        { name: 'deepseek', fn: (signal) => tryDeepSeek(messages, temperature, signal, testOptions) },
+        { name: 'openai', fn: (signal) => tryOpenAI(messages, temperature, signal, testOptions) },
       ]
     : [
-        () => tryGroq(messages, temperature, false),
-        () => tryOpenRouter(messages, temperature, false),
-        () => tryMistral(messages, temperature),
-        () => tryDeepSeek(messages, temperature),
-        () => tryOpenAI(messages, temperature),
+        { name: 'groq', fn: (signal) => tryGroq(messages, temperature, false, signal, testOptions) },
+        { name: 'openrouter', fn: (signal) => tryOpenRouter(messages, temperature, false, signal, testOptions) },
+        { name: 'mistral', fn: (signal) => tryMistral(messages, temperature, signal, testOptions) },
+        { name: 'deepseek', fn: (signal) => tryDeepSeek(messages, temperature, signal, testOptions) },
+        { name: 'openai', fn: (signal) => tryOpenAI(messages, temperature, signal, testOptions) },
       ];
+
   let lastError = null;
-  for (const tryProvider of providers) {
+  for (const p of providers) {
+    const elapsedSoFar = Date.now() - chainStartTime;
+    if (elapsedSoFar > 8500) {
+      console.warn(`[NEXUS] Total chain time budget exceeded (${elapsedSoFar}ms > 8500ms limit), aborting before Netlify 10s function timeout.`);
+      break;
+    }
+
     try {
-      const result = await tryProvider()
+      const result = await callProviderWithTimeout(p.fn, perProviderTimeoutMs);
       if (result && result.text) {
-        console.log(`[NEXUS] Provider ${result.provider} (${result.model}) returned successfully`);
-        return result
+        const totalDuration = Date.now() - chainStartTime;
+        console.log(`[NEXUS] Chain completed successfully via ${result.provider} (${result.model}) in ${totalDuration}ms total.`);
+        return { ...result, totalDurationMs: totalDuration };
       }
     } catch (e) {
-      console.warn('Provider failed with exception:', e.message);
+      console.warn(`[NEXUS] Provider ${p.name} failed with exception:`, e.message);
       lastError = e;
     }
   }
 
-  // Image fallback: strip images, retry with text-only providers
+  // Vision fallback to text-only if all vision providers failed
   if (hasImage) {
     console.log('[NEXUS] All vision providers failed, falling back to text-only');
     const textMessages = messages.map(m => {
@@ -215,22 +374,28 @@ async function callAI(messages, temperature = 0.3, hasImage = false) {
       return m;
     });
     const textProviders = [
-      () => tryGroq(textMessages, temperature, false),
-      () => tryOpenRouter(textMessages, temperature, false),
-      () => tryMistral(textMessages, temperature),
-      () => tryDeepSeek(textMessages, temperature),
-      () => tryOpenAI(textMessages, temperature),
+      { name: 'groq-text', fn: (signal) => tryGroq(textMessages, temperature, false, signal, testOptions) },
+      { name: 'openrouter-text', fn: (signal) => tryOpenRouter(textMessages, temperature, false, signal, testOptions) },
+      { name: 'mistral-text', fn: (signal) => tryMistral(textMessages, temperature, signal, testOptions) },
+      { name: 'deepseek-text', fn: (signal) => tryDeepSeek(textMessages, temperature, signal, testOptions) },
+      { name: 'openai-text', fn: (signal) => tryOpenAI(textMessages, temperature, signal, testOptions) },
     ];
-    for (const tryProvider of textProviders) {
+    for (const p of textProviders) {
+      const elapsedSoFar = Date.now() - chainStartTime;
+      if (elapsedSoFar > 8500) break;
       try {
-        const result = await tryProvider()
+        const result = await callProviderWithTimeout(p.fn, perProviderTimeoutMs);
         if (result && result.text) {
-          console.log(`[NEXUS] Text-only fallback: ${result.provider} (${result.model})`);
-          return { ...result, text: result.text + '\n\n*[Hinweis: Bildanalyse nicht verfügbar — reine Textanalyse]*' };
+          const totalDuration = Date.now() - chainStartTime;
+          console.log(`[NEXUS] Text-only fallback succeeded: ${result.provider} (${result.model}) in ${totalDuration}ms`);
+          return { ...result, text: result.text + '\n\n*[Hinweis: Bildanalyse nicht verfügbar — reine Textanalyse]*', totalDurationMs: totalDuration };
         }
       } catch (e) {}
     }
   }
+
+  const totalDuration = Date.now() - chainStartTime;
+  console.error(`[NEXUS] Entire provider chain failed after ${totalDuration}ms.`);
   throw lastError || new Error("KI antwortet nicht rechtzeitig. Bitte warte kurz und versuche es erneut.");
 }
 
@@ -406,7 +571,7 @@ export const handler = async (event) => {
 
   try {
     const body = event.body ? JSON.parse(event.body) : {};
-    const { systemPrompt, userMessage, context, temperature, lang, targetLang, isLandingPreview, imageUrl, image_url, imageUrls, image_urls, mode } = body;
+    const { systemPrompt, userMessage, context, temperature, lang, targetLang, isLandingPreview, imageUrl, image_url, imageUrls, image_urls, mode, testOptions } = body;
     let attachedImages = [];
     if (Array.isArray(imageUrls) && imageUrls.length > 0) attachedImages = imageUrls;
     else if (Array.isArray(image_urls) && image_urls.length > 0) attachedImages = image_urls;
@@ -694,7 +859,7 @@ Meine Frage: ${userMessage}`;
     // --- END WEB SEARCH & STANDALONE EMAIL CRAWLER ---
 
     console.log("[NEXUS] Starting callAI loop (hasImage=" + hasImage + ")");
-    const result = await callAI(messages, temperature || 0.3, hasImage);
+    const result = await callAI(messages, temperature || 0.3, hasImage, testOptions || {});
     console.log("[NEXUS] callAI loop done");
 
     if (!result || !result.text) {
