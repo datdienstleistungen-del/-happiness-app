@@ -696,8 +696,8 @@ export default function NexusLeadRadarPage() {
         </div>
       )}
 
-      {/* Empty State (0 Results) */}
-      {triggers.length === 0 && !loading && !error && activeOffering && (
+      {/* Empty State (0 Results) — nur anzeigen wenn kein Scan aktiv läuft */}
+      {triggers.length === 0 && !loading && !error && activeOffering && scanStatus !== 'starting' && scanStatus !== 'running' && (
         <div className="lead-radar-empty" style={{ textAlign: 'center', padding: '40px', background: 'var(--bg-secondary)', borderRadius: '12px', marginTop: '20px' }}>
           <h3>{t('nexus.noCurrentSignals', 'Keine aktuellen Signale gefunden')}</h3>
           <p>{t('nexus.noCurrentSignalsDesc', 'Für dein Angebot gab es in den letzten 14 Tagen keine relevanten News-Artikel.')}</p>
