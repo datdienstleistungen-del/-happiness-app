@@ -191,6 +191,27 @@ export const handler = async (event) => {
       };
     }
 
+    // Stale-Job-Check: Wenn der Job älter als 5 Minuten ist und noch "running"
+    const jobAge = Date.now() - new Date(job.created_at).getTime();
+    if (jobAge > 5 * 60 * 1000) {
+      console.log(`[ScanStep] Stale job ${job_id} (${Math.round(jobAge/1000)}s old) — marking as error`);
+      await userSupabase
+        .from('nexus_scan_jobs')
+        .update({ status: 'error', error_message: 'Scan-Timeout: Job stale (>5min)', updated_at: new Date().toISOString() })
+        .eq('id', job_id);
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          status: 'error',
+          current_step: job.current_step,
+          total_steps: job.total_steps,
+          last_message: 'Scan-Timeout',
+          partial_results: job.partial_results,
+          error_message: 'Scan-Timeout: Job stale (>5min)'
+        })
+      };
+    }
+
     // Hard Cap Check
     if (job.current_step > 12) {
       await userSupabase

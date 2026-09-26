@@ -122,7 +122,7 @@ export const handler = async (event) => {
     // Duplikatschutz: Existiert bereits ein laufender Job?
     const existingRes = await userSupabase
       .from('nexus_scan_jobs')
-      .select('id, status')
+      .select('id, status, created_at')
       .eq('user_id', user.id)
       .eq('offering_id', offering_id)
       .eq('status', 'running')
@@ -130,15 +130,25 @@ export const handler = async (event) => {
       .limit(1);
 
     if (existingRes.data && existingRes.data.length > 0) {
-      console.log(`[ScanStart] Running job already exists: ${existingRes.data[0].id}`);
-      return {
-        statusCode: 200,
-        body: JSON.stringify({
-          job_id: existingRes.data[0].id,
-          status: 'already_running',
-          message: 'Ein Scan läuft bereits für dieses Angebot.'
-        })
-      };
+      const existing = existingRes.data[0];
+      const age = Date.now() - new Date(existing.created_at).getTime();
+      const STALE_MS = 5 * 60 * 1000; // 5 Minuten
+
+      if (age > STALE_MS) {
+        // Alter stuck-Job → löschen und neu starten
+        console.log(`[ScanStart] Stale job ${existing.id} (${Math.round(age/1000)}s old) — deleting and restarting`);
+        await userSupabase.from('nexus_scan_jobs').delete().eq('id', existing.id);
+      } else {
+        console.log(`[ScanStart] Running job already exists: ${existing.id}`);
+        return {
+          statusCode: 200,
+          body: JSON.stringify({
+            job_id: existing.id,
+            status: 'already_running',
+            message: 'Ein Scan läuft bereits für dieses Angebot.'
+          })
+        };
+      }
     }
 
     // Tavily-Suche
