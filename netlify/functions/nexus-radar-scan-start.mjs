@@ -208,8 +208,8 @@ export const handler = async (event) => {
       .single();
 
     if (jobRes.error) {
-      console.error('[ScanStart] DB insert error:', jobRes.error);
-      return { statusCode: 500, body: JSON.stringify({ error: 'Job konnte nicht erstellt werden' }) };
+      console.error('[ScanStart] DB insert error:', JSON.stringify(jobRes.error));
+      return { statusCode: 500, body: JSON.stringify({ error: `Job konnte nicht erstellt werden: ${jobRes.error.message || jobRes.error.code || 'Unknown'}` }) };
     }
 
     console.log(`[ScanStart] Job ${jobRes.id} created: ${uniqueResults.length} URLs`);
