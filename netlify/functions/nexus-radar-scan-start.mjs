@@ -91,7 +91,7 @@ async function searchTavilyParallel(query, apiKey, maxResults = 10) {
     }
   }
 
-  console.log(`[searchTavily] NEWS=${news.length} JOB_PORTAL=${jobs.length} GENERAL_WEB=${general.length} COMBINED=${combined.length}`);
+  console.log(`[searchTavilyParallel] query="${query.substring(0,60)}" NEWS=${news.length} JOB_PORTAL=${jobs.length} GENERAL_WEB=${general.length} COMBINED=${combined.length}`);
 
   return combined;
 }
@@ -153,11 +153,13 @@ export const handler = async (event) => {
     }
 
     const searchQuery = query || `${branche || ''} B2B Unternehmen Expansion`.trim();
+    console.log(`[ScanStart] Query: "${searchQuery}" | Keys: ${tavilyKeys.length}`);
     let allResults = [];
 
     for (const key of tavilyKeys) {
       if (allResults.length > 0) break;
       allResults = await searchTavilyParallel(searchQuery, key, 10);
+      console.log(`[ScanStart] Key ${key.substring(0,8)}... returned ${allResults.length} results`);
     }
 
     // Dedupliziere URLs (bereits in searchTavilyParallel erledigt, aber zur Sicherheit)
