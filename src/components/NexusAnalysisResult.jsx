@@ -1,7 +1,7 @@
 import React from 'react'
 import { 
   Target, AlertTriangle, TrendingUp, Users, MessageSquare, 
-  Phone, Lightbulb, ChevronRight, CheckCircle, Flame
+  Phone, Lightbulb, ChevronRight, CheckCircle, Flame, Globe
 } from 'lucide-react'
 import { useLanguage } from '../i18n/translations.jsx'
 import './NexusAnalysisResult.css'
@@ -12,7 +12,7 @@ import './NexusAnalysisResult.css'
  * Presentation Layer für NeXus KI-Ausgaben.
  * Wandelt rohes JSON in verständliche Sales Intelligence Analyse um.
  */
-export default function NexusAnalysisResult({ data, mode = 'angebotsanalyse' }) {
+export default function NexusAnalysisResult({ data, mode = 'angebotsanalyse', firmenprofil, profilLoading }) {
   // Try to parse JSON if it's a string (handles markdown code blocks)
   let parsed = data
   if (typeof data === 'string') {
@@ -51,7 +51,7 @@ export default function NexusAnalysisResult({ data, mode = 'angebotsanalyse' }) 
     case 'trigger_detection':
       return <TriggerDetectionView data={parsed} />
     case 'lead_intelligence':
-      return <LeadIntelligenceView data={parsed} />
+      return <LeadIntelligenceView data={parsed} firmenprofil={firmenprofil} profilLoading={profilLoading} />
     case 'sales_pitch':
     case 'follow_up':
     case 'einwandbehandlung':
@@ -328,8 +328,81 @@ function TriggerDetectionView({ data }) {
 
 // ── Lead Intelligence ──
 
-function LeadIntelligenceView({ data }) {
-  return <AngebotsanalyseView data={data} />
+function LeadIntelligenceView({ data, firmenprofil, profilLoading }) {
+  return (
+    <div className="nexus-analysis">
+      <AngebotsanalyseView data={data} />
+
+      {/* Firmenprofil laut Webseite */}
+      {(profilLoading || (firmenprofil?.sources?.length > 0)) && (
+        <Section title="Firmenprofil laut Webseite" icon={Globe}>
+          {profilLoading && !firmenprofil?.sources?.length && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 0' }}>
+              <div className="btn-spinner" style={{ width: 16, height: 16 }} />
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Webseiten werden analysiert...</span>
+            </div>
+          )}
+
+          {firmenprofil?.description && (
+            <p className="nexus-description" style={{ marginBottom: '12px' }}>{firmenprofil.description}</p>
+          )}
+
+          {firmenprofil?.services?.length > 0 && (
+            <div style={{ marginBottom: '12px' }}>
+              <strong style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Leistungen:</strong>
+              <div className="nexus-chips" style={{ marginTop: '6px' }}>
+                {firmenprofil.services.map((s, i) => (
+                  <span key={i} className="nexus-chip">{s}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {firmenprofil?.target_audience && (
+            <div style={{ marginBottom: '12px' }}>
+              <strong style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Zielgruppe:</strong>
+              <p style={{ margin: '4px 0 0', fontSize: '0.9rem' }}>{firmenprofil.target_audience}</p>
+            </div>
+          )}
+
+          {firmenprofil?.legal_form_location && (
+            <div style={{ marginBottom: '12px' }}>
+              <strong style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Rechtsform / Sitz:</strong>
+              <p style={{ margin: '4px 0 0', fontSize: '0.9rem' }}>{firmenprofil.legal_form_location}</p>
+            </div>
+          )}
+
+          {firmenprofil?.sources?.length > 0 && (
+            <div style={{ marginTop: '16px' }}>
+              <strong style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Belege ({firmenprofil.sources.length}):</strong>
+              <div className="nexus-cards" style={{ marginTop: '8px' }}>
+                {firmenprofil.sources.map((src, i) => (
+                  <div key={i} className="nexus-card" style={{ padding: '10px 14px' }}>
+                    <p style={{ margin: '0 0 6px', fontSize: '0.9rem' }}>{src.claim}</p>
+                    {src.quote && (
+                      <p style={{ margin: '0 0 6px', fontSize: '0.8rem', fontStyle: 'italic', color: 'var(--text-secondary)', borderLeft: '3px solid var(--color-koralle, #e74c3c)', paddingLeft: '10px' }}>
+                        &bdquo;{src.quote}&ldquo;
+                      </p>
+                    )}
+                    {src.source_url && (
+                      <a
+                        href={src.source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: '0.78rem', color: 'var(--color-koralle, #e74c3c)', textDecoration: 'none' }}
+                      >
+                        Quelle ansehen &rarr;
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </Section>
+      )}
+    </div>
+  )
 }
 
 // Sales Message (Plain Text)
