@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Radar, Search, ArrowRight, Building2, AlertCircle, RefreshCw, Briefcase, Globe, CheckCircle, Sparkles, User, Mail, Copy, HelpCircle } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Radar, Search, ArrowRight, Building2, AlertCircle, RefreshCw, Briefcase, Globe, CheckCircle, Sparkles, User, Mail, Copy, HelpCircle, Brain } from 'lucide-react'
 import { callContactIntelligence, runResearchPipeline } from '../lib/nexus-ai'
 import { trackRadarScan } from '../lib/nexus-analytics'
 import { supabase } from '../lib/supabase'
@@ -498,6 +498,7 @@ export default function NexusLeadRadarPage() {
               prioritaet: t.prioritaet || 99,
               bewertung: t.bewertung || '',
               signal: t.signal || '',
+              signal_kategorie: t.signal_kategorie || null,
               psychologische_ansprache: t.psychologische_ansprache || '',
               quelle: t.quelle || r.url || 'KI-Analyse',
               ansprechpartner: {
@@ -527,6 +528,7 @@ export default function NexusLeadRadarPage() {
               prioritaet: t.prioritaet || 99,
               bewertung: t.bewertung || '',
               signal: t.signal || '',
+              signal_kategorie: t.signal_kategorie || null,
               psychologische_ansprache: t.psychologische_ansprache || '',
               quelle: t.quelle || r.url || 'KI-Analyse',
               ansprechpartner: {
@@ -745,6 +747,29 @@ export default function NexusLeadRadarPage() {
                   {trigger.prioritaet === 1 ? 'HOHE PRIORITÄT' : trigger.prioritaet === 2 ? 'MITTLERE PRIORITÄT' : 'NIEDRIGE PRIORITÄT'}
                 </div>
                 <h3 className="trigger-company">{trigger.company}</h3>
+
+                {trigger.signal_kategorie && (
+                  <span style={{
+                    display: 'inline-block',
+                    padding: '2px 8px',
+                    background: trigger.signal_kategorie === 'HIRING' ? '#05966920' :
+                                trigger.signal_kategorie === 'FUNDING' ? '#7c3aed20' :
+                                trigger.signal_kategorie === 'TECH_MIGRATION' ? '#2563eb20' :
+                                trigger.signal_kategorie === 'REGULATION' ? '#d9770620' :
+                                trigger.signal_kategorie === 'M_A' ? '#dc262620' : '#6b728020',
+                    color: trigger.signal_kategorie === 'HIRING' ? '#059669' :
+                           trigger.signal_kategorie === 'FUNDING' ? '#7c3aed' :
+                           trigger.signal_kategorie === 'TECH_MIGRATION' ? '#2563eb' :
+                           trigger.signal_kategorie === 'REGULATION' ? '#d97706' :
+                           trigger.signal_kategorie === 'M_A' ? '#dc2626' : '#6b7280',
+                    borderRadius: '6px',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    marginBottom: '6px'
+                  }}>
+                    {trigger.signal_kategorie.replace('_', ' ')}
+                  </span>
+                )}
                 
                 {trigger.bewertung && (
                   <p className="trigger-rating" style={{ fontStyle: 'italic', color: 'var(--text-secondary)', marginBottom: '8px' }}>
@@ -837,6 +862,20 @@ export default function NexusLeadRadarPage() {
                   </div>
                 </div>
                 <div className="trigger-actions">
+                  <button
+                    type="button"
+                    className="action-btn action-btn-secondary"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 12px' }}
+                    onClick={() => {
+                      const params = new URLSearchParams()
+                      params.set('company', trigger.company)
+                      if (trigger.signal) params.set('trigger', `${trigger.signal} | ${trigger.psychologische_ansprache || ''}`)
+                      navigate(`/nexus/lead-intelligence?${params.toString()}`)
+                    }}
+                  >
+                    <Brain size={14} />
+                    <span>Lead Intelligence</span>
+                  </button>
                   {(Array.isArray(savedLeads) ? savedLeads.includes(trigger.company) : Boolean(savedLeads?.[trigger.company])) ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
                       <button className="action-btn action-btn-primary" style={{ background: '#10B981', borderColor: '#10B981', cursor: 'default' }} disabled>

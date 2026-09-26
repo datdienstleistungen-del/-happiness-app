@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Users, Building2, Search, ArrowRight, AlertCircle, CheckCircle, Globe } from 'lucide-react'
 import { callNexusAI } from '../lib/nexus-ai'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
@@ -15,8 +16,9 @@ async function fetchWithAuth(url, options = {}) {
 }
 
 export default function NexusLeadIntelligencePage() {
+  const [searchParams] = useSearchParams()
   const { currentLead } = useLead()
-  const [companyName, setCompanyName] = useState(() => currentLead?.companyName || '')
+  const [companyName, setCompanyName] = useState(() => currentLead?.companyName || searchParams.get('company') || '')
   const [angebot, setAngebot] = useState(() => currentLead?.angebot || '')
   const [analyse, setAnalyse] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -26,6 +28,9 @@ export default function NexusLeadIntelligencePage() {
   const autoAnalyzedRef = useRef(false)
   const profilStartedRef = useRef(false)
 
+  // Trigger-Kontext aus URL-Param (z.B. von Lead Radar weitergeleitet)
+  const triggerContext = searchParams.get('trigger') || null
+
   const startProfileScan = async (companyId, domain) => {
     if (profilStartedRef.current) return
     profilStartedRef.current = true
@@ -34,7 +39,11 @@ export default function NexusLeadIntelligencePage() {
     try {
       const startRes = await fetchWithAuth('/.netlify/functions/nexus-company-profile-start', {
         method: 'POST',
-        body: JSON.stringify({ company_id: companyId, domain })
+        body: JSON.stringify({
+          company_id: companyId,
+          domain,
+          trigger_context: triggerContext || undefined
+        })
       })
       if (!startRes.ok) return
       const { profile_id, status } = await startRes.json()

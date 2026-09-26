@@ -286,6 +286,15 @@ REGELN:
 3. Erkläre warum das ein Kaufsignal ist
 4. "ansprechpartner" nur wenn Name WÖRTLICH im Text steht, sonst null
 5. "quelle" MUSS die echte URL sein
+6. Klassifiziere jedes Signal in eine der 5 Kategorien (siehe unten)
+7. Die "psychologische_ansprache" MUSS tiefgehend sein: Nicht nur "wie ansprechen", sondern: Was ist der emotionale Zustand? Was ist der unsichtbare Schmerz? Was passiert im Kopf des Entscheiders?
+
+KAUFSIGNAL-KATEGORIEN:
+1. HIRING — Massiver Personalaufbau (10+ Stellen in kurzer Zeit, neue Abteilungen)
+2. FUNDING — Finanzierungsrunden, Investitionen, Series A/B/C
+3. TECH_MIGRATION — Cloud-Migration, Systemwechsel, Legacy-Ablösung
+4. REGULATION — Neue Gesetze, Compliance-Pflichten, regulatorische Änderungen
+5. M_A — Übernahmen, Fusionen, Partnerschaften
 
 Gib ein JSON zurück:
 {
@@ -296,12 +305,13 @@ Gib ein JSON zurück:
       "prioritaet": 1,
       "bewertung": "B - Hohe Chance. Warum?",
       "signal": "Was ist passiert?",
+      "signal_kategorie": "HIRING | FUNDING | TECH_MIGRATION | REGULATION | M_A",
       "relevanz": "Relevanz für das Angebot",
       "ansprechpartner": null,
       "position": null,
       "kontakt": null,
       "quelle": "${nextUrl.url}",
-      "psychologische_ansprache": "Wie ansprechen?"
+      "psychologische_ansprache": "Deep dive: Was ist der emotionale Zustand des Entscheiders? Welcher unsichtbare Schmerz verbirgt sich hinter diesem Signal? Was passiert gerade im Unternehmen, was niemand nach außen trägt?"
     }
   ]
 }`;

@@ -34,6 +34,11 @@ async function searchTavily(query, apiKey, maxResults = 10) {
     'heise.de', 'golem.de', 'computerwoche.de'
   ];
 
+  const JOB_PORTAL_DOMAINS = [
+    'linkedin.com', 'indeed.com', 'stepstone.de', 'glassdoor.de',
+    'xing.com', 'kununu.com', 'absolventa.de'
+  ];
+
   try {
     const res = await fetchWithTimeout('https://api.tavily.com/search', {
       method: 'POST',
@@ -54,7 +59,29 @@ async function searchTavily(query, apiKey, maxResults = 10) {
     }
   } catch (e) { /* continue */ }
 
-  // Fallback: Allgemeine Suche
+  // Fallback 1: Job-Portale (Hiring-Signale sind die stärksten Trigger)
+  try {
+    const jobQuery = `${query} jobs hiring einstellen`;
+    const res = await fetchWithTimeout('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: apiKey,
+        query: jobQuery,
+        search_depth: 'advanced',
+        include_answer: false,
+        max_results: Math.min(maxResults, 5),
+        include_domains: JOB_PORTAL_DOMAINS
+      })
+    }, 8000);
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.results && data.results.length > 0) return data.results;
+    }
+  } catch (e) { /* continue */ }
+
+  // Fallback 2: Allgemeine Suche
   try {
     const res = await fetchWithTimeout('https://api.tavily.com/search', {
       method: 'POST',

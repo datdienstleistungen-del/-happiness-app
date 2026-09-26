@@ -175,7 +175,8 @@ export const handler = async (event) => {
           services: job.services,
           is_competitor: job.is_competitor,
           competitor_reason: job.competitor_reason,
-          competitor_category: job.competitor_category
+          competitor_category: job.competitor_category,
+          pain_points: job.pain_points
         })
       };
     }
@@ -202,12 +203,74 @@ export const handler = async (event) => {
     const currentSources = job.sources || [];
     const rawCache = job.raw_page_cache || {};
 
-    // Keine weiteren URLs → fertig
+    // Keine weiteren URLs → Pain Point Deduction (falls Trigger-Kontext vorhanden)
     if (pendingUrls.length === 0) {
+      let painPoints = job.pain_points;
+
+      // Phase 2: Schmerzpunkt-Analyse (nur wenn Trigger-Kontext vorhanden)
+      if (job.trigger_context && currentSources.length > 0 && !job.pain_points) {
+        console.log(`[CompanyProfileStep] Running pain point deduction with trigger context...`);
+
+        const sourceSummary = currentSources
+          .map(s => `- ${s.claim} (Quelle: ${s.source_url})`)
+          .join('\n');
+
+        const painPointPrompt = `Du bist ein B2B-Vertriebspsychologe. Analysiere die folgenden Unternehmensdaten und den Trigger, um die VERBORGENEN Schmerzpunkte zu deduzieren.
+
+TRIGGER (was ist passiert?):
+${job.trigger_context}
+
+UNTERNEHMENSFAKTEN (aus der Webseite extrahiert):
+${sourceSummary}
+
+BESCHREIBUNG: ${job.description || 'Keine'}
+LEISTUNGEN: ${(job.services || []).join(', ') || 'Keine'}
+ZIELGRUPPE: ${job.target_audience || 'Unbekannt'}
+
+AUFGABE: Deduziere die psychologische Lage des Unternehmens. Was bedeutet dieser Trigger KONKRET für die Entscheider?
+
+REGELN:
+1. Erfinde KEINE Fakten — nur logische Ableitungen aus den obigen Daten
+2. Unterscheide FACT (was belegt ist) von DEDUKTION (was du daraus ableitest)
+3. Identifiziere den wahrscheinlichsten emotionalen Zustand (Panik, Druck, Euphorie, Unsicherheit)
+4. Benenne den konkreten Schmerzpunkt, der durch den Trigger entsteht
+
+Gib ein JSON zurück:
+{
+  "deduktionen": [
+    {
+      "typ": "FACT" oder "DEDUKTION",
+      "text": "Was wurde abgeleitet",
+      "basis": "Worauf basiert diese Schlussfolgerung"
+    }
+  ],
+  "emotionaler_zustand": "Panik / Druck / Euphorie / Unsicherheit / Wachstum",
+  "haupt_schmerzpunkt": "Der wichtigste Schmerzpunkt in 1 Satz",
+  "kaufsignal_kategorie": "EXPANSION / FUHRUNGSWECHSEL / M_A / SYSTEMWECHSEL / NEUES_PRODUKT",
+  "verkaufsargument": "Wie der Vertriebler dieses Signal vertrieblich ansprechen sollte (2-3 Sätze)"
+}`;
+
+        const painResult = await callAI([
+          { role: 'system', content: 'Du gibst IMMER valides JSON zurück, ohne Markdown-Blöcke.' },
+          { role: 'user', content: painPointPrompt }
+        ], { temperature: 0.3, max_tokens: 1500, jsonMode: true });
+
+        if (painResult?.text) {
+          try {
+            const cleaned = painResult.text.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
+            painPoints = JSON.parse(cleaned);
+            console.log(`[CompanyProfileStep] Pain points deduced: ${painPoints.haupt_schmerzpunkt}`);
+          } catch (e) {
+            console.warn('[CompanyProfileStep] Pain point JSON parse failed:', e.message);
+          }
+        }
+      }
+
       await serviceClient
         .from('nexus_company_profiles')
         .update({
           status: 'done',
+          pain_points: painPoints,
           updated_at: new Date().toISOString()
         })
         .eq('id', profile_id);
@@ -223,7 +286,8 @@ export const handler = async (event) => {
           sources: currentSources,
           is_competitor: job.is_competitor,
           competitor_reason: job.competitor_reason,
-          competitor_category: job.competitor_category
+          competitor_category: job.competitor_category,
+          pain_points: painPoints
         })
       };
     }
@@ -329,7 +393,7 @@ Extrahiere eine strukturierte Firmenbeschreibung. Jede Aussage MUSS ein wörtlic
     const competitorReason = extracted.competitor_reason || job.competitor_reason || null;
     const competitorCategory = extracted.competitor_category || job.competitor_category || null;
 
-    const newStatus = updatedPending.length === 0 ? 'done' : 'running';
+    const newStatus = 'running'; // Immer running bis Pain Point Deduction am Ende
 
     await serviceClient
       .from('nexus_company_profiles')

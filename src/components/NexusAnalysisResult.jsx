@@ -389,6 +389,60 @@ function LeadIntelligenceView({ data, firmenprofil, profilLoading }) {
             </div>
           )}
 
+          {/* Phase 2: Pain Point Deduction */}
+          {firmenprofil?.pain_points && (
+            <div style={{ marginTop: '16px', padding: '16px 18px', background: 'linear-gradient(135deg, #fef3c7, #fde68a)', border: '2px solid #d97706', borderRadius: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                <AlertTriangle size={20} color="#d97706" />
+                <strong style={{ color: '#92400e', fontSize: '0.95rem' }}>Schmerzpunkt-Analyse</strong>
+              </div>
+
+              {firmenprofil.pain_points.haupt_schmerzpunkt && (
+                <p style={{ margin: '0 0 10px', fontSize: '0.95rem', fontWeight: 600, color: '#92400e' }}>
+                  {firmenprofil.pain_points.haupt_schmerzpunkt}
+                </p>
+              )}
+
+              {firmenprofil.pain_points.emotionaler_zustand && (
+                <div style={{ marginBottom: '10px' }}>
+                  <span style={{ display: 'inline-block', padding: '3px 10px', background: '#d97706', color: '#fff', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 600 }}>
+                    {firmenprofil.pain_points.emotionaler_zustand}
+                  </span>
+                  {firmenprofil.pain_points.kaufsignal_kategorie && (
+                    <span style={{ display: 'inline-block', marginLeft: '6px', padding: '3px 10px', background: '#92400e', color: '#fff', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 600 }}>
+                      {firmenprofil.pain_points.kaufsignal_kategorie}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {firmenprofil.pain_points.verkaufsargument && (
+                <p style={{ margin: '0 0 10px', fontSize: '0.88rem', fontStyle: 'italic', color: '#78350f' }}>
+                  {firmenprofil.pain_points.verkaufsargument}
+                </p>
+              )}
+
+              {firmenprofil.pain_points.deduktionen?.length > 0 && (
+                <div style={{ marginTop: '8px' }}>
+                  <strong style={{ fontSize: '0.8rem', color: '#92400e' }}>Deduktionen:</strong>
+                  {firmenprofil.pain_points.deduktionen.map((d, i) => (
+                    <div key={i} style={{ marginTop: '6px', padding: '8px 12px', background: 'rgba(255,255,255,0.5)', borderRadius: '6px', fontSize: '0.85rem' }}>
+                      <span style={{ display: 'inline-block', padding: '1px 6px', background: d.typ === 'FACT' ? '#059669' : '#d97706', color: '#fff', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700, marginRight: '6px' }}>
+                        {d.typ}
+                      </span>
+                      {d.text}
+                      {d.basis && (
+                        <span style={{ display: 'block', marginTop: '2px', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                          Basis: {d.basis}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {firmenprofil?.sources?.length > 0 && (
             <div style={{ marginTop: '16px' }}>
               <strong style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Belege ({firmenprofil.sources.length}):</strong>

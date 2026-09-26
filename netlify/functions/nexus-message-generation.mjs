@@ -110,7 +110,7 @@ async function generateMessage(context) {
   
   const contextStr = contextParts.join('\n');
   
-  const prompt = `Du bist ein B2B-Vertriebsexperte. Erstelle eine individuelle Erstansprache.
+  const prompt = `Du bist ein B2B-Vertriebsexperte. Erstelle eine individuelle Erstansprache nach der "Trigger-first, Value-first" Methode.
 
 KONTEXT (nur diese Daten verwenden):
 ${contextStr}
@@ -121,24 +121,35 @@ STRENGE REGELN:
 3. Erwähne KEINE Budgets, Probleme oder Entscheidungen, die nicht belegt sind
 4. Erwähne KEINE konkreten Leistungszahlen (Prozente, Euro, Stückzahlen), es sei denn, sie sind explizit im Kontext belegt
 5. Unterscheide FACT (was belegt ist) von INTERPRETATION (was du daraus ableitest)
-6. Die Nachricht soll kurz und natürlich sein (3-5 Sätze)
-7. Persönliche Anrede mit Name
-8. Konkreter Anlass = Trigger
-9. Verbindung zum Offering = was du anbietest
-10. Einfache Handlungsaufforderung (Gesprächsangebot)
-11. KEIN Marketing-Blabla, KEINE KI-Floskeln
 
-STRUKTUR:
-1. Anrede (Name, Rolle)
-2. Anlass (Trigger - was ist passiert?)
-3. Angebot (was bietest du an?)
-4. Nutzen (warum relevant?)
-5. Handlungsaufforderung (Gespräch?)
+STRUKTUR (exakt diese Reihenfolge):
+1. ZEILE 1-2: DER TRIGGER — Starte mit dem konkreten Anlass. Was ist bei dieser Firma passiert? (z.B. "Ich habe gesehen, dass Sie bei [Firma] gerade [Trigger]...")
+2. ZEILE 3: DER SCHMERZPUNKT — Was bedeutet dieser Trigger konkret für das Unternehmen? Welche unsichtbare Herausforderung entsteht dadurch?
+3. ZEILE 4: DER MEHRWERT — Biete einen KONKRETEN, SOFORT NÜTZLICHEN Mehrwert an. KEIN "Gesprächsangebot". Stattdessen: eine Checkliste, ein Audit, eine Analyse, ein Template, ein Report. Etwas, das der Empfänger SOFORT verwenden kann.
+4. ZEILE 5: LEICHTER CTA — Kein "Haben Sie 15 Minuten für ein Gespräch?" Stattdessen: "Wäre ein kurzer Blick darauf für Sie hilfreich?" oder "Soll ich Ihnen die Checkliste zuschicken?"
+
+TONALITÄT:
+- Die Nachricht soll klingen wie ein glücklicher Zufall, KEIN Verkaufsgespräch
+- "Ich habe zufällig gesehen, dass..." statt "Wir bieten Ihnen an..."
+- Direkt, respektvoll, kurz. Wie eine Nachricht von einem informierten Kollegen, nicht von einem Verkäufer.
+- DER EMPFÄNGER SOLL SICH DENKEN: "Woher wissen die das? Genau DAS habe ich gerade nötig!"
+
+VERBOTEN:
+- KEIN "Wir sind eine führende Agentur..."
+- KEIN "Haben Sie 15 Minuten für ein Gespräch?"
+- KEIN "Lassen Sie uns einen Termin vereinbaren"
+- KEIN "Ich würde mich freuen, wenn..."
+- KEIN "Gerne stelle ich Ihnen unser Angebot vor"
+- KEIN Marketing-Blabla, KEINE KI-Floskeln wie "In der heutigen dynamischen Welt..."
+- KEINE Übertreibungen oder superlativen Eigenschaftswörter
+
+BEISPIEL (Trigger: Cloud-Migration, CTO als Ansprechpartner):
+"Guten Tag Herr [Name], bei [Firma] gerade auf AWS auszubauen und parallel neue Cloud-Entwickler einzustellen — bei solchen Migrationen von Legacy-Systemen entstehen extrem oft vorübergehende Sicherheitslücken in den API-Schnittstellen. Wir haben eine 48-Stunden Audit-Checkliste entwickelt, die speziell für diese kritische Phase konzipiert wurde. Soll ich Ihnen die Checkliste zuschicken?"
 
 Gib ein JSON zurück:
 {
-  "subject": "Betreff-Zeile (kurz, konkret)",
-  "message": "Die vollständige Nachricht",
+  "subject": "Betreff-Zeile (kurz, konkret, TRIGGER-bezogen)",
+  "message": "Die vollständige Nachricht (max 5 Sätze)",
   "used_facts": ["Liste der verwendeten Fakten"],
   "interpretations": ["Liste der Interpretationen"],
   "sources": ["Quellen für verwendete Fakten"]

@@ -26,7 +26,7 @@ export const handler = async (event) => {
   }
 
   try {
-    const { company_id, domain } = JSON.parse(event.body || '{}');
+    const { company_id, domain, trigger_context } = JSON.parse(event.body || '{}');
 
     if (!company_id || !domain) {
       return { statusCode: 400, body: JSON.stringify({ error: 'company_id and domain required' }) };
@@ -86,6 +86,8 @@ export const handler = async (event) => {
         services: [],
         target_audience: null,
         legal_form_location: null,
+        trigger_context: trigger_context || null,
+        pain_points: null,
         updated_at: new Date().toISOString()
       })
       .select()
