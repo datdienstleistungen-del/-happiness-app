@@ -27,7 +27,7 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
   }
 }
 
-async function searchTavily(query, apiKey, maxResults = 10) {
+async function searchTavilyParallel(query, apiKey, maxResults = 10) {
   const B2B_NEWS_DOMAINS = [
     'pressebox.de', 'openpr.de', 'it-business.de', 'crn.de', 'handelsblatt.com',
     'wiwo.de', 'unternehmensboerse.de', 'northdata.de', 'bundesanzeiger.de',
@@ -39,70 +39,61 @@ async function searchTavily(query, apiKey, maxResults = 10) {
     'xing.com', 'kununu.com', 'absolventa.de'
   ];
 
-  try {
-    const res = await fetchWithTimeout('https://api.tavily.com/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+  async function tavilySearch(q, domains, topic) {
+    try {
+      const body = {
         api_key: apiKey,
-        query,
+        query: q,
         search_depth: 'advanced',
         include_answer: false,
-        max_results: maxResults,
-        include_domains: B2B_NEWS_DOMAINS
-      })
-    }, 8000);
+        max_results: maxResults
+      };
+      if (domains) body.include_domains = domains;
+      if (topic) body.topic = topic;
 
-    if (res.ok) {
-      const data = await res.json();
-      if (data.results && data.results.length > 0) return data.results;
+      const res = await fetchWithTimeout('https://api.tavily.com/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }, 8000);
+
+      if (res.ok) {
+        const data = await res.json();
+        return data.results || [];
+      }
+    } catch (e) { /* continue */ }
+    return [];
+  }
+
+  // Alle drei Suchen parallel ausführen
+  const [newsResults, jobResults, generalResults] = await Promise.allSettled([
+    tavilySearch(query, B2B_NEWS_DOMAINS),
+    tavilySearch(`${query} jobs hiring einstellen`, JOB_PORTAL_DOMAINS),
+    tavilySearch(`${query} 2026`, null, 'general')
+  ]);
+
+  const news = newsResults.status === 'fulfilled' ? newsResults.value : [];
+  const jobs = jobResults.status === 'fulfilled' ? jobResults.value : [];
+  const general = generalResults.status === 'fulfilled' ? generalResults.value : [];
+
+  // source_type taggen
+  const taggedNews = news.map(r => ({ ...r, source_type: 'NEWS' }));
+  const taggedJobs = jobs.map(r => ({ ...r, source_type: 'JOB_PORTAL' }));
+  const taggedGeneral = general.map(r => ({ ...r, source_type: 'GENERAL_WEB' }));
+
+  // Kombinieren, Duplikate anhand URL entfernen (erste Quelle gewinnt)
+  const seen = new Set();
+  const combined = [];
+  for (const r of [...taggedNews, ...taggedJobs, ...taggedGeneral]) {
+    if (r.url && !seen.has(r.url)) {
+      seen.add(r.url);
+      combined.push(r);
     }
-  } catch (e) { /* continue */ }
+  }
 
-  // Fallback 1: Job-Portale (Hiring-Signale sind die stärksten Trigger)
-  try {
-    const jobQuery = `${query} jobs hiring einstellen`;
-    const res = await fetchWithTimeout('https://api.tavily.com/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        api_key: apiKey,
-        query: jobQuery,
-        search_depth: 'advanced',
-        include_answer: false,
-        max_results: Math.min(maxResults, 5),
-        include_domains: JOB_PORTAL_DOMAINS
-      })
-    }, 8000);
+  console.log(`[searchTavily] NEWS=${news.length} JOB_PORTAL=${jobs.length} GENERAL_WEB=${general.length} COMBINED=${combined.length}`);
 
-    if (res.ok) {
-      const data = await res.json();
-      if (data.results && data.results.length > 0) return data.results;
-    }
-  } catch (e) { /* continue */ }
-
-  // Fallback 2: Allgemeine Suche
-  try {
-    const res = await fetchWithTimeout('https://api.tavily.com/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        api_key: apiKey,
-        query: `${query} 2026`,
-        search_depth: 'advanced',
-        include_answer: false,
-        max_results: maxResults,
-        topic: 'general'
-      })
-    }, 8000);
-
-    if (res.ok) {
-      const data = await res.json();
-      if (data.results && data.results.length > 0) return data.results;
-    }
-  } catch (e) { /* continue */ }
-
-  return [];
+  return combined;
 }
 
 export const handler = async (event) => {
@@ -166,13 +157,20 @@ export const handler = async (event) => {
 
     for (const key of tavilyKeys) {
       if (allResults.length > 0) break;
-      allResults = await searchTavily(searchQuery, key, 10);
+      allResults = await searchTavilyParallel(searchQuery, key, 10);
     }
 
-    // Dedupliziere URLs
-    const uniqueUrls = [...new Set(allResults.map(r => r.url).filter(Boolean))];
+    // Dedupliziere URLs (bereits in searchTavilyParallel erledigt, aber zur Sicherheit)
+    const seenUrls = new Set();
+    const uniqueResults = [];
+    for (const r of allResults) {
+      if (r.url && !seenUrls.has(r.url)) {
+        seenUrls.add(r.url);
+        uniqueResults.push(r);
+      }
+    }
 
-    if (uniqueUrls.length === 0) {
+    if (uniqueResults.length === 0) {
       return {
         statusCode: 200,
         body: JSON.stringify({
@@ -191,10 +189,10 @@ export const handler = async (event) => {
         offering_id,
         status: 'running',
         current_step: 0,
-        total_steps: uniqueUrls.length,
-        pending_urls: uniqueUrls.map(url => ({ url, title: allResults.find(r => r.url === url)?.title || '' })),
+        total_steps: uniqueResults.length,
+        pending_urls: uniqueResults.map(r => ({ url: r.url, title: r.title || '', source_type: r.source_type || 'NEWS' })),
         partial_results: [],
-        last_message: `Suche gestartet: ${uniqueUrls.length} Kandidaten gefunden...`
+        last_message: `Suche gestartet: ${uniqueResults.length} Kandidaten gefunden...`
       })
       .select('id')
       .single();

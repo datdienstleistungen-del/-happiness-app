@@ -336,6 +336,7 @@ Gib ein JSON zurück:
       url: nextUrl.url,
       title: nextUrl.title,
       domain,
+      source_type: nextUrl.source_type || 'NEWS',
       triggers: extracted.trigger_events || [],
       extracted_at: new Date().toISOString()
     }];
