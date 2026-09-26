@@ -14,7 +14,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { GROQ_JSON_HEAVY, OPENROUTER_FREE_MODELS, MISTRAL_DEFAULT_MODEL, OPENAI_DEFAULT_MODEL } from './nexus-models.mjs';
-import { fetchAndExtractText } from '../shared/html-fetch.mjs';
+import { fetchAndExtractText } from './_shared/html-fetch.mjs';
 import { checkTextGroundedInSource } from './grounding-helpers.mjs';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;

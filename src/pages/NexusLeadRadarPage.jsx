@@ -704,7 +704,7 @@ export default function NexusLeadRadarPage() {
           <button 
             className="btn-primary" 
             style={{ marginTop: '15px' }}
-            onClick={() => { setError(null); generateTriggersFromOffering(activeOffering, true) }}
+            onClick={() => { setError(null); setScanStatus(null); startChunkedScan() }}
           >
             <RefreshCw size={14} style={{ marginRight: '8px' }} />
             {t('nexus.rescan', 'Nochmal scannen')}
@@ -723,7 +723,9 @@ export default function NexusLeadRadarPage() {
                 localStorage.removeItem('nexus:radar_state')
                 localStorage.removeItem('nexus:radar_triggers')
                 setTriggers([])
-                generateTriggersFromOffering(activeOffering, true)
+                setScanStatus(null)
+                setHasSearched(false)
+                startChunkedScan()
               }}
               style={{ fontSize: '0.85rem', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
               disabled={loading}
