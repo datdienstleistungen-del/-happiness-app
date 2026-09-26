@@ -1,7 +1,7 @@
 import React from 'react'
 import { 
   Target, AlertTriangle, TrendingUp, Users, MessageSquare, 
-  Phone, Lightbulb, ChevronRight, CheckCircle, Flame, Globe
+  Phone, Lightbulb, ChevronRight, CheckCircle, Flame, Globe, ShieldAlert
 } from 'lucide-react'
 import { useLanguage } from '../i18n/translations.jsx'
 import './NexusAnalysisResult.css'
@@ -340,6 +340,23 @@ function LeadIntelligenceView({ data, firmenprofil, profilLoading }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 0' }}>
               <div className="btn-spinner" style={{ width: 16, height: 16 }} />
               <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Webseiten werden analysiert...</span>
+            </div>
+          )}
+
+          {firmenprofil?.is_competitor && (
+            <div style={{ marginBottom: '16px', padding: '14px 18px', background: 'linear-gradient(135deg, #fef2f2, #fee2e2)', border: '2px solid #dc2626', borderRadius: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                <ShieldAlert size={20} color="#dc2626" />
+                <strong style={{ color: '#dc2626', fontSize: '0.95rem' }}>Eigener Anbieter / Kompetitor erkannt</strong>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.88rem', color: '#991b1b' }}>
+                {firmenprofil.competitor_reason || 'Diese Firma bietet selbst Software/Tools im Bereich CRM, Sales oder Marketing an.'}
+              </p>
+              {firmenprofil.competitor_category && (
+                <span style={{ display: 'inline-block', marginTop: '8px', padding: '3px 10px', background: '#dc2626', color: '#fff', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 600 }}>
+                  {firmenprofil.competitor_category}
+                </span>
+              )}
             </div>
           )}
 

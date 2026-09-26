@@ -103,6 +103,7 @@ REGELN:
 2. Erfinde NICHTS. Wenn nichts Verlässliches im Text steht, gib eine leere Liste zurück.
 3. Gib IMMER valides JSON zurück, ohne Markdown-Blöcke.
 4. "zitat" muss exakt so im Text vorkommen (Whitespace normalisiert).
+5. CRITICAL: Prüfe ob die Firma SELBST ein Anbieter von CRM-, Sales-, Marketing-, Chat- oder E-Commerce-Software/-Tools ist. Das ist der "Competitor-Check".
 
 Gib ein JSON zurück mit diesem Schema:
 {
@@ -112,8 +113,16 @@ Gib ein JSON zurück mit diesem Schema:
   ],
   "leistungen": ["Service 1", "Service 2"],
   "zielgruppe": "Beschreibung der Zielgruppe falls erkennbar",
-  "impressum_info": "Rechtsform, Ort, Geschäftsführer falls im Impressum"
-}`;
+  "impressum_info": "Rechtsform, Ort, Geschäftsführer falls im Impressum",
+  "is_competitor": false,
+  "competitor_reason": null,
+  "competitor_category": null
+}
+
+is_competitor: true wenn die Firma SELBST Software/Tools/SaaS für CRM, Sales, Marketing, Chatbot, E-Commerce, Helpdesk, Ticketing, Automatisierung o.ä. verkauft oder als Hauptgeschäft anbietet.
+competitor_reason: Kurze Begründung mit Zitat (z.B. "Bietet CRM-Software als SaaS-Produkt an").
+competitor_category: Kategorie des Produkts (z.B. "CRM", "Chatbot", "Marketing-Automation", "E-Commerce-Plattform", "Helpdesk").
+Wenn die Firma KEIN Software-/SaaS-Anbieter ist: is_competitor: false, competitor_reason: null, competitor_category: null.`;
 
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
@@ -163,7 +172,10 @@ export const handler = async (event) => {
           total_steps: (job.pending_urls?.length || 0) + job.current_step,
           description: job.description,
           sources: job.sources,
-          services: job.services
+          services: job.services,
+          is_competitor: job.is_competitor,
+          competitor_reason: job.competitor_reason,
+          competitor_category: job.competitor_category
         })
       };
     }
@@ -208,7 +220,10 @@ export const handler = async (event) => {
           total_steps: job.current_step,
           description: job.description,
           services: job.services,
-          sources: currentSources
+          sources: currentSources,
+          is_competitor: job.is_competitor,
+          competitor_reason: job.competitor_reason,
+          competitor_category: job.competitor_category
         })
       };
     }
@@ -259,7 +274,7 @@ Extrahiere eine strukturierte Firmenbeschreibung. Jede Aussage MUSS ein wörtlic
       { role: 'user', content: userPrompt }
     ], { temperature: 0.3, max_tokens: 2000, jsonMode: true });
 
-    let extracted = { aussagen: [], leistungen: [], zielgruppe: null, impressum_info: null };
+    let extracted = { aussagen: [], leistungen: [], zielgruppe: null, impressum_info: null, is_competitor: false, competitor_reason: null, competitor_category: null };
 
     if (llmResult?.text) {
       try {
@@ -309,6 +324,11 @@ Extrahiere eine strukturierte Firmenbeschreibung. Jede Aussage MUSS ein wörtlic
       ? extracted.impressum_info
       : job.legal_form_location;
 
+    // Competitor-Check: Wenn eine Seite True liefert, gilt das für das gesamte Profil
+    const isCompetitor = extracted.is_competitor || job.is_competitor || false;
+    const competitorReason = extracted.competitor_reason || job.competitor_reason || null;
+    const competitorCategory = extracted.competitor_category || job.competitor_category || null;
+
     const newStatus = updatedPending.length === 0 ? 'done' : 'running';
 
     await serviceClient
@@ -322,6 +342,9 @@ Extrahiere eine strukturierte Firmenbeschreibung. Jede Aussage MUSS ein wörtlic
         services: servicesUpdate,
         target_audience: targetUpdate,
         legal_form_location: impressumUpdate,
+        is_competitor: isCompetitor,
+        competitor_reason: competitorReason,
+        competitor_category: competitorCategory,
         status: newStatus,
         updated_at: new Date().toISOString()
       })
@@ -338,6 +361,9 @@ Extrahiere eine strukturierte Firmenbeschreibung. Jede Aussage MUSS ein wörtlic
         sources: updatedSources,
         services: servicesUpdate,
         description: descriptionUpdate,
+        is_competitor: isCompetitor,
+        competitor_reason: competitorReason,
+        competitor_category: competitorCategory,
         last_message: `${nextUrl} — ${groundedSources.length} Aussagen extrahiert.`
       })
     };
