@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio';
+import { createClient } from '@supabase/supabase-js';
 
 // ============================================================================
 // CONFIGURATION & API KEYS (Multi-Provider Support)
@@ -9,6 +10,8 @@ const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
 const GROQ_API_KEY = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
 const TAVILY_API_KEY = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY;
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 const LANG_MAP = {
   de: 'German / Deutsch',
@@ -629,6 +632,44 @@ export const handler = async (event) => {
   try {
     const body = event.body ? JSON.parse(event.body) : {};
     const { action, companyName, website, trigger, offering, contact, activity, targetPostLang, targetLang, uiLang, lang } = body;
+
+    // === COMPETITOR HARD GATE ===
+    // Social Intelligence für erkannte Konkurrenten blockieren
+    if (companyName && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+      try {
+        const svcClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+        // Company über nexus_companies finden, dann Profile-Check
+        const { data: company } = await svcClient
+          .from('nexus_companies')
+          .select('id')
+          .ilike('name', companyName)
+          .maybeSingle();
+        
+        if (company?.id) {
+          const { data: profile } = await svcClient
+            .from('nexus_company_profiles')
+            .select('is_competitor, competitor_reason')
+            .eq('company_id', company.id)
+            .eq('status', 'done')
+            .maybeSingle();
+          
+          if (profile?.is_competitor) {
+            console.log(`[SocialIntel] BLOCKED: "${companyName}" is competitor — ${profile.competitor_reason}`);
+            return {
+              statusCode: 403,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                error: 'Social Intelligence blockiert: Firma als Mitbewerber erkannt.',
+                reason: profile.competitor_reason
+              })
+            };
+          }
+        }
+      } catch (e) {
+        // Competitor-Check fehlgeschlagen — nicht blockieren, weitermachen
+        console.warn('[SocialIntel] Competitor check failed:', e.message);
+      }
+    }
 
     if (!companyName && !activity) {
       return {

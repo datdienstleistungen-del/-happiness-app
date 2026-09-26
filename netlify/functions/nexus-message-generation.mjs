@@ -182,6 +182,29 @@ export const handler = async (event) => {
       return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
     }
     
+    // === COMPETITOR HARD GATE ===
+    // Nachrichtengenerierung für erkannte Konkurrenten sofort blockieren
+    if (company?.id) {
+      const serviceClient = createClient(supabaseUrl, supabaseKey);
+      const { data: profile } = await serviceClient
+        .from('nexus_company_profiles')
+        .select('is_competitor, competitor_reason')
+        .eq('company_id', company.id)
+        .eq('status', 'done')
+        .maybeSingle();
+      
+      if (profile?.is_competitor) {
+        console.log(`[MessageGen] BLOCKED: company ${company.id} is competitor — ${profile.competitor_reason}`);
+        return {
+          statusCode: 403,
+          body: JSON.stringify({
+            error: 'Nachrichtengenerierung blockiert: Firma als Mitbewerber erkannt.',
+            reason: profile.competitor_reason
+          })
+        };
+      }
+    }
+    
     // Validate required data
     if (!contact?.name) {
       return { statusCode: 400, body: JSON.stringify({ error: 'Contact name required' }) };

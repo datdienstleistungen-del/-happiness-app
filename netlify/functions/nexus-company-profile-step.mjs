@@ -350,6 +350,22 @@ Extrahiere eine strukturierte Firmenbeschreibung. Jede Aussage MUSS ein wörtlic
       })
       .eq('id', profile_id);
 
+    // === COMPETITOR HARD GATE ===
+    // Sobald is_competitor: true → alle zugehörigen Leads sofort downgraden
+    if (isCompetitor && job.company_id) {
+      console.log(`[CompanyProfileStep] COMPETITOR GATE: ${job.company_id} — downgrading lead packages`);
+      await serviceClient
+        .from('nexus_lead_packages')
+        .update({
+          status: 'excluded',
+          quality_score: 0,
+          exclusion_reason: competitorReason || 'Firma als Mitbewerber erkannt',
+          updated_at: new Date().toISOString()
+        })
+        .eq('company_id', job.company_id)
+        .neq('status', 'excluded');
+    }
+
     console.log(`[CompanyProfileStep] Step ${job.current_step + 1}: ${nextUrl} — ${groundedSources.length} grounded quotes (${Date.now() - deadline + 8500}ms remaining)`);
 
     return {
