@@ -55,7 +55,7 @@ async function searchTavilyParallel(query, apiKey, maxResults = 10) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
-      }, 8000);
+      }, 5000);
 
       if (res.ok) {
         const data = await res.json();
@@ -119,33 +119,31 @@ export const handler = async (event) => {
 
     if (!offering_id) return { statusCode: 400, body: JSON.stringify({ error: 'offering_id required' }) };
 
-    // Duplikatschutz: Existiert bereits ein laufender Job?
-    const existingRes = await userSupabase
+    // Erst: ALLE alten Jobs für diesen User aufräumen (nicht nur dieses Offering)
+    const allRunningRes = await userSupabase
       .from('nexus_scan_jobs')
-      .select('id, status, created_at')
+      .select('id, created_at')
       .eq('user_id', user.id)
-      .eq('offering_id', offering_id)
-      .eq('status', 'running')
-      .order('created_at', { ascending: false })
-      .limit(1);
+      .eq('status', 'running');
 
-    if (existingRes.data && existingRes.data.length > 0) {
-      const existing = existingRes.data[0];
-      const age = Date.now() - new Date(existing.created_at).getTime();
-      const STALE_MS = 5 * 60 * 1000; // 5 Minuten
-
-      if (age > STALE_MS) {
-        // Alter stuck-Job → löschen und neu starten
-        console.log(`[ScanStart] Stale job ${existing.id} (${Math.round(age/1000)}s old) — deleting and restarting`);
-        await userSupabase.from('nexus_scan_jobs').delete().eq('id', existing.id);
-      } else {
-        console.log(`[ScanStart] Running job already exists: ${existing.id}`);
+    if (allRunningRes.data && allRunningRes.data.length > 0) {
+      const now = Date.now();
+      const staleIds = allRunningRes.data
+        .filter(j => now - new Date(j.created_at).getTime() > 2 * 60 * 1000)
+        .map(j => j.id);
+      if (staleIds.length > 0) {
+        console.log(`[ScanStart] Cleaning ${staleIds.length} stale running jobs`);
+        await userSupabase.from('nexus_scan_jobs').delete().in('id', staleIds);
+      }
+      // Wenn noch ein fresh <2min Job existiert → blockieren
+      const freshRunning = allRunningRes.data.filter(j => !staleIds.includes(j.id));
+      if (freshRunning.length > 0) {
         return {
           statusCode: 200,
           body: JSON.stringify({
-            job_id: existing.id,
+            job_id: freshRunning[0].id,
             status: 'already_running',
-            message: 'Ein Scan läuft bereits für dieses Angebot.'
+            message: 'Ein Scan läuft bereits.'
           })
         };
       }
@@ -214,15 +212,15 @@ export const handler = async (event) => {
       return { statusCode: 500, body: JSON.stringify({ error: 'Job konnte nicht erstellt werden' }) };
     }
 
-    console.log(`[ScanStart] Job ${jobRes.id} created: ${uniqueUrls.length} URLs`);
+    console.log(`[ScanStart] Job ${jobRes.id} created: ${uniqueResults.length} URLs`);
 
     return {
       statusCode: 200,
       body: JSON.stringify({
         job_id: jobRes.id,
         status: 'started',
-        total_steps: uniqueUrls.length,
-        message: `Scan gestartet: ${uniqueUrls.length} Kandidaten werden geprüft.`
+        total_steps: uniqueResults.length,
+        message: `Scan gestartet: ${uniqueResults.length} Kandidaten werden geprüft.`
       })
     };
 

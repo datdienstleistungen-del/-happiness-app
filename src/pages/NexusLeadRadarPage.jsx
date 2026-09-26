@@ -433,6 +433,23 @@ export default function NexusLeadRadarPage() {
       })
 
       const data = await res.json()
+      console.log('[ScanStart] Response:', data)
+
+      if (data.error) {
+        console.error('[ScanStart] Function error:', data.error)
+        setScanStatus(null)
+        setScanMessage('')
+        setError(data.error)
+        return
+      }
+
+      if (!res.ok) {
+        console.error('[ScanStart] HTTP error:', res.status)
+        setScanStatus(null)
+        setScanMessage('')
+        setError(`Server-Fehler (${res.status}). Scan konnte nicht gestartet werden.`)
+        return
+      }
 
       if (data.status === 'already_running') {
         // Bestehenden Job übernehmen

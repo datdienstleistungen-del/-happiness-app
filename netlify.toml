@@ -6,6 +6,12 @@
 [functions]
   node_bundler = "esbuild"
 
+[functions."nexus-radar-scan-start"]
+  timeout = 26
+
+[functions."nexus-radar-scan-step"]
+  timeout = 26
+
 [functions."cron-search"]
   schedule = "*/15 * * * *"
 
