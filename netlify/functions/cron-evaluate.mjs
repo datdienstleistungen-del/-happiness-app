@@ -74,7 +74,7 @@ export async function handler(event, context) {
         continue;
       }
 
-      console.log(`B2 Cron: Analysiere Hit ${hit.id} mit Provider ${aiProvider}`);
+      console.log(`B2 Cron: Analysiere Hit ${hit.id}`);
       
       const contentExcerpt = hit.raw_content ? hit.raw_content.substring(0, 3000) : hit.title;
       const prompt = `Analysiere diesen Textausschnitt und bewerte die Relevanz für das folgende Angebot.
@@ -281,7 +281,7 @@ async function createOpportunityFromHit(hit, offering, aiResult, supabaseUrl, su
           user_id: hit.user_id,
           trigger_id: triggerEvent.id,
           summary: hit.title || 'Radar-Hit Research',
-          raw_data: {
+          findings: {
             url: hit.url,
             title: hit.title,
             source: hit.source,

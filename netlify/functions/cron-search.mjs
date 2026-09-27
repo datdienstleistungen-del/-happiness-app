@@ -68,6 +68,23 @@ export async function handler(event, context) {
   const BATCH_SIZE = 3; // Wir scannen max. 3 Offerings pro Lauf (um Netlify Limits zu respektieren)
 
   try {
+    // 1.5 Stale-Locks freigeben: Offerings die >30 Min als laufend markiert sind,
+    // aber nie entsperrt wurden (Crash/Timeout) — sonst werden sie nie wieder geclaimt
+    try {
+      const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+      for (const filter of [`last_scanned_at=lt.${cutoff}`, 'last_scanned_at=is.null']) {
+        const staleRes = await fetch(`${supabaseUrl}/rest/v1/nexus_offerings?is_scanning=eq.true&${filter}`, {
+          method: 'PATCH',
+          headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_scanning: false })
+        });
+        if (staleRes.ok) {
+          const unlocked = await staleRes.json();
+          if (unlocked?.length > 0) console.log(`B1 Cron: ${unlocked.length} stale Offering-Locks freigegeben.`);
+        }
+      }
+    } catch (e) { console.warn('B1 Cron: Stale-Unlock fehlgeschlagen:', e.message); }
+
     // 2. Atomarer Claim von Offerings (Die am längsten nicht gescannt wurden)
     // Aufruf unserer neuen Supabase RPC-Funktion
     const claimRes = await fetch(`${supabaseUrl}/rest/v1/rpc/claim_offerings_for_scan`, {
