@@ -48,6 +48,23 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
       message = rest.userMessage || rest.searchContext || rest.message || `Firma: ${rest.company || ''}\nSuchergebnisse:\n${rest.context || JSON.stringify(rest)}`;
     } else if (mode === 'lead_intelligence') {
       message = `Unternehmen: ${rest.company || ''}\nAngebot des Verkäufers: ${rest.angebot || ''}`
+      const p = rest.companyProfile
+      if (p && p.status === 'done') {
+        message += `\n\n--- VERIFIZIERTES FIRMENPROFIL (automatisch von der Firmenwebseite extrahiert) ---`
+        if (p.description) message += `\nBeschreibung: ${p.description}`
+        if (Array.isArray(p.services) && p.services.length) message += `\nLeistungen: ${p.services.join(', ')}`
+        if (p.target_audience) message += `\nZielgruppe laut Firma: ${p.target_audience}`
+        if (p.legal_form_location) message += `\nRechtsform/Ort: ${p.legal_form_location}`
+        if (Array.isArray(p.sources) && p.sources.length) {
+          message += `\nBelege mit Quellen:`
+          message += p.sources.slice(0, 12).map(s => `\n- "${s.claim}" (Quelle: ${s.source_url})`).join('')
+        }
+        if (p.pain_points?.haupt_schmerzpunkt) message += `\nAbgeleiteter Schmerzpunkt: ${p.pain_points.haupt_schmerzpunkt}`
+        if (p.pain_points?.emotionaler_zustand) message += `\nEmotionaler Zustand: ${p.pain_points.emotionaler_zustand}`
+        if (p.pain_points?.kaufsignal_kategorie) message += `\nKaufsignal-Kategorie: ${p.pain_points.kaufsignal_kategorie}`
+        if (p.pain_points?.verkaufsargument) message += `\nVerkaufsargument: ${p.pain_points.verkaufsargument}`
+        message += `\n\nREGEL: Stütze die Analyse PRIMÄR auf dieses verifizierte Profil. Erweitere nichts, was dort nicht belegt ist. Wo das Profil keine Infos liefert, schreibe "Unbekannt".`
+      }
     } else if (mode === 'einwandbehandlung') {
       message = `KUNDEN-EINWAND (OBERSTE PRIORITÄT): "${rest.einwand || '-'}"\n\nZIELUNTERNEHMEN: ${rest.company || '-'}\nANSPRECHPARTNER: ${rest.ansprechpartner || '-'}\nBRANCHE: ${rest.branche || '-'}\nSITUATION/KONTEXT: ${rest.situation || '-'}\nUNSER ANGEBOT: ${rest.full_context?.offering?.name || rest.full_context?.offering?.positioning || rest.company || '-'}`
     } else if (mode === 'follow_up') {

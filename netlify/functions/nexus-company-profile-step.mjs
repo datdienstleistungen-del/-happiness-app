@@ -18,7 +18,7 @@ import { fetchAndExtractText } from './_shared/html-fetch.mjs';
 import { checkTextGroundedInSource } from './grounding-helpers.mjs';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 const serviceKey = process.env.SUPABASE_SERVICE_KEY;
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {

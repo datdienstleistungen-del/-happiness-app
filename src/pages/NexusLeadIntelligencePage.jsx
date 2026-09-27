@@ -17,52 +17,59 @@ async function fetchWithAuth(url, options = {}) {
 
 export default function NexusLeadIntelligencePage() {
   const [searchParams] = useSearchParams()
-  const { currentLead } = useLead()
-  const [companyName, setCompanyName] = useState(() => currentLead?.companyName || searchParams.get('company') || '')
-  const [angebot, setAngebot] = useState(() => currentLead?.angebot || '')
+  const { activeOffering } = useLead()
+  const [companyName, setCompanyName] = useState(() => searchParams.get('company') || '')
+  const [angebot, setAngebot] = useState(() => {
+    const fromUrl = searchParams.get('angebot')
+    if (fromUrl) return fromUrl
+    return activeOffering ? [activeOffering.offering_name, activeOffering.positioning].filter(Boolean).join(' — ') : ''
+  })
   const [analyse, setAnalyse] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [firmenprofil, setFirmenprofil] = useState(null)
   const [profilLoading, setProfilLoading] = useState(false)
   const autoAnalyzedRef = useRef(false)
-  const profilStartedRef = useRef(false)
 
   // Trigger-Kontext aus URL-Param (z.B. von Lead Radar weitergeleitet)
   const triggerContext = searchParams.get('trigger') || null
 
-  const startProfileScan = async (companyId, domain) => {
-    if (profilStartedRef.current) return
-    profilStartedRef.current = true
+  // Firmenprofil zuerst: Company+Domain auflösen, Website crawlen, fertiges Profil zurückgeben
+  const runProfileScan = async (name) => {
     setProfilLoading(true)
-
+    setFirmenprofil(null)
     try {
       const startRes = await fetchWithAuth('/.netlify/functions/nexus-company-profile-start', {
         method: 'POST',
         body: JSON.stringify({
-          company_id: companyId,
-          domain,
+          company_name: name,
           trigger_context: triggerContext || undefined
         })
       })
-      if (!startRes.ok) return
-      const { profile_id, status } = await startRes.json()
-      if (status === 'already_running' || !profile_id) return
+      if (!startRes.ok) return null
+      const startData = await startRes.json()
+      console.log('[Intelligence] Profile start:', startData)
+      if (startData.status === 'no_domain' || !startData.profile_id) return null
 
-      let done = false
-      while (!done) {
+      // Bis status done/error pollen (auch already_done: erste Abfrage liefert den fertigen Stand)
+      let profile = null
+      let guard = 0
+      while (guard++ < 60) {
         const stepRes = await fetchWithAuth('/.netlify/functions/nexus-company-profile-step', {
           method: 'POST',
-          body: JSON.stringify({ profile_id })
+          body: JSON.stringify({ profile_id: startData.profile_id })
         })
         if (!stepRes.ok) break
         const stepData = await stepRes.json()
+        profile = stepData
         setFirmenprofil(stepData)
-        if (stepData.status === 'done' || stepData.status === 'error') done = true
-        if (!done) await new Promise(r => setTimeout(r, 300))
+        if (stepData.status === 'done' || stepData.status === 'error') break
+        await new Promise(r => setTimeout(r, 400))
       }
+      return profile && profile.status === 'done' ? profile : null
     } catch (err) {
       console.error('Firmenprofil-Scan Fehler:', err)
+      return null
     } finally {
       setProfilLoading(false)
     }
@@ -79,23 +86,20 @@ export default function NexusLeadIntelligencePage() {
     setError(null)
     setAnalyse(null)
     setFirmenprofil(null)
-    profilStartedRef.current = false
 
     try {
+      // 1. Firmenprofil zuerst (Domain-Auflösung + Web-Crawl) — liefert verifizierte Fakten
+      const profile = await runProfileScan(companyName.trim())
+
+      // 2. Intelligence-Analyse mit eingespeistem Profil
+      const angebotText = angebot || (activeOffering ? [activeOffering.offering_name, activeOffering.positioning].filter(Boolean).join(' — ') : '')
       const result = await callNexusAI({
         mode: 'lead_intelligence',
         company: companyName,
-        angebot: angebot
+        angebot: angebotText,
+        companyProfile: profile || null
       })
-
       setAnalyse(result)
-
-      // Firmenprofil-Scan starten (falls Domain bekannt)
-      const domain = result?.firma_domain || result?.domain || null
-      const companyId = result?.company_id || null
-      if (domain && companyId) {
-        startProfileScan(companyId, domain)
-      }
     } catch (err) {
       console.error('Lead Intelligence Fehler:', err)
       setError('Fehler bei der Analyse. Bitte versuche es erneut.')
@@ -104,16 +108,14 @@ export default function NexusLeadIntelligencePage() {
     }
   }
 
-  // Auto-analyze if we have a real company name from lead context
+  // Auto-analyze, wenn der Firmenname aus der URL kommt (z.B. Lead-Radar-Weiterleitung)
   useEffect(() => {
-    if (currentLead?.companyName && 
-        currentLead.companyName !== 'Unbekanntes Unternehmen' &&
-        currentLead.companyName !== 'Nicht spezifiziert' &&
-        !autoAnalyzedRef.current) {
+    const urlCompany = searchParams.get('company')
+    if (urlCompany && !autoAnalyzedRef.current) {
       autoAnalyzedRef.current = true
       setTimeout(() => handleAnalyze(null), 100)
     }
-  }, [currentLead])
+  }, [searchParams])
 
   return (
     <div className="lead-intelligence-page">
@@ -173,7 +175,11 @@ export default function NexusLeadIntelligencePage() {
           {loading ? (
             <>
               <div className="btn-spinner"></div>
-              Analyse läuft...
+              {profilLoading
+                ? (firmenprofil && firmenprofil.current_step != null && firmenprofil.total_steps
+                    ? `Firmenprofil: Schritt ${firmenprofil.current_step} von ${firmenprofil.total_steps}...`
+                    : 'Firmenwebsite wird aufgelöst...')
+                : 'Analyse läuft...'}
             </>
           ) : (
             <>
@@ -198,14 +204,16 @@ export default function NexusLeadIntelligencePage() {
               <Globe size={18} className={profilLoading ? 'spin' : ''} />
               <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                 {profilLoading
-                  ? 'Firmenprofil wird von der Webseite extrahiert...'
-                  : `Firmenprofil: ${firmenprofil?.sources?.length || 0} Aussagen aus ${Object.keys(firmenprofil?.raw_page_cache || {}).length} Seiten`}
+                  ? (firmenprofil && firmenprofil.current_step != null && firmenprofil.total_steps
+                      ? `Firmenprofil wird extrahiert... Schritt ${firmenprofil.current_step} von ${firmenprofil.total_steps}`
+                      : 'Firmenwebsite wird aufgelöst...')
+                  : `Firmenprofil: ${firmenprofil?.sources?.length || 0} Aussagen aus ${firmenprofil?.current_step || 0} Seiten`}
               </span>
             </div>
           )}
           
           <div className="result-actions">
-            <button className="btn-primary" onClick={() => { setAnalyse(null); setFirmenprofil(null); profilStartedRef.current = false; autoAnalyzedRef.current = false }}>
+            <button className="btn-primary" onClick={() => { setAnalyse(null); setFirmenprofil(null); autoAnalyzedRef.current = false }}>
               Neue Analyse
             </button>
           </div>
