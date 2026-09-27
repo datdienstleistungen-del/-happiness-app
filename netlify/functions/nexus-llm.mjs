@@ -53,7 +53,7 @@ async function tryGroq(messages, temperature = 0.3, hasImage = false, signal = n
     console.warn(`[NEXUS] Groq disabled by test flag.`);
     return null;
   }
-  const key = testOptions?.invalid_groq_key ? 'gsk_invalid_test_key_12345' : (process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY);
+  const key = testOptions?.invalid_groq_key ? 'gsk_invalid_test_key_12345' : (process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || process.env.GROQ_API_KEY_2);
   if (!key) return null;
 
   const models = hasImage 
@@ -117,7 +117,7 @@ async function tryOpenRouter(messages, temperature = 0.3, hasImage = false, sign
     return null;
   }
 
-  const key = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
+  const key = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY_2;
   if (!key) return null;
 
   const models = hasImage
@@ -182,7 +182,7 @@ async function tryMistral(messages, temperature = 0.3, signal = null, testOption
     console.warn(`[NEXUS] Mistral disabled by test flag.`);
     return null;
   }
-  const key = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY || BACKUP_MISTRAL;
+  const key = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY || process.env.MISTRAL_API_KEY_2 || BACKUP_MISTRAL;
   if (!key) return null;
 
   const t0 = Date.now();
