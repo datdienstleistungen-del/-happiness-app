@@ -471,7 +471,14 @@ export default function NexusLeadRadarPage() {
         setScanStatus('running')
         setScanProgress({ current: 0, total: data.total_steps })
         startPolling(data.job_id)
+        return
       }
+
+      // Kein job_id und kein bekannter Status → nicht endlos "Suche wird gestartet..." anzeigen
+      console.error('[ScanStart] Unexpected response:', data)
+      setScanStatus(null)
+      setScanMessage('')
+      setError('Scan-Start hat keine Job-ID geliefert. Bitte versuche es erneut.')
     } catch (e) {
       console.error('[ScanStart] Error:', e)
       setScanStatus(null)
@@ -485,6 +492,8 @@ export default function NexusLeadRadarPage() {
       clearInterval(scanPollingRef.current)
     }
 
+    let consecutiveFailures = 0
+
     scanPollingRef.current = setInterval(async () => {
       try {
         const res = await fetch('/.netlify/functions/nexus-radar-scan-step', {
@@ -497,6 +506,21 @@ export default function NexusLeadRadarPage() {
         })
 
         const data = await res.json()
+
+        if (!res.ok || data.error) {
+          consecutiveFailures++
+          console.error('[ScanStep] Error response:', res.status, data.error || '')
+          if (consecutiveFailures >= 8) {
+            clearInterval(scanPollingRef.current)
+            scanPollingRef.current = null
+            setScanStatus(null)
+            setScanMessage('')
+            setError(data.error || `Scan-Step-Fehler (${res.status}).`)
+          }
+          return
+        }
+
+        consecutiveFailures = 0
 
         // State updaten
         setScanProgress({ current: data.current_step, total: data.total_steps })
@@ -561,7 +585,15 @@ export default function NexusLeadRadarPage() {
           if (partialTriggers.length > 0) setTriggers(partialTriggers)
         }
       } catch (e) {
+        consecutiveFailures++
         console.error('[ScanStep] Polling error:', e)
+        if (consecutiveFailures >= 8) {
+          clearInterval(scanPollingRef.current)
+          scanPollingRef.current = null
+          setScanStatus(null)
+          setScanMessage('')
+          setError('Scan-Step liefert keine gültigen Antworten. Bitte versuche es erneut.')
+        }
       }
     }, 500) // Alle 500ms pollen
   }

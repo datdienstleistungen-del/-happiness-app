@@ -6,7 +6,7 @@
  * 2. LLM-Extraktion (wiederverwendet nexus-research.mjs Logik)
  * 3. Ergebnis an partial_results anhängen
  * 4. URL entfernen, current_step erhöhen
- * 5. Bei Deadline oder leerem pending_urls → status: 'done'
+ * 5. Bei leerem pending_urls → status: 'done'
  * 
  * Hard Cap: current_step > 12 → status: 'error'
  */
@@ -35,7 +35,7 @@ async function fetchPageText(url) {
   try {
     const res = await fetchWithTimeout(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NeXusBot/1.0)' }
-    }, 6000);
+    }, 4000);
     if (!res.ok) return null;
     const html = await res.text();
     // Einfache Text-Extraktion: HTML-Tags entfernen
@@ -146,8 +146,6 @@ export const handler = async (event) => {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  const deadline = Date.now() + 8500; // 8.5s Budget
-
   try {
     const { job_id } = JSON.parse(event.body || '{}');
 
@@ -212,11 +210,11 @@ export const handler = async (event) => {
       };
     }
 
-    // Hard Cap Check
-    if (job.current_step > 12) {
+    // Hard Cap Check (Sicherheitsnetz — Scans mit 20 Kandidaten dürfen nicht abgebrochen werden)
+    if (job.current_step > 25) {
       await userSupabase
         .from('nexus_scan_jobs')
-        .update({ status: 'error', error_message: 'Hard Cap erreicht (max 12 Schritte)', updated_at: new Date().toISOString() })
+        .update({ status: 'error', error_message: 'Hard Cap erreicht (max 25 Schritte)', updated_at: new Date().toISOString() })
         .eq('id', job_id);
 
       return {
@@ -227,7 +225,7 @@ export const handler = async (event) => {
           total_steps: job.total_steps,
           last_message: 'Scan wurde abgebrochen: zu viele Schritte.',
           partial_results: job.partial_results,
-          error_message: 'Hard Cap erreicht (max 12 Schritte)'
+          error_message: 'Hard Cap erreicht (max 25 Schritte)'
         })
       };
     }
@@ -337,10 +335,13 @@ Gib ein JSON zurück:
   ]
 }`;
 
-    const llmResult = await callAI([
-      { role: 'system', content: 'Du gibst IMMER valides JSON zurück, ohne Markdown-Blöcke.' },
-      { role: 'user', content: extractPrompt }
-    ], { temperature: 0.3, max_tokens: 2000, jsonMode: true });
+    const llmResult = await Promise.race([
+      callAI([
+        { role: 'system', content: 'Du gibst IMMER valides JSON zurück, ohne Markdown-Blöcke.' },
+        { role: 'user', content: extractPrompt }
+      ], { temperature: 0.3, max_tokens: 2000, jsonMode: true }),
+      new Promise(resolve => setTimeout(() => resolve(null), 4500)) // LLM-Budget: nie über 10s Netlify-Limit
+    ]);
 
     let extracted = { trigger_events: [] };
     if (llmResult?.text) {
@@ -369,8 +370,8 @@ Gib ein JSON zurück:
       ? `${triggersFound} mögliche Signale auf ${domain} gefunden, werte aus...`
       : `${domain} — keine Signale erkannt.`;
 
-    // 4. DB updaten
-    const isDone = updatedPending.length === 0 || Date.now() >= deadline;
+    // 4. DB updaten — fertig ist nur, wenn keine Kandidaten-URLs mehr übrig sind
+    const isDone = updatedPending.length === 0;
     await userSupabase
       .from('nexus_scan_jobs')
       .update({

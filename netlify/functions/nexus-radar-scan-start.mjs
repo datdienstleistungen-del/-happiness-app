@@ -212,12 +212,18 @@ export const handler = async (event) => {
       return { statusCode: 500, body: JSON.stringify({ error: `Job konnte nicht erstellt werden: ${jobRes.error.message || jobRes.error.code || 'Unknown'}` }) };
     }
 
-    console.log(`[ScanStart] Job ${jobRes.id} created: ${uniqueResults.length} URLs`);
+    const newJobId = jobRes.data?.id;
+    if (!newJobId) {
+      console.error('[ScanStart] No job id returned:', JSON.stringify(jobRes.data));
+      return { statusCode: 500, body: JSON.stringify({ error: 'Job-ID fehlt nach dem Anlegen.' }) };
+    }
+
+    console.log(`[ScanStart] Job ${newJobId} created: ${uniqueResults.length} URLs`);
 
     return {
       statusCode: 200,
       body: JSON.stringify({
-        job_id: jobRes.id,
+        job_id: newJobId,
         status: 'started',
         total_steps: uniqueResults.length,
         message: `Scan gestartet: ${uniqueResults.length} Kandidaten werden geprüft.`
