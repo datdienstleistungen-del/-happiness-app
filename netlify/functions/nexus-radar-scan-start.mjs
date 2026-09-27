@@ -3,8 +3,9 @@
  * 
  * Startet einen chunked Lead-Radar-Scan.
  * 1. Prüft auf existierenden laufenden Job (Duplikatschutz)
- * 2. Keyless-Multisource-Suche: Bing News RSS + DuckDuckGo (Web/PR/Jobs)
- *    + synthetische Jobbörsen-URLs (StepStone/XING/LinkedIn), mischt und dedupliziert Kandidaten
+ * 2. Keyless-Multisource-Suche: Bing News RSS + DuckDuckGo (Web/PR/Jobbörsen/PR-Portale)
+ *    + synthetische URLs (StepStone/XING/LinkedIn Jobs, NorthData-Firmensuche),
+ *    mischt und dedupliziert Kandidaten
  * 3. Legt nexus_scan_jobs-Eintrag an
  * 4. Gibt sofort { job_id, total_steps } zurück (<5s)
  *
@@ -177,12 +178,17 @@ export const handler = async (event) => {
     const ddgQueries = [
       { q: searchQuery, type: 'GENERAL_WEB' },
       { q: `${branche || searchQuery} Pressemitteilung`, type: 'GENERAL_WEB' },
-      ...(kwOk ? [{ q: `${kw} Stellenangebote`, type: 'JOB_PORTAL' }] : [])
+      ...(kwOk ? [{ q: `${kw} Stellenangebote`, type: 'JOB_PORTAL' }] : []),
+      ...(kwOk ? [{ q: `${kw} site:openpr.de OR site:presseportal.de`, type: 'NEWS' }] : [])
     ];
 
     const [newsSets, ddgSets] = await Promise.all([
       Promise.allSettled(newsQueries.map(q => searchBingNews(q, 8))),
-      Promise.allSettled(ddgQueries.map(d => searchDuckDuckGo(d.q, 8)))
+      // DDG leicht versetzt abfragen (429-Rate-Limit bei parallelen Anfragen)
+      Promise.allSettled(ddgQueries.map((d, i) => (async () => {
+        if (i > 0) await new Promise(r => setTimeout(r, i * 350));
+        return searchDuckDuckGo(d.q, 8);
+      })()))
     ]);
 
     const newsResults = [];
@@ -206,20 +212,21 @@ export const handler = async (event) => {
       }
     });
 
-    // Synthetische Jobbörsen-URLs (öffentliche Jobsuche ist crawelbar: StepStone 24k, XING 7.6k, LinkedIn 10.8k Text)
-    const jobBoards = kwOk ? [
+    // Synthetische URLs (öffentlich crawelbar: StepStone 24k, XING 7.6k, LinkedIn 10.8k, NorthData 11k Text)
+    const syntheticUrls = kwOk ? [
       { url: `https://www.stepstone.de/jobs/${encodeURIComponent(kw)}`, title: `StepStone Stellenangebote: ${kw}`, source_type: 'JOB_PORTAL' },
       { url: `https://www.xing.com/jobs/search?keywords=${encodeURIComponent(kw)}`, title: `XING Jobs: ${kw}`, source_type: 'JOB_PORTAL' },
-      { url: `https://www.linkedin.com/jobs/search?keywords=${encodeURIComponent(kw)}&location=Germany`, title: `LinkedIn Jobs: ${kw}`, source_type: 'JOB_PORTAL' }
+      { url: `https://www.linkedin.com/jobs/search?keywords=${encodeURIComponent(kw)}&location=Germany`, title: `LinkedIn Jobs: ${kw}`, source_type: 'JOB_PORTAL' },
+      { url: `https://www.northdata.de/suche?q=${encodeURIComponent(kw)}`, title: `NorthData Firmensuche: ${kw}`, source_type: 'REGISTER' }
     ] : [];
 
-    // Mischung: News (M&A/Expansion) -> Jobbörsen (HIRING) -> Web/PR, max. 20 Kandidaten
+    // Mischung: News (M&A/Expansion) -> synthetische (Jobs/Register) -> Web/PR, max. 22 Kandidaten
     const allResults = [
       ...newsResults.slice(0, 10).map(r => ({ ...r, source_type: 'NEWS' })),
-      ...jobBoards,
-      ...webResults.slice(0, 7)
+      ...syntheticUrls,
+      ...webResults.slice(0, 8)
     ];
-    console.log(`[ScanStart] Sources: NEWS=${newsResults.length} JOB_BOARDS=${jobBoards.length} WEB=${webResults.length}`);
+    console.log(`[ScanStart] Sources: NEWS=${newsResults.length} SYNTH=${syntheticUrls.length} WEB=${webResults.length}`);
 
     // Dedupliziere URLs (erste Quelle gewinnt)
     const seenUrls = new Set();
