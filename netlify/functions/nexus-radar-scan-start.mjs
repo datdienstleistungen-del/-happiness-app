@@ -96,6 +96,50 @@ async function searchTavilyParallel(query, apiKey, maxResults = 10) {
   return combined;
 }
 
+function decodeEntities(s) {
+  return s
+    .replace(/<!\[CDATA\[|\]\]>/g, '')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+}
+
+// Bing News RSS (keyless) -> echte Unternehmens-News mit Original-Links, max. 14 Tage alt
+async function searchBingNews(query, maxResults = 10, timeoutMs = 3000) {
+  try {
+    const res = await fetchWithTimeout(
+      `https://www.bing.com/news/search?q=${encodeURIComponent(query)}&format=rss&count=${maxResults * 2}`,
+      { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' } },
+      timeoutMs
+    );
+    if (!res.ok) return [];
+    const xml = await res.text();
+    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+    const cutoff = Date.now() - 14 * 24 * 3600 * 1000;
+    const out = [];
+    for (const it of items) {
+      const b = it[1];
+      const title = decodeEntities(((b.match(/<title>([\s\S]*?)<\/title>/) || [])[1] || '')).trim();
+      const link = decodeEntities(((b.match(/<link>([\s\S]*?)<\/link>/) || [])[1] || '')).trim();
+      const pub = (b.match(/<pubDate>([\s\S]*?)<\/pubDate>/) || [])[1] || '';
+      const ts = pub ? Date.parse(pub) : NaN;
+      if (!Number.isNaN(ts) && ts < cutoff) continue;
+      // Bing-Redirect: Original-URL im url-Param
+      let url = link;
+      try { const u = new URL(link); const real = u.searchParams.get('url'); if (real) url = real; } catch { /* keep */ }
+      if (!url.startsWith('http') || !title) continue;
+      if (!out.some(r => r.url === url)) out.push({ url, title });
+      if (out.length >= maxResults) break;
+    }
+    return out;
+  } catch (e) {
+    return [];
+  }
+}
+
 async function searchDuckDuckGo(query, maxResults = 10, timeoutMs = 4000) {
   try {
     const controller = new AbortController();
@@ -204,16 +248,42 @@ export const handler = async (event) => {
       console.log(`[ScanStart] Key ${key.substring(0,8)}... returned ${allResults.length} results`);
     }
 
-    // Fallback: DuckDuckGo (keyless) wenn Tavily leer oder Keys blockiert (402/432)
+    // Fallback 1: Bing News RSS (keyless) -> echte Unternehmens-News der Zielgruppe (max. 14 Tage)
+    if (allResults.length === 0) {
+      // Kernwort aus der Branche ableiten (lange Phrasen liefern kaum News-Treffer)
+      const STOP = new Set(['im', 'in', 'der', 'die', 'das', 'und', 'für', 'fuer', 'mit', 'von', 'aus', 'am', 'an', 'zu', 'den', 'des', 'dem', 'bereich', 'branche', 'unternehmen', 'firmen', 'kunden']);
+      const words = (branche || '').split(/[,\s;-]+/).map(w => w.trim()).filter(w => w.length > 2 && !STOP.has(w.toLowerCase()));
+      const kw = words[0] || (searchQuery || '').trim().split(/\s+/)[0] || '';
+      const newsQueries = [...new Set([kw, `${kw} expandiert`, `${kw} stellt ein`].filter(q => q.trim().length > 2))].slice(0, 3);
+
+      const newsSets = await Promise.allSettled(newsQueries.map(q => searchBingNews(q, 8)));
+      const newsSeen = new Set();
+      const newsResults = [];
+      for (const s of newsSets) {
+        if (s.status !== 'fulfilled') continue;
+        for (const r of s.value) {
+          if (!newsSeen.has(r.url)) { newsSeen.add(r.url); newsResults.push(r); }
+        }
+      }
+      console.log(`[ScanStart] Bing News RSS (kw="${kw}", queries=${newsQueries.length}): ${newsResults.length} unique results`);
+      if (newsResults.length > 0) {
+        allResults = newsResults.map(r => ({ ...r, source_type: 'NEWS' }));
+      }
+    }
+
+    // Fallback 2: DuckDuckGo (keyless) wenn Tavily und News leer oder Keys blockiert (402/432)
     if (allResults.length === 0) {
       console.log('[ScanStart] Tavily empty -> DuckDuckGo fallback');
+      // Zweite Suche: Zielgruppen-Pressemitteilungen -> echte Unternehmens-News mit Kaufsignalen
+      // (Angebots-Queries liefern sonst nur Wettbewerber-Ratgeber ohne Signale)
+      const prQuery = branche ? `${branche} Pressemitteilung` : `${searchQuery} Pressemitteilung`;
       const ddg = await Promise.allSettled([
         searchDuckDuckGo(searchQuery, 10),
-        searchDuckDuckGo(`${searchQuery} jobs hiring einstellen`, 10)
+        searchDuckDuckGo(prQuery, 10)
       ]);
       const ddgResults = ddg.flatMap(x => x.status === 'fulfilled' ? x.value : []);
       allResults = ddgResults.map(r => ({ ...r, source_type: 'GENERAL_WEB' }));
-      console.log(`[ScanStart] DuckDuckGo fallback returned ${allResults.length} results`);
+      console.log(`[ScanStart] DuckDuckGo fallback returned ${allResults.length} results (PR query: "${prQuery}")`);
     }
 
     // Dedupliziere URLs (bereits in searchTavilyParallel erledigt, aber zur Sicherheit)
