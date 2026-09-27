@@ -53,55 +53,60 @@ async function tryGroq(messages, temperature = 0.3, hasImage = false, signal = n
     console.warn(`[NEXUS] Groq disabled by test flag.`);
     return null;
   }
-  const key = testOptions?.invalid_groq_key ? 'gsk_invalid_test_key_12345' : (process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || process.env.GROQ_API_KEY_2);
-  if (!key) return null;
+
+  // Alle Groq-Keys versuchen (nicht nur den ersten!)
+  if (testOptions?.invalid_groq_key) return null;
+  const groqKeys = [process.env.GROQ_API_KEY, process.env.GROQ_API_KEY_2].filter(Boolean);
+  if (groqKeys.length === 0) return null;
 
   const models = hasImage 
     ? GROQ_VISION_MODELS
     : GROQ_FREE_FIRST;
 
-  for (const model of models) {
-    const t0 = Date.now();
-    const tier = getModelTier('groq', model);
-    try {
-      console.log(`[NEXUS] Trying Groq model: ${model} [${tier}]`);
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature,
-          max_tokens: 3000
-        }),
-        signal
-      });
+  for (const key of groqKeys) {
+    for (const model of models) {
+      const t0 = Date.now();
+      const tier = getModelTier('groq', model);
+      try {
+        console.log(`[NEXUS] Trying Groq model: ${model} [${tier}] with key ${key.substring(0,8)}...`);
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model,
+            messages,
+            temperature,
+            max_tokens: 3000
+          }),
+          signal
+        });
 
-      const elapsed = Date.now() - t0;
+        const elapsed = Date.now() - t0;
 
-      if (res.status === 429) {
-        console.warn(`[NEXUS] Groq (${model}) [${tier}] returned HTTP 429 in ${elapsed}ms -> Aborting Groq (no further models), switching to next provider.`);
-        return null; // Kein Retry auf demselben Anbieter bei 429!
-      }
+        if (res.status === 429) {
+          console.warn(`[NEXUS] Groq (${model}) [${tier}] returned HTTP 429 -> trying next key`);
+          continue; // Weiter mit nächstem Key, NICHT abbrechen!
+        }
 
-      if (!res.ok) {
-        console.warn(`[NEXUS] Groq (${model}) [${tier}] returned HTTP ${res.status} in ${elapsed}ms`);
-        continue;
-      }
+        if (!res.ok) {
+          console.warn(`[NEXUS] Groq (${model}) [${tier}] returned HTTP ${res.status} in ${elapsed}ms`);
+          continue;
+        }
 
-      const data = await res.json();
-      const rawText = data.choices?.[0]?.message?.content;
-      if (rawText) {
-        console.log(`[NEXUS] Groq (${model}) [${tier}] succeeded in ${elapsed}ms`);
-        return { text: cleanModelOutput(rawText), provider: 'groq', model, tier, durationMs: elapsed };
+        const data = await res.json();
+        const rawText = data.choices?.[0]?.message?.content;
+        if (rawText) {
+          console.log(`[NEXUS] Groq (${model}) [${tier}] succeeded in ${elapsed}ms`);
+          return { text: cleanModelOutput(rawText), provider: 'groq', model, tier, durationMs: elapsed };
+        }
+      } catch (e) {
+        const elapsed = Date.now() - t0;
+        if (e.name === 'AbortError') {
+          console.warn(`[NEXUS] Groq (${model}) [${tier}] TIMED OUT -> trying next key`);
+          continue;
+        }
+        console.warn(`[NEXUS] Groq (${model}) [${tier}] error: ${e.message} in ${elapsed}ms`);
       }
-    } catch (e) {
-      const elapsed = Date.now() - t0;
-      if (e.name === 'AbortError') {
-        console.warn(`[NEXUS] Groq (${model}) [${tier}] TIMED OUT after ${elapsed}ms (limit: 2500ms) -> Switching to next provider.`);
-        return null;
-      }
-      console.warn(`[NEXUS] Groq (${model}) [${tier}] error: ${e.message} in ${elapsed}ms`);
     }
   }
   return null;
@@ -112,66 +117,64 @@ async function tryOpenRouter(messages, temperature = 0.3, hasImage = false, sign
     console.warn(`[NEXUS] OpenRouter disabled by test flag.`);
     return null;
   }
-  if (testOptions?.simulate_429_providers?.includes('openrouter')) {
-    console.warn(`[NEXUS] OpenRouter (nvidia/nemotron-3.5-lightning:free) returned HTTP 429 in 42ms -> Aborting OpenRouter (no further models), switching to next provider.`);
-    return null;
-  }
 
-  const key = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY_2;
-  if (!key) return null;
+  const openrouterKeys = [process.env.OPENROUTER_API_KEY, process.env.OPENROUTER_API_KEY_2].filter(Boolean);
+  if (openrouterKeys.length === 0) return null;
 
   const models = hasImage
     ? ['google/gemma-4-26b-a4b-it:free', 'google/gemma-4-31b-it:free', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free']
     : OPENROUTER_FREE_MODELS;
 
-  for (const model of models) {
-    const t0 = Date.now();
-    const tier = getModelTier('openrouter', model);
-    try {
-      console.log(`[NEXUS] Trying OpenRouter model: ${model} [${tier}]`);
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${key}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://nexus-hit.netlify.app',
-          'X-Title': 'NeXus Sales Intelligence'
-        },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature,
-          max_tokens: 4096
-        }),
-        signal
-      });
+  for (const key of openrouterKeys) {
+    for (const model of models) {
+      const t0 = Date.now();
+      const tier = getModelTier('openrouter', model);
+      try {
+        console.log(`[NEXUS] Trying OpenRouter model: ${model} [${tier}]`);
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${key}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://nexus-hit.netlify.app',
+            'X-Title': 'NeXus Sales Intelligence'
+          },
+          body: JSON.stringify({
+            model,
+            messages,
+            temperature,
+            max_tokens: 4096
+          }),
+          signal
+        });
 
-      const elapsed = Date.now() - t0;
+        const elapsed = Date.now() - t0;
 
-      if (res.status === 429) {
-        console.warn(`[NEXUS] OpenRouter (${model}) [${tier}] returned HTTP 429 in ${elapsed}ms -> Aborting OpenRouter (no further models), switching to next provider.`);
-        return null; // Kein Retry auf demselben Anbieter bei 429!
-      }
+        if (res.status === 429) {
+          console.warn(`[NEXUS] OpenRouter (${model}) [${tier}] returned HTTP 429 -> trying next key`);
+          continue;
+        }
 
-      if (!res.ok) {
-        console.warn(`[NEXUS] OpenRouter (${model}) [${tier}] returned HTTP ${res.status} in ${elapsed}ms`);
-        await res.text().catch(() => {});
-        continue;
-      }
+        if (!res.ok) {
+          console.warn(`[NEXUS] OpenRouter (${model}) [${tier}] returned HTTP ${res.status} in ${elapsed}ms`);
+          await res.text().catch(() => {});
+          continue;
+        }
 
-      const data = await res.json();
-      const rawText = data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning;
-      if (rawText) {
-        console.log(`[NEXUS] OpenRouter (${model}) [${tier}] succeeded in ${elapsed}ms`);
-        return { text: cleanModelOutput(rawText), provider: 'openrouter', model, tier, durationMs: elapsed };
+        const data = await res.json();
+        const rawText = data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning;
+        if (rawText) {
+          console.log(`[NEXUS] OpenRouter (${model}) [${tier}] succeeded in ${elapsed}ms`);
+          return { text: cleanModelOutput(rawText), provider: 'openrouter', model, tier, durationMs: elapsed };
+        }
+      } catch (e) {
+        const elapsed = Date.now() - t0;
+        if (e.name === 'AbortError') {
+          console.warn(`[NEXUS] OpenRouter (${model}) [${tier}] TIMED OUT -> trying next key`);
+          continue;
+        }
+        console.warn(`[NEXUS] OpenRouter (${model}) [${tier}] error: ${e.message} in ${elapsed}ms`);
       }
-    } catch (e) {
-      const elapsed = Date.now() - t0;
-      if (e.name === 'AbortError') {
-        console.warn(`[NEXUS] OpenRouter (${model}) [${tier}] TIMED OUT after ${elapsed}ms (limit: 2500ms) -> Switching to next provider.`);
-        return null;
-      }
-      console.warn(`[NEXUS] OpenRouter (${model}) [${tier}] error: ${e.message} in ${elapsed}ms`);
     }
   }
   return null;
@@ -182,53 +185,64 @@ async function tryMistral(messages, temperature = 0.3, signal = null, testOption
     console.warn(`[NEXUS] Mistral disabled by test flag.`);
     return null;
   }
-  const key = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY || process.env.MISTRAL_API_KEY_2 || BACKUP_MISTRAL;
-  if (!key) return null;
 
-  const t0 = Date.now();
-  const tier = getModelTier('mistral', 'mistral-small-latest');
-  try {
-    console.log(`[NEXUS] Trying Mistral model: mistral-small-latest [${tier}]`);
-    const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'mistral-small-latest',
-        messages,
-        temperature,
-        max_tokens: 4096
-      }),
-      signal
-    });
+  const mistralKeys = [process.env.MISTRAL_API_KEY, process.env.MISTRAL_API_KEY_2].filter(Boolean);
+  if (mistralKeys.length === 0) return null;
 
-    const elapsed = Date.now() - t0;
+  for (const key of mistralKeys) {
+    const t0 = Date.now();
+    const tier = getModelTier('mistral', 'mistral-small-latest');
+    try {
+      console.log(`[NEXUS] Trying Mistral model: mistral-small-latest [${tier}]`);
+      const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'mistral-small-latest',
+          messages,
+          temperature,
+          max_tokens: 4096
+        }),
+        signal
+      });
 
-    if (res.status === 429) {
-      console.warn(`[NEXUS] Mistral [${tier}] returned HTTP 429 in ${elapsed}ms -> Aborting Mistral, switching to next provider.`);
-      return null;
+      const elapsed = Date.now() - t0;
+
+      if (res.status === 429) {
+        console.warn(`[NEXUS] Mistral [${tier}] returned HTTP 429 -> trying next key`);
+        continue;
+      }
+
+      if (!res.ok) {
+        console.warn(`[NEXUS] Mistral [${tier}] returned HTTP ${res.status} in ${elapsed}ms`);
+        continue;
+      }
+
+      const data = await res.json();
+      const rawText = data.choices?.[0]?.message?.content;
+      if (rawText) {
+        console.log(`[NEXUS] Mistral (mistral-small-latest) [${tier}] succeeded in ${elapsed}ms`);
+        return { text: cleanModelOutput(rawText), provider: 'mistral', model: 'mistral-small-latest', tier, durationMs: elapsed };
+      }
+      continue;
+    } catch (e) {
+      const elapsed = Date.now() - t0;
+      if (e.name === 'AbortError') {
+        console.warn(`[NEXUS] Mistral [${tier}] TIMED OUT -> trying next key`);
+        continue;
+      }
+      console.warn(`[NEXUS] Mistral [${tier}] error: ${e.message} in ${elapsed}ms`);
+      continue;
     }
-
-    if (!res.ok) {
-      console.warn(`[NEXUS] Mistral [${tier}] returned HTTP ${res.status} in ${elapsed}ms`);
-      return null;
-    }
-
-    const data = await res.json();
-    const rawText = data.choices?.[0]?.message?.content;
-    if (rawText) {
-      console.log(`[NEXUS] Mistral (mistral-small-latest) [${tier}] succeeded in ${elapsed}ms`);
-      return { text: cleanModelOutput(rawText), provider: 'mistral', model: 'mistral-small-latest', tier, durationMs: elapsed };
-    }
-    return null;
-  } catch (e) {
-    const elapsed = Date.now() - t0;
-    if (e.name === 'AbortError') {
-      console.warn(`[NEXUS] Mistral [${tier}] TIMED OUT after ${elapsed}ms (limit: 2500ms) -> Switching to next provider.`);
-      return null;
+  }
+  return null;
+}
     }
     console.warn(`[NEXUS] Mistral [${tier}] error: ${e.message} in ${elapsed}ms`);
-    return null;
+    continue;
   }
+  }
+  return null;
 }
 
 async function tryDeepSeek(messages, temperature = 0.3, signal = null, testOptions = {}) {
@@ -290,53 +304,57 @@ async function tryOpenAI(messages, temperature = 0.3, signal = null, testOptions
   if (testOptions?.disable_openai || testOptions?.force_fail_providers?.includes('openai')) {
     return null;
   }
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) return null;
 
-  const t0 = Date.now();
-  const tier = getModelTier('openai', 'gpt-4o-mini');
-  try {
-    console.log(`[NEXUS] Trying OpenAI model: gpt-4o-mini [${tier}]`);
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages,
-        temperature,
-        max_tokens: 4096
-      }),
-      signal
-    });
+  const openaiKeys = [process.env.OPENAI_API_KEY, process.env.OPENAI_API_KEY_2].filter(Boolean);
+  if (openaiKeys.length === 0) return null;
 
-    const elapsed = Date.now() - t0;
+  for (const key of openaiKeys) {
+    const t0 = Date.now();
+    const tier = getModelTier('openai', 'gpt-4o-mini');
+    try {
+      console.log(`[NEXUS] Trying OpenAI model: gpt-4o-mini [${tier}]`);
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages,
+          temperature,
+          max_tokens: 4096
+        }),
+        signal
+      });
 
-    if (res.status === 429) {
-      console.warn(`[NEXUS] OpenAI [${tier}] returned HTTP 429 in ${elapsed}ms`);
-      return null;
+      const elapsed = Date.now() - t0;
+
+      if (res.status === 429) {
+        console.warn(`[NEXUS] OpenAI [${tier}] returned HTTP 429 -> trying next key`);
+        continue;
+      }
+
+      if (!res.ok) {
+        console.warn(`[NEXUS] OpenAI [${tier}] returned HTTP ${res.status} in ${elapsed}ms`);
+        continue;
+      }
+
+      const data = await res.json();
+      const rawText = data.choices?.[0]?.message?.content;
+      if (rawText) {
+        console.log(`[NEXUS] OpenAI (gpt-4o-mini) [${tier}] succeeded in ${elapsed}ms`);
+        return { text: cleanModelOutput(rawText), provider: 'openai', model: 'gpt-4o-mini', tier, durationMs: elapsed };
+      }
+      continue;
+    } catch (e) {
+      const elapsed = Date.now() - t0;
+      if (e.name === 'AbortError') {
+        console.warn(`[NEXUS] OpenAI [${tier}] TIMED OUT -> trying next key`);
+        continue;
+      }
+      console.warn(`[NEXUS] OpenAI [${tier}] error: ${e.message} in ${elapsed}ms`);
+      continue;
     }
-
-    if (!res.ok) {
-      console.warn(`[NEXUS] OpenAI [${tier}] returned HTTP ${res.status} in ${elapsed}ms`);
-      return null;
-    }
-
-    const data = await res.json();
-    const rawText = data.choices?.[0]?.message?.content;
-    if (rawText) {
-      console.log(`[NEXUS] OpenAI (gpt-4o-mini) [${tier}] succeeded in ${elapsed}ms`);
-      return { text: cleanModelOutput(rawText), provider: 'openai', model: 'gpt-4o-mini', tier, durationMs: elapsed };
-    }
-    return null;
-  } catch (e) {
-    const elapsed = Date.now() - t0;
-    if (e.name === 'AbortError') {
-      console.warn(`[NEXUS] OpenAI [${tier}] TIMED OUT after ${elapsed}ms (limit: 2500ms)`);
-      return null;
-    }
-    console.warn(`[NEXUS] OpenAI [${tier}] error: ${e.message} in ${elapsed}ms`);
-    return null;
   }
+  return null;
 }
 
 async function callAI(messages, temperature = 0.3, hasImage = false, testOptions = {}) {
