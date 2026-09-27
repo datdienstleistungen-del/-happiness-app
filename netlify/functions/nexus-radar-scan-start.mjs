@@ -3,9 +3,12 @@
  * 
  * Startet einen chunked Lead-Radar-Scan.
  * 1. Prüft auf existierenden laufenden Job (Duplikatschutz)
- * 2. Führt Tavily-Suche aus, sammelt Kandidaten-URLs
+ * 2. Keyless-Multisource-Suche: Bing News RSS + DuckDuckGo (Web/PR/Jobs)
+ *    + synthetische Jobbörsen-URLs (StepStone/XING/LinkedIn), mischt und dedupliziert Kandidaten
  * 3. Legt nexus_scan_jobs-Eintrag an
- * 4. Gibt sofort { job_id, total_steps } zurück (<2s)
+ * 4. Gibt sofort { job_id, total_steps } zurück (<5s)
+ *
+ * Tavily ist bewusst entfernt (Keys geblockt: 402/432) — wird bei Bedarf wieder ergänzt.
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -25,75 +28,6 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
     clearTimeout(abortId);
     throw e;
   }
-}
-
-async function searchTavilyParallel(query, apiKey, maxResults = 10) {
-  const B2B_NEWS_DOMAINS = [
-    'pressebox.de', 'openpr.de', 'it-business.de', 'crn.de', 'handelsblatt.com',
-    'wiwo.de', 'unternehmensboerse.de', 'northdata.de', 'bundesanzeiger.de',
-    'heise.de', 'golem.de', 'computerwoche.de'
-  ];
-
-  const JOB_PORTAL_DOMAINS = [
-    'linkedin.com', 'indeed.com', 'stepstone.de', 'glassdoor.de',
-    'xing.com', 'kununu.com', 'absolventa.de'
-  ];
-
-  async function tavilySearch(q, domains, topic) {
-    try {
-      const body = {
-        api_key: apiKey,
-        query: q,
-        search_depth: 'advanced',
-        include_answer: false,
-        max_results: maxResults
-      };
-      if (domains) body.include_domains = domains;
-      if (topic) body.topic = topic;
-
-      const res = await fetchWithTimeout('https://api.tavily.com/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      }, 5000);
-
-      if (res.ok) {
-        const data = await res.json();
-        return data.results || [];
-      }
-    } catch (e) { /* continue */ }
-    return [];
-  }
-
-  // Alle drei Suchen parallel ausführen
-  const [newsResults, jobResults, generalResults] = await Promise.allSettled([
-    tavilySearch(query, B2B_NEWS_DOMAINS),
-    tavilySearch(`${query} jobs hiring einstellen`, JOB_PORTAL_DOMAINS),
-    tavilySearch(`${query} 2026`, null, 'general')
-  ]);
-
-  const news = newsResults.status === 'fulfilled' ? newsResults.value : [];
-  const jobs = jobResults.status === 'fulfilled' ? jobResults.value : [];
-  const general = generalResults.status === 'fulfilled' ? generalResults.value : [];
-
-  // source_type taggen
-  const taggedNews = news.map(r => ({ ...r, source_type: 'NEWS' }));
-  const taggedJobs = jobs.map(r => ({ ...r, source_type: 'JOB_PORTAL' }));
-  const taggedGeneral = general.map(r => ({ ...r, source_type: 'GENERAL_WEB' }));
-
-  // Kombinieren, Duplikate anhand URL entfernen (erste Quelle gewinnt)
-  const seen = new Set();
-  const combined = [];
-  for (const r of [...taggedNews, ...taggedJobs, ...taggedGeneral]) {
-    if (r.url && !seen.has(r.url)) {
-      seen.add(r.url);
-      combined.push(r);
-    }
-  }
-
-  console.log(`[searchTavilyParallel] query="${query.substring(0,60)}" NEWS=${news.length} JOB_PORTAL=${jobs.length} GENERAL_WEB=${general.length} COMBINED=${combined.length}`);
-
-  return combined;
 }
 
 function decodeEntities(s) {
@@ -227,66 +161,67 @@ export const handler = async (event) => {
       }
     }
 
-    // Tavily-Suche
-    const tavilyKeys = [
-      process.env.TAVILY_API_KEY,
-      process.env.TAVILY_API_KEY_2,
-      process.env.VITE_TAVILY_API_KEY
-    ].filter(Boolean);
-
-    if (tavilyKeys.length === 0) {
-      return { statusCode: 500, body: JSON.stringify({ error: 'No Tavily API keys configured' }) };
-    }
-
     const searchQuery = query || `${branche || ''} B2B Unternehmen Expansion`.trim();
-    console.log(`[ScanStart] Query: "${searchQuery}" | Keys: ${tavilyKeys.length}`);
-    let allResults = [];
 
-    for (const key of tavilyKeys) {
-      if (allResults.length > 0) break;
-      allResults = await searchTavilyParallel(searchQuery, key, 10);
-      console.log(`[ScanStart] Key ${key.substring(0,8)}... returned ${allResults.length} results`);
+    // Kernwort aus der Branche ableiten (lange Phrasen liefern kaum Treffer)
+    const STOP = new Set(['im', 'in', 'der', 'die', 'das', 'und', 'für', 'fuer', 'mit', 'von', 'aus', 'am', 'an', 'zu', 'den', 'des', 'dem', 'bereich', 'branche', 'unternehmen', 'firmen', 'kunden']);
+    const words = (branche || '').split(/[,\s;-]+/).map(w => w.trim()).filter(w => w.length > 2 && !STOP.has(w.toLowerCase()));
+    const kw = words[0] || (searchQuery.trim().split(/\s+/)[0] || '');
+    const kwOk = kw.trim().length > 2;
+    console.log(`[ScanStart] Query: "${searchQuery}" | kw="${kw}"`);
+
+    // Alle keyless-Quellen PARALLEL: Bing News (14d frisch) + DuckDuckGo (Web/PR/Jobs)
+    const newsQueries = kwOk
+      ? [...new Set([kw, `${kw} expandiert`, `${kw} stellt ein`])].slice(0, 3)
+      : [searchQuery];
+    const ddgQueries = [
+      { q: searchQuery, type: 'GENERAL_WEB' },
+      { q: `${branche || searchQuery} Pressemitteilung`, type: 'GENERAL_WEB' },
+      ...(kwOk ? [{ q: `${kw} Stellenangebote`, type: 'JOB_PORTAL' }] : [])
+    ];
+
+    const [newsSets, ddgSets] = await Promise.all([
+      Promise.allSettled(newsQueries.map(q => searchBingNews(q, 8))),
+      Promise.allSettled(ddgQueries.map(d => searchDuckDuckGo(d.q, 8)))
+    ]);
+
+    const newsResults = [];
+    const newsSeen = new Set();
+    for (const s of newsSets) {
+      if (s.status !== 'fulfilled') continue;
+      for (const r of s.value) {
+        if (!newsSeen.has(r.url)) { newsSeen.add(r.url); newsResults.push(r); }
+      }
     }
 
-    // Fallback 1: Bing News RSS (keyless) -> echte Unternehmens-News der Zielgruppe (max. 14 Tage)
-    if (allResults.length === 0) {
-      // Kernwort aus der Branche ableiten (lange Phrasen liefern kaum News-Treffer)
-      const STOP = new Set(['im', 'in', 'der', 'die', 'das', 'und', 'für', 'fuer', 'mit', 'von', 'aus', 'am', 'an', 'zu', 'den', 'des', 'dem', 'bereich', 'branche', 'unternehmen', 'firmen', 'kunden']);
-      const words = (branche || '').split(/[,\s;-]+/).map(w => w.trim()).filter(w => w.length > 2 && !STOP.has(w.toLowerCase()));
-      const kw = words[0] || (searchQuery || '').trim().split(/\s+/)[0] || '';
-      const newsQueries = [...new Set([kw, `${kw} expandiert`, `${kw} stellt ein`].filter(q => q.trim().length > 2))].slice(0, 3);
-
-      const newsSets = await Promise.allSettled(newsQueries.map(q => searchBingNews(q, 8)));
-      const newsSeen = new Set();
-      const newsResults = [];
-      for (const s of newsSets) {
-        if (s.status !== 'fulfilled') continue;
-        for (const r of s.value) {
-          if (!newsSeen.has(r.url)) { newsSeen.add(r.url); newsResults.push(r); }
+    const webResults = [];
+    const webSeen = new Set();
+    ddgSets.forEach((s, i) => {
+      if (s.status !== 'fulfilled') return;
+      for (const r of s.value) {
+        if (!webSeen.has(r.url)) {
+          webSeen.add(r.url);
+          webResults.push({ ...r, source_type: ddgQueries[i].type });
         }
       }
-      console.log(`[ScanStart] Bing News RSS (kw="${kw}", queries=${newsQueries.length}): ${newsResults.length} unique results`);
-      if (newsResults.length > 0) {
-        allResults = newsResults.map(r => ({ ...r, source_type: 'NEWS' }));
-      }
-    }
+    });
 
-    // Fallback 2: DuckDuckGo (keyless) wenn Tavily und News leer oder Keys blockiert (402/432)
-    if (allResults.length === 0) {
-      console.log('[ScanStart] Tavily empty -> DuckDuckGo fallback');
-      // Zweite Suche: Zielgruppen-Pressemitteilungen -> echte Unternehmens-News mit Kaufsignalen
-      // (Angebots-Queries liefern sonst nur Wettbewerber-Ratgeber ohne Signale)
-      const prQuery = branche ? `${branche} Pressemitteilung` : `${searchQuery} Pressemitteilung`;
-      const ddg = await Promise.allSettled([
-        searchDuckDuckGo(searchQuery, 10),
-        searchDuckDuckGo(prQuery, 10)
-      ]);
-      const ddgResults = ddg.flatMap(x => x.status === 'fulfilled' ? x.value : []);
-      allResults = ddgResults.map(r => ({ ...r, source_type: 'GENERAL_WEB' }));
-      console.log(`[ScanStart] DuckDuckGo fallback returned ${allResults.length} results (PR query: "${prQuery}")`);
-    }
+    // Synthetische Jobbörsen-URLs (öffentliche Jobsuche ist crawelbar: StepStone 24k, XING 7.6k, LinkedIn 10.8k Text)
+    const jobBoards = kwOk ? [
+      { url: `https://www.stepstone.de/jobs/${encodeURIComponent(kw)}`, title: `StepStone Stellenangebote: ${kw}`, source_type: 'JOB_PORTAL' },
+      { url: `https://www.xing.com/jobs/search?keywords=${encodeURIComponent(kw)}`, title: `XING Jobs: ${kw}`, source_type: 'JOB_PORTAL' },
+      { url: `https://www.linkedin.com/jobs/search?keywords=${encodeURIComponent(kw)}&location=Germany`, title: `LinkedIn Jobs: ${kw}`, source_type: 'JOB_PORTAL' }
+    ] : [];
 
-    // Dedupliziere URLs (bereits in searchTavilyParallel erledigt, aber zur Sicherheit)
+    // Mischung: News (M&A/Expansion) -> Jobbörsen (HIRING) -> Web/PR, max. 20 Kandidaten
+    const allResults = [
+      ...newsResults.slice(0, 10).map(r => ({ ...r, source_type: 'NEWS' })),
+      ...jobBoards,
+      ...webResults.slice(0, 7)
+    ];
+    console.log(`[ScanStart] Sources: NEWS=${newsResults.length} JOB_BOARDS=${jobBoards.length} WEB=${webResults.length}`);
+
+    // Dedupliziere URLs (erste Quelle gewinnt)
     const seenUrls = new Set();
     const uniqueResults = [];
     for (const r of allResults) {
