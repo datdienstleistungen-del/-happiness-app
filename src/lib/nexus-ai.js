@@ -415,37 +415,69 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
     clearTimeout(timeoutId);
   }
 
-  // Client-Side Direct High-Speed Groq Fallback
+  // Client-Side Direct High-Speed Fallback (Groq -> OpenRouter -> Mistral)
   if (useFallback) {
-    try {
-      const fallbackKey = import.meta.env.VITE_GROQ_API_KEY || '';
-      if (!fallbackKey) throw new Error("Kein API Key verfügbar");
-      const hasImg = !!imageUrl;
-      const models = hasImg 
-        ? ['qwen/qwen3.8-27b']
-        : ['allam-2-7b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b'];
-      
-      const userContent = hasImg 
-        ? [
-            { type: 'text', text: message || 'Bitte analysiere dieses Bild / Dokument.' },
-            { type: 'image_url', image_url: { url: imageUrl } }
-          ]
-        : message;
+    const groqKey = import.meta.env.VITE_GROQ_API_KEY || '';
+    const openrouterKey = import.meta.env.VITE_OPENROUTER_API_KEY || '';
+    const mistralKey = import.meta.env.VITE_MISTRAL_API_KEY || '';
 
-      const fallbackMessages = [
-        { role: 'system', content: systemPrompt },
-        ...(context?.history && Array.isArray(context.history) ? context.history : []),
-        { role: 'user', content: userContent }
-      ];
+    const hasImg = !!imageUrl;
+    const isJsonMode = mode !== 'chat' && mode !== 'assistant';
+    
+    // For JSON modes, prioritize models that strictly follow JSON schemas
+    const groqModels = hasImg 
+      ? ['qwen/qwen3.8-27b']
+      : (isJsonMode 
+          ? ['qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'allam-2-7b']
+          : ['allam-2-7b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b']);
+    
+    const userContent = hasImg 
+      ? [
+          { type: 'text', text: message || 'Bitte analysiere dieses Bild / Dokument.' },
+          { type: 'image_url', image_url: { url: imageUrl } }
+        ]
+      : message;
 
-      for (const model of models) {
+    const fallbackMessages = [
+      { role: 'system', content: systemPrompt },
+      ...(context?.history && Array.isArray(context.history) ? context.history : []),
+      { role: 'user', content: userContent }
+    ];
+
+    const parseOutput = (rawText) => {
+      if (!rawText) return null;
+      let text = rawText
+        .replace(/<\|tool_call_start\|>[\s\S]*?<\|tool_call_end\|>/gi, '')
+        .replace(/<\|im_start\|>[\s\S]*?<\|im_end\|>/gi, '')
+        .replace(/<\|[\s\S]*?\|>/g, '')
+        .replace(/<think>[\s\S]*?<\/think>/gi, '')
+        .trim();
+      if (mode === 'chat') return text;
+      try {
+        const clean = text.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim();
+        return JSON.parse(clean);
+      } catch (e) {
+        // Fallback extraction for embedded JSON objects
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            return JSON.parse(jsonMatch[0]);
+          } catch (e2) {}
+        }
+        return text;
+      }
+    };
+
+    // 1. Try Groq
+    if (groqKey) {
+      for (const model of groqModels) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 10000);
+          const timeoutId = setTimeout(() => controller.abort(), 12000);
           const fbRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${fallbackKey}`,
+              'Authorization': `Bearer ${groqKey}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -459,26 +491,81 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
           clearTimeout(timeoutId);
           if (fbRes.ok) {
             const fbData = await fbRes.json();
-            let text = fbData.choices?.[0]?.message?.content;
-            if (text) {
-              text = text
-                .replace(/<\|tool_call_start\|>[\s\S]*?<\|tool_call_end\|>/gi, '')
-                .replace(/<\|im_start\|>[\s\S]*?<\|im_end\|>/gi, '')
-                .replace(/<\|[\s\S]*?\|>/g, '')
-                .trim();
-              if (mode === 'chat') return text;
-              try {
-                // Strip markdown code fences if model returned ```json
-                const clean = text.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim();
-                return JSON.parse(clean);
-              } catch (e) {
-                return text;
-              }
-            }
+            const text = fbData.choices?.[0]?.message?.content;
+            const parsed = parseOutput(text);
+            if (parsed) return parsed;
           }
-        } catch (e) {}
+        } catch (e) {
+          console.warn(`[nexus-ai client] Groq (${model}) failed:`, e.message);
+        }
       }
-    } catch (e) {}
+    }
+
+    // 2. Try OpenRouter Free Fallback
+    if (openrouterKey && !hasImg) {
+      const orModels = ['nvidia/nemotron-3.5-lightning:free', 'google/gemma-4-26b-a4b-it:free'];
+      for (const model of orModels) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
+          const orRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openrouterKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model,
+              messages: fallbackMessages,
+              temperature: temperature || 0.3,
+              max_tokens: 4096
+            }),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          if (orRes.ok) {
+            const orData = await orRes.json();
+            const text = orData.choices?.[0]?.message?.content;
+            const parsed = parseOutput(text);
+            if (parsed) return parsed;
+          }
+        } catch (e) {
+          console.warn(`[nexus-ai client] OpenRouter (${model}) failed:`, e.message);
+        }
+      }
+    }
+
+    // 3. Try Mistral
+    if (mistralKey && !hasImg) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const mRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${mistralKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'mistral-small-latest',
+            messages: fallbackMessages,
+            temperature: temperature || 0.3,
+            max_tokens: 4096
+          }),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (mRes.ok) {
+          const mData = await mRes.json();
+          const text = mData.choices?.[0]?.message?.content;
+          const parsed = parseOutput(text);
+          if (parsed) return parsed;
+        }
+      } catch (e) {
+        console.warn(`[nexus-ai client] Mistral failed:`, e.message);
+      }
+    }
+
     throw new Error("KI-Dienst temporär überlastet. Bitte versuche es in wenigen Sekunden erneut.");
   }
 }
