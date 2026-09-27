@@ -417,7 +417,7 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
 
   // Client-Side Direct High-Speed Fallback (Groq -> OpenRouter -> Mistral)
   if (useFallback) {
-    const groqKey = import.meta.env.VITE_GROQ_API_KEY || '';
+    const groqKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GROQ_API_KEY_2 || '';
     const openrouterKey = import.meta.env.VITE_OPENROUTER_API_KEY || '';
     const mistralKey = import.meta.env.VITE_MISTRAL_API_KEY || '';
 
