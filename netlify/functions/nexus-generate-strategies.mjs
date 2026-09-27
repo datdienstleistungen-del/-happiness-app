@@ -1,8 +1,12 @@
 
 
-import { GROQ_JSON_HEAVY, OPENROUTER_FREE_MODELS, MISTRAL_DEFAULT_MODEL } from './nexus-models.mjs';
+import { GROQ_JSON_HEAVY, OPENROUTER_FREE_MODELS, MISTRAL_DEFAULT_MODEL, OPENAI_DEFAULT_MODEL } from './nexus-models.mjs';
 
-async function fetchWithTimeout(url, options, timeoutMs = 20000) {
+// Gesamtbudget für die Provider-Kette — muss unter netlify.toml timeout (26s) bleiben,
+// damit Auth + DELETE + INSERT des Handlers noch Platz haben.
+const TOTAL_BUDGET_MS = 22000;
+
+async function fetchWithTimeout(url, options, timeoutMs = 8000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -14,43 +18,59 @@ async function fetchWithTimeout(url, options, timeoutMs = 20000) {
   }
 }
 
+function cleanJsonText(text) {
+  return text.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
+}
+
 async function callAI(messages, { temperature = 0.7, max_tokens = 4096, jsonMode = false } = {}) {
-  // 1. Groq (High Speed & Low-Cost: gpt-oss-20b is rock-solid for complex JSON)
+  const deadline = Date.now() + TOTAL_BUDGET_MS;
+  const remaining = () => deadline - Date.now();
+  // Kurz-Protokoll: welcher Provider warum gescheitert — erscheint in der Fehlermeldung
+  const errors = [];
+  const fail = (tag) => errors.push(tag);
+
+  // 1. Groq (Primary) — pro Modell eigene Rate-Limits, deshalb bei 429 zum nächsten Modell.
+  //    Bei 400 auf response_format wird einmal ohne json_mode wiederholt (JSON per Extraktion).
   const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
   if (groqKey) {
-    const models = GROQ_JSON_HEAVY;
-    for (const model of models) {
-      try {
-        const payload = { model, messages, temperature, max_tokens };
-        if (jsonMode) payload.response_format = { type: 'json_object' };
-        const { res, timer } = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }, 7000);
-        if (res.status === 429) {
+    for (const model of GROQ_JSON_HEAVY) {
+      if (remaining() < 1500) { fail('groq:budget'); break; }
+      const variants = jsonMode ? [true, false] : [false];
+      let nextModel = false;
+      for (const withJson of variants) {
+        if (nextModel) break;
+        try {
+          const payload = { model, messages, temperature, max_tokens };
+          if (withJson) payload.response_format = { type: 'json_object' };
+          const { res, timer } = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          }, Math.min(9000, remaining()));
           clearTimeout(timer);
-          break; // Abort whole provider on 429
+          if (res.status === 429) { fail(`groq:${model}:429`); nextModel = true; break; }
+          if (res.status === 400 && withJson) { fail(`groq:${model}:400-json`); continue; }
+          if (!res.ok) { fail(`groq:${model}:${res.status}`); nextModel = true; break; }
+          const data = await res.json();
+          const text = data.choices?.[0]?.message?.content;
+          if (text) return { text, provider: 'groq', model };
+          fail(`groq:${model}:leer`);
+          nextModel = true;
+        } catch (e) {
+          fail(`groq:${model}:${e.name === 'AbortError' ? 'timeout' : 'netz'}`);
+          nextModel = true;
         }
-        if (!res.ok) {
-          clearTimeout(timer);
-          continue;
-        }
-        const data = await res.json();
-        clearTimeout(timer);
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return { text, provider: 'groq', model };
-      } catch (e) {
-        console.warn(`[Groq Error ${model}]:`, e.message);
       }
     }
+  } else {
+    fail('groq:kein-key');
   }
 
-  // 2. OpenRouter (Free Models)
+  // 2. OpenRouter (Free Models) — Tageslimit 50, bei 429 sofort weiter zu Mistral
   const openrouterKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
   if (openrouterKey) {
-    const models = OPENROUTER_FREE_MODELS;
-    for (const model of models) {
+    for (const model of OPENROUTER_FREE_MODELS.slice(0, 3)) {
+      if (remaining() < 1200) { fail('openrouter:budget'); break; }
       try {
         const { res, timer } = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
@@ -61,74 +81,77 @@ async function callAI(messages, { temperature = 0.7, max_tokens = 4096, jsonMode
             'X-Title': 'NeXus Strategies'
           },
           body: JSON.stringify({ model, messages, temperature, max_tokens })
-        }, 5000);
-        if (res.status === 429) {
-          clearTimeout(timer);
-          break; // Abort whole provider on 429
-        }
-        if (!res.ok) {
-          clearTimeout(timer);
-          continue;
-        }
-        const data = await res.json();
+        }, Math.min(4000, remaining()));
         clearTimeout(timer);
+        if (res.status === 429) { fail(`openrouter:429-${model}`); break; }
+        if (!res.ok) { fail(`openrouter:${model}:${res.status}`); continue; }
+        const data = await res.json();
         const text = data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning;
         if (text) return { text, provider: 'openrouter', model };
+        fail(`openrouter:${model}:leer`);
       } catch (e) {
-        console.warn(`[OpenRouter Error ${model}]:`, e.message);
+        fail(`openrouter:${model}:${e.name === 'AbortError' ? 'timeout' : 'netz'}`);
       }
     }
+  } else {
+    fail('openrouter:kein-key');
   }
 
   // 3. Mistral
   const mistralKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
-  if (mistralKey) {
+  if (mistralKey && remaining() >= 1200) {
     try {
-      const payload = { model: 'mistral-small-latest', messages, temperature, max_tokens };
+      const payload = { model: MISTRAL_DEFAULT_MODEL, messages, temperature, max_tokens };
       if (jsonMode) payload.response_format = { type: 'json_object' };
       const { res, timer } = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${mistralKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-      }, 5000);
+      }, Math.min(4000, remaining()));
+      clearTimeout(timer);
       if (res.ok) {
         const data = await res.json();
-        clearTimeout(timer);
         const text = data.choices?.[0]?.message?.content;
-        if (text) return { text, provider: 'mistral', model: 'mistral-small-latest' };
+        if (text) return { text, provider: 'mistral', model: MISTRAL_DEFAULT_MODEL };
+        fail('mistral:leer');
       } else {
-        clearTimeout(timer);
+        fail(`mistral:${res.status}`);
       }
     } catch (e) {
-      console.warn('[Mistral Error]:', e.message);
+      fail(`mistral:${e.name === 'AbortError' ? 'timeout' : 'netz'}`);
     }
+  } else {
+    fail(mistralKey ? 'mistral:budget' : 'mistral:kein-key');
   }
 
   // 4. OpenAI
   const openaiKey = process.env.OPENAI_API_KEY;
-  if (openaiKey) {
+  if (openaiKey && remaining() >= 1000) {
     try {
-      const payload = { model: 'gpt-4o-mini', messages, temperature, max_tokens };
+      const payload = { model: OPENAI_DEFAULT_MODEL, messages, temperature, max_tokens };
       if (jsonMode) payload.response_format = { type: 'json_object' };
       const { res, timer } = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-      }, 5000);
+      }, Math.min(4000, remaining()));
+      clearTimeout(timer);
       if (res.ok) {
         const data = await res.json();
-        clearTimeout(timer);
         const text = data.choices?.[0]?.message?.content;
-        if (text) return { text, provider: 'openai', model: 'gpt-4o-mini' };
+        if (text) return { text, provider: 'openai', model: OPENAI_DEFAULT_MODEL };
+        fail('openai:leer');
       } else {
-        clearTimeout(timer);
+        fail(`openai:${res.status}`);
       }
     } catch (e) {
-      console.warn('[OpenAI Error]:', e.message);
+      fail(`openai:${e.name === 'AbortError' ? 'timeout' : 'netz'}`);
     }
+  } else {
+    fail(openaiKey ? 'openai:budget' : 'openai:kein-key');
   }
 
-  throw new Error('Alle KI-Provider sind derzeit ausgelastet oder nicht erreichbar.');
+  throw new Error(`Alle KI-Provider sind derzeit ausgelastet oder nicht erreichbar. (${errors.slice(0, 10).join(', ')})`);
 }
 
 export const handler = async (event, context) => {
@@ -151,12 +174,6 @@ export const handler = async (event, context) => {
       return { statusCode: 400, body: JSON.stringify({ error: "Missing offering details or AI understanding" }) };
     }
 
-    // 1. Delete old strategies to ensure idempotency and clean state
-    await fetch(`${supabaseUrl}/rest/v1/nexus_signal_strategies?offering_id=eq.${offeringId}`, {
-      method: 'DELETE',
-      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` }
-    });
-
     const marketsString = Array.isArray(targetMarkets) && targetMarkets.length > 0 ? targetMarkets.join(", ") : "Worldwide / Global";
     const currentYear = new Date().getFullYear();
 
@@ -178,7 +195,7 @@ ARCHITEKTUR-REGEL (GLOBAL BY DESIGN & AKTUALITÄT):
 
 REGELN:
 - Generiere 5-10 extrem scharfe und relevante Signal-Strategien.
-- Leite diese AUSSCHLIESSLICH aus dem 'demand_contexts' des Angebots-Verständnisses ab.
+- Leite diese AUSSCHLIESSLICH aus den 'demand_contexts' des Angebots-Verständnisses ab.
 - Erfinde keine Fantasie-Produkte. Halte dich strikt an 'what_is_NOT_sold'.
 
 Antworte AUSSCHLIESSLICH im folgenden JSON-Format:
@@ -201,12 +218,20 @@ Antworte AUSSCHLIESSLICH im folgenden JSON-Format:
 }`;
 
     const aiRes = await callAI([{ role: "system", content: systemPrompt }], { temperature: 0.7, jsonMode: true });
-    let content = aiRes.text.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
+    let content = cleanJsonText(aiRes.text);
     let parsed;
     try {
       parsed = JSON.parse(content);
-    } catch(e) {
-      return { statusCode: 500, body: JSON.stringify({ error: "Invalid JSON from AI" }) };
+    } catch (e) {
+      // Ohne response_format kann umschliessenden Text enthalten — erstes {...} extrahieren
+      const start = content.indexOf('{');
+      const end = content.lastIndexOf('}');
+      if (start >= 0 && end > start) {
+        try { parsed = JSON.parse(content.slice(start, end + 1)); } catch (e2) { /* fall through */ }
+      }
+      if (!parsed) {
+        return { statusCode: 500, body: JSON.stringify({ error: "Invalid JSON from AI" }) };
+      }
     }
 
     let rawStrategies = [];
@@ -247,6 +272,13 @@ Antworte AUSSCHLIESSLICH im folgenden JSON-Format:
       return { statusCode: 500, body: JSON.stringify({ error: "AI generated no valid strategies." }) };
     }
 
+    // Alte Strategien erst JETZT löschen — die KI hat erfolgreich geliefert,
+    // ein Fehlschlag oben darf die vorhandenen Strategien nicht zerstören.
+    await fetch(`${supabaseUrl}/rest/v1/nexus_signal_strategies?offering_id=eq.${offeringId}`, {
+      method: 'DELETE',
+      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` }
+    });
+
     const rowsToInsert = validStrategies.map(s => ({
       offering_id: offeringId,
       user_id: user.id,
@@ -269,7 +301,7 @@ Antworte AUSSCHLIESSLICH im folgenden JSON-Format:
     }
 
     const insertedData = await insertRes.json();
-    return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ success: true, strategies: insertedData }) };
+    return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ success: true, provider: aiRes.provider, strategies: insertedData }) };
 
   } catch (error) {
     console.error("Generate Strategies Error:", error);

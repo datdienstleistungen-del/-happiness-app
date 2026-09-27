@@ -38,10 +38,12 @@ export const GROQ_COACH = [
 ];
 
 // 4. OpenRouter Free Tier Fallback Models
+// 27.09.2026 geprüft: nex-agi/nex-n2.5-mini:free existiert nicht mehr (404),
+// die freien Modelle sind über die Models-API aktuell gehalten
 export const OPENROUTER_FREE_MODELS = [
-  'nex-agi/nex-n2.5-mini:free',
-  'nvidia/nemotron-3.5-lightning:free',
-  'google/gemma-4-26b-a4b-it:free'
+  'qwen/qwen3.8-27b:free',
+  'google/gemma-4-31b-it:free',
+  'nvidia/nemotron-3-super-120b-a12b:free'
 ];
 
 // 5. Mistral Default Model
