@@ -96,6 +96,40 @@ async function searchTavilyParallel(query, apiKey, maxResults = 10) {
   return combined;
 }
 
+async function searchDuckDuckGo(query, maxResults = 10, timeoutMs = 4000) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const res = await fetch(
+      `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
+      { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }, signal: controller.signal }
+    );
+    clearTimeout(timer);
+    if (!res.ok) return [];
+    const html = await res.text();
+    const results = [];
+    const linkRegex = /<a[^>]+class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+    let match;
+    while ((match = linkRegex.exec(html)) !== null && results.length < maxResults) {
+      const href = match[1];
+      const title = match[2].replace(/<[^>]*>/g, '').trim();
+      let url = null;
+      if (href.includes('uddg=')) {
+        const uddgMatch = href.match(/uddg=([^&]*)/);
+        if (uddgMatch) url = decodeURIComponent(uddgMatch[1]);
+      } else if (href.startsWith('http')) {
+        url = href;
+      }
+      if (url && title && !results.some(r => r.url === url)) {
+        results.push({ url, title });
+      }
+    }
+    return results;
+  } catch (e) {
+    return [];
+  }
+}
+
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' } };
@@ -168,6 +202,18 @@ export const handler = async (event) => {
       if (allResults.length > 0) break;
       allResults = await searchTavilyParallel(searchQuery, key, 10);
       console.log(`[ScanStart] Key ${key.substring(0,8)}... returned ${allResults.length} results`);
+    }
+
+    // Fallback: DuckDuckGo (keyless) wenn Tavily leer oder Keys blockiert (402/432)
+    if (allResults.length === 0) {
+      console.log('[ScanStart] Tavily empty -> DuckDuckGo fallback');
+      const ddg = await Promise.allSettled([
+        searchDuckDuckGo(searchQuery, 10),
+        searchDuckDuckGo(`${searchQuery} jobs hiring einstellen`, 10)
+      ]);
+      const ddgResults = ddg.flatMap(x => x.status === 'fulfilled' ? x.value : []);
+      allResults = ddgResults.map(r => ({ ...r, source_type: 'GENERAL_WEB' }));
+      console.log(`[ScanStart] DuckDuckGo fallback returned ${allResults.length} results`);
     }
 
     // Dedupliziere URLs (bereits in searchTavilyParallel erledigt, aber zur Sicherheit)
