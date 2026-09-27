@@ -143,7 +143,11 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
           "social_proof": "...",
           "call_to_action": "..."
         }
-      }`
+      }
+      WICHTIGE REGELN:
+      - Verlasse dich EXAKT an diese Struktur. Erfinde KEINE zusätzlichen Keys (z.B. sales_window, sales_opportunity_score o.Ä.).
+      - Keine wiederholten Sätze, keine Aufzählungen oder Erläuterungen außerhalb des JSON.
+      - Nutze nur belastbares Wissen. Wo du nichts Sicheres weißt, schreibe "Unbekannt" statt zu erfinden.`
   } else if (mode === 'trigger_detection') {
     systemPrompt += ` Du bist ein Radar für Kaufsignale im Markt (${currentMonthYear}, Jahr ${currentYear}). Finde bzw. analysiere 4-6 REALISTISCHE B2B Trigger-Events passend zur Zielgruppe, die HEUTE ein hochaktuelles Timing-Fenster aufweisen (Zukunft oder max. 90 Tage alt, KEINE veralteten oder abgeschlossenen Projekte).
       
@@ -382,6 +386,7 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
       body: JSON.stringify({
         systemPrompt: systemPrompt,
         userMessage: message,
+        mode: mode,
         context: context,
         temperature: temperature,
         lang: lang,
@@ -468,6 +473,19 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
       }
     };
 
+    // Strikte Schema-Prüfung für Intelligence/Angebotsanalyse: kein Roh-Text, keine Halluzination-Keys
+    const strictMode = mode === 'lead_intelligence' || mode === 'angebotsanalyse';
+    const requiredKeys = ['zielgruppe', 'schmerzpunkte', 'vertriebsstrategie', 'pitch_grundlage'];
+    const acceptParsed = (parsed) => {
+      if (!parsed) return null;
+      if (strictMode) {
+        if (typeof parsed === 'object' && !Array.isArray(parsed) && requiredKeys.every(k => k in parsed)) return parsed;
+        console.warn('[nexus-ai client] strict schema rejected result:', parsed && typeof parsed === 'object' ? Object.keys(parsed) : typeof parsed);
+        return null;
+      }
+      return parsed;
+    };
+
     // 1. Try Groq
     if (groqKey) {
       for (const model of groqModels) {
@@ -492,8 +510,8 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
           if (fbRes.ok) {
             const fbData = await fbRes.json();
             const text = fbData.choices?.[0]?.message?.content;
-            const parsed = parseOutput(text);
-            if (parsed) return parsed;
+            const accepted = acceptParsed(parseOutput(text));
+            if (accepted) return accepted;
           }
         } catch (e) {
           console.warn(`[nexus-ai client] Groq (${model}) failed:`, e.message);
@@ -526,8 +544,8 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
           if (orRes.ok) {
             const orData = await orRes.json();
             const text = orData.choices?.[0]?.message?.content;
-            const parsed = parseOutput(text);
-            if (parsed) return parsed;
+            const accepted = acceptParsed(parseOutput(text));
+            if (accepted) return accepted;
           }
         } catch (e) {
           console.warn(`[nexus-ai client] OpenRouter (${model}) failed:`, e.message);
@@ -558,8 +576,8 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
         if (mRes.ok) {
           const mData = await mRes.json();
           const text = mData.choices?.[0]?.message?.content;
-          const parsed = parseOutput(text);
-          if (parsed) return parsed;
+          const accepted = acceptParsed(parseOutput(text));
+          if (accepted) return accepted;
         }
       } catch (e) {
         console.warn(`[nexus-ai client] Mistral failed:`, e.message);

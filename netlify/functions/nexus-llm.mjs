@@ -1,6 +1,6 @@
 // ── Multi-Provider Fallback Chain ──
 import { runEmailPatternCrawler } from './nexus-email-crawler.mjs';
-import { GROQ_FREE_FIRST, GROQ_VISION_MODELS, OPENROUTER_FREE_MODELS } from './nexus-models.mjs';
+import { GROQ_FREE_FIRST, GROQ_JSON_HEAVY, GROQ_VISION_MODELS, OPENROUTER_FREE_MODELS } from './nexus-models.mjs';
 
 async function fetchWithTimeout(url, options, timeoutMs = 20000) {
   const controller = new AbortController();
@@ -61,10 +61,11 @@ async function tryGroq(messages, temperature = 0.3, hasImage = false, signal = n
 
   const models = hasImage 
     ? GROQ_VISION_MODELS
-    : GROQ_FREE_FIRST;
+    : (testOptions?.preferJsonModels ? GROQ_JSON_HEAVY : GROQ_FREE_FIRST);
 
   for (const key of groqKeys) {
     for (const model of models) {
+      if (testOptions?.skipModels?.includes(model)) continue;
       const t0 = Date.now();
       const tier = getModelTier('groq', model);
       try {
@@ -127,6 +128,7 @@ async function tryOpenRouter(messages, temperature = 0.3, hasImage = false, sign
 
   for (const key of openrouterKeys) {
     for (const model of models) {
+      if (testOptions?.skipModels?.includes(model)) continue;
       const t0 = Date.now();
       const tier = getModelTier('openrouter', model);
       try {
@@ -352,7 +354,7 @@ async function tryOpenAI(messages, temperature = 0.3, signal = null, testOptions
 
 async function callAI(messages, temperature = 0.3, hasImage = false, testOptions = {}) {
   const chainStartTime = Date.now();
-  const perProviderTimeoutMs = 2500;
+  const perProviderTimeoutMs = testOptions?.preferJsonModels ? 4500 : 2500;
 
   const providers = hasImage 
     ? [
@@ -589,6 +591,60 @@ async function webSearch(query) {
   
   console.log("[Search] All search providers returned no results for:", query);
   return [];
+}
+
+// ── JSON-Validierung: Degeneration (Endlosschleifen) & Schema-Check ──
+function isDegenerateText(text) {
+  if (!text || typeof text !== 'string') return false;
+  const sentences = text.split(/[.!?]\s+/).map(s => s.trim()).filter(s => s.length > 70);
+  const seen = new Map();
+  for (const s of sentences) {
+    const key = s.slice(0, 120).toLowerCase();
+    seen.set(key, (seen.get(key) || 0) + 1);
+    if (seen.get(key) >= 3) return true;
+  }
+  return false;
+}
+
+function extractJsonObject(text) {
+  if (!text || typeof text !== 'string') return null;
+  const unfenced = text.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+  try {
+    const p = JSON.parse(unfenced);
+    if (p && typeof p === 'object' && !Array.isArray(p)) return p;
+  } catch {}
+  const start = text.indexOf('{');
+  if (start >= 0) {
+    let depth = 0, inStr = false, esc = false;
+    for (let i = start; i < text.length; i++) {
+      const ch = text[i];
+      if (esc) { esc = false; continue; }
+      if (ch === '\\') { esc = true; continue; }
+      if (ch === '"') { inStr = !inStr; continue; }
+      if (inStr) continue;
+      if (ch === '{') depth++;
+      else if (ch === '}') {
+        depth--;
+        if (depth === 0) {
+          try {
+            const p = JSON.parse(text.slice(start, i + 1));
+            if (p && typeof p === 'object' && !Array.isArray(p)) return p;
+          } catch {}
+          break;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function validateStructuredResult(content, requiredKeys) {
+  if (isDegenerateText(content)) return { ok: false, reason: 'wiederholte, degenerierte Antwort' };
+  const parsed = extractJsonObject(content);
+  if (!parsed) return { ok: false, reason: 'kein valides JSON' };
+  const missing = requiredKeys.filter(k => !(k in parsed));
+  if (missing.length > 0) return { ok: false, reason: `Pflichtfelder fehlen: ${missing.join(', ')}` };
+  return { ok: true, parsed };
 }
 
 export const handler = async (event) => {
@@ -889,20 +945,62 @@ Meine Frage: ${userMessage}`;
     // --- END WEB SEARCH & STANDALONE EMAIL CRAWLER ---
 
     console.log("[NEXUS] Starting callAI loop (hasImage=" + hasImage + ")");
-    const result = await callAI(messages, temperature || 0.3, hasImage, testOptions || {});
-    console.log("[NEXUS] callAI loop done");
+    const wantsJsonMode = mode ? (mode !== 'chat' && mode !== 'assistant') : /validem JSON|EXAKT folgender Struktur/i.test(systemPrompt || '');
+    const strictSchema = wantsJsonMode && (isIntelligenceMode || isAngebotsanalyse);
+    const requiredKeys = ['zielgruppe', 'schmerzpunkte', 'vertriebsstrategie', 'pitch_grundlage'];
+    const callStart = Date.now();
+
+    let result = await callAI(messages, temperature || 0.3, hasImage, { ...(testOptions || {}), preferJsonModels: wantsJsonMode });
+    console.log("[NEXUS] callAI loop done via " + (result?.model || 'none'));
 
     if (!result || !result.text) {
       throw new Error("KI antwortet nicht rechtzeitig. Bitte warte kurz und versuche es erneut.");
     }
 
     const content = result.text;
-    
+
+    if (strictSchema) {
+      let check = validateStructuredResult(content, requiredKeys);
+
+      // 1 Retry mit anderem Modell, wenn Zeitbudget es zulässt
+      if (!check.ok && Date.now() - callStart < 6000 && result.model) {
+        console.warn(`[NEXUS] Schema-Validation failed (${check.reason}) -> Retry ohne Modell ${result.model}`);
+        const retry = await callAI(messages, temperature || 0.3, hasImage, { ...(testOptions || {}), preferJsonModels: true, skipModels: [result.model] });
+        if (retry?.text) {
+          const recheck = validateStructuredResult(retry.text, requiredKeys);
+          if (recheck.ok) {
+            result = retry;
+            check = recheck;
+            console.log(`[NEXUS] Retry succeeded via ${retry.provider} (${retry.model})`);
+          } else {
+            console.warn(`[NEXUS] Retry failed too: ${recheck.reason}`);
+            check.reason = `${check.reason} / Retry: ${recheck.reason}`;
+          }
+        }
+      }
+
+      if (!check.ok) {
+        // NIEMALS Roh-Text oder degeneriertes JSON ausliefern
+        return {
+          statusCode: 502,
+          body: JSON.stringify({ error: `Die KI-Analyse war ungültig (${check.reason}). Bitte versuche es erneut.` }),
+          headers: { "Content-Type": "application/json" }
+        };
+      }
+
+      return {
+        statusCode: 200,
+        body: JSON.stringify(check.parsed),
+        headers: { "Content-Type": "application/json" }
+      };
+    }
+
+    // Nachsichtig: JSON wenn möglich, sonst strukturierte Extraktion, sonst Roh-Text (Chat)
     let parsed;
     try {
       parsed = JSON.parse(content);
     } catch (e) {
-      parsed = content; // Fallback
+      parsed = extractJsonObject(content) || content;
     }
 
     return {
