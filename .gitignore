@@ -45,6 +45,8 @@ fix*.cjs
 fix*.mjs
 builder.mjs
 check-*.mjs
+# CI-Gates duerfen getrackt werden (permanente Checks, keine Debug-Einmaldateien)
+!scripts/check-*.mjs
 run-cron*.mjs
 real-test.mjs
 verify-*.mjs

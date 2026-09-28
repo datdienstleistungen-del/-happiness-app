@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-verify-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Syntax-Check (netlify/functions + scripts)
+        run: npm run check:syntax
+
+      - name: Build
+        run: npm run build
+
+      - name: Leak-Check (kein Provider-Key/Domae im dist-Bundle)
+        run: npm run check:leak
+
+      - name: Playwright installieren
+        run: npx playwright install --with-deps chromium
+
+      # Public-Werte (liegen per design im Bundle): nur URLs/Keys, keine Secrets
+      - name: E2E (smoke + profiles-Security)
+        run: npx playwright test --project=chromium --project=api --grep-invert "generate-strategies"
+        env:
+          VITE_SUPABASE_URL: https://irumowvmhvrofezwvnop.supabase.co
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      # Strategies-E2E braucht Testaccount + Service-Key -> nur wenn Secrets hinterlegt
+      - id: creds
+        name: Secrets-Status pruefen
+        env:
+          PW: ${{ secrets.TEST_USER_PASSWORD }}
+        run: |
+          if [ -n "$PW" ]; then echo "has=true" >> "$GITHUB_OUTPUT"; else echo "has=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: E2E (nexus-generate-strategies)
+        if: steps.creds.outputs.has == 'true'
+        run: npx playwright test --project=api --grep "generate-strategies"
+        env:
+          VITE_SUPABASE_URL: https://irumowvmhvrofezwvnop.supabase.co
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
