@@ -8,9 +8,11 @@
 // fallback) auf Status.
 //
 // Ausloeser: nexus-radar-scan-start (nach Job-Anlage und bei already_running,
-// ueber x-queue-secret). Background-Mode via netlify.toml
-// [functions."nexus-radar-scan-queue"] background = true -> sofortiges 202,
-// dann bis 15 Minuten Laufzeit.
+// ueber x-queue-secret). Background-Mode DOPPELT abgesichert, weil
+// netlify.toml-background=true beim Live-Test NICHT griff (Handler-Response
+// kam durch statt 202): -background-Suffix am Dateinamen (Legacy-Konvention,
+// docs: "still fully supported") UND inline config.background.
+// -> sofortiges 202, dann bis 15 Minuten Laufzeit.
 // ============================================================================
 import { createClient } from '@supabase/supabase-js';
 import { fetchJob, guardJob, claimJob, processNextUrl } from './_shared/scan-job.mjs';
@@ -31,6 +33,10 @@ const json = (statusCode, body) => ({
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(body)
 });
+
+// Background-Mode: leeres 202 sofort an den Client, Handler-Rueckgabe wird
+// verworfen (Platform-Verhalten, docs.netlify.com/build/functions/api).
+export const config = { background: true };
 
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {

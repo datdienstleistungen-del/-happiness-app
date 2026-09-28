@@ -17,8 +17,9 @@
   schedule = "*/15 * * * *"
 
 # Phase 3 (Radar-Queue): arbeitet nexus_scan_jobs serverseitig ab (bis 15 min),
-# damit Scans ohne offenes Frontend-Tab weiterlaufen.
-[functions."nexus-radar-scan-queue"]
+# damit Scans ohne offenes Frontend-Tab weiterlaufen. -background-Suffix +
+# inline config.background im File (TOML-Allein griff beim Live-Test nicht).
+[functions."nexus-radar-scan-queue-background"]
   background = true
 
 [build.environment]

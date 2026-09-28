@@ -32,7 +32,7 @@ async function triggerScanQueue(jobId) {
     return false;
   }
   try {
-    const res = await fetch(`${base}/.netlify/functions/nexus-radar-scan-queue`, {
+    const res = await fetch(`${base}/.netlify/functions/nexus-radar-scan-queue-background`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-queue-secret': secret },
       body: JSON.stringify({ job_id: jobId }),
