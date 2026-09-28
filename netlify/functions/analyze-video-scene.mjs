@@ -1,9 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
+import { callLLM } from './_shared/llm-core.mjs'
 const supabaseUrl = process.env.VITE_SUPABASE_URL
-
-const GROQ_API_KEY = process.env.GROQ_API_KEY
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY
-const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY
 
 const ANALYSIS_SYSTEM_PROMPT = `Analysiere die übergebenen Bilder.
 Es können zwei Arten von Bildern enthalten sein:
@@ -74,126 +71,27 @@ function parseAnalysisResponse(text) {
   }
 }
 
-async function tryGroqImages(imagePayloads, analyticsPayloads = []) {
-  if (!GROQ_API_KEY) {
-    console.error('[analyze-video] GROQ_API_KEY not set')
-    return { error: 'GROQ_API_KEY not configured' }
-  }
-  try {
-    const totalSize = imagePayloads.reduce((s, p) => s + p.length, 0) + (analyticsPayloads?.reduce((s, p) => s + p.length, 0) || 0)
-    console.log(`[analyze-video] Groq: ${imagePayloads.length} frames, ${analyticsPayloads?.length || 0} analytics, ${(totalSize / 1024 / 1024).toFixed(1)}MB total`)
-    
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'qwen/qwen3.6-27b',
-        messages: buildImageMessages(imagePayloads, analyticsPayloads),
-        temperature: 0.2,
-        max_tokens: 4096
-      })
-    })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      const msg = err?.error?.message || JSON.stringify(err)
-      console.error('[analyze-video] Groq failed:', res.status, msg)
-      return { error: `Groq ${res.status}: ${msg}` }
-    }
-    const data = await res.json()
-    const text = data.choices?.[0]?.message?.content || ''
-    console.log('[analyze-video] Groq response length:', text.length)
-    const parsed = parseAnalysisResponse(text)
-    if (parsed) return { data: parsed }
-    return { error: `Groq returned unparseable response (${text.length} chars): ${text.substring(0, 200)}` }
-  } catch (e) {
-    console.error('[analyze-video] Groq images failed:', e.message)
-    return { error: `Groq exception: ${e.message}` }
-  }
-}
+async function analyzeImages(imagePayloads, analyticsPayloads = []) {
+  const totalSize = imagePayloads.reduce((s, p) => s + p.length, 0) + (analyticsPayloads?.reduce((s, p) => s + p.length, 0) || 0)
+  console.log(`[analyze-video] Vision chain: ${imagePayloads.length} frames, ${analyticsPayloads?.length || 0} analytics, ${(totalSize / 1024 / 1024).toFixed(1)}MB total`)
 
-async function tryOpenRouterImages(imagePayloads, analyticsPayloads = []) {
-  if (!OPENROUTER_API_KEY) return { error: 'OPENROUTER_API_KEY not configured' }
-  try {
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://nexus-hit.netlify.app',
-        'X-Title': 'Happiness Video Analysis'
-      },
-      body: JSON.stringify({
-        model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
-        messages: buildImageMessages(imagePayloads, analyticsPayloads),
-        temperature: 0.2,
-        max_tokens: 4096
-      })
-    })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      const msg = err?.error?.message || JSON.stringify(err)
-      console.error('[analyze-video] OpenRouter failed:', res.status, msg)
-      return { error: `OpenRouter ${res.status}: ${msg}` }
+  // Kette Groq -> OpenRouter -> Mistral via _shared/llm-core.mjs (profile vision).
+  // acceptText sorgt wie bisher fuer den naechsten Provider, wenn das JSON
+  // unbrauchbar ist; wirft, wenn alle Provider versagen.
+  const { text, provider, model } = await callLLM(
+    buildImageMessages(imagePayloads, analyticsPayloads),
+    {
+      profile: 'vision',
+      providers: ['groq', 'openrouter', 'mistral'],
+      temperature: 0.2,
+      max_tokens: 4096,
+      acceptText: (t) => parseAnalysisResponse(t) !== null,
+      xTitle: 'Happiness Video Analysis',
+      totalBudgetMs: 40000,
     }
-    const data = await res.json()
-    const text = data.choices?.[0]?.message?.content || ''
-    const parsed = parseAnalysisResponse(text)
-    if (parsed) return { data: parsed }
-    return { error: `OpenRouter returned unparseable response (${text.length} chars): ${text.substring(0, 200)}` }
-  } catch (e) {
-    console.error('[analyze-video] OpenRouter images failed:', e.message)
-    return { error: `OpenRouter exception: ${e.message}` }
-  }
-}
-
-async function tryMistralImages(imagePayloads, analyticsPayloads = []) {
-  if (!MISTRAL_API_KEY) return { error: 'MISTRAL_API_KEY not configured' }
-  try {
-    const content = [
-      { type: 'text', text: 'Analysiere diese Bilderserie (Frames aus einem Video und TikTok-Analytics) und gib die Szenen-Beats und Zielgruppen-Insights als JSON zurück. Antworte ausschließlich mit validem JSON.' }
-    ]
-    for (const img of imagePayloads) {
-      content.push({ type: 'image_url', image_url: { url: img } })
-    }
-    if (Array.isArray(analyticsPayloads)) {
-      for (const aImg of analyticsPayloads) {
-        content.push({ type: 'image_url', image_url: { url: aImg } })
-      }
-    }
-    const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${MISTRAL_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'pixtral-12b-2409',
-        messages: [
-          { role: 'system', content: ANALYSIS_SYSTEM_PROMPT },
-          { role: 'user', content }
-        ],
-        temperature: 0.2,
-        max_tokens: 4096
-      })
-    })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      const msg = err?.error?.message || JSON.stringify(err)
-      console.error('[analyze-video] Mistral failed:', res.status, msg)
-      return { error: `Mistral ${res.status}: ${msg}` }
-    }
-    const data = await res.json()
-    const text = data.choices?.[0]?.message?.content || ''
-    const parsed = parseAnalysisResponse(text)
-    if (parsed) return { data: parsed }
-    return { error: `Mistral returned unparseable response (${text.length} chars): ${text.substring(0, 200)}` }
-  } catch (e) {
-    console.error('[analyze-video] Mistral images failed:', e.message)
-    return { error: `Mistral exception: ${e.message}` }
-  }
+  )
+  console.log(`[analyze-video] ${provider}/${model} response length: ${text.length}`)
+  return parseAnalysisResponse(text)
 }
 
 async function checkGuestRateLimit(visitorId, clientIp) {
@@ -282,35 +180,25 @@ export const handler = async (event) => {
     const safeFrames = Array.isArray(frames) ? frames : []
     const safeAnalytics = Array.isArray(analytics_images) ? analytics_images : []
 
-    console.log(`[analyze-video] Received ${safeFrames.length} frames + ${safeAnalytics.length} analytics images, trying Groq Vision...`)
+    console.log(`[analyze-video] Received ${safeFrames.length} frames + ${safeAnalytics.length} analytics images, trying vision chain...`)
 
-    // Try Groq first (fast, reliable)
-    let groqResult = await tryGroqImages(safeFrames, safeAnalytics)
-    let sceneAnalysis = groqResult?.data || null
-    let allErrors = groqResult?.error ? [`Groq: ${groqResult.error}`] : []
-
-    if (!sceneAnalysis) {
-      console.log('[analyze-video] Groq failed, trying OpenRouter...')
-      let orResult = await tryOpenRouterImages(safeFrames, safeAnalytics)
-      sceneAnalysis = orResult?.data || null
-      if (orResult?.error) allErrors.push(`OpenRouter: ${orResult.error}`)
+    // Kette Groq -> OpenRouter -> Mistral via _shared/llm-core.mjs
+    let sceneAnalysis = null
+    let chainError = null
+    try {
+      sceneAnalysis = await analyzeImages(safeFrames, safeAnalytics)
+    } catch (e) {
+      chainError = e.message
     }
 
     if (!sceneAnalysis) {
-      console.log('[analyze-video] OpenRouter failed, trying Mistral...')
-      let mistralResult = await tryMistralImages(safeFrames, safeAnalytics)
-      sceneAnalysis = mistralResult?.data || null
-      if (mistralResult?.error) allErrors.push(`Mistral: ${mistralResult.error}`)
-    }
-
-    if (!sceneAnalysis) {
-      console.error('[analyze-video] ALL PROVIDERS FAILED:', allErrors)
+      console.error('[analyze-video] ALL PROVIDERS FAILED:', chainError)
       return {
         statusCode: 502,
         headers: CORS_HEADERS,
         body: JSON.stringify({
           error: 'Video-Analyse fehlgeschlagen. Die KI-Modelle konnten die Frames nicht verarbeiten.',
-          details: allErrors.join(' | ')
+          details: chainError || 'unbekannter Fehler'
         })
       }
     }

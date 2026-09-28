@@ -1,5 +1,6 @@
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || ''
+import { callLLM } from './_shared/llm-core.mjs'
 
 async function moderateWithGoogle(cleanBase64, apiKey) {
   const visionUrl = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`
@@ -43,44 +44,21 @@ async function moderateWithGoogle(cleanBase64, apiKey) {
 }
 
 async function moderateWithGroq(cleanBase64, imageMimeType) {
-  const groqKey = process.env.GROQ_API_KEY
-  if (!groqKey) throw new Error('No Groq API key available')
-
   const dataUrl = `data:${imageMimeType};base64,${cleanBase64}`
 
-  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${groqKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-      messages: [{
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: 'Analyze this image for content policy violations. Is this image safe for a general audience social media platform? Look for: nudity, sexual content, graphic violence, gore, hate symbols, or other inappropriate content.\n\nReply with ONLY a JSON object in this exact format:\n{"safe": true/false, "reason": "brief explanation if unsafe"}'
-          },
-          {
-            type: 'image_url',
-            image_url: { url: dataUrl }
-          }
-        ]
-      }],
-      max_tokens: 150,
-      temperature: 0.1
-    })
-  })
-
-  if (!response.ok) {
-    const errBody = await response.text().catch(() => '')
-    throw new Error(`Groq Vision API error ${response.status}: ${errBody}`)
-  }
-
-  const result = await response.json()
-  const content = result.choices?.[0]?.message?.content || ''
+  const { text: content } = await callLLM([{
+    role: 'user',
+    content: [
+      {
+        type: 'text',
+        text: 'Analyze this image for content policy violations. Is this image safe for a general audience social media platform? Look for: nudity, sexual content, graphic violence, gore, hate symbols, or other inappropriate content.\n\nReply with ONLY a JSON object in this exact format:\n{"safe": true/false, "reason": "brief explanation if unsafe"}'
+      },
+      {
+        type: 'image_url',
+        image_url: { url: dataUrl }
+      }
+    ]
+  }], { profile: 'vision', providers: ['groq'], max_tokens: 150, temperature: 0.1 })
 
   const jsonMatch = content.match(/\{[\s\S]*?\}/)
   if (!jsonMatch) throw new Error('Could not parse Groq Vision response')

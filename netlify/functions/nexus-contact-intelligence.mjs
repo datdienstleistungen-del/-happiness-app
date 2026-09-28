@@ -12,6 +12,9 @@
  * Kein Pattern-Guessing als echte Adresse. Kein SMTP-Probing.
  */
 
+import { callLLM as callProviderChain } from './_shared/llm-core.mjs';
+import { searchDuckDuckGo as ddgSearch, getTavilyKeys, tavilySearch } from './_shared/search-core.mjs';
+
 import { createClient } from '@supabase/supabase-js';
 import { resolveCompanyWebsite, getGoogleCseQuotaStatus } from './nexus-domain-discovery.mjs';
 import { checkTextGroundedInSource } from './grounding-helpers.mjs';
@@ -325,75 +328,30 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
 }
 
 async function searchTavily(query) {
-  const apiKey = process.env.TAVILY_API_KEY;
-  if (!apiKey) return null;
-  try {
-    const { res } = await fetchWithTimeout('https://api.tavily.com/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        api_key: apiKey,
-        query,
-        max_results: 5,
-        search_depth: 'basic'
-      })
-    }, 5000);
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!data.results?.length) return null;
-    return data.results.map(r => ({
-      url: r.url,
-      title: r.title || '',
-      snippet: r.content || ''
-    }));
-  } catch (e) {
-    console.log('[Search] Tavily failed:', e.message);
-    return null;
+  // Multi-Key (inkl. VITE_TAVILY_API_KEY) via _shared/search-core.mjs
+  for (const key of getTavilyKeys()) {
+    const out = await tavilySearch(query, key, {
+      maxResults: 5,
+      searchDepth: 'basic',
+      includeRawContent: false,
+      timeoutMs: 5000,
+    });
+    if (out.ok) {
+      return out.results.map(r => ({
+        url: r.url,
+        title: r.title || '',
+        snippet: r.content || ''
+      }));
+    }
   }
+  return null;
 }
 
 async function searchDuckDuckGo(query) {
-  try {
-    const { res } = await fetchWithTimeout(
-      `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
-      { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } },
-      5000
-    );
-    if (!res.ok) return null;
-    const html = await res.text();
-    const results = [];
-    
-    const linkRegex = /<a[^>]+class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
-    let match;
-    
-    while ((match = linkRegex.exec(html)) !== null && results.length < 5) {
-      const href = match[1];
-      const title = match[2].replace(/<[^>]*>/g, '').trim();
-      
-      let url = null;
-      if (href.includes('uddg=')) {
-        const uddgMatch = href.match(/uddg=([^&]*)/);
-        if (uddgMatch) {
-          url = decodeURIComponent(uddgMatch[1]);
-        }
-      } else if (href.startsWith('http')) {
-        url = href;
-      }
-      
-      const snippetRegex = /<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
-      snippetRegex.lastIndex = match.index + match[0].length;
-      const snippetMatch = snippetRegex.exec(html);
-      const snippet = snippetMatch ? snippetMatch[1].replace(/<[^>]*>/g, '').trim() : '';
-      
-      if (url && title) {
-        results.push({ url, title, snippet });
-      }
-    }
-    
-    return results.length > 0 ? results : null;
-  } catch (e) {
-    return null;
-  }
+  const results = await ddgSearch(query, { maxResults: 5, timeoutMs: 5000 });
+  return results.length > 0
+    ? results.map(r => ({ url: r.url, title: r.title, snippet: r.content }))
+    : null;
 }
 
 async function searchSearXNG(query) {
@@ -1303,49 +1261,22 @@ Nur relevante Kandidaten (Score > 40).`;
 // ============================================================================
 
 async function callLLM(prompt, temperature = 0.3) {
-  const providers = [
-    { url: 'https://api.deepseek.com/chat/completions', key: process.env.DEEPSEEK_API_KEY, model: 'deepseek-chat', skipIf: process.env.DEEPSEEK_ENABLED === 'false' },
-    { url: 'https://api.mistral.ai/v1/chat/completions', key: process.env.MISTRAL_API_KEY, model: 'mistral-small-latest' }
-  ];
-  
-  for (const p of providers) {
-    if (p.skipIf) { console.log(`[callLLM] SKIP ${p.model}: disabled`); continue; }
-    if (!p.key) { console.log(`[callLLM] SKIP ${p.model}: no API key`); continue; }
-    try {
-      console.log(`[callLLM] Trying ${p.model}...`);
-      const { res } = await fetchWithTimeout(p.url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${p.key}` },
-        body: JSON.stringify({
-          model: p.model,
-          messages: [
-            { role: 'system', content: 'Du gibst IMMER valides JSON zurück, ohne Markdown-Blöcke.' },
-            { role: 'user', content: prompt }
-          ],
-          temperature,
-          max_tokens: 1500
-        })
-      }, 15000);
-      
-      if (!res.ok) {
-        const errBody = await res.text().catch(() => '');
-        console.log(`[callLLM] ${p.model} HTTP ${res.status}: ${errBody.substring(0, 200)}`);
-        continue;
-      }
-      const data = await res.json();
-      const text = data.choices?.[0]?.message?.content || '';
-      console.log(`[callLLM] ${p.model} responded (${text.length} chars)`);
-      
-      // JSON parsen
-      const cleaned = text.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
-      try { return JSON.parse(cleaned); } catch(e) { return { raw: text }; }
-    } catch (e) { 
-      console.log(`[callLLM] ${p.model} exception: ${e.message}`);
-      continue; 
-    }
+  // Kette DeepSeek -> Mistral via _shared/llm-core.mjs (DEEPSEEK_ENABLED=false
+  // sperrt die DeepSeek-Stufe wie bisher). Liefert parsedes JSON, { raw } bei
+  // unbrauchbarem Output oder null, wenn alle Provider versagen.
+  const providers = process.env.DEEPSEEK_ENABLED === 'false' ? ['mistral'] : ['deepseek', 'mistral'];
+  try {
+    const { text } = await callProviderChain([
+      { role: 'system', content: 'Du gibst IMMER valides JSON zurück, ohne Markdown-Blöcke.' },
+      { role: 'user', content: prompt }
+    ], { providers, temperature, max_tokens: 1500, totalBudgetMs: 20000 });
+    console.log(`[callLLM] chain responded (${text.length} chars)`);
+    const cleaned = text.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
+    try { return JSON.parse(cleaned); } catch (e) { return { raw: text }; }
+  } catch (e) {
+    console.log('[callLLM] All providers failed:', e.message);
+    return null;
   }
-  console.log('[callLLM] All providers failed, returning null');
-  return null;
 }
 
 // ============================================================================

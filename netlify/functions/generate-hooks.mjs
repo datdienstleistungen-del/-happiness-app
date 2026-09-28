@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { callLLM } from './_shared/llm-core.mjs'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const CORS_HEADERS = {
@@ -131,58 +132,23 @@ NUR das JSON Array. Kein Text davor oder danach. Kein markdown.`
     let hooks = null
     let lastError = null
 
-    // Try Groq first
-    const GROQ_API_KEY = process.env.GROQ_API_KEY
-    if (GROQ_API_KEY) {
-      try {
-        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'openai/gpt-oss-120b',
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.8,
-            max_tokens: 2048
-          })
-        })
-        if (res.ok) {
-          const data = await res.json()
-          const content = data.choices?.[0]?.message?.content || ''
-          const jsonMatch = content.match(/\[[\s\S]*\]/)
-          if (jsonMatch) hooks = JSON.parse(jsonMatch[0])
-        } else {
-          lastError = `Groq: ${res.status}`
+    // Kette Groq -> Mistral via _shared/llm-core.mjs; acceptText erzwingt ein
+    // parsesbares JSON-Array, sonst faehrt die Kette zum naechsten Provider.
+    try {
+      const { text: content } = await callLLM(
+        [{ role: 'user', content: prompt }],
+        {
+          providers: ['groq', 'mistral'],
+          temperature: 0.8,
+          max_tokens: 2048,
+          acceptText: (t) => /\[[\s\S]*\]/.test(t),
         }
-      } catch (e) {
-        lastError = `Groq: ${e.message}`
-      }
-    }
-
-    // Try Mistral
-    if (!hooks) {
-      const mistralKey = process.env.MISTRAL_API_KEY || ''
-      try {
-        const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${mistralKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'mistral-large-latest',
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.8,
-            max_tokens: 2048
-          })
-        })
-        if (res.ok) {
-          const data = await res.json()
-          const content = data.choices?.[0]?.message?.content || ''
-          const jsonMatch = content.match(/\[[\s\S]*\]/)
-          if (jsonMatch) hooks = JSON.parse(jsonMatch[0])
-        } else {
-          lastError = `Mistral: ${res.status}`
-        }
-      } catch (e) {
-        lastError = `Mistral: ${e.message}`
-      }
+      )
+      const jsonMatch = content.match(/\[[\s\S]*\]/)
+      if (jsonMatch) hooks = JSON.parse(jsonMatch[0])
+      else lastError = 'Antwort enthielt kein JSON-Array'
+    } catch (e) {
+      lastError = e.message
     }
 
     if (!hooks) {

@@ -1,10 +1,8 @@
+import { callLLM } from './_shared/llm-core.mjs';
+
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
-
-const GROQ_API_KEY = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || process.env.VITE_DEEPSEEK_API_KEY;
-const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
 
 const SYSTEM_PROMPT = `Du bist ein preisgekrönter Senior Copywriter und Content-Strategist, spezialisiert auf B2B-Sales-Videos, Kurzvideos (TikTok, Reels, Shorts) und visuelle Video-Pitches. Erstelle ein hochgradig konvertierendes, emotionales und maßgeschneidertes "Rezept" (Videoskript oder Caption).
 
@@ -49,19 +47,6 @@ JSON-Struktur:
   "hook_check_notes": [],
   "hook_check_suggestions": []
 }`;
-
-async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
-    clearTimeout(timeoutId);
-    return res;
-  } catch (err) {
-    clearTimeout(timeoutId);
-    throw err;
-  }
-}
 
 function cleanJson(text) {
   if (!text) return null;
@@ -130,99 +115,24 @@ export async function handler(event) {
 
   let recipeData = null;
 
-  // 1. Try Groq (Ultra fast: 0.1s response time, 100% active models)
-  if (!recipeData && GROQ_API_KEY) {
-    const groqModels = ['allam-2-7b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b'];
-    for (const m of groqModels) {
-      try {
-        console.log(`[CAPCUT-RECIPE] Trying Groq model ${m}...`);
-        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: m,
-            messages: [
-              { role: 'system', content: SYSTEM_PROMPT },
-              { role: 'user', content: fullPrompt }
-            ],
-            temperature: 0.7,
-            response_format: { type: 'json_object' }
-          })
-        }, 8000);
-
-        if (res.ok) {
-          const data = await res.json();
-          const text = data.choices?.[0]?.message?.content;
-          recipeData = cleanJson(text);
-          if (recipeData) {
-            console.log(`[CAPCUT-RECIPE] Success with Groq ${m}`);
-            break;
-          }
-        } else {
-          console.warn(`[CAPCUT-RECIPE] Groq ${m} status: ${res.status}`);
-        }
-      } catch (e) {
-        console.warn(`[CAPCUT-RECIPE] Groq ${m} error: ${e.message}`);
-      }
-    }
-  }
-
-  // 2. Try DeepSeek (Fallback)
-  if (!recipeData && DEEPSEEK_API_KEY) {
-    try {
-      console.log('[CAPCUT-RECIPE] Trying DeepSeek...');
-      const res = await fetchWithTimeout('https://api.deepseek.com/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${DEEPSEEK_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'deepseek-chat',
-          messages: [
-            { role: 'system', content: 'You are an elite video copywriter. Output valid JSON only.' },
-            { role: 'user', content: fullPrompt }
-          ],
-          temperature: 0.7,
-          response_format: { type: 'json_object' }
-        })
-      }, 10000);
-
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.choices?.[0]?.message?.content;
-        recipeData = cleanJson(text);
-        if (recipeData) console.log('[CAPCUT-RECIPE] Success with DeepSeek');
-      }
-    } catch (e) {
-      console.warn('[CAPCUT-RECIPE] DeepSeek error:', e.message);
-    }
-  }
-
-  // 3. Try Mistral (Fallback)
-  if (!recipeData && MISTRAL_API_KEY) {
-    try {
-      console.log('[CAPCUT-RECIPE] Trying Mistral...');
-      const res = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${MISTRAL_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'mistral-small-latest',
-          messages: [
-            { role: 'system', content: 'You are an elite video copywriter. Output valid JSON only.' },
-            { role: 'user', content: fullPrompt }
-          ],
-          temperature: 0.7,
-          response_format: { type: 'json_object' }
-        })
-      }, 10000);
-
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.choices?.[0]?.message?.content;
-        recipeData = cleanJson(text);
-        if (recipeData) console.log('[CAPCUT-RECIPE] Success with Mistral');
-      }
-    } catch (e) {
-      console.warn('[CAPCUT-RECIPE] Mistral error:', e.message);
-    }
+  // Kette Groq -> DeepSeek -> Mistral via _shared/llm-core.mjs; acceptText
+  // faehrt wie bisher zum naechsten Provider, wenn das JSON unbrauchbar ist.
+  try {
+    console.log('[CAPCUT-RECIPE] Trying LLM chain (groq -> deepseek -> mistral)...');
+    const { text, provider } = await callLLM([
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: fullPrompt }
+    ], {
+      providers: ['groq', 'deepseek', 'mistral'],
+      temperature: 0.7,
+      jsonMode: true,
+      acceptText: (t) => Boolean(cleanJson(t)),
+      totalBudgetMs: 20000,
+    });
+    recipeData = cleanJson(text);
+    if (recipeData) console.log(`[CAPCUT-RECIPE] Success with ${provider}`);
+  } catch (e) {
+    console.warn('[CAPCUT-RECIPE] LLM chain error:', e.message);
   }
 
   if (!recipeData) {

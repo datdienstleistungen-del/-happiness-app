@@ -64,12 +64,14 @@ export async function tavilySearch(query, key, {
   includeRawContent = true,
   daysBack = null,
   includeDomains = null,
+  excludeDomains = null,
   timeoutMs = 5000,
 } = {}) {
   try {
     const payload = { api_key: key, query, search_depth: searchDepth, include_raw_content: includeRawContent, max_results: maxResults };
     if (daysBack) payload.days_back = daysBack;
     if (Array.isArray(includeDomains) && includeDomains.length > 0) payload.include_domains = includeDomains;
+    if (Array.isArray(excludeDomains) && excludeDomains.length > 0) payload.exclude_domains = excludeDomains;
     const res = await fetch('https://api.tavily.com/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -1,15 +1,8 @@
 import * as cheerio from 'cheerio';
 import { createClient } from '@supabase/supabase-js';
+import { callLLM as callProviderChain } from './_shared/llm-core.mjs';
+import { getTavilyKeys, tavilySearch } from './_shared/search-core.mjs';
 
-// ============================================================================
-// CONFIGURATION & API KEYS (Multi-Provider Support)
-// ============================================================================
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || process.env.VITE_DEEPSEEK_API_KEY;
-const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
-const GROQ_API_KEY = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
-const TAVILY_API_KEY = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY;
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
@@ -56,200 +49,51 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 7000) {
 }
 
 // ============================================================================
-// MULTI-PROVIDER LLM CALLER (DeepSeek -> Gemini -> Mistral -> OpenRouter)
+// MULTI-PROVIDER LLM CALLER (via _shared/llm-core.mjs)
 // ============================================================================
+const parseSocialJson = (t) => JSON.parse(t.replace(/^\s*```json\s*/i, '').replace(/\s*```\s*$/i, '').trim());
+
 async function callLLM(prompt, temperature = 0.3) {
-  // 0. Try Groq (Super fast & active)
-  if (GROQ_API_KEY) {
-    const groqModels = ['allam-2-7b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b'];
-    for (const m of groqModels) {
-      try {
-        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: m,
-            messages: [
-              { role: 'system', content: 'You are an elite B2B sales copywriter and strategist. Output valid JSON only.' },
-              { role: 'user', content: prompt }
-            ],
-            temperature,
-            response_format: { type: 'json_object' }
-          })
-        }, 6000);
-
-        if (res.ok) {
-          const data = await res.json();
-          const text = data.choices?.[0]?.message?.content;
-          if (text) {
-            const cleaned = text.replace(/^\s*```json\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-            return JSON.parse(cleaned);
-          }
-        }
-      } catch (e) {
-        console.warn(`[Social Intelligence] Groq ${m} error:`, e.message);
-      }
-    }
-  }
-
-  // 1. Try DeepSeek (super reliable for JSON format)
-  if (DEEPSEEK_API_KEY) {
-    try {
-      const res = await fetchWithTimeout('https://api.deepseek.com/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${DEEPSEEK_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'deepseek-chat',
-          messages: [
-            { role: 'system', content: 'You are an elite B2B sales copywriter and strategist. Output valid JSON only.' },
-            { role: 'user', content: prompt }
-          ],
-          temperature,
-          response_format: { type: 'json_object' }
-        })
-      }, 15000);
-
-      if (res.ok) {
-        const data = await res.json();
-        const content = data.choices?.[0]?.message?.content;
-        if (content) {
-          const cleaned = content.replace(/^\s*```json\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-          return JSON.parse(cleaned);
-        }
-      }
-    } catch (e) {
-      console.warn('[Social Intelligence] DeepSeek error:', e.message);
-    }
-  }
-
-  // 2. Try Gemini
-  if (GEMINI_API_KEY) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-      const res = await fetchWithTimeout(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature,
-            responseMimeType: 'application/json'
-          }
-        })
-      }, 15000);
-
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) {
-          const cleaned = text.replace(/^\s*```json\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-          return JSON.parse(cleaned);
-        }
-      }
-    } catch (e) {
-      console.warn('[Social Intelligence] Gemini error:', e.message);
-    }
-  }
-
-  // 3. Try Mistral
-  if (MISTRAL_API_KEY) {
-    try {
-      const res = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${MISTRAL_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'mistral-small-latest',
-          messages: [
-            { role: 'system', content: 'You are an elite B2B sales copywriter and strategist. Output valid JSON only.' },
-            { role: 'user', content: prompt }
-          ],
-          temperature,
-          response_format: { type: 'json_object' }
-        })
-      }, 15000);
-
-      if (res.ok) {
-        const data = await res.json();
-        const content = data.choices?.[0]?.message?.content;
-        if (content) {
-          const cleaned = content.replace(/^\s*```json\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-          return JSON.parse(cleaned);
-        }
-      }
-    } catch (e) {
-      console.warn('[Social Intelligence] Mistral error:', e.message);
-    }
-  }
-
-  // 4. Try OpenRouter
-  if (OPENROUTER_API_KEY) {
-    try {
-      const res = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://nexus-hit.netlify.app',
-          'X-Title': 'NeXus Revenue OS'
-        },
-        body: JSON.stringify({
-          model: 'google/gemma-4-26b-a4b-it:free',
-          messages: [
-            { role: 'system', content: 'You are an elite B2B sales copywriter and strategist. Output valid JSON only.' },
-            { role: 'user', content: prompt }
-          ],
-          temperature
-        })
-      }, 15000);
-
-      if (res.ok) {
-        const data = await res.json();
-        const content = data.choices?.[0]?.message?.content;
-        if (content) {
-          const cleaned = content.replace(/^\s*```json\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-          return JSON.parse(cleaned);
-        }
-      }
-    } catch (e) {
-      console.warn('[Social Intelligence] OpenRouter error:', e.message);
-    }
-  }
-
-  throw new Error('All LLM providers failed in Social Intelligence');
+  // Kette Groq -> DeepSeek -> Mistral -> OpenRouter via _shared/llm-core.mjs.
+  // Die fruehere optionale Gemini-Stufe entfaellt (Core-Kette ist
+  // OpenAI-kompatibel). acceptText: unbrauchbares JSON -> naechste Stufe;
+  // wirft, wenn alle Provider versagen (wie bisher).
+  const { text } = await callProviderChain([
+    { role: 'system', content: 'You are an elite B2B sales copywriter and strategist. Output valid JSON only.' },
+    { role: 'user', content: prompt }
+  ], {
+    providers: ['groq', 'deepseek', 'mistral', 'openrouter'],
+    temperature,
+    jsonMode: true,
+    totalBudgetMs: 30000,
+    xTitle: 'NeXus Revenue OS',
+    acceptText: (t) => { try { parseSocialJson(t); return true; } catch (e) { return false; } },
+  });
+  return parseSocialJson(text);
 }
 
 // ============================================================================
-// WEB SEARCH HELPER (Tavily)
+// WEB SEARCH HELPER (Tavily via _shared/search-core.mjs, Multi-Key)
 // ============================================================================
 async function searchWeb(query, options = {}) {
   const { maxResults = 5 } = options;
 
-  if (TAVILY_API_KEY) {
-    try {
-      const res = await fetchWithTimeout('https://api.tavily.com/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          api_key: TAVILY_API_KEY,
-          query,
-          search_depth: 'basic',
-          max_results: maxResults,
-          include_domains: options.includeDomains,
-          exclude_domains: options.excludeDomains
-        })
-      }, 5000);
-
-      if (res.ok) {
-        const data = await res.json();
-        return (data.results || []).map(r => ({
-          title: r.title,
-          url: r.url,
-          snippet: r.content,
-          date: r.published_date || null
-        }));
-      }
-    } catch (e) {
-      console.warn('[Social Intelligence] Tavily search error:', e.message);
+  for (const key of getTavilyKeys()) {
+    const out = await tavilySearch(query, key, {
+      maxResults,
+      searchDepth: 'basic',
+      includeRawContent: false,
+      includeDomains: options.includeDomains,
+      excludeDomains: options.excludeDomains,
+      timeoutMs: 5000,
+    });
+    if (out.ok) {
+      return out.results.map(r => ({
+        title: r.title,
+        url: r.url,
+        snippet: r.content,
+        date: r.published_date || null
+      }));
     }
   }
 

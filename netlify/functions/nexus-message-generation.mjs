@@ -13,71 +13,33 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { checkTextGroundedInSource, checkMessageGroundedMechanical, detectConcreteNumbers } from './grounding-helpers.mjs';
+import { callLLM as callProviderChain } from './_shared/llm-core.mjs';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
-// ============================================================================
-// WEB SEARCH (DuckDuckGo → SearXNG)
-// ============================================================================
-
-async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
-  const controller = new AbortController();
-  const abortId = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
-    clearTimeout(abortId);
-    return { res, abortId };
-  } catch (e) {
-    clearTimeout(abortId);
-    throw e;
-  }
-}
-
 async function callLLM(prompt, temperature = 0.7) {
-  const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
-  const mistralKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
-  const openrouterKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
-
-  const providers = [
-    { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'allam-2-7b' },
-    { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'openai/gpt-oss-20b' },
-    { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'openai/gpt-oss-120b' },
-    { url: 'https://api.groq.com/openai/v1/chat/completions', key: groqKey, model: 'qwen/qwen3.8-27b' },
-    { url: 'https://openrouter.ai/api/v1/chat/completions', key: openrouterKey, model: 'nex-agi/nex-n2.5-mini:free' },
-    { url: 'https://openrouter.ai/api/v1/chat/completions', key: openrouterKey, model: 'nvidia/nemotron-3.5-lightning:free' },
-    { url: 'https://api.mistral.ai/v1/chat/completions', key: mistralKey, model: 'mistral-small-latest' },
-    { url: 'https://api.deepseek.com/chat/completions', key: process.env.DEEPSEEK_API_KEY, model: 'deepseek-chat' },
-    { url: 'https://api.openai.com/v1/chat/completions', key: process.env.OPENAI_API_KEY, model: 'gpt-4o-mini' }
-  ];
-  
-  for (const p of providers) {
-    if (!p.key) continue;
-    try {
-      const { res } = await fetchWithTimeout(p.url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${p.key}` },
-        body: JSON.stringify({
-          model: p.model,
-          messages: [
-            { role: 'system', content: 'Du gibst IMMER valides JSON zurück, ohne Markdown-Blöcke.' },
-            { role: 'user', content: prompt }
-          ],
-          temperature,
-          max_tokens: 1500
-        })
-      }, 8000);
-      
-      if (!res.ok) continue;
-      const data = await res.json();
-      const text = data.choices?.[0]?.message?.content || '';
-      
-      const cleaned = text.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
-      try { return JSON.parse(cleaned); } catch(e) { return { raw: text }; }
-    } catch (e) { continue; }
+  // Kette Groq -> OpenRouter -> Mistral -> DeepSeek -> OpenAI via
+  // _shared/llm-core.mjs (die toten OR-Modelle der alten Tabelle entfaellt,
+  // Modelllisten kommen aus der Registry). Liefert parsedes JSON, { raw } bei
+  // unbrauchbarem Output oder null, wenn alle Provider versagen.
+  try {
+    const { text } = await callProviderChain([
+      { role: 'system', content: 'Du gibst IMMER valides JSON zurück, ohne Markdown-Blöcke.' },
+      { role: 'user', content: prompt }
+    ], {
+      providers: ['groq', 'openrouter', 'mistral', 'deepseek', 'openai'],
+      temperature,
+      max_tokens: 1500,
+      totalBudgetMs: 20000,
+    });
+    const cleaned = text.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
+    try { return JSON.parse(cleaned); } catch (e) { return { raw: text }; }
+  } catch (e) {
+    console.warn('[MessageGen] LLM chain failed:', e.message);
+    return null;
   }
-  return null;
 }
 
 // ============================================================================

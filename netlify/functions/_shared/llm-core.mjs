@@ -43,6 +43,7 @@ const chatBody = (model, messages, temperature, max_tokens, withJson) => {
 };
 
 const firstText = (data) => data?.choices?.[0]?.message?.content;
+const firstUsage = (data) => data?.usage ?? null;
 
 // Annahme-Filter: Optionale Funktion, die unerwuenschte Outputs (z.B.
 // Garbage-Marker wie "[SEARCH]"-Blodia) auf Stufe-Ebene aussortiert — dann
@@ -69,8 +70,9 @@ async function stageGroq(ctx) {
         if (res.status === 429) break;            // -> naechstes Modell
         if (res.status === 400 && withJson) { ctx.fail(`groq:${model}:400-json`); continue; }
         if (!res.ok) { ctx.fail(`groq:${model}:${res.status}`); break; }
-        const text = firstText(await res.json());
-        if (accepted(ctx, text)) return { text, provider: 'groq', model };
+        const data = await res.json();
+        const text = firstText(data);
+        if (accepted(ctx, text)) return { text, provider: 'groq', model, usage: firstUsage(data) };
         ctx.fail(`groq:${model}:leer`);
         break;                                     // -> naechstes Modell
       } catch (e) {
@@ -102,7 +104,7 @@ async function stageOpenRouter(ctx) {
       if (!res.ok) { ctx.fail(`openrouter:${model}:${res.status}`); continue; }
       const data = await res.json();
       const text = data?.choices?.[0]?.message?.content || data?.choices?.[0]?.message?.reasoning;
-      if (accepted(ctx, text)) return { text, provider: 'openrouter', model };
+      if (accepted(ctx, text)) return { text, provider: 'openrouter', model, usage: firstUsage(data) };
       ctx.fail(`openrouter:${model}:leer`);
     } catch (e) {
       ctx.fail(`openrouter:${model}:${ERROR_TAG(e)}`);
@@ -123,8 +125,9 @@ async function stageMistral(ctx) {
       Math.min(4000, ctx.remaining())
     );
     if (res.ok) {
-      const text = firstText(await res.json());
-      if (accepted(ctx, text)) return { text, provider: 'mistral', model: MISTRAL_DEFAULT_MODEL };
+    const data = await res.json();
+    const text = firstText(data);
+    if (accepted(ctx, text)) return { text, provider: 'mistral', model: MISTRAL_DEFAULT_MODEL, usage: firstUsage(data) };
       ctx.fail('mistral:leer');
     } else {
       ctx.fail(`mistral:${res.status}`);
@@ -147,8 +150,9 @@ async function stageOpenAI(ctx) {
       Math.min(4000, ctx.remaining())
     );
     if (res.ok) {
-      const text = firstText(await res.json());
-      if (accepted(ctx, text)) return { text, provider: 'openai', model: OPENAI_DEFAULT_MODEL };
+    const data = await res.json();
+    const text = firstText(data);
+    if (accepted(ctx, text)) return { text, provider: 'openai', model: OPENAI_DEFAULT_MODEL, usage: firstUsage(data) };
       ctx.fail('openai:leer');
     } else {
       ctx.fail(`openai:${res.status}`);
@@ -174,8 +178,9 @@ async function stageDeepSeek(ctx) {
       Math.min(4000, ctx.remaining())
     );
     if (res.ok) {
-      const text = firstText(await res.json());
-      if (accepted(ctx, text)) return { text, provider: 'deepseek', model: 'deepseek-chat' };
+    const data = await res.json();
+    const text = firstText(data);
+    if (accepted(ctx, text)) return { text, provider: 'deepseek', model: 'deepseek-chat', usage: firstUsage(data) };
       ctx.fail('deepseek:leer');
     } else {
       ctx.fail(`deepseek:${res.status}`);

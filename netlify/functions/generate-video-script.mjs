@@ -1,14 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
+import { callLLM } from './_shared/llm-core.mjs'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
-const GROQ_API_KEY = process.env.GROQ_API_KEY
-const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY
 
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
@@ -151,108 +148,24 @@ async function tryGemini(systemPrompt) {
   }
 }
 
-async function tryDeepSeek(systemPrompt) {
-  if (!DEEPSEEK_API_KEY) return null
-  try {
-    const res = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${DEEPSEEK_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          { role: 'system', content: 'Du bist ein preisgekrönter Regisseur und Copywriter für Video-Skripte.' },
-          { role: 'user', content: systemPrompt }
-        ],
-        temperature: 0.5
-      })
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.choices?.[0]?.message?.content || null
-  } catch (e) {
-    console.error('[generate-script] DeepSeek failed:', e.message)
-    return null
-  }
-}
-
-async function tryGroq(systemPrompt) {
-  if (!GROQ_API_KEY) return null
-  try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'openai/gpt-oss-120b',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: 'Erstelle das Drehbuch basierend auf der Szenen-Analyse.' }
-        ],
-        temperature: 0.5,
-        max_tokens: 4096
-      })
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.choices?.[0]?.message?.content || null
-  } catch (e) {
-    console.error('[generate-script] Groq failed:', e.message)
-    return null
-  }
-}
-
-async function tryMistral(systemPrompt) {
-  if (!MISTRAL_API_KEY) return null
-  try {
-    const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${MISTRAL_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'mistral-small-latest',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: 'Erstelle das Drehbuch basierend auf der Szenen-Analyse.' }
-        ],
-        temperature: 0.5,
-        max_tokens: 4096
-      })
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.choices?.[0]?.message?.content || null
-  } catch (e) {
-    console.error('[generate-script] Mistral failed:', e.message)
-    return null
-  }
-}
-
-async function tryOpenRouter(systemPrompt) {
-  if (!OPENROUTER_API_KEY) return null
-  try {
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://nexus-hit.netlify.app',
-        'X-Title': 'Happiness Video Script'
-      },
-      body: JSON.stringify({
-        model: 'nvidia/nemotron-3.5-lightning:free',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: 'Erstelle das Drehbuch basierend auf der Szenen-Analyse.' }
-        ],
-        temperature: 0.5,
-        max_tokens: 4096
-      })
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.choices?.[0]?.message?.content || null
-  } catch (e) {
-    console.error('[generate-script] OpenRouter failed:', e.message)
-    return null
-  }
+async function generateScript(systemPrompt) {
+  // Kette Groq -> Mistral -> OpenRouter -> DeepSeek via _shared/llm-core.mjs.
+  // Wirft, wenn alle Provider versagen (Handler antwortet mit 502).
+  const { text, provider } = await callLLM(
+    [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: 'Erstelle das Drehbuch basierend auf der Szenen-Analyse.' }
+    ],
+    {
+      providers: ['groq', 'mistral', 'openrouter', 'deepseek'],
+      temperature: 0.5,
+      max_tokens: 4096,
+      xTitle: 'Happiness Video Script',
+      totalBudgetMs: 20000,
+    }
+  )
+  console.log(`[generate-script] Success via ${provider}`)
+  return text
 }
 
 
@@ -346,27 +259,12 @@ export const handler = async (event) => {
 
     const systemPrompt = buildSystemPrompt(scene_analysis, content_goal, user_premise, ad_text, selected_hook)
 
-    // Fallback chain: Groq → Mistral → OpenRouter → DeepSeek
+    // Fallback chain: Groq → Mistral → OpenRouter → DeepSeek (via _shared/llm-core.mjs)
     let script = null
-
-    script = await tryGroq(systemPrompt)
-    if (script) {
-      console.log('[generate-script] Success via Groq')
-    }
-
-    if (!script) {
-      script = await tryMistral(systemPrompt)
-      if (script) console.log('[generate-script] Success via Mistral')
-    }
-
-    if (!script) {
-      script = await tryOpenRouter(systemPrompt)
-      if (script) console.log('[generate-script] Success via OpenRouter')
-    }
-
-    if (!script) {
-      script = await tryDeepSeek(systemPrompt)
-      if (script) console.log('[generate-script] Success via DeepSeek')
+    try {
+      script = await generateScript(systemPrompt)
+    } catch (e) {
+      console.error('[generate-script] all providers failed:', e.message)
     }
 
     if (!script) {

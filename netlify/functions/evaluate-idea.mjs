@@ -1,13 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
+import { callLLM } from './_shared/llm-core.mjs'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY
 const supabase = createClient(supabaseUrl, supabaseKey)
-
-const GROQ_API_KEY = process.env.GROQ_API_KEY
-const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY
 
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
@@ -77,109 +73,24 @@ function parseVerdict(text) {
   return result
 }
 
-async function tryGroq(systemPrompt) {
-  if (!GROQ_API_KEY) return null
-  try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'openai/gpt-oss-120b',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: 'Bewerte diese Content-Idee.' }
-        ],
-        temperature: 0.3,
-        max_tokens: 2048
-      })
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.choices?.[0]?.message?.content || null
-  } catch (e) {
-    console.error('[evaluate-idea] Groq failed:', e.message)
-    return null
-  }
-}
-
-async function tryMistral(systemPrompt) {
-  if (!MISTRAL_API_KEY) return null
-  try {
-    const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${MISTRAL_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'mistral-small-latest',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: 'Bewerte diese Content-Idee.' }
-        ],
-        temperature: 0.3,
-        max_tokens: 2048
-      })
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.choices?.[0]?.message?.content || null
-  } catch (e) {
-    console.error('[evaluate-idea] Mistral failed:', e.message)
-    return null
-  }
-}
-
-async function tryOpenRouter(systemPrompt) {
-  if (!OPENROUTER_API_KEY) return null
-  try {
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://nexus-hit.netlify.app',
-        'X-Title': 'Happiness Idea Evaluation'
-      },
-      body: JSON.stringify({
-        model: 'nvidia/nemotron-3.5-lightning:free',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: 'Bewerte diese Content-Idee.' }
-        ],
-        temperature: 0.3,
-        max_tokens: 2048
-      })
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.choices?.[0]?.message?.content || null
-  } catch (e) {
-    console.error('[evaluate-idea] OpenRouter failed:', e.message)
-    return null
-  }
-}
-
-async function tryDeepSeek(systemPrompt) {
-  if (!DEEPSEEK_API_KEY) return null
-  try {
-    const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${DEEPSEEK_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: 'Bewerte diese Content-Idee.' }
-        ],
-        temperature: 0.3,
-        max_tokens: 2048
-      })
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.choices?.[0]?.message?.content || null
-  } catch (e) {
-    console.error('[evaluate-idea] DeepSeek failed:', e.message)
-    return null
-  }
+async function evaluateIdea(systemPrompt) {
+  // Kette Groq -> Mistral -> OpenRouter -> DeepSeek via _shared/llm-core.mjs.
+  // Wirft, wenn alle Provider versagen (Handler antwortet mit 502).
+  const { text, provider } = await callLLM(
+    [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: 'Bewerte diese Content-Idee.' }
+    ],
+    {
+      providers: ['groq', 'mistral', 'openrouter', 'deepseek'],
+      temperature: 0.3,
+      max_tokens: 2048,
+      xTitle: 'Happiness Idea Evaluation',
+      totalBudgetMs: 20000,
+    }
+  )
+  console.log(`[evaluate-idea] Success via ${provider}`)
+  return text
 }
 
 export const handler = async (event) => {
@@ -262,25 +173,12 @@ export const handler = async (event) => {
     // 2. Build system prompt with dynamic rules
     const systemPrompt = buildSystemPrompt(rules, idea_text, content_goal)
 
-    // 3. Fallback chain: Groq → Mistral → OpenRouter → DeepSeek
+    // 3. Kette: Groq -> Mistral -> OpenRouter -> DeepSeek (via _shared/llm-core.mjs)
     let response = null
-
-    response = await tryGroq(systemPrompt)
-    if (response) console.log('[evaluate-idea] Success via Groq')
-
-    if (!response) {
-      response = await tryMistral(systemPrompt)
-      if (response) console.log('[evaluate-idea] Success via Mistral')
-    }
-
-    if (!response) {
-      response = await tryOpenRouter(systemPrompt)
-      if (response) console.log('[evaluate-idea] Success via OpenRouter')
-    }
-
-    if (!response) {
-      response = await tryDeepSeek(systemPrompt)
-      if (response) console.log('[evaluate-idea] Success via DeepSeek')
+    try {
+      response = await evaluateIdea(systemPrompt)
+    } catch (e) {
+      console.error('[evaluate-idea] all providers failed:', e.message)
     }
 
     if (!response) {

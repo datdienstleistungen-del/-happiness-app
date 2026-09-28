@@ -5,6 +5,8 @@
 // Ziel: LLM-Call via Groq (parallel, non-blocking)
 // ──────────────────────────────────────────────────────────────
 
+import { callLLM } from './_shared/llm-core.mjs';
+
 const CHAT_URL = 'https://nexus-hit.netlify.app/.netlify/functions/chat'
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || ''
@@ -88,84 +90,21 @@ function classifyGoalWithKeywords(message) {
   return { goal: 'general', confidence: 0.3, method: 'keyword' }
 }
 
-async function classifyGoalWithLLM(message, groqKey) {
+async function classifyGoalWithLLM(message) {
   if (!message) return { goal: 'unknown', confidence: 0, method: 'none' }
 
-  // Try Groq first
-  if (groqKey) {
-    try {
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 5000)
-
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-          messages: [
-            { role: 'system', content: GOAL_PROMPT },
-            { role: 'user', content: message.substring(0, 500) }
-          ],
-          temperature: 0,
-          max_tokens: 20
-        }),
-        signal: controller.signal
-      })
-
-      clearTimeout(timeout)
-
-      if (res.ok) {
-        const data = await res.json()
-        const raw = (data.choices?.[0]?.message?.content || '').trim()
-        return parseGoalResponse(raw)
-      }
-      console.warn(`[H.I.T.] Groq goal call failed: HTTP ${res.status}`)
-    } catch (err) {
-      if (err.name === 'AbortError') {
-        console.warn('[H.I.T.] Groq goal call timed out (5s)')
-      } else {
-        console.warn('[H.I.T.] Groq goal call error:', err.message)
-      }
-    }
+  // Kette Groq -> Mistral via _shared/llm-core.mjs; bei allen Fehlern wie
+  // bisher der stille keyword-nahe Unknown-Fallback (method: 'none').
+  try {
+    const { text } = await callLLM([
+      { role: 'system', content: GOAL_PROMPT },
+      { role: 'user', content: message.substring(0, 500) }
+    ], { providers: ['groq', 'mistral'], temperature: 0, max_tokens: 20, totalBudgetMs: 9000 })
+    return parseGoalResponse(text.trim())
+  } catch (err) {
+    console.warn('[H.I.T.] Goal classification failed:', err.message)
+    return { goal: 'unknown', confidence: 0, method: 'none' }
   }
-
-  // Fallback: Mistral
-  const mistralKey = process.env.MISTRAL_API_KEY
-  if (mistralKey) {
-    try {
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 8000)
-
-      const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${mistralKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'mistral-small-latest',
-          messages: [
-            { role: 'system', content: GOAL_PROMPT },
-            { role: 'user', content: message.substring(0, 500) }
-          ],
-          temperature: 0,
-          max_tokens: 20
-        }),
-        signal: controller.signal
-      })
-
-      clearTimeout(timeout)
-
-      if (res.ok) {
-        const data = await res.json()
-        const raw = (data.choices?.[0]?.message?.content || '').trim()
-        console.log('[H.I.T.] Goal classified via Mistral fallback')
-        return parseGoalResponse(raw)
-      }
-      console.warn(`[H.I.T.] Mistral goal call failed: HTTP ${res.status}`)
-    } catch (err) {
-      console.warn('[H.I.T.] Mistral goal call error:', err.message)
-    }
-  }
-
-  return { goal: 'unknown', confidence: 0, method: 'none' }
 }
 
 function parseGoalResponse(raw) {
@@ -247,7 +186,6 @@ export const handler = async (event) => {
   try {
     const body = JSON.parse(event.body)
     const { message } = body
-    const groqKey = process.env.GROQ_API_KEY
 
     // Plattform-Erkennung (instant, Keyword-basiert)
     const platformResult = classifyPlatform(message)
@@ -257,7 +195,7 @@ export const handler = async (event) => {
 
     // Parallele Ausführung: LLM Goal-Erkennung + Chat-Forward
     const [goalResult, chatResponse] = await Promise.all([
-      classifyGoalWithLLM(message, groqKey).catch(err => {
+      classifyGoalWithLLM(message).catch(err => {
         console.error('[H.I.T.] Goal classification failed:', err.message)
         return { goal: 'unknown', confidence: 0, method: 'llm_error' }
       }),

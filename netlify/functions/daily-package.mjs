@@ -1,10 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
+import { callLLM } from './_shared/llm-core.mjs'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY
 const supabase = createClient(supabaseUrl, supabaseKey)
-
-const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY
 
 const SYSTEM_PROMPT = `Du bist ein Social-Media-Experte. Erstelle ein kurzes, sofort postfertiges Video-Rezept.
 
@@ -60,37 +59,20 @@ export const handler = async (event) => {
 
     // SUMMARIZE ONLY: User wrote freetext, we summarize it for confirmation
     if (summarizeOnly && customRequest) {
-      const summaryResponse = await fetch('https://api.mistral.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${MISTRAL_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'mistral-small-latest',
-          messages: [
-            { role: 'system', content: 'Du fassst den Wunsch des Users in 1-2 klaren Sätzen zusammen. Antworte NUR mit der Zusammenfassung, kein Markdown, kein extra Text.' },
-            { role: 'user', content: `Fasse zusammen was der User möchte:\n\n"${customRequest}"` }
-          ],
-          temperature: 0.3,
-          max_tokens: 200
-        })
-      })
-
-      if (summaryResponse.ok) {
-        const summaryData = await summaryResponse.json()
-        const summary = summaryData.choices?.[0]?.message?.content?.trim() || customRequest
-        return {
-          statusCode: 200,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify({ summary })
-        }
-      } else {
-        return {
-          statusCode: 200,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify({ summary: customRequest })
-        }
+      let summary = customRequest
+      try {
+        const r = await callLLM([
+          { role: 'system', content: 'Du fassst den Wunsch des Users in 1-2 klaren Sätzen zusammen. Antworte NUR mit der Zusammenfassung, kein Markdown, kein extra Text.' },
+          { role: 'user', content: `Fasse zusammen was der User möchte:\n\n"${customRequest}"` }
+        ], { providers: ['mistral'], temperature: 0.3, max_tokens: 200 })
+        summary = r.text?.trim() || customRequest
+      } catch (e) {
+        console.error('[DAILY-PACKAGE] Summary error:', e.message)
+      }
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ summary })
       }
     }
 
@@ -147,28 +129,21 @@ Plattform: ${platform}
 Videodauer: ${duration} Sekunden`
     }
 
-    // Generate with Mistral
-    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${MISTRAL_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'mistral-small-latest',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: customRequest
-            ? `Erstelle ein Creator-Paket basierend auf diesem Wunsch:\n\n${userContext}`
-            : `Erstelle ein Creator-Paket für heute.\n\n${userContext}` }
-        ],
-        temperature: 0.7,
-        max_tokens: 1024
-      })
-    })
+    // Generate with Mistral (Kette via _shared/llm-core.mjs)
+    let raw = null
+    try {
+      const r = await callLLM([
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: customRequest
+          ? `Erstelle ein Creator-Paket basierend auf diesem Wunsch:\n\n${userContext}`
+          : `Erstelle ein Creator-Paket für heute.\n\n${userContext}` }
+      ], { providers: ['mistral'], temperature: 0.7, max_tokens: 1024 })
+      raw = r.text || ''
+    } catch (e) {
+      console.error('[DAILY-PACKAGE] Mistral error:', e.message)
+    }
 
-    if (!response.ok) {
-      console.error('[DAILY-PACKAGE] Mistral error:', response.status)
+    if (raw === null) {
       // Fallback: generic package
       const fallback = {
         hook: 'Stop scrolling. Das hier ändert alles.',
@@ -184,8 +159,6 @@ Videodauer: ${duration} Sekunden`
       }
     }
 
-    const data = await response.json()
-    const raw = data.choices?.[0]?.message?.content || ''
     const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     const pkg = JSON.parse(cleaned)
 

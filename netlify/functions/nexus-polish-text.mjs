@@ -1,20 +1,7 @@
 // Serverless function: Instant AI Text Polish & STT Spelling Correction
 // Provides sub-second correction of phonetic speech-to-text glitches, punctuation, and grammar.
 
-async function fetchWithTimeout(url, options, timeoutMs = 12000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
-    clearTimeout(timer);
-    return res;
-  } catch (err) {
-    clearTimeout(timer);
-    throw err;
-  }
-}
-
-
+import { callLLM } from './_shared/llm-core.mjs';
 
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
@@ -31,108 +18,30 @@ Deine Aufgaben:
 4. FÜGE KEINE EIGENEN ERKLÄRUNGEN, KEINE HÖFLICHKEITSFLOSKELN, KEINE PRÄFIXE UND KEINE ANTWORTEN HINZU.
 5. Gib AUSSCHLIESSLICH den bereinigten, korrigierten Text zurück.`;
 
-async function tryGroqPolish(text, lang = 'de') {
-  const key = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
-  if (!key) return null;
-  const models = ['allam-2-7b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b'];
-  for (const model of models) {
-    try {
-      const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: 'system', content: SYSTEM_INSTRUCTION },
-            { role: 'user', content: `Bitte korrigiere folgenden Text (Sprache: ${lang}):\n\n"${text}"` }
-          ],
-          temperature: 0.1,
-          max_tokens: 2048
-        })
-      }, 8000);
-      if (!res.ok) continue;
-      const data = await res.json();
-      let result = data.choices?.[0]?.message?.content?.trim();
-      if (result) {
-        if ((result.startsWith('"') && result.endsWith('"')) || (result.startsWith('„') && result.endsWith('“'))) {
-          result = result.slice(1, -1).trim();
-        }
-        return result;
-      }
-    } catch (e) {
-      console.warn('[Polish] Groq failed:', e.message);
-    }
-  }
-  return null;
-}
-
-async function tryMistralPolish(text, lang = 'de') {
-  const key = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
-  if (!key) return null;
+async function polishText(text, lang = 'de') {
+  // Schnelle Kette Groq -> Mistral -> OpenRouter via _shared/llm-core.mjs.
+  // Rueckfall: null, wenn alle Provider versagen (Handler gibt Originaltext zurueck).
   try {
-    const res = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'mistral-small-latest',
-        messages: [
-          { role: 'system', content: SYSTEM_INSTRUCTION },
-          { role: 'user', content: `Bitte korrigiere folgenden Text (Sprache: ${lang}):\n\n"${text}"` }
-        ],
-        temperature: 0.1,
-        max_tokens: 2048
-      })
-    }, 8000);
-    if (!res.ok) return null;
-    const data = await res.json();
-    let result = data.choices?.[0]?.message?.content?.trim();
-    if (result) {
-      if ((result.startsWith('"') && result.endsWith('"')) || (result.startsWith('„') && result.endsWith('“'))) {
-        result = result.slice(1, -1).trim();
-      }
-      return result;
+    const { text: out } = await callLLM([
+      { role: 'system', content: SYSTEM_INSTRUCTION },
+      { role: 'user', content: `Bitte korrigiere folgenden Text (Sprache: ${lang}):\n\n"${text}"` }
+    ], {
+      providers: ['groq', 'mistral', 'openrouter'],
+      temperature: 0.1,
+      max_tokens: 2048,
+      totalBudgetMs: 12000,
+      xTitle: 'NeXus Polish',
+    });
+    let result = (out || '').trim();
+    if (!result) return null;
+    if ((result.startsWith('"') && result.endsWith('"')) || (result.startsWith('„') && result.endsWith('“'))) {
+      result = result.slice(1, -1).trim();
     }
+    return result || null;
   } catch (e) {
-    console.warn('[Polish] Mistral failed:', e.message);
+    console.warn('[Polish] chain failed:', e.message);
+    return null;
   }
-  return null;
-}
-
-async function tryOpenRouterPolish(text, lang = 'de') {
-  const key = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
-  if (!key) return null;
-  try {
-    const res = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${key}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://nexus-hit.netlify.app',
-        'X-Title': 'NeXus Polish'
-      },
-      body: JSON.stringify({
-        model: 'google/gemma-4-26b-a4b-it:free',
-        messages: [
-          { role: 'system', content: SYSTEM_INSTRUCTION },
-          { role: 'user', content: `Bitte korrigiere folgenden Text (Sprache: ${lang}):\n\n"${text}"` }
-        ],
-        temperature: 0.1,
-        max_tokens: 2048
-      })
-    }, 8000);
-    if (!res.ok) return null;
-    const data = await res.json();
-    let result = data.choices?.[0]?.message?.content?.trim();
-    if (result) {
-      if ((result.startsWith('"') && result.endsWith('"')) || (result.startsWith('„') && result.endsWith('“'))) {
-        result = result.slice(1, -1).trim();
-      }
-      return result;
-    }
-  } catch (e) {
-    console.warn('[Polish] OpenRouter failed:', e.message);
-  }
-  return null;
 }
 
 export const handler = async (event) => {
@@ -162,9 +71,7 @@ export const handler = async (event) => {
     }
 
     // Call fast fallback chain
-    let polished = await tryGroqPolish(text, lang);
-    if (!polished) polished = await tryMistralPolish(text, lang);
-    if (!polished) polished = await tryOpenRouterPolish(text, lang);
+    const polished = await polishText(text, lang);
 
     // If all providers fail, return original text safely
     return {
