@@ -13,6 +13,7 @@
 
 import * as cheerio from 'cheerio';
 import { resolveCompanyWebsite, SKIP_DOMAINS } from './nexus-domain-discovery.mjs';
+import { getTavilyKeys, tavilySearch } from './_shared/search-core.mjs';
 
 const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
 
@@ -295,28 +296,23 @@ export async function crawlDomainPages(domain) {
   const domainBlocked = isDirectBlocked && directSuccessful.length === 0;
   let fallbackSource = null;
   let isFallbackUsed = false;
-  const tavilyKey = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY;
+  const tavilyKeys = getTavilyKeys();
 
-  if (directSuccessful.length === 0 && tavilyKey && !cleanDomain.includes('fake') && !cleanDomain.includes('nonexistent') && !crawledPages.every(p => p.status === 0)) {
+  if (directSuccessful.length === 0 && tavilyKeys.length > 0 && !cleanDomain.includes('fake') && !cleanDomain.includes('nonexistent') && !crawledPages.every(p => p.status === 0)) {
     try {
       console.log(`[EmailCrawler] Direct fetch eingeschränkt${domainBlocked ? ' (Bot-Schutz/429 erkannt)' : ''}. Starte sekundäre Analyse für: ${cleanDomain}`);
-      const res = await fetchWithTimeout('https://api.tavily.com/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          api_key: tavilyKey,
-          query: `site:${cleanDomain} email OR kontakt OR impressum OR contact`,
-          search_depth: 'basic',
-          max_results: 5
-        })
-      }, 6000);
+      let tavilyResults = [];
+      for (const key of tavilyKeys) {
+        const out = await tavilySearch(`site:${cleanDomain} email OR kontakt OR impressum OR contact`, key, {
+          maxResults: 5, searchDepth: 'basic', includeRawContent: false, timeoutMs: 6000
+        });
+        if (out.ok) { tavilyResults = out.results; break; }
+      }
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.results && data.results.length > 0) {
+      if (tavilyResults.length > 0) {
           isFallbackUsed = true;
           const fallbackHostnames = new Set();
-          for (const r of data.results) {
+          for (const r of tavilyResults) {
             try {
               const u = new URL(r.url);
               fallbackHostnames.add(u.hostname.replace(/^www\./, ''));
@@ -329,7 +325,6 @@ export async function crawlDomainPages(domain) {
           if (fallbackHostnames.size > 0) {
             fallbackSource = Array.from(fallbackHostnames).join(', ');
           }
-        }
       }
     } catch (err) {
       console.warn('[EmailCrawler] Sekundäre Analyse fehlgeschlagen:', err.message);
@@ -664,8 +659,8 @@ export async function findTargetPerson(companyName, domain, targetRoleOrName, ex
   const isDirectName = targetRoleOrName.trim().split(/\s+/).length >= 2 && !/(head|ceo|director|manager|leiter|vorstand|sales|vp|marketing|founder|gründer|cfo|cto|coo|cro)/i.test(targetRoleOrName);
 
   // PRIORITY 2: Externe Tavily-Suche als Fallback (mit strikter Domain-Verifikation)
-  const tavilyKey = process.env.TAVILY_API_KEY || process.env.VITE_TAVILY_API_KEY;
-  if (!tavilyKey) {
+  const tavilyKeys = getTavilyKeys();
+  if (tavilyKeys.length === 0) {
     if (isDirectName) {
       return {
         name: targetRoleOrName.trim(),
@@ -681,20 +676,15 @@ export async function findTargetPerson(companyName, domain, targetRoleOrName, ex
   const roleQuery = targetRoleOrName;
 
   try {
-    const res = await fetchWithTimeout('https://api.tavily.com/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        api_key: tavilyKey,
-        query: `"${companyName}" ${roleQuery} LinkedIn`,
-        search_depth: 'basic',
-        max_results: 6
-      })
-    }, 6000);
+    let data = { results: [] };
+    for (const key of tavilyKeys) {
+      const out = await tavilySearch(`"${companyName}" ${roleQuery} LinkedIn`, key, {
+        maxResults: 6, searchDepth: 'basic', includeRawContent: false, timeoutMs: 6000
+      });
+      if (out.ok) { data = { results: out.results }; break; }
+    }
 
-    if (res.ok) {
-      const data = await res.json();
-      if (data.results && data.results.length > 0) {
+    if (data.results.length > 0) {
         const companyClean = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
         const domainClean = domain.toLowerCase().split('.')[0].replace(/[^a-z0-9]/g, '');
 
@@ -785,7 +775,6 @@ export async function findTargetPerson(companyName, domain, targetRoleOrName, ex
             }
           }
         }
-      }
     }
   } catch (err) {
     console.warn('[EmailCrawler] Personensuche fehlgeschlagen:', err.message);

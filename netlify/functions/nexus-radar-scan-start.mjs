@@ -13,6 +13,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { searchDuckDuckGo as coreSearchDuckDuckGo } from './_shared/search-core.mjs';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
@@ -75,38 +76,11 @@ async function searchBingNews(query, maxResults = 10, timeoutMs = 3000) {
   }
 }
 
+// DDG via _shared/search-core.mjs (Chrome-UA statt generischem Bot-UA).
+// Shape bleibt { url, title } — Consumer speichern nur diese beiden Felder.
 async function searchDuckDuckGo(query, maxResults = 10, timeoutMs = 4000) {
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    const res = await fetch(
-      `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
-      { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }, signal: controller.signal }
-    );
-    clearTimeout(timer);
-    if (!res.ok) return [];
-    const html = await res.text();
-    const results = [];
-    const linkRegex = /<a[^>]+class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
-    let match;
-    while ((match = linkRegex.exec(html)) !== null && results.length < maxResults) {
-      const href = match[1];
-      const title = match[2].replace(/<[^>]*>/g, '').trim();
-      let url = null;
-      if (href.includes('uddg=')) {
-        const uddgMatch = href.match(/uddg=([^&]*)/);
-        if (uddgMatch) url = decodeURIComponent(uddgMatch[1]);
-      } else if (href.startsWith('http')) {
-        url = href;
-      }
-      if (url && title && !results.some(r => r.url === url)) {
-        results.push({ url, title });
-      }
-    }
-    return results;
-  } catch (e) {
-    return [];
-  }
+  const results = await coreSearchDuckDuckGo(query, { maxResults, timeoutMs });
+  return results.map(r => ({ url: r.url, title: r.title }));
 }
 
 export const handler = async (event) => {

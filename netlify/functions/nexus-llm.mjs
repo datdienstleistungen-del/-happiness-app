@@ -1,6 +1,7 @@
 // ── Multi-Provider Fallback Chain (via _shared/llm-core.mjs) ──
 import { runEmailPatternCrawler } from './nexus-email-crawler.mjs';
 import { callLLM } from './_shared/llm-core.mjs';
+import { getTavilyKeys, tavilySearch, searchDuckDuckGo as coreSearchDuckDuckGo } from './_shared/search-core.mjs';
 
 async function fetchWithTimeout(url, options, timeoutMs = 20000) {
   const controller = new AbortController();
@@ -111,84 +112,36 @@ async function callAI(messages, temperature = 0.3, hasImage = false, testOptions
 
 // ── Web Search mit Fallback-Kette: Tavily -> DuckDuckGo -> Brave -> SearXNG ──
 
+// Tavily via _shared/search-core.mjs (Multi-Key inkl. VITE-Alias).
+// Fix: die alte Version referenzierte das undefinierte BACKUP_TAVILY und
+// war damit als erste Stufe stillschweigend IMMER defekt.
 async function tryTavilySearch(query) {
-  const tavilyKeys = [
-    process.env.TAVILY_API_KEY,
-    process.env.TAVILY_API_KEY_2,
-    process.env.VITE_TAVILY_API_KEY,
-    BACKUP_TAVILY
-  ].filter(Boolean);
-
-  for (const key of tavilyKeys) {
-    try {
-      const { res, timer } = await fetchWithTimeout("https://api.tavily.com/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          api_key: key,
-          query,
-          search_depth: "basic",
-          include_answer: false,
-          max_results: 6
-        })
-      }, 10000);
-      clearTimeout(timer);
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.results && data.results.length > 0) {
-          return data.results.map(r => ({
-            url: r.url,
-            title: r.title,
-            snippet: r.content || ''
-          }));
-        }
-      }
-    } catch (e) {
-      console.warn('[Search] Tavily error:', e.message);
+  for (const key of getTavilyKeys()) {
+    const out = await tavilySearch(query, key, {
+      maxResults: 6,
+      searchDepth: 'basic',
+      includeRawContent: false,
+      timeoutMs: 10000,
+    });
+    if (out.ok) {
+      return out.results.map(r => ({
+        url: r.url,
+        title: r.title,
+        snippet: r.content || ''
+      }));
     }
   }
   return null;
 }
 
+// DuckDuckGo via _shared/search-core.mjs (identisches HTML-Parsing).
 async function tryDuckDuckGo(query) {
   try {
-    const { res, timer } = await fetchWithTimeout(
-      `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
-      { 
-        headers: { 
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7'
-        } 
-      },
-      8000
-    );
-    clearTimeout(timer);
-    if (!res.ok) return null;
-    const html = await res.text();
-    
-    const results = [];
-    const linkRegex = /<a[^>]+class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
-    let match;
-    while ((match = linkRegex.exec(html)) !== null && results.length < 6) {
-      const href = match[1];
-      const title = match[2].replace(/<[^>]*>/g, '').trim();
-      let url = null;
-      if (href.includes('uddg=')) {
-        const uddgMatch = href.match(/uddg=([^&]*)/);
-        if (uddgMatch) url = decodeURIComponent(uddgMatch[1]);
-      } else if (href.startsWith('http')) {
-        url = href;
-      }
-      const snippetRegex = /<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
-      snippetRegex.lastIndex = match.index + match[0].length;
-      const snippetMatch = snippetRegex.exec(html);
-      const snippet = snippetMatch ? snippetMatch[1].replace(/<[^>]*>/g, '').trim() : '';
-      if (url && title) {
-        results.push({ url, title, snippet });
-      }
+    const results = await coreSearchDuckDuckGo(query, { maxResults: 6, timeoutMs: 8000 });
+    if (results.length > 0) {
+      return results.map(r => ({ url: r.url, title: r.title, snippet: r.content || '' }));
     }
-    return results.length > 0 ? results : null;
+    return null;
   } catch (e) {
     console.warn("[Search] DuckDuckGo failed:", e.message);
     return null;
