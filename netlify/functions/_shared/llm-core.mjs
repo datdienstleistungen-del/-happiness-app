@@ -36,8 +36,8 @@ async function postJSON(url, headers, payload, timeoutMs) {
   return res;
 }
 
-const chatBody = (model, messages, temperature, max_tokens, withJson) => {
-  const payload = { model, messages, temperature, max_tokens };
+const chatBody = (model, messages, temperature, max_tokens, withJson, extraBody = {}) => {
+  const payload = { model, messages, temperature, max_tokens, ...extraBody };
   if (withJson) payload.response_format = { type: 'json_object' };
   return payload;
 };
@@ -64,7 +64,7 @@ async function stageGroq(ctx) {
         const res = await postJSON(
           'https://api.groq.com/openai/v1/chat/completions',
           { Authorization: `Bearer ${key}` },
-          chatBody(model, ctx.messages, ctx.temperature, ctx.max_tokens, withJson),
+          chatBody(model, ctx.messages, ctx.temperature, ctx.max_tokens, withJson, ctx.extraBody),
           Math.min(9000, ctx.remaining())
         );
         if (res.status === 429) break;            // -> naechstes Modell
@@ -97,7 +97,7 @@ async function stageOpenRouter(ctx) {
           'HTTP-Referer': 'https://nexus-hit.netlify.app',
           'X-Title': ctx.xTitle,
         },
-        chatBody(model, ctx.messages, ctx.temperature, ctx.max_tokens, false),
+        chatBody(model, ctx.messages, ctx.temperature, ctx.max_tokens, false, ctx.extraBody),
         Math.min(4000, ctx.remaining())
       );
       if (res.status === 429) { ctx.fail(`openrouter:429-${model}`); break; }
@@ -121,7 +121,7 @@ async function stageMistral(ctx) {
     const res = await postJSON(
       'https://api.mistral.ai/v1/chat/completions',
       { Authorization: `Bearer ${key}` },
-      chatBody(MISTRAL_DEFAULT_MODEL, ctx.messages, ctx.temperature, ctx.max_tokens, ctx.jsonMode),
+      chatBody(MISTRAL_DEFAULT_MODEL, ctx.messages, ctx.temperature, ctx.max_tokens, ctx.jsonMode, ctx.extraBody),
       Math.min(4000, ctx.remaining())
     );
     if (res.ok) {
@@ -146,7 +146,7 @@ async function stageOpenAI(ctx) {
     const res = await postJSON(
       'https://api.openai.com/v1/chat/completions',
       { Authorization: `Bearer ${key}` },
-      chatBody(OPENAI_DEFAULT_MODEL, ctx.messages, ctx.temperature, ctx.max_tokens, ctx.jsonMode),
+      chatBody(OPENAI_DEFAULT_MODEL, ctx.messages, ctx.temperature, ctx.max_tokens, ctx.jsonMode, ctx.extraBody),
       Math.min(4000, ctx.remaining())
     );
     if (res.ok) {
@@ -174,7 +174,7 @@ async function stageDeepSeek(ctx) {
     const res = await postJSON(
       'https://api.deepseek.com/v1/chat/completions',
       { Authorization: `Bearer ${key}` },
-      chatBody('deepseek-chat', ctx.messages, ctx.temperature, ctx.max_tokens, ctx.jsonMode),
+      chatBody('deepseek-chat', ctx.messages, ctx.temperature, ctx.max_tokens, ctx.jsonMode, ctx.extraBody),
       Math.min(4000, ctx.remaining())
     );
     if (res.ok) {
@@ -224,6 +224,7 @@ export async function callLLM(messages, {
   providers = DEFAULT_PROVIDERS,
   xTitle = 'NeXus',
   acceptText = null,
+  extraBody = {},
 } = {}) {
   const deadline = Date.now() + totalBudgetMs;
   const errors = [];
@@ -233,6 +234,7 @@ export async function callLLM(messages, {
     max_tokens,
     jsonMode,
     xTitle,
+    extraBody,
     groqModels: models || PROFILES[profile] || GROQ_FREE_FIRST,
     acceptText,
     remaining: () => deadline - Date.now(),

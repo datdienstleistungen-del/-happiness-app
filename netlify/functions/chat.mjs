@@ -7,8 +7,7 @@ console.log('SUPABASE_SERVICE_KEY vorhanden:', !!process.env.SUPABASE_SERVICE_KE
 const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
 
-const GROQ_API_BASE = 'https://api.groq.com/openai/v1'
-const DEEPSEEK_API_BASE = 'https://api.deepseek.com/v1'
+import { callLLM } from './_shared/llm-core.mjs'
 
 // ── Happiness Knowledge System (RAG) ──
 
@@ -187,20 +186,6 @@ function formatKnowledge(entries) {
   return result
 }
 
-async function fetchWithTimeout(url, options, timeoutMs = 8000) {
-  const controller = new AbortController()
-  const { signal } = controller
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
-  try {
-    const response = await fetch(url, { ...options, signal })
-    clearTimeout(timeoutId)
-    return response
-  } catch (err) {
-    clearTimeout(timeoutId)
-    throw err
-  }
-}
-
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -295,39 +280,22 @@ ${message}`
       let leadModel = ''
       let leadUsage = null
 
-      // Try providers in order: Mistral -> Groq -> OpenRouter -> DeepSeek
-      const leadProviders = [
-        { name: 'mistral', url: 'https://api.mistral.ai/v1/chat/completions', key: process.env.MISTRAL_API_KEY, model: 'mistral-small-latest' },
-        { name: 'groq', url: 'https://api.groq.com/openai/v1/chat/completions', key: process.env.GROQ_API_KEY, model: 'allam-2-7b' },
-        { name: 'openrouter', url: 'https://openrouter.ai/api/v1/chat/completions', key: process.env.OPENROUTER_API_KEY, model: 'nex-agi/nex-n2.5-mini:free' },
-        { name: 'deepseek', url: 'https://api.deepseek.com/chat/completions', key: process.env.DEEPSEEK_API_KEY, model: 'deepseek-chat' },
-      ]
-
-      for (const p of leadProviders) {
-        if (!p.key) continue
-        try {
-          const headers = { 'Authorization': `Bearer ${p.key}`, 'Content-Type': 'application/json' }
-          if (p.name === 'openrouter') {
-            headers['HTTP-Referer'] = 'https://nexus-hit.netlify.app'
-            headers['X-Title'] = 'Happiness'
-          }
-          const res = await fetch(p.url, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ model: p.model, messages: leadMessages, temperature: 0.1, max_tokens: 1024 })
-          })
-          if (res.ok) {
-            const data = await res.json()
-            leadAiResponse = data.choices?.[0]?.message?.content || ''
-            leadUsage = data.usage
-            leadProvider = p.name
-            leadModel = p.model
-            console.log(`[LeadRadar] Response from: ${p.name}`)
-            break
-          }
-        } catch (e) {
-          console.warn(`[LeadRadar] ${p.name} failed:`, e.message)
-        }
+      // Kette: Mistral -> Groq -> OpenRouter -> DeepSeek via _shared/llm-core.mjs
+      try {
+        const r = await callLLM(leadMessages, {
+          providers: ['mistral', 'groq', 'openrouter', 'deepseek'],
+          temperature: 0.1,
+          max_tokens: 1024,
+          totalBudgetMs: 30000,
+          xTitle: 'Happiness',
+        })
+        leadAiResponse = r.text || ''
+        leadUsage = r.usage
+        leadProvider = r.provider
+        leadModel = r.model
+        console.log(`[LeadRadar] Response from: ${r.provider}`)
+      } catch (e) {
+        console.warn('[LeadRadar] all providers failed:', e.message)
       }
 
       if (!leadAiResponse) {
@@ -549,349 +517,109 @@ ${message}`
     let usage = null
     let provider = ''
     let modelName = ''
-    const providerErrors = []
 
     if (hasImage) {
-      let res = null
-      let data = null
-
-      // Versuche zuerst Groq Vision (Extrem schnell, verhindert Netlify 10s 504 Timeout)
+      // Vision-Kette Groq -> OpenAI via _shared/llm-core.mjs (profile vision);
+      // schlaegt die ganze Kette fehl, wird wie bisher textbasiert mit
+      // imageNote-Rueckfall geantwortet.
       const groqKey = process.env.GROQ_API_KEY
-      if (groqKey) {
-        try {
-          res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: 'llama-3.2-90b-vision-instruct',
-              messages: buildMessages(historyLimit),
-              temperature: 0.1,
-              max_tokens: 4096
-            })
-          })
-          data = await res.json()
-        } catch (err) { console.error('Groq Vision fetch failed:', err.message) }
-
-        if (res && res.ok && data && data.choices) {
-          console.log('Antwort von:', 'groq-vision')
-          aiResponse = data.choices?.[0]?.message?.content || ''
-          usage = data.usage
-          provider = 'groq'
-          modelName = 'llama-3.2-90b-vision-instruct'
-        }
-      }
-
-      // Fallback zu OpenAI GPT-4o
-      if (!aiResponse) {
-        const openAiKey = process.env.OPENAI_API_KEY
-        if (!groqKey && !openAiKey) {
-          return {
-            statusCode: 500,
-            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-            body: JSON.stringify({ error: 'Weder GROQ_API_KEY noch OPENAI_API_KEY konfiguriert für Vision' })
-          }
-        }
-        
-        if (openAiKey) {
-          try {
-            res = await fetch('https://api.openai.com/v1/chat/completions', {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${openAiKey}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                model: 'gpt-4o',
-                messages: buildMessages(historyLimit),
-                temperature: 0.4,
-                max_tokens: 2500
-              })
-            })
-            data = await res.json()
-          } catch (err) { console.error('OpenAI Vision fetch failed:', err.message) }
-          
-          if (res && res.ok && data && data.choices) {
-            console.log('Antwort von:', 'openai-gpt-4o-vision')
-            aiResponse = data.choices?.[0]?.message?.content || 'Entschuldigung, ich konnte keine Antwort generieren.'
-            usage = data.usage
-            provider = 'openai'
-            modelName = 'gpt-4o'
-          }
-        }
-      }
-
-      if (!aiResponse) {
-        const errMsg = (data?.error?.message || '').toLowerCase()
-        console.log('Vision model failed, falling back to text-only with Groq. Error:', errMsg)
-        
-        const textApiKey = process.env.GROQ_API_KEY
-        if (textApiKey) {
-          try {
-            const fallbackRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${textApiKey}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                model: 'llama-3.1-8b-instant',
-                messages: buildMessages(historyLimit, true),
-                temperature: 0.1,
-                max_tokens: 4096
-              })
-            })
-            if (fallbackRes.ok) {
-              const fallbackData = await fallbackRes.json()
-              console.log('Antwort von:', 'groq-vision-fallback')
-              aiResponse = fallbackData.choices?.[0]?.message?.content || 'Entschuldigung, ich konnte keine Antwort generieren.'
-              usage = fallbackData.usage
-              provider = 'groq'
-              modelName = 'openai/gpt-oss-20b'
-              return {
-                statusCode: 200,
-                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-                body: JSON.stringify({
-                  response: aiResponse,
-                  imageNote: 'Das Bild konnte nicht analysiert werden – der Chat funktioniert aber ganz normal weiter.',
-                  usage: usage,
-                  provider,
-                  model: modelName
-                })
-              }
-            } else {
-              const fallbackData = await fallbackRes.json().catch(() => ({}))
-              console.error('Groq vision fallback failed:', fallbackRes.status, fallbackData)
-            }
-          } catch (e) {
-            console.error('Groq vision fallback error:', e.message)
-          }
-        }
-        
-        console.error('Groq Vision failed and DeepSeek fallback was unsuccessful:', JSON.stringify(data))
+      const openAiKey = process.env.OPENAI_API_KEY
+      if (!groqKey && !openAiKey) {
         return {
-          statusCode: 502,
+          statusCode: 500,
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify({
-            error: data?.error?.message || 'Groq Vision failed and fallback was unsuccessful.',
-            rawResponse: data
+          body: JSON.stringify({ error: 'Weder GROQ_API_KEY noch OPENAI_API_KEY konfiguriert für Vision' })
+        }
+      }
+
+      let visionText = null
+      let visionErr = null
+      try {
+        const r = await callLLM(buildMessages(historyLimit), {
+          profile: 'vision',
+          providers: ['groq', 'openai'],
+          temperature: 0.1,
+          max_tokens: 4096,
+          totalBudgetMs: 30000,
+        })
+        console.log('Antwort von:', `${r.provider}-vision`)
+        visionText = r.text
+        usage = r.usage
+        provider = r.provider
+        modelName = r.model
+      } catch (e) {
+        visionErr = e
+        console.log('Vision model failed, falling back to text-only. Error:', e.message)
+      }
+
+      if (visionText) {
+        aiResponse = visionText
+      } else {
+        // Text-Fallback: Bild wird ignoriert, Hinweis an den Nutzer
+        try {
+          const fb = await callLLM(buildMessages(historyLimit, true), {
+            providers: ['groq'],
+            temperature: 0.1,
+            max_tokens: 4096,
+            totalBudgetMs: 15000,
           })
+          console.log('Antwort von:', 'groq-vision-fallback')
+          return {
+            statusCode: 200,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+            body: JSON.stringify({
+              response: fb.text || 'Entschuldigung, ich konnte keine Antwort generieren.',
+              imageNote: 'Das Bild konnte nicht analysiert werden – der Chat funktioniert aber ganz normal weiter.',
+              usage: fb.usage,
+              provider: fb.provider,
+              model: fb.model
+            })
+          }
+        } catch (e) {
+          console.error('Groq vision fallback error:', e.message)
+          return {
+            statusCode: 502,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+            body: JSON.stringify({
+              error: (visionErr?.message || 'Groq Vision failed') + ' | Fallback: ' + e.message
+            })
+          }
         }
       }
     } else {
-      // Text-only request: Fallback Chain
+      // Text-only request: Kette Groq -> OpenRouter -> Mistral -> OpenAI ->
+      // DeepSeek via _shared/llm-core.mjs (Skript-Audits ueberspringen OR).
+      // Hinweis: die alte Stage 0 referenzierte das unbeschriebene reqMaxTokens
+      // und war damit stillschweigend immer defekt — die Kette startet nun
+      // wie dokumentiert wieder bei Groq.
       const isScriptAudit = systemPrompt && (systemPrompt.includes('Retention-Coach') || systemPrompt.includes('REICHWEITEN-PROGNOSE'))
-      let success = false
+      const textProviders = isScriptAudit
+        ? ['groq', 'mistral', 'openai', 'deepseek']
+        : ['groq', 'openrouter', 'mistral', 'openai', 'deepseek']
 
-      // Stage 0: Groq (Primary because it is extremely fast and avoids Netlify 10s timeout)
-      const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY
-      if (groqKey) {
-        const groqModels = ['allam-2-7b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'qwen/qwen3.8-27b']
-        for (const model of groqModels) {
-          try {
-            const groqRes = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                model,
-                messages: buildMessages(historyLimit, true),
-                temperature: reqTemperature,
-                max_tokens: Math.min(reqMaxTokens || 2048, 2048),
-                ...(reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {})
-              })
-            }, 8000)
-            if (groqRes.ok) {
-              const groqData = await groqRes.json()
-              console.log('Antwort von Groq:', model)
-              aiResponse = groqData.choices?.[0]?.message?.content || ''
-              usage = groqData.usage
-              provider = 'groq'
-              modelName = model
-              success = true
-              break
-            } else {
-              const groqData = await groqRes.json().catch(() => ({}))
-              providerErrors.push(`Groq (${model}): ${groqData?.error?.message || 'Unknown Error'} (HTTP ${groqRes.status})`)
-            }
-          } catch (err) {
-            providerErrors.push(`Groq (${model}): ${err.message}`)
-          }
-        }
-      }
-
-      // Stage 1: OpenRouter (kostenlos - primär, übersprungen bei Skript-Audit wegen Latenz)
-      const orKey = process.env.OPENROUTER_API_KEY
-      if (!success && orKey && !isScriptAudit) {
-        const orModels = ['nvidia/nemotron-3.5-lightning:free', 'openrouter/free', 'google/gemma-4-26b-a4b-it:free']
-        for (const model of orModels) {
-          try {
-            const orRes = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${orKey}`,
-                'Content-Type': 'application/json',
-                'HTTP-Referer': 'https://nexus-hit.netlify.app',
-                'X-Title': 'Happiness'
-              },
-              body: JSON.stringify({
-                model,
-                messages: buildMessages(historyLimit),
-                temperature: reqTemperature,
-                max_tokens: 2048,
-                ...(reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {})
-              })
-            }, 25000)
-            if (orRes.ok) {
-              const orData = await orRes.json()
-              console.log('Antwort von OpenRouter:', model)
-              aiResponse = orData.choices?.[0]?.message?.content || ''
-              usage = orData.usage
-              provider = 'openrouter'
-              modelName = model
-              success = true
-              break
-            } else {
-              const orData = await orRes.json().catch(() => ({}))
-              const errMsg = orData?.error?.message || JSON.stringify(orData)
-              providerErrors.push(`OpenRouter (${model}): ${errMsg} (HTTP ${orRes.status})`)
-              console.warn(`OpenRouter (${model}) failed, status:`, orRes.status, 'message:', errMsg)
-            }
-          } catch (err) {
-            providerErrors.push(`OpenRouter (${model}): ${err.message}`)
-            console.warn(`OpenRouter (${model}) fetch failed:`, err.message)
-          }
-        }
-      } else if (!success && !orKey) {
-        providerErrors.push('OpenRouter: OPENROUTER_API_KEY not configured')
-        console.warn('OPENROUTER_API_KEY not configured, skipping to Mistral')
-      }
-
-      // Stage 2: Mistral (zuverlässigster Anbieter)
-      if (!success) {
-        const mistralKey = process.env.MISTRAL_API_KEY
-        if (mistralKey) {
-          try {
-            const mistralRes = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${mistralKey}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                model: 'mistral-small-latest',
-                messages: buildMessages(historyLimit),
-                temperature: reqTemperature,
-                max_tokens: 4096,
-                ...(reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {})
-              })
-            }, 45000)
-            if (mistralRes.ok) {
-              const mistralData = await mistralRes.json()
-              console.log('Antwort von:', 'mistral')
-              aiResponse = mistralData.choices?.[0]?.message?.content || ''
-              usage = mistralData.usage
-              provider = 'mistral'
-              modelName = 'mistral-small-latest'
-              success = true
-            } else {
-              const mistralData = await mistralRes.json().catch(() => ({}))
-              const errMsg = mistralData?.error?.message || JSON.stringify(mistralData)
-              providerErrors.push(`Mistral: ${errMsg} (HTTP ${mistralRes.status})`)
-              console.warn('Mistral failed, status:', mistralRes.status, 'message:', errMsg)
-            }
-          } catch (err) {
-            providerErrors.push(`Mistral: ${err.message}`)
-            console.warn('Mistral fetch failed:', err.message)
-          }
-        } else {
-          providerErrors.push('Mistral: MISTRAL_API_KEY not configured')
-          console.warn('MISTRAL_API_KEY not configured, skipping to Groq')
-        }
-      }
-
-      // Stage 3: OpenAI (Falls Groq und andere fehlschlagen)
-      if (!success) {
-        const openAiKey = process.env.OPENAI_API_KEY
-        if (openAiKey) {
-          try {
-            const oaiRes = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${openAiKey}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                model: 'gpt-4o-mini',
-                messages: buildMessages(historyLimit, true),
-                temperature: reqTemperature,
-                max_tokens: 2500,
-                ...(reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {})
-              })
-            }, 8000)
-            if (oaiRes.ok) {
-              const oaiData = await oaiRes.json()
-              console.log('Antwort von:', 'openai-gpt-4o-mini')
-              aiResponse = oaiData.choices?.[0]?.message?.content || ''
-              usage = oaiData.usage
-              provider = 'openai'
-              modelName = 'gpt-4o-mini'
-              success = true
-            } else {
-              const oaiData = await oaiRes.json().catch(() => ({}))
-              const errMsg = oaiData?.error?.message || JSON.stringify(oaiData)
-              providerErrors.push(`OpenAI: ${errMsg} (HTTP ${oaiRes.status})`)
-            }
-          } catch (err) {
-            providerErrors.push(`OpenAI: ${err.message}`)
-          }
-        } else {
-          providerErrors.push('OpenAI: OPENAI_API_KEY not configured')
-        }
-      }
-
-      // Stage 4: DeepSeek (letzter Fallback)
-      if (!success) {
-        const deepseekKey = process.env.DEEPSEEK_API_KEY
-        if (deepseekKey) {
-          try {
-            const dsRes = await fetchWithTimeout('https://api.deepseek.com/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${deepseekKey}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                model: 'deepseek-chat',
-                messages: buildMessages(historyLimit),
-                temperature: reqTemperature,
-                max_tokens: 4096,
-                ...(reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {})
-              })
-            }, 45000)
-            if (dsRes.ok) {
-              const dsData = await dsRes.json()
-              console.log('Antwort von:', 'deepseek-fallback')
-              aiResponse = dsData.choices?.[0]?.message?.content || ''
-              usage = dsData.usage
-              provider = 'deepseek'
-              modelName = 'deepseek-chat'
-              success = true
-            } else {
-              const dsData = await dsRes.json().catch(() => ({}))
-              const errMsg = dsData?.error?.message || JSON.stringify(dsData)
-              providerErrors.push(`DeepSeek: ${errMsg} (HTTP ${dsRes.status})`)
-              console.warn('DeepSeek fallback failed, status:', dsRes.status, errMsg)
-            }
-          } catch (err) {
-            providerErrors.push(`DeepSeek: ${err.message}`)
-            console.warn('DeepSeek fallback fetch failed:', err.message)
-          }
-        } else {
-          providerErrors.push('DeepSeek: DEEPSEEK_API_KEY not configured')
-          console.warn('DEEPSEEK_API_KEY not configured, no more providers')
-        }
-      }
-
-      if (!success) {
+      try {
+        const r = await callLLM(buildMessages(historyLimit), {
+          providers: textProviders,
+          temperature: reqTemperature,
+          max_tokens: 4096,
+          totalBudgetMs: 45000,
+          xTitle: 'Happiness',
+          extraBody: reqPresencePenalty !== undefined ? { presence_penalty: reqPresencePenalty } : {},
+        })
+        console.log('Antwort von:', `${r.provider}/${r.model}`)
+        aiResponse = r.text || ''
+        usage = r.usage
+        provider = r.provider
+        modelName = r.model
+      } catch (e) {
         return {
           statusCode: 502,
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify({ error: 'Alle AI-Provider fehlgeschlagen: ' + providerErrors.join(' | ') })
+          body: JSON.stringify({ error: 'Alle AI-Provider fehlgeschlagen: ' + e.message })
         }
       }
+
+
       }
 
     // --- Increment Creator Academy counter ---
