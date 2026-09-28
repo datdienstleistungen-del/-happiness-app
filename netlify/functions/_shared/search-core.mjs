@@ -4,6 +4,7 @@
 // Tavily-Multi-Key-Aufrufe (bisher cron-search, cron-event-search,
 // nexus-research, nexus-llm, coach-chat, nexus-contact-intelligence, ...).
 // ============================================================================
+import { tryConsumeDaily, tavilyDailyLimit, dayKey, keyFingerprint } from './quota.mjs';
 
 // Tavily-Key-Pool (Multi-Key Failover). Reihenfolge = Prioritaet.
 // VITE_TAVILY_API_KEY als letzte Option: historischer Alias einiger Functions.
@@ -58,6 +59,9 @@ export async function searchDuckDuckGo(query, { maxResults = 10, timeoutMs = 600
 }
 
 // Einzelner Tavily-Call. Liefert { ok, results, error? } — wirft nie.
+// Phase 5b (Quota): pro Key ein Tagesbudget (TAVILY_DAILY_LIMIT, Default 30).
+// Ueberschritten -> { ok:false, error:'quota' }, die Kette faellt automatisch
+// auf den naechsten Key bzw. DuckDuckGo durch.
 export async function tavilySearch(query, key, {
   maxResults = 5,
   searchDepth = 'advanced',
@@ -67,6 +71,11 @@ export async function tavilySearch(query, key, {
   excludeDomains = null,
   timeoutMs = 5000,
 } = {}) {
+  const quota = await tryConsumeDaily(`tavily:${keyFingerprint(key)}:${dayKey()}`, tavilyDailyLimit());
+  if (!quota.allowed) {
+    console.warn(`[SearchCore] Tavily-Quota erreicht (${quota.used}/${quota.limit} heute) — Key wird uebersprungen.`);
+    return { ok: false, results: [], error: 'quota' };
+  }
   try {
     const payload = { api_key: key, query, search_depth: searchDepth, include_raw_content: includeRawContent, max_results: maxResults };
     if (daysBack) payload.days_back = daysBack;

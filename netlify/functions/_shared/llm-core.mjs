@@ -16,6 +16,26 @@ import {
   MISTRAL_DEFAULT_MODEL,
   OPENAI_DEFAULT_MODEL,
 } from '../nexus-models.mjs';
+import { setCooldown, cooldownRemaining } from './quota.mjs';
+
+// --- Quota/Cooldown (Phase 5b) -------------------------------------------
+// 429 = Rate-Limit -> kurze Sperre pro Modell (Limit ist meist TPM-pro-Modell).
+// 402 = kein Guthaben -> lange, providerweite Sperre (betrifft alle Modelle).
+const COOLDOWN_429_MS = Number(process.env.LLM_COOLDOWN_429_MS) || 10 * 60 * 1000;
+const COOLDOWN_402_MS = Number(process.env.LLM_COOLDOWN_402_MS) || 60 * 60 * 1000;
+
+async function noteQuotaStatus(provider, model, status) {
+  if (status === 429) await setCooldown(`${provider}:${model}`, COOLDOWN_429_MS);
+  else if (status === 402) {
+    await setCooldown(`${provider}:*`, COOLDOWN_402_MS);
+    await setCooldown(`${provider}:${model}`, COOLDOWN_402_MS);
+  }
+}
+
+async function isCooling(provider, model) {
+  if (await cooldownRemaining(`${provider}:*`) > 0) return true;
+  return (await cooldownRemaining(`${provider}:${model}`)) > 0;
+}
 
 export const PROFILES = {
   free: GROQ_FREE_FIRST,       // Standard-Gespraech / Kurz-Klassifikation
@@ -58,6 +78,7 @@ async function stageGroq(ctx) {
   for (const key of keys) {
     for (const model of ctx.groqModels) {
       if (ctx.skipModels.has(model)) continue;
+      if (await isCooling('groq', model)) { ctx.fail('groq:cooldown'); continue; }
       if (ctx.remaining() < 1500) { ctx.fail('groq:budget'); return null; }
       // jsonMode: bei 400 auf response_format einmal ohne json_mode wiederholen
       const variants = ctx.jsonMode ? [true, false] : [false];
@@ -69,6 +90,7 @@ async function stageGroq(ctx) {
             chatBody(model, ctx.messages, ctx.temperature, ctx.max_tokens, withJson, ctx.extraBody),
             Math.min(9000, ctx.remaining())
           );
+          await noteQuotaStatus('groq', model, res.status);
           if (res.status === 429) break;            // -> naechstes Modell
           if (res.status === 400 && withJson) { ctx.fail(`groq:${model}:400-json`); continue; }
           if (!res.ok) { ctx.fail(`groq:${model}:${res.status}`); break; }
@@ -93,6 +115,7 @@ async function stageOpenRouter(ctx) {
   for (const key of keys) {
     for (const model of OPENROUTER_FREE_MODELS) {
       if (ctx.skipModels.has(model)) continue;
+      if (await isCooling('openrouter', model)) { ctx.fail('openrouter:cooldown'); continue; }
       if (ctx.remaining() < 1200) { ctx.fail('openrouter:budget'); return null; }
       try {
         const res = await postJSON(
@@ -105,6 +128,7 @@ async function stageOpenRouter(ctx) {
           chatBody(model, ctx.messages, ctx.temperature, ctx.max_tokens, false, ctx.extraBody),
           Math.min(4000, ctx.remaining())
         );
+        await noteQuotaStatus('openrouter', model, res.status);
         if (res.status === 429) { ctx.fail(`openrouter:429-${model}`); break; }
         if (!res.ok) { ctx.fail(`openrouter:${model}:${res.status}`); continue; }
         const data = await res.json();
@@ -123,6 +147,7 @@ async function stageMistral(ctx) {
   const keys = [process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY, process.env.MISTRAL_API_KEY_2].filter(Boolean);
   if (keys.length === 0) { ctx.fail('mistral:kein-key'); return null; }
   if (ctx.remaining() < 1200) { ctx.fail('mistral:budget'); return null; }
+  if (await isCooling('mistral', MISTRAL_DEFAULT_MODEL)) { ctx.fail('mistral:cooldown'); return null; }
   for (const key of keys) {
     try {
       const res = await postJSON(
@@ -131,6 +156,7 @@ async function stageMistral(ctx) {
         chatBody(MISTRAL_DEFAULT_MODEL, ctx.messages, ctx.temperature, ctx.max_tokens, ctx.jsonMode, ctx.extraBody),
         Math.min(4000, ctx.remaining())
       );
+      await noteQuotaStatus('mistral', MISTRAL_DEFAULT_MODEL, res.status);
       if (res.ok) {
         const data = await res.json();
         const text = firstText(data);
@@ -150,6 +176,7 @@ async function stageOpenAI(ctx) {
   const keys = [process.env.OPENAI_API_KEY, process.env.OPENAI_API_KEY_2].filter(Boolean);
   if (keys.length === 0) { ctx.fail('openai:kein-key'); return null; }
   if (ctx.remaining() < 1000) { ctx.fail('openai:budget'); return null; }
+  if (await isCooling('openai', OPENAI_DEFAULT_MODEL)) { ctx.fail('openai:cooldown'); return null; }
   for (const key of keys) {
     try {
       const res = await postJSON(
@@ -158,6 +185,7 @@ async function stageOpenAI(ctx) {
         chatBody(OPENAI_DEFAULT_MODEL, ctx.messages, ctx.temperature, ctx.max_tokens, ctx.jsonMode, ctx.extraBody),
         Math.min(4000, ctx.remaining())
       );
+      await noteQuotaStatus('openai', OPENAI_DEFAULT_MODEL, res.status);
       if (res.ok) {
         const data = await res.json();
         const text = firstText(data);
@@ -180,6 +208,7 @@ async function stageDeepSeek(ctx) {
     return null;
   }
   if (ctx.remaining() < 1200) { ctx.fail('deepseek:budget'); return null; }
+  if (await isCooling('deepseek', 'deepseek-chat')) { ctx.fail('deepseek:cooldown'); return null; }
   try {
     const res = await postJSON(
       'https://api.deepseek.com/v1/chat/completions',
@@ -187,6 +216,7 @@ async function stageDeepSeek(ctx) {
       chatBody('deepseek-chat', ctx.messages, ctx.temperature, ctx.max_tokens, ctx.jsonMode, ctx.extraBody),
       Math.min(4000, ctx.remaining())
     );
+    await noteQuotaStatus('deepseek', 'deepseek-chat', res.status);
     if (res.ok) {
     const data = await res.json();
     const text = firstText(data);

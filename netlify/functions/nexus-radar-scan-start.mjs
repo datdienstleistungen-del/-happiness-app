@@ -14,6 +14,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { searchDuckDuckGo as coreSearchDuckDuckGo } from './_shared/search-core.mjs';
+import { isBlockedUrl } from './_shared/url-rules.mjs';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
@@ -218,6 +219,16 @@ export const handler = async (event) => {
       }
     });
 
+    // Blocklist-Filter (Phase 5a): nur fuer Suchergebnisse — die synthetischen
+    // URLs unten bleiben bewusst erhalten (StepStone/XING/LinkedIn/NorthData
+    // sind gesetzte HIRING-/Register-Quellen, kein Rauschen).
+    const newsKept = newsResults.filter(r => !isBlockedUrl(r.url));
+    const webKept = webResults.filter(r => !isBlockedUrl(r.url));
+    const blockedCount = (newsResults.length - newsKept.length) + (webResults.length - webKept.length);
+    if (blockedCount > 0) {
+      console.log(`[ScanStart] ${blockedCount} Suchtreffer durch URL-Blocklist gefiltert.`);
+    }
+
     // Synthetische URLs (öffentlich crawelbar: StepStone 24k, XING 7.6k, LinkedIn 10.8k, NorthData 11k Text)
     const syntheticUrls = kwOk ? [
       { url: `https://www.stepstone.de/jobs/${encodeURIComponent(kw)}`, title: `StepStone Stellenangebote: ${kw}`, source_type: 'JOB_PORTAL' },
@@ -228,9 +239,9 @@ export const handler = async (event) => {
 
     // Mischung: News (M&A/Expansion) -> synthetische (Jobs/Register) -> Web/PR, max. 22 Kandidaten
     const allResults = [
-      ...newsResults.slice(0, 10).map(r => ({ ...r, source_type: 'NEWS' })),
+      ...newsKept.slice(0, 10).map(r => ({ ...r, source_type: 'NEWS' })),
       ...syntheticUrls,
-      ...webResults.slice(0, 8)
+      ...webKept.slice(0, 8)
     ];
     console.log(`[ScanStart] Sources: NEWS=${newsResults.length} SYNTH=${syntheticUrls.length} WEB=${webResults.length}`);
 

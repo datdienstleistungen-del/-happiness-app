@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { getTavilyKeys, searchWithFallback } from './_shared/search-core.mjs';
+import { isBlockedUrl } from './_shared/url-rules.mjs';
 
 export async function handler(event, context) {
   // 1. Setup & Environment
@@ -126,8 +127,14 @@ export async function handler(event, context) {
           allResults.push(...results);
         }
 
-        // 5. Ergebnisse normalisieren & hashen
-        const rowsToInsert = allResults.map(r => {
+        // 5. Ergebnisse normalisieren & hashen — Blocklist-Filter (Phase 5a):
+        // Jobboersen/Social/Kleinanzeigen raus, bevor sie die DB erreichen.
+        const keptResults = allResults.filter(r => !isBlockedUrl(r.url));
+        const blockedCount = allResults.length - keptResults.length;
+        if (blockedCount > 0) {
+          console.log(`B1 Cron: ${blockedCount} Treffer durch URL-Blocklist gefiltert (${keptResults.length} bleiben).`);
+        }
+        const rowsToInsert = keptResults.map(r => {
           const hash = crypto.createHash('md5').update(r.url || '').digest('hex');
           return {
             user_id: offering.user_id,
