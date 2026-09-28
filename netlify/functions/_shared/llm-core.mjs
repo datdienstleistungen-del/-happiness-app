@@ -53,31 +53,34 @@ const accepted = (ctx, text) => Boolean(text) && (typeof ctx.acceptText !== 'fun
 // --- Stufen (jede liefert { text, provider, model } oder null) ---
 
 async function stageGroq(ctx) {
-  const key = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
-  if (!key) { ctx.fail('groq:kein-key'); return null; }
-  for (const model of ctx.groqModels) {
-    if (ctx.remaining() < 1500) { ctx.fail('groq:budget'); break; }
-    // jsonMode: bei 400 auf response_format einmal ohne json_mode wiederholen
-    const variants = ctx.jsonMode ? [true, false] : [false];
-    for (const withJson of variants) {
-      try {
-        const res = await postJSON(
-          'https://api.groq.com/openai/v1/chat/completions',
-          { Authorization: `Bearer ${key}` },
-          chatBody(model, ctx.messages, ctx.temperature, ctx.max_tokens, withJson, ctx.extraBody),
-          Math.min(9000, ctx.remaining())
-        );
-        if (res.status === 429) break;            // -> naechstes Modell
-        if (res.status === 400 && withJson) { ctx.fail(`groq:${model}:400-json`); continue; }
-        if (!res.ok) { ctx.fail(`groq:${model}:${res.status}`); break; }
-        const data = await res.json();
-        const text = firstText(data);
-        if (accepted(ctx, text)) return { text, provider: 'groq', model, usage: firstUsage(data) };
-        ctx.fail(`groq:${model}:leer`);
-        break;                                     // -> naechstes Modell
-      } catch (e) {
-        ctx.fail(`groq:${model}:${ERROR_TAG(e)}`);
-        break;
+  const keys = [process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY, process.env.GROQ_API_KEY_2].filter(Boolean);
+  if (keys.length === 0) { ctx.fail('groq:kein-key'); return null; }
+  for (const key of keys) {
+    for (const model of ctx.groqModels) {
+      if (ctx.skipModels.has(model)) continue;
+      if (ctx.remaining() < 1500) { ctx.fail('groq:budget'); return null; }
+      // jsonMode: bei 400 auf response_format einmal ohne json_mode wiederholen
+      const variants = ctx.jsonMode ? [true, false] : [false];
+      for (const withJson of variants) {
+        try {
+          const res = await postJSON(
+            'https://api.groq.com/openai/v1/chat/completions',
+            { Authorization: `Bearer ${key}` },
+            chatBody(model, ctx.messages, ctx.temperature, ctx.max_tokens, withJson, ctx.extraBody),
+            Math.min(9000, ctx.remaining())
+          );
+          if (res.status === 429) break;            // -> naechstes Modell
+          if (res.status === 400 && withJson) { ctx.fail(`groq:${model}:400-json`); continue; }
+          if (!res.ok) { ctx.fail(`groq:${model}:${res.status}`); break; }
+          const data = await res.json();
+          const text = firstText(data);
+          if (accepted(ctx, text)) return { text, provider: 'groq', model, usage: firstUsage(data) };
+          ctx.fail(`groq:${model}:leer`);
+          break;                                     // -> naechstes Modell
+        } catch (e) {
+          ctx.fail(`groq:${model}:${ERROR_TAG(e)}`);
+          break;
+        }
       }
     }
   }
@@ -85,80 +88,87 @@ async function stageGroq(ctx) {
 }
 
 async function stageOpenRouter(ctx) {
-  const key = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
-  if (!key) { ctx.fail('openrouter:kein-key'); return null; }
-  for (const model of OPENROUTER_FREE_MODELS) {
-    if (ctx.remaining() < 1200) { ctx.fail('openrouter:budget'); break; }
-    try {
-      const res = await postJSON(
-        'https://openrouter.ai/api/v1/chat/completions',
-        {
-          Authorization: `Bearer ${key}`,
-          'HTTP-Referer': 'https://nexus-hit.netlify.app',
-          'X-Title': ctx.xTitle,
-        },
-        chatBody(model, ctx.messages, ctx.temperature, ctx.max_tokens, false, ctx.extraBody),
-        Math.min(4000, ctx.remaining())
-      );
-      if (res.status === 429) { ctx.fail(`openrouter:429-${model}`); break; }
-      if (!res.ok) { ctx.fail(`openrouter:${model}:${res.status}`); continue; }
-      const data = await res.json();
-      const text = data?.choices?.[0]?.message?.content || data?.choices?.[0]?.message?.reasoning;
-      if (accepted(ctx, text)) return { text, provider: 'openrouter', model, usage: firstUsage(data) };
-      ctx.fail(`openrouter:${model}:leer`);
-    } catch (e) {
-      ctx.fail(`openrouter:${model}:${ERROR_TAG(e)}`);
+  const keys = [process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY, process.env.OPENROUTER_API_KEY_2].filter(Boolean);
+  if (keys.length === 0) { ctx.fail('openrouter:kein-key'); return null; }
+  for (const key of keys) {
+    for (const model of OPENROUTER_FREE_MODELS) {
+      if (ctx.skipModels.has(model)) continue;
+      if (ctx.remaining() < 1200) { ctx.fail('openrouter:budget'); return null; }
+      try {
+        const res = await postJSON(
+          'https://openrouter.ai/api/v1/chat/completions',
+          {
+            Authorization: `Bearer ${key}`,
+            'HTTP-Referer': 'https://nexus-hit.netlify.app',
+            'X-Title': ctx.xTitle,
+          },
+          chatBody(model, ctx.messages, ctx.temperature, ctx.max_tokens, false, ctx.extraBody),
+          Math.min(4000, ctx.remaining())
+        );
+        if (res.status === 429) { ctx.fail(`openrouter:429-${model}`); break; }
+        if (!res.ok) { ctx.fail(`openrouter:${model}:${res.status}`); continue; }
+        const data = await res.json();
+        const text = data?.choices?.[0]?.message?.content || data?.choices?.[0]?.message?.reasoning;
+        if (accepted(ctx, text)) return { text, provider: 'openrouter', model, usage: firstUsage(data) };
+        ctx.fail(`openrouter:${model}:leer`);
+      } catch (e) {
+        ctx.fail(`openrouter:${model}:${ERROR_TAG(e)}`);
+      }
     }
   }
   return null;
 }
 
 async function stageMistral(ctx) {
-  const key = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
-  if (!key) { ctx.fail('mistral:kein-key'); return null; }
+  const keys = [process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY, process.env.MISTRAL_API_KEY_2].filter(Boolean);
+  if (keys.length === 0) { ctx.fail('mistral:kein-key'); return null; }
   if (ctx.remaining() < 1200) { ctx.fail('mistral:budget'); return null; }
-  try {
-    const res = await postJSON(
-      'https://api.mistral.ai/v1/chat/completions',
-      { Authorization: `Bearer ${key}` },
-      chatBody(MISTRAL_DEFAULT_MODEL, ctx.messages, ctx.temperature, ctx.max_tokens, ctx.jsonMode, ctx.extraBody),
-      Math.min(4000, ctx.remaining())
-    );
-    if (res.ok) {
-    const data = await res.json();
-    const text = firstText(data);
-    if (accepted(ctx, text)) return { text, provider: 'mistral', model: MISTRAL_DEFAULT_MODEL, usage: firstUsage(data) };
-      ctx.fail('mistral:leer');
-    } else {
-      ctx.fail(`mistral:${res.status}`);
+  for (const key of keys) {
+    try {
+      const res = await postJSON(
+        'https://api.mistral.ai/v1/chat/completions',
+        { Authorization: `Bearer ${key}` },
+        chatBody(MISTRAL_DEFAULT_MODEL, ctx.messages, ctx.temperature, ctx.max_tokens, ctx.jsonMode, ctx.extraBody),
+        Math.min(4000, ctx.remaining())
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const text = firstText(data);
+        if (accepted(ctx, text)) return { text, provider: 'mistral', model: MISTRAL_DEFAULT_MODEL, usage: firstUsage(data) };
+        ctx.fail('mistral:leer');
+      } else {
+        ctx.fail(`mistral:${res.status}`);
+      }
+    } catch (e) {
+      ctx.fail(`mistral:${ERROR_TAG(e)}`);
     }
-  } catch (e) {
-    ctx.fail(`mistral:${ERROR_TAG(e)}`);
   }
   return null;
 }
 
 async function stageOpenAI(ctx) {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) { ctx.fail('openai:kein-key'); return null; }
+  const keys = [process.env.OPENAI_API_KEY, process.env.OPENAI_API_KEY_2].filter(Boolean);
+  if (keys.length === 0) { ctx.fail('openai:kein-key'); return null; }
   if (ctx.remaining() < 1000) { ctx.fail('openai:budget'); return null; }
-  try {
-    const res = await postJSON(
-      'https://api.openai.com/v1/chat/completions',
-      { Authorization: `Bearer ${key}` },
-      chatBody(OPENAI_DEFAULT_MODEL, ctx.messages, ctx.temperature, ctx.max_tokens, ctx.jsonMode, ctx.extraBody),
-      Math.min(4000, ctx.remaining())
-    );
-    if (res.ok) {
-    const data = await res.json();
-    const text = firstText(data);
-    if (accepted(ctx, text)) return { text, provider: 'openai', model: OPENAI_DEFAULT_MODEL, usage: firstUsage(data) };
-      ctx.fail('openai:leer');
-    } else {
-      ctx.fail(`openai:${res.status}`);
+  for (const key of keys) {
+    try {
+      const res = await postJSON(
+        'https://api.openai.com/v1/chat/completions',
+        { Authorization: `Bearer ${key}` },
+        chatBody(OPENAI_DEFAULT_MODEL, ctx.messages, ctx.temperature, ctx.max_tokens, ctx.jsonMode, ctx.extraBody),
+        Math.min(4000, ctx.remaining())
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const text = firstText(data);
+        if (accepted(ctx, text)) return { text, provider: 'openai', model: OPENAI_DEFAULT_MODEL, usage: firstUsage(data) };
+        ctx.fail('openai:leer');
+      } else {
+        ctx.fail(`openai:${res.status}`);
+      }
+    } catch (e) {
+      ctx.fail(`openai:${ERROR_TAG(e)}`);
     }
-  } catch (e) {
-    ctx.fail(`openai:${ERROR_TAG(e)}`);
   }
   return null;
 }
@@ -225,6 +235,7 @@ export async function callLLM(messages, {
   xTitle = 'NeXus',
   acceptText = null,
   extraBody = {},
+  skipModels = [],
 } = {}) {
   const deadline = Date.now() + totalBudgetMs;
   const errors = [];
@@ -237,6 +248,7 @@ export async function callLLM(messages, {
     extraBody,
     groqModels: models || PROFILES[profile] || GROQ_FREE_FIRST,
     acceptText,
+    skipModels: new Set(skipModels),
     remaining: () => deadline - Date.now(),
     fail: (tag) => errors.push(tag),
   };

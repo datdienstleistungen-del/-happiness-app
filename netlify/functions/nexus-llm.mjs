@@ -1,6 +1,6 @@
-// ── Multi-Provider Fallback Chain ──
+// ── Multi-Provider Fallback Chain (via _shared/llm-core.mjs) ──
 import { runEmailPatternCrawler } from './nexus-email-crawler.mjs';
-import { GROQ_FREE_FIRST, GROQ_JSON_HEAVY, GROQ_VISION_MODELS, OPENROUTER_FREE_MODELS } from './nexus-models.mjs';
+import { callLLM } from './_shared/llm-core.mjs';
 
 async function fetchWithTimeout(url, options, timeoutMs = 20000) {
   const controller = new AbortController();
@@ -26,16 +26,6 @@ function cleanModelOutput(text) {
     .trim();
 }
 
-async function callProviderWithTimeout(providerFn, timeoutMs = 2500) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await providerFn(controller.signal);
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 function getModelTier(provider, model) {
   if (provider === 'groq') {
     if (model === 'allam-2-7b') return 'FREE-TIER';
@@ -48,353 +38,48 @@ function getModelTier(provider, model) {
   return 'PAID-FALLBACK';
 }
 
-async function tryGroq(messages, temperature = 0.3, hasImage = false, signal = null, testOptions = {}) {
-  if (testOptions?.disable_groq || testOptions?.force_fail_providers?.includes('groq')) {
-    console.warn(`[NEXUS] Groq disabled by test flag.`);
-    return null;
-  }
-
-  // Alle Groq-Keys versuchen (nicht nur den ersten!)
-  if (testOptions?.invalid_groq_key) return null;
-  const groqKeys = [process.env.GROQ_API_KEY, process.env.GROQ_API_KEY_2].filter(Boolean);
-  if (groqKeys.length === 0) return null;
-
-  const models = hasImage 
-    ? GROQ_VISION_MODELS
-    : (testOptions?.preferJsonModels ? GROQ_JSON_HEAVY : GROQ_FREE_FIRST);
-
-  for (const key of groqKeys) {
-    for (const model of models) {
-      if (testOptions?.skipModels?.includes(model)) continue;
-      const t0 = Date.now();
-      const tier = getModelTier('groq', model);
-      try {
-        console.log(`[NEXUS] Trying Groq model: ${model} [${tier}] with key ${key.substring(0,8)}...`);
-        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model,
-            messages,
-            temperature,
-            max_tokens: 3000
-          }),
-          signal
-        });
-
-        const elapsed = Date.now() - t0;
-
-        if (res.status === 429) {
-          console.warn(`[NEXUS] Groq (${model}) [${tier}] returned HTTP 429 -> trying next key`);
-          continue; // Weiter mit nächstem Key, NICHT abbrechen!
-        }
-
-        if (!res.ok) {
-          console.warn(`[NEXUS] Groq (${model}) [${tier}] returned HTTP ${res.status} in ${elapsed}ms`);
-          continue;
-        }
-
-        const data = await res.json();
-        const rawText = data.choices?.[0]?.message?.content;
-        if (rawText) {
-          console.log(`[NEXUS] Groq (${model}) [${tier}] succeeded in ${elapsed}ms`);
-          return { text: cleanModelOutput(rawText), provider: 'groq', model, tier, durationMs: elapsed };
-        }
-      } catch (e) {
-        const elapsed = Date.now() - t0;
-        if (e.name === 'AbortError') {
-          console.warn(`[NEXUS] Groq (${model}) [${tier}] TIMED OUT -> trying next key`);
-          continue;
-        }
-        console.warn(`[NEXUS] Groq (${model}) [${tier}] error: ${e.message} in ${elapsed}ms`);
-      }
-    }
-  }
-  return null;
-}
-
-async function tryOpenRouter(messages, temperature = 0.3, hasImage = false, signal = null, testOptions = {}) {
-  if (testOptions?.disable_openrouter || testOptions?.force_fail_providers?.includes('openrouter')) {
-    console.warn(`[NEXUS] OpenRouter disabled by test flag.`);
-    return null;
-  }
-
-  const openrouterKeys = [process.env.OPENROUTER_API_KEY, process.env.OPENROUTER_API_KEY_2].filter(Boolean);
-  if (openrouterKeys.length === 0) return null;
-
-  const models = hasImage
-    ? ['google/gemma-4-26b-a4b-it:free', 'google/gemma-4-31b-it:free', 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free']
-    : OPENROUTER_FREE_MODELS;
-
-  for (const key of openrouterKeys) {
-    for (const model of models) {
-      if (testOptions?.skipModels?.includes(model)) continue;
-      const t0 = Date.now();
-      const tier = getModelTier('openrouter', model);
-      try {
-        console.log(`[NEXUS] Trying OpenRouter model: ${model} [${tier}]`);
-        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${key}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://nexus-hit.netlify.app',
-            'X-Title': 'NeXus Sales Intelligence'
-          },
-          body: JSON.stringify({
-            model,
-            messages,
-            temperature,
-            max_tokens: 4096
-          }),
-          signal
-        });
-
-        const elapsed = Date.now() - t0;
-
-        if (res.status === 429) {
-          console.warn(`[NEXUS] OpenRouter (${model}) [${tier}] returned HTTP 429 -> trying next key`);
-          continue;
-        }
-
-        if (!res.ok) {
-          console.warn(`[NEXUS] OpenRouter (${model}) [${tier}] returned HTTP ${res.status} in ${elapsed}ms`);
-          await res.text().catch(() => {});
-          continue;
-        }
-
-        const data = await res.json();
-        const rawText = data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning;
-        if (rawText) {
-          console.log(`[NEXUS] OpenRouter (${model}) [${tier}] succeeded in ${elapsed}ms`);
-          return { text: cleanModelOutput(rawText), provider: 'openrouter', model, tier, durationMs: elapsed };
-        }
-      } catch (e) {
-        const elapsed = Date.now() - t0;
-        if (e.name === 'AbortError') {
-          console.warn(`[NEXUS] OpenRouter (${model}) [${tier}] TIMED OUT -> trying next key`);
-          continue;
-        }
-        console.warn(`[NEXUS] OpenRouter (${model}) [${tier}] error: ${e.message} in ${elapsed}ms`);
-      }
-    }
-  }
-  return null;
-}
-
-async function tryMistral(messages, temperature = 0.3, signal = null, testOptions = {}) {
-  if (testOptions?.disable_mistral || testOptions?.force_fail_providers?.includes('mistral')) {
-    console.warn(`[NEXUS] Mistral disabled by test flag.`);
-    return null;
-  }
-
-  const mistralKeys = [process.env.MISTRAL_API_KEY, process.env.MISTRAL_API_KEY_2].filter(Boolean);
-  if (mistralKeys.length === 0) return null;
-
-  for (const key of mistralKeys) {
-    const t0 = Date.now();
-    const tier = getModelTier('mistral', 'mistral-small-latest');
-    try {
-      console.log(`[NEXUS] Trying Mistral model: mistral-small-latest [${tier}]`);
-      const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'mistral-small-latest',
-          messages,
-          temperature,
-          max_tokens: 4096
-        }),
-        signal
-      });
-
-      const elapsed = Date.now() - t0;
-
-      if (res.status === 429) {
-        console.warn(`[NEXUS] Mistral [${tier}] returned HTTP 429 -> trying next key`);
-        continue;
-      }
-
-      if (!res.ok) {
-        console.warn(`[NEXUS] Mistral [${tier}] returned HTTP ${res.status} in ${elapsed}ms`);
-        continue;
-      }
-
-      const data = await res.json();
-      const rawText = data.choices?.[0]?.message?.content;
-      if (rawText) {
-        console.log(`[NEXUS] Mistral (mistral-small-latest) [${tier}] succeeded in ${elapsed}ms`);
-        return { text: cleanModelOutput(rawText), provider: 'mistral', model: 'mistral-small-latest', tier, durationMs: elapsed };
-      }
-      continue;
-    } catch (e) {
-      const elapsed = Date.now() - t0;
-      if (e.name === 'AbortError') {
-        console.warn(`[NEXUS] Mistral [${tier}] TIMED OUT -> trying next key`);
-        continue;
-      }
-      console.warn(`[NEXUS] Mistral [${tier}] error: ${e.message} in ${elapsed}ms`);
-      continue;
-    }
-  }
-  return null;
-}
-
-async function tryDeepSeek(messages, temperature = 0.3, signal = null, testOptions = {}) {
-  // GLOBAL SKIP: DeepSeek deaktiviert bis Guthaben aufgeladen (402 Insufficient Balance)
-  if (process.env.DEEPSEEK_ENABLED === 'false') return null;
-  if (testOptions?.disable_deepseek || testOptions?.force_fail_providers?.includes('deepseek')) {
-    return null;
-  }
-  const key = process.env.DEEPSEEK_API_KEY;
-  if (!key) return null;
-
-  const t0 = Date.now();
-  const tier = getModelTier('deepseek', 'deepseek-chat');
-  try {
-    console.log(`[NEXUS] Trying DeepSeek model: deepseek-chat [${tier}]`);
-    const res = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages,
-        temperature,
-        max_tokens: 4096
-      }),
-      signal
-    });
-
-    const elapsed = Date.now() - t0;
-
-    if (res.status === 429 || res.status === 402) {
-      console.warn(`[NEXUS] DeepSeek [${tier}] returned HTTP ${res.status} (${res.status === 402 ? 'Insufficient Balance' : 'Rate Limited'}) in ${elapsed}ms -> Aborting DeepSeek, switching to next provider.`);
-      return null;
-    }
-
-    if (!res.ok) {
-      console.warn(`[NEXUS] DeepSeek [${tier}] returned HTTP ${res.status} in ${elapsed}ms`);
-      return null;
-    }
-
-    const data = await res.json();
-    const rawText = data.choices?.[0]?.message?.content;
-    if (rawText) {
-      console.log(`[NEXUS] DeepSeek (deepseek-chat) [${tier}] succeeded in ${elapsed}ms`);
-      return { text: cleanModelOutput(rawText), provider: 'deepseek', model: 'deepseek-chat', tier, durationMs: elapsed };
-    }
-    return null;
-  } catch (e) {
-    const elapsed = Date.now() - t0;
-    if (e.name === 'AbortError') {
-      console.warn(`[NEXUS] DeepSeek [${tier}] TIMED OUT after ${elapsed}ms (limit: 2500ms) -> Switching to next provider.`);
-      return null;
-    }
-    console.warn(`[NEXUS] DeepSeek [${tier}] error: ${e.message} in ${elapsed}ms`);
-    return null;
-  }
-}
-
-async function tryOpenAI(messages, temperature = 0.3, signal = null, testOptions = {}) {
-  if (testOptions?.disable_openai || testOptions?.force_fail_providers?.includes('openai')) {
-    return null;
-  }
-
-  const openaiKeys = [process.env.OPENAI_API_KEY, process.env.OPENAI_API_KEY_2].filter(Boolean);
-  if (openaiKeys.length === 0) return null;
-
-  for (const key of openaiKeys) {
-    const t0 = Date.now();
-    const tier = getModelTier('openai', 'gpt-4o-mini');
-    try {
-      console.log(`[NEXUS] Trying OpenAI model: gpt-4o-mini [${tier}]`);
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages,
-          temperature,
-          max_tokens: 4096
-        }),
-        signal
-      });
-
-      const elapsed = Date.now() - t0;
-
-      if (res.status === 429) {
-        console.warn(`[NEXUS] OpenAI [${tier}] returned HTTP 429 -> trying next key`);
-        continue;
-      }
-
-      if (!res.ok) {
-        console.warn(`[NEXUS] OpenAI [${tier}] returned HTTP ${res.status} in ${elapsed}ms`);
-        continue;
-      }
-
-      const data = await res.json();
-      const rawText = data.choices?.[0]?.message?.content;
-      if (rawText) {
-        console.log(`[NEXUS] OpenAI (gpt-4o-mini) [${tier}] succeeded in ${elapsed}ms`);
-        return { text: cleanModelOutput(rawText), provider: 'openai', model: 'gpt-4o-mini', tier, durationMs: elapsed };
-      }
-      continue;
-    } catch (e) {
-      const elapsed = Date.now() - t0;
-      if (e.name === 'AbortError') {
-        console.warn(`[NEXUS] OpenAI [${tier}] TIMED OUT -> trying next key`);
-        continue;
-      }
-      console.warn(`[NEXUS] OpenAI [${tier}] error: ${e.message} in ${elapsed}ms`);
-      continue;
-    }
-  }
-  return null;
-}
-
+// ── Kette via _shared/llm-core.mjs. testOptions (API-Vertrag) wird hier auf
+// Core-Optionen uebersetzt: disable_*/force_fail_providers/invalid_groq_key ->
+// Provider-Liste, skipModels -> Core skipModels (Retry ohne Vorstufen-Modell),
+// preferJsonModels -> profile 'json' (GROQ_JSON_HEAVY) OHNE response_format,
+// weil die alte Kette nur die Modell-Liste tauschte. Vision-Reihenfolge
+// (openrouter zuerst) und Text-Fallback mit Hinweis-Note bleiben identisch.
 async function callAI(messages, temperature = 0.3, hasImage = false, testOptions = {}) {
   const chainStartTime = Date.now();
-  const perProviderTimeoutMs = testOptions?.preferJsonModels ? 4500 : 2500;
 
-  const providers = hasImage 
-    ? [
-        { name: 'openrouter-vision', fn: (signal) => tryOpenRouter(messages, temperature, true, signal, testOptions) },
-        { name: 'groq-vision', fn: (signal) => tryGroq(messages, temperature, true, signal, testOptions) },
-        { name: 'mistral', fn: (signal) => tryMistral(messages, temperature, signal, testOptions) },
-        { name: 'deepseek', fn: (signal) => tryDeepSeek(messages, temperature, signal, testOptions) },
-        { name: 'openai', fn: (signal) => tryOpenAI(messages, temperature, signal, testOptions) },
-      ]
-    : [
-        { name: 'groq', fn: (signal) => tryGroq(messages, temperature, false, signal, testOptions) },
-        { name: 'openrouter', fn: (signal) => tryOpenRouter(messages, temperature, false, signal, testOptions) },
-        { name: 'mistral', fn: (signal) => tryMistral(messages, temperature, signal, testOptions) },
-        { name: 'deepseek', fn: (signal) => tryDeepSeek(messages, temperature, signal, testOptions) },
-        { name: 'openai', fn: (signal) => tryOpenAI(messages, temperature, signal, testOptions) },
-      ];
+  const disabled = new Set([...(testOptions.force_fail_providers || [])]);
+  if (testOptions.disable_groq || testOptions.invalid_groq_key) disabled.add('groq');
+  if (testOptions.disable_openrouter) disabled.add('openrouter');
+  if (testOptions.disable_mistral) disabled.add('mistral');
+  if (testOptions.disable_openai) disabled.add('openai');
+  if (testOptions.disable_deepseek) disabled.add('deepseek');
 
-  let lastError = null;
-  for (const p of providers) {
-    const elapsedSoFar = Date.now() - chainStartTime;
-    if (elapsedSoFar > 20000) {
-      console.warn(`[NEXUS] Total chain time budget exceeded (${elapsedSoFar}ms > 20000ms limit), aborting before Netlify 60s function timeout.`);
-      break;
-    }
+  const baseProviders = hasImage
+    ? ['openrouter', 'groq', 'mistral', 'deepseek', 'openai']
+    : ['groq', 'openrouter', 'mistral', 'deepseek', 'openai'];
+  const providers = baseProviders.filter(p => !disabled.has(p));
 
-    try {
-      const result = await callProviderWithTimeout(p.fn, perProviderTimeoutMs);
-      if (result && result.text) {
-        const totalDuration = Date.now() - chainStartTime;
-        console.log(`[NEXUS] Chain completed successfully via ${result.provider} (${result.model}) [${result.tier || 'TIER-UNKNOWN'}] in ${totalDuration}ms total.`);
-        return { ...result, totalDurationMs: totalDuration };
-      }
-    } catch (e) {
-      console.warn(`[NEXUS] Provider ${p.name} failed with exception:`, e.message);
-      lastError = e;
-    }
+  const profile = hasImage ? 'vision' : (testOptions.preferJsonModels ? 'json' : 'free');
+  const opts = {
+    profile,
+    temperature,
+    max_tokens: 4096,
+    providers,
+    totalBudgetMs: 20000,
+    xTitle: 'NeXus Sales Intelligence',
+    skipModels: testOptions.skipModels || [],
+  };
+
+  let result = null;
+  let lastErr = null;
+  try {
+    result = await callLLM(messages, opts);
+  } catch (e) {
+    lastErr = e;
   }
 
-  // Vision fallback to text-only if all vision providers failed
-  if (hasImage) {
+  // Vision-Fallback: wie bisher Bild-Inhalte entfernen und textbasiert wiederholen
+  if (!result && hasImage) {
     console.log('[NEXUS] All vision providers failed, falling back to text-only');
     const textMessages = messages.map(m => {
       if (Array.isArray(m.content)) {
@@ -402,30 +87,26 @@ async function callAI(messages, temperature = 0.3, hasImage = false, testOptions
       }
       return m;
     });
-    const textProviders = [
-      { name: 'groq-text', fn: (signal) => tryGroq(textMessages, temperature, false, signal, testOptions) },
-      { name: 'openrouter-text', fn: (signal) => tryOpenRouter(textMessages, temperature, false, signal, testOptions) },
-      { name: 'mistral-text', fn: (signal) => tryMistral(textMessages, temperature, signal, testOptions) },
-      { name: 'deepseek-text', fn: (signal) => tryDeepSeek(textMessages, temperature, signal, testOptions) },
-      { name: 'openai-text', fn: (signal) => tryOpenAI(textMessages, temperature, signal, testOptions) },
-    ];
-    for (const p of textProviders) {
-      const elapsedSoFar = Date.now() - chainStartTime;
-      if (elapsedSoFar > 20000) break;
-      try {
-        const result = await callProviderWithTimeout(p.fn, perProviderTimeoutMs);
-        if (result && result.text) {
-          const totalDuration = Date.now() - chainStartTime;
-          console.log(`[NEXUS] Text-only fallback succeeded: ${result.provider} (${result.model}) in ${totalDuration}ms`);
-          return { ...result, text: result.text + '\n\n*[Hinweis: Bildanalyse nicht verfügbar — reine Textanalyse]*', totalDurationMs: totalDuration };
-        }
-      } catch (e) {}
+    try {
+      result = await callLLM(textMessages, opts);
+      result.text = result.text + '\n\n*[Hinweis: Bildanalyse nicht verfügbar — reine Textanalyse]*';
+      console.log(`[NEXUS] Text-only fallback succeeded: ${result.provider} (${result.model}) in ${Date.now() - chainStartTime}ms`);
+    } catch (e) {
+      lastErr = e;
     }
   }
 
-  const totalDuration = Date.now() - chainStartTime;
-  console.error(`[NEXUS] Entire provider chain failed after ${totalDuration}ms.`);
-  throw lastError || new Error("KI antwortet nicht rechtzeitig. Bitte warte kurz und versuche es erneut.");
+  if (!result || !result.text) {
+    const totalDuration = Date.now() - chainStartTime;
+    console.error(`[NEXUS] Entire provider chain failed after ${totalDuration}ms.`);
+    throw lastErr || new Error('KI antwortet nicht rechtzeitig. Bitte warte kurz und versuche es erneut.');
+  }
+
+  const text = cleanModelOutput(result.text);
+  const tier = getModelTier(result.provider, result.model);
+  const totalDurationMs = Date.now() - chainStartTime;
+  console.log(`[NEXUS] Chain completed successfully via ${result.provider} (${result.model}) [${tier}] in ${totalDurationMs}ms total.`);
+  return { text, provider: result.provider, model: result.model, usage: result.usage ?? null, tier, totalDurationMs };
 }
 
 // ── Web Search mit Fallback-Kette: Tavily -> DuckDuckGo -> Brave -> SearXNG ──
