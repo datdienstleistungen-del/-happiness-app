@@ -19,6 +19,36 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 const serviceKey = process.env.SUPABASE_SERVICE_KEY;
 
+// Hintergrund-Queue anstossen (Phase 3, Radar-Queue): Der Worker faehrt den
+// Job serverseitig zu Ende, auch wenn kein Frontend-Tab offen ist.
+// Background-Function antwortet sofort mit 202. Ein Fehlschlag ist unkritisch —
+// das Frontend-Polling auf nexus-radar-scan-step bleibt als Fallback-Treiber.
+// Ohne process.env.URL (lokale Dev-Umgebung) wird nicht ausgeloest.
+async function triggerScanQueue(jobId) {
+  const base = process.env.URL;
+  const secret = process.env.RADAR_QUEUE_SECRET || process.env.SUPABASE_SERVICE_KEY;
+  if (!base || !secret) {
+    console.warn('[ScanStart] Kein URL/Queue-Secret in der Env — Queue-Trigger uebersprungen (Polling-Fallback).');
+    return false;
+  }
+  try {
+    const res = await fetch(`${base}/.netlify/functions/nexus-radar-scan-queue`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-queue-secret': secret },
+      body: JSON.stringify({ job_id: jobId }),
+      signal: AbortSignal.timeout(4000)
+    });
+    if (res.ok) {
+      console.log(`[ScanStart] Queue-Worker fuer Job ${jobId} angestossen (HTTP ${res.status}).`);
+      return true;
+    }
+    console.warn(`[ScanStart] Queue-Trigger fehlgeschlagen (HTTP ${res.status}) — Frontend-Polling uebernimmt.`);
+  } catch (e) {
+    console.warn('[ScanStart] Queue-Trigger Fehler:', e.message, '— Frontend-Polling uebernimmt.');
+  }
+  return false;
+}
+
 async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
   const controller = new AbortController();
   const abortId = setTimeout(() => controller.abort(), timeoutMs);
@@ -125,6 +155,8 @@ export const handler = async (event) => {
       // Wenn noch ein fresh <2min Job existiert → blockieren
       const freshRunning = allRunningRes.data.filter(j => !staleIds.includes(j.id));
       if (freshRunning.length > 0) {
+        // Queue erneut anstossen: heilt Jobs, deren Worker gestorben ist
+        await triggerScanQueue(freshRunning[0].id);
         return {
           statusCode: 200,
           body: JSON.stringify({
@@ -234,7 +266,8 @@ export const handler = async (event) => {
         total_steps: uniqueResults.length,
         pending_urls: uniqueResults.map(r => ({ url: r.url, title: r.title || '', source_type: r.source_type || 'NEWS' })),
         partial_results: [],
-        last_message: `Suche gestartet: ${uniqueResults.length} Kandidaten gefunden...`
+        last_message: `Suche gestartet: ${uniqueResults.length} Kandidaten gefunden...`,
+        updated_at: new Date().toISOString()
       })
       .select('id')
       .single();
@@ -251,6 +284,8 @@ export const handler = async (event) => {
     }
 
     console.log(`[ScanStart] Job ${newJobId} created: ${uniqueResults.length} URLs`);
+
+    await triggerScanQueue(newJobId);
 
     return {
       statusCode: 200,
