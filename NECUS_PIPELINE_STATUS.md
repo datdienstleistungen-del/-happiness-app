@@ -1,5 +1,14 @@
 # NeXus Pipeline – Stand 09.09.2026 / 21:00 Uhr
 
+## Update 28.09.2026 – Sanierung (Phasen 3 + 5)
+
+1. **Radar-Queue (Server-Worker):** `nexus-radar-scan-start` legt den Job an und stößt sofort `nexus-radar-scan-queue-background` an (Background-Function, leeres 202, Budget 8 min). Der Scan läuft **serverseitig zu Ende** — geschlossener Browser-Tab stoppt ihn nicht mehr. `nexus-radar-scan-step` bleibt als Read-/Fallback-Polling (Claim-geschützt über `updated_at`).
+2. **Scan → B2-Brücke:** Jede geholte Scan-URL wird zusätzlich als `nexus_radar_hits`-Row (`pending`, `source='NeXus Radar Scan'`) abgelegt → **cron-evaluate wertet Scan-Treffer automatisch mit** (Company/Trigger/Opportunity wie bei B1, Dedup über `url_hash`).
+3. **Qualitäts-Blocklist:** `_shared/url-rules.mjs` filtert Jobbörsen/Social/Marktplätze/SES aus B1-Treffern und Suchkandidaten (synthetische HIRING-Quellen im Scan bleiben). Env `RADAR_BLOCKLIST` ergänzt die eingebaute Liste.
+4. **Quota:** `_shared/quota.mjs` (Netlify Blobs) — Tavily-Tagesbudget pro Key (`TAVILY_DAILY_LIMIT`, Default 30/Key/Tag → sonst DDG-Fallback) und LLM-Cooldowns (429 → 10 Min pro Modell, 402 → 60 Min providerweit).
+
+---
+
 ## Was wurde erreicht?
 
 Die **automatisierte NeXus Lead-Pipeline** funktioniert jetzt Ende-zu-Ende (E2E). Das heißt:
@@ -81,6 +90,10 @@ Die **automatisierte NeXus Lead-Pipeline** funktioniert jetzt Ende-zu-Ende (E2E)
 | `TAVILY_API_KEY` | ✅ gesetzt |
 | `DEEPSEEK_API_KEY` | ✅ gesetzt |
 | `BACKGROUND_AI_PROVIDER` | ✅ `deepseek` |
+| `RADAR_QUEUE_SECRET` | ⬜ optional (sonst Fallback auf Service-Key; ohne beides Queue aus, Polling-Fallback) |
+| `RADAR_BLOCKLIST` | ⬜ optional (kommagetrennte Domains, ergänzt Standard-Blocklist) |
+| `TAVILY_DAILY_LIMIT` | ⬜ optional (Default 30 Calls/Key/Tag) |
+| `LLM_COOLDOWN_429_MS` / `LLM_COOLDOWN_402_MS` | ⬜ optional (Default 10 Min / 60 Min) |
 
 **Werte liegen in `.env` (lokal) und in Netlify Dashboard → Environment Variables.**
 
@@ -125,7 +138,7 @@ Die **automatisierte NeXus Lead-Pipeline** funktioniert jetzt Ende-zu-Ende (E2E)
 
 ## Nächste Schritte
 
-1. **B1-Suchrauschen reduzieren** — Die Suchstrategie verbessern, damit weniger irrelevante Treffer (Job-Börsen, Instagram) entstehen. Das ist eine Qualitätsfrage, kein Bug.
+1. **B1-Suchrauschen reduzieren** — Grundfilter läuft (URL-Blocklist, Phase 5a). Offen: Suchquery-Verfeinerung, damit weniger irrelevante Treffer entstehen.
 
 2. **Offering-Intelligence** — NeXus muss aus "Wir bauen Industrietore" selbst verstehen, was das bedeutet und daraus sinnvolle Such- und Triggerlogik entwickeln. Die Pipeline darunter steht.
 
