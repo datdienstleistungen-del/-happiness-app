@@ -13,88 +13,14 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { GROQ_JSON_HEAVY, OPENROUTER_FREE_MODELS, MISTRAL_DEFAULT_MODEL, OPENAI_DEFAULT_MODEL } from './nexus-models.mjs';
+import { callLLM } from './_shared/llm-core.mjs';
+import { extractJson, companyProfileSchema } from './_shared/schemas.mjs';
 import { fetchAndExtractText } from './_shared/html-fetch.mjs';
 import { checkTextGroundedInSource } from './grounding-helpers.mjs';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 const serviceKey = process.env.SUPABASE_SERVICE_KEY;
-
-async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
-  const controller = new AbortController();
-  const abortId = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
-    clearTimeout(abortId);
-    return res;
-  } catch (e) {
-    clearTimeout(abortId);
-    throw e;
-  }
-}
-
-async function callAI(messages, { temperature = 0.3, max_tokens = 4096, jsonMode = false } = {}) {
-  const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
-  if (groqKey) {
-    for (const model of GROQ_JSON_HEAVY) {
-      try {
-        const payload = { model, messages, temperature, max_tokens };
-        if (jsonMode) payload.response_format = { type: 'json_object' };
-        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }, 6500);
-        if (res.status === 429) break;
-        if (!res.ok) continue;
-        const data = await res.json();
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return { text, provider: 'groq', model };
-      } catch (e) { /* continue */ }
-    }
-  }
-
-  const openrouterKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
-  if (openrouterKey) {
-    for (const model of OPENROUTER_FREE_MODELS) {
-      try {
-        const payload = { model, messages, temperature, max_tokens };
-        if (jsonMode) payload.response_format = { type: 'json_object' };
-        const res = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${openrouterKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }, 6500);
-        if (res.status === 429) continue;
-        if (!res.ok) continue;
-        const data = await res.json();
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return { text, provider: 'openrouter', model };
-      } catch (e) { /* continue */ }
-    }
-  }
-
-  const mistralKey = process.env.MISTRAL_API_KEY;
-  if (mistralKey) {
-    try {
-      const payload = { model: MISTRAL_DEFAULT_MODEL, messages, temperature };
-      if (jsonMode) payload.response_format = { type: 'json_object' };
-      const res = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${mistralKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }, 6500);
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return { text, provider: 'mistral', model: MISTRAL_DEFAULT_MODEL };
-      }
-    } catch (e) { /* skip */ }
-  }
-
-  return null;
-}
 
 const SYSTEM_PROMPT = `Du bist die NeXus Firmenprofil-Engine. Du extrahierst strukturierte Informationen aus Webseiten-Inhalten.
 
@@ -250,18 +176,18 @@ Gib ein JSON zurück:
   "verkaufsargument": "Wie der Vertriebler dieses Signal vertrieblich ansprechen sollte (2-3 Sätze)"
 }`;
 
-        const painResult = await callAI([
+        const painResult = await callLLM([
           { role: 'system', content: 'Du gibst IMMER valides JSON zurück, ohne Markdown-Blöcke.' },
           { role: 'user', content: painPointPrompt }
-        ], { temperature: 0.3, max_tokens: 1500, jsonMode: true });
+        ], { profile: 'json', temperature: 0.3, max_tokens: 1500, jsonMode: true, totalBudgetMs: 6500 }).catch(() => null);
 
         if (painResult?.text) {
-          try {
-            const cleaned = painResult.text.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
-            painPoints = JSON.parse(cleaned);
+          const parsedPain = extractJson(painResult.text);
+          if (parsedPain && typeof parsedPain === 'object') {
+            painPoints = parsedPain;
             console.log(`[CompanyProfileStep] Pain points deduced: ${painPoints.haupt_schmerzpunkt}`);
-          } catch (e) {
-            console.warn('[CompanyProfileStep] Pain point JSON parse failed:', e.message);
+          } else {
+            console.warn('[CompanyProfileStep] Pain point JSON parse failed');
           }
         }
       }
@@ -333,19 +259,26 @@ ${fetched.text.substring(0, 3000)}
 
 Extrahiere eine strukturierte Firmenbeschreibung. Jede Aussage MUSS ein wörtliches Zitat als Beleg haben.`;
 
-    const llmResult = await callAI([
+    const llmResult = await callLLM([
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: userPrompt }
-    ], { temperature: 0.3, max_tokens: 2000, jsonMode: true });
+    ], { profile: 'json', temperature: 0.3, max_tokens: 2000, jsonMode: true, totalBudgetMs: 6500 }).catch(() => null);
 
     let extracted = { aussagen: [], leistungen: [], zielgruppe: null, impressum_info: null, is_competitor: false, competitor_reason: null, competitor_category: null };
 
     if (llmResult?.text) {
-      try {
-        const cleaned = llmResult.text.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
-        extracted = JSON.parse(cleaned);
-      } catch (e) {
-        console.warn('[CompanyProfileStep] JSON parse failed:', e.message);
+      // Fence-Toleranz + Zod: is_competitor wird zu echtem boolean
+      // (siehe _shared/schemas.mjs) — sonst triggert "false" das Competitor-Gate.
+      const rawProfile = extractJson(llmResult.text);
+      if (rawProfile === null || typeof rawProfile !== 'object') {
+        console.warn('[CompanyProfileStep] JSON parse failed: kein valides JSON');
+      } else {
+        const profileParsed = companyProfileSchema.safeParse(rawProfile);
+        if (profileParsed.success) {
+          extracted = profileParsed.data;
+        } else {
+          console.warn('[CompanyProfileStep] Schema-Verletzung:', profileParsed.error.issues.slice(0, 3).map((i) => i.path.join('.')).join(', '));
+        }
       }
     }
 

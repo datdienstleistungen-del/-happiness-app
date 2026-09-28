@@ -15,15 +15,12 @@
  */
 
 import crypto from 'crypto';
+import { callLLM } from './_shared/llm-core.mjs';
+import { extractJson } from './_shared/schemas.mjs';
+import { getTavilyKeys, tavilySearch, searchDuckDuckGo } from './_shared/search-core.mjs';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-
-const tavilyKeys = [
-  process.env.TAVILY_API_KEY,
-  process.env.TAVILY_API_KEY_2,
-  process.env.VITE_TAVILY_API_KEY
-].filter(Boolean);
 
 function authHeaders(token) {
   return {
@@ -37,9 +34,6 @@ function authHeaders(token) {
 // --- LLM: Suchstrategien generieren ---
 
 async function generateSearchStrategies(eventType, region) {
-  const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
-  if (!groqKey) return null;
-
   const messages = [
     {
       role: 'system',
@@ -65,23 +59,18 @@ Zeitraum: Letzte 30 Tage`
   ];
 
   try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'qwen/qwen3.8-27b',
-        messages,
-        temperature: 0.3,
-        max_tokens: 800,
-        response_format: { type: 'json_object' }
-      })
+    // Kette via _shared/llm-core (Profile aus nexus-models, json_object-Mode).
+    // Nur Groq wie bisher — kein bezahlter Fallback fuer diesen Cron.
+    const aiRes = await callLLM(messages, {
+      profile: 'json',
+      jsonMode: true,
+      temperature: 0.3,
+      max_tokens: 800,
+      totalBudgetMs: 12000,
+      providers: ['groq'],
     });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const text = data.choices?.[0]?.message?.content;
-    if (!text) return null;
-
-    const parsed = JSON.parse(text);
+    const parsed = extractJson(aiRes.text);
+    if (!parsed) return null;
     return Array.isArray(parsed) ? parsed : (parsed.strategies || parsed.queries || []);
   } catch (e) {
     console.warn('[Event Search] Strategy generation failed:', e.message);
@@ -92,61 +81,11 @@ Zeitraum: Letzte 30 Tage`
 // --- Tavily Search ---
 
 async function searchTavily(query, maxResults = 5) {
-  for (const key of tavilyKeys) {
-    try {
-      const res = await fetch('https://api.tavily.com/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          api_key: key,
-          query: query,
-          search_depth: 'basic',
-          include_raw_content: false,
-          max_results: maxResults,
-          days_back: 30
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.results?.length > 0) return data.results;
-      }
-    } catch (e) { /* try next key */ }
+  for (const key of getTavilyKeys()) {
+    const out = await tavilySearch(query, key, { maxResults, searchDepth: 'basic', includeRawContent: false, daysBack: 30 });
+    if (out.ok) return out.results;
   }
   return [];
-}
-
-// --- DuckDuckGo Fallback ---
-
-async function searchDuckDuckGo(query, maxResults = 5) {
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 6000);
-    const res = await fetch(
-      `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
-      { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }, signal: controller.signal }
-    );
-    clearTimeout(timer);
-    if (!res.ok) return [];
-    const html = await res.text();
-    const results = [];
-    const linkRegex = /<a[^>]+class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
-    let match;
-    while ((match = linkRegex.exec(html)) !== null && results.length < maxResults) {
-      const href = match[1];
-      const title = match[2].replace(/<[^>]*>/g, '').trim();
-      let url = null;
-      if (href.includes('uddg=')) {
-        const uddgMatch = href.match(/uddg=([^&]*)/);
-        if (uddgMatch) url = decodeURIComponent(uddgMatch[1]);
-      } else if (href.startsWith('http')) {
-        url = href;
-      }
-      if (url && title) results.push({ url, title, content: '' });
-    }
-    return results;
-  } catch (e) {
-    return [];
-  }
 }
 
 // --- Content Hash ---
@@ -203,7 +142,7 @@ export async function handler(event) {
 
       let results = await searchTavily(query, 5);
       if (results.length === 0) {
-        results = await searchDuckDuckGo(query, 5);
+        results = await searchDuckDuckGo(query, { maxResults: 5 });
       }
       allResults.push(...results.map(r => ({ ...r, _query: query })));
     }

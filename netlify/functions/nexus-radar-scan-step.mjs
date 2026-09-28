@@ -12,7 +12,8 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { GROQ_JSON_HEAVY, OPENROUTER_FREE_MODELS, MISTRAL_DEFAULT_MODEL, OPENAI_DEFAULT_MODEL } from './nexus-models.mjs';
+import { callLLM } from './_shared/llm-core.mjs';
+import { parseScanTriggers, extractJson } from './_shared/schemas.mjs';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
@@ -49,93 +50,6 @@ async function fetchPageText(url) {
   } catch (e) {
     return null;
   }
-}
-
-async function callAI(messages, { temperature = 0.3, max_tokens = 4096, jsonMode = false } = {}) {
-  // 1. Groq
-  const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
-  if (groqKey) {
-    for (const model of GROQ_JSON_HEAVY) {
-      try {
-        const payload = { model, messages, temperature, max_tokens };
-        if (jsonMode) payload.response_format = { type: 'json_object' };
-        const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }, 6500);
-        if (res.status === 429) break;
-        if (!res.ok) continue;
-        const data = await res.json();
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return { text, provider: 'groq', model };
-      } catch (e) { /* continue */ }
-    }
-  }
-
-  // 2. OpenRouter
-  const openrouterKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
-  if (openrouterKey) {
-    for (const model of OPENROUTER_FREE_MODELS) {
-      try {
-        const res = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openrouterKey}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://nexus-hit.netlify.app',
-            'X-Title': 'NeXus Research'
-          },
-          body: JSON.stringify({ model, messages, temperature, max_tokens })
-        }, 6500);
-        if (res.status === 429) break;
-        if (!res.ok) continue;
-        const data = await res.json();
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return { text, provider: 'openrouter', model };
-      } catch (e) { /* continue */ }
-    }
-  }
-
-  // 3. Mistral
-  const mistralKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
-  if (mistralKey) {
-    try {
-      const payload = { model: MISTRAL_DEFAULT_MODEL, messages, temperature, max_tokens };
-      if (jsonMode) payload.response_format = { type: 'json_object' };
-      const res = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${mistralKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }, 6500);
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return { text, provider: 'mistral', model: MISTRAL_DEFAULT_MODEL };
-      }
-    } catch (e) { /* continue */ }
-  }
-
-  // 4. OpenAI
-  const openaiKey = process.env.OPENAI_API_KEY;
-  if (openaiKey) {
-    try {
-      const payload = { model: OPENAI_DEFAULT_MODEL, messages, temperature, max_tokens };
-      if (jsonMode) payload.response_format = { type: 'json_object' };
-      const res = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }, 6500);
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return { text, provider: 'openai', model: 'gpt-4o-mini' };
-      }
-    } catch (e) { /* continue */ }
-  }
-
-  return null;
 }
 
 export const handler = async (event) => {
@@ -336,21 +250,20 @@ Gib ein JSON zurück:
 }`;
 
     const llmResult = await Promise.race([
-      callAI([
+      callLLM([
         { role: 'system', content: 'Du gibst IMMER valides JSON zurück, ohne Markdown-Blöcke.' },
         { role: 'user', content: extractPrompt }
-      ], { temperature: 0.3, max_tokens: 2000, jsonMode: true }),
+      ], { profile: 'json', temperature: 0.3, max_tokens: 2000, jsonMode: true, totalBudgetMs: 4400, xTitle: 'NeXus Research' }).catch(() => null),
       new Promise(resolve => setTimeout(() => resolve(null), 4500)) // LLM-Budget: nie über 10s Netlify-Limit
     ]);
 
+    // Zod sichert: trigger_events bleibt ein Array (siehe _shared/schemas.mjs)
     let extracted = { trigger_events: [] };
     if (llmResult?.text) {
-      try {
-        const cleaned = llmResult.text.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
-        extracted = JSON.parse(cleaned);
-      } catch (e) {
-        console.warn(`[ScanStep] JSON parse error for ${domain}:`, e.message);
+      if (extractJson(llmResult.text) === null) {
+        console.warn(`[ScanStep] JSON parse error for ${domain}: kein valides JSON`);
       }
+      extracted = parseScanTriggers(llmResult.text);
     }
 
     // 3. Ergebnis an partial_results anhängen

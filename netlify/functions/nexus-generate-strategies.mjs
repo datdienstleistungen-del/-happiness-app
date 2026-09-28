@@ -1,158 +1,11 @@
 
 
-import { GROQ_JSON_HEAVY, OPENROUTER_FREE_MODELS, MISTRAL_DEFAULT_MODEL, OPENAI_DEFAULT_MODEL } from './nexus-models.mjs';
+import { callLLM } from './_shared/llm-core.mjs';
+import { parseStrategiesOutput } from './_shared/schemas.mjs';
 
 // Gesamtbudget für die Provider-Kette — deutlich unter dem Netlify-Sync-Limit
 // (60s, nicht konfigurierbar), damit Auth + DELETE + INSERT des Handlers noch Platz haben.
 const TOTAL_BUDGET_MS = 22000;
-
-async function fetchWithTimeout(url, options, timeoutMs = 8000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
-    return { res, timer };
-  } catch (err) {
-    clearTimeout(timer);
-    throw err;
-  }
-}
-
-function cleanJsonText(text) {
-  return text.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
-}
-
-async function callAI(messages, { temperature = 0.7, max_tokens = 4096, jsonMode = false } = {}) {
-  const deadline = Date.now() + TOTAL_BUDGET_MS;
-  const remaining = () => deadline - Date.now();
-  // Kurz-Protokoll: welcher Provider warum gescheitert — erscheint in der Fehlermeldung
-  const errors = [];
-  const fail = (tag) => errors.push(tag);
-
-  // 1. Groq (Primary) — pro Modell eigene Rate-Limits, deshalb bei 429 zum nächsten Modell.
-  //    Bei 400 auf response_format wird einmal ohne json_mode wiederholt (JSON per Extraktion).
-  const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
-  if (groqKey) {
-    for (const model of GROQ_JSON_HEAVY) {
-      if (remaining() < 1500) { fail('groq:budget'); break; }
-      const variants = jsonMode ? [true, false] : [false];
-      let nextModel = false;
-      for (const withJson of variants) {
-        if (nextModel) break;
-        try {
-          const payload = { model, messages, temperature, max_tokens };
-          if (withJson) payload.response_format = { type: 'json_object' };
-          const { res, timer } = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          }, Math.min(9000, remaining()));
-          clearTimeout(timer);
-          if (res.status === 429) { fail(`groq:${model}:429`); nextModel = true; break; }
-          if (res.status === 400 && withJson) { fail(`groq:${model}:400-json`); continue; }
-          if (!res.ok) { fail(`groq:${model}:${res.status}`); nextModel = true; break; }
-          const data = await res.json();
-          const text = data.choices?.[0]?.message?.content;
-          if (text) return { text, provider: 'groq', model };
-          fail(`groq:${model}:leer`);
-          nextModel = true;
-        } catch (e) {
-          fail(`groq:${model}:${e.name === 'AbortError' ? 'timeout' : 'netz'}`);
-          nextModel = true;
-        }
-      }
-    }
-  } else {
-    fail('groq:kein-key');
-  }
-
-  // 2. OpenRouter (Free Models) — Tageslimit 50, bei 429 sofort weiter zu Mistral
-  const openrouterKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
-  if (openrouterKey) {
-    for (const model of OPENROUTER_FREE_MODELS.slice(0, 3)) {
-      if (remaining() < 1200) { fail('openrouter:budget'); break; }
-      try {
-        const { res, timer } = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openrouterKey}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://nexus-hit.netlify.app',
-            'X-Title': 'NeXus Strategies'
-          },
-          body: JSON.stringify({ model, messages, temperature, max_tokens })
-        }, Math.min(4000, remaining()));
-        clearTimeout(timer);
-        if (res.status === 429) { fail(`openrouter:429-${model}`); break; }
-        if (!res.ok) { fail(`openrouter:${model}:${res.status}`); continue; }
-        const data = await res.json();
-        const text = data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning;
-        if (text) return { text, provider: 'openrouter', model };
-        fail(`openrouter:${model}:leer`);
-      } catch (e) {
-        fail(`openrouter:${model}:${e.name === 'AbortError' ? 'timeout' : 'netz'}`);
-      }
-    }
-  } else {
-    fail('openrouter:kein-key');
-  }
-
-  // 3. Mistral
-  const mistralKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
-  if (mistralKey && remaining() >= 1200) {
-    try {
-      const payload = { model: MISTRAL_DEFAULT_MODEL, messages, temperature, max_tokens };
-      if (jsonMode) payload.response_format = { type: 'json_object' };
-      const { res, timer } = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${mistralKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }, Math.min(4000, remaining()));
-      clearTimeout(timer);
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return { text, provider: 'mistral', model: MISTRAL_DEFAULT_MODEL };
-        fail('mistral:leer');
-      } else {
-        fail(`mistral:${res.status}`);
-      }
-    } catch (e) {
-      fail(`mistral:${e.name === 'AbortError' ? 'timeout' : 'netz'}`);
-    }
-  } else {
-    fail(mistralKey ? 'mistral:budget' : 'mistral:kein-key');
-  }
-
-  // 4. OpenAI
-  const openaiKey = process.env.OPENAI_API_KEY;
-  if (openaiKey && remaining() >= 1000) {
-    try {
-      const payload = { model: OPENAI_DEFAULT_MODEL, messages, temperature, max_tokens };
-      if (jsonMode) payload.response_format = { type: 'json_object' };
-      const { res, timer } = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }, Math.min(4000, remaining()));
-      clearTimeout(timer);
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return { text, provider: 'openai', model: OPENAI_DEFAULT_MODEL };
-        fail('openai:leer');
-      } else {
-        fail(`openai:${res.status}`);
-      }
-    } catch (e) {
-      fail(`openai:${e.name === 'AbortError' ? 'timeout' : 'netz'}`);
-    }
-  } else {
-    fail(openaiKey ? 'openai:budget' : 'openai:kein-key');
-  }
-
-  throw new Error(`Alle KI-Provider sind derzeit ausgelastet oder nicht erreichbar. (${errors.slice(0, 10).join(', ')})`);
-}
 
 export const handler = async (event, context) => {
   if (event.httpMethod !== "POST") {
@@ -217,60 +70,16 @@ Antworte AUSSCHLIESSLICH im folgenden JSON-Format:
   ]
 }`;
 
-    const aiRes = await callAI([{ role: "system", content: systemPrompt }], { temperature: 0.7, jsonMode: true });
-    let content = cleanJsonText(aiRes.text);
-    let parsed;
-    try {
-      parsed = JSON.parse(content);
-    } catch (e) {
-      // Ohne response_format kann umschliessenden Text enthalten — erstes {...} extrahieren
-      const start = content.indexOf('{');
-      const end = content.lastIndexOf('}');
-      if (start >= 0 && end > start) {
-        try { parsed = JSON.parse(content.slice(start, end + 1)); } catch (e2) { /* fall through */ }
-      }
-      if (!parsed) {
-        return { statusCode: 500, body: JSON.stringify({ error: "Invalid JSON from AI" }) };
-      }
-    }
-
-    let rawStrategies = [];
-    if (Array.isArray(parsed)) {
-      rawStrategies = parsed;
-    } else if (Array.isArray(parsed.strategies)) {
-      rawStrategies = parsed.strategies;
-    } else if (Array.isArray(parsed.signal_strategies)) {
-      rawStrategies = parsed.signal_strategies;
-    } else if (Array.isArray(parsed.data)) {
-      rawStrategies = parsed.data;
-    } else {
-      for (const val of Object.values(parsed)) {
-        if (Array.isArray(val) && val.length > 0) {
-          rawStrategies = val;
-          break;
-        }
-      }
-    }
-
-    const validStrategies = rawStrategies.map(s => {
-      const category = s.signal_category || s.category || s.type || 'expansion';
-      const triggerName = s.trigger_name || s.name || s.trigger || s.title || 'Signal Trigger';
-      const whyRelevant = s.why_relevant || s.why || s.relevance || s.reason || s.explanation || 'Relevanter B2B Vertriebs-Trigger';
-      const queries = s.search_queries || s.queries || (s.query ? [{ market: 'Global', language: 'de', query: s.query }] : []);
-      const sources = s.source_hints || s.sources || s.hints || ['Web & LinkedIn'];
-
-      return {
-        signal_category: category,
-        trigger_name: triggerName,
-        why_relevant: whyRelevant,
-        search_queries: queries,
-        source_hints: sources
-      };
-    }).filter(s => s.trigger_name && s.why_relevant);
-
-    if (validStrategies.length === 0) {
-      return { statusCode: 500, body: JSON.stringify({ error: "AI generated no valid strategies." }) };
-    }
+    const aiRes = await callLLM([{ role: "system", content: systemPrompt }], {
+      profile: 'json',
+      temperature: 0.7,
+      jsonMode: true,
+      totalBudgetMs: TOTAL_BUDGET_MS,
+      xTitle: 'NeXus Strategies',
+    });
+    // Extraktion + Alias-Normalisierung + Zod sichern die kanonische Form
+    // (siehe _shared/schemas.mjs). Wirft -> aeußerer Catch liefert 500 mit Grund.
+    const validStrategies = parseStrategiesOutput(aiRes.text).strategies;
 
     // Alte Strategien erst JETZT löschen — die KI hat erfolgreich geliefert,
     // ein Fehlschlag oben darf die vorhandenen Strategien nicht zerstören.

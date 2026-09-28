@@ -20,69 +20,11 @@
  * - Welcher Kunde ist interessiert?
  */
 
-import { GROQ_FREE_FIRST } from './nexus-models.mjs';
+import { callLLM } from './_shared/llm-core.mjs';
+import { extractJson, businessEventSchema } from './_shared/schemas.mjs';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-
-async function callLLM(messages, { temperature = 0.2, max_tokens = 1500 } = {}) {
-  // 1. Groq (Free)
-  const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
-  if (groqKey) {
-    const models = GROQ_FREE_FIRST;
-    for (const model of models) {
-      try {
-        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model, messages, temperature, max_tokens, response_format: { type: 'json_object' } })
-        });
-        if (res.status === 429) break;
-        if (res.ok) {
-          const data = await res.json();
-          const text = data.choices?.[0]?.message?.content;
-          if (text) return { text, provider: 'groq', model };
-        }
-      } catch (e) { /* continue */ }
-    }
-  }
-
-  // 2. DeepSeek (skip if disabled or no balance)
-  const dsKey = process.env.DEEPSEEK_API_KEY;
-  if (dsKey && process.env.DEEPSEEK_ENABLED !== 'false') {
-    try {
-      const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${dsKey}` },
-        body: JSON.stringify({ model: 'deepseek-chat', messages, temperature, max_tokens, response_format: { type: 'json_object' } })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return { text, provider: 'deepseek', model: 'deepseek-chat' };
-      }
-    } catch (e) { /* continue */ }
-  }
-
-  // 3. Mistral
-  const mistralKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
-  if (mistralKey) {
-    try {
-      const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${mistralKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'mistral-small-latest', messages, temperature, max_tokens, response_format: { type: 'json_object' } })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return { text, provider: 'mistral', model: 'mistral-small-latest' };
-      }
-    } catch (e) { /* continue */ }
-  }
-
-  return null;
-}
 
 function buildExtractionPrompt(rawContent, sourceUrl, sourceTitle) {
   const currentDate = new Date().toISOString().split('T')[0];
@@ -161,17 +103,35 @@ export async function extractEventFromRaw(rawEventId, token, userId) {
   // 2. LLM-Prompt bauen
   const messages = buildExtractionPrompt(raw.raw_content || '', raw.source_url, raw.title);
 
-  // 3. LLM aufrufen
-  const llmResult = await callLLM(messages);
-  if (!llmResult) return { error: 'LLM failed' };
-
-  // 4. JSON parsen
-  let extracted;
+  // 3. LLM aufrufen — Kette via _shared/llm-core, Reihenfolge wie bisher
+  //    (Groq -> DeepSeek -> Mistral), Free-Modelle, json_object-Mode.
+  let llmResult;
   try {
-    extracted = JSON.parse(llmResult.text);
+    llmResult = await callLLM(messages, {
+      profile: 'free',
+      jsonMode: true,
+      temperature: 0.2,
+      max_tokens: 1500,
+      providers: ['groq', 'deepseek', 'mistral'],
+    });
   } catch (e) {
+    return { error: 'LLM failed', detail: e.message };
+  }
+
+  // 4. JSON parsen (Fence-Toleranz) + Zod-Validierung (_shared/schemas.mjs)
+  let extracted = extractJson(llmResult.text);
+  if (extracted === null || typeof extracted !== 'object') {
     return { error: 'Invalid JSON from LLM', raw: llmResult.text };
   }
+  const eventParsed = businessEventSchema.safeParse(extracted);
+  if (!eventParsed.success) {
+    return {
+      error: 'Schema-Verletzung vom LLM',
+      detail: eventParsed.error.issues.slice(0, 3).map((i) => i.path.join('.')).join(', '),
+      raw: llmResult.text,
+    };
+  }
+  extracted = eventParsed.data;
 
   // 5. Validation
   if (!extracted.company_name || extracted.company_name === 'null') {

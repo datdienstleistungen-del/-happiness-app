@@ -1,4 +1,5 @@
-import { GROQ_FREE_FIRST } from './nexus-models.mjs';
+import { callLLM } from './_shared/llm-core.mjs';
+import { extractJson, radarHitClassificationSchema } from './_shared/schemas.mjs';
 
 export async function handler(event, context) {
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
@@ -108,58 +109,30 @@ Antworte strikt in JSON mit exakt diesen 6 Feldern:
         let aiResult = null;
         const llmMessages = [{ role: 'system', content: 'Du bist ein Vertriebsassistent. Antworte immer im JSON-Format.' }, { role: 'user', content: prompt }];
 
-        // 1. Groq (primary, free)
-        if (groqKey) {
-          for (const model of GROQ_FREE_FIRST) {
-            try {
-              const gRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model, messages: llmMessages, temperature: 0.2, max_tokens: 1000, response_format: { type: 'json_object' } }),
-                signal: AbortSignal.timeout(8000)
-              });
-              if (gRes.ok) {
-                const gData = await gRes.json();
-                aiResult = JSON.parse(gData.choices[0].message.content);
-                console.log(`B2 Cron: Groq ${model} OK`);
-                break;
-              }
-            } catch (e) { /* continue */ }
+        // Kette via _shared/llm-core: Groq -> Mistral -> DeepSeek (wie bisher),
+        // json_object-Mode. Ausgabe serverseitig per Zod geprueft
+        // (relevance_score wird koerziert und auf 0-100 geclamped).
+        try {
+          const aiRes = await callLLM(llmMessages, {
+            profile: 'free',
+            jsonMode: true,
+            temperature: 0.2,
+            max_tokens: 1000,
+            totalBudgetMs: 20000,
+            providers: ['groq', 'mistral', 'deepseek'],
+          });
+          const parsed = extractJson(aiRes.text);
+          if (parsed && typeof parsed === 'object') {
+            const cls = radarHitClassificationSchema.safeParse(parsed);
+            if (cls.success) {
+              aiResult = cls.data;
+              console.log(`B2 Cron: ${aiRes.provider} ${aiRes.model} OK`);
+            } else {
+              console.warn('B2 Cron: Schema-Verletzung:', cls.error.issues.slice(0, 3).map((i) => i.path.join('.')).join(', '));
+            }
           }
-        }
-
-        // 2. Mistral fallback
-        if (!aiResult && mistralKey) {
-          try {
-            const mRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${mistralKey}` },
-              body: JSON.stringify({ model: 'mistral-small-latest', messages: llmMessages, temperature: 0.2, max_tokens: 1000, response_format: { type: 'json_object' } }),
-              signal: AbortSignal.timeout(8000)
-            });
-            if (mRes.ok) {
-              const mData = await mRes.json();
-              aiResult = JSON.parse(mData.choices[0].message.content);
-              console.log('B2 Cron: Mistral OK');
-            }
-          } catch (e) { /* continue */ }
-        }
-
-        // 3. DeepSeek fallback (skip if disabled or no balance)
-        if (!aiResult && deepseekKey && process.env.DEEPSEEK_ENABLED !== 'false') {
-          try {
-            const dsRes = await fetch('https://api.deepseek.com/v1/chat/completions', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deepseekKey}` },
-              body: JSON.stringify({ model: 'deepseek-chat', messages: llmMessages, temperature: 0.2, max_tokens: 1000, response_format: { type: 'json_object' } }),
-              signal: AbortSignal.timeout(8000)
-            });
-            if (dsRes.ok) {
-              const dsData = await dsRes.json();
-              aiResult = JSON.parse(dsData.choices[0].message.content);
-              console.log('B2 Cron: DeepSeek OK');
-            }
-          } catch (e) { /* continue */ }
+        } catch (e) {
+          console.warn(`B2 Cron: Provider-Kette fehlgeschlagen fuer Hit ${hit.id}: ${e.message}`);
         }
 
         if (!aiResult) {

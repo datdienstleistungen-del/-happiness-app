@@ -33,7 +33,8 @@
     "react-router-dom": "^7.1.0",
     "remark-gfm": "^4.0.1",
     "stripe": "^22.3.0",
-    "ws": "^8.21.3"
+    "ws": "^8.21.3",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.110.0",

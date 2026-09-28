@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { checkTextGroundedInSource, detectConcreteNumbers } from './grounding-helpers.mjs'
-import { GROQ_COACH } from './nexus-models.mjs'
+import { callLLM } from './_shared/llm-core.mjs'
+import { getTavilyKeys, tavilySearch } from './_shared/search-core.mjs'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const CORS_HEADERS = {
@@ -146,143 +147,15 @@ async function crawlTargetWebsite(rawUrl) {
 }
 
 async function performTavilySearch(query) {
-  const key = process.env.TAVILY_API_KEY
+  const key = getTavilyKeys()[0]
   if (!key) return "Tavily API Key fehlt im Backend."
-  try {
-    const res = await fetch("https://api.tavily.com/search", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        api_key: key,
-        query: query,
-        search_depth: "advanced",
-        include_answer: false,
-        max_results: 6,
-        topic: "general",
-        days: 30
-      })
-    })
-    if (!res.ok) return `Tavily API Error: ${res.statusText}`
-    const data = await res.json()
-    if (!data.results || data.results.length === 0) return "Keine aktuellen Suchergebnisse gefunden."
-    return data.results.map(r => `Titel: ${r.title}\nInhalt: ${r.content}\nURL: ${r.url}`).join('\n\n')
-  } catch (e) {
-    return `Fehler bei der Suche: ${e.message}`
+  const out = await tavilySearch(query, key, { maxResults: 6, includeRawContent: false, daysBack: 30, timeoutMs: 8000 })
+  if (!out.ok) {
+    if (out.error === 'leer') return "Keine aktuellen Suchergebnisse gefunden."
+    if (String(out.error).startsWith('http')) return `Tavily API Error: ${out.error}`
+    return `Fehler bei der Suche: ${out.error}`
   }
-}
-
-// LLM Callers
-async function tryOpenAIGpt4o(messages) {
-  const key = process.env.OPENAI_API_KEY
-  if (!key) return null
-  try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${key}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages,
-        temperature: 0.5,
-        max_tokens: 1500
-      })
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.choices?.[0]?.message?.content || null
-  } catch (e) {
-    return null
-  }
-}
-
-async function tryGroq(messages) {
-  const key = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY || BACKUP_GROQ
-  if (!key) return null
-  const models = GROQ_COACH
-  for (const model of models) {
-    try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${key}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature: 0.5,
-          max_tokens: 1500
-        })
-      })
-      if (res.status === 429) break
-      if (res.ok) {
-        const data = await res.json()
-        const content = data.choices?.[0]?.message?.content
-        if (content) return content
-      }
-    } catch (e) {
-      console.error(`[LLM-Groq] ${model} error:`, e.message)
-    }
-  }
-  return null
-}
-
-async function tryOpenRouterGemma(messages) {
-  const key = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY || BACKUP_OPENROUTER
-  if (!key) return null
-  const models = ['nex-agi/nex-n2.5-mini:free', 'nvidia/nemotron-3.5-lightning:free', 'google/gemma-4-26b-a4b-it:free']
-  for (const model of models) {
-    try {
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${key}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://nexus-hit.netlify.app',
-          'X-Title': 'NeXus Coach'
-        },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature: 0.5,
-          max_tokens: 1500
-        })
-      })
-      if (res.ok) {
-        const data = await res.json()
-        const content = data.choices?.[0]?.message?.content
-        if (content) return content
-      }
-    } catch (e) {}
-  }
-  return null
-}
-
-async function tryMistral(messages) {
-  const key = process.env.MISTRAL_API_KEY
-  if (!key) return null
-  try {
-    const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${key}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'mistral-small-latest',
-        messages,
-        temperature: 0.5,
-        max_tokens: 1500
-      })
-    })
-    if (res.ok) {
-      const data = await res.json()
-      return data.choices?.[0]?.message?.content || null
-    }
-  } catch (e) {}
-  return null
+  return out.results.map(r => `Titel: ${r.title}\nInhalt: ${r.content}\nURL: ${r.url}`).join('\n\n')
 }
 
 function sanitizeCoachResponse(text) {
@@ -477,32 +350,26 @@ export const handler = async (event) => {
 
       const executeChain = async () => {
         responseText = null
-        if (image_url) {
-          responseText = await tryOpenAIGpt4o(llmMessages)
-          if (responseText && !isResponseGarbage(responseText)) providerUsed = 'OpenAI (GPT-4o Vision)'
-          else responseText = null
-        }
-
-        if (!responseText) {
-          responseText = await tryGroq(llmMessages)
-          if (responseText && !isResponseGarbage(responseText)) {
-            providerUsed = 'Groq (qwen/qwen3.8-27b)'
-          } else {
-            responseText = null
-            responseText = await tryMistral(llmMessages)
-            if (responseText && !isResponseGarbage(responseText)) {
-              providerUsed = 'Mistral API (Mistral Small)'
-            } else {
-              responseText = null
-              responseText = await tryOpenRouterGemma(llmMessages)
-              if (responseText && !isResponseGarbage(responseText)) {
-                providerUsed = 'OpenRouter (Gemma)'
-              } else {
-                responseText = null
-              }
-            }
-          }
-        }
+        // Stufen wie bisher: Bei Bild zuerst OpenAI (Vision-Route), sonst
+        // Groq-first. acceptText verwirft Garbage-Outputs (isResponseGarbage)
+        // auf Stufe-Ebene — die Kette faellt wie zuvor auf die naechste durch.
+        const providers = image_url
+          ? ['openai', 'groq', 'mistral', 'openrouter']
+          : ['groq', 'mistral', 'openrouter']
+        const out = await callLLM(llmMessages, {
+          profile: 'coach',
+          temperature: 0.5,
+          max_tokens: 1500,
+          totalBudgetMs: 30000,
+          providers,
+          xTitle: 'NeXus Coach',
+          acceptText: (t) => !isResponseGarbage(t)
+        }).catch((e) => {
+          console.error('[Coach] Provider-Kette fehlgeschlagen:', e.message)
+          return null
+        })
+        responseText = out?.text || null
+        providerUsed = out ? `${out.provider} (${out.model})` : ''
       }
 
       await executeChain()

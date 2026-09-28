@@ -1,173 +1,6 @@
 import crypto from 'crypto';
-import { GROQ_JSON_HEAVY, OPENROUTER_FREE_MODELS, MISTRAL_DEFAULT_MODEL, OPENAI_DEFAULT_MODEL } from './nexus-models.mjs';
-
-async function fetchWithTimeout(url, options, timeoutMs = 20000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
-    return { res, timer };
-  } catch (err) {
-    clearTimeout(timer);
-    throw err;
-  }
-}
-
-
-
-async function searchDuckDuckGo(query, maxResults = 10) {
-  try {
-    const { res, timer } = await fetchWithTimeout(
-      `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
-      { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } },
-      8000
-    );
-    clearTimeout(timer);
-    if (!res.ok) return null;
-    const html = await res.text();
-    const results = [];
-    const linkRegex = /<a[^>]+class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
-    let match;
-    while ((match = linkRegex.exec(html)) !== null && results.length < maxResults) {
-      const href = match[1];
-      const title = match[2].replace(/<[^>]*>/g, '').trim();
-      let url = null;
-      if (href.includes('uddg=')) {
-        const uddgMatch = href.match(/uddg=([^&]*)/);
-        if (uddgMatch) url = decodeURIComponent(uddgMatch[1]);
-      } else if (href.startsWith('http')) {
-        url = href;
-      }
-      const snippetRegex = /<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
-      snippetRegex.lastIndex = match.index + match[0].length;
-      const snippetMatch = snippetRegex.exec(html);
-      const snippet = snippetMatch ? snippetMatch[1].replace(/<[^>]*>/g, '').trim() : '';
-      if (url && title) {
-        results.push({ url, title, snippet });
-      }
-    }
-    return results.length > 0 ? results : null;
-  } catch (e) {
-    return null;
-  }
-}
-
-async function callAI(messages, { temperature = 0.3, max_tokens = 4096, jsonMode = false } = {}) {
-  // 1. Groq (High Speed & Free/Low-Cost Priority)
-  const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
-  if (groqKey) {
-    const models = GROQ_JSON_HEAVY;
-    for (const model of models) {
-      try {
-        const payload = { model, messages, temperature, max_tokens };
-        if (jsonMode) payload.response_format = { type: 'json_object' };
-        const { res, timer } = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }, 6500);
-        if (res.status === 429) {
-          clearTimeout(timer);
-          break; // Abort whole provider on 429
-        }
-        if (!res.ok) {
-          clearTimeout(timer);
-          continue;
-        }
-        const data = await res.json();
-        clearTimeout(timer);
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return { text, provider: 'groq', model };
-      } catch (e) {
-        console.warn(`[Groq Error ${model}]:`, e.message);
-      }
-    }
-  }
-
-  // 2. OpenRouter (Free Models)
-  const openrouterKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
-  if (openrouterKey) {
-    const models = OPENROUTER_FREE_MODELS;
-    for (const model of models) {
-      try {
-        const { res, timer } = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openrouterKey}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://nexus-hit.netlify.app',
-            'X-Title': 'NeXus Research'
-          },
-          body: JSON.stringify({ model, messages, temperature, max_tokens })
-        }, 6500);
-        if (res.status === 429) {
-          clearTimeout(timer);
-          break; // Abort whole provider on 429
-        }
-        if (!res.ok) {
-          clearTimeout(timer);
-          continue;
-        }
-        const data = await res.json();
-        clearTimeout(timer);
-        const text = data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning;
-        if (text) return { text, provider: 'openrouter', model };
-      } catch (e) {
-        console.warn(`[OpenRouter Error ${model}]:`, e.message);
-      }
-    }
-  }
-
-  // 3. Mistral
-  const mistralKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
-  if (mistralKey) {
-    try {
-      const payload = { model: MISTRAL_DEFAULT_MODEL, messages, temperature, max_tokens };
-      if (jsonMode) payload.response_format = { type: 'json_object' };
-      const { res, timer } = await fetchWithTimeout('https://api.mistral.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${mistralKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }, 6500);
-      if (res.ok) {
-        const data = await res.json();
-        clearTimeout(timer);
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return { text, provider: 'mistral', model: MISTRAL_DEFAULT_MODEL };
-      } else {
-        clearTimeout(timer);
-      }
-    } catch (e) {
-      console.warn('[Mistral Error]:', e.message);
-    }
-  }
-
-  // 4. OpenAI
-  const openaiKey = process.env.OPENAI_API_KEY;
-  if (openaiKey) {
-    try {
-      const payload = { model: OPENAI_DEFAULT_MODEL, messages, temperature, max_tokens };
-      if (jsonMode) payload.response_format = { type: 'json_object' };
-      const { res, timer } = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }, 6500);
-      if (res.ok) {
-        const data = await res.json();
-        clearTimeout(timer);
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return { text, provider: 'openai', model: 'gpt-4o-mini' };
-      } else {
-        clearTimeout(timer);
-      }
-    } catch (e) {
-      console.warn('[OpenAI Error]:', e.message);
-    }
-  }
-
-  throw new Error('Alle KI-Provider sind derzeit ausgelastet oder nicht erreichbar. Bitte versuche es in wenigen Augenblicken erneut.');
-}
+import { callLLM } from './_shared/llm-core.mjs';
+import { searchDuckDuckGo, getTavilyKeys, tavilySearch } from './_shared/search-core.mjs';
 
 let inFlightResearch = 0;
 const MAX_CONCURRENT_RESEARCH = 20;
@@ -359,11 +192,7 @@ export const handler = async (event) => {
     searchQueriesToTry.push('Mittelstand Unternehmen Expansion ODER Übernahme ODER Investition');
 
     // Multi-key Tavily with failover & DuckDuckGo fallback
-    const tavilyKeys = [
-      process.env.TAVILY_API_KEY,
-      process.env.TAVILY_API_KEY_2,
-      process.env.VITE_TAVILY_API_KEY
-    ].filter(Boolean);
+    // (Keys via _shared/search-core.mjs — auch VITE_TAVILY_API_KEY beruecksichtigt)
 
     let tavilyData = null;
     let searchSource = 'Tavily Deep Search';
@@ -377,54 +206,16 @@ export const handler = async (event) => {
     for (const q of searchQueriesToTry) {
       if (tavilyData && tavilyData.results && tavilyData.results.length > 0) break;
 
-      for (const key of tavilyKeys) {
-        try {
-          // 1. Priorität: Gezielte Suche auf B2B- & Wirtschafts-Nachrichtenportalen
-          let tavilyRes = await fetch("https://api.tavily.com/search", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              api_key: key,
-              query: q,
-              search_depth: "advanced",
-              include_answer: false,
-              max_results: 10,
-              include_domains: B2B_NEWS_DOMAINS
-            })
-          });
+      for (const key of getTavilyKeys()) {
+        // 1. Priorität: Gezielte Suche auf B2B- & Wirtschafts-Nachrichtenportalen
+        const domainHit = await tavilySearch(q, key, {
+          maxResults: 10, includeDomains: B2B_NEWS_DOMAINS, timeoutMs: 8000,
+        });
+        if (domainHit.ok) { tavilyData = { results: domainHit.results }; break; }
 
-          if (tavilyRes.ok) {
-            const data = await tavilyRes.json();
-            if (data && data.results && data.results.length > 0) {
-              tavilyData = data;
-              break;
-            }
-          }
-
-          // 2. Priorität: Allgemeine Web-Suche
-          tavilyRes = await fetch("https://api.tavily.com/search", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              api_key: key,
-              query: `${q} 2026`,
-              search_depth: "advanced",
-              include_answer: false,
-              max_results: 10,
-              topic: "general"
-            })
-          });
-
-          if (tavilyRes.ok) {
-            const data = await tavilyRes.json();
-            if (data && data.results && data.results.length > 0) {
-              tavilyData = data;
-              break;
-            }
-          }
-        } catch (keyErr) {
-          console.warn(`[nexus-research] Tavily Fetch Error:`, keyErr.message);
-        }
+        // 2. Priorität: Allgemeine Web-Suche
+        const generalHit = await tavilySearch(`${q} 2026`, key, { maxResults: 10, timeoutMs: 8000 });
+        if (generalHit.ok) { tavilyData = { results: generalHit.results }; break; }
       }
     }
 
@@ -432,22 +223,11 @@ export const handler = async (event) => {
     if (!tavilyData || !tavilyData.results || tavilyData.results.length === 0) {
       console.log(`[nexus-research] Alle Tavily Keys erschöpft/nicht verfügbar. Aktiviere DuckDuckGo Fallback-Suche...`);
       for (const q of searchQueriesToTry) {
-        try {
-          const ddgResults = await searchDuckDuckGo(q, 10);
-          if (ddgResults && ddgResults.length > 0) {
-            tavilyData = {
-              results: ddgResults.map(r => ({
-                url: r.url,
-                title: r.title,
-                content: r.snippet,
-                published_date: new Date().toISOString()
-              }))
-            };
-            searchSource = 'DuckDuckGo Search (Fallback)';
-            break;
-          }
-        } catch (ddgErr) {
-          console.warn(`[nexus-research] DuckDuckGo Fallback Error:`, ddgErr.message);
+        const ddgResults = await searchDuckDuckGo(q, { maxResults: 10, timeoutMs: 8000 });
+        if (ddgResults && ddgResults.length > 0) {
+          tavilyData = { results: ddgResults };
+          searchSource = 'DuckDuckGo Search (Fallback)';
+          break;
         }
       }
     }
@@ -604,10 +384,17 @@ export const handler = async (event) => {
     }`;
 
     console.log('[nexus-research] Calling LLM with webContext length:', webContext.length);
-    const triggerLlmResult = await callAI([
+    const triggerLlmResult = await callLLM([
       { role: "system", content: systemPrompt },
       { role: "user", content: `Web-Recherche Ergebnisse:\n\n${webContext}` }
-    ], { temperature: 0.3, max_tokens: 4096, jsonMode: true });
+    ], {
+      profile: 'json',
+      providers: ['groq', 'openrouter', 'mistral', 'openai'],
+      temperature: 0.3,
+      max_tokens: 4096,
+      jsonMode: true,
+      xTitle: 'NeXus Research',
+    });
 
     let content = triggerLlmResult.text;
     console.log('[nexus-research] LLM raw content:\n', content);
