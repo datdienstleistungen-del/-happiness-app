@@ -142,6 +142,37 @@ export async function claimJob(client, job) {
   return Boolean(res.data && res.data.length > 0);
 }
 
+// Treffer aus dem Scan als nexus_radar_hits ablegen (Phase 3b): B2
+// (cron-evaluate) bewertet sie im naechsten 15-Min-Lauf automatisch mit.
+// Genau der Row-Shape wie cron-search (B1), inkl. url_hash + ignore-duplicates,
+// damit B1-Doppelfunde nicht doppelt landen. Pro URL, nicht erst bei Job-Done.
+async function insertRadarHit(client, job, url, title, pageText) {
+  if (!job.offering_id || !job.user_id || !pageText) return;
+  try {
+    const crypto = await import('crypto');
+    const row = {
+      user_id: job.user_id,
+      offering_id: job.offering_id,
+      url,
+      url_hash: crypto.createHash('md5').update(url).digest('hex'),
+      source: 'NeXus Radar Scan',
+      title: title || '',
+      raw_content: pageText,
+      published_at: null,
+      status: 'pending'
+    };
+    const res = await client
+      .from('nexus_radar_hits')
+      .insert(row, { ignoreDuplicates: true });
+    if (res.error) {
+      // 409/Duplikat: erwartet, wenn B1 dieselbe URL schon eingefuegt hat
+      console.warn(`[ScanJob] radar_hit insert fehlgeschlagen (${url}):`, res.error.message);
+    }
+  } catch (e) {
+    console.warn(`[ScanJob] radar_hit insert Fehler (${url}):`, e.message);
+  }
+}
+
 // Eine URL verarbeiten (Volltext -> LLM-Extraktion -> DB-Update). Darf nur mit
 // gewonnenem Claim aufgerufen werden. Liefert die Antwort im alten Shape.
 export async function processNextUrl(client, job) {
@@ -253,6 +284,9 @@ Gib ein JSON zurück:
     ? `${triggersFound} mögliche Signale auf ${domain} gefunden, werte aus...`
     : `${domain} — keine Signale erkannt.`;
   const isDone = updatedPending.length === 0;
+
+  // B2-Bruecke: Treffer-Pending-Row fuer cron-evaluate (Phase 3b).
+  await insertRadarHit(client, job, nextUrl.url, nextUrl.title, pageText);
 
   await client
     .from('nexus_scan_jobs')
