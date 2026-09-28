@@ -110,7 +110,9 @@ export async function handler(event, context) {
     }
 
     // 3. Iteration über die geclaimten Offerings
+    const runStart = Date.now(); // Laufbudget: 24s gegen Netlify Scheduled-Limit 30s (nicht konfigurierbar)
     for (const offering of offerings) {
+      if (Date.now() - runStart > 24000) { console.warn('B1 Cron: Zeitbudget 24s erschöpft - breche ab vor 30s Scheduled-Limit.'); break; }
       // Signal-Strategien laden (preferiert) oder Fallback auf target_audience
       let searchQueries = [];
       try {
@@ -167,7 +169,8 @@ export async function handler(event, context) {
                   include_raw_content: true,
                   max_results: 5,
                   days_back: 7
-                })
+                }),
+                signal: AbortSignal.timeout(5000)
               });
               if (tavilyRes.ok) {
                 const data = await tavilyRes.json();

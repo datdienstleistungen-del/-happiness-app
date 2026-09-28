@@ -2,8 +2,8 @@
 
 import { GROQ_JSON_HEAVY, OPENROUTER_FREE_MODELS, MISTRAL_DEFAULT_MODEL, OPENAI_DEFAULT_MODEL } from './nexus-models.mjs';
 
-// Gesamtbudget für die Provider-Kette — muss unter netlify.toml timeout (26s) bleiben,
-// damit Auth + DELETE + INSERT des Handlers noch Platz haben.
+// Gesamtbudget für die Provider-Kette — deutlich unter dem Netlify-Sync-Limit
+// (60s, nicht konfigurierbar), damit Auth + DELETE + INSERT des Handlers noch Platz haben.
 const TOTAL_BUDGET_MS = 22000;
 
 async function fetchWithTimeout(url, options, timeoutMs = 8000) {

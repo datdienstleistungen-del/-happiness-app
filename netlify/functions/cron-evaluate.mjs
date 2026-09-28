@@ -66,7 +66,9 @@ export async function handler(event, context) {
     offeringsArray.forEach(o => offeringsMap[o.id] = o);
 
     // 3. Iteration über die Hits und KI-Bewertung
+    const runStart = Date.now(); // Laufbudget: 24s gegen Netlify Scheduled-Limit 30s (nicht konfigurierbar)
     for (const hit of hits) {
+      if (Date.now() - runStart > 24000) { console.warn('B2 Cron: Zeitbudget 24s erschöpft - breche ab vor 30s Scheduled-Limit.'); break; }
       const offering = offeringsMap[hit.offering_id];
       if (!offering) {
         // Fallback: Irrelevant, wenn Offering fehlt
@@ -113,7 +115,8 @@ Antworte strikt in JSON mit exakt diesen 6 Feldern:
               const gRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model, messages: llmMessages, temperature: 0.2, max_tokens: 1000, response_format: { type: 'json_object' } })
+                body: JSON.stringify({ model, messages: llmMessages, temperature: 0.2, max_tokens: 1000, response_format: { type: 'json_object' } }),
+                signal: AbortSignal.timeout(8000)
               });
               if (gRes.ok) {
                 const gData = await gRes.json();
@@ -131,7 +134,8 @@ Antworte strikt in JSON mit exakt diesen 6 Feldern:
             const mRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${mistralKey}` },
-              body: JSON.stringify({ model: 'mistral-small-latest', messages: llmMessages, temperature: 0.2, max_tokens: 1000, response_format: { type: 'json_object' } })
+              body: JSON.stringify({ model: 'mistral-small-latest', messages: llmMessages, temperature: 0.2, max_tokens: 1000, response_format: { type: 'json_object' } }),
+              signal: AbortSignal.timeout(8000)
             });
             if (mRes.ok) {
               const mData = await mRes.json();
@@ -147,7 +151,8 @@ Antworte strikt in JSON mit exakt diesen 6 Feldern:
             const dsRes = await fetch('https://api.deepseek.com/v1/chat/completions', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deepseekKey}` },
-              body: JSON.stringify({ model: 'deepseek-chat', messages: llmMessages, temperature: 0.2, max_tokens: 1000, response_format: { type: 'json_object' } })
+              body: JSON.stringify({ model: 'deepseek-chat', messages: llmMessages, temperature: 0.2, max_tokens: 1000, response_format: { type: 'json_object' } }),
+              signal: AbortSignal.timeout(8000)
             });
             if (dsRes.ok) {
               const dsData = await dsRes.json();

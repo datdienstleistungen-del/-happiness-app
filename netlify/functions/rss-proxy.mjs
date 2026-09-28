@@ -13,7 +13,7 @@ export default async function handler(request) {
 
   try {
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 8000) // 8s for Netlify free tier
+    const timeout = setTimeout(() => controller.abort(), 8000) // 8s Upstream-Geduld (Netlify-Sync-Limit ist inzwischen 60s)
 
     const res = await fetch(targetUrl, {
       signal: controller.signal,

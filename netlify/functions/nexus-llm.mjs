@@ -375,8 +375,8 @@ async function callAI(messages, temperature = 0.3, hasImage = false, testOptions
   let lastError = null;
   for (const p of providers) {
     const elapsedSoFar = Date.now() - chainStartTime;
-    if (elapsedSoFar > 8500) {
-      console.warn(`[NEXUS] Total chain time budget exceeded (${elapsedSoFar}ms > 8500ms limit), aborting before Netlify 10s function timeout.`);
+    if (elapsedSoFar > 20000) {
+      console.warn(`[NEXUS] Total chain time budget exceeded (${elapsedSoFar}ms > 20000ms limit), aborting before Netlify 60s function timeout.`);
       break;
     }
 
@@ -411,7 +411,7 @@ async function callAI(messages, temperature = 0.3, hasImage = false, testOptions
     ];
     for (const p of textProviders) {
       const elapsedSoFar = Date.now() - chainStartTime;
-      if (elapsedSoFar > 8500) break;
+      if (elapsedSoFar > 20000) break;
       try {
         const result = await callProviderWithTimeout(p.fn, perProviderTimeoutMs);
         if (result && result.text) {
