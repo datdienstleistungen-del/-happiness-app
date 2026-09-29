@@ -508,6 +508,10 @@
   opacity: 0.6;
 }
 
+.social-presence-badge.unverified:hover {
+  opacity: 1;
+}
+
 .social-activities-grid {
   display: flex;
   flex-direction: column;

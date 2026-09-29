@@ -1163,18 +1163,18 @@ export default function SalesWorkspacePage() {
                               <ExternalLink size={14} /> LinkedIn Unternehmensseite ↗
                             </a>
                           ) : (
-                            <span className="social-presence-badge unverified">
-                              LinkedIn: Keine verifizierte URL
-                            </span>
+                            <a href={`https://www.linkedin.com/search/results/company/?keywords=${encodeURIComponent(fullContext?.company?.name || formData.company || '')}`} target="_blank" rel="noopener noreferrer" className="social-presence-badge unverified">
+                              <Search size={14} /> LinkedIn-Suche ↗
+                            </a>
                           )}
                           {socialState.profiles?.youtube?.url ? (
                             <a href={socialState.profiles.youtube.url} target="_blank" rel="noopener noreferrer" className="social-presence-badge youtube">
                               <Video size={14} /> YouTube Kanal ↗
                             </a>
                           ) : (
-                            <span className="social-presence-badge unverified">
-                              YouTube: Kein Kanal verlinkt
-                            </span>
+                            <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(fullContext?.company?.name || formData.company || '')}`} target="_blank" rel="noopener noreferrer" className="social-presence-badge unverified">
+                              <Search size={14} /> YouTube-Suche ↗
+                            </a>
                           )}
                         </div>
                       </div>

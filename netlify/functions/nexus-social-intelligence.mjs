@@ -242,6 +242,20 @@ async function getYouTubeActivities(companyName, verifiedYtProfile) {
     }
   }
 
+  // C. Guaranteed 1-Click search entry point (analog LinkedIn-Step-4): bleibt
+  // auch dann eine klickbare Option, wenn DDG keine Videos liefert.
+  if (activities.length === 0 && companyName && companyName.length >= 2) {
+    activities.push({
+      platform: 'youtube',
+      type: 'profile',
+      url: `https://www.youtube.com/results?search_query=${encodeURIComponent(companyName)}`,
+      title: `YouTube Suche: ${companyName}`,
+      snippet: `1-Klick Direktzugriff auf Videos und Kanaele von ${companyName} auf YouTube.`,
+      date: '1-Klick Recherche',
+      verifiedChannel: false
+    });
+  }
+
   return activities;
 }
 
