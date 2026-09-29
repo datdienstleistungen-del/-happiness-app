@@ -146,8 +146,13 @@ Antworte strikt in JSON mit exakt diesen 6 Feldern:
         const finalStatus = (aiResult.status === 'relevant' && aiResult.relevance_score >= 50) ? 'relevant' : 'irrelevant';
         await updateHit(hit.id, finalStatus, aiResult.relevance_score, aiResult.relevance_reason, aiResult.trigger_type, supabaseUrl, supabaseKey, authToken);
 
-        // 5. Automatische Opportunity erstellen (nur wenn relevant und Firma erkannt)
-        if (finalStatus === 'relevant' && aiResult.firmenname && aiResult.firmenname !== 'N/A' && String(aiResult.firmenname).toLowerCase() !== 'null') {
+        // 5. Automatische Opportunity erstellen (wenn relevant und Firma oder Domain erkannt)
+        const companyName = (aiResult.firmenname && aiResult.firmenname !== 'N/A' && String(aiResult.firmenname).toLowerCase() !== 'null')
+          ? aiResult.firmenname
+          : (aiResult.domain && aiResult.domain !== 'N/A' && String(aiResult.domain).toLowerCase() !== 'null' ? aiResult.domain.replace(/^www\./, '').split('.')[0] : null);
+
+        if (finalStatus === 'relevant' && companyName) {
+          aiResult.firmenname = companyName;
           await createOpportunityFromHit(hit, offering, aiResult, supabaseUrl, supabaseKey, authToken);
         }
 

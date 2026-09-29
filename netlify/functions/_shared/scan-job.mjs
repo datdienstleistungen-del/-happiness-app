@@ -34,16 +34,28 @@ async function fetchPageText(url) {
     }, 4000);
     if (!res.ok) return null;
     const html = await res.text();
-    const text = html
+    const text = stripBoilerplate(html
       .replace(/<script[\s\S]*?<\/script>/gi, '')
       .replace(/<style[\s\S]*?<\/style>/gi, '')
       .replace(/<[^>]+>/g, ' ')
       .replace(/\s+/g, ' ')
-      .trim();
+      .trim());
     return text.substring(0, 4000);
   } catch (e) {
     return null;
   }
+}
+
+// Cookie-Banner/Navigation aus dem Textkopf entfernen: die ersten 1500
+// Zeichen dominieren das LLM-Fenster (substring 0..3000 im Extrakations-
+// Prompt) und bestehen bei vielen Seiten sonst ueberwiegend aus Consent-Text.
+export function stripBoilerplate(text) {
+  if (!text) return text;
+  const BANNER_KEYS = /\b(cookie|cookies|consent|tracking|werbung|werbezwecke|statistik|statistikzwecke|personalisierung|akzeptieren|ablehnen|einstellungen|einwilligung|zustimmen|verstanden|nur notwendige|notwendige cookies|diese website|wir verwenden|werden verwendet|datenschutzerklärung|impressum|newsletter|abonnieren|willkommen|weitere informationen|alle auswählen)\b/i;
+  const head = text.slice(0, 1500);
+  const rest = text.slice(1500);
+  const kept = head.split(/(?<=[.!?])\s+/).filter(s => !BANNER_KEYS.test(s));
+  return [...kept, rest].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
 }
 
 // Job laden. Mit userId (scan-step, user-RLS-Client) nur eigene Jobs, ohne
@@ -255,8 +267,8 @@ Gib ein JSON zurück:
     callLLM([
       { role: 'system', content: 'Du gibst IMMER valides JSON zurück, ohne Markdown-Blöcke.' },
       { role: 'user', content: extractPrompt }
-    ], { profile: 'json', temperature: 0.3, max_tokens: 2000, jsonMode: true, totalBudgetMs: 4400, xTitle: 'NeXus Research' }).catch(() => null),
-    new Promise(resolve => setTimeout(() => resolve(null), 4500))
+    ], { profile: 'json', temperature: 0.3, max_tokens: 2000, jsonMode: true, totalBudgetMs: 8000, xTitle: 'NeXus Research' }).catch(() => null),
+    new Promise(resolve => setTimeout(() => resolve(null), 8500))
   ]);
 
   // Zod sichert: trigger_events bleibt ein Array (siehe _shared/schemas.mjs)
