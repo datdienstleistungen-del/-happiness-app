@@ -102,7 +102,7 @@ export default function NexusLeadIntelligencePage() {
       setAnalyse(result)
     } catch (err) {
       console.error('Lead Intelligence Fehler:', err)
-      setError('Fehler bei der Analyse. Bitte versuche es erneut.')
+      setError(err?.message || 'Fehler bei der Analyse. Bitte versuche es erneut.')
     } finally {
       setLoading(false)
     }

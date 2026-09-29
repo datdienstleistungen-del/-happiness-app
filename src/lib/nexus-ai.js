@@ -388,6 +388,7 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
   const { data: { session } } = await supabase.auth.getSession()
   const token = session?.access_token || ''
 
+  let lastServerError = null;
   const callServer = async () => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 Sekunden Timeout
@@ -413,7 +414,14 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
         signal: controller.signal
       });
 
-      if (!res.ok) return undefined;
+      if (!res.ok) {
+        try {
+          const errData = await res.json();
+          const msg = errData && (errData.error || errData.message);
+          if (msg) lastServerError = `HTTP ${res.status}: ${msg}`;
+        } catch {}
+        return undefined;
+      }
 
       const data = await res.json();
 
@@ -437,7 +445,7 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
   let result = await callServer();
   if (result === undefined) result = await callServer();
   if (result === undefined) {
-    throw new Error("KI-Dienst temporär überlastet. Bitte versuche es in wenigen Sekunden erneut.");
+    throw new Error(lastServerError || "KI-Dienst temporär überlastet. Bitte versuche es in wenigen Sekunden erneut.");
   }
   return result;
 }
