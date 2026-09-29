@@ -11,7 +11,7 @@ NeXus ist ein eigenständiges B2B Revenue OS zur Erkennung von echten Kaufsignal
 - **Angebotsanalyse (Single-Input)**: Aus einer einzigen Angebotsbeschreibung leitet NeXus Zielgruppe, Kaufzyklus, Schmerzpunkte und Signalstrategien ab.
 - **Lead Radar**: Kontinuierliches Durchsuchen des Webs nach konkreten Ereignissen (Triggern) passend zum definierten Angebot.
 - **Opportunity & Lead-Akte**: Saubere Trennung zwischen beobachteten Fakten und vertrieblicher Interpretation.
-- **Sales Coach & Contact Intelligence**: Echtzeit-Recherche von Entscheidern und E-Mail-Mustern sowie Verfassen maßgeschneiderter Vertriebsansprachen.
+- **DealCoach & Contact Intelligence**: Echtzeit-Recherche von Entscheidern und E-Mail-Mustern sowie Verfassen maßgeschneiderter Vertriebsansprachen.
 - **NeXus Assistent**: Integrierter KI-Produktbegleiter für Systembedienung und Vertriebsmethodik in 7 Sprachen.
 
 ## URL

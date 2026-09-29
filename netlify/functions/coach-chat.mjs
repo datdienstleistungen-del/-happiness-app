@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { checkTextGroundedInSource, detectConcreteNumbers } from './grounding-helpers.mjs'
+import { callLLM } from './_shared/llm-core.mjs'
 import { getTavilyKeys, tavilySearch, searchDuckDuckGo } from './_shared/search-core.mjs'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
@@ -10,7 +11,7 @@ const CORS_HEADERS = {
 }
 
 
-const SYSTEM_PROMPT = `Du bist NeXus Sales & Content Coach — die zentrale Intelligence Engine für das "NeXus Sales Operation System".
+const SYSTEM_PROMPT = `Du bist NeXus DealCoach — die zentrale Intelligence Engine für das "NeXus Sales Operation System".
 Du bist der intelligente Sparringspartner für B2B-Vertrieb, Lead-Intelligence und professionelle Video- & Content-Skripterstellung.
 Du kennst NeXus Revenue OS bis ins kleinste Detail und lieferst sofort einsatzbereite, hochwertige Ergebnisse (Recherchen, 1-Klick-Links, E-Mails, Videoskripte für Studioproduktion).
 
@@ -370,7 +371,7 @@ export const handler = async (event) => {
           max_tokens: 1500,
           totalBudgetMs: 30000,
           providers,
-          xTitle: 'NeXus Coach',
+          xTitle: 'NeXus DealCoach',
           acceptText: (t) => !isResponseGarbage(t)
         }).catch((e) => {
           console.error('[Coach] Provider-Kette fehlgeschlagen:', e.message)

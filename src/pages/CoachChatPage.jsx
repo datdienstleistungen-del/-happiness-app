@@ -119,7 +119,7 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
   useEffect(() => {
     document.title = currentLead 
       ? `Coach: ${currentLead.nexus_companies?.name || 'Lead'}` 
-      : 'NeXus Coach - Sales Intelligence'
+      : 'NeXus DealCoach - Sales Intelligence'
   }, [currentLead])
 
   const handlePaste = (e) => {
@@ -604,7 +604,7 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
               <Target size={22} />
             </div>
             <div className="nexus-coach-info">
-              <h1>{currentLead ? `Coach: ${currentLead.nexus_companies?.name}` : 'NeXus Sales Coach'}</h1>
+              <h1>{currentLead ? `Coach: ${currentLead.nexus_companies?.name}` : 'NeXus DealCoach'}</h1>
               <span className="nexus-coach-subtitle">
                 {currentLead ? `Lead Intelligence für ${currentLead.nexus_companies?.industry || 'Unbekannte Branche'}` : 'Dein Vertriebs- & Content-Coach'}
               </span>
@@ -645,7 +645,7 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
             <div className="nexus-coach-welcome-icon">
               <Target size={48} />
             </div>
-            <h2>{currentLead ? `Coach: ${currentLead.nexus_companies?.name || 'Lead'}` : t('nexus.coach.welcomeTitle', 'Willkommen beim NeXus Sales Coach')}</h2>
+            <h2>{currentLead ? `Coach: ${currentLead.nexus_companies?.name || 'Lead'}` : t('nexus.coach.welcomeTitle', 'Willkommen beim NeXus DealCoach')}</h2>
             <p>{currentLead 
               ? `${t('nexus.coach.helpPrefix', 'Ich helfe dir beim Verkauf an')} ${currentLead.nexus_companies?.name || 'diesen Lead'}. ${t('nexus.coach.chooseAction', 'Wähle eine Aktion oder stelle mir eine Frage.')}`
               : t('nexus.coach.generalHelp', 'Ich helfe dir bei Vertriebsoptimierung, Lead-Recherche & AGB-Checks. Füge Text, Screenshots (Strg+V) oder Dokumente ein.')

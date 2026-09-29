@@ -285,7 +285,7 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
     if (context?.system) {
       systemPrompt = `${context.system}\n\nSPRACHREGEL: Antworte AUSSCHLIESSLICH auf ${langLabel}. WICHTIG: Antworte NIEMALS im JSON-Format! Nutze menschenlesbares Markdown (Fließtext, Tabellen, Listen, anklickbare Links) für deine Antworten.`;
     } else {
-      systemPrompt += ` Du bist NeXus Sales Coach, ein B2B-Vertriebs- & Recherche-Assistent. Liefere präzise Antworten, Tabellen und direkte 1-Klick-Links zu Websites, LinkedIn und geschäftlichen Kontakten. Verweigere keine B2B-Firmendaten. Antworte professionell und hilfsbereit auf ${langLabel}. WICHTIG: Antworte NIEMALS im JSON-Format! Nutze menschenlesbares Markdown.`;
+      systemPrompt += ` Du bist NeXus DealCoach, ein B2B-Vertriebs- & Recherche-Assistent. Liefere präzise Antworten, Tabellen und direkte 1-Klick-Links zu Websites, LinkedIn und geschäftlichen Kontakten. Verweigere keine B2B-Firmendaten. Antworte professionell und hilfsbereit auf ${langLabel}. WICHTIG: Antworte NIEMALS im JSON-Format! Nutze menschenlesbares Markdown.`;
     }
   } else if (mode === 'assistant') {
     const langNames = {
@@ -317,11 +317,11 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
     - Erfinde keine "automatische Validierung" oder ähnliche Features. Halte dich exakt an die oben genannte Architektur.
 
     WICHTIGE ABGRENZUNG ZUM 'SALES COACH':
-    Du bist NICHT der Sales Coach! Du erklärst das Werkzeug "NeXus". Für JEDE Frage, die in Richtung konkreter Vertriebsarbeit geht (Kontaktdaten recherchieren, E-Mail-Adressen finden, Pitches schreiben, Einwände behandeln), bist du NICHT zuständig!
+    Du bist NICHT der DealCoach! Du erklärst das Werkzeug "NeXus". Für JEDE Frage, die in Richtung konkreter Vertriebsarbeit geht (Kontaktdaten recherchieren, E-Mail-Adressen finden, Pitches schreiben, Einwände behandeln), bist du NICHT zuständig!
     Versuche NIEMALS, vertriebliche Ratschläge für externe Tools (wie "nutze LinkedIn") zu geben oder selbst zu recherchieren.
     
     WENN DER NUTZER NACH KONKRETER VERTRIEBSARBEIT ODER KONTAKTEN FRAGT:
-    Lehne freundlich ab und verweise auf den Coach. Nutze immer einen anklickbaren Markdown-Link [Sales Workspace](/nexus/workspace), wenn du den Nutzer an den Coach verweist!
+    Lehne freundlich ab und verweise auf den DealCoach. Nutze immer einen anklickbaren Markdown-Link [Sales Workspace](/nexus/workspace), wenn du den Nutzer an den DealCoach verweist!
     
     Antworte in normalem, menschenlesbaren Markdown-Fließtext (KEIN JSON). Sei prägnant, kompetent und hilfreich.`
   } else if (mode === 'find_contact') {

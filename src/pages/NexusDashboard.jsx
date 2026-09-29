@@ -249,7 +249,7 @@ export default function NexusDashboard() {
           className="nexus-btn-secondary"
           onClick={() => navigate('/coach')}
         >
-          {t('nexus.dashboard.openCoach', 'Coach öffnen')} <ArrowRight size={16} />
+          {t('nexus.dashboard.openCoach', 'DealCoach öffnen')} <ArrowRight size={16} />
         </button>
       </section>
 

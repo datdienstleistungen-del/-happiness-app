@@ -58,7 +58,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
   ]
 
   const coachLinks = [
-    { to: '/coach', icon: Heart, label: t('nexus.nav.coach', 'Coach') },
+    { to: '/coach', icon: Heart, label: t('nexus.nav.coach', 'DealCoach') },
   ]
 
   const contentLinks = [
@@ -231,7 +231,7 @@ function MobileBar() {
         </Link>
         <Link to="/coach" className={`mobile-nav-link ${location.pathname === '/coach' ? 'active' : ''}`}>
           <Heart size={20} />
-          <span>Coach</span>
+          <span>DealCoach</span>
         </Link>
         <Link to="/video-finder" className={`mobile-nav-link ${['/video-finder', '/video-script', '/capcut-studio'].includes(location.pathname) ? 'active' : ''}`}>
           <Video size={20} />

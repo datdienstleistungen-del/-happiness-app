@@ -1,7 +1,7 @@
 /**
- * NeXus Coach Module
+ * NeXus DealCoach Module
  * 
- * Context Builder + System-Prompt-Trennung für den Sales Coach.
+ * Context Builder + System-Prompt-Trennung für den DealCoach.
  * Trennt sauber: Basis-Prompt | NeXus-Wissen | Vertriebswissen | Aktueller Kontext
  */
 
@@ -218,7 +218,7 @@ export function buildCoachSystemPrompt(context, quickAction = null, lang = 'de')
 function getBasePrompt(lang = 'de') {
   const targetLanguage = LANGUAGE_NAMES[lang] || 'Deutsch';
   const currentYear = new Date().getFullYear();
-  return `Du bist NeXus Sales & Content Coach — der intelligente Sparringspartner für B2B-Vertrieb, Lead-Intelligence und professionelle Video- & Content-Skripterstellung.
+  return `Du bist NeXus DealCoach — der intelligente Sparringspartner für B2B-Vertrieb, Lead-Intelligence und professionelle Video- & Content-Skripterstellung.
 ZEITSTAND & HEUTIGES JAHR: ${currentYear}. (Beziehe Recherchen und Zeithorizonte immer auf ${currentYear}, niemals veraltete Jahreszahlen wie 2024 oder 2023).
 Du kennst NeXus Revenue OS bis ins kleinste Detail und lieferst sofort einsatzbereite, hochwertige Ergebnisse (Recherchen, 1-Klick-Links, E-Mails, Videoskripte für Studioproduktion).
 
@@ -275,7 +275,7 @@ KERNMODULE & ARCHITEKTUR VON NeXus:
    - Video Finder (/video-finder): Wettbewerbsanalyse, virale Content-Trends, Hooks & Format-Inspiration.
    - Video Script Generator (/video-script): Erstellung sendefähiger Video-Skripte (TikTok, YouTube Shorts, LinkedIn, Reels) mit Hook, Story, Call-to-Action und visuellen Regieanweisungen.
    - CapCut Studio / Video Maker (/capcut-studio): Vorbereitung von Skripten für Schnittprogramme und KI-Video-Generatoren (z.B. CapCut, HeyGen, Synthesia).
-6. NeXus Coach (/coach):
+6. NeXus DealCoach (/coach):
    - Intelligenter Sparringspartner für Vertriebsstrategie, Einwandbehandlung, Recherche, Content- und Video-Skripterstellung.
 7. Vertriebspsychologie (/wissenschaft):
    - Fundiertes Wissen zu Verkaufspsychologie, Vertrauensaufbau und Trigger-Mechanismen.

@@ -490,6 +490,7 @@ Deine Aufgabe ist es, den bereitgestellten Vertrag, die AGB oder das Dokument gr
     const isExplicitRechercheMode = systemPrompt && (
       systemPrompt.includes('Recherche-Agent') || 
       systemPrompt.includes('Sales & Content Coach') || 
+      systemPrompt.includes('DealCoach') || 
       systemPrompt.includes('B2B-RECHERCHE-MANDAT')
     );
     const searchTriggers = [

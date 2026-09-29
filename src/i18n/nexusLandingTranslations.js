@@ -195,7 +195,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         },
         {
           "num": "05",
-          "name": "AI Deal Coach"
+          "name": "DealCoach"
         },
         {
           "num": "06",
@@ -405,7 +405,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         },
         {
           "num": "05",
-          "name": "AI Deal Coach"
+          "name": "DealCoach"
         },
         {
           "num": "06",
@@ -615,7 +615,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         },
         {
           "num": "05",
-          "name": "Coach de Ventas IA"
+          "name": "DealCoach"
         },
         {
           "num": "06",
@@ -825,7 +825,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         },
         {
           "num": "05",
-          "name": "Coach IA"
+          "name": "DealCoach"
         },
         {
           "num": "06",
@@ -1035,7 +1035,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         },
         {
           "num": "05",
-          "name": "AI Coach"
+          "name": "DealCoach"
         },
         {
           "num": "06",
@@ -1245,7 +1245,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         },
         {
           "num": "05",
-          "name": "AI Deal Coach"
+          "name": "DealCoach"
         },
         {
           "num": "06",
@@ -1455,7 +1455,7 @@ export const NEXUS_LANDING_TRANSLATIONS = {
         },
         {
           "num": "05",
-          "name": "AI Deal Coach"
+          "name": "DealCoach"
         },
         {
           "num": "06",
