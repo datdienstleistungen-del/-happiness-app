@@ -251,7 +251,7 @@ async function getYouTubeActivities(companyName, verifiedYtProfile) {
 async function getLinkedInAndPublicActivities(companyName, verifiedLiProfile) {
   const activities = [];
 
-  // Add verified company profile
+  // 1. Add verified company profile if extracted from website
   if (verifiedLiProfile?.url) {
     activities.push({
       platform: 'linkedin',
@@ -264,28 +264,82 @@ async function getLinkedInAndPublicActivities(companyName, verifiedLiProfile) {
     });
   }
 
-  // Search for official articles / updates / PR announcements
-  try {
-    const results = await searchWeb(`site:linkedin.com/pulse OR site:linkedin.com/posts "${companyName}"`, { maxResults: 3 });
-    const compLower = (companyName || '').toLowerCase();
-    for (const r of results) {
-      if ((r.url.includes('linkedin.com/pulse/') || r.url.includes('linkedin.com/posts/')) && !activities.some(a => a.url === r.url)) {
-        const text = ((r.title || '') + ' ' + (r.snippet || '')).toLowerCase();
-        if (compLower && text.includes(compLower)) {
+  // 2. If no verified profile yet, search specifically for the company page
+  if (activities.length === 0 && companyName && companyName.length >= 2) {
+    try {
+      const compResults = await searchWeb(`"${companyName}" site:linkedin.com/company/`, { maxResults: 3 });
+      for (const r of compResults) {
+        if (r.url && r.url.includes('linkedin.com/company/') && !activities.some(a => a.url === r.url)) {
+          const cleanLi = r.url.split('?')[0].replace(/\/+$/, '');
           activities.push({
             platform: 'linkedin',
-            type: 'post',
-            url: r.url,
-            title: r.title ? r.title.replace(' | LinkedIn', '').trim() : `LinkedIn Update ${companyName}`,
-            snippet: r.snippet || '',
-            date: r.date || 'Kürzlich',
-            verifiedChannel: false
+            type: 'profile',
+            url: cleanLi,
+            title: r.title ? r.title.replace(' | LinkedIn', '').trim() : `LinkedIn Profil: ${companyName}`,
+            snippet: r.snippet || `Offizielles LinkedIn-Unternehmensprofil von ${companyName}`,
+            date: 'Profil',
+            verifiedChannel: true
           });
+          break; // Keep best match
         }
       }
+    } catch (e) {
+      console.warn('[Social Intelligence] Error searching LinkedIn company profile:', e.message);
     }
-  } catch (e) {
-    console.warn('[Social Intelligence] Error finding LinkedIn posts:', e.message);
+  }
+
+  // 3. Search for official articles / updates / PR announcements
+  if (companyName && companyName.length >= 2) {
+    try {
+      const results = await searchWeb(`site:linkedin.com/posts "${companyName}"`, { maxResults: 3 });
+      const compLower = companyName.toLowerCase();
+      for (const r of results) {
+        if (r.url && (r.url.includes('linkedin.com/pulse/') || r.url.includes('linkedin.com/posts/')) && !activities.some(a => a.url === r.url)) {
+          const text = ((r.title || '') + ' ' + (r.snippet || '')).toLowerCase();
+          if (compLower && text.includes(compLower)) {
+            activities.push({
+              platform: 'linkedin',
+              type: 'post',
+              url: r.url,
+              title: r.title ? r.title.replace(' | LinkedIn', '').trim() : `LinkedIn Update ${companyName}`,
+              snippet: r.snippet || '',
+              date: r.date || 'Kürzlich',
+              verifiedChannel: false
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[Social Intelligence] Error finding LinkedIn posts:', e.message);
+    }
+  }
+
+  // 4. Guaranteed 1-Click Search Entry Points (Always available for instant B2B research)
+  if (companyName && companyName.length >= 2) {
+    const searchUrl = `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(companyName)}`;
+    const peopleSearchUrl = `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(companyName + ' Geschäftsführer OR CEO OR Vertrieb')}`;
+
+    if (!activities.some(a => a.url.includes('linkedin.com/company/'))) {
+      activities.push({
+        platform: 'linkedin',
+        type: 'profile',
+        url: searchUrl,
+        title: `LinkedIn Suche: ${companyName}`,
+        snippet: `Direkte 1-Klick-Suche nach Beiträgen, Updates und Unternehmensprofil von ${companyName}.`,
+        date: '1-Klick Recherche',
+        verifiedChannel: true
+      });
+    }
+
+    activities.push({
+      platform: 'linkedin',
+      type: 'post',
+      url: peopleSearchUrl,
+      title: `Entscheider-Suche: ${companyName}`,
+      snippet: `1-Klick Direktzugriff auf Geschäftsführer, CEOs und Vertriebsleiter von ${companyName} auf LinkedIn.`,
+      date: 'Entscheider-Direktlink',
+      verifiedChannel: true
+    });
   }
 
   return activities;

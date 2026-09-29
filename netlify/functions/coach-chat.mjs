@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { checkTextGroundedInSource, detectConcreteNumbers } from './grounding-helpers.mjs'
-import { callLLM } from './_shared/llm-core.mjs'
-import { getTavilyKeys, tavilySearch } from './_shared/search-core.mjs'
+import { getTavilyKeys, tavilySearch, searchDuckDuckGo } from './_shared/search-core.mjs'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const CORS_HEADERS = {
@@ -147,15 +146,24 @@ async function crawlTargetWebsite(rawUrl) {
 }
 
 async function performTavilySearch(query) {
-  const key = getTavilyKeys()[0]
-  if (!key) return "Tavily API Key fehlt im Backend."
-  const out = await tavilySearch(query, key, { maxResults: 6, includeRawContent: false, daysBack: 30, timeoutMs: 8000 })
-  if (!out.ok) {
-    if (out.error === 'leer') return "Keine aktuellen Suchergebnisse gefunden."
-    if (String(out.error).startsWith('http')) return `Tavily API Error: ${out.error}`
-    return `Fehler bei der Suche: ${out.error}`
+  for (const key of getTavilyKeys()) {
+    const out = await tavilySearch(query, key, { maxResults: 6, includeRawContent: false, daysBack: 30, timeoutMs: 5000 });
+    if (out.ok && out.results && out.results.length > 0) {
+      return out.results.map(r => `Titel: ${r.title}\nInhalt: ${r.content}\nURL: ${r.url}`).join('\n\n');
+    }
   }
-  return out.results.map(r => `Titel: ${r.title}\nInhalt: ${r.content}\nURL: ${r.url}`).join('\n\n')
+
+  // Fallback to DuckDuckGo when Tavily keys are exhausted or unavailable
+  try {
+    const ddg = await searchDuckDuckGo(query, { maxResults: 6, timeoutMs: 6000 });
+    if (ddg.length > 0) {
+      return ddg.map(r => `Titel: ${r.title}\nInhalt: ${r.content}\nURL: ${r.url}`).join('\n\n');
+    }
+  } catch (e) {
+    console.warn('[CoachChat] DuckDuckGo fallback error:', e.message);
+  }
+
+  return "Keine aktuellen Suchergebnisse gefunden.";
 }
 
 function sanitizeCoachResponse(text) {
