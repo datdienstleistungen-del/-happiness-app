@@ -1,7 +1,8 @@
 import * as cheerio from 'cheerio';
 import { createClient } from '@supabase/supabase-js';
 import { callLLM as callProviderChain } from './_shared/llm-core.mjs';
-import { getTavilyKeys, tavilySearch } from './_shared/search-core.mjs';
+import { getTavilyKeys, tavilySearch, searchDuckDuckGo } from './_shared/search-core.mjs';
+import { resolveCompanyWebsite } from './nexus-domain-discovery.mjs';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -73,7 +74,8 @@ async function callLLM(prompt, temperature = 0.3) {
 }
 
 // ============================================================================
-// WEB SEARCH HELPER (Tavily via _shared/search-core.mjs, Multi-Key)
+// WEB SEARCH HELPER (Tavily Multi-Key via _shared/search-core.mjs, dann
+// DuckDuckGo-Fallback — Tavily-Keys koennen gesperrt/leer sein: 402/432)
 // ============================================================================
 async function searchWeb(query, options = {}) {
   const { maxResults = 5 } = options;
@@ -95,6 +97,16 @@ async function searchWeb(query, options = {}) {
         date: r.published_date || null
       }));
     }
+  }
+
+  const ddg = await searchDuckDuckGo(query, { maxResults });
+  if (ddg.length > 0) {
+    return ddg.map(r => ({
+      title: r.title,
+      url: r.url,
+      snippet: r.content,
+      date: r.published_date || null
+    }));
   }
 
   return [];
@@ -528,6 +540,18 @@ export const handler = async (event) => {
     // 1. ACTION: DISCOVER ACTIVITIES
     if (action === 'discover_activities') {
       let resolvedWebsite = website;
+      if (!resolvedWebsite) {
+        try {
+          const discovery = await resolveCompanyWebsite(companyName);
+          if (discovery?.url) {
+            resolvedWebsite = discovery.url;
+          } else if (discovery?.domain) {
+            resolvedWebsite = `https://${discovery.domain}`;
+          }
+        } catch (e) {
+          console.warn('[Social Intelligence] resolveCompanyWebsite failed:', e.message);
+        }
+      }
       if (!resolvedWebsite) {
         const cleanName = companyName.toLowerCase().replace(/[^a-z0-9]/g, '');
         const candidates = [`https://www.${cleanName}.com`, `https://www.${cleanName}.de`, `https://${cleanName}.com`, `https://${cleanName}.ai`, `https://${cleanName}.io`];
