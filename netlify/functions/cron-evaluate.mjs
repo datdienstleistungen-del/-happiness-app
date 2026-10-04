@@ -101,7 +101,7 @@ Antworte strikt in JSON mit exakt diesen 6 Feldern:
 1. "status": "relevant" oder "irrelevant"
 2. "relevance_score": Zahl zwischen 0 und 100
 3. "relevance_reason": Warum ist es relevant? Beziehe dich explizit auf das Angebot des Nutzers. (oder "N/A" falls irrelevant)
-4. "trigger_type": Benenne die Art des Ereignisses in 1-3 Worten (z.B. "Expansion", "Neuorientierung", "Personalwechsel"). (oder "N/A")
+4. "trigger_type": Benenne die Art des Ereignisses in 1-3 Worten (z.B. "Stellenanzeige / Hiring", "Expansion", "IT-Migration", "Führungswechsel"). (oder "N/A")
 5. "firmenname": Der exakte Name des B2B-Unternehmens, um das es in dem Text geht. WICHTIG: Nutze NUR echte Firmennamen aus dem Text. (oder null, falls keine konkrete Firma genannt wird)
 6. "domain": Die Web-Domain der gefundenen Firma, falls sie im Text erwähnt wird (z.B. "firma.de"). (oder null)`;
 

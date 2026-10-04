@@ -237,11 +237,11 @@ REGELN:
 7. Die "psychologische_ansprache" MUSS tiefgehend sein: Nicht nur "wie ansprechen", sondern: Was ist der emotionale Zustand? Was ist der unsichtbare Schmerz? Was passiert im Kopf des Entscheiders?
 
 KAUFSIGNAL-KATEGORIEN:
-1. HIRING — Massiver Personalaufbau (10+ Stellen in kurzer Zeit, neue Abteilungen)
-2. FUNDING — Finanzierungsrunden, Investitionen, Series A/B/C
-3. TECH_MIGRATION — Cloud-Migration, Systemwechsel, Legacy-Ablösung
-4. REGULATION — Neue Gesetze, Compliance-Pflichten, regulatorische Änderungen
-5. M_A — Übernahmen, Fusionen, Partnerschaften
+1. HIRING — Strategische Stellenanzeigen & Personalaufbau (z.B. Head of Sales, IT-Leitung, Cloud/Security-Spezialisten, Expansion, neue Abteilungen oder gezielte Schlüsselpositionen. Ignoriere reines Low-Level-Rauschen wie Praktika oder Azubis).
+2. FUNDING — Finanzierungsrunden, Investitionen, Förderungen, Series A/B/C
+3. TECH_MIGRATION — Cloud-Migration, Systemwechsel, ERP/CRM-Einführung, Software-Ablösung
+4. REGULATION — Neue Gesetze, Compliance-Pflichten, Zertifizierungen, regulatorische Änderungen
+5. M_A — Übernahmen, Fusionen, Joint Ventures, Partnerschaften
 
 Gib ein JSON zurück:
 {
@@ -251,14 +251,14 @@ Gib ein JSON zurück:
       "branche": "Branche",
       "prioritaet": 1,
       "bewertung": "B - Hohe Chance. Warum?",
-      "signal": "Was ist passiert?",
+      "signal": "Was ist passiert? (z.B. 'Sucht Head of Sales zur Expansion' oder 'Stellt SAP-Consultants für S/4HANA ein')",
       "signal_kategorie": "HIRING | FUNDING | TECH_MIGRATION | REGULATION | M_A",
-      "relevanz": "Relevanz für das Angebot",
-      "ansprechpartner": null,
-      "position": null,
+      "relevanz": "Konkretes Kaufsignal & Relevanz für den B2B-Vertrieb",
+      "ansprechpartner": "Konkreter Name falls im Text genannt, sonst null",
+      "position": "Ziel-Entscheiderrolle für den Pitch (z.B. 'Geschäftsführer', 'Head of Sales', 'CTO / IT-Leiter')",
       "kontakt": null,
       "quelle": "${nextUrl.url}",
-      "psychologische_ansprache": "Deep dive: Was ist der emotionale Zustand des Entscheiders? Welcher unsichtbare Schmerz verbirgt sich hinter diesem Signal? Was passiert gerade im Unternehmen, was niemand nach außen trägt?"
+      "psychologische_ansprache": "Deep dive: Was ist der emotionale Zustand des Entscheiders? Welcher unsichtbare Schmerz/Bedarf verbirgt sich hinter dieser Stellenausschreibung/diesem Signal?"
     }
   ]
 }`;

@@ -20,11 +20,13 @@
  * - Welcher Kunde ist interessiert?
  */
 
+import { createClient } from '@supabase/supabase-js';
 import { callLLM } from './_shared/llm-core.mjs';
 import { extractJson, businessEventSchema } from './_shared/schemas.mjs';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || SUPABASE_KEY;
 
 function buildExtractionPrompt(rawContent, sourceUrl, sourceTitle) {
   const currentDate = new Date().toISOString().split('T')[0];
@@ -41,7 +43,8 @@ function buildExtractionPrompt(rawContent, sourceUrl, sourceTitle) {
 - Veraltete historische Events (z.B. Eröffnung/Fertigstellung liegt über 90 Tage zurück) haben KEINEN Vertriebswert. Wenn das Event rein historisch/abgelaufen ist, setze "confidence": 0.1.
 
 WICHTIG: Nutze NUR echte Daten aus dem Text. Erfinde absolut nichts.
-Wenn ein Feld nicht eindeutig bestimmbar ist, setze es auf null.
+# EVENT-TYPEN & HIRING-SIGNALE:
+- Bei "hiring": Fokussiere auf strategische Positionen, Expansion, IT-/Software-Einführungen und Führungskräfte (z.B. Head of Sales, CTO, Expansions-Manager). Gewöhnliche Aushilfs- oder Praktikantenstellen haben keine Relevanz.
 
 Gib die Antwort als JSON mit exakt diesen Feldern:
 {
@@ -171,20 +174,57 @@ export async function extractEventFromRaw(rawEventId, token, userId) {
 }
 
 /**
- * Handler für direkten HTTP-Aufruf.
+ * Handler für direkten HTTP-Aufruf (gesichert gegen unbefugte Nutzung).
  */
 export async function handler(event) {
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+      },
+      body: ''
+    };
+  }
+
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
+  // 1. Zwingende Authentifizierungsprüfung
+  const authHeader = event.headers.authorization || event.headers.Authorization;
+  if (!authHeader) {
+    return {
+      statusCode: 401,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Unauthorized: Authentifizierung erforderlich.' })
+    };
+  }
+
+  const token = authHeader.replace(/^Bearer\s+/i, '');
+  const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: authHeader } }
+  });
+  const { data: { user }, error: authError } = await authClient.auth.getUser();
+
+  if (authError || !user) {
+    return {
+      statusCode: 401,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Unauthorized: Ungültige Sitzung.' })
+    };
+  }
+
   try {
-    const { raw_event_id } = JSON.parse(event.body);
+    const { raw_event_id } = JSON.parse(event.body || '{}');
     if (!raw_event_id) return { statusCode: 400, body: JSON.stringify({ error: 'raw_event_id required' }) };
 
-    const result = await extractEventFromRaw(raw_event_id);
+    const result = await extractEventFromRaw(raw_event_id, token, user.id);
     return { statusCode: 200, body: JSON.stringify(result) };
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
 }
+

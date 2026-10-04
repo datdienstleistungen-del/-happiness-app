@@ -182,10 +182,17 @@ export const handler = async (event) => {
     const newsQueries = kwOk
       ? [...new Set([kw, `${kw} expandiert`, `${kw} stellt ein`])].slice(0, 3)
       : [searchQuery];
+    // Echte, ungesperrte Stellen- und Wachstumsrecherchen statt blockierter Aggregatoren
+    const hiringQueries = kwOk ? [
+      { q: `"${kw}" ("wir suchen" OR "Stellenangebote" OR "Karriere") -site:stepstone.de -site:indeed.com -site:arbeitsagentur.de`, type: 'JOB_PORTAL' },
+      { q: `"${kw}" ("schafft neue Stellen" OR "baut Team aus" OR "stellt ein" OR "Personalaufbau")`, type: 'NEWS' },
+      { q: `"${kw}" ("Head of" OR "Leiter" OR "Director" OR "VP" OR "Manager") ("wir suchen" OR "Stellenanzeige")`, type: 'JOB_PORTAL' }
+    ] : [];
+
     const ddgQueries = [
       { q: searchQuery, type: 'GENERAL_WEB' },
       { q: `${branche || searchQuery} Pressemitteilung`, type: 'GENERAL_WEB' },
-      ...(kwOk ? [{ q: `${kw} Stellenangebote`, type: 'JOB_PORTAL' }] : []),
+      ...hiringQueries,
       ...(kwOk ? [{ q: `${kw} site:openpr.de OR site:presseportal.de`, type: 'NEWS' }] : [])
     ];
 
@@ -229,21 +236,18 @@ export const handler = async (event) => {
       console.log(`[ScanStart] ${blockedCount} Suchtreffer durch URL-Blocklist gefiltert.`);
     }
 
-    // Synthetische URLs (öffentlich crawelbar: StepStone 24k, XING 7.6k, LinkedIn 10.8k, NorthData 11k Text)
+    // Synthetische URLs (nur barrierefreie Register-Quellen wie NorthData; Job-Portale werden oben organisch gesucht)
     const syntheticUrls = kwOk ? [
-      { url: `https://www.stepstone.de/jobs/${encodeURIComponent(kw)}`, title: `StepStone Stellenangebote: ${kw}`, source_type: 'JOB_PORTAL' },
-      { url: `https://www.xing.com/jobs/search?keywords=${encodeURIComponent(kw)}`, title: `XING Jobs: ${kw}`, source_type: 'JOB_PORTAL' },
-      { url: `https://www.linkedin.com/jobs/search?keywords=${encodeURIComponent(kw)}&location=Germany`, title: `LinkedIn Jobs: ${kw}`, source_type: 'JOB_PORTAL' },
       { url: `https://www.northdata.de/suche?q=${encodeURIComponent(kw)}`, title: `NorthData Firmensuche: ${kw}`, source_type: 'REGISTER' }
     ] : [];
 
-    // Mischung: News (M&A/Expansion) -> synthetische (Jobs/Register) -> Web/PR, max. 22 Kandidaten
+    // Mischung: News (M&A/Expansion) -> Web/PR/Jobs (organische Karriereseiten) -> Register, max. 22 Kandidaten
     const allResults = [
       ...newsKept.slice(0, 10).map(r => ({ ...r, source_type: 'NEWS' })),
-      ...syntheticUrls,
-      ...webKept.slice(0, 8)
+      ...webKept.slice(0, 12),
+      ...syntheticUrls
     ];
-    console.log(`[ScanStart] Sources: NEWS=${newsResults.length} SYNTH=${syntheticUrls.length} WEB=${webResults.length}`);
+    console.log(`[ScanStart] Sources: NEWS=${newsResults.length} WEB/JOBS=${webResults.length} SYNTH=${syntheticUrls.length}`);
 
     // Dedupliziere URLs (erste Quelle gewinnt)
     const seenUrls = new Set();

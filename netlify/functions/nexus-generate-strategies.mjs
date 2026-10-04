@@ -50,6 +50,7 @@ REGELN:
 - Generiere 5-10 extrem scharfe und relevante Signal-Strategien.
 - Leite diese AUSSCHLIESSLICH aus den 'demand_contexts' des Angebots-Verständnisses ab.
 - Erfinde keine Fantasie-Produkte. Halte dich strikt an 'what_is_NOT_sold'.
+- Für 'jobs'/Hiring-Strategien: Formuliere Suchanfragen so, dass sie echte Firmen-Karriereseiten und direkte Stellenausschreibungen ansprechen (z.B. mit '"wir suchen"' oder '"Stellenangebot"' und Rollenbegriffen, ohne geschützte Portale wie StepStone/Indeed).
 
 Antworte AUSSCHLIESSLICH im folgenden JSON-Format:
 {

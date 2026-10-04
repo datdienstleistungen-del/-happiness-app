@@ -265,6 +265,23 @@ export const handler = async (event) => {
         return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: 'visitor_id ist erforderlich' }) }
       }
 
+      // Schutz vor unbegrenzter anonymer Nutzung: Limit auf 5 Anfragen pro visitor_id
+      if (!user && activeVisitorId) {
+        const { count: visitorMsgCount } = await supabase
+          .from('coach_messages')
+          .select('id', { count: 'exact', head: true })
+          .eq('visitor_id', activeVisitorId)
+          .eq('role', 'user');
+
+        if ((visitorMsgCount || 0) >= 5) {
+          return {
+            statusCode: 429,
+            headers: CORS_HEADERS,
+            body: JSON.stringify({ error: 'Kostenloses Gast-Kontingent (5 Nachrichten) aufgebraucht. Bitte melde dich an, um unbegrenzt mit NeXus DealCoach zu sprechen.' })
+          };
+        }
+      }
+
       // Check Consent serverseitig
       let consentQuery = supabase.from('coach_consent').select('id')
       if (user) {
@@ -359,12 +376,12 @@ export const handler = async (event) => {
 
       const executeChain = async () => {
         responseText = null
-        // Stufen wie bisher: Bei Bild zuerst OpenAI (Vision-Route), sonst
-        // Groq-first. acceptText verwirft Garbage-Outputs (isResponseGarbage)
-        // auf Stufe-Ebene — die Kette faellt wie zuvor auf die naechste durch.
-        const providers = image_url
-          ? ['openai', 'groq', 'mistral', 'openrouter']
-          : ['groq', 'mistral', 'openrouter']
+        // Stufen: Bei anonymen Gästen nur kostenlose Free-Tier-Modelle (Groq/OpenRouter).
+        // Bei eingeloggten Nutzern mit Bild zuerst OpenAI (Vision-Route), sonst Groq -> Mistral -> OpenRouter.
+        const defaultProviders = user
+          ? (image_url ? ['openai', 'groq', 'mistral', 'openrouter'] : ['groq', 'mistral', 'openrouter'])
+          : ['groq', 'openrouter'];
+        const providers = defaultProviders;
         const out = await callLLM(llmMessages, {
           profile: 'coach',
           temperature: 0.5,

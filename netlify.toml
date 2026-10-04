@@ -13,8 +13,9 @@
 [functions."cron-search"]
   schedule = "*/15 * * * *"
 
-[functions."cron-evaluate"]
-  schedule = "*/15 * * * *"
+# cron-evaluate vorübergehend deaktiviert (stoppt automatischen 15-Minuten-Dauerverbrauch von LLM-Tokens)
+# [functions."cron-evaluate"]
+#   schedule = "*/15 * * * *"
 
 # Phase 3 (Radar-Queue): arbeitet nexus_scan_jobs serverseitig ab (bis 15 min),
 # damit Scans ohne offenes Frontend-Tab weiterlaufen. -background-Suffix +

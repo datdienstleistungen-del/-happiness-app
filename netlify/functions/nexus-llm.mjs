@@ -330,12 +330,18 @@ export const handler = async (event) => {
       }
     }
 
-    if (user && user.id) {
-      const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'harro@happiness.de').split(',');
-      isAdmin = user.email && ADMIN_EMAILS.includes(user.email);
+    if (!user || !user.id) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Unauthorized: Bitte melde dich an, um NeXus KI-Funktionen zu nutzen.' })
+      };
     }
 
-    // Premium-Tier-Check & Rate Limiting (nur für eingeloggte User)
+    const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'harro@happiness.de').split(',');
+    isAdmin = user.email && ADMIN_EMAILS.includes(user.email);
+
+    // Premium-Tier-Check & Rate Limiting (für eingeloggte User)
     if (user && user.id) {
       let isPremium = false;
       let premiumTier = 'free';

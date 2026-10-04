@@ -1,8 +1,9 @@
+import { createClient } from '@supabase/supabase-js';
 import { callLLM } from './_shared/llm-core.mjs';
 
-const SUPABASE_URL = 'https://irumowvmhvrofezwvnop.supabase.co';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://irumowvmhvrofezwvnop.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || SUPABASE_SERVICE_KEY;
 
 const SYSTEM_PROMPT = `Du bist ein preisgekrönter Senior Copywriter und Content-Strategist, spezialisiert auf B2B-Sales-Videos, Kurzvideos (TikTok, Reels, Shorts) und visuelle Video-Pitches. Erstelle ein hochgradig konvertierendes, emotionales und maßgeschneidertes "Rezept" (Videoskript oder Caption).
 
@@ -84,6 +85,29 @@ export async function handler(event) {
       statusCode: 405, 
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ error: 'Method not allowed' }) 
+    };
+  }
+
+  // 1. Zwingende Authentifizierung
+  const authHeader = event.headers.authorization || event.headers.Authorization;
+  if (!authHeader) {
+    return {
+      statusCode: 401,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Unauthorized: Authentifizierung erforderlich.' })
+    };
+  }
+
+  const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: authHeader } }
+  });
+  const { data: { user }, error: authError } = await authClient.auth.getUser();
+
+  if (authError || !user) {
+    return {
+      statusCode: 401,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Unauthorized: Ungültige Sitzung.' })
     };
   }
 

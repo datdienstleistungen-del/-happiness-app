@@ -124,6 +124,9 @@ export function getProfileUrls(domain) {
   return [
     `https://${clean}`,
     `https://${clean}/impressum`,
+    `https://${clean}/karriere`,
+    `https://${clean}/jobs`,
+    `https://${clean}/careers`,
     `https://${clean}/ueber-uns`,
     `https://${clean}/about-us`,
     `https://${clean}/leistungen`,
