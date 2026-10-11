@@ -72,7 +72,31 @@ async function generateMessage(context) {
   
   const contextStr = contextParts.join('\n');
   
-  const prompt = `Du bist ein Elite B2B-Sales-Copywriter und Meister des Problem-First-Outreach. Erstelle eine individuelle Erstansprache nach der strengen 5-SCHRITTE-PROBLEM-FIRST-METHODIK.
+  // Verhindert Halluzinationen von Zahlen und Referenzen, die den Vertriebler blamieren und NeXus verbrennen.
+  const WAHRHEITSREGEL = `WAHRHEITSREGEL:
+Du darfst NUR Aussagen treffen, die durch den übergebenen Kontext (Trigger, Angebot, Ansprechpartner, Quellen) belegt sind. 
+
+STRENG VERBOTEN:
+- Erfundene Zahlen ("15 % Steigerung", "6 Wochen kürzer")
+- Erfundene Referenzen ("bei Siemens, Bosch, Telekom")
+- Erfundene Ergebnisse ("in vergleichbaren Projekten")
+- Erfundene Zeitangaben ("innerhalb von zwei Wochen")
+- Erfundene Kunden ("unser Kunde XY")
+- Erfundene Fallstudien ("ein ähnlicher Fall zeigte...")
+
+ERLAUBT:
+- Aussagen, die direkt aus dem Trigger abgeleitet sind
+- Aussagen, die direkt aus dem Angebot abgeleitet sind
+- Allgemeine Formulierungen ohne konkrete Zahlen: "Wir haben Erfahrung mit ähnlichen Fällen", "Wir können Ihnen eine Übersicht schicken, wie wir dort vorgehen"
+- Wenn echte Zahlen im Kontext stehen: Diese dürfen zitiert werden
+
+BEI UNSICHERHEIT:
+Wenn du keine belegten Zahlen hast, formuliere ohne Zahlen. 
+Lieber vage und ehrlich als konkret und erfunden.`;
+
+  const prompt = `${WAHRHEITSREGEL}
+
+Du bist ein Elite B2B-Sales-Copywriter und Meister des Problem-First-Outreach. Erstelle eine individuelle Erstansprache nach der strengen 5-SCHRITTE-PROBLEM-FIRST-METHODIK.
 
 KONTEXT (nur diese Daten verwenden):
 ${contextStr}
@@ -80,7 +104,7 @@ ${contextStr}
 STRENGE REGELN:
 1. Verwende NUR Informationen aus dem obigen Kontext
 2. Erfinde KEINE Fakten über die Person oder das Unternehmen
-3. Keine erfundenen Leistungszahlen
+3. Keine erfundenen Leistungszahlen, Kennzahlen oder Referenzen. Beachte strikt die WAHRHEITSREGEL!
 4. STRENGSTES VERBOT: Beginne NIEMALS mit "wir haben erfahren", "ich habe gesehen", "ich habe zufällig gesehen", "wir freuen uns", "mit Interesse".
 5. ABSOLUTES FLOSKEL-VERBOT: Keine Floskeln wie "maßgeschneiderte Lösungen", "höchste Qualitätsstandards", "wir bieten Ihnen", "unser Portfolio", "innovative Lösungen", "zuverlässiger Partner".
 6. KEIN TERMIN-DRUCK: Frage NIEMALS nach einem Telefonat oder Termin ("Haben Sie 15 Minuten?", "Wollen wir telefonieren?", "Wann passt es für einen Call?").
@@ -94,8 +118,9 @@ Die Nachricht im Feld "message" besteht (nach einer optionalen persönlichen Anr
 2. SATZ 2 (PROBLEM): Drei KONKRETE Engpässe des Entscheiders (KEINE Wünsche, KEINE Features!).
    - JEDER Engpass muss ein konkretes operatives Problem mit Ursache & Auswirkung beschreiben (z.B. "unterschiedliche CRM-Systeme in den Regionen (führt zu doppelten Leads)..."). Wünsche wie "Echtzeit-Überwachung" sind verboten!
 3. SATZ 3 (KONSEQUENZ): Was riskiert der Entscheider/die Firma bei Untätigkeit? (Konkreter Zeitverlust, Budgetüberschreitung, Reibung).
-4. SATZ 4 (LÖSUNG): Auf DIESEN KONKRETEN LEAD bezogener Nutzen mit messbarem Resultat (KEINE FEATURE-LISTE!).
+4. SATZ 4 (LÖSUNG): Auf DIESEN KONKRETEN LEAD bezogener Nutzen (KEINE FEATURE-LISTE, KEINE ERFUNDENEN ZAHLEN/REFERENZEN!).
    - Niemals allgemeine Produkt-Slogans aus dem Angebot kopieren! Beziehe den Nutzen direkt auf die Engpässe dieses Leads.
+   - Formuliere ehrlich ohne Zahlen ("Wir unterstützen [Zielgruppe] dabei... – wir haben Erfahrung mit ähnlichen Fällen").
 5. SATZ 5 (NÄCHSTER SCHRITT): Niedrigschwelliges Angebot ohne Termindruck ("Ich schicke Ihnen gerne eine 1-seitige Übersicht, wie das funktioniert – wäre das hilfreich?").
 
 Gib ein JSON zurück:

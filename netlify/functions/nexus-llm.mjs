@@ -463,10 +463,32 @@ Deine Aufgabe ist es, den bereitgestellten Vertrag, die AGB oder das Dokument gr
   2. Gib direkt danach 2-3 konkrete Sätze als perfekten B2B-Aufhänger / Einstieg für die Erstansprache.
   3. Stelle NIEMALS theoretische Gegenfragen ("Welche Tools haben Sie genutzt?"). Liefere sofort die fertige Tabelle mit allen anklickbaren Links!`;
 
+    // Verhindert Halluzinationen von Zahlen und Referenzen, die den Vertriebler blamieren und NeXus verbrennen.
+    const WAHRHEITSREGEL = `WAHRHEITSREGEL:
+Du darfst NUR Aussagen treffen, die durch den übergebenen Kontext (Trigger, Angebot, Ansprechpartner, Quellen) belegt sind. 
+
+STRENG VERBOTEN:
+- Erfundene Zahlen ("15 % Steigerung", "6 Wochen kürzer")
+- Erfundene Referenzen ("bei Siemens, Bosch, Telekom")
+- Erfundene Ergebnisse ("in vergleichbaren Projekten")
+- Erfundene Zeitangaben ("innerhalb von zwei Wochen")
+- Erfundene Kunden ("unser Kunde XY")
+- Erfundene Fallstudien ("ein ähnlicher Fall zeigte...")
+
+ERLAUBT:
+- Aussagen, die direkt aus dem Trigger abgeleitet sind
+- Aussagen, die direkt aus dem Angebot abgeleitet sind
+- Allgemeine Formulierungen ohne konkrete Zahlen: "Wir haben Erfahrung mit ähnlichen Fällen", "Wir können Ihnen eine Übersicht schicken, wie wir dort vorgehen"
+- Wenn echte Zahlen im Kontext stehen: Diese dürfen zitiert werden
+
+BEI UNSICHERHEIT:
+Wenn du keine belegten Zahlen hast, formuliere ohne Zahlen. 
+Lieber vage und ehrlich als konkret und erfunden.`;
+
     const isIntelligenceMode = mode === 'lead_intelligence' || (systemPrompt || '').includes('zielgruppe') || (systemPrompt || '').includes('vertriebsstrategie');
     const isCopywritingMode = ['sales_pitch', 'follow_up', 'einwandbehandlung', 'forum_response'].includes(mode);
     const contextSystem = (context && context.system && !systemPrompt.includes(context.system.slice(0, 50))) ? `\n\n${context.system}` : '';
-    const finalSystemPrompt = [systemPrompt, contextSystem, langInstruction, contractInstruction, (isIntelligenceMode || isCopywritingMode) ? '' : b2bResearchDirective].filter(Boolean).join('\n\n');
+    const finalSystemPrompt = [WAHRHEITSREGEL, systemPrompt, contextSystem, langInstruction, contractInstruction, (isIntelligenceMode || isCopywritingMode) ? '' : b2bResearchDirective].filter(Boolean).join('\n\n');
     
     const messages = [
       { role: "system", content: finalSystemPrompt }

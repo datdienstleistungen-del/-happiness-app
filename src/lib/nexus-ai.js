@@ -183,6 +183,28 @@ UNSER ANGEBOT & POSITIONIERUNG: ${offName || '-'} (${offPos || '-'})`;
   const currentYear = new Date().getFullYear();
   const currentMonthYear = new Date().toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
 
+  // Verhindert Halluzinationen von Zahlen und Referenzen, die den Vertriebler blamieren und NeXus verbrennen.
+  const WAHRHEITSREGEL = `WAHRHEITSREGEL:
+Du darfst NUR Aussagen treffen, die durch den übergebenen Kontext (Trigger, Angebot, Ansprechpartner, Quellen) belegt sind. 
+
+STRENG VERBOTEN:
+- Erfundene Zahlen ("15 % Steigerung", "6 Wochen kürzer")
+- Erfundene Referenzen ("bei Siemens, Bosch, Telekom")
+- Erfundene Ergebnisse ("in vergleichbaren Projekten")
+- Erfundene Zeitangaben ("innerhalb von zwei Wochen")
+- Erfundene Kunden ("unser Kunde XY")
+- Erfundene Fallstudien ("ein ähnlicher Fall zeigte...")
+
+ERLAUBT:
+- Aussagen, die direkt aus dem Trigger abgeleitet sind
+- Aussagen, die direkt aus dem Angebot abgeleitet sind
+- Allgemeine Formulierungen ohne konkrete Zahlen: "Wir haben Erfahrung mit ähnlichen Fällen", "Wir können Ihnen eine Übersicht schicken, wie wir dort vorgehen"
+- Wenn echte Zahlen im Kontext stehen: Diese dürfen zitiert werden
+
+BEI UNSICHERHEIT:
+Wenn du keine belegten Zahlen hast, formuliere ohne Zahlen. 
+Lieber vage und ehrlich als konkret und erfunden.`;
+
   const salesWindowInstruction = `
 # MISSION & ROLE
 Du bist die zentrale Intelligence Engine für das "Nexus Sales Operation System". Deine Aufgabe ist es, B2B-Vertriebstrigger zu identifizieren, zu bewerten und ausschließlich solche Opportunities auszugeben, die HEUTE für den Vertrieb direkt bespielbar sind.
@@ -208,7 +230,7 @@ Ein faktisch korrekter Trigger ohne zeitliche Relevanz ist für den Vertrieb wer
 3. [ ] Reales Handlungsfenster für den Vertrieb heute (${currentYear}) vorhanden?
 Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
 
-  let systemPrompt = `Du bist NeXus, ein B2B Sales Intelligence System.\n${salesWindowInstruction}\n`
+  let systemPrompt = `${WAHRHEITSREGEL}\n\nDu bist NeXus, ein B2B Sales Intelligence System.\n${salesWindowInstruction}\n`
   if (mode !== 'chat') {
     systemPrompt += " Antworte IMMER in validem JSON ohne Markdown-Blöcke (kein ```json)."
   }
@@ -279,6 +301,7 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
     1. VALIDIERUNG & TACTICAL EMPATHY: Gehe im ALLERERSTEN Satz direkt auf den Einwand ein und nimm allen Verkaufsdruck weg (z. B. "Vollkommen verständlich – wenn Budgets für das Quartal fixiert sind, steht Kostendisziplin an erster Stelle. Es geht mir aktuell überhaupt nicht darum, dass Sie sofort Budget freigeben oder eine Kaufentscheidung treffen.").
     2. PROBLEM & KONSEQUENZ: Beleuchte das reale Risiko, das trotz des Einwands durch den aktuellen Trigger/die Marktphase entsteht (z. B. "Gleichzeitig beobachten wir bei Projekten dieser Art, dass ein Aufschieben der Klärung später zu signifikanten Zeitverzögerungen oder ungeplanten Mehrkosten führt.").
     3. LÖSUNG (NUTZEN STATT FEATURES): Zeige eine risikofreie, budgetneutrale Entlastung auf (z. B. Vorbereitung für die nächste Phase, neutraler Benchmark, Null-Aufwand).
+       BEACHTE DIE WAHRHEITSREGEL: Keine erfundenen Zahlen ("15 %", "2 Wochen"), keine erfundenen Kunden/Referenzen. Formuliere ehrlich ohne Zahlen: "Wir haben Erfahrung mit ähnlichen Fällen".
        ABSOLUTES FLOSKEL-VERBOT: Keine "maßgeschneiderten Lösungen", "höchsten Qualitätsstandards", kein "wir bieten Ihnen".
     4. REIBUNGSARMER NÄCHSTER SCHRITT: Biete eine nützliche Vorlage oder Übersicht ohne Termindruck an (z. B. "Wäre es für Sie hilfreich, wenn ich Ihnen einfach die 1-seitige Entscheidungsvorlage schicke – ganz unverbindlich für die spätere Planungsrunde?").
 
@@ -295,6 +318,7 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
     1. STRENG VERBOTEN: Kein "Ich wollte nur mal nachhaken", "Haben Sie meine E-Mail gesehen?", "Ich beziehe mich auf meine letzte Nachricht".
     2. TRIGGER & AKUTER ENGPASS: Knüpfe direkt an das akute Projekt / den Trigger und den drängendsten Engpass des Entscheiders an.
     3. KONSEQUENZ & NEUER NUTZEN: Zeige auf, welches operative Risiko / welcher Zeitverlust bei weiterem Zuwarten entsteht, und bringe einen neuen konkreten Praxis-Impuls oder Nutzenwert ein.
+       BEACHTE DIE WAHRHEITSREGEL: Keine erfundenen Zahlen, keine erfundenen Zeiträume ("innerhalb von 2 Wochen"), keine erfundenen Fallstudien. Formuliere ehrlich: "Wir haben Erfahrung mit ähnlichen Situationen und können Ihnen zeigen, wie wir dort vorgehen."
     4. KEINE FEATURE-LISTEN & KEINE FLOSKELN: Absolut verboten sind "maßgeschneiderte Lösungen", "höchste Qualitätsstandards", "wir bieten Ihnen", "unser Portfolio".
     5. NIEDRIGSCHWELLIGER SCHRITT: Schließe mit einem reibungsarmen nächsten Schritt ohne Termindruck (z. B. "Soll ich Ihnen den 1-seitigen Praxis-Leitfaden dazu kurz per Mail senden, damit Sie ihn bei der nächsten Abstimmung griffbereit haben?").
     6. Halte die Nachricht extrem fokussiert (3-4 kurze Absätze).
@@ -312,6 +336,7 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
     1. KEIN WERBETEXT, KEINE FLOSKELN: Absolut verboten sind Werbesprache ("wir bieten Ihnen", "unsere Software", "maßgeschneiderte Lösungen", "höchste Qualitätsstandards").
     2. PROBLEM-FIRST & ENGINGE: Greife das im Beitrag beschriebene Problem auf und benenne aus Praxiserfahrung die 2-3 typischen Engpässe und die Konsequenzen, wenn man sie übersieht.
     3. METHODISCHE LÖSUNG (NUTZEN): Gib sofort anwendbaren fachlichen Input und die praxiserprobte Lösungsmethodik an die Hand (reiner Nutzen und Praxiserfahrung, keine Feature-Listen).
+       BEACHTE DIE WAHRHEITSREGEL: Keine erfundenen Zahlen oder Kundenreferenzen. Formuliere ehrlich ohne Zahlen.
     4. NIEDRIGSCHWELLIGER MEHRWERT: Schließe mit einem hilfreichen Impuls für die Diskussion oder dem Angebot, eine 1-seitige Checkliste/Ressource bereitzustellen ("Falls hilfreich, teile ich gerne unsere Checkliste dazu hier in den Kommentaren.").
     5. Natürliche, kollegiale Experten-Tonalität auf Augenhöhe.
 
@@ -342,10 +367,11 @@ Der Text im Feld "response" besteht (nach einer optionalen persönlichen Anredez
    - Konkret benennen: zeitlicher Verzug, Budgetüberschreitungen, interner Reibungsverlust.
    - Muster: "Wenn diese Punkte nicht frühzeitig geklärt werden, riskiert [Firma/Entscheider], dass [konkretes Risiko, z.B. die Übergangsphase 3–6 Monate länger dauert als geplant]."
 
-4. SATZ 4 (LÖSUNG): Auf DIESEN KONKRETEN LEAD bezogener Nutzen mit messbarem Resultat (KEINE FEATURE-LISTE!).
+4. SATZ 4 (LÖSUNG): Auf DIESEN KONKRETEN LEAD bezogener Nutzen (KEINE FEATURE-LISTE, KEINE ERFUNDENEN ZAHLEN/REFERENZEN!).
+   - STRENGSTE BEACHTUNG DER WAHRHEITSREGEL: Erfinde NIEMALS Kennzahlen ("um 6 Wochen verkürzt", "15 % mehr"), Kundenreferenzen ("bei Siemens") oder Zeitangaben ("in zwei Wochen"). Wenn keine belegten Zahlen vorliegen, formuliere zwingend OHNE Zahlen!
    - STRENGES VERBOT VON PRODUKT-FEATURE-LISTEN: Kopiere NIEMALS allgemeine Feature-Listen oder Standard-Slogans aus dem Offering (z.B. NICHT "Unsere SaaS-Sales-Software steigert den Umsatz um bis zu 20 % durch automatisierte Lead-Qualifizierung, Echtzeit-Analytics und nahtlose Integration").
    - Der Nutzen muss sich direkt auf die in Satz 2 genannten Engpässe DIESES konkreten Leads beziehen!
-   - Muster: "Wir sorgen dafür, dass [konkrete Lösung für diesen Lead, z.B. alle vier Regionen dieselben Lead-Definitionen nutzen] – in vergleichbaren [Projekten/Umstrukturierungen] haben wir [konkretes Ergebnis, z.B. die Übergangszeit um 6 Wochen verkürzt]."
+   - Muster: "Wir unterstützen [Zielgruppe] dabei, [konkreter Nutzen für diesen Lead, z.B. alle Regionen auf denselben Lead-Standard auszurichten] – wir haben Erfahrung mit ähnlichen Fällen und können Ihnen zeigen, wie wir dort vorgehen."
    - ABSOLUTES FLOSKEL-VERBOT: Keine "maßgeschneiderten Lösungen", keine "höchsten Qualitätsstandards", kein "wir bieten Ihnen", kein "unser Portfolio".
 
 5. SATZ 5 (NÄCHSTER SCHRITT): Niedrigschwelliges Angebot ohne Termindruck.
@@ -358,7 +384,7 @@ Du musst ein JSON-Objekt mit EXAKT folgender Struktur zurückgeben:
   "thought_trigger": "Satz 1 Analyse: Trigger + Quelle + Datum",
   "thought_problem": "Satz 2 Analyse: 3 konkrete Engpässe mit Ursache/Auswirkung (keine Wünsche)",
   "thought_consequence": "Satz 3 Analyse: Konsequenz bei Untätigkeit",
-  "thought_solution": "Satz 4 Analyse: Spezifischer Nutzen für DIESEN Lead (keine Feature-Liste)",
+  "thought_solution": "Satz 4 Analyse: Spezifischer Nutzen für DIESEN Lead (ehrlich ohne erfundene Zahlen)",
   "thought_next_step": "Satz 5 Analyse: 1-seitige Übersicht/Checkliste ohne Termindruck",
   "response": "Der fertige Pitch mit maximal 5 Sätzen (optional mit persönlicher Anredezeile 'Sehr geehrte(r) Frau/Herr [Nachname],')."
 }`
@@ -375,7 +401,7 @@ Du musst ein JSON-Objekt mit EXAKT folgender Struktur zurückgeben:
     const activeLang = lang || 'de';
     const langLabel = langNames[activeLang] || 'Deutsch';
     if (context?.system) {
-      systemPrompt = `${context.system}\n\nSPRACHREGEL: Antworte AUSSCHLIESSLICH auf ${langLabel}. WICHTIG: Antworte NIEMALS im JSON-Format! Nutze menschenlesbares Markdown (Fließtext, Tabellen, Listen, anklickbare Links) für deine Antworten.`;
+      systemPrompt = `${WAHRHEITSREGEL}\n\n${context.system}\n\nSPRACHREGEL: Antworte AUSSCHLIESSLICH auf ${langLabel}. WICHTIG: Antworte NIEMALS im JSON-Format! Nutze menschenlesbares Markdown (Fließtext, Tabellen, Listen, anklickbare Links) für deine Antworten.`;
     } else {
       systemPrompt += ` Du bist NeXus DealCoach, ein B2B-Vertriebs- & Recherche-Assistent. Liefere präzise Antworten, Tabellen und direkte 1-Klick-Links zu Websites, LinkedIn und geschäftlichen Kontakten. Verweigere keine B2B-Firmendaten. Antworte professionell und hilfsbereit auf ${langLabel}. WICHTIG: Antworte NIEMALS im JSON-Format! Nutze menschenlesbares Markdown.`;
     }

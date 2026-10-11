@@ -480,12 +480,37 @@ async function generateSocialOutreach(params) {
   // User landing page URL
   const landingPageUrl = offering?.website || offering?.landing_page || 'https://nexus-hit.netlify.app';
 
-  const prompt = `You are an elite B2B Social Selling & Revenue Conversion Strategist in "NeXus Revenue OS".
+  // Verhindert Halluzinationen von Zahlen und Referenzen, die den Vertriebler blamieren und NeXus verbrennen.
+  const WAHRHEITSREGEL = `WAHRHEITSREGEL:
+Du darfst NUR Aussagen treffen, die durch den übergebenen Kontext (Trigger, Angebot, Ansprechpartner, Quellen) belegt sind. 
+
+STRENG VERBOTEN:
+- Erfundene Zahlen ("15 % Steigerung", "6 Wochen kürzer")
+- Erfundene Referenzen ("bei Siemens, Bosch, Telekom")
+- Erfundene Ergebnisse ("in vergleichbaren Projekten")
+- Erfundene Zeitangaben ("innerhalb von zwei Wochen")
+- Erfundene Kunden ("unser Kunde XY")
+- Erfundene Fallstudien ("ein ähnlicher Fall zeigte...")
+
+ERLAUBT:
+- Aussagen, die direkt aus dem Trigger abgeleitet sind
+- Aussagen, die direkt aus dem Angebot abgeleitet sind
+- Allgemeine Formulierungen ohne konkrete Zahlen: "Wir haben Erfahrung mit ähnlichen Fällen", "Wir können Ihnen eine Übersicht schicken, wie wir dort vorgehen"
+- Wenn echte Zahlen im Kontext stehen: Diese dürfen zitiert werden
+
+BEI UNSICHERHEIT:
+Wenn du keine belegten Zahlen hast, formuliere ohne Zahlen. 
+Lieber vage und ehrlich als konkret und erfunden.`;
+
+  const prompt = `${WAHRHEITSREGEL}
+
+You are an elite B2B Social Selling & Revenue Conversion Strategist in "NeXus Revenue OS".
 
 COMMERCIAL SALES PURPOSE:
 We are engaging with this public post/video specifically as an active B2B sales opportunity.
 The goal is to generate inbound interest and drive traffic/leads directly to our landing page: ${landingPageUrl}.
 You MUST include a direct consultative invitation and the exact landing page link (${landingPageUrl}) in BOTH the public comment and the direct message.
+CRITICAL TRUTH ENFORCEMENT: Never invent case study metrics, percentages, customer names, or duration estimates in comment or message!`;
 
 CONTEXT:
 - Target Company: "${companyName}"

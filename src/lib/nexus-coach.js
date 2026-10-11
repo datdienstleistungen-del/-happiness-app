@@ -187,9 +187,31 @@ const LANGUAGE_NAMES = {
   el: 'Ελληνικά (Greek)'
 };
 
+// Verhindert Halluzinationen von Zahlen und Referenzen, die den Vertriebler blamieren und NeXus verbrennen.
+const WAHRHEITSREGEL = `WAHRHEITSREGEL:
+Du darfst NUR Aussagen treffen, die durch den übergebenen Kontext (Trigger, Angebot, Ansprechpartner, Quellen) belegt sind. 
+
+STRENG VERBOTEN:
+- Erfundene Zahlen ("15 % Steigerung", "6 Wochen kürzer")
+- Erfundene Referenzen ("bei Siemens, Bosch, Telekom")
+- Erfundene Ergebnisse ("in vergleichbaren Projekten")
+- Erfundene Zeitangaben ("innerhalb von zwei Wochen")
+- Erfundene Kunden ("unser Kunde XY")
+- Erfundene Fallstudien ("ein ähnlicher Fall zeigte...")
+
+ERLAUBT:
+- Aussagen, die direkt aus dem Trigger abgeleitet sind
+- Aussagen, die direkt aus dem Angebot abgeleitet sind
+- Allgemeine Formulierungen ohne konkrete Zahlen: "Wir haben Erfahrung mit ähnlichen Fällen", "Wir können Ihnen eine Übersicht schicken, wie wir dort vorgehen"
+- Wenn echte Zahlen im Kontext stehen: Diese dürfen zitiert werden
+
+BEI UNSICHERHEIT:
+Wenn du keine belegten Zahlen hast, formuliere ohne Zahlen. 
+Lieber vage und ehrlich als konkret und erfunden.`;
+
 /**
  * Baut den System-Prompt für den Coach auf.
- * Schichten: Basis | NeXus-Wissen | Vertriebswissen | Kontext | Grounding
+ * Schichten: WAHRHEITSREGEL | Basis | NeXus-Wissen | Vertriebswissen | Kontext | Grounding
  * 
  * @param {object} context - Aus buildCoachContext()
  * @param {string|null} quickAction - Aktive Quick-Action (pitch, einwand, followup, analyse)
@@ -198,6 +220,7 @@ const LANGUAGE_NAMES = {
  */
 export function buildCoachSystemPrompt(context, quickAction = null, lang = 'de') {
   const layers = [
+    WAHRHEITSREGEL,
     getBasePrompt(lang),
     NEXUS_KNOWLEDGE,
     VIDEO_STUDIO_KNOWLEDGE,
@@ -462,14 +485,16 @@ function getQuickActionInstruction(actionId) {
   const instructions = {
     pitch: `MODUS: SALES PITCH
 Der Nutzer möchte einen personalisierten Verkaufspitch erstellen.
+Halte dich strikt an die WAHRHEITSREGEL: Keine erfundenen Zahlen, Wochen, Prozentwerte oder Referenzen!
 Konzentriere dich auf:
 1. Trigger als Aufhänger nutzen
-2. Problem → Lösung → Nutzen Struktur
+2. Problem → Lösung → Nutzen Struktur (Nutzen ehrlich formuliert ohne erfundene Metriken)
 3. Konkreten Call-to-Action am Ende
 4. Tonalität: Professionell, menschlich, auf Augenhöhe`,
 
     einwand: `MODUS: EINWAND BEHANDELN
 Der Nutzer hat einen Einwand vom Kunden erhalten.
+Halte dich strikt an die WAHRHEITSREGEL: Keine erfundenen Zahlen oder Referenzen!
 Vorgehen:
 1. Einwand verstehen und validieren ("Das verstehe ich")
 2. Nicht leugnen oder drängeln
@@ -478,6 +503,7 @@ Vorgehen:
 
     followup: `MODUS: FOLLOW-UP VORSCHLAG
 Der Nutzer braucht eine Idee für die nächste Aktion.
+Halte dich strikt an die WAHRHEITSREGEL: Keine erfundenen Zahlen oder Zeiträume!
 Vorgehen:
 1. Bezug zum letzten Kontakt herstellen
 2. Neuen Mehrwert bieten (nicht "wollen wir nochmal reden")
@@ -486,6 +512,7 @@ Vorgehen:
 
     analyse: `MODUS: LEAD ANALYSE
 Der Nutzer möchte den Lead verstehen.
+Halte dich strikt an die WAHRHEITSREGEL: Keine erfundenen Fakten!
 Vorgehen:
 1. Company-Informationen zusammenfassen
 2. Trigger Events bewerten (Signifikanz)
