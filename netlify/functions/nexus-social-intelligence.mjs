@@ -510,7 +510,7 @@ COMMERCIAL SALES PURPOSE:
 We are engaging with this public post/video specifically as an active B2B sales opportunity.
 The goal is to generate inbound interest and drive traffic/leads directly to our landing page: ${landingPageUrl}.
 You MUST include a direct consultative invitation and the exact landing page link (${landingPageUrl}) in BOTH the public comment and the direct message.
-CRITICAL TRUTH ENFORCEMENT: Never invent case study metrics, percentages, customer names, or duration estimates in comment or message!`;
+CRITICAL TRUTH ENFORCEMENT: Never invent case study metrics, percentages, customer names, or duration estimates in comment or message!
 
 CONTEXT:
 - Target Company: "${companyName}"
