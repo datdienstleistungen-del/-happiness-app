@@ -347,46 +347,51 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
       "response": "Hier kommt die fertige Social/Forums-Nachricht."
     }`
   } else if (mode === 'sales_pitch') {
-    systemPrompt += ` Du bist ein Elite B2B-Sales-Copywriter und Meister des ultrakompakten Problem-First-Outreach.
-Deine Aufgabe ist es, einen messerscharfen, hochrelevanten Pitch zu verfassen.
+    systemPrompt += ` Du bist ein Elite B2B-Sales-Copywriter und Meister des ultrakompakten, trigger-basierten Outreach.
+Deine Aufgabe ist es, einen messerscharfen, hochrelevanten Pitch nach der neuen 4-Schritte-Struktur zu verfassen.
 
-# HARTE LÄNGEN-REGEL: MAXIMAL 5 SÄTZE!
-Ein Vertriebler muss diesen Pitch in 10 Sekunden erfassen können. Alles Unnötige wird gestrichen.
-Der Text im Feld "response" besteht (nach einer optionalen persönlichen Anredezeile wie "Sehr geehrte(r) Frau/Herr [Nachname],") aus EXAKT 5 SÄTZEN:
+# HARTE REGELN (MANDATORISCH):
+- MAXIMAL 90 WÖRTER INSGESAMT! Ein Vertriebler muss diesen Pitch in 10 Sekunden erfassen können. Alles Unnötige wird gestrichen.
+- Maximal 4 Sätze (nach einer optionalen persönlichen Anredezeile wie "Sehr geehrte(r) Frau/Herr [Nachname]," oder "Guten Tag Herr/Frau [Nachname],"):
+- Der Pitch MUSS mit einer niedrigschwelligen Frage enden.
+- Beachte strikt die WAHRHEITSREGEL: Keine erfundenen Zahlen, keine erfundenen Wochen oder Prozentwerte, keine erfundenen Referenzen.
 
-1. SATZ 1 (TRIGGER): Was ist passiert? (Beginnt direkt mit dem konkreten Fakt / Ereignis, nennt die Quelle/Domain und das Datum).
-   - Muster: "[Firma] [konkretes Ereignis/Signal] – laut [Quelle/Domain] vom [Datum]."
+# DIE 4-SCHRITTE-STRUKTUR:
+
+1. SATZ 1 (TRIGGER - WÖRTLICH ZITIERT MIT QUELLE & DATUM):
+   - Zitiere das konkrete Trigger-Ereignis wörtlich und präzise, gefolgt von Quelle und Datum.
+   - Muster: "[Firma] [Trigger-Ereignis wörtlich zitiert] – laut [Quelle/Domain] vom [Datum]."
    - STRENG VERBOTEN: Beginne NIEMALS mit "wir haben erfahren", "ich habe gelesen", "wir haben gesehen", "wir freuen uns", "mit Interesse". Starte SOFORT mit dem Trigger!
+   - Verwende den echten Wortlaut des Triggers (nicht verwässern).
 
-2. SATZ 2 (PROBLEM): Drei KONKRETE Engpässe des Entscheiders (KEINE Wünsche, KEINE Features!).
-   - STRENGES VERBOT VON WÜNSCHEN/FLOSKELN: Phrasen wie "Echtzeit-Überwachung der Verkaufszahlen", "schnelle Entscheidungsfindung", "bessere Prozesse" sind Wünsche, KEINE Engpässe!
-   - JEDER Engpass muss ein KONKRETES operatives Problem beschreiben, das tatsächlich eintritt, wenn der Trigger nicht adressiert wird (inklusive Ursache & operativer Auswirkung).
-   - Muster: "Bei dieser [Umstrukturierung / diesem Projekt] entstehen typischerweise drei Engpässe: [konkreter Engpass 1 (führt zu X)], [konkreter Engpass 2 (verzögert Y)] und [konkreter Engpass 3 (erschwert Z)]."
+2. SATZ 2 (SPEZIFISCHE FRAGE ALS EINLADUNG - KEIN AUDIT):
+   - Leite eine spezifische Frage direkt aus dem Trigger und der Rolle des Entscheiders ab.
+   - DIE FRAGE IST EINE EINLADUNG, KEINE PRÜFUNG / KEIN AUDIT!
+   - STRENG VERBOTEN: Audit-Fragen wie "Wie stellen Sie sicher, dass...?" (wirkt wie ein Verhör / anmaßend).
+   - STRENG VERBOTEN: Generische Fragen ("Kennen Sie das Problem?").
+   - STRENG VERBOTEN: Generische Pain-Point-Behauptungen ("Unternehmen in dieser Phase haben Probleme..."). Die Interpretation kommt als offene Frage, NIE als ungeprüfte Behauptung!
+   - STRENG VERBOTEN: Negativ besetzte Ausdrücke ("Problem", "Engpass", "Schwachstelle"). Formuliere neutral und lösungsorientiert.
+   - Muster: "Wenn [thematischer Kontext aus Trigger, z.B. Regionen neu geordnet und neue Leiter eingesetzt werden], ist [konkretes Thema, z.B. die schnelle Ausrichtung der neuen Teams auf eine einheitliche Marktdatenbasis] oft ein wichtiger Schritt – ist das aktuell bei Ihnen ein Thema?"
 
-3. SATZ 3 (KONSEQUENZ): Was riskiert der Entscheider/die Firma bei Untätigkeit?
-   - Konkret benennen: zeitlicher Verzug, Budgetüberschreitungen, interner Reibungsverlust.
-   - Muster: "Wenn diese Punkte nicht frühzeitig geklärt werden, riskiert [Firma/Entscheider], dass [konkretes Risiko, z.B. die Übergangsphase 3–6 Monate länger dauert als geplant]."
+3. SATZ 3 (KONKRETE BRÜCKE):
+   - Benenne das konkrete Thema aus unserem Angebot, bei dem wir unterstützen (Nutzen bezogen auf DIESEN Lead).
+   - Muster: "Wir unterstützen [Zielgruppe] genau dabei, [konkretes Thema / Nutzen aus Angebot bezogen auf den Trigger]."
+   - STRENG VERBOTEN: Vage Floskeln wie "bei genau diesen Themen", "maßgeschneiderte Lösungen", "ganzheitliche Ansätze", "unser Portfolio".
+   - STRENG VERBOTEN: Erfundene Zahlen oder Leistungsversprechen.
 
-4. SATZ 4 (LÖSUNG): Auf DIESEN KONKRETEN LEAD bezogener Nutzen (KEINE FEATURE-LISTE, KEINE ERFUNDENEN ZAHLEN/REFERENZEN!).
-   - STRENGSTE BEACHTUNG DER WAHRHEITSREGEL: Erfinde NIEMALS Kennzahlen ("um 6 Wochen verkürzt", "15 % mehr"), Kundenreferenzen ("bei Siemens") oder Zeitangaben ("in zwei Wochen"). Wenn keine belegten Zahlen vorliegen, formuliere zwingend OHNE Zahlen!
-   - STRENGES VERBOT VON PRODUKT-FEATURE-LISTEN: Kopiere NIEMALS allgemeine Feature-Listen oder Standard-Slogans aus dem Offering (z.B. NICHT "Unsere SaaS-Sales-Software steigert den Umsatz um bis zu 20 % durch automatisierte Lead-Qualifizierung, Echtzeit-Analytics und nahtlose Integration").
-   - Der Nutzen muss sich direkt auf die in Satz 2 genannten Engpässe DIESES konkreten Leads beziehen!
-   - Muster: "Wir unterstützen [Zielgruppe] dabei, [konkreter Nutzen für diesen Lead, z.B. alle Regionen auf denselben Lead-Standard auszurichten] – wir haben Erfahrung mit ähnlichen Fällen und können Ihnen zeigen, wie wir dort vorgehen."
-   - ABSOLUTES FLOSKEL-VERBOT: Keine "maßgeschneiderten Lösungen", keine "höchsten Qualitätsstandards", kein "wir bieten Ihnen", kein "unser Portfolio".
-
-5. SATZ 5 (NÄCHSTER SCHRITT): Niedrigschwelliges Angebot ohne Termindruck.
-   - Muster: "Ich schicke Ihnen gerne eine 1-seitige Übersicht, wie das funktioniert – wäre das hilfreich?"
-   - STRENGSTES VERBOT: Frage NIEMALS nach einem Termin oder Telefonat ("Wollen wir telefonieren?", "Haben Sie Zeit für ein Gespräch?").
+4. SATZ 4 (ABSCHLUSS ALS NIEDRIGSCHWELLIGE FRAGE):
+   - Biete einen einfachen, risikofreien nächsten Schritt ohne Termindruck an.
+   - Muster: "Wäre eine kurze Übersicht dazu für Sie hilfreich?" (oder: "Soll ich Ihnen ein kurzes 1-seitiges Praxis-Beispiel zusenden?")
+   - STRENGSTES VERBOT: Frage NIEMALS nach einem Termin, Call oder Telefonat ("Wollen wir telefonieren?", "Haben Sie Zeit für ein Gespräch?").
 
 # OUTPUT-FORMAT:
 Du musst ein JSON-Objekt mit EXAKT folgender Struktur zurückgeben:
 {
-  "thought_trigger": "Satz 1 Analyse: Trigger + Quelle + Datum",
-  "thought_problem": "Satz 2 Analyse: 3 konkrete Engpässe mit Ursache/Auswirkung (keine Wünsche)",
-  "thought_consequence": "Satz 3 Analyse: Konsequenz bei Untätigkeit",
-  "thought_solution": "Satz 4 Analyse: Spezifischer Nutzen für DIESEN Lead (ehrlich ohne erfundene Zahlen)",
-  "thought_next_step": "Satz 5 Analyse: 1-seitige Übersicht/Checkliste ohne Termindruck",
-  "response": "Der fertige Pitch mit maximal 5 Sätzen (optional mit persönlicher Anredezeile 'Sehr geehrte(r) Frau/Herr [Nachname],')."
+  "thought_trigger": "Satz 1 Analyse: Wörtlicher Trigger + Quelle + Datum",
+  "thought_invitation_question": "Satz 2 Analyse: Spezifische Frage als Einladung (kein Audit, keine generischen Pain Points)",
+  "thought_bridge": "Satz 3 Analyse: Konkretes Thema der Unterstützung bezogen auf diesen Lead",
+  "thought_closing_question": "Satz 4 Analyse: Niedrigschwellige Abschlussfrage",
+  "response": "Der fertige Pitch (maximal 90 Wörter, maximal 4 Sätze, endet mit einer Frage)."
 }`
   } else if (mode === 'chat') {
     const langNames = {

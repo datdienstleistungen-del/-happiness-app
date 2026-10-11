@@ -96,37 +96,28 @@ Lieber vage und ehrlich als konkret und erfunden.`;
 
   const prompt = `${WAHRHEITSREGEL}
 
-Du bist ein Elite B2B-Sales-Copywriter und Meister des Problem-First-Outreach. Erstelle eine individuelle Erstansprache nach der strengen 5-SCHRITTE-PROBLEM-FIRST-METHODIK.
+Du bist ein Elite B2B-Sales-Copywriter und Meister des trigger-basierten Outreach. Erstelle eine individuelle Erstansprache nach der 4-SCHRITTE-METHODIK.
 
 KONTEXT (nur diese Daten verwenden):
 ${contextStr}
 
-STRENGE REGELN:
-1. Verwende NUR Informationen aus dem obigen Kontext
-2. Erfinde KEINE Fakten über die Person oder das Unternehmen
-3. Keine erfundenen Leistungszahlen, Kennzahlen oder Referenzen. Beachte strikt die WAHRHEITSREGEL!
-4. STRENGSTES VERBOT: Beginne NIEMALS mit "wir haben erfahren", "ich habe gesehen", "ich habe zufällig gesehen", "wir freuen uns", "mit Interesse".
-5. ABSOLUTES FLOSKEL-VERBOT: Keine Floskeln wie "maßgeschneiderte Lösungen", "höchste Qualitätsstandards", "wir bieten Ihnen", "unser Portfolio", "innovative Lösungen", "zuverlässiger Partner".
-6. KEIN TERMIN-DRUCK: Frage NIEMALS nach einem Telefonat oder Termin ("Haben Sie 15 Minuten?", "Wollen wir telefonieren?", "Wann passt es für einen Call?").
-
-# HARTE LÄNGEN-REGEL: MAXIMAL 5 SÄTZE!
-Ein Vertriebler muss diesen Pitch in 10 Sekunden erfassen können. Alles Unnötige wird gestrichen.
-Die Nachricht im Feld "message" besteht (nach einer optionalen persönlichen Anredezeile) aus EXAKT 5 SÄTZEN:
-
-1. SATZ 1 (TRIGGER): Was ist passiert? (Startet direkt mit dem Trigger/Projekt, nennt Quelle/Domain und Datum).
-   - Muster: "[Firma] [Ereignis] – laut [Quelle/Domain] vom [Datum]."
-2. SATZ 2 (PROBLEM): Drei KONKRETE Engpässe des Entscheiders (KEINE Wünsche, KEINE Features!).
-   - JEDER Engpass muss ein konkretes operatives Problem mit Ursache & Auswirkung beschreiben (z.B. "unterschiedliche CRM-Systeme in den Regionen (führt zu doppelten Leads)..."). Wünsche wie "Echtzeit-Überwachung" sind verboten!
-3. SATZ 3 (KONSEQUENZ): Was riskiert der Entscheider/die Firma bei Untätigkeit? (Konkreter Zeitverlust, Budgetüberschreitung, Reibung).
-4. SATZ 4 (LÖSUNG): Auf DIESEN KONKRETEN LEAD bezogener Nutzen (KEINE FEATURE-LISTE, KEINE ERFUNDENEN ZAHLEN/REFERENZEN!).
-   - Niemals allgemeine Produkt-Slogans aus dem Angebot kopieren! Beziehe den Nutzen direkt auf die Engpässe dieses Leads.
-   - Formuliere ehrlich ohne Zahlen ("Wir unterstützen [Zielgruppe] dabei... – wir haben Erfahrung mit ähnlichen Fällen").
-5. SATZ 5 (NÄCHSTER SCHRITT): Niedrigschwelliges Angebot ohne Termindruck ("Ich schicke Ihnen gerne eine 1-seitige Übersicht, wie das funktioniert – wäre das hilfreich?").
+HARTE REGELN (MANDATORISCH):
+1. MAXIMAL 90 WÖRTER INSGESAMT! Maximal 4 Sätze.
+2. SATZ 1 (TRIGGER): Zitiere den Trigger wörtlich mit Quelle und Datum.
+   Muster: "[Firma] [Trigger-Ereignis wörtlich zitiert] – laut [Quelle/Domain] vom [Datum]."
+   Niemals mit "wir haben erfahren" beginnen!
+3. SATZ 2 (FRAGE ALS EINLADUNG): Spezifische Frage, abgeleitet aus dem Trigger.
+   EINLADUNG, KEIN AUDIT! Nicht "Wie stellen Sie sicher...?", sondern "Wenn [Kontext], ist [konkretes Thema] oft ein wichtiger Schritt – ist das aktuell bei Ihnen ein Thema?"
+   Keine generischen Fragen ("Kennen Sie das?"), keine generischen Pain Points ("Unternehmen in dieser Phase..."), keine negativ besetzten Wörter ("Problem", "Engpass").
+4. SATZ 3 (KONKRETE BRÜCKE): Benenne das konkrete Thema aus unserem Angebot, bei dem wir unterstützen.
+   Muster: "Wir unterstützen [Zielgruppe] genau dabei, [konkretes Thema / Nutzen aus Angebot bezogen auf Trigger]."
+5. SATZ 4 (ABSCHLUSS ALS FRAGE): Niedrigschwelliges Angebot ohne Termindruck ("Wäre eine kurze Übersicht dazu für Sie hilfreich?").
+6. Beachte strikt die WAHRHEITSREGEL: Keine erfundenen Zahlen, Wochen, Prozentwerte oder Referenzen!
 
 Gib ein JSON zurück:
 {
   "subject": "Betreff-Zeile (kurz, konkret, TRIGGER-bezogen)",
-  "message": "Der fertige Pitch mit maximal 5 Sätzen",
+  "message": "Der fertige Pitch mit maximal 4 Sätzen und unter 90 Wörtern",
   "used_facts": ["Liste der verwendeten Fakten"],
   "interpretations": ["Liste der Interpretationen"],
   "sources": ["Quellen für verwendete Fakten"]

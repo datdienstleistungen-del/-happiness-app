@@ -485,12 +485,12 @@ function getQuickActionInstruction(actionId) {
   const instructions = {
     pitch: `MODUS: SALES PITCH
 Der Nutzer möchte einen personalisierten Verkaufspitch erstellen.
-Halte dich strikt an die WAHRHEITSREGEL: Keine erfundenen Zahlen, Wochen, Prozentwerte oder Referenzen!
-Konzentriere dich auf:
-1. Trigger als Aufhänger nutzen
-2. Problem → Lösung → Nutzen Struktur (Nutzen ehrlich formuliert ohne erfundene Metriken)
-3. Konkreten Call-to-Action am Ende
-4. Tonalität: Professionell, menschlich, auf Augenhöhe`,
+Halte dich strikt an die 4-Schritte-Struktur (maximal 90 Wörter):
+1. Trigger wörtlich zitieren (mit Quelle und Datum)
+2. Spezifische Frage als Einladung ("Ist das aktuell bei Ihnen ein Thema?", kein Audit, keine generischen Pain Points)
+3. Konkrete Brücke zum Angebot ("Wir unterstützen [Zielgruppe] genau dabei, [konkretes Thema]")
+4. Niedrigschwellige Abschlussfrage ohne Termindruck ("Wäre eine kurze Übersicht dazu für Sie hilfreich?")
+Beachte strikt die WAHRHEITSREGEL: Keine erfundenen Zahlen, Wochen, Prozentwerte oder Referenzen! Keine negativ besetzten Ausdrücke.`,
 
     einwand: `MODUS: EINWAND BEHANDELN
 Der Nutzer hat einen Einwand vom Kunden erhalten.
