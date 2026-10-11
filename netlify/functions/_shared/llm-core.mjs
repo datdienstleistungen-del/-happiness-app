@@ -16,7 +16,7 @@ import {
   MISTRAL_DEFAULT_MODEL,
   OPENAI_DEFAULT_MODEL,
 } from '../nexus-models.mjs';
-import { setCooldown, cooldownRemaining } from './quota.mjs';
+import { setCooldown, cooldownRemaining, recordProviderError } from './quota.mjs';
 
 // --- Quota/Cooldown (Phase 5b) -------------------------------------------
 // 429 = Rate-Limit -> kurze Sperre pro Modell (Limit ist meist TPM-pro-Modell).
@@ -25,10 +25,15 @@ const COOLDOWN_429_MS = Number(process.env.LLM_COOLDOWN_429_MS) || 10 * 60 * 100
 const COOLDOWN_402_MS = Number(process.env.LLM_COOLDOWN_402_MS) || 60 * 60 * 1000;
 
 async function noteQuotaStatus(provider, model, status) {
-  if (status === 429) await setCooldown(`${provider}:${model}`, COOLDOWN_429_MS);
-  else if (status === 402) {
+  if (status === 429) {
+    await setCooldown(`${provider}:${model}`, COOLDOWN_429_MS);
+    await recordProviderError(provider, `Rate limit (429) on ${model}`);
+  } else if (status === 402) {
     await setCooldown(`${provider}:*`, COOLDOWN_402_MS);
     await setCooldown(`${provider}:${model}`, COOLDOWN_402_MS);
+    await recordProviderError(provider, `Payment required (402) on ${model}`);
+  } else if (status >= 500) {
+    await recordProviderError(provider, `Server error (${status}) on ${model}`);
   }
 }
 

@@ -64,11 +64,16 @@ async function writeRaw(key, value) {
   memCooldown.set(key, String(value));
 }
 
-// --- Tageszaehler --------------------------------------------------------
+// --- Tages- und Stundenzaehler --------------------------------------------
 
 // UTC-Tag als Bucket-Tag (Blobs ueberleben den Tag hinaus; Tagwechsel = neuer Key)
 export function dayKey(d = new Date()) {
   return d.toISOString().slice(0, 10);
+}
+
+// UTC-Stunde als Bucket-Key (z.B. "2026-10-12T00")
+export function hourKey(d = new Date()) {
+  return d.toISOString().slice(0, 13);
 }
 
 // Key nie roh speichern — Fingerprint reicht zur Unterscheidung.
@@ -85,12 +90,34 @@ export async function tryConsumeDaily(bucket, limit) {
   return { allowed: true, used: used + 1, limit };
 }
 
+// Verbraucht 1 aus dem Stundenbudget. Liefert { allowed, used, limit }.
+export async function tryConsumeHourly(bucket, limit) {
+  const used = parseInt(await readRaw(bucket), 10) || 0;
+  if (used >= limit) return { allowed: false, used, limit };
+  await writeRaw(bucket, used + 1);
+  return { allowed: true, used: used + 1, limit };
+}
+
+// Token-Budget-Tracking (Standard: 100.000 Token/Tag pro Nutzer)
+export async function checkDailyTokenBudget(userId, maxDailyTokens = 100000) {
+  const key = `tokens:${userId}:${dayKey()}`;
+  const used = parseInt(await readRaw(key), 10) || 0;
+  return { allowed: used < maxDailyTokens, used, limit: maxDailyTokens };
+}
+
+export async function recordTokenUsage(userId, tokens) {
+  if (!tokens || tokens <= 0) return;
+  const key = `tokens:${userId}:${dayKey()}`;
+  const used = parseInt(await readRaw(key), 10) || 0;
+  await writeRaw(key, used + tokens);
+}
+
 export function tavilyDailyLimit() {
   const n = parseInt(process.env.TAVILY_DAILY_LIMIT, 10);
   return Number.isFinite(n) ? n : 30; // Tavily-Free ~1000 Credits/Monat
 }
 
-// --- Provider-Cooldowns --------------------------------------------------
+// --- Provider-Cooldowns & Monitoring --------------------------------------
 
 // Setzt eine Sperre fuer `ms` auf den Bucket-Namen.
 export async function setCooldown(bucket, ms) {
@@ -107,3 +134,34 @@ export async function cooldownRemaining(bucket) {
   if (!Number.isFinite(until)) return 0;
   return Math.max(0, until - Date.now());
 }
+
+// Provider Health Monitoring: Fehler protokollieren
+export async function recordProviderError(provider, errorMsg) {
+  const today = dayKey();
+  const countKey = `health:err:${provider}:${today}`;
+  const lastKey = `health:last_err:${provider}`;
+  const currentCount = parseInt(await readRaw(countKey), 10) || 0;
+  await writeRaw(countKey, currentCount + 1);
+  await writeRaw(lastKey, JSON.stringify({ error: String(errorMsg).slice(0, 200), timestamp: new Date().toISOString() }));
+}
+
+// Provider Health Snapshot fuer Monitoring-Endpoints
+export async function getProviderHealthSnapshot(providers = ['groq', 'openrouter', 'mistral', 'openai', 'deepseek']) {
+  const today = dayKey();
+  const summary = {};
+  for (const p of providers) {
+    const isGloballyCooling = (await cooldownRemaining(`${p}:*`)) > 0;
+    const errorsToday = parseInt(await readRaw(`health:err:${p}:${today}`), 10) || 0;
+    const lastErrRaw = await readRaw(`health:last_err:${p}`);
+    let lastError = null;
+    try { if (lastErrRaw) lastError = JSON.parse(lastErrRaw); } catch {}
+    summary[p] = {
+      status: isGloballyCooling ? 'COOLDOWN' : (errorsToday > 10 ? 'DEGRADED' : 'HEALTHY'),
+      errorsToday,
+      cooldownRemainingMs: await cooldownRemaining(`${p}:*`),
+      lastError
+    };
+  }
+  return summary;
+}
+

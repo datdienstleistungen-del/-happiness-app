@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { 
   Radar, Target, TrendingUp, Users, ArrowRight, Zap, Activity,
   BarChart3, Clock, CheckCircle, AlertCircle, ChevronRight,
-  Lightbulb, TrendingDown, DollarSign, Building2
+  Lightbulb, TrendingDown, DollarSign, Building2, Sparkles
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { getDashboardStats, wipeAllUserData } from '../lib/nexus-db'
@@ -98,6 +98,160 @@ export default function NexusDashboard() {
           {t('nexus.dashboard.btnAnalyzeNew', 'Neues Angebot analysieren')}
         </button>
       </header>
+
+      {/* 3-SCHRITTE ONBOARDING-ASSISTENT (für neue Nutzer oder Nutzer ohne Opportunities) */}
+      {(offerings.length === 0 || stats.totalOpps === 0) && (
+        <section className="nexus-onboarding-wizard" style={{
+          background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.12) 0%, rgba(16, 185, 129, 0.08) 100%)',
+          border: '1px solid rgba(56, 189, 248, 0.3)',
+          borderRadius: '16px',
+          padding: '24px',
+          marginBottom: '24px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={20} color="var(--accent-blue, #38bdf8)" />
+                {t('nexus.onboarding.title', 'NeXus Schnellstart in 3 Schritten')}
+              </h2>
+              <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                {t('nexus.onboarding.subtitle', 'In unter 60 Sekunden zu deinen ersten B2B-Verkaufschancen und abschlussstarken Pitches:')}
+              </p>
+            </div>
+            <span style={{ fontSize: '0.8rem', background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', padding: '4px 12px', borderRadius: '20px', fontWeight: 600 }}>
+              {offerings.length === 0 ? 'Schritt 1 von 3' : 'Schritt 2 von 3'}
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+            {/* Schritt 1: Angebot eingeben */}
+            <div style={{
+              background: offerings.length > 0 ? 'rgba(16, 185, 129, 0.08)' : 'rgba(15, 23, 42, 0.7)',
+              border: offerings.length > 0 ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid var(--accent-blue, #38bdf8)',
+              borderRadius: '12px',
+              padding: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <span style={{
+                    background: offerings.length > 0 ? '#10b981' : '#38bdf8',
+                    color: '#000',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem'
+                  }}>
+                    {offerings.length > 0 ? '✓' : '1'}
+                  </span>
+                  <strong style={{ color: '#fff' }}>1. Angebot definieren</strong>
+                </div>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 12px 0' }}>
+                  {offerings.length > 0 ? `Aktiv: "${offerings[0]?.offering_name || 'Angebot hinterlegt'}"` : 'Beschreibe kurz dein Produkt oder deine B2B-Dienstleistung.'}
+                </p>
+              </div>
+              <button 
+                className={offerings.length > 0 ? "nexus-btn-secondary" : "nexus-btn-primary"}
+                style={{ width: '100%', fontSize: '0.85rem', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                onClick={() => navigate('/nexus/angebotsanalyse')}
+              >
+                <Target size={15} /> {offerings.length > 0 ? 'Angebot anpassen' : 'Angebot analysieren'}
+              </button>
+            </div>
+
+            {/* Schritt 2: Lead Radar starten */}
+            <div style={{
+              background: offerings.length > 0 && stats.newTriggers === 0 ? 'rgba(15, 23, 42, 0.7)' : 'rgba(15, 23, 42, 0.4)',
+              border: offerings.length > 0 && stats.newTriggers === 0 ? '1px solid var(--accent-blue, #38bdf8)' : '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '12px',
+              padding: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              opacity: offerings.length === 0 ? 0.6 : 1
+            }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <span style={{
+                    background: stats.newTriggers > 0 ? '#10b981' : (offerings.length > 0 ? '#38bdf8' : 'rgba(255, 255, 255, 0.2)'),
+                    color: (stats.newTriggers > 0 || offerings.length > 0) ? '#000' : '#fff',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem'
+                  }}>
+                    {stats.newTriggers > 0 ? '✓' : '2'}
+                  </span>
+                  <strong style={{ color: '#fff' }}>2. Lead Radar starten</strong>
+                </div>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 12px 0' }}>
+                  {stats.newTriggers > 0 ? `${stats.newTriggers} Signale gefunden` : 'NeXus durchsucht News & Signale nach konkreten B2B-Kaufanlässen.'}
+                </p>
+              </div>
+              <button 
+                className={offerings.length > 0 ? "nexus-btn-primary" : "nexus-btn-secondary"}
+                style={{ width: '100%', fontSize: '0.85rem', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                onClick={() => navigate('/nexus/lead-radar')}
+                disabled={offerings.length === 0}
+              >
+                <Radar size={15} /> Lead Radar öffnen
+              </button>
+            </div>
+
+            {/* Schritt 3: Ergebnis & Pitch sehen */}
+            <div style={{
+              background: 'rgba(15, 23, 42, 0.4)',
+              border: stats.totalOpps > 0 ? '1px solid #10b981' : '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '12px',
+              padding: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              opacity: (offerings.length === 0 || stats.newTriggers === 0) ? 0.6 : 1
+            }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                  <span style={{
+                    background: stats.totalOpps > 0 ? '#10b981' : 'rgba(255, 255, 255, 0.2)',
+                    color: stats.totalOpps > 0 ? '#000' : '#fff',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem'
+                  }}>
+                    {stats.totalOpps > 0 ? '✓' : '3'}
+                  </span>
+                  <strong style={{ color: '#fff' }}>3. Ergebnis & Pitch</strong>
+                </div>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 12px 0' }}>
+                  4-Schritte-Pitch generieren und Leads direkt im Workspace managen.
+                </p>
+              </div>
+              <button 
+                className="nexus-btn-secondary"
+                style={{ width: '100%', fontSize: '0.85rem', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                onClick={() => navigate('/nexus/sales-workspace')}
+              >
+                <Zap size={15} /> Sales Workspace
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Stats Grid */}
       <div className="nexus-stats-grid">

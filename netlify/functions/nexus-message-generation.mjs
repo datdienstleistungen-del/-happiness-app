@@ -14,6 +14,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { checkTextGroundedInSource, checkMessageGroundedMechanical, detectConcreteNumbers } from './grounding-helpers.mjs';
 import { callLLM as callProviderChain } from './_shared/llm-core.mjs';
+import { tryConsumeHourly, hourKey, checkDailyTokenBudget, recordTokenUsage } from './_shared/quota.mjs';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
@@ -159,6 +160,39 @@ export const handler = async (event) => {
     const { data: { user }, error: authError } = await userSupabase.auth.getUser();
     if (authError || !user) {
       return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
+    }
+
+    const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'harro@happiness.de').split(',');
+    const isAdmin = user.email && ADMIN_EMAILS.includes(user.email);
+
+    // 1. RATE LIMITING: Maximal 5 Nachrichten/Pitches pro Stunde
+    if (!isAdmin) {
+      const MAX_PITCHES_PER_HOUR = 5;
+      const pitchQuota = await tryConsumeHourly(`pitch:${user.id}:${hourKey()}`, MAX_PITCHES_PER_HOUR);
+      if (!pitchQuota.allowed) {
+        console.warn(`[MessageGen] User ${user.id} hit hourly limit (${pitchQuota.used}/${MAX_PITCHES_PER_HOUR})`);
+        return {
+          statusCode: 429,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({
+            error: `Stundenlimit erreicht: Du hast in dieser Stunde bereits ${MAX_PITCHES_PER_HOUR} Pitches/Nachrichten generiert. Bitte warte bis zur nächsten Stunde.`
+          })
+        };
+      }
+
+      // 2. KOSTENKONTROLLE: Maximal 100.000 Tokens pro Nutzer pro Tag
+      const MAX_DAILY_TOKENS = 100000;
+      const tokenCheck = await checkDailyTokenBudget(user.id, MAX_DAILY_TOKENS);
+      if (!tokenCheck.allowed) {
+        console.warn(`[MessageGen] User ${user.id} reached daily token budget (${tokenCheck.used}/${MAX_DAILY_TOKENS})`);
+        return {
+          statusCode: 429,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({
+            error: `Tages-Token-Budget erreicht (${tokenCheck.used.toLocaleString()} von ${MAX_DAILY_TOKENS.toLocaleString()} Tokens verbraucht). Dein Kontingent wird um Mitternacht UTC zurückgesetzt.`
+          })
+        };
+      }
     }
     
     // === COMPETITOR HARD GATE ===

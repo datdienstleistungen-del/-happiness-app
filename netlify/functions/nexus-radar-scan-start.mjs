@@ -123,7 +123,7 @@ export const handler = async (event) => {
   }
 
   try {
-    const { offering_id, query, branche } = JSON.parse(event.body || '{}');
+    const { offering_id, query, branche, force_refresh = false } = JSON.parse(event.body || '{}');
 
     // Auth check
     const authHeader = event.headers.authorization;
@@ -136,6 +136,66 @@ export const handler = async (event) => {
     if (authError || !user) return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
 
     if (!offering_id) return { statusCode: 400, body: JSON.stringify({ error: 'offering_id required' }) };
+
+    const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'harro@happiness.de').split(',');
+    const isAdmin = user.email && ADMIN_EMAILS.includes(user.email);
+
+    // 1. RATE LIMITING: Maximal 10 Scans pro Nutzer pro Tag
+    const todayStart = new Date();
+    todayStart.setUTCHours(0, 0, 0, 0);
+    const todayIso = todayStart.toISOString();
+
+    const todayScansRes = await userSupabase
+      .from('nexus_scan_jobs')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .gte('created_at', todayIso);
+
+    const todayScanCount = todayScansRes.count || 0;
+    const MAX_SCANS_PER_DAY = 10;
+    if (!isAdmin && todayScanCount >= MAX_SCANS_PER_DAY) {
+      console.warn(`[ScanStart] User ${user.id} reached daily scan limit (${todayScanCount}/${MAX_SCANS_PER_DAY})`);
+      return {
+        statusCode: 429,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({
+          error: `Tageslimit erreicht: Du hast heute bereits ${todayScanCount} von maximal ${MAX_SCANS_PER_DAY} Scans gestartet. Bitte warte bis morgen oder nutze bestehende Ergebnisse.`
+        })
+      };
+    }
+
+    // 2. 24h-SCAN-CACHING: Gleiche Angebote innerhalb von 24h aus Cache bedienen (außer force_refresh)
+    if (!force_refresh) {
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: cachedJob } = await userSupabase
+        .from('nexus_scan_jobs')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('offering_id', offering_id)
+        .eq('status', 'done')
+        .gte('created_at', twentyFourHoursAgo)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (cachedJob && Array.isArray(cachedJob.partial_results) && cachedJob.partial_results.length > 0) {
+        console.log(`[ScanStart] 24h-Cache Hit für Offering ${offering_id} (Job ${cachedJob.id}, ${cachedJob.partial_results.length} Treffer)`);
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({
+            job_id: cachedJob.id,
+            status: 'done',
+            is_cached: true,
+            total_steps: cachedJob.total_steps || cachedJob.partial_results.length,
+            current_step: cachedJob.total_steps || cachedJob.partial_results.length,
+            partial_results: cachedJob.partial_results,
+            cached_at: cachedJob.created_at,
+            message: `Ergebnisse aus dem 24h-Cache geladen (${cachedJob.partial_results.length} Treffer).`
+          })
+        };
+      }
+    }
 
     // Erst: ALLE alten Jobs für diesen User aufräumen (nicht nur dieses Offering)
     const allRunningRes = await userSupabase

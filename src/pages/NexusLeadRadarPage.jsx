@@ -423,7 +423,7 @@ export default function NexusLeadRadarPage() {
   // CHUNKED SCAN: Start + Polling
   // ============================================================================
 
-  const startChunkedScan = async () => {
+  const startChunkedScan = async (forceRefresh = false) => {
     if (!activeOffering) return
 
     // Sofort-Feedback: Button deaktivieren, Lade-Zustand anzeigen
@@ -447,7 +447,8 @@ export default function NexusLeadRadarPage() {
         body: JSON.stringify({
           offering_id: activeOffering.id,
           query,
-          branche
+          branche,
+          force_refresh: forceRefresh
         })
       })
 
@@ -468,6 +469,48 @@ export default function NexusLeadRadarPage() {
         setScanMessage('')
         setError(`Server-Fehler (${res.status}). Scan konnte nicht gestartet werden.`)
         return
+      }
+
+      // 24h Cache Hit oder fertiger Job direkt übernehmen
+      if (data.status === 'done' || data.is_cached) {
+        setScanJobId(data.job_id)
+        setScanStatus('done')
+        setScanProgress({ current: data.total_steps || 1, total: data.total_steps || 1 })
+        setScanMessage(data.message || 'Ergebnisse aus dem 24h-Cache geladen.')
+        setScanResults(data.partial_results || [])
+
+        const allTriggers = (data.partial_results || []).flatMap(r =>
+          (r.triggers || [])
+            .filter(t => !isPlaceholderCompany(t.firmenname || t.company))
+            .map(t => {
+              const isKnownVendor = /^(ricoh|canon|konica minolta|xerox|bechtle|computacenter)$/i.test((t.firmenname || '').trim());
+              const matchScore = isKnownVendor ? 25 : (typeof t.target_group_match === 'number' ? t.target_group_match : (t.prioritaet === 1 ? 88 : t.prioritaet === 2 ? 72 : 55));
+              return {
+                company: t.firmenname || 'Unbekanntes Unternehmen',
+                prioritaet: t.prioritaet || 99,
+                target_group_match: matchScore,
+                match_reason: t.match_reason || '',
+                bewertung: t.bewertung || '',
+                signal: t.signal || '',
+                signal_kategorie: t.signal_kategorie || null,
+                psychologische_ansprache: t.psychologische_ansprache || '',
+                quelle: t.quelle || r.url || null,
+                published_at: t.published_at || new Date().toISOString(),
+                ansprechpartner: {
+                  name: t.contact?.name || t.ansprechpartner || null,
+                  rolle: t.contact?.role || t.position || null,
+                  email: t.contact?.email || (typeof t.kontakt === 'string' && t.kontakt.includes('@') ? t.kontakt : null),
+                  email_status: t.contact?.email_status || ((t.contact?.email || (typeof t.kontakt === 'string' && t.kontakt.includes('@'))) ? 'FOUND' : 'UNKNOWN'),
+                  confidence: t.contact?.confidence || null,
+                  source_url: t.contact?.source_url || t.quelle || r.url || null
+                }
+              }
+            })
+        ).sort((a, b) => a.prioritaet - b.prioritaet);
+
+        setTriggers(allTriggers);
+        localStorage.setItem('nexus:radar_triggers', JSON.stringify(allTriggers));
+        return;
       }
 
       if (data.status === 'already_running') {
@@ -673,7 +716,7 @@ export default function NexusLeadRadarPage() {
                   localStorage.removeItem('nexus:radar_state')
                   localStorage.removeItem('nexus:radar_triggers')
                   setTriggers([])
-                  startChunkedScan()
+                  startChunkedScan(true)
                 }} 
                 style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px' }}
                 disabled={loading || scanStatus === 'starting' || scanStatus === 'running'}
@@ -811,7 +854,7 @@ export default function NexusLeadRadarPage() {
                 setTriggers([])
                 setScanStatus(null)
                 setHasSearched(false)
-                startChunkedScan()
+                startChunkedScan(true)
               }}
               style={{ fontSize: '0.85rem', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
               disabled={loading}

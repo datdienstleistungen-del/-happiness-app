@@ -2,6 +2,7 @@
 import { runEmailPatternCrawler } from './nexus-email-crawler.mjs';
 import { callLLM } from './_shared/llm-core.mjs';
 import { getTavilyKeys, tavilySearch, searchDuckDuckGo as coreSearchDuckDuckGo } from './_shared/search-core.mjs';
+import { tryConsumeHourly, hourKey, checkDailyTokenBudget, recordTokenUsage } from './_shared/quota.mjs';
 
 async function fetchWithTimeout(url, options, timeoutMs = 20000) {
   const controller = new AbortController();
@@ -397,6 +398,38 @@ export const handler = async (event) => {
       } catch(e) {
         console.warn("[NEXUS] Usage tracking skipped:", e.message);
       }
+
+      // 1. RATE LIMITING: Maximal 5 Sales-Pitches pro Stunde
+      if (mode === 'sales_pitch' && !isAdmin) {
+        const MAX_PITCHES_PER_HOUR = 5;
+        const pitchQuota = await tryConsumeHourly(`pitch:${user.id}:${hourKey()}`, MAX_PITCHES_PER_HOUR);
+        if (!pitchQuota.allowed) {
+          console.warn(`[NEXUS] User ${user.id} hit hourly pitch limit (${pitchQuota.used}/${MAX_PITCHES_PER_HOUR})`);
+          return {
+            statusCode: 429,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+            body: JSON.stringify({
+              error: `Stundenlimit erreicht: Du hast in dieser Stunde bereits ${MAX_PITCHES_PER_HOUR} Pitches generiert. Bitte warte bis zur nächsten Stunde.`
+            })
+          };
+        }
+      }
+
+      // 2. KOSTENKONTROLLE: Maximal 100.000 Tokens pro Nutzer pro Tag
+      if (!isAdmin) {
+        const MAX_DAILY_TOKENS = 100000;
+        const tokenCheck = await checkDailyTokenBudget(user.id, MAX_DAILY_TOKENS);
+        if (!tokenCheck.allowed) {
+          console.warn(`[NEXUS] User ${user.id} reached daily token budget (${tokenCheck.used}/${MAX_DAILY_TOKENS})`);
+          return {
+            statusCode: 429,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+            body: JSON.stringify({
+              error: `Tages-Token-Budget erreicht (${tokenCheck.used.toLocaleString()} von ${MAX_DAILY_TOKENS.toLocaleString()} Tokens verbraucht). Dein Kontingent wird um Mitternacht UTC zurückgesetzt.`
+            })
+          };
+        }
+      }
     }
     
 
@@ -619,6 +652,11 @@ Meine Frage: ${userMessage}`;
 
     if (!result || !result.text) {
       throw new Error("KI antwortet nicht rechtzeitig. Bitte warte kurz und versuche es erneut.");
+    }
+
+    const tokensUsed = result?.usage?.total_tokens || Math.round(((effectiveUserMessage?.length || 0) + (result?.text?.length || 0)) / 4);
+    if (user && user.id) {
+      recordTokenUsage(user.id, tokensUsed).catch(() => {});
     }
 
     const content = result.text;
