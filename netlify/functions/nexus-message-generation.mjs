@@ -85,18 +85,23 @@ STRENGE REGELN:
 5. ABSOLUTES FLOSKEL-VERBOT: Keine Floskeln wie "maßgeschneiderte Lösungen", "höchste Qualitätsstandards", "wir bieten Ihnen", "unser Portfolio", "innovative Lösungen", "zuverlässiger Partner".
 6. KEIN TERMIN-DRUCK: Frage NIEMALS nach einem Telefonat oder Termin ("Haben Sie 15 Minuten?", "Wollen wir telefonieren?", "Wann passt es für einen Call?").
 
-STRUKTUR (EXAKT DIESE 5 SCHRITTE):
-Anrede: Persönlich ("Sehr geehrte(r) Frau/Herr [Nachname]," bzw. "Guten Tag Frau/Herr [Nachname],")
-1. TRIGGER: Starte direkt mit dem konkreten Fakt/Ereignis, belegt mit Quelle und Datum (z.B. "Sie planen [Projekt] – laut [Quelle] vom [Datum].")
-2. PROBLEM: Drei typische operative Engpässe, die daraus für den Entscheider in seiner Rolle entstehen ("Bei Vorhaben dieser Größenordnung entstehen für [Rolle] typischerweise drei Engpässe: [1], [2] und [3].")
-3. KONSEQUENZ: Was der Entscheider persönlich riskiert, wenn diese Engpässe ungeklärt bleiben (Zeitverlust im Projektplan, Budgetrisiko, interner Druck vor Vorstand/GF).
-4. LÖSUNG: Reiner Nutzen und messbares Ergebnis unseres Angebots, der diese Konsequenz verhindert (Fokus auf NUTZEN, KEINE Feature-Listen, keine Floskeln!).
-5. NÄCHSTER SCHRITT: Extrem niedrigschwellig und nützlich ("Ich schicke Ihnen dazu gerne eine kurze 1-seitige Übersicht / Checkliste – wäre das hilfreich?").
+# HARTE LÄNGEN-REGEL: MAXIMAL 5 SÄTZE!
+Ein Vertriebler muss diesen Pitch in 10 Sekunden erfassen können. Alles Unnötige wird gestrichen.
+Die Nachricht im Feld "message" besteht (nach einer optionalen persönlichen Anredezeile) aus EXAKT 5 SÄTZEN:
+
+1. SATZ 1 (TRIGGER): Was ist passiert? (Startet direkt mit dem Trigger/Projekt, nennt Quelle/Domain und Datum).
+   - Muster: "[Firma] [Ereignis] – laut [Quelle/Domain] vom [Datum]."
+2. SATZ 2 (PROBLEM): Drei KONKRETE Engpässe des Entscheiders (KEINE Wünsche, KEINE Features!).
+   - JEDER Engpass muss ein konkretes operatives Problem mit Ursache & Auswirkung beschreiben (z.B. "unterschiedliche CRM-Systeme in den Regionen (führt zu doppelten Leads)..."). Wünsche wie "Echtzeit-Überwachung" sind verboten!
+3. SATZ 3 (KONSEQUENZ): Was riskiert der Entscheider/die Firma bei Untätigkeit? (Konkreter Zeitverlust, Budgetüberschreitung, Reibung).
+4. SATZ 4 (LÖSUNG): Auf DIESEN KONKRETEN LEAD bezogener Nutzen mit messbarem Resultat (KEINE FEATURE-LISTE!).
+   - Niemals allgemeine Produkt-Slogans aus dem Angebot kopieren! Beziehe den Nutzen direkt auf die Engpässe dieses Leads.
+5. SATZ 5 (NÄCHSTER SCHRITT): Niedrigschwelliges Angebot ohne Termindruck ("Ich schicke Ihnen gerne eine 1-seitige Übersicht, wie das funktioniert – wäre das hilfreich?").
 
 Gib ein JSON zurück:
 {
   "subject": "Betreff-Zeile (kurz, konkret, TRIGGER-bezogen)",
-  "message": "Die vollständige Nachricht mit den 5 Schritten (durch Absätze getrennt)",
+  "message": "Der fertige Pitch mit maximal 5 Sätzen",
   "used_facts": ["Liste der verwendeten Fakten"],
   "interpretations": ["Liste der Interpretationen"],
   "sources": ["Quellen für verwendete Fakten"]

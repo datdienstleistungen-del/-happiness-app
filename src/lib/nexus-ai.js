@@ -93,6 +93,20 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
       const trigUrl = rest.source_url || trigObj.source_url || trigObj.url || trigObj.source || rest.full_context?.opportunity?.source_url || '';
       const trigDate = rest.event_date || trigObj.event_date || trigObj.published_at || trigObj.created_at || rest.full_context?.opportunity?.event_date || '';
 
+      const cleanDomain = trigUrl ? (trigUrl.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0] || trigUrl) : '';
+      let cleanDate = '';
+      if (trigDate) {
+        try {
+          const dt = new Date(trigDate);
+          if (!isNaN(dt.getTime())) {
+            const day = String(dt.getDate()).padStart(2, '0');
+            const month = String(dt.getMonth() + 1).padStart(2, '0');
+            cleanDate = `${day}.${month}.${dt.getFullYear()}`;
+          }
+        } catch(e) {}
+        if (!cleanDate) cleanDate = String(trigDate).split('T')[0];
+      }
+
       const offName = rest.full_context?.offering?.name || rest.offering?.offering_name || rest.offering?.name || (typeof rest.offering === 'string' ? rest.offering : '') || '';
       const offPos = rest.full_context?.offering?.positioning || rest.offering?.positioning || '';
 
@@ -102,8 +116,8 @@ ANSPRECHPARTNER: ${contactName || 'Unbekannt'} ${contactRole ? `(${contactRole})
 
 TRIGGER / ANLASS AUS DEM INTELLIGENCE AUDIT:
 - Ereignis / Kaufsignal: ${trigContent || '-'}
-- Quelle / Beleg: ${trigUrl || 'Branchen-Meldung'}
-- Veröffentlichungsdatum: ${trigDate || 'Aktuell'}
+- Quelle / Beleg: ${cleanDomain || trigUrl || 'Branchen-Meldung'}
+- Veröffentlichungsdatum: ${cleanDate || trigDate || 'Aktuell'}
 
 UNSER ANGEBOT & POSITIONIERUNG:
 - Angebot: ${offName || '-'}
@@ -308,49 +322,45 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
       "response": "Hier kommt die fertige Social/Forums-Nachricht."
     }`
   } else if (mode === 'sales_pitch') {
-    systemPrompt += ` Du bist ein Elite B2B-Sales-Copywriter und Meister des Problem-First-Outreach.
-Deine Aufgabe ist es, eine hochwirksame Erstansprache nach der strengen 5-SCHRITTE-PROBLEM-FIRST-METHODIK zu verfassen.
+    systemPrompt += ` Du bist ein Elite B2B-Sales-Copywriter und Meister des ultrakompakten Problem-First-Outreach.
+Deine Aufgabe ist es, einen messerscharfen, hochrelevanten Pitch zu verfassen.
 
-# DIE 5-SCHRITTE-STRUKTUR DER NACHRICHT (MANDATORISCH & EXAKT EINHALTEN):
-Vor den 5 Schritten steht die persönliche Anrede:
-- Wenn Ansprechpartner vorhanden: "Sehr geehrte(r) Frau/Herr [Nachname]," bzw. "Guten Tag Frau/Herr [Nachname],".
-- Nur falls kein Ansprechpartner übergeben wurde: "Guten Tag,".
+# HARTE LÄNGEN-REGEL: MAXIMAL 5 SÄTZE!
+Ein Vertriebler muss diesen Pitch in 10 Sekunden erfassen können. Alles Unnötige wird gestrichen.
+Der Text im Feld "response" besteht (nach einer optionalen persönlichen Anredezeile wie "Sehr geehrte(r) Frau/Herr [Nachname],") aus EXAKT 5 SÄTZEN:
 
-1. SCHRITT 1: TRIGGER (Was ist passiert?)
-   - Starte DIREKT im ersten Satz mit dem konkreten Fakt / Ereignis, belegt mit Quelle und Datum.
-   - Muster: "Sie planen [Ereignis/Projekt] – laut [Quelle/Domain] vom [Datum]." oder "Mit [Ereignis] laut [Quelle/Domain] vom [Datum] steht bei [Unternehmen] ein wichtiger Meilenstein an."
-   - Falls die Quelle eine Domain oder URL ist (z.B. auto-medienportal.net), nenne die Domain bzw. Publikation. Falls ein Datum übergeben wurde, nenne das Datum.
-   - STRENGSTES VERBOT: Beginne NIEMALS mit "wir haben erfahren", "ich habe gelesen", "wir haben gesehen", "wir freuen uns", "mit Interesse haben wir erfahren", "wie wir erfahren durften". Starte SOFORT mit dem Trigger!
+1. SATZ 1 (TRIGGER): Was ist passiert? (Beginnt direkt mit dem konkreten Fakt / Ereignis, nennt die Quelle/Domain und das Datum).
+   - Muster: "[Firma] [konkretes Ereignis/Signal] – laut [Quelle/Domain] vom [Datum]."
+   - STRENG VERBOTEN: Beginne NIEMALS mit "wir haben erfahren", "ich habe gelesen", "wir haben gesehen", "wir freuen uns", "mit Interesse". Starte SOFORT mit dem Trigger!
 
-2. SCHRITT 2: PROBLEM (Drei personenbezogene Engpässe)
-   - Welche DREI typischen operativen Engpässe entstehen aus diesem Anlass für den Entscheider persönlich (personenbezogen und rollenspezifisch für dessen Funktion, z.B. als Einkaufsleiter, Vertriebsleiter, Projektleiter, Werkleiter, Geschäftsführer – NICHT abstrakt über das Unternehmen)?
-   - Muster: "Bei Vorhaben dieser Größenordnung entstehen für [Rolle des Entscheiders] erfahrungsgemäß drei Engpässe: [Engpass 1], [Engpass 2] und [Engpass 3]."
+2. SATZ 2 (PROBLEM): Drei KONKRETE Engpässe des Entscheiders (KEINE Wünsche, KEINE Features!).
+   - STRENGES VERBOT VON WÜNSCHEN/FLOSKELN: Phrasen wie "Echtzeit-Überwachung der Verkaufszahlen", "schnelle Entscheidungsfindung", "bessere Prozesse" sind Wünsche, KEINE Engpässe!
+   - JEDER Engpass muss ein KONKRETES operatives Problem beschreiben, das tatsächlich eintritt, wenn der Trigger nicht adressiert wird (inklusive Ursache & operativer Auswirkung).
+   - Muster: "Bei dieser [Umstrukturierung / diesem Projekt] entstehen typischerweise drei Engpässe: [konkreter Engpass 1 (führt zu X)], [konkreter Engpass 2 (verzögert Y)] und [konkreter Engpass 3 (erschwert Z)]."
 
-3. SCHRITT 3: KONSEQUENZ (Was riskiert der Entscheider bei Untätigkeit?)
-   - Was riskiert der Entscheider persönlich, wenn diese drei Engpässe nicht frühzeitig gelöst werden? (Zeitverlust im Projektplan, Budgetüberschreitung, interner Rechtfertigungsdruck vor Vorstand/GF, Reibungsverluste, Verlust von Marktanteilen).
-   - Muster: "Werden diese Punkte nicht frühzeitig geklärt, [Konsequenz: z.B. gerät der Zeitplan ins Wanken / drohen ungeplante Nachforderungen / steigen die operativen Reibungsverluste]."
+3. SATZ 3 (KONSEQUENZ): Was riskiert der Entscheider/die Firma bei Untätigkeit?
+   - Konkret benennen: zeitlicher Verzug, Budgetüberschreitungen, interner Reibungsverlust.
+   - Muster: "Wenn diese Punkte nicht frühzeitig geklärt werden, riskiert [Firma/Entscheider], dass [konkretes Risiko, z.B. die Übergangsphase 3–6 Monate länger dauert als geplant]."
 
-4. SCHRITT 4: LÖSUNG (Nutzen statt Features)
-   - Wie hilft das Angebot, genau diese Konsequenz sicher zu verhindern?
-   - Fokus AUSSCHLIESSLICH auf NUTZEN, Transformation und messbares Ergebnis!
-   - Muster: "Wir helfen [Zielgruppe], [konkreter Nutzen/Ergebnis], damit [Konsequenz vermieden wird] – in vergleichbaren Projekten konnten wir [konkretes greifbares Ergebnis] erzielen."
-   - STRENGSTES VERBOT: KEINE Feature-Listen! Keine technischen Spezifikationen!
-   - ABSOLUTES FLOSKEL-VERBOT: Verwende NIEMALS Phrasen wie "maßgeschneiderte Lösungen", "höchste Qualitätsstandards", "wir bieten Ihnen", "unser Portfolio", "innovative Lösungen", "zuverlässiger Partner".
+4. SATZ 4 (LÖSUNG): Auf DIESEN KONKRETEN LEAD bezogener Nutzen mit messbarem Resultat (KEINE FEATURE-LISTE!).
+   - STRENGES VERBOT VON PRODUKT-FEATURE-LISTEN: Kopiere NIEMALS allgemeine Feature-Listen oder Standard-Slogans aus dem Offering (z.B. NICHT "Unsere SaaS-Sales-Software steigert den Umsatz um bis zu 20 % durch automatisierte Lead-Qualifizierung, Echtzeit-Analytics und nahtlose Integration").
+   - Der Nutzen muss sich direkt auf die in Satz 2 genannten Engpässe DIESES konkreten Leads beziehen!
+   - Muster: "Wir sorgen dafür, dass [konkrete Lösung für diesen Lead, z.B. alle vier Regionen dieselben Lead-Definitionen nutzen] – in vergleichbaren [Projekten/Umstrukturierungen] haben wir [konkretes Ergebnis, z.B. die Übergangszeit um 6 Wochen verkürzt]."
+   - ABSOLUTES FLOSKEL-VERBOT: Keine "maßgeschneiderten Lösungen", keine "höchsten Qualitätsstandards", kein "wir bieten Ihnen", kein "unser Portfolio".
 
-5. SCHRITT 5: NÄCHSTER SCHRITT (Niedrigschwellig, kein Termindruck)
-   - Biete den konkretesten, niedrigschwelligsten nächsten Schritt an. Nimm den Entscheider an die Hand, ohne Druck auszuüben.
-   - Muster: "Ich schicke Ihnen dazu gerne eine kurze 1-seitige Übersicht / Checkliste – wäre das hilfreich?" oder "Dazu haben wir eine kompakte 1-seitige Übersicht vorbereitet – soll ich Ihnen diese unverbindlich zusenden?"
-   - STRENGSTES VERBOT: Frage NIEMALS nach einem Termin, Call oder Telefonat! Absolut verboten: "Wollen wir telefonieren?", "Haben Sie nächste Woche Zeit?", "Wäre ein kurzes Gespräch möglich?", "Lassen Sie uns einen Termin vereinbaren".
+5. SATZ 5 (NÄCHSTER SCHRITT): Niedrigschwelliges Angebot ohne Termindruck.
+   - Muster: "Ich schicke Ihnen gerne eine 1-seitige Übersicht, wie das funktioniert – wäre das hilfreich?"
+   - STRENGSTES VERBOT: Frage NIEMALS nach einem Termin oder Telefonat ("Wollen wir telefonieren?", "Haben Sie Zeit für ein Gespräch?").
 
 # OUTPUT-FORMAT:
 Du musst ein JSON-Objekt mit EXAKT folgender Struktur zurückgeben:
 {
-  "thought_trigger": "Analyse: Was ist der konkrete Anlass, Quelle und Datum?",
-  "thought_problem": "Analyse: Welche 3 personenbezogenen Engpässe entstehen für den Entscheider?",
-  "thought_consequence": "Analyse: Was riskiert der Entscheider bei Untätigkeit (Zeit, Geld, Karriere, Marktanteile)?",
-  "thought_solution": "Analyse: Welcher reine Nutzen verhindert diese Konsequenz (ohne Features/Floskeln)?",
-  "thought_next_step": "Analyse: Welcher reibungsarme nächste Schritt (Checkliste/Übersicht) wird angeboten?",
-  "response": "Hier kommt die fertige, hochpersonalisierte 5-Schritte-Nachricht (mit Leerzeilen \\n\\n zwischen den Absätzen formatiert)."
+  "thought_trigger": "Satz 1 Analyse: Trigger + Quelle + Datum",
+  "thought_problem": "Satz 2 Analyse: 3 konkrete Engpässe mit Ursache/Auswirkung (keine Wünsche)",
+  "thought_consequence": "Satz 3 Analyse: Konsequenz bei Untätigkeit",
+  "thought_solution": "Satz 4 Analyse: Spezifischer Nutzen für DIESEN Lead (keine Feature-Liste)",
+  "thought_next_step": "Satz 5 Analyse: 1-seitige Übersicht/Checkliste ohne Termindruck",
+  "response": "Der fertige Pitch mit maximal 5 Sätzen (optional mit persönlicher Anredezeile 'Sehr geehrte(r) Frau/Herr [Nachname],')."
 }`
   } else if (mode === 'chat') {
     const langNames = {
