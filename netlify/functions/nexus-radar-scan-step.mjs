@@ -12,7 +12,7 @@
  * aktive Queue bleibt dieses Polling der alleinige Treiber wie bisher.
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient as createClient } from './_shared/supabase-client.mjs';
 import { fetchJob, guardJob, claimJob, processNextUrl, readResponse } from './_shared/scan-job.mjs';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;

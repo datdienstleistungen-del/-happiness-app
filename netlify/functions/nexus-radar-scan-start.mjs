@@ -12,7 +12,7 @@
  * Tavily ist bewusst entfernt (Keys geblockt: 402/432) — wird bei Bedarf wieder ergänzt.
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient as createClient } from './_shared/supabase-client.mjs';
 import { searchDuckDuckGo as coreSearchDuckDuckGo } from './_shared/search-core.mjs';
 import { isBlockedUrl } from './_shared/url-rules.mjs';
 

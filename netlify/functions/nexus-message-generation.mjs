@@ -11,7 +11,7 @@
  * REGEL: Keine erfundenen Fakten. Nur belegter Kontext.
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient as createClient } from './_shared/supabase-client.mjs';
 import { checkTextGroundedInSource, checkMessageGroundedMechanical, detectConcreteNumbers } from './grounding-helpers.mjs';
 import { callLLM as callProviderChain } from './_shared/llm-core.mjs';
 import { tryConsumeHourly, hourKey, checkDailyTokenBudget, recordTokenUsage } from './_shared/quota.mjs';

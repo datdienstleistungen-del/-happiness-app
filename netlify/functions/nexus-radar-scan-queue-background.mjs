@@ -14,7 +14,7 @@
 // docs: "still fully supported") UND inline config.background.
 // -> sofortiges 202, dann bis 15 Minuten Laufzeit.
 // ============================================================================
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient as createClient } from './_shared/supabase-client.mjs';
 import { fetchJob, guardJob, claimJob, processNextUrl } from './_shared/scan-job.mjs';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
