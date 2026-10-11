@@ -98,6 +98,7 @@ export function LeadProvider({ children }) {
         signal_type: signalData.signal_type || 'KI_DETECTED',
         content: signalData.content,
         source: cleanSourceUrl || signalData.source || 'NeXus Radar Scan',
+        source_url: cleanSourceUrl,
         confidence_score: signalData.confidence_score || 0.8,
         trigger_score: targetMatchScore
       })

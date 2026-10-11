@@ -1082,15 +1082,7 @@ export default function NexusLeadRadarPage() {
                       </button>
                     </div>
                   ) : (
-                    <button className="action-btn action-btn-primary" onClick={() => handleProcessSignal({
-                      company: trigger.company,
-                      prioritaet: trigger.prioritaet,
-                      bewertung: trigger.bewertung,
-                      signal: trigger.signal,
-                      psychologische_ansprache: trigger.psychologische_ansprache,
-                      ansprechpartner: trigger.ansprechpartner,
-                      event: `Priorität: ${trigger.prioritaet}\n\nBewertung: ${trigger.bewertung}\n\nSignal: ${trigger.signal}\n\nPsychologie: ${trigger.psychologische_ansprache}`
-                    })}>
+                    <button className="action-btn action-btn-primary" onClick={() => handleProcessSignal(trigger)}>
                       <ArrowRight size={16} />
                       {t('nexus.radar.saveToPipeline', 'In Pipeline übernehmen')}
                     </button>
