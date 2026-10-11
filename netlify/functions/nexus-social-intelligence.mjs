@@ -544,21 +544,21 @@ TASKS:
    - Value-first pitch with direct hook and link to ${landingPageUrl}.
 5. Provide the exact TRANSLATION of the direct message into ${uiLanguageStr}.
 
-Return VALID JSON ONLY:
+Return VALID JSON ONLY with your actual customized generated content (do NOT output placeholders or template descriptions):
 {
   "post_lang": "${postLangKey}",
   "post_lang_label": "${postLangDisplayName}",
   "ui_lang": "${userUiLangKey}",
   "analysis": {
-    "post_summary": "Summary in ${uiLanguageStr}",
-    "relevance_explanation": "Relevance explanation in ${uiLanguageStr}",
+    "post_summary": "Echte 1-2 Sätze Zusammenfassung des Beitrags auf ${uiLanguageStr}",
+    "relevance_explanation": "Echte 1-2 Sätze Erklärung der Vertriebsrelevanz auf ${uiLanguageStr}",
     "recommended_action": "comment"
   },
-  "comment": "Full comment text in ${postLanguageStr} with ${landingPageUrl} ready to post...",
-  "comment_translation": "Übersetzung des Kommentars in ${uiLanguageStr} zur Prüfung...",
-  "direct_message": "Full direct message text in ${postLanguageStr} with ${landingPageUrl} ready to send...",
-  "direct_message_translation": "Übersetzung der Direktnachricht in ${uiLanguageStr} zur Prüfung...",
-  "pitch_angle": "Strategic angle"
+  "comment": "Der vollständige, echte Kommentar auf ${postLanguageStr} inklusive ${landingPageUrl}",
+  "comment_translation": "Die vollständige Übersetzung des Kommentars auf ${uiLanguageStr}",
+  "direct_message": "Die vollständige, echte Direktnachricht auf ${postLanguageStr} inklusive ${landingPageUrl}",
+  "direct_message_translation": "Die vollständige Übersetzung der Direktnachricht auf ${uiLanguageStr}",
+  "pitch_angle": "Strategischer Aufhänger auf ${uiLanguageStr}"
 }`;
 
   const result = await callLLM(prompt, 0.4);
