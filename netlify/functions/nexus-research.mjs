@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { callLLM } from './_shared/llm-core.mjs';
 import { searchDuckDuckGo, getTavilyKeys, tavilySearch } from './_shared/search-core.mjs';
+import { isPlaceholderCompany } from './_shared/validation.mjs';
 
 let inFlightResearch = 0;
 const MAX_CONCURRENT_RESEARCH = 20;
@@ -355,10 +356,17 @@ export const handler = async (event) => {
     5. NEUES PRODUKT / PROJEKTE: Neue Produktlinien, Großaufträge, neue Marktsegmente.
     
     # STRIKTE REGELN:
-    1. AKZEPTIERE NUR ECHTE UNTERNEHMEN: Nutze ausschließlich reale Firmennamen, die explizit in den Web-Ergebnissen genannt werden. Erfinde NIEMALS Firmen.
-    2. MATCHING ZUM ANGEBOT: Erkläre präzise, warum dieses Ereignis eine Verkaufschance für das analysierte Angebot ("${angebot || searchQuery}") darstellt.
-    3. KEINE HALLUZINIERTEN KONTAKTE: "ansprechpartner" und "kontakt" dürfen NUR befüllt werden, wenn sie wörtlich im Quelltext stehen. Sonst MUSS der Wert null sein.
-    4. QUELLEN: "quelle" MUSS die echte URL aus dem Quelltext sein.
+    1. AKZEPTIERE NUR ECHTE UNTERNEHMEN: Nutze ausschließlich reale Firmennamen aus den Web-Ergebnissen. Erfinde NIEMALS Firmen und nutze KEINE Platzhalter wie "Echter Firmenname", "Musterfirma" oder "Test GmbH".
+    2. KÄUFER-VS-ANBIETER FILTER (WICHTIG - ANTI-RICOH-FILTER):
+       - Frage dich: Ist das gefundene Unternehmen ein potenzieller KÄUFER des Angebots?
+       - Wenn das Unternehmen SELBST Anbieter/Hersteller der angebotenen Lösung ist oder eigene Produkte bewirbt (z.B. Ricoh bewirbt eigenes Dokumentenmanagement, IT-Dienstleister bewirbt eigene Cloud), ist das Unternehmen ein WETTBEWERBER/ANBIETER und KEIN Käufer!
+       - In solchen Fällen: Setze "target_group_match" auf unter 40 und "is_potential_buyer" auf false!
+    3. ZIELGRUPPEN-MATCH (0-100):
+       - 80-100: Perfekter Käufer-Match (Passt zur Zielgruppe, echter Bedarf)
+       - 50-79: Plausibler Käufer (Bedarf wahrscheinlich)
+       - 0-49: Zielgruppe unklar / Anbieter / Wettbewerber / Fehlmatch
+    4. KEINE HALLUZINIERTEN KONTAKTE: "ansprechpartner" und "kontakt" dürfen NUR befüllt werden, wenn sie wörtlich im Quelltext stehen. Sonst MUSS der Wert null sein.
+    5. QUELLEN: "quelle" MUSS die echte URL aus dem Quelltext sein.
     ${langInstruction}
     
     DEINE AUFGABE: Werte die gefundenen Leads aus und SORTIERE SIE nach Priorität (1 ist der absolut beste Lead).
@@ -368,12 +376,15 @@ export const handler = async (event) => {
       "trigger_events": [
         {
           "hit_id": "Die exakte Hit-ID aus den Quelldaten (kopiere sie 1:1, falls 'none' dann weglassen)",
-          "firmenname": "Echter Firmenname aus dem Quelltext",
+          "firmenname": "Konkreter Firmenname aus dem Quelltext (KEIN Platzhalter)",
           "branche": "Branche des Zielunternehmens",
           "prioritaet": 1,
           "bewertung": "A - Höchste Chance. Warum?",
           "signal": "Was ist konkret passiert? (z.B. Senacor übernimmt Finanteq zur Expansion; Bechtle wächst stark im Cloud-Bereich)",
           "relevanz": "Kurze Begründung der Relevanz für das Angebot in 1 Satz",
+          "target_group_match": 85,
+          "is_potential_buyer": true,
+          "match_reason": "Begründung für Zielgruppen-Match: Warum Käufer und kein Anbieter?",
           "ansprechpartner": null,
           "position": null,
           "kontakt": null,
@@ -407,20 +418,28 @@ export const handler = async (event) => {
       parsed = JSON.parse(content);
       console.log('[nexus-research] Parsed trigger_events count:', parsed.trigger_events?.length);
       
-      // Post-Processing: Quell-URLs absichern und Defaults setzen falls LLM Felder auslässt
+      // Post-Processing: Quell-URLs absichern, Platzhalter filtern und Defaults setzen
       if (parsed.trigger_events && Array.isArray(parsed.trigger_events)) {
-        parsed.trigger_events = parsed.trigger_events.map((t, idx) => {
-          const matchedSource = safeResults.find(r => r.url === t.quelle) || safeResults[idx % safeResults.length];
-          return {
-            ...t,
-            branche: t.branche || branche || 'B2B / Mittelstand',
-            relevanz: t.relevanz || t.bewertung || 'Hohe Passgenauigkeit für das analysierte Leistungsportfolio.',
-            ansprechpartner: t.ansprechpartner && typeof t.ansprechpartner === 'string' && !t.ansprechpartner.includes('z.B.') ? t.ansprechpartner : null,
-            position: t.position && typeof t.position === 'string' && !t.position.includes('z.B.') ? t.position : null,
-            kontakt: t.kontakt && typeof t.kontakt === 'string' && !t.kontakt.includes('z.B.') && !t.kontakt.includes('unternehmen.de') ? t.kontakt : null,
-            quelle: matchedSource ? matchedSource.url : (t.quelle || 'https://www.bundesanzeiger.de')
-          };
-        });
+        parsed.trigger_events = parsed.trigger_events
+          .filter(t => !isPlaceholderCompany(t.firmenname))
+          .map((t, idx) => {
+            const matchedSource = safeResults.find(r => r.url === t.quelle) || safeResults[idx % safeResults.length];
+            const isKnownVendor = /^(ricoh|canon|konica minolta|xerox|bechtle|computacenter)$/i.test((t.firmenname || '').trim());
+            const matchScore = isKnownVendor ? 25 : (typeof t.target_group_match === 'number' ? Math.max(0, Math.min(100, t.target_group_match)) : 75);
+
+            return {
+              ...t,
+              target_group_match: matchScore,
+              is_potential_buyer: !isKnownVendor && (t.is_potential_buyer !== false),
+              branche: t.branche || branche || 'B2B / Mittelstand',
+              relevanz: t.relevanz || t.bewertung || 'Hohe Passgenauigkeit für das analysierte Leistungsportfolio.',
+              ansprechpartner: t.ansprechpartner && typeof t.ansprechpartner === 'string' && !t.ansprechpartner.includes('z.B.') ? t.ansprechpartner : null,
+              position: t.position && typeof t.position === 'string' && !t.position.includes('z.B.') ? t.position : null,
+              kontakt: t.kontakt && typeof t.kontakt === 'string' && !t.kontakt.includes('z.B.') && !t.kontakt.includes('unternehmen.de') ? t.kontakt : null,
+              quelle: matchedSource ? matchedSource.url : (t.quelle || 'https://www.bundesanzeiger.de'),
+              published_at: matchedSource?.published_date || new Date().toISOString()
+            };
+          });
 
         // Update DB status for relevant hits (only if user and db present)
         if (user && user.id && supabaseUrl && supabaseKey) {

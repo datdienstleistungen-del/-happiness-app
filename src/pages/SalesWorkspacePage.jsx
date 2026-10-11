@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Briefcase, Mail, MessageSquare, Send, Copy, CheckCircle, AlertCircle, List, Trash2, ArrowRight, Search, Share2, ExternalLink, Video, Globe, Sparkles, RefreshCw } from 'lucide-react'
+import { Briefcase, Mail, MessageSquare, Send, Copy, CheckCircle, AlertCircle, List, Trash2, ArrowRight, Search, Share2, ExternalLink, Video, Globe, Sparkles, RefreshCw, Clock } from 'lucide-react'
 import { callNexusAI, runDeepResearch, callContactIntelligence, callMessageGeneration, callSocialIntelligence } from '../lib/nexus-ai'
+import { isPlaceholderCompany, computeTargetMatchScore } from '../lib/nexus-validation'
+import { formatEventDate, extractDomain } from '../lib/nexus-dates'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import { useLead } from '../context/LeadContext'
 import { useAuth } from '../context/AuthContext'
@@ -32,6 +34,8 @@ export default function SalesWorkspacePage() {
   const [selectedMode, setSelectedMode] = useState('sales_pitch')
   const [activeOppId, setActiveOppId] = useState(oppIdFromUrl || null)
   const [activeTab, setActiveTab] = useState('aktion') // 'historie', 'aktion', 'intelligence'
+  const [queueFilter, setQueueFilter] = useState('relevant') // Baustelle 3: 'relevant' (>= 50) | 'all' | 'unclear' (< 50)
+
 
   useEffect(() => {
     if (oppIdFromUrl && oppIdFromUrl !== activeOppId) {
@@ -784,7 +788,35 @@ export default function SalesWorkspacePage() {
               />
             </div>
             <div className="form-group">
-              <label htmlFor="situation">{t('nexus.situationContext')}</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '8px' }}>
+                <label htmlFor="situation" style={{ margin: 0 }}>{t('nexus.situationContext')}</label>
+                {/* Baustelle 2: Quelle & Datum direkt beim Kaufsignal im Pitch-Formular */}
+                {(() => {
+                  const sUrl = (activeTrigger?.source?.startsWith('http') ? activeTrigger.source : null) || (activeTrigger?.source_url?.startsWith('http') ? activeTrigger.source_url : null) || (activeOpp?.source?.startsWith('http') ? activeOpp.source : null);
+                  const dateVal = activeTrigger?.event_date || activeTrigger?.published_at || activeTrigger?.created_at || activeOpp?.created_at;
+                  const dateInfo = dateVal ? formatEventDate(dateVal) : null;
+                  
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.8rem' }}>
+                      {dateInfo && (
+                        <span style={{ color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <Clock size={12} /> {dateInfo.relativeTime}
+                          {dateInfo.isExpired && <span className="badge-expired" style={{ fontSize: '0.65rem', padding: '1px 5px' }}>Veraltet</span>}
+                        </span>
+                      )}
+                      {sUrl ? (
+                        <a href={sUrl} target="_blank" rel="noopener noreferrer" className="ws-source-link" style={{ fontSize: '0.78rem', padding: '3px 8px' }}>
+                          <Globe size={12} /> {extractDomain(sUrl)} <ExternalLink size={11} />
+                        </a>
+                      ) : (
+                        <span className="ws-source-warning" style={{ fontSize: '0.75rem', padding: '2px 6px' }}>
+                          ⚠️ Keine Quelle verfügbar
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
               <textarea
                 id="situation"
                 name="situation"
@@ -944,39 +976,139 @@ export default function SalesWorkspacePage() {
             <List size={18} />
             <h3>{t('nexus.yourPipeline')}</h3>
           </div>
-          <div className="queue-list">
-            {opportunities && opportunities.length > 0 ? (
-              opportunities.map(opp => (
-                <div 
-                  key={opp.id} 
-                  className={`queue-item ${activeOppId === opp.id ? 'active' : ''}`}
-                  onClick={() => setActiveOppId(opp.id)}
-                  style={{ cursor: 'pointer' }}
+
+          {/* Baustelle 3: Filter für Zielgruppen-Match in der Pipeline */}
+          {(() => {
+            const validOpps = (opportunities || []).filter(o => !isPlaceholderCompany(o.nexus_companies?.name || o.company?.name));
+            const relevantCount = validOpps.filter(o => computeTargetMatchScore(o.nexus_companies?.name || o.company?.name, o.lead_score) >= 50).length;
+            const unclearCount = validOpps.filter(o => computeTargetMatchScore(o.nexus_companies?.name || o.company?.name, o.lead_score) < 50).length;
+            
+            return (
+              <div className="ws-queue-filter-tabs">
+                <button 
+                  type="button"
+                  className={`ws-queue-tab ${queueFilter === 'relevant' ? 'active' : ''}`}
+                  onClick={() => setQueueFilter('relevant')}
+                  title="Leads mit Zielgruppen-Match >= 50%"
                 >
-                  <div className="queue-item-content">
-                    <h4>{opp.nexus_companies?.name || 'Unbekanntes Unternehmen'}</h4>
-                    <span className="queue-stage">{opp.pipeline_stage}</span>
-                  </div>
+                  🎯 Relevante ({relevantCount})
+                </button>
+                <button 
+                  type="button"
+                  className={`ws-queue-tab ${queueFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setQueueFilter('all')}
+                  title="Alle Opportunities"
+                >
+                  Alle ({validOpps.length})
+                </button>
+                {unclearCount > 0 && (
                   <button 
-                    className="delete-opp-btn"
-                    title="Lead löschen"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if(window.confirm('Lead wirklich aus der Pipeline löschen?')) {
-                        deleteOpportunity(opp.id);
-                        if(activeOppId === opp.id) setActiveOppId(null);
-                      }
-                    }}
+                    type="button"
+                    className={`ws-queue-tab ${queueFilter === 'unclear' ? 'active' : ''}`}
+                    onClick={() => setQueueFilter('unclear')}
+                    title="Zielgruppen-Match < 50%"
+                    style={{ color: queueFilter === 'unclear' ? '#050608' : '#f87171' }}
                   >
-                    <Trash2 size={14} />
+                    ⚠️ Unklar ({unclearCount})
                   </button>
-                </div>
-              ))
-            ) : (
-              <div className="queue-empty">
-                {t('nexus.noLeads')}
+                )}
               </div>
-            )}
+            );
+          })()}
+
+          <div className="queue-list">
+            {(() => {
+              const validOpps = (opportunities || []).filter(o => !isPlaceholderCompany(o.nexus_companies?.name || o.company?.name));
+              const displayedOpps = validOpps.filter(o => {
+                const match = computeTargetMatchScore(o.nexus_companies?.name || o.company?.name, o.lead_score);
+                if (queueFilter === 'relevant') return match >= 50;
+                if (queueFilter === 'unclear') return match < 50;
+                return true;
+              });
+
+              if (displayedOpps.length === 0) {
+                return (
+                  <div className="queue-empty">
+                    {validOpps.length === 0 ? t('nexus.noLeads') : 'Keine Opportunities im gewählten Filter.'}
+                  </div>
+                );
+              }
+
+              return displayedOpps.map(opp => {
+                const matchScore = computeTargetMatchScore(opp.nexus_companies?.name || opp.company?.name, opp.lead_score);
+                const dateInfo = formatEventDate(opp.created_at);
+                const hasValidSource = opp.source && opp.source.startsWith('http');
+                const domain = hasValidSource ? extractDomain(opp.source) : null;
+
+                return (
+                  <div 
+                    key={opp.id} 
+                    className={`queue-item ${activeOppId === opp.id ? 'active' : ''}`}
+                    onClick={() => setActiveOppId(opp.id)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div className="queue-item-content">
+                      <div className="queue-item-header">
+                        <h4>{opp.nexus_companies?.name || 'Unbekanntes Unternehmen'}</h4>
+                        <span className="queue-stage">{opp.pipeline_stage}</span>
+                      </div>
+
+                      {/* Baustelle 3: Zielgruppen-Match Badge & Veraltet-Kennzeichnung */}
+                      <div className="queue-item-meta">
+                        {matchScore >= 70 ? (
+                          <span className="queue-badge-high" title="Hoher Zielgruppen-Match">
+                            {matchScore}% Match
+                          </span>
+                        ) : matchScore >= 50 ? (
+                          <span className="queue-badge-mid" title="Guter Zielgruppen-Match">
+                            {matchScore}% Match
+                          </span>
+                        ) : (
+                          <span className="queue-badge-low" title="Zielgruppe unklar">
+                            ⚠️ Unklar ({matchScore}%)
+                          </span>
+                        )}
+
+                        {dateInfo.isExpired && (
+                          <span className="queue-badge-expired" title="Signal älter als 90 Tage">
+                            Veraltet
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Baustelle 2: Quelle & Datum in Queue */}
+                      <div className="queue-item-footer">
+                        <span className="queue-date" title={dateInfo.formattedDate}>
+                          <Clock size={11} /> {dateInfo.relativeTime}
+                        </span>
+                        {hasValidSource ? (
+                          <span className="queue-source" title={opp.source}>
+                            <Globe size={11} /> {domain}
+                          </span>
+                        ) : (
+                          <span className="queue-source-missing" title="Keine Belegquelle verknüpft">
+                            ⚠️ Keine Quelle
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <button 
+                      className="delete-opp-btn"
+                      title="Lead löschen"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if(window.confirm('Lead wirklich aus der Pipeline löschen?')) {
+                          deleteOpportunity(opp.id);
+                          if(activeOppId === opp.id) setActiveOppId(null);
+                        }
+                      }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                );
+              });
+            })()}
           </div>
         </aside>
 
@@ -1010,11 +1142,31 @@ export default function SalesWorkspacePage() {
               </div>
               
               {activeOpp && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                  {`${t('nexus.wsStage')}: `}
-                  <span style={{ background: '#0a0c0f', border: '1px solid #1e232d', padding: '4px 12px', borderRadius: '12px', fontWeight: 600, color: 'var(--accent-blue, #38bdf8)' }}>
-                    {activeOpp.pipeline_stage.toUpperCase()}
-                  </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                  {/* Baustelle 3: Zielgruppen-Match Badge im CRM Header */}
+                  {(() => {
+                    const matchScore = computeTargetMatchScore(activeOpp.company?.name || activeOpp.nexus_companies?.name, activeOpp.lead_score ?? activeTrigger?.trigger_score);
+                    return matchScore >= 70 ? (
+                      <span className="badge-match-high" style={{ padding: '4px 10px', fontSize: '0.8rem' }} title="Hohe Passgenauigkeit zum Zielkundenprofil">
+                        <CheckCircle size={13} /> Zielgruppen-Match: {matchScore}%
+                      </span>
+                    ) : matchScore >= 50 ? (
+                      <span className="badge-match-mid" style={{ padding: '4px 10px', fontSize: '0.8rem' }} title="Guter Zielgruppen-Match">
+                        <Sparkles size={13} /> Zielgruppen-Match: {matchScore}%
+                      </span>
+                    ) : (
+                      <span className="badge-match-low" style={{ padding: '4px 10px', fontSize: '0.8rem' }} title="Unternehmen ist möglicherweise Anbieter/Wettbewerber oder passt nicht zur Zielgruppe">
+                        <AlertCircle size={13} /> Zielgruppe unklar ({matchScore}%)
+                      </span>
+                    );
+                  })()}
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                    {`${t('nexus.wsStage')}: `}
+                    <span style={{ background: '#0a0c0f', border: '1px solid #1e232d', padding: '4px 12px', borderRadius: '12px', fontWeight: 600, color: 'var(--accent-blue, #38bdf8)' }}>
+                      {(activeOpp.pipeline_stage || 'OPPORTUNITY').toUpperCase()}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
@@ -1924,28 +2076,86 @@ export default function SalesWorkspacePage() {
                           </p>
                         )}
                         
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        {/* Baustelle 2 & 3: Quellen-URL, Datum mit Verfall & Zielgruppen-Match */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '0.85rem', color: 'var(--text-secondary)', background: '#0a0c0f', padding: '16px', borderRadius: '8px', border: '1px solid #1e232d' }}>
                           <div>
-                            <strong style={{ color: 'var(--text-primary)' }}>{t('nexus.wsAuditSource')}</strong> <br/>
-                            {activeTrigger.source?.startsWith('http') ? (
-                              <a href={activeTrigger.source} target="_blank" rel="noreferrer" style={{ color: 'var(--color-koralle)', textDecoration: 'none' }}>
-                                {t('nexus.wsOpenLink')}
-                              </a>
-                            ) : (
-                              activeTrigger.source
+                            <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '4px' }}>{t('nexus.wsAuditSource')}</strong>
+                            {(() => {
+                              const sUrl = (activeTrigger.source?.startsWith('http') ? activeTrigger.source : null) || (activeTrigger.source_url?.startsWith('http') ? activeTrigger.source_url : null) || (activeOpp?.source?.startsWith('http') ? activeOpp.source : null);
+                              if (sUrl) {
+                                return (
+                                  <a 
+                                    href={sUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="ws-source-link"
+                                    title={sUrl}
+                                  >
+                                    <Globe size={13} />
+                                    <span>Quelle: {extractDomain(sUrl) || 'Originalbeleg'}</span>
+                                    <ExternalLink size={12} />
+                                  </a>
+                                );
+                              }
+                              return (
+                                <div className="ws-source-warning">
+                                  ⚠️ Keine Quelle verfügbar – Opportunity nicht testreif.
+                                </div>
+                              );
+                            })()}
+                          </div>
+                          <div>
+                            <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '4px' }}>{t('nexus.wsDiscoveredAt')}</strong>
+                            {(() => {
+                              const dateVal = activeTrigger.event_date || activeTrigger.published_at || activeTrigger.created_at || activeOpp?.created_at;
+                              const dateInfo = formatEventDate(dateVal);
+                              return (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                  <Clock size={13} style={{ color: 'var(--text-secondary)' }} />
+                                  <span style={{ color: 'var(--text-primary)' }}>{dateInfo.formattedDate}</span>
+                                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>({dateInfo.relativeTime})</span>
+                                  {dateInfo.isExpired && (
+                                    <span className="badge-expired" title="Signal ist älter als 90 Tage">
+                                      🚨 Veraltet (&gt;90 Tage)
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                          <div>
+                            <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '4px' }}>Zielgruppen-Match:</strong>
+                            {(() => {
+                              const matchScore = computeTargetMatchScore(fullContext?.company?.name || activeOpp?.nexus_companies?.name, activeOpp?.lead_score ?? activeTrigger.trigger_score);
+                              if (matchScore >= 70) {
+                                return (
+                                  <span className="badge-match-high">
+                                    <CheckCircle size={12} /> {matchScore}% (Hoher Fit)
+                                  </span>
+                                );
+                              } else if (matchScore >= 50) {
+                                return (
+                                  <span className="badge-match-mid">
+                                    <Sparkles size={12} /> {matchScore}% (Guter Fit)
+                                  </span>
+                                );
+                              } else {
+                                return (
+                                  <span className="badge-match-low">
+                                    <AlertCircle size={12} /> {matchScore}% (Zielgruppe unklar)
+                                  </span>
+                                );
+                              }
+                            })()}
+                          </div>
+                          <div>
+                            <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '4px' }}>{t('nexus.wsTriggerType')}</strong>
+                            <span style={{ color: 'var(--text-primary)' }}>{activeTrigger.signal_type || 'Unbekannt'}</span>
+                            {activeTrigger.confidence_score != null && (
+                              <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginLeft: '6px' }}>
+                                ({activeTrigger.confidence_score <= 1 ? Math.round(activeTrigger.confidence_score * 100) : Math.round(activeTrigger.confidence_score)}% KI-Konfidenz)
+                              </span>
                             )}
-                          </div>
-                          <div>
-                            <strong style={{ color: 'var(--text-primary)' }}>{t('nexus.wsDiscoveredAt')}</strong> <br/>
-                            {new Date(activeTrigger.created_at).toLocaleDateString()}
-                          </div>
-                          <div>
-                            <strong style={{ color: 'var(--text-primary)' }}>{t('nexus.wsTriggerType')}</strong> <br/>
-                            {activeTrigger.signal_type || 'Unbekannt'}
-                          </div>
-                          <div>
-                            <strong style={{ color: 'var(--text-primary)' }}>AI Confidence:</strong> <br/>
-                            {activeTrigger.confidence_score ? `${activeTrigger.confidence_score}%` : 'N/A'}
                           </div>
                         </div>
                       </div>

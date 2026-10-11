@@ -10,6 +10,7 @@
 // ============================================================================
 import { callLLM } from './llm-core.mjs';
 import { parseScanTriggers, extractJson } from './schemas.mjs';
+import { isPlaceholderCompany } from './validation.mjs';
 
 export const STALE_MS = 5 * 60 * 1000;   // Job-Alter ab dem status='error'
 export const HARD_CAP = 25;              // max. current_step
@@ -219,8 +220,24 @@ export async function processNextUrl(client, job) {
     };
   }
 
-  const extractPrompt = `Du bist die Intelligence Engine für NeXus Sales. Analysiere diesen Web-Inhalt und finde B2B-Kaufsignale.
+  // Baustelle 3: Offering-Kontext laden für Zielgruppen- und Käufer-Matching
+  let offeringContext = '';
+  if (job.offering_id) {
+    try {
+      const offRes = await client.from('nexus_offerings').select('offering_name, target_audience, positioning').eq('id', job.offering_id).single();
+      if (offRes.data) {
+        offeringContext = `\nUNSER ANGEBOT (DARAUF BASIERT DAS MATCHING):
+- Produkt/Dienstleistung: ${offRes.data.offering_name || 'B2B Lösung'}
+- Definierte Zielgruppe: ${offRes.data.target_audience || 'Mittelständische Unternehmen'}
+- Positionierung: ${offRes.data.positioning || 'B2B Vertrieb'}\n`;
+      }
+    } catch (e) {
+      console.warn('[ScanJob] Konnte Offering-Kontext nicht laden:', e.message);
+    }
+  }
 
+  const extractPrompt = `Du bist die Intelligence Engine für NeXus Sales. Analysiere diesen Web-Inhalt und finde B2B-Kaufsignale.
+${offeringContext}
 QUELLE: ${nextUrl.url}
 TITEL: ${nextUrl.title || 'Unbekannt'}
 
@@ -228,37 +245,45 @@ INHALT:
 ${pageText.substring(0, 3000)}
 
 REGELN:
-1. NUR echte Firmennamen aus dem Text
-2. Erfinde KEINE Unternehmen
-3. Erkläre warum das ein Kaufsignal ist
+1. NUR echte Firmennamen aus dem Text. Erfinde KEINE Unternehmen und nutze NIEMALS Platzhalter wie "Echter Firmenname", "Musterfirma" oder "Test GmbH".
+2. KÄUFER-VS-ANBIETER FILTER (WICHTIG - ANTI-RICOH-FILTER):
+   - Ist das gefundene Unternehmen ein potenzieller KÄUFER des Angebots?
+   - Wenn das Unternehmen SELBST Anbieter/Hersteller der angebotenen Lösung ist oder eigene Produkte bewirbt (z.B. Ricoh bewirbt eigene Dokumentenmanagement-Lösungen, IT-Dienstleister bewirbt eigene Cloud), ist das Unternehmen ein WETTBEWERBER/ANBIETER und KEIN Käufer!
+   - In solchen Fällen: Setze "target_group_match" auf unter 40 und "is_potential_buyer" auf false!
+3. ZIELGRUPPEN-MATCH (0-100):
+   - 80-100: Perfekter Käufer-Match (Passt zur Zielgruppe, echter Bedarf)
+   - 50-79: Plausibler Käufer (Bedarf wahrscheinlich)
+   - 0-49: Zielgruppe unklar / Anbieter / Wettbewerber / Fehlmatch
 4. "ansprechpartner" nur wenn Name WÖRTLICH im Text steht, sonst null
 5. "quelle" MUSS die echte URL sein
-6. Klassifiziere jedes Signal in eine der 5 Kategorien (siehe unten)
-7. Die "psychologische_ansprache" MUSS tiefgehend sein: Nicht nur "wie ansprechen", sondern: Was ist der emotionale Zustand? Was ist der unsichtbare Schmerz? Was passiert im Kopf des Entscheiders?
+6. Klassifiziere jedes Signal in eine der 5 Kategorien
 
 KAUFSIGNAL-KATEGORIEN:
-1. HIRING — Strategische Stellenanzeigen & Personalaufbau (z.B. Head of Sales, IT-Leitung, Cloud/Security-Spezialisten, Expansion, neue Abteilungen oder gezielte Schlüsselpositionen. Ignoriere reines Low-Level-Rauschen wie Praktika oder Azubis).
-2. FUNDING — Finanzierungsrunden, Investitionen, Förderungen, Series A/B/C
-3. TECH_MIGRATION — Cloud-Migration, Systemwechsel, ERP/CRM-Einführung, Software-Ablösung
-4. REGULATION — Neue Gesetze, Compliance-Pflichten, Zertifizierungen, regulatorische Änderungen
+1. HIRING — Strategische Stellenanzeigen & Personalaufbau (z.B. Head of Sales, IT-Leitung, Expansion)
+2. FUNDING — Finanzierungsrunden, Investitionen, Förderungen
+3. TECH_MIGRATION — Cloud-Migration, Systemwechsel, ERP/CRM-Einführung
+4. REGULATION — Neue Gesetze, Compliance-Pflichten, Zertifizierungen
 5. M_A — Übernahmen, Fusionen, Joint Ventures, Partnerschaften
 
 Gib ein JSON zurück:
 {
   "trigger_events": [
     {
-      "firmenname": "Echter Firmenname",
+      "firmenname": "Name des konkreten Unternehmens aus dem Quelltext",
       "branche": "Branche",
       "prioritaet": 1,
       "bewertung": "B - Hohe Chance. Warum?",
-      "signal": "Was ist passiert? (z.B. 'Sucht Head of Sales zur Expansion' oder 'Stellt SAP-Consultants für S/4HANA ein')",
+      "signal": "Was ist passiert? (Konkretes Ereignis)",
       "signal_kategorie": "HIRING | FUNDING | TECH_MIGRATION | REGULATION | M_A",
       "relevanz": "Konkretes Kaufsignal & Relevanz für den B2B-Vertrieb",
-      "ansprechpartner": "Konkreter Name falls im Text genannt, sonst null",
-      "position": "Ziel-Entscheiderrolle für den Pitch (z.B. 'Geschäftsführer', 'Head of Sales', 'CTO / IT-Leiter')",
+      "target_group_match": 85,
+      "is_potential_buyer": true,
+      "match_reason": "Begründung: Warum ist die Firma ein Käufer und kein Anbieter?",
+      "ansprechpartner": null,
+      "position": "Ziel-Entscheiderrolle",
       "kontakt": null,
       "quelle": "${nextUrl.url}",
-      "psychologische_ansprache": "Deep dive: Was ist der emotionale Zustand des Entscheiders? Welcher unsichtbare Schmerz/Bedarf verbirgt sich hinter dieser Stellenausschreibung/diesem Signal?"
+      "psychologische_ansprache": "Was ist der emotionale Zustand und unsichtbare Schmerz des Entscheiders?"
     }
   ]
 }`;
@@ -280,12 +305,27 @@ Gib ein JSON zurück:
     extracted = parseScanTriggers(llmResult.text);
   }
 
+  // Baustelle 1 & 3: Platzhalter filtern und Zielgruppen-Match absichern
+  const cleanTriggers = (extracted.trigger_events || [])
+    .filter(t => !isPlaceholderCompany(t.firmenname))
+    .map(t => {
+      // Heuristik-Check: Wenn Firma Ricoh oder reiner IT-Hersteller ist und sales-software gesucht wird
+      const isKnownVendor = /^(ricoh|canon|konica minolta|xerox|bechtle|computacenter)$/i.test((t.firmenname || '').trim());
+      const matchScore = isKnownVendor ? 25 : (typeof t.target_group_match === 'number' ? Math.max(0, Math.min(100, t.target_group_match)) : 75);
+      return {
+        ...t,
+        target_group_match: matchScore,
+        is_potential_buyer: !isKnownVendor && (t.is_potential_buyer !== false),
+        quelle: t.quelle || nextUrl.url
+      };
+    });
+
   const newResults = [...partialResults, {
     url: nextUrl.url,
     title: nextUrl.title,
     domain,
     source_type: nextUrl.source_type || 'NEWS',
-    triggers: extracted.trigger_events || [],
+    triggers: cleanTriggers,
     extracted_at: new Date().toISOString()
   }];
 

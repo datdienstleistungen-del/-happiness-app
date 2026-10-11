@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { useAuth } from './AuthContext'
 import * as db from '../lib/nexus-db'
+import { isPlaceholderCompany, computeTargetMatchScore } from '../lib/nexus-validation'
 
 /**
  * NeXus LeadContext (Revenue OS)
@@ -31,8 +32,13 @@ export function LeadProvider({ children }) {
         db.getOfferings(user.id),
         db.getRadarHits(user.id)
       ])
-      setOpportunities(opps || [])
-      setTriggers(trigs || [])
+
+      // Baustelle 1: Filtere Platzhalter-Einträge ("Echter Firmenname", etc.) aus Produktivansicht
+      const cleanOpps = (opps || []).filter(o => !isPlaceholderCompany(o.nexus_companies?.name || o.company?.name));
+      const cleanTrigs = (trigs || []).filter(t => !isPlaceholderCompany(t.company_name || t.nexus_companies?.name));
+
+      setOpportunities(cleanOpps)
+      setTriggers(cleanTrigs)
       setOfferings(offs || [])
       setRadarHits(hits || [])
       
@@ -53,6 +59,14 @@ export function LeadProvider({ children }) {
   // 2. Die Kern-Pipeline: Mache aus einem rohen Signal eine Opportunity
   const processSignalToOpportunity = useCallback(async (offeringId, companyData, signalData, contactData = null) => {
     if (!user) return null
+
+    // Baustelle 1: Keine Platzhalter-Firmen anlegen
+    if (isPlaceholderCompany(companyData.name)) {
+      console.warn('[LeadContext] Abgelehnt: Firmenname ist ein Platzhalter:', companyData.name);
+      alert("Test- oder Platzhalter-Einträge ('Echter Firmenname', etc.) können nicht in den Sales Workspace übernommen werden.");
+      return null;
+    }
+
     setLoading(true)
     try {
       // 1. Company identifizieren oder anlegen
@@ -75,13 +89,17 @@ export function LeadProvider({ children }) {
         await db.linkCompanyOffering(company.id, offeringId)
       }
 
-      // 3. Trigger Event in der DB anlegen
+      // 3. Trigger Event in der DB anlegen (mit Baustelle 2: echter Quelle-URL & Baustelle 3: Match-Score)
+      const cleanSourceUrl = signalData.source_url || (signalData.source?.startsWith('http') ? signalData.source : null);
+      const targetMatchScore = computeTargetMatchScore(companyData.name, signalData.target_group_match);
+
       const triggerEvent = await db.createTriggerEvent(user.id, {
         company_id: company.id,
         signal_type: signalData.signal_type || 'KI_DETECTED',
         content: signalData.content,
-        source: signalData.source || 'NeXus Radar Scan',
-        confidence_score: signalData.confidence_score || 0.8
+        source: cleanSourceUrl || signalData.source || 'NeXus Radar Scan',
+        confidence_score: signalData.confidence_score || 0.8,
+        trigger_score: targetMatchScore
       })
 
       if (!triggerEvent || !triggerEvent.id) {
@@ -89,12 +107,13 @@ export function LeadProvider({ children }) {
         return null;
       }
 
-      // 4. Opportunity erzeugen
+      // 4. Opportunity erzeugen (mit Baustelle 3: lead_score = Zielgruppen-Match)
       const opp = await db.createOpportunity(user.id, company.id, {
         offering_id: offeringId,
         pipeline_stage: 'opportunity',
-        source: 'Trigger Radar',
-        created_from: 'AI'
+        source: cleanSourceUrl || 'Trigger Radar',
+        created_from: 'AI',
+        lead_score: targetMatchScore
       })
 
       if (opp && triggerEvent) {
