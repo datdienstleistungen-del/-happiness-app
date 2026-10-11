@@ -639,11 +639,24 @@ export default function SalesWorkspacePage() {
     setResult(null)
 
     try {
+      const primaryTrigger = activeTrigger || (fullContext?.triggers?.[0]?.nexus_trigger_events) || null;
+      const effectiveSourceUrl = (primaryTrigger?.source_url?.startsWith('http') ? primaryTrigger.source_url : null) ||
+        (primaryTrigger?.source?.startsWith('http') ? primaryTrigger.source : null) ||
+        (fullContext?.opportunity?.source_url?.startsWith('http') ? fullContext.opportunity.source_url : null) ||
+        (fullContext?.source_url?.startsWith('http') ? fullContext.source_url : null) ||
+        primaryTrigger?.source_url || primaryTrigger?.source || '';
+        
+      const effectiveEventDate = primaryTrigger?.event_date || primaryTrigger?.published_at || primaryTrigger?.created_at ||
+        fullContext?.opportunity?.event_date || fullContext?.event_date || '';
+
       const resultData = await callNexusAI({
         mode: selectedMode,
         lang: lang,
         targetLang: formData.targetLang || 'auto',
         ...formData,
+        source_url: effectiveSourceUrl,
+        event_date: effectiveEventDate,
+        trigger: primaryTrigger,
         full_context: {
           opportunity: fullContext || null,
           research: fullContext?.research || [],
@@ -792,7 +805,10 @@ export default function SalesWorkspacePage() {
                 <label htmlFor="situation" style={{ margin: 0 }}>{t('nexus.situationContext')}</label>
                 {/* Baustelle 2: Quelle & Datum direkt beim Kaufsignal im Pitch-Formular */}
                 {(() => {
-                  const sUrl = (activeTrigger?.source?.startsWith('http') ? activeTrigger.source : null) || (activeTrigger?.source_url?.startsWith('http') ? activeTrigger.source_url : null) || (activeOpp?.source?.startsWith('http') ? activeOpp.source : null);
+                  const sUrl = (activeTrigger?.source_url?.startsWith('http') ? activeTrigger.source_url : null) || 
+                               (activeOpp?.source_url?.startsWith('http') ? activeOpp.source_url : null) ||
+                               (activeTrigger?.source?.startsWith('http') ? activeTrigger.source : null) || 
+                               (activeOpp?.source?.startsWith('http') ? activeOpp.source : null);
                   const dateVal = activeTrigger?.event_date || activeTrigger?.published_at || activeTrigger?.created_at || activeOpp?.created_at;
                   const dateInfo = dateVal ? formatEventDate(dateVal) : null;
                   

@@ -464,8 +464,9 @@ Deine Aufgabe ist es, den bereitgestellten Vertrag, die AGB oder das Dokument gr
   3. Stelle NIEMALS theoretische Gegenfragen ("Welche Tools haben Sie genutzt?"). Liefere sofort die fertige Tabelle mit allen anklickbaren Links!`;
 
     const isIntelligenceMode = mode === 'lead_intelligence' || (systemPrompt || '').includes('zielgruppe') || (systemPrompt || '').includes('vertriebsstrategie');
+    const isCopywritingMode = ['sales_pitch', 'follow_up', 'einwandbehandlung', 'forum_response'].includes(mode);
     const contextSystem = (context && context.system && !systemPrompt.includes(context.system.slice(0, 50))) ? `\n\n${context.system}` : '';
-    const finalSystemPrompt = [systemPrompt, contextSystem, langInstruction, contractInstruction, isIntelligenceMode ? '' : b2bResearchDirective].filter(Boolean).join('\n\n');
+    const finalSystemPrompt = [systemPrompt, contextSystem, langInstruction, contractInstruction, (isIntelligenceMode || isCopywritingMode) ? '' : b2bResearchDirective].filter(Boolean).join('\n\n');
     
     const messages = [
       { role: "system", content: finalSystemPrompt }
@@ -507,7 +508,7 @@ Deine Aufgabe ist es, den bereitgestellten Vertrag, die AGB oder das Dokument gr
     ];
     const isAngebotsanalyse = mode === 'angebotsanalyse' || (systemPrompt || '').includes('B2B Vertriebsmodell') || (lowerMsg.includes('analysiere') && lowerMsg.includes('angebot'));
     const isChatMode = mode === 'chat';
-    const needsSearch = !hasImage && !isChatMode && !isAngebotsanalyse && !isIntelligenceMode && (Boolean(directUrlOrDomain) || isExplicitRechercheMode || searchTriggers.some(t => lowerMsg.includes(t)));
+    const needsSearch = !hasImage && !isChatMode && !isAngebotsanalyse && !isIntelligenceMode && !isCopywritingMode && (Boolean(directUrlOrDomain) || isExplicitRechercheMode || searchTriggers.some(t => lowerMsg.includes(t)));
 
     if (needsSearch) {
       let companyName = (context?.company?.name || context?.company?.firmenname || context?.company || '').toString().trim();

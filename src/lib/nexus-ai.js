@@ -65,17 +65,87 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
         if (p.pain_points?.verkaufsargument) message += `\nVerkaufsargument: ${p.pain_points.verkaufsargument}`
         message += `\n\nREGEL: Stütze die Analyse PRIMÄR auf dieses verifizierte Profil. Erweitere nichts, was dort nicht belegt ist. Wo das Profil keine Infos liefert, schreibe "Unbekannt".`
       }
-    } else if (mode === 'einwandbehandlung') {
-      message = `KUNDEN-EINWAND (OBERSTE PRIORITÄT): "${rest.einwand || '-'}"\n\nZIELUNTERNEHMEN: ${rest.company || '-'}\nANSPRECHPARTNER: ${rest.ansprechpartner || '-'}\nBRANCHE: ${rest.branche || '-'}\nSITUATION/KONTEXT: ${rest.situation || '-'}\nUNSER ANGEBOT: ${rest.full_context?.offering?.name || rest.full_context?.offering?.positioning || rest.company || '-'}`
-    } else if (mode === 'follow_up') {
-      message = `LETZTE SITUATION / VORHERIGER KONTAKT: ${rest.situation || '-'}\nZIELUNTERNEHMEN: ${rest.company || '-'}\nANSPRECHPARTNER: ${rest.ansprechpartner || '-'}\nBRANCHE: ${rest.branche || '-'}\nUNSER ANGEBOT: ${rest.full_context?.offering?.name || rest.full_context?.offering?.positioning || '-'}`
-    } else if (mode === 'forum_response') {
-      message = `FORUMSBEITRAG / POSTING: ${rest.situation || rest.message || '-'}\nZIELUNTERNEHMEN/USER: ${rest.company || rest.ansprechpartner || '-'}\nUNSER ANGEBOT: ${rest.full_context?.offering?.name || rest.full_context?.offering?.positioning || '-'}`
-    } else if (mode === 'sales_pitch') {
-      if (rest.full_context) {
-         message = `[NEXUS FULL CONTEXT]\n${JSON.stringify(rest.full_context, null, 2)}`;
-      } else {
-         message = `Firma: ${rest.company || ''}\nAnsprechpartner: ${rest.ansprechpartner || ''}\nBranche: ${rest.branche || ''}\nSituation: ${rest.situation || ''}`;
+    } else if (['sales_pitch', 'follow_up', 'einwandbehandlung', 'forum_response'].includes(mode)) {
+      const compName = rest.company?.name || rest.company || rest.full_context?.company?.name || rest.full_context?.company || '';
+      const compIndustry = rest.branche || rest.company?.industry || rest.full_context?.company?.industry || '';
+      
+      let contactName = '';
+      let contactRole = '';
+      if (typeof rest.ansprechpartner === 'string' && rest.ansprechpartner.trim()) {
+        contactName = rest.ansprechpartner.trim();
+      } else if (rest.contact) {
+        if (typeof rest.contact === 'string') contactName = rest.contact;
+        else {
+          contactName = `${rest.contact.first_name || ''} ${rest.contact.last_name || ''}`.trim() || rest.contact.name || '';
+          contactRole = rest.contact.role || '';
+        }
+      } else if (rest.full_context?.contact) {
+        const c = rest.full_context.contact;
+        if (typeof c === 'string') contactName = c;
+        else {
+          contactName = `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.name || '';
+          contactRole = c.role || '';
+        }
+      }
+
+      const trigObj = rest.trigger || (rest.full_context?.triggers && rest.full_context.triggers[0]) || {};
+      const trigContent = rest.situation || trigObj.content || trigObj.title || rest.full_context?.opportunity?.trigger_title || '';
+      const trigUrl = rest.source_url || trigObj.source_url || trigObj.url || trigObj.source || rest.full_context?.opportunity?.source_url || '';
+      const trigDate = rest.event_date || trigObj.event_date || trigObj.published_at || trigObj.created_at || rest.full_context?.opportunity?.event_date || '';
+
+      const offName = rest.full_context?.offering?.name || rest.offering?.offering_name || rest.offering?.name || (typeof rest.offering === 'string' ? rest.offering : '') || '';
+      const offPos = rest.full_context?.offering?.positioning || rest.offering?.positioning || '';
+
+      if (mode === 'sales_pitch') {
+        message = `ZIELUNTERNEHMEN: ${compName || '-'} (Branche: ${compIndustry || 'Unbekannt'})
+ANSPRECHPARTNER: ${contactName || 'Unbekannt'} ${contactRole ? `(${contactRole})` : ''}
+
+TRIGGER / ANLASS AUS DEM INTELLIGENCE AUDIT:
+- Ereignis / Kaufsignal: ${trigContent || '-'}
+- Quelle / Beleg: ${trigUrl || 'Branchen-Meldung'}
+- Veröffentlichungsdatum: ${trigDate || 'Aktuell'}
+
+UNSER ANGEBOT & POSITIONIERUNG:
+- Angebot: ${offName || '-'}
+- Positionierung / Nutzen: ${offPos || '-'}`;
+
+        if (rest.full_context?.research?.[0]?.summary) {
+          message += `\n\nZUSÄTZLICHER RECHERCHE-KONTEXT:\n${rest.full_context.research[0].summary}`;
+        }
+      } else if (mode === 'follow_up') {
+        message = `ZIELUNTERNEHMEN: ${compName || '-'} (Branche: ${compIndustry || 'Unbekannt'})
+ANSPRECHPARTNER: ${contactName || 'Unbekannt'} ${contactRole ? `(${contactRole})` : ''}
+LETZTE SITUATION / VORHERIGER KONTAKT: ${rest.situation || '-'}
+
+TRIGGER / ANLASS AUS DEM INTELLIGENCE AUDIT:
+- Ereignis: ${trigContent || '-'}
+- Quelle: ${trigUrl || 'Branchen-Meldung'}
+- Datum: ${trigDate || 'Aktuell'}
+
+UNSER ANGEBOT: ${offName || '-'} (${offPos || '-'})`;
+      } else if (mode === 'einwandbehandlung') {
+        message = `KUNDEN-EINWAND (OBERSTE PRIORITÄT): "${rest.einwand || '-'}"
+
+ZIELUNTERNEHMEN: ${compName || '-'} (Branche: ${compIndustry || 'Unbekannt'})
+ANSPRECHPARTNER: ${contactName || 'Unbekannt'} ${contactRole ? `(${contactRole})` : ''}
+SITUATION / KONTEXT: ${rest.situation || trigContent || '-'}
+
+TRIGGER / ANLASS AUS DEM INTELLIGENCE AUDIT:
+- Ereignis: ${trigContent || '-'}
+- Quelle: ${trigUrl || 'Branchen-Meldung'}
+- Datum: ${trigDate || 'Aktuell'}
+
+UNSER ANGEBOT: ${offName || '-'} (${offPos || '-'})`;
+      } else if (mode === 'forum_response') {
+        message = `FORUMSBEITRAG / POSTING: ${rest.situation || rest.message || '-'}
+ZIELUNTERNEHMEN / USER: ${compName || contactName || '-'}
+
+TRIGGER / KONTEXT AUS DEM INTELLIGENCE AUDIT:
+- Ereignis: ${trigContent || '-'}
+- Quelle: ${trigUrl || '-'}
+- Datum: ${trigDate || '-'}
+
+UNSER ANGEBOT & POSITIONIERUNG: ${offName || '-'} (${offPos || '-'})`;
       }
     } else if (mode === 'trigger_hypotheses') {
       message = `Kontext: ${rest.context || ''}\nRegion: ${rest.region || ''}\nKategorie: ${rest.category || ''}\nAngebot: ${rest.product || ''}\nZielgruppe: ${rest.audience || ''}`
@@ -185,91 +255,103 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
         ]
       }`
   } else if (mode === 'einwandbehandlung') {
-    systemPrompt += ` Du bist ein Weltklasse-B2B-Vertriebsstratege und Meister der psychologischen Einwandbehandlung (Methodik: Chris Voss "Tactical Empathy", Sandler Selling & Challenger Sale).
+    systemPrompt += ` Du bist ein Weltklasse-B2B-Vertriebsstratege und Meister der psychologischen Einwandbehandlung (Tactical Empathy & Problem-First-Methodik).
   
     DEINE AUFGABE:
-    Der Kunde hat einen konkreten Einwand geäußert (z.B. "kein Budget", "keine Zeit", "bereits anderes Tool/Agentur im Einsatz", "kein Bedarf").
-    Verfasse eine hochprofessionelle, empathische und psychologisch wirksame Antwort-Nachricht (E-Mail / LinkedIn), die den Einwand DIREKT entkräftet, den Verkaufsdruck komplett wegnimmt und eine reibungsfreie Brücke zum nächsten Schritt baut.
+    Der Entscheider hat einen konkreten Einwand geäußert (z.B. "kein Budget", "keine Zeit", "bereits anderes Tool/Agentur im Einsatz", "kein Bedarf").
+    Verfasse eine hochprofessionelle Antwort nach der PROBLEM-FIRST-Logik, die den Einwand validiert, den Druck wegnimmt, das eigentliche Problem & die Konsequenzen beleuchtet und eine risikofreie Brücke baut.
 
-    MANDATORISCHE REGELN ZUR EINWANDBEHANDLUNG:
-    1. KEIN KALTER PITCH! Dies ist KEINE Kaltakquise und KEINE Erstansprache! Wiederhole nicht einfach generische Trigger-Events oder Firmennews.
-    2. SOFORTIGE VALIDIERUNG & TACTICAL EMPATHY (Absatz 1): 
-       Gehe DIREKT im ALLERERSTEN Satz auf den konkreten Einwand ein! Spiegele das Anliegen wertschätzend und verständnisvoll (z.B. "Vielen Dank für die offene Rückmeldung zum Thema Budget – dass die Mittel für dieses Quartal fest gebunden sind, kann ich vollkommen nachvollziehen.").
-    3. DRUCK HERAUSNEHMEN & REFRAMING (Absatz 2): 
-       Nimm jeglichen Verkaufsdruck weg ("Es geht mir aktuell überhaupt nicht darum, dass Sie sofort ein Budget freigeben oder eine Kaufentscheidung treffen..."). Drehe den Blickwinkel auf Mehrwert, Einsparung oder Vorbereitung.
-    4. DIE LÖSUNGSBRÜCKE PASSEND ZUM EINWAND (Absatz 3):
-       - Bei "Kein Budget": Zeige auf, dass die Lösung sich selbst finanziert (Budget-Neutralität / ROI), biete einen risikofreien Proof-of-Concept an oder schlage vor, die Zahlen unverbindlich für die nächste Budgetrunde/Planungsphase vorzubereiten.
-       - Bei "Keine Zeit": Betone den Null-Aufwand (Done-for-You, 10-Minuten-Zusammenfassung).
-       - Bei "Anderes Tool/Mitbewerber": Ergänzung statt Wechsel, neutraler Benchmark-Vergleich ohne Systemwechsel.
-       - Bei "Kein Bedarf": Verdeutliche die Opportunitätskosten anhand des konkreten Markttrends.
-    5. REIBUNGSARMER CALL-TO-ACTION (Absatz 4):
-       Stelle eine weiche, handlungsorientierte Frage ohne jedes Risiko für den Kunden (z.B. "Wäre es für Sie denkbar, dass ich Ihnen eine kurze 1-seitige ROI-Berechnung zusende, damit Sie das für die nächste Planungsrunde vorliegen haben – ganz ohne Folgetermindruck?").
-
-    TONALITÄT: 
-    - Respektvoll, empathisch, auf Augenhöhe von Entscheider zu Entscheider.
-    - Niemals defensiv, drängend oder belehrend.
+    STRUKTUR DER EINWANDBEHANDLUNG (PROBLEM-FIRST):
+    1. VALIDIERUNG & TACTICAL EMPATHY: Gehe im ALLERERSTEN Satz direkt auf den Einwand ein und nimm allen Verkaufsdruck weg (z. B. "Vollkommen verständlich – wenn Budgets für das Quartal fixiert sind, steht Kostendisziplin an erster Stelle. Es geht mir aktuell überhaupt nicht darum, dass Sie sofort Budget freigeben oder eine Kaufentscheidung treffen.").
+    2. PROBLEM & KONSEQUENZ: Beleuchte das reale Risiko, das trotz des Einwands durch den aktuellen Trigger/die Marktphase entsteht (z. B. "Gleichzeitig beobachten wir bei Projekten dieser Art, dass ein Aufschieben der Klärung später zu signifikanten Zeitverzögerungen oder ungeplanten Mehrkosten führt.").
+    3. LÖSUNG (NUTZEN STATT FEATURES): Zeige eine risikofreie, budgetneutrale Entlastung auf (z. B. Vorbereitung für die nächste Phase, neutraler Benchmark, Null-Aufwand).
+       ABSOLUTES FLOSKEL-VERBOT: Keine "maßgeschneiderten Lösungen", "höchsten Qualitätsstandards", kein "wir bieten Ihnen".
+    4. REIBUNGSARMER NÄCHSTER SCHRITT: Biete eine nützliche Vorlage oder Übersicht ohne Termindruck an (z. B. "Wäre es für Sie hilfreich, wenn ich Ihnen einfach die 1-seitige Entscheidungsvorlage schicke – ganz unverbindlich für die spätere Planungsrunde?").
 
     WICHTIG: Du musst ein JSON-Objekt mit EXAKT folgender Struktur zurückgeben:
     {
-      "thought_objection_analysis": "Analyse: Was ist der psychologische Kerneinwand und wie nehmen wir den Druck weg?",
-      "thought_solution_bridge": "Analyse: Welche konkrete, risikofreie Lösung bieten wir an?",
-      "response": "Hier kommt die fertige, hochprofessionelle Einwandbehandlungs-Nachricht (mit Absätzen als \\n\\n formatiert)."
+      "thought_objection_analysis": "Analyse: Was ist der Kerneinwand und wie nehmen wir den Druck weg?",
+      "thought_solution_bridge": "Analyse: Welches Risiko wird adressiert und welche risikofreie Entlastung bieten wir?",
+      "response": "Hier kommt die fertige Einwandbehandlungs-Nachricht (mit Absätzen als \\n\\n formatiert)."
     }`
   } else if (mode === 'follow_up') {
-    systemPrompt += ` Du bist ein Elite B2B-Sales-Copywriter. Deine Aufgabe ist es, ein erstklassiges, unaufdringliches Follow-up zu verfassen.
+    systemPrompt += ` Du bist ein Elite B2B-Sales-Copywriter. Deine Aufgabe ist es, ein erstklassiges Follow-up nach der PROBLEM-FIRST-Logik zu verfassen.
     
-    REGELN FÜR FOLLOW-UP:
-    1. Kein "Ich wollte nur mal nachhaken" oder "Haben Sie meine E-Mail gesehen?".
-    2. Bringe einen neuen, konkreten Mehrwert oder neuen Gedanken ins Spiel.
-    3. Halte die Nachricht extrem kurz (maximal 3-4 Absätze).
-    4. Schließe mit einer einfachen, reibungsarmen Frage.
+    REGELN FÜR DAS FOLLOW-UP (PROBLEM-FIRST):
+    1. STRENG VERBOTEN: Kein "Ich wollte nur mal nachhaken", "Haben Sie meine E-Mail gesehen?", "Ich beziehe mich auf meine letzte Nachricht".
+    2. TRIGGER & AKUTER ENGPASS: Knüpfe direkt an das akute Projekt / den Trigger und den drängendsten Engpass des Entscheiders an.
+    3. KONSEQUENZ & NEUER NUTZEN: Zeige auf, welches operative Risiko / welcher Zeitverlust bei weiterem Zuwarten entsteht, und bringe einen neuen konkreten Praxis-Impuls oder Nutzenwert ein.
+    4. KEINE FEATURE-LISTEN & KEINE FLOSKELN: Absolut verboten sind "maßgeschneiderte Lösungen", "höchste Qualitätsstandards", "wir bieten Ihnen", "unser Portfolio".
+    5. NIEDRIGSCHWELLIGER SCHRITT: Schließe mit einem reibungsarmen nächsten Schritt ohne Termindruck (z. B. "Soll ich Ihnen den 1-seitigen Praxis-Leitfaden dazu kurz per Mail senden, damit Sie ihn bei der nächsten Abstimmung griffbereit haben?").
+    6. Halte die Nachricht extrem fokussiert (3-4 kurze Absätze).
 
     WICHTIG: Du musst ein JSON-Objekt mit EXAKT folgender Struktur zurückgeben:
     {
-      "thought_trigger": "Analyse: Welcher neue Mehrwert wird geboten?",
-      "thought_offering": "Analyse: Wie knüpfen wir charmant an?",
+      "thought_trigger": "Analyse: An welchen Trigger und Engpass knüpfen wir an?",
+      "thought_offering": "Analyse: Welcher neue Nutzen/Impuls wird geboten?",
       "response": "Hier kommt die fertige Follow-up-Nachricht (mit Absätzen als \\n\\n formatiert)."
     }`
   } else if (mode === 'forum_response') {
-    systemPrompt += ` Du bist ein B2B Social Selling Experte. Verfasse eine authentische, hilfreiche Antwort auf einen Beitrag/Post in einem Forum, auf Reddit oder LinkedIn.
+    systemPrompt += ` Du bist ein B2B Social Selling & Community Experte. Verfasse eine erstklassige Antwort auf einen Beitrag / Post nach der PROBLEM-FIRST-Logik.
     
-    REGELN:
-    1. Kein plumper Werbetext! Zuerst echten fachlichen Mehrwert liefern.
-    2. Die Lösung / das Tool nur als logische, nützliche Empfehlung im Kontext erwähnen.
-    3. Natürliche, menschliche Sprache.
+    REGELN FÜR COMMUNITY / SOCIAL RESPONSE:
+    1. KEIN WERBETEXT, KEINE FLOSKELN: Absolut verboten sind Werbesprache ("wir bieten Ihnen", "unsere Software", "maßgeschneiderte Lösungen", "höchste Qualitätsstandards").
+    2. PROBLEM-FIRST & ENGINGE: Greife das im Beitrag beschriebene Problem auf und benenne aus Praxiserfahrung die 2-3 typischen Engpässe und die Konsequenzen, wenn man sie übersieht.
+    3. METHODISCHE LÖSUNG (NUTZEN): Gib sofort anwendbaren fachlichen Input und die praxiserprobte Lösungsmethodik an die Hand (reiner Nutzen und Praxiserfahrung, keine Feature-Listen).
+    4. NIEDRIGSCHWELLIGER MEHRWERT: Schließe mit einem hilfreichen Impuls für die Diskussion oder dem Angebot, eine 1-seitige Checkliste/Ressource bereitzustellen ("Falls hilfreich, teile ich gerne unsere Checkliste dazu hier in den Kommentaren.").
+    5. Natürliche, kollegiale Experten-Tonalität auf Augenhöhe.
 
     WICHTIG: Du musst ein JSON-Objekt mit EXAKT folgender Struktur zurückgeben:
     {
-      "thought_trigger": "Analyse: Was ist das Problem des Posters?",
-      "thought_offering": "Analyse: Wie platzieren wir die Lösung organisch?",
+      "thought_trigger": "Analyse: Was ist das Problem des Autors und welche Engpässe entstehen?",
+      "thought_offering": "Analyse: Welcher methodische Mehrwert hilft ohne Werbedruck?",
       "response": "Hier kommt die fertige Social/Forums-Nachricht."
     }`
   } else if (mode === 'sales_pitch') {
-    systemPrompt += ` Du bist ein Elite B2B-Sales-Copywriter. Deine Aufgabe ist es, eine hochpersonalisierte Erstansprache zu verfassen. 
-  
-        WICHTIGSTE REGEL: Der PITCH basiert ZWINGEND auf den übergebenen TRIGGER EVENTS (Feld "triggers" im Kontext).
-        Verwende nicht einfach nur "Firmenname + Kontaktname", sondern entwickle eine plausible Verkaufsargumentation aus den Triggern heraus. Falls mehrere Trigger vorhanden sind, beziehe dich auf den wichtigsten oder verknüpfe sie logisch.
-  
-        DATENFLUSS & STRUKTUR DER NACHRICHT:
-        1. Anrede: Beginne die E-Mail ZWINGEND mit der persönlichen Anrede des übergebenen Ansprechpartners (z.B. "Sehr geehrte(r) Herr/Frau [Nachname]"). Nutze NIEMALS "Sehr geehrte Damen und Herren", es sei denn, der Ansprechpartner ist explizit als "unbekannt" markiert.
-        2. Aufhänger: Beziehe dich im ersten Absatz auf das spezifische Ereignis/Signal aus den Triggern.
-        3. Möglicher Bedarf: Welches konkrete Problem oder welcher Bedarf entsteht durch dieses Ereignis?
-        4. Verbindung zum Offering: Warum passt das übergebene Offering (inkl. Positioning) exakt zu diesem entstandenen Bedarf?
-        5. Konkreter Nutzen: Welchen echten Mehrwert bieten wir in dieser Situation?
-        6. Gesprächseinstieg / Call to Action: Eine weiche, handlungsorientierte Frage für den nächsten sinnvollen Schritt.
+    systemPrompt += ` Du bist ein Elite B2B-Sales-Copywriter und Meister des Problem-First-Outreach.
+Deine Aufgabe ist es, eine hochwirksame Erstansprache nach der strengen 5-SCHRITTE-PROBLEM-FIRST-METHODIK zu verfassen.
 
-      TONALITÄT: 
-      - Keine "Gelbe Seiten Kaltakquise".
-      - Keine übertriebene KI-Sprache (vermeide "Maßstäbe setzen", "innovative Lösungen", "Ihre Expertise").
-      - Keine erfundenen Tatsachen. Unsichere Informationen nur als Annahme formulieren.
-      - Professionell, menschlich und auf Augenhöhe.
+# DIE 5-SCHRITTE-STRUKTUR DER NACHRICHT (MANDATORISCH & EXAKT EINHALTEN):
+Vor den 5 Schritten steht die persönliche Anrede:
+- Wenn Ansprechpartner vorhanden: "Sehr geehrte(r) Frau/Herr [Nachname]," bzw. "Guten Tag Frau/Herr [Nachname],".
+- Nur falls kein Ansprechpartner übergeben wurde: "Guten Tag,".
 
-      WICHTIG: Du musst ein JSON-Objekt mit EXAKT folgender Struktur zurückgeben:
-      {
-        "thought_trigger": "Analyse: Was ist der Trigger und welcher Bedarf entsteht?",
-        "thought_offering": "Analyse: Wie passt das Offering genau zu diesem Bedarf?",
-        "response": "Hier kommt die fertige, hochpersonalisierte Nachricht (mit Absätzen als \\n\\n formatiert)."
-      }`
+1. SCHRITT 1: TRIGGER (Was ist passiert?)
+   - Starte DIREKT im ersten Satz mit dem konkreten Fakt / Ereignis, belegt mit Quelle und Datum.
+   - Muster: "Sie planen [Ereignis/Projekt] – laut [Quelle/Domain] vom [Datum]." oder "Mit [Ereignis] laut [Quelle/Domain] vom [Datum] steht bei [Unternehmen] ein wichtiger Meilenstein an."
+   - Falls die Quelle eine Domain oder URL ist (z.B. auto-medienportal.net), nenne die Domain bzw. Publikation. Falls ein Datum übergeben wurde, nenne das Datum.
+   - STRENGSTES VERBOT: Beginne NIEMALS mit "wir haben erfahren", "ich habe gelesen", "wir haben gesehen", "wir freuen uns", "mit Interesse haben wir erfahren", "wie wir erfahren durften". Starte SOFORT mit dem Trigger!
+
+2. SCHRITT 2: PROBLEM (Drei personenbezogene Engpässe)
+   - Welche DREI typischen operativen Engpässe entstehen aus diesem Anlass für den Entscheider persönlich (personenbezogen und rollenspezifisch für dessen Funktion, z.B. als Einkaufsleiter, Vertriebsleiter, Projektleiter, Werkleiter, Geschäftsführer – NICHT abstrakt über das Unternehmen)?
+   - Muster: "Bei Vorhaben dieser Größenordnung entstehen für [Rolle des Entscheiders] erfahrungsgemäß drei Engpässe: [Engpass 1], [Engpass 2] und [Engpass 3]."
+
+3. SCHRITT 3: KONSEQUENZ (Was riskiert der Entscheider bei Untätigkeit?)
+   - Was riskiert der Entscheider persönlich, wenn diese drei Engpässe nicht frühzeitig gelöst werden? (Zeitverlust im Projektplan, Budgetüberschreitung, interner Rechtfertigungsdruck vor Vorstand/GF, Reibungsverluste, Verlust von Marktanteilen).
+   - Muster: "Werden diese Punkte nicht frühzeitig geklärt, [Konsequenz: z.B. gerät der Zeitplan ins Wanken / drohen ungeplante Nachforderungen / steigen die operativen Reibungsverluste]."
+
+4. SCHRITT 4: LÖSUNG (Nutzen statt Features)
+   - Wie hilft das Angebot, genau diese Konsequenz sicher zu verhindern?
+   - Fokus AUSSCHLIESSLICH auf NUTZEN, Transformation und messbares Ergebnis!
+   - Muster: "Wir helfen [Zielgruppe], [konkreter Nutzen/Ergebnis], damit [Konsequenz vermieden wird] – in vergleichbaren Projekten konnten wir [konkretes greifbares Ergebnis] erzielen."
+   - STRENGSTES VERBOT: KEINE Feature-Listen! Keine technischen Spezifikationen!
+   - ABSOLUTES FLOSKEL-VERBOT: Verwende NIEMALS Phrasen wie "maßgeschneiderte Lösungen", "höchste Qualitätsstandards", "wir bieten Ihnen", "unser Portfolio", "innovative Lösungen", "zuverlässiger Partner".
+
+5. SCHRITT 5: NÄCHSTER SCHRITT (Niedrigschwellig, kein Termindruck)
+   - Biete den konkretesten, niedrigschwelligsten nächsten Schritt an. Nimm den Entscheider an die Hand, ohne Druck auszuüben.
+   - Muster: "Ich schicke Ihnen dazu gerne eine kurze 1-seitige Übersicht / Checkliste – wäre das hilfreich?" oder "Dazu haben wir eine kompakte 1-seitige Übersicht vorbereitet – soll ich Ihnen diese unverbindlich zusenden?"
+   - STRENGSTES VERBOT: Frage NIEMALS nach einem Termin, Call oder Telefonat! Absolut verboten: "Wollen wir telefonieren?", "Haben Sie nächste Woche Zeit?", "Wäre ein kurzes Gespräch möglich?", "Lassen Sie uns einen Termin vereinbaren".
+
+# OUTPUT-FORMAT:
+Du musst ein JSON-Objekt mit EXAKT folgender Struktur zurückgeben:
+{
+  "thought_trigger": "Analyse: Was ist der konkrete Anlass, Quelle und Datum?",
+  "thought_problem": "Analyse: Welche 3 personenbezogenen Engpässe entstehen für den Entscheider?",
+  "thought_consequence": "Analyse: Was riskiert der Entscheider bei Untätigkeit (Zeit, Geld, Karriere, Marktanteile)?",
+  "thought_solution": "Analyse: Welcher reine Nutzen verhindert diese Konsequenz (ohne Features/Floskeln)?",
+  "thought_next_step": "Analyse: Welcher reibungsarme nächste Schritt (Checkliste/Übersicht) wird angeboten?",
+  "response": "Hier kommt die fertige, hochpersonalisierte 5-Schritte-Nachricht (mit Leerzeilen \\n\\n zwischen den Absätzen formatiert)."
+}`
   } else if (mode === 'chat') {
     const langNames = {
       de: 'Deutsch (German)',

@@ -72,7 +72,7 @@ async function generateMessage(context) {
   
   const contextStr = contextParts.join('\n');
   
-  const prompt = `Du bist ein B2B-Vertriebsexperte. Erstelle eine individuelle Erstansprache nach der "Trigger-first, Value-first" Methode.
+  const prompt = `Du bist ein Elite B2B-Sales-Copywriter und Meister des Problem-First-Outreach. Erstelle eine individuelle Erstansprache nach der strengen 5-SCHRITTE-PROBLEM-FIRST-METHODIK.
 
 KONTEXT (nur diese Daten verwenden):
 ${contextStr}
@@ -80,38 +80,23 @@ ${contextStr}
 STRENGE REGELN:
 1. Verwende NUR Informationen aus dem obigen Kontext
 2. Erfinde KEINE Fakten über die Person oder das Unternehmen
-3. Erwähne KEINE Budgets, Probleme oder Entscheidungen, die nicht belegt sind
-4. Erwähne KEINE konkreten Leistungszahlen (Prozente, Euro, Stückzahlen), es sei denn, sie sind explizit im Kontext belegt
-5. Unterscheide FACT (was belegt ist) von INTERPRETATION (was du daraus ableitest)
+3. Keine erfundenen Leistungszahlen
+4. STRENGSTES VERBOT: Beginne NIEMALS mit "wir haben erfahren", "ich habe gesehen", "ich habe zufällig gesehen", "wir freuen uns", "mit Interesse".
+5. ABSOLUTES FLOSKEL-VERBOT: Keine Floskeln wie "maßgeschneiderte Lösungen", "höchste Qualitätsstandards", "wir bieten Ihnen", "unser Portfolio", "innovative Lösungen", "zuverlässiger Partner".
+6. KEIN TERMIN-DRUCK: Frage NIEMALS nach einem Telefonat oder Termin ("Haben Sie 15 Minuten?", "Wollen wir telefonieren?", "Wann passt es für einen Call?").
 
-STRUKTUR (exakt diese Reihenfolge):
-1. ZEILE 1-2: DER TRIGGER — Starte mit dem konkreten Anlass. Was ist bei dieser Firma passiert? (z.B. "Ich habe gesehen, dass Sie bei [Firma] gerade [Trigger]...")
-2. ZEILE 3: DER SCHMERZPUNKT — Was bedeutet dieser Trigger konkret für das Unternehmen? Welche unsichtbare Herausforderung entsteht dadurch?
-3. ZEILE 4: DER MEHRWERT — Biete einen KONKRETEN, SOFORT NÜTZLICHEN Mehrwert an. KEIN "Gesprächsangebot". Stattdessen: eine Checkliste, ein Audit, eine Analyse, ein Template, ein Report. Etwas, das der Empfänger SOFORT verwenden kann.
-4. ZEILE 5: LEICHTER CTA — Kein "Haben Sie 15 Minuten für ein Gespräch?" Stattdessen: "Wäre ein kurzer Blick darauf für Sie hilfreich?" oder "Soll ich Ihnen die Checkliste zuschicken?"
-
-TONALITÄT:
-- Die Nachricht soll klingen wie ein glücklicher Zufall, KEIN Verkaufsgespräch
-- "Ich habe zufällig gesehen, dass..." statt "Wir bieten Ihnen an..."
-- Direkt, respektvoll, kurz. Wie eine Nachricht von einem informierten Kollegen, nicht von einem Verkäufer.
-- DER EMPFÄNGER SOLL SICH DENKEN: "Woher wissen die das? Genau DAS habe ich gerade nötig!"
-
-VERBOTEN:
-- KEIN "Wir sind eine führende Agentur..."
-- KEIN "Haben Sie 15 Minuten für ein Gespräch?"
-- KEIN "Lassen Sie uns einen Termin vereinbaren"
-- KEIN "Ich würde mich freuen, wenn..."
-- KEIN "Gerne stelle ich Ihnen unser Angebot vor"
-- KEIN Marketing-Blabla, KEINE KI-Floskeln wie "In der heutigen dynamischen Welt..."
-- KEINE Übertreibungen oder superlativen Eigenschaftswörter
-
-BEISPIEL (Trigger: Cloud-Migration, CTO als Ansprechpartner):
-"Guten Tag Herr [Name], bei [Firma] gerade auf AWS auszubauen und parallel neue Cloud-Entwickler einzustellen — bei solchen Migrationen von Legacy-Systemen entstehen extrem oft vorübergehende Sicherheitslücken in den API-Schnittstellen. Wir haben eine 48-Stunden Audit-Checkliste entwickelt, die speziell für diese kritische Phase konzipiert wurde. Soll ich Ihnen die Checkliste zuschicken?"
+STRUKTUR (EXAKT DIESE 5 SCHRITTE):
+Anrede: Persönlich ("Sehr geehrte(r) Frau/Herr [Nachname]," bzw. "Guten Tag Frau/Herr [Nachname],")
+1. TRIGGER: Starte direkt mit dem konkreten Fakt/Ereignis, belegt mit Quelle und Datum (z.B. "Sie planen [Projekt] – laut [Quelle] vom [Datum].")
+2. PROBLEM: Drei typische operative Engpässe, die daraus für den Entscheider in seiner Rolle entstehen ("Bei Vorhaben dieser Größenordnung entstehen für [Rolle] typischerweise drei Engpässe: [1], [2] und [3].")
+3. KONSEQUENZ: Was der Entscheider persönlich riskiert, wenn diese Engpässe ungeklärt bleiben (Zeitverlust im Projektplan, Budgetrisiko, interner Druck vor Vorstand/GF).
+4. LÖSUNG: Reiner Nutzen und messbares Ergebnis unseres Angebots, der diese Konsequenz verhindert (Fokus auf NUTZEN, KEINE Feature-Listen, keine Floskeln!).
+5. NÄCHSTER SCHRITT: Extrem niedrigschwellig und nützlich ("Ich schicke Ihnen dazu gerne eine kurze 1-seitige Übersicht / Checkliste – wäre das hilfreich?").
 
 Gib ein JSON zurück:
 {
   "subject": "Betreff-Zeile (kurz, konkret, TRIGGER-bezogen)",
-  "message": "Die vollständige Nachricht (max 5 Sätze)",
+  "message": "Die vollständige Nachricht mit den 5 Schritten (durch Absätze getrennt)",
   "used_facts": ["Liste der verwendeten Fakten"],
   "interpretations": ["Liste der Interpretationen"],
   "sources": ["Quellen für verwendete Fakten"]
