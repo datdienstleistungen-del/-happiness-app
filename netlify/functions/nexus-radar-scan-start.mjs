@@ -15,6 +15,7 @@
 import { createServerClient as createClient } from './_shared/supabase-client.mjs';
 import { searchDuckDuckGo as coreSearchDuckDuckGo } from './_shared/search-core.mjs';
 import { isBlockedUrl } from './_shared/url-rules.mjs';
+import { buildDachScanQueries } from './_shared/query-builder.mjs';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
@@ -229,41 +230,26 @@ export const handler = async (event) => {
       }
     }
 
-    const searchQuery = query || `${branche || ''} B2B Unternehmen Expansion`.trim();
+    // Offering-Daten und vorhandene nexus_signal_strategies laden (Phase 2A)
+    const { data: offering } = await userSupabase
+      .from('nexus_offerings')
+      .select('id, offering_name, target_audience, positioning, ai_understanding')
+      .eq('id', offering_id)
+      .maybeSingle();
 
-    // Kernwort aus der Branche ableiten (lange Phrasen liefern kaum Treffer)
-    const STOP = new Set(['im', 'in', 'der', 'die', 'das', 'und', 'für', 'fuer', 'mit', 'von', 'aus', 'am', 'an', 'zu', 'den', 'des', 'dem', 'bereich', 'branche', 'unternehmen', 'firmen', 'kunden']);
-    const words = (branche || '').split(/[,\s;-]+/).map(w => w.trim()).filter(w => w.length > 2 && !STOP.has(w.toLowerCase()));
-    const kw = words[0] || (searchQuery.trim().split(/\s+/)[0] || '');
-    const kwOk = kw.trim().length > 2;
-    console.log(`[ScanStart] Query: "${searchQuery}" | kw="${kw}"`);
+    const { data: signalStrategies } = await userSupabase
+      .from('nexus_signal_strategies')
+      .select('signal_category, trigger_name, search_queries, why_relevant')
+      .eq('offering_id', offering_id);
 
-    // DACH-Operatoren & Wirtschaftsmedien / Register
-    const DACH_SITE_OPERATOR = '(site:de OR site:at OR site:ch)';
-    const DACH_MEDIA_OPERATOR = '(site:presseportal.de OR site:openpr.de OR site:unternehmensregister.de OR site:handelsblatt.com OR site:wiwo.de OR site:manager-magazin.de OR site:bundesanzeiger.de OR site:northdata.de)';
+    const { newsQueries, ddgQueries, strategySource } = buildDachScanQueries({
+      offering,
+      signalStrategies: signalStrategies || [],
+      manualQuery: query,
+      branche
+    });
 
-    // Alle keyless-Quellen PARALLEL mit DACH-Fokus: Bing News (14d frisch, CC=DE) + DuckDuckGo (Web/PR/Jobs)
-    const newsQueries = kwOk
-      ? [
-          `${kw} expandiert (Deutschland OR Österreich OR Schweiz)`,
-          `${kw} stellt ein ${DACH_SITE_OPERATOR}`,
-          `${kw} ("Neubau" OR "Investition" OR "Erweiterung") ${DACH_SITE_OPERATOR}`
-        ]
-      : [`${searchQuery} ${DACH_SITE_OPERATOR}`];
-
-    // Echte, ungesperrte Stellen- und Wachstumsrecherchen statt blockierter Aggregatoren (DACH)
-    const hiringQueries = kwOk ? [
-      { q: `"${kw}" ("wir suchen" OR "Stellenangebote" OR "Karriere") ${DACH_SITE_OPERATOR} -site:stepstone.de -site:indeed.com -site:arbeitsagentur.de`, type: 'JOB_PORTAL' },
-      { q: `"${kw}" ("schafft neue Stellen" OR "baut Team aus" OR "stellt ein" OR "Personalaufbau") ${DACH_SITE_OPERATOR}`, type: 'NEWS' },
-      { q: `"${kw}" ("Head of" OR "Leiter" OR "Geschäftsführer" OR "Director") ("wir suchen" OR "Stellenanzeige") ${DACH_SITE_OPERATOR}`, type: 'JOB_PORTAL' }
-    ] : [];
-
-    const ddgQueries = [
-      { q: `"${kwOk ? kw : searchQuery}" (Investition OR Expansion OR Neubau OR Standort) ${DACH_SITE_OPERATOR}`, type: 'NEWS' },
-      { q: `"${kwOk ? kw : searchQuery}" ${DACH_MEDIA_OPERATOR}`, type: 'NEWS' },
-      ...hiringQueries,
-      ...(kwOk ? [{ q: `"${kw}" ${DACH_MEDIA_OPERATOR}`, type: 'NEWS' }] : [])
-    ];
+    console.log(`[ScanStart] Query-Strategie (${strategySource}): ${newsQueries.length} News-Queries, ${ddgQueries.length} Web-Queries`);
 
     const [newsSets, ddgSets] = await Promise.all([
       Promise.allSettled(newsQueries.map(q => searchBingNews(q, 8))),
@@ -305,8 +291,12 @@ export const handler = async (event) => {
     }
 
     // Synthetische URLs (nur barrierefreie Register-Quellen wie NorthData)
-    const syntheticUrls = kwOk ? [
-      { url: `https://www.northdata.de/suche?q=${encodeURIComponent(kw)}`, title: `NorthData Firmensuche: ${kw}`, source_type: 'REGISTER' }
+    const registerTerm = (offering?.target_audience || branche || query || 'Mittelstand')
+      .split(/[/,\s;-]+/)
+      .map(w => w.trim())
+      .filter(w => w.length > 2 && w.toLowerCase() !== 'b2b')[0] || 'Mittelstand';
+    const syntheticUrls = registerTerm ? [
+      { url: `https://www.northdata.de/suche?q=${encodeURIComponent(registerTerm)}`, title: `NorthData Firmensuche: ${registerTerm}`, source_type: 'REGISTER' }
     ] : [];
 
     // Mischung: News (M&A/Expansion) -> Web/PR/Jobs (organische Karriereseiten) -> Register, max. 22 Kandidaten

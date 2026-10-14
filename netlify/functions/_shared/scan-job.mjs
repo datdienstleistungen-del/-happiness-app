@@ -59,6 +59,28 @@ export function stripBoilerplate(text) {
   return [...kept, rest].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * Prüft vor dem LLM-Aufruf, ob eine Seite offensichtlich ungeeigneter
+ * Endverbraucher- oder Boulevard-Content ist (z.B. Schreibtisch-Testbericht,
+ * Heiratsantrag, Rezepte, Gutscheine), um unnötige LLM-Aufrufe einzusparen.
+ */
+export function isObviouslyIrrelevantPage(url, pageText) {
+  if (!url) return true;
+  try {
+    const urlLower = url.toLowerCase();
+    const NOISE_PATH_REGEX = /\/(testberichte?|produkttest|gutschein|rabatt|deals|gewinnspiel|heiratsantrag|horoskop|rezept|rezepte|promi|unterhaltung)\b/i;
+    if (NOISE_PATH_REGEX.test(urlLower)) return true;
+  } catch {}
+
+  if (pageText) {
+    const textLower = pageText.toLowerCase().slice(0, 1000);
+    if (/\b(unser fazit im test|ausführlicher testbericht|im praxistest|pro und contra|lieferumfang:|aufbau und montage)\b/i.test(textLower)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Exakte Kalendertagsprüfung nach gregorianischem Kalender:
 // Weist unmögliche Kalenderdaten wie 2026-09-31 oder 2026-02-31 strikt ab.
 export function parseStrictIsoDate(str) {
@@ -260,6 +282,43 @@ export async function processNextUrl(client, job) {
     };
   }
 
+  // Phase 2A Pre-Filter: Offensichtliche Verbrauchertests oder Boulevard vor LLM abfangen
+  if (isObviouslyIrrelevantPage(nextUrl.url, pageText)) {
+    const updatedPending = pendingUrls.slice(1);
+    const isDone = updatedPending.length === 0;
+    const last_message = `${domain} — kein B2B-Kaufanlass (Verbrauchertest/Boulevard übersprungen).`;
+    const newResults = [...partialResults, {
+      url: nextUrl.url,
+      title: nextUrl.title,
+      domain,
+      source_type: nextUrl.source_type || 'NEWS',
+      status: 'skipped',
+      analysis_status: 'skipped',
+      reason: 'obviously_irrelevant_consumer_content',
+      triggers: [],
+      extracted_at: new Date().toISOString()
+    }];
+    await client
+      .from('nexus_scan_jobs')
+      .update({
+        pending_urls: updatedPending,
+        partial_results: newResults,
+        current_step: job.current_step + 1,
+        last_message,
+        status: isDone ? 'done' : 'running',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', job.id);
+
+    return {
+      status: isDone ? 'done' : 'running',
+      current_step: job.current_step + 1,
+      total_steps: job.total_steps,
+      last_message,
+      partial_results: newResults
+    };
+  }
+
   // Baustelle 3: Offering-Kontext laden für Zielgruppen- und Käufer-Matching
   let offeringContext = '';
   if (job.offering_id) {
@@ -311,6 +370,23 @@ REGELN:
 8. BELEG-SATZ (EVIDENCE):
    - Zitiere im Feld "evidence" den konkreten 1-2 Sätze langen Textauszug aus dem Quelltext, der das Ereignis und das Datum belegt.
    - Ein Signal ohne belegbaren Satz oder ohne Datumsbezug im Text ist unzulässig!
+9. DACH-BEZUG-VERIFIKATION (WICHTIG - KEINE BLINDEN DOMAIN-ANNAHMEN):
+   Unterscheide strikt zwischen 4 Fällen und setze "dach_status":
+   - "DACH_HEADQUARTERS": Das Unternehmen hat seinen belegten Hauptsitz in Deutschland (DE), Österreich (AT) oder der Schweiz (CH).
+     * Nachweis durch: DACH-Rechtsform (GmbH, AG, GmbH & Co. KG, e.K. etc.), Registerangabe oder expliziten Standort im Text (z.B. "Fahrradhersteller Raymon aus Schweinfurt").
+   - "DACH_SUBSIDIARY": Ein ausländisches Unternehmen mit einer im Text belegten eigenständigen, operativen Niederlassung, Tochtergesellschaft oder lokalem Standort im DACH-Raum (z.B. "deutsche Tochtergesellschaft in Frankfurt", "eröffnet DACH-Büro in München").
+   - "FOREIGN_MENTIONED": Ein ausländisches Unternehmen OHNE belegten DACH-Standort, über dessen globales Produkt, globale Finanzierung oder Pressemitteilung lediglich in einem deutschsprachigen Medium berichtet wird (z.B. Shenzhen Timekettle mit US-Dollar-Preis auf deutschem Blog).
+   - "DACH_UNVERIFIED": Der Standort des Unternehmens lässt sich aus dem Quelltext nicht verifizieren (keine Rechtsform, kein Ort im DACH-Raum).
+   * ACHTUNG: Die Domainendung (.de, .at, .ch) der Nachrichtenseite beweist NIEMALS den Sitz des Unternehmens!
+   * Bei "FOREIGN_MENTIONED" oder "DACH_UNVERIFIED": Setze "target_group_match" auf unter 40 und "is_potential_buyer" auf false!
+10. DREISTUFIGE SIGNAL-TRENNUNG (EREIGNIS vs. CHANCE vs. KAUFABSICHT):
+   - "event_fact": Das tatsächliche, objektiv im Text belegte Ereignis (Was ist passiert? z.B. "Start eines neuen B2B-Shops im November 2026").
+   - "business_opportunity": Die daraus abgeleitete geschäftliche Chance für unser Angebot (Warum könnte Bedarf entstehen? Hypothese). Eine abgeleitete Chance ist KEINE belegte Kaufabsicht!
+   - "purchase_intent_status":
+     * "TRIGGER_EVENT": Konkreter operativer Veränderungsanlass (Expansion, Neubau, Systemwechsel, Führungswechsel), aber keine explizite Ausschreibung/Kaufabsicht geäußert.
+     * "EXPLICIT_INTENT": Das Unternehmen sucht im Text wörtlich nach einer Lösung/Software/Ausschreibung.
+     * "PURE_MENTION": Reiner PR-Artikel, Speaker-Auftritt (z.B. Keynote auf DMEXCO), allgemeine Produktwerbung, Thought-Leadership ohne konkretes Investitions-/Veränderungsereignis.
+   * REGEL: "PURE_MENTION" ist KEIN Kaufsignal! Wenn kein konkretes geschäftliches Veränderungsereignis vorliegt, setze "trigger_events": [].
 
 KAUFSIGNAL-KATEGORIEN:
 1. EXPANSION / NEUBAU — Neue Standorte, Werksneubau, Vergrößerung, Büros
@@ -341,7 +417,14 @@ Gib ein JSON zurück:
       "position": "Ziel-Entscheiderrolle (z.B. Geschäftsführung, Werkleiter, Head of Sales)",
       "kontakt": null,
       "quelle": "${nextUrl.url}",
-      "psychologische_ansprache": "Was ist der emotionale Zustand und unsichtbare Schmerz des Entscheiders?"
+      "psychologische_ansprache": "Was ist der emotionale Zustand und unsichtbare Schmerz des Entscheiders?",
+      "dach_status": "DACH_HEADQUARTERS | DACH_SUBSIDIARY | FOREIGN_MENTIONED | DACH_UNVERIFIED",
+      "company_hq_country": "DE | AT | CH | ANDERES | UNBEKANNT",
+      "company_hq_city": "Stadt des Sitzes oder null",
+      "dach_evidence": "Wörtlicher Belegsatz für den DACH-Sitz/Niederlassung",
+      "event_fact": "Objektiv belegtes Ereignis",
+      "business_opportunity": "Abgeleitete Chance (Hypothese)",
+      "purchase_intent_status": "TRIGGER_EVENT | EXPLICIT_INTENT | PURE_MENTION"
     }
   ]
 }`;
@@ -468,7 +551,7 @@ Gib ein JSON zurück:
   }
   const extracted = parseScanTriggers(llmResult.text);
 
-  // Baustelle 1 & 3: Platzhalter filtern, striktes Ereignisdatum (max. 60 Tage) und Zielgruppen-Match absichern
+  // Baustelle 1 & 3 + Phase 2A: Platzhalter filtern, DACH-Status prüfen, striktes Ereignisdatum (max. 60 Tage) und Kaufanlass absichern
   const cleanTriggers = (extracted.trigger_events || [])
     .filter(t => !isPlaceholderCompany(t.firmenname))
     .filter(t => {
@@ -480,6 +563,21 @@ Gib ein JSON zurück:
       // Belegbarkeit: Das Signal MUSS einen konkreten Belegsatz haben (mind. 10 Zeichen)
       const evidence = (t.evidence || t.beleg || '').trim();
       if (!evidence || evidence.length < 10) return false;
+
+      // Phase 2A: DACH-Verifikation: Nur verifizierte DACH-Hauptsitze oder DACH-Niederlassungen zulassen!
+      // Ausländische Unternehmen ohne DACH-Präsenz (FOREIGN_MENTIONED) oder unbestätigter Standort (DACH_UNVERIFIED) verwerfen
+      const dachStatus = t.dach_status;
+      if (dachStatus === 'FOREIGN_MENTIONED' || dachStatus === 'DACH_UNVERIFIED') {
+        return false;
+      }
+      if (dachStatus && dachStatus !== 'DACH_HEADQUARTERS' && dachStatus !== 'DACH_SUBSIDIARY') {
+        return false;
+      }
+
+      // Phase 2A: Kaufabsicht/Erwähnung: Reine PR-Erwähnungen ohne geschäftlichen Veränderungsanlass verwerfen
+      if (t.purchase_intent_status === 'PURE_MENTION') {
+        return false;
+      }
 
       return true;
     })
@@ -497,9 +595,28 @@ Gib ein JSON zurück:
         evidence: (t.evidence || t.beleg || '').trim(),
         target_group_match: matchScore,
         is_potential_buyer: !isKnownVendor && (t.is_potential_buyer !== false),
-        quelle: t.quelle || nextUrl.url
+        quelle: t.quelle || nextUrl.url,
+        // Phase 2A: Strukturierte Felder
+        dach_status: t.dach_status || 'DACH_UNVERIFIED',
+        company_hq_country: t.company_hq_country || null,
+        company_hq_city: t.company_hq_city || null,
+        dach_evidence: (t.dach_evidence || '').trim() || null,
+        event_fact: (t.event_fact || t.signal || '').trim(),
+        business_opportunity: (t.business_opportunity || t.relevanz || '').trim(),
+        purchase_intent_status: t.purchase_intent_status || 'TRIGGER_EVENT'
       };
     });
+
+  // Phase 2A: Deduplizierung innerhalb derselben Quellseite nach Firma + Event-Datum
+  const seenPageEvents = new Set();
+  const deduplicatedTriggers = [];
+  for (const t of cleanTriggers) {
+    const key = `${(t.firmenname || '').toLowerCase().trim()}::${t.event_date || ''}`;
+    if (!seenPageEvents.has(key)) {
+      seenPageEvents.add(key);
+      deduplicatedTriggers.push(t);
+    }
+  }
 
   const newResults = [...partialResults, {
     url: nextUrl.url,
@@ -508,15 +625,15 @@ Gib ein JSON zurück:
     source_type: nextUrl.source_type || 'NEWS',
     status: 'completed',
     analysis_status: 'completed',
-    triggers: cleanTriggers,
+    triggers: deduplicatedTriggers,
     extracted_at: new Date().toISOString()
   }];
 
   const updatedPending = pendingUrls.slice(1);
   const newStep = job.current_step + 1;
   const isDone = updatedPending.length === 0;
-  const message = cleanTriggers.length > 0
-    ? `${cleanTriggers.length} verifizierte Signale auf ${domain} gefunden.`
+  const message = deduplicatedTriggers.length > 0
+    ? `${deduplicatedTriggers.length} verifizierte Signale auf ${domain} gefunden.`
     : `${domain} — keine qualifizierten Signale erkannt.`;
 
   // B2-Bruecke: Treffer-Pending-Row fuer cron-evaluate (Phase 3b).

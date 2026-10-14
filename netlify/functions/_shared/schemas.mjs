@@ -144,11 +144,41 @@ export const businessEventSchema = z.object({
   evidence: z.string().nullable().catch(null),
 }).passthrough();
 
+// Scan-Trigger-Item-Schema (Phase 2A: DACH-Verifikation & Kaufanlass)
+export const scanTriggerItemSchema = z.object({
+  firmenname: z.string().catch('Unbekanntes Unternehmen'),
+  branche: z.string().catch('B2B'),
+  prioritaet: z.coerce.number().catch(1),
+  bewertung: z.string().catch(''),
+  signal: z.string().catch(''),
+  signal_kategorie: z.string().catch('EXPANSION'),
+  relevanz: z.string().catch(''),
+  target_group_match: z.coerce.number().catch(75),
+  is_potential_buyer: z.boolean().catch(true),
+  match_reason: z.string().catch(''),
+  event_date: z.string().nullable().catch(null),
+  published_at: z.string().nullable().catch(null),
+  evidence: z.string().catch(''),
+  ansprechpartner: z.string().nullable().catch(null),
+  position: z.string().nullable().catch(null),
+  kontakt: z.string().nullable().catch(null),
+  quelle: z.string().nullable().catch(null),
+  psychologische_ansprache: z.string().catch(''),
+  // Phase 2A: DACH-Verifikation (4 Stufen)
+  dach_status: z.enum(['DACH_HEADQUARTERS', 'DACH_SUBSIDIARY', 'FOREIGN_MENTIONED', 'DACH_UNVERIFIED']).catch('DACH_UNVERIFIED'),
+  company_hq_country: z.string().nullable().catch(null),
+  company_hq_city: z.string().nullable().catch(null),
+  dach_evidence: z.string().nullable().catch(null),
+  // Phase 2A: Dreistufige Signaltrennung (Fakt vs. Chance vs. Kaufabsicht)
+  event_fact: z.string().catch(''),
+  business_opportunity: z.string().catch(''),
+  purchase_intent_status: z.enum(['TRIGGER_EVENT', 'EXPLICIT_INTENT', 'PURE_MENTION']).catch('TRIGGER_EVENT')
+}).passthrough();
+
 // Scan-Extraktion (nexus-radar-scan-step): sichert, dass trigger_events ein
-// Array bleibt — die KI liefert sonst mal einen String/Objekt, der ungefiltert
-// in die DB-Spalte triggers wandern wuerde.
+// Array typisierter Triggerelemente bleibt.
 export const scanTriggerExtractionSchema = z.object({
-  trigger_events: z.array(z.record(z.unknown())).catch([]),
+  trigger_events: z.array(scanTriggerItemSchema).catch([]),
 });
 
 // Text -> { trigger_events: [...] }. Liefert Fallback-Objekt bei keinem Ergebnis.

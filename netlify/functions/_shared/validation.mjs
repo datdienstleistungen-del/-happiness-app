@@ -68,3 +68,57 @@ export function computeTargetMatchScore(companyName, rawScore = null) {
   return 75;
 }
 
+/**
+ * Normalisiert einen Firmennamen durch Entfernen von Rechtsformen und Sonderzeichen.
+ */
+export function normalizeCompanyName(name) {
+  if (!name || typeof name !== 'string') return '';
+  return name
+    .toLowerCase()
+    .replace(/\(?haftungsbeschr[äa]nkt\)?/gi, '')
+    .replace(/\b(gmbh\s*&\s*co\.?\s*kg|gmbh\s*&\s*co\s*kg|gmbh|ag|se|e\.?\s*k\.?|kg|ohg|ug|inc\.?|ltd\.?|corp\.?|llc)\b/gi, '')
+    .replace(/[^a-z0-9äöüß]+/gi, ' ')
+    .trim();
+}
+
+/**
+ * Dedupliziert Trigger-Listen auf Unternehmensebene:
+ * - Identische Ereignisse desselben Unternehmens (gleiches Datum/Kategorie) werden
+ *   zu 1 Reporteintrag zusammengeführt (Quellen und Scores aggregiert).
+ * - Unterschiedliche reale Ereignisse desselben Unternehmens bleiben als separate Signale erhalten.
+ */
+export function deduplicateAndMergeTriggers(rawTriggers) {
+  if (!Array.isArray(rawTriggers)) return [];
+  const map = new Map();
+
+  for (const item of rawTriggers) {
+    if (!item) continue;
+    const compNorm = normalizeCompanyName(item.company || item.firmenname);
+    if (!compNorm) continue;
+
+    const eventKey = `${item.event_date || ''}_${item.signal_kategorie || ''}`;
+    const compositeKey = `${compNorm}::${eventKey}`;
+
+    if (!map.has(compositeKey)) {
+      map.set(compositeKey, {
+        ...item,
+        all_sources: item.quelle ? [item.quelle] : []
+      });
+    } else {
+      const existing = map.get(compositeKey);
+      if (item.quelle && !existing.all_sources.includes(item.quelle)) {
+        existing.all_sources.push(item.quelle);
+      }
+      if ((item.target_group_match || 0) > (existing.target_group_match || 0)) {
+        existing.target_group_match = item.target_group_match;
+      }
+      if ((item.evidence || '').length > (existing.evidence || '').length) {
+        existing.evidence = item.evidence;
+      }
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => (a.prioritaet || 99) - (b.prioritaet || 99));
+}
+
+

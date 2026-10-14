@@ -4,7 +4,7 @@ import { Radar, Search, ArrowRight, Building2, AlertCircle, RefreshCw, Briefcase
 import { callContactIntelligence, runResearchPipeline } from '../lib/nexus-ai'
 import { trackRadarScan } from '../lib/nexus-analytics'
 import { supabase } from '../lib/supabase'
-import { isPlaceholderCompany, computeTargetMatchScore } from '../lib/nexus-validation'
+import { isPlaceholderCompany, computeTargetMatchScore, normalizeCompanyName, deduplicateAndMergeTriggers } from '../lib/nexus-validation'
 import { formatEventDate, extractDomain } from '../lib/nexus-dates'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import SetupWizard from '../components/SetupWizard'
@@ -12,6 +12,8 @@ import UpgradeModal from '../components/UpgradeModal'
 import { useLead } from '../context/LeadContext'
 import { useLanguage } from '../i18n/translations.jsx'
 import './NexusLeadRadarPage.css'
+
+export { normalizeCompanyName, deduplicateAndMergeTriggers }
 
 export default function NexusLeadRadarPage() {
   const { t, lang } = useLanguage()
@@ -512,8 +514,9 @@ export default function NexusLeadRadarPage() {
             })
         ).sort((a, b) => a.prioritaet - b.prioritaet);
 
-        setTriggers(allTriggers);
-        localStorage.setItem('nexus:radar_triggers', JSON.stringify(allTriggers));
+        const deduplicated = deduplicateAndMergeTriggers(allTriggers);
+        setTriggers(deduplicated);
+        localStorage.setItem('nexus:radar_triggers', JSON.stringify(deduplicated));
         return;
       }
 
@@ -630,9 +633,9 @@ export default function NexusLeadRadarPage() {
                   }
                 };
               })
-          ).sort((a, b) => a.prioritaet - b.prioritaet)
-
-          setTriggers(allTriggers)
+          ).sort((a, b) => a.prioritaet - b.prioritaet);
+          const deduplicated = deduplicateAndMergeTriggers(allTriggers);
+          setTriggers(deduplicated);
         }
 
         if (data.status === 'error') {
@@ -674,7 +677,7 @@ export default function NexusLeadRadarPage() {
                 };
               })
           ).sort((a, b) => a.prioritaet - b.prioritaet)
-          if (partialTriggers.length > 0) setTriggers(partialTriggers)
+          if (partialTriggers.length > 0) setTriggers(deduplicateAndMergeTriggers(partialTriggers));
         }
       } catch (e) {
         consecutiveFailures++
@@ -701,7 +704,8 @@ export default function NexusLeadRadarPage() {
 
   // CSV-Export für Signal-Reports (Productised Service)
   const handleExportCsv = () => {
-    const visibleTriggers = triggers.filter(t => {
+    const deduplicated = deduplicateAndMergeTriggers(triggers);
+    const visibleTriggers = deduplicated.filter(t => {
       const match = computeTargetMatchScore(t.company, t.target_group_match);
       if (radarFilter === 'relevant') return match >= 50;
       if (radarFilter === 'unclear') return match < 50;
