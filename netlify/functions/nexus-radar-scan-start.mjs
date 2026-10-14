@@ -8,12 +8,16 @@
  *    mischt und dedupliziert Kandidaten
  * 3. Legt nexus_scan_jobs-Eintrag an
  * 4. Gibt sofort { job_id, total_steps } zurück (<5s)
- *
- * Tavily ist bewusst entfernt (Keys geblockt: 402/432) — wird bei Bedarf wieder ergänzt.
+ * Kostenlose DACH-Recherche: Bing News RSS (de-DE, de-AT, de-CH) + DuckDuckGo + Brave Search API.
+ * Tavily ist vollständig aus dem Standardbetrieb entfernt.
  */
 
 import { createServerClient as createClient } from './_shared/supabase-client.mjs';
-import { searchDuckDuckGo as coreSearchDuckDuckGo } from './_shared/search-core.mjs';
+import {
+  searchDuckDuckGo as coreSearchDuckDuckGo,
+  searchBrave,
+  searchBingNewsRss
+} from './_shared/search-core.mjs';
 import { isBlockedUrl } from './_shared/url-rules.mjs';
 import { buildDachScanQueries } from './_shared/query-builder.mjs';
 
@@ -75,44 +79,53 @@ function decodeEntities(s) {
     .replace(/&gt;/g, '>');
 }
 
-// Bing News RSS (keyless) -> echte Unternehmens-News mit Original-Links, max. 14 Tage alt
-async function searchBingNews(query, maxResults = 10, timeoutMs = 3000) {
-  try {
-    const res = await fetchWithTimeout(
-      `https://www.bing.com/news/search?q=${encodeURIComponent(query)}&format=rss&count=${maxResults * 2}&cc=DE&setlang=de`,
-      { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' } },
-      timeoutMs
-    );
-    if (!res.ok) return [];
-    const xml = await res.text();
-    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
-    const cutoff = Date.now() - 14 * 24 * 3600 * 1000;
-    const out = [];
-    for (const it of items) {
-      const b = it[1];
-      const title = decodeEntities(((b.match(/<title>([\s\S]*?)<\/title>/) || [])[1] || '')).trim();
-      const link = decodeEntities(((b.match(/<link>([\s\S]*?)<\/link>/) || [])[1] || '')).trim();
-      const pub = (b.match(/<pubDate>([\s\S]*?)<\/pubDate>/) || [])[1] || '';
-      const ts = pub ? Date.parse(pub) : NaN;
-      if (!Number.isNaN(ts) && ts < cutoff) continue;
-      // Bing-Redirect: Original-URL im url-Param
-      let url = link;
-      try { const u = new URL(link); const real = u.searchParams.get('url'); if (real) url = real; } catch { /* keep */ }
-      if (!url.startsWith('http') || !title) continue;
-      if (!out.some(r => r.url === url)) out.push({ url, title });
-      if (out.length >= maxResults) break;
-    }
-    return out;
-  } catch (e) {
-    return [];
-  }
+// Bing News RSS (kostenlos, keyless) für DACH-Märkte (de-DE, de-AT, de-CH)
+async function searchBingNews(query, maxResults = 10, timeoutMs = 4000) {
+  const hits = await searchBingNewsRss(query, {
+    maxResults,
+    markets: ['de-DE', 'de-AT', 'de-CH'],
+    cutoffDays: 60,
+    timeoutMs
+  });
+  return hits.map(h => ({ url: h.url, title: h.title, published_date: h.published_date }));
 }
 
-// DDG via _shared/search-core.mjs (Chrome-UA statt generischem Bot-UA).
-// Shape bleibt { url, title } — Consumer speichern nur diese beiden Felder.
-async function searchDuckDuckGo(query, maxResults = 10, timeoutMs = 4000) {
-  const results = await coreSearchDuckDuckGo(query, { maxResults, timeoutMs });
-  return results.map(r => ({ url: r.url, title: r.title }));
+// Web-Suche mit kostenlosen & konformen Quellen:
+// 1. Brave Search API (falls serverseitig BRAVE_SEARCH_API_KEY konfiguriert ist)
+// 2. DuckDuckGo HTML-Suche (kostenlos, keyless)
+// 3. Bing News RSS Fallback für DACH-Märkte
+async function searchWebWithFallback(query, maxResults = 8, timeoutMs = 5000) {
+  // 1. Brave Search API (falls serverseitiger Key konfiguriert)
+  try {
+    const braveRes = await searchBrave(query, { maxResults, country: 'DE', timeoutMs: 3500 });
+    if (braveRes.ok && braveRes.results.length > 0) {
+      return braveRes.results.map(r => ({ url: r.url, title: r.title }));
+    }
+  } catch {}
+
+  // 2. DuckDuckGo HTML-Suche versuchen
+  try {
+    const ddgResults = await coreSearchDuckDuckGo(query, { maxResults, timeoutMs: 3500 });
+    if (ddgResults && ddgResults.length > 0) {
+      return ddgResults.map(r => ({ url: r.url, title: r.title }));
+    }
+  } catch {}
+
+  // 3. Bing News RSS Fallback für DACH-Märkte (de-DE, de-AT, de-CH)
+  try {
+    const cleanQ = query.replace(/\(site:[^)]+\)/gi, '').replace(/site:\S+/gi, '').replace(/[-+()]/g, ' ').trim();
+    const bingResults = await searchBingNewsRss(cleanQ || query, {
+      maxResults,
+      markets: ['de-DE', 'de-AT', 'de-CH'],
+      cutoffDays: 60,
+      timeoutMs: 3500
+    });
+    if (bingResults && bingResults.length > 0) {
+      return bingResults.map(r => ({ url: r.url, title: r.title }));
+    }
+  } catch {}
+
+  return [];
 }
 
 export const handler = async (event) => {
@@ -253,10 +266,10 @@ export const handler = async (event) => {
 
     const [newsSets, ddgSets] = await Promise.all([
       Promise.allSettled(newsQueries.map(q => searchBingNews(q, 8))),
-      // DDG leicht versetzt abfragen (429-Rate-Limit bei parallelen Anfragen)
+      // Web-Suche leicht versetzt abfragen (429-Rate-Limit bei parallelen Anfragen)
       Promise.allSettled(ddgQueries.map((d, i) => (async () => {
         if (i > 0) await new Promise(r => setTimeout(r, i * 350));
-        return searchDuckDuckGo(d.q, 8);
+        return searchWebWithFallback(d.q, 8);
       })()))
     ]);
 

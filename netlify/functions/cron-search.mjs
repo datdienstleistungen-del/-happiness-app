@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { getTavilyKeys, searchWithFallback } from './_shared/search-core.mjs';
+import { searchWithFallback } from './_shared/search-core.mjs';
 import { isBlockedUrl } from './_shared/url-rules.mjs';
 
 export async function handler(event, context) {
@@ -117,23 +117,15 @@ export async function handler(event, context) {
         continue;
       }
 
-      console.log(`B1 Cron: Starte Tavily Search für Offering ${offering.id} (${searchQueries.length} Queries)`);
+      console.log(`B1 Cron: Starte Web Search für Offering ${offering.id} (${searchQueries.length} Queries)`);
 
       try {
-        // 4. Tavily Deep Search (Datengewinnung mit Multi-Key Failover & DuckDuckGo
-        // Fallback) — Kette via _shared/search-core.mjs. Die _source-Labels
-        // bleiben identisch, weil sie in die DB geschrieben werden.
+        // 4. Web Search via _shared/search-core.mjs (Brave -> DuckDuckGo -> Bing News RSS)
         const allResults = [];
         for (const query of searchQueries.slice(0, 5)) { // Max 5 Queries pro Offering (Netlify Timeout)
           const { results } = await searchWithFallback(query, {
             maxResults: 5,
-            ddgResults: 5,
-            searchDepth: 'advanced',
-            includeRawContent: true,
-            daysBack: 7,
             timeoutMs: 5000,
-            tavilySource: 'Tavily Deep Search (B1 Cron)',
-            ddgSource: 'DuckDuckGo Search (B1 Fallback)',
           });
           allResults.push(...results);
         }
@@ -152,7 +144,7 @@ export async function handler(event, context) {
             offering_id: offering.id,
             url: r.url,
             url_hash: hash,
-            source: r._source || 'Tavily Deep Search (B1 Cron)',
+            source: r._source || 'Web Search (B1 Cron)',
             title: r.title || '',
             raw_content: r.content || r.snippet || '',
             published_at: r.published_date || null,

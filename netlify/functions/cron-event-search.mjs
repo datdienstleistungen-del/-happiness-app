@@ -5,7 +5,7 @@
  *
  * Flow:
  * 1. Event-Type → Suchstrategien (LLM)
- * 2. Suchstrategien → Tavily Search (max 10 Queries)
+ * 2. Suchstrategien → Web Search (Brave / DDG / Bing News RSS)
  * 3. Rohdaten → nexus_raw_events (URL-Hash + Content-Hash Dedup)
  * 4. nexus_raw_events → Event Extraction (LLM)
  * 5. Extrahierte Events → nexus_events (Entity Resolution)
@@ -17,7 +17,7 @@
 import crypto from 'crypto';
 import { callLLM } from './_shared/llm-core.mjs';
 import { extractJson } from './_shared/schemas.mjs';
-import { getTavilyKeys, tavilySearch, searchDuckDuckGo } from './_shared/search-core.mjs';
+import { searchWithFallback } from './_shared/search-core.mjs';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
@@ -78,15 +78,6 @@ Zeitraum: Letzte 30 Tage`
   }
 }
 
-// --- Tavily Search ---
-
-async function searchTavily(query, maxResults = 5) {
-  for (const key of getTavilyKeys()) {
-    const out = await tavilySearch(query, key, { maxResults, searchDepth: 'basic', includeRawContent: false, daysBack: 30 });
-    if (out.ok) return out.results;
-  }
-  return [];
-}
 
 // --- Content Hash ---
 
@@ -162,7 +153,7 @@ export async function handler(event) {
 
     console.log(`[Event Search] ${strategies.length} strategies generated`);
 
-    // 2. Tavily Search (max 10 Queries)
+    // 2. Web Search via _shared/search-core.mjs (Brave -> DuckDuckGo -> Bing News RSS)
     const allResults = [];
     const maxQueries = Math.min(strategies.length, 10);
 
@@ -170,10 +161,7 @@ export async function handler(event) {
       const query = strategies[i].query;
       console.log(`[Event Search] Query ${i + 1}/${maxQueries}: ${query}`);
 
-      let results = await searchTavily(query, 5);
-      if (results.length === 0) {
-        results = await searchDuckDuckGo(query, { maxResults: 5 });
-      }
+      const { results } = await searchWithFallback(query, { maxResults: 5 });
       allResults.push(...results.map(r => ({ ...r, _query: query })));
     }
 

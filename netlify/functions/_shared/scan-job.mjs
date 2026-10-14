@@ -31,8 +31,14 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
 async function fetchPageText(url) {
   try {
     const res = await fetchWithTimeout(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NeXusBot/1.0)' }
-    }, 4000);
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    }, 4500);
     if (!res.ok) return null;
     const html = await res.text();
     const text = stripBoilerplate(html
@@ -433,12 +439,12 @@ Gib ein JSON zurück:
   let llmResult = null;
   let llmError = null;
   const maxAttempts = 2;
-  const stepBudgetMs = 12000;
+  const stepBudgetMs = 22000;
   const stepDeadline = Date.now() + stepBudgetMs;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const remainingBudget = stepDeadline - Date.now();
-    if (remainingBudget < 2000) break;
+    if (remainingBudget < 3000) break;
 
     try {
       llmResult = await callLLM([
@@ -449,7 +455,7 @@ Gib ein JSON zurück:
         temperature: 0.3,
         max_tokens: 2000,
         jsonMode: true,
-        totalBudgetMs: Math.min(remainingBudget - 500, 9000),
+        totalBudgetMs: Math.min(remainingBudget - 500, 18000),
         xTitle: 'NeXus Research'
       });
       if (llmResult?.text) {

@@ -2,7 +2,7 @@
  * NeXus Standalone Email Pattern Crawler & Contact Intelligence
  * 
  * Eigenständiger On-Demand Crawler (kein Fremd-API wie Hunter/Clearbit, kostenlos):
- * 1. Domain-Auflösung via Tavily Search
+ * 1. Domain-Auflösung via Web Search (Brave / DDG)
  * 2. Seiten-Crawl mit Cheerio (/impressum, /kontakt, /team, /about, /leadership, etc.)
  * 3. E-Mail-Extraktion (Regex + mailto:)
  * 4. Muster-Ableitung (vorname.nachname, v.nachname, vornamenachname, etc.)
@@ -13,7 +13,7 @@
 
 import * as cheerio from 'cheerio';
 import { resolveCompanyWebsite, SKIP_DOMAINS } from './nexus-domain-discovery.mjs';
-import { getTavilyKeys, tavilySearch } from './_shared/search-core.mjs';
+import { searchBrave, searchDuckDuckGo } from './_shared/search-core.mjs';
 
 const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
 
@@ -201,7 +201,7 @@ export function extractPersonsFromHtml(html, pageUrl) {
 }
 
 /**
- * 2. Seiten-Crawl der Firmendomain (Direct Fetch + Fallback Tavily Snippet Inspection)
+ * 2. Seiten-Crawl der Firmendomain (Direct Fetch + Fallback Web Snippet Inspection)
  */
 export async function crawlDomainPages(domain) {
   if (!domain) return { pages: [], rawEmails: [], extractedPersons: [] };
@@ -296,23 +296,23 @@ export async function crawlDomainPages(domain) {
   const domainBlocked = isDirectBlocked && directSuccessful.length === 0;
   let fallbackSource = null;
   let isFallbackUsed = false;
-  const tavilyKeys = getTavilyKeys();
 
-  if (directSuccessful.length === 0 && tavilyKeys.length > 0 && !cleanDomain.includes('fake') && !cleanDomain.includes('nonexistent') && !crawledPages.every(p => p.status === 0)) {
+  if (directSuccessful.length === 0 && !cleanDomain.includes('fake') && !cleanDomain.includes('nonexistent') && !crawledPages.every(p => p.status === 0)) {
     try {
       console.log(`[EmailCrawler] Direct fetch eingeschränkt${domainBlocked ? ' (Bot-Schutz/429 erkannt)' : ''}. Starte sekundäre Analyse für: ${cleanDomain}`);
-      let tavilyResults = [];
-      for (const key of tavilyKeys) {
-        const out = await tavilySearch(`site:${cleanDomain} email OR kontakt OR impressum OR contact`, key, {
-          maxResults: 5, searchDepth: 'basic', includeRawContent: false, timeoutMs: 6000
-        });
-        if (out.ok) { tavilyResults = out.results; break; }
+      let searchResults = [];
+      const braveHit = await searchBrave(`site:${cleanDomain} email OR kontakt OR impressum OR contact`, { maxResults: 5, timeoutMs: 5000 });
+      if (braveHit.ok && braveHit.results.length > 0) {
+        searchResults = braveHit.results;
+      } else {
+        const ddgHit = await searchDuckDuckGo(`site:${cleanDomain} email OR kontakt OR impressum OR contact`, { maxResults: 5, timeoutMs: 5000 });
+        if (ddgHit.length > 0) searchResults = ddgHit;
       }
 
-      if (tavilyResults.length > 0) {
+      if (searchResults.length > 0) {
           isFallbackUsed = true;
           const fallbackHostnames = new Set();
-          for (const r of tavilyResults) {
+          for (const r of searchResults) {
             try {
               const u = new URL(r.url);
               fallbackHostnames.add(u.hostname.replace(/^www\./, ''));
@@ -658,10 +658,20 @@ export async function findTargetPerson(companyName, domain, targetRoleOrName, ex
   // Ist targetRoleOrName bereits ein konkreter Vor- und Nachname? (z.B. "Bastian Nominacher", "Hanno Renner")
   const isDirectName = targetRoleOrName.trim().split(/\s+/).length >= 2 && !/(head|ceo|director|manager|leiter|vorstand|sales|vp|marketing|founder|gründer|cfo|cto|coo|cro)/i.test(targetRoleOrName);
 
-  // PRIORITY 2: Externe Tavily-Suche als Fallback (mit strikter Domain-Verifikation)
-  const tavilyKeys = getTavilyKeys();
-  if (tavilyKeys.length === 0) {
-    if (isDirectName) {
+  // PRIORITY 2: Externe Web-Suche als Fallback (Brave / DuckDuckGo mit strikter Domain-Verifikation)
+  const roleQuery = targetRoleOrName;
+
+  try {
+    let data = { results: [] };
+    const braveHit = await searchBrave(`"${companyName}" ${roleQuery} LinkedIn`, { maxResults: 6, timeoutMs: 5000 });
+    if (braveHit.ok && braveHit.results.length > 0) {
+      data = { results: braveHit.results };
+    } else {
+      const ddgHit = await searchDuckDuckGo(`"${companyName}" ${roleQuery} LinkedIn`, { maxResults: 6, timeoutMs: 5000 });
+      if (ddgHit.length > 0) data = { results: ddgHit };
+    }
+
+    if (data.results.length === 0 && isDirectName) {
       return {
         name: targetRoleOrName.trim(),
         role: 'Entscheider / Ansprechpartner',
@@ -669,19 +679,6 @@ export async function findTargetPerson(companyName, domain, targetRoleOrName, ex
         person_source: 'user_input',
         role_match: 'exact'
       };
-    }
-    return null;
-  }
-
-  const roleQuery = targetRoleOrName;
-
-  try {
-    let data = { results: [] };
-    for (const key of tavilyKeys) {
-      const out = await tavilySearch(`"${companyName}" ${roleQuery} LinkedIn`, key, {
-        maxResults: 6, searchDepth: 'basic', includeRawContent: false, timeoutMs: 6000
-      });
-      if (out.ok) { data = { results: out.results }; break; }
     }
 
     if (data.results.length > 0) {

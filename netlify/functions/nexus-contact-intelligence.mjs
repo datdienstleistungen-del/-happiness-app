@@ -13,7 +13,7 @@
  */
 
 import { callLLM as callProviderChain } from './_shared/llm-core.mjs';
-import { searchDuckDuckGo as ddgSearch, getTavilyKeys, tavilySearch } from './_shared/search-core.mjs';
+import { searchDuckDuckGo as ddgSearch, searchBrave, searchBingNewsRss } from './_shared/search-core.mjs';
 
 import { createClient } from '@supabase/supabase-js';
 import { resolveCompanyWebsite, getGoogleCseQuotaStatus } from './nexus-domain-discovery.mjs';
@@ -311,7 +311,7 @@ async function discoverEmailFromWebsite(domain, personFirstName, personLastName)
 }
 
 // ============================================================================
-// WEB SEARCH (Tavily → DuckDuckGo → SearXNG)
+// WEB SEARCH (Brave → DuckDuckGo → SearXNG)
 // ============================================================================
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
@@ -327,23 +327,17 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
   }
 }
 
-async function searchTavily(query) {
-  // Multi-Key (inkl. VITE_TAVILY_API_KEY) via _shared/search-core.mjs
-  for (const key of getTavilyKeys()) {
-    const out = await tavilySearch(query, key, {
-      maxResults: 5,
-      searchDepth: 'basic',
-      includeRawContent: false,
-      timeoutMs: 5000,
-    });
-    if (out.ok) {
-      return out.results.map(r => ({
+async function searchBraveHelper(query) {
+  try {
+    const res = await searchBrave(query, { maxResults: 5, timeoutMs: 5000 });
+    if (res.ok && res.results.length > 0) {
+      return res.results.map(r => ({
         url: r.url,
         title: r.title || '',
         snippet: r.content || ''
       }));
     }
-  }
+  } catch {}
   return null;
 }
 
@@ -376,9 +370,8 @@ async function searchSearXNG(query) {
 }
 
 async function webSearch(query) {
-  // Tavily first (most reliable from cloud servers)
-  const tavily = await searchTavily(query);
-  if (tavily?.length > 0) return tavily;
+  const brave = await searchBraveHelper(query);
+  if (brave?.length > 0) return brave;
   
   const ddg = await searchDuckDuckGo(query);
   if (ddg?.length > 0) return ddg;

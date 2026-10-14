@@ -1,7 +1,7 @@
 // ── Multi-Provider Fallback Chain (via _shared/llm-core.mjs) ──
 import { runEmailPatternCrawler } from './nexus-email-crawler.mjs';
 import { callLLM } from './_shared/llm-core.mjs';
-import { getTavilyKeys, tavilySearch, searchDuckDuckGo as coreSearchDuckDuckGo } from './_shared/search-core.mjs';
+import { searchBrave, searchDuckDuckGo as coreSearchDuckDuckGo, searchBingNewsRss } from './_shared/search-core.mjs';
 import { tryConsumeHourly, hourKey, checkDailyTokenBudget, recordTokenUsage } from './_shared/quota.mjs';
 
 async function fetchWithTimeout(url, options, timeoutMs = 20000) {
@@ -111,28 +111,20 @@ async function callAI(messages, temperature = 0.3, hasImage = false, testOptions
   return { text, provider: result.provider, model: result.model, usage: result.usage ?? null, tier, totalDurationMs };
 }
 
-// ── Web Search mit Fallback-Kette: Tavily -> DuckDuckGo -> Brave -> SearXNG ──
+// ── Web Search mit Fallback-Kette: Brave -> DuckDuckGo -> Bing News RSS -> SearXNG ──
 
-// Tavily via _shared/search-core.mjs (Multi-Key inkl. VITE-Alias).
-// Fix: die alte Version referenzierte das undefinierte BACKUP_TAVILY und
-// war damit als erste Stufe stillschweigend IMMER defekt.
-async function tryTavilySearch(query) {
-  for (const key of getTavilyKeys()) {
-    const out = await tavilySearch(query, key, {
-      maxResults: 6,
-      searchDepth: 'basic',
-      includeRawContent: false,
-      timeoutMs: 10000,
-    });
-    if (out.ok) {
-      return out.results.map(r => ({
-        url: r.url,
-        title: r.title,
-        snippet: r.content || ''
-      }));
+// Brave Search API via _shared/search-core.mjs (kostenloses monatliches Freikontingent)
+async function tryBraveSearch(query) {
+  try {
+    const res = await searchBrave(query, { maxResults: 5, timeoutMs: 6000 });
+    if (res.ok && res.results.length > 0) {
+      return res.results.map(r => ({ url: r.url, title: r.title, snippet: r.content || '' }));
     }
+    return null;
+  } catch (e) {
+    console.warn("[Search] Brave failed:", e.message);
+    return null;
   }
-  return null;
 }
 
 // DuckDuckGo via _shared/search-core.mjs (identisches HTML-Parsing).
@@ -145,6 +137,21 @@ async function tryDuckDuckGo(query) {
     return null;
   } catch (e) {
     console.warn("[Search] DuckDuckGo failed:", e.message);
+    return null;
+  }
+}
+
+// Bing News RSS via _shared/search-core.mjs (keyless DACH).
+async function tryBingNews(query) {
+  try {
+    const cleanQ = query.replace(/\(site:[^)]+\)/gi, '').replace(/site:\S+/gi, '').replace(/[-+()]/g, ' ').trim();
+    const hits = await searchBingNewsRss(cleanQ || query, { maxResults: 6, timeoutMs: 6000 });
+    if (hits.length > 0) {
+      return hits.map(r => ({ url: r.url, title: r.title, snippet: r.content || '' }));
+    }
+    return null;
+  } catch (e) {
+    console.warn("[Search] Bing News RSS failed:", e.message);
     return null;
   }
 }
@@ -171,36 +178,14 @@ async function trySearXNG(query) {
   return null;
 }
 
-async function tryBraveSearch(query) {
-  const key = process.env.BRAVE_API_KEY;
-  if (!key) return null;
-  try {
-    const { res, timer } = await fetchWithTimeout(
-      `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=5`,
-      { headers: { 'Accept': 'application/json', 'Accept-Encoding': 'gzip', 'X-Subscription-Token': key } },
-      8000
-    );
-    clearTimeout(timer);
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (data.web && data.web.results && data.web.results.length > 0) {
-      return data.web.results.slice(0, 5).map(r => ({ url: r.url, title: r.title, snippet: r.description || '' }));
-    }
-    return null;
-  } catch (e) {
-    console.warn("[Search] Brave failed:", e.message);
-    return null;
-  }
-}
-
 async function webSearch(query) {
   console.log(`[Search] Searching: "${query}"`);
   
-  // 1. Tavily (Top Precision & Speed)
-  const tavilyResults = await tryTavilySearch(query);
-  if (tavilyResults && tavilyResults.length > 0) {
-    console.log(`[Search] Tavily: ${tavilyResults.length} results for "${query}"`);
-    return tavilyResults;
+  // 1. Brave (Brave Search API mit Free-Credit)
+  const braveResults = await tryBraveSearch(query);
+  if (braveResults && braveResults.length > 0) {
+    console.log(`[Search] Brave: ${braveResults.length} results for "${query}"`);
+    return braveResults;
   }
   
   // 2. DuckDuckGo
@@ -209,12 +194,12 @@ async function webSearch(query) {
     console.log(`[Search] DuckDuckGo: ${ddgResults.length} results for "${query}"`);
     return ddgResults;
   }
-  
-  // 3. Brave
-  const braveResults = await tryBraveSearch(query);
-  if (braveResults && braveResults.length > 0) {
-    console.log(`[Search] Brave: ${braveResults.length} results for "${query}"`);
-    return braveResults;
+
+  // 3. Bing News RSS (DACH)
+  const bingResults = await tryBingNews(query);
+  if (bingResults && bingResults.length > 0) {
+    console.log(`[Search] Bing News RSS: ${bingResults.length} results for "${query}"`);
+    return bingResults;
   }
 
   // 4. SearXNG

@@ -1,31 +1,154 @@
 // ============================================================================
-// NeXus _shared/search-core.mjs — Recherche-Primitives (Phase 2)
-// Buedelt die 7x kopierte DuckDuckGo-HTML-Parsing-Funktion und die
-// Tavily-Multi-Key-Aufrufe (bisher cron-search, cron-event-search,
-// nexus-research, nexus-llm, coach-chat, nexus-contact-intelligence, ...).
+// NeXus _shared/search-core.mjs — Recherche-Primitives
+// (Phase 2 & Phase 3: Kostenlose Suchquellen & Tavily-Entfernung)
+//
+// Primärquellen:
+// 1. Jiro Search (Evaluierung: Python-Laufzeit auf Netlify Node nicht nativ ausführbar)
+// 2. Brave Search API (serverseitig via BRAVE_SEARCH_API_KEY / BRAVE_API_KEY, $5/Monat Freikontingent)
+// 3. DuckDuckGo HTML-Suche (keyless, kostenlos)
+// 4. Bing News RSS (keyless, kostenlos, DACH-Märkte: de-DE, de-AT, de-CH)
+//
+// Tavily ist VOLLSTÄNDIG aus dem Standardbetrieb entfernt und standardmäßig
+// deaktiviert (darf nur bei explizitem ENABLE_TAVILY_EMERGENCY_FALLBACK=true laufen).
 // ============================================================================
 import { tryConsumeDaily, tavilyDailyLimit, dayKey, keyFingerprint } from './quota.mjs';
 
-// Tavily-Key-Pool (Multi-Key Failover). Reihenfolge = Prioritaet.
-// VITE_TAVILY_API_KEY als letzte Option: historischer Alias einiger Functions.
-export function getTavilyKeys() {
-  return [
-    process.env.TAVILY_API_KEY,
-    process.env.TAVILY_API_KEY_2,
-    process.env.TAVILY_API_KEY_3,
-    process.env.VITE_TAVILY_API_KEY,
-  ].filter(Boolean);
+function decodeEntities(s) {
+  if (!s || typeof s !== 'string') return '';
+  return s
+    .replace(/<!\[CDATA\[|\]\]>/g, '')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
 }
 
-// DuckDuckGo HTML-Suche (keyless). Liefert IMMER ein Array ([] bei Fehler).
-// Ergebnis-Shape kanonisch: { url, title, content, published_date }.
+// ----------------------------------------------------------------------------
+// 1. BRAVE SEARCH API (Kostenlose $5/Monat Freikredits ~ 1.000 Anfragen/Monat)
+// ----------------------------------------------------------------------------
+export async function searchBrave(query, {
+  maxResults = 5,
+  country = 'DE',
+  searchLang = 'de',
+  timeoutMs = 6000
+} = {}) {
+  const key = process.env.BRAVE_SEARCH_API_KEY || process.env.BRAVE_API_KEY;
+  if (!key) {
+    return { ok: false, results: [], error: 'no_key' };
+  }
+
+  try {
+    const url = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=${maxResults}&country=${country}&search_lang=${searchLang}`;
+    const res = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'Accept-Encoding': 'gzip',
+        'X-Subscription-Token': key
+      },
+      signal: AbortSignal.timeout(timeoutMs)
+    });
+
+    if (res.status === 429) {
+      console.warn('[SearchCore] Brave Search API Rate Limit (429) erreicht.');
+      return { ok: false, results: [], error: 'rate_limit' };
+    }
+
+    if (!res.ok) {
+      console.warn(`[SearchCore] Brave Search API Fehler HTTP ${res.status}`);
+      return { ok: false, results: [], error: `http_${res.status}` };
+    }
+
+    const data = await res.json();
+    const results = (data?.web?.results || []).map(r => ({
+      url: r.url,
+      title: r.title || '',
+      content: r.description || '',
+      published_date: r.page_age || new Date().toISOString()
+    }));
+
+    return { ok: results.length > 0, results, error: results.length > 0 ? null : 'empty' };
+  } catch (e) {
+    const isTimeout = e?.name === 'TimeoutError' || e?.name === 'AbortError';
+    console.warn('[SearchCore] Brave Search Exception:', isTimeout ? 'timeout' : e.message);
+    return { ok: false, results: [], error: isTimeout ? 'timeout' : 'network' };
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 2. BING NEWS RSS (Keyless, kostenlos, DACH-Märkte de-DE, de-AT, de-CH)
+// ----------------------------------------------------------------------------
+export async function searchBingNewsRss(query, {
+  maxResults = 10,
+  markets = ['de-DE', 'de-AT', 'de-CH'],
+  cutoffDays = 60,
+  timeoutMs = 5000
+} = {}) {
+  const cutoff = Date.now() - cutoffDays * 24 * 3600 * 1000;
+  const allHits = [];
+  const seenUrls = new Set();
+
+  for (const mkt of markets) {
+    try {
+      const url = `https://www.bing.com/news/search?q=${encodeURIComponent(query)}&format=rss&count=${maxResults * 2}&mkt=${mkt}&setlang=de`;
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' },
+        signal: AbortSignal.timeout(timeoutMs)
+      });
+      if (!res.ok) continue;
+
+      const xml = await res.text();
+      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+
+      for (const it of items) {
+        const b = it[1];
+        const title = decodeEntities(((b.match(/<title>([\s\S]*?)<\/title>/) || [])[1] || '')).trim();
+        const rawLink = decodeEntities(((b.match(/<link>([\s\S]*?)<\/link>/) || [])[1] || '')).trim();
+        const pub = (b.match(/<pubDate>([\s\S]*?)<\/pubDate>/) || [])[1] || '';
+        const desc = decodeEntities(((b.match(/<description>([\s\S]*?)<\/description>/) || [])[1] || '')).trim();
+
+        const ts = pub ? Date.parse(pub) : NaN;
+        if (!Number.isNaN(ts) && ts < cutoff) continue;
+
+        let realUrl = rawLink;
+        try {
+          const u = new URL(rawLink);
+          const target = u.searchParams.get('url');
+          if (target) realUrl = target;
+        } catch {}
+
+        if (!realUrl.startsWith('http') || !title) continue;
+        if (!seenUrls.has(realUrl)) {
+          seenUrls.add(realUrl);
+          allHits.push({
+            url: realUrl,
+            title,
+            content: desc,
+            published_date: !Number.isNaN(ts) ? new Date(ts).toISOString().slice(0, 10) : null,
+            market: mkt
+          });
+        }
+        if (allHits.length >= maxResults) break;
+      }
+    } catch {
+      // Feed-Fehler abfangen und nächsten Markt versuchen
+    }
+    if (allHits.length >= maxResults) break;
+  }
+
+  return allHits;
+}
+
+// ----------------------------------------------------------------------------
+// 3. DUCKDUCKGO HTML-SUCHE (Keyless, kostenlos)
+// ----------------------------------------------------------------------------
 export async function searchDuckDuckGo(query, { maxResults = 10, timeoutMs = 6000 } = {}) {
   try {
     const res = await fetch(
       `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
       {
-        // Chrome-UA (DDG blockt generische Bots zuverlaessiger)
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' },
         signal: AbortSignal.timeout(timeoutMs),
       }
     );
@@ -58,19 +181,37 @@ export async function searchDuckDuckGo(query, { maxResults = 10, timeoutMs = 600
   }
 }
 
-// Einzelner Tavily-Call. Liefert { ok, results, error? } — wirft nie.
-// Phase 5b (Quota): pro Key ein Tagesbudget (TAVILY_DAILY_LIMIT, Default 30).
-// Ueberschritten -> { ok:false, error:'quota' }, die Kette faellt automatisch
-// auf den naechsten Key bzw. DuckDuckGo durch.
+// ----------------------------------------------------------------------------
+// 4. TAVILY — VOLLSTÄNDIG AUS DEM STANDARDBETRIEB ENTFERNT
+// Nur als explizit deaktivierter Notfall-Fallback erhalten.
+// ----------------------------------------------------------------------------
+export function getTavilyKeys() {
+  if (process.env.ENABLE_TAVILY_EMERGENCY_FALLBACK !== 'true') {
+    return [];
+  }
+  return [
+    process.env.TAVILY_API_KEY,
+    process.env.TAVILY_API_KEY_2,
+    process.env.TAVILY_API_KEY_3,
+    process.env.VITE_TAVILY_API_KEY,
+  ].filter(Boolean);
+}
+
 export async function tavilySearch(query, key, {
   maxResults = 5,
-  searchDepth = 'advanced',
-  includeRawContent = true,
+  searchDepth = 'basic',
+  includeRawContent = false,
   daysBack = null,
   includeDomains = null,
   excludeDomains = null,
   timeoutMs = 5000,
 } = {}) {
+  // Streng deaktiviert im Standardbetrieb (Phase 2)
+  if (process.env.ENABLE_TAVILY_EMERGENCY_FALLBACK !== 'true') {
+    return { ok: false, results: [], error: 'tavily_disabled' };
+  }
+  if (!key) return { ok: false, results: [], error: 'no_key' };
+
   const quota = await tryConsumeDaily(`tavily:${keyFingerprint(key)}:${dayKey()}`, tavilyDailyLimit());
   if (!quota.allowed) {
     console.warn(`[SearchCore] Tavily-Quota erreicht (${quota.used}/${quota.limit} heute) — Key wird uebersprungen.`);
@@ -98,29 +239,48 @@ export async function tavilySearch(query, key, {
   }
 }
 
-// Komplette Kette: alle Tavily-Keys der Reihe nach, dann DuckDuckGo-Fallback.
-// Liefert { results, source } mit source = 'tavily' | 'ddg' | null.
-// _source-Labels sind konfigurierbar, weil sie in die DB geschrieben werden.
+// ----------------------------------------------------------------------------
+// 5. STANDARD FALLBACK-KETTE: Brave -> DuckDuckGo -> Bing News RSS
+// (Tavily ist standardmäßig nicht in der Kette)
+// ----------------------------------------------------------------------------
 export async function searchWithFallback(query, {
   maxResults = 5,
-  ddgResults = 5,
-  searchDepth = 'advanced',
-  includeRawContent = true,
-  daysBack = null,
+  country = 'DE',
   timeoutMs = 5000,
-  tavilySource = 'Tavily Deep Search',
-  ddgSource = 'DuckDuckGo Search (Fallback)',
+  includeBingNews = true
 } = {}) {
-  const keys = getTavilyKeys();
-  for (const key of keys) {
-    const out = await tavilySearch(query, key, { maxResults, searchDepth, includeRawContent, daysBack, timeoutMs });
-    if (out.ok) {
-      return { results: out.results.map((r) => ({ ...r, _source: tavilySource })), source: 'tavily' };
+  // 1. Quelle: Jiro Search (Evaluierung: Python-Laufzeit auf Netlify Node nicht nativ lauffähig)
+  // 2. Quelle: Brave Search API (falls serverseitiger API-Key konfiguriert)
+  const brave = await searchBrave(query, { maxResults, country, timeoutMs });
+  if (brave.ok && brave.results.length > 0) {
+    return { results: brave.results.map((r) => ({ ...r, _source: 'Brave Search API' })), source: 'brave' };
+  }
+
+  // 3. Quelle: DuckDuckGo HTML-Suche (kostenlos, keyless)
+  const ddg = await searchDuckDuckGo(query, { maxResults, timeoutMs });
+  if (ddg.length > 0) {
+    return { results: ddg.map((r) => ({ ...r, _source: 'DuckDuckGo Search' })), source: 'ddg' };
+  }
+
+  // 4. Quelle: Bing News RSS (kostenlos, keyless, DACH-Märkte)
+  if (includeBingNews) {
+    const cleanQ = query.replace(/\(site:[^)]+\)/gi, '').replace(/site:\S+/gi, '').replace(/[-+()]/g, ' ').trim();
+    const bing = await searchBingNewsRss(cleanQ || query, { maxResults, markets: ['de-DE', 'de-AT', 'de-CH'], timeoutMs });
+    if (bing.length > 0) {
+      return { results: bing.map((r) => ({ ...r, _source: 'Bing News RSS' })), source: 'bing_news' };
     }
   }
-  const ddg = await searchDuckDuckGo(query, { maxResults: ddgResults });
-  if (ddg.length > 0) {
-    return { results: ddg.map((r) => ({ ...r, _source: ddgSource })), source: 'ddg' };
+
+  // 5. Notfall-Fallback: Tavily — NUR wenn explizit per ENABLE_TAVILY_EMERGENCY_FALLBACK=true aktiviert
+  if (process.env.ENABLE_TAVILY_EMERGENCY_FALLBACK === 'true') {
+    const keys = getTavilyKeys();
+    for (const key of keys) {
+      const out = await tavilySearch(query, key, { maxResults, searchDepth: 'basic', includeRawContent: false, timeoutMs });
+      if (out.ok && out.results?.length > 0) {
+        return { results: out.results.map((r) => ({ ...r, _source: 'Tavily (Emergency Fallback)' })), source: 'tavily' };
+      }
+    }
   }
+
   return { results: [], source: null };
 }

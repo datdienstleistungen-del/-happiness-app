@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { callLLM } from './_shared/llm-core.mjs';
-import { searchDuckDuckGo, getTavilyKeys, tavilySearch } from './_shared/search-core.mjs';
+import { searchDuckDuckGo, searchBrave, searchBingNewsRss, searchWithFallback } from './_shared/search-core.mjs';
 import { isPlaceholderCompany } from './_shared/validation.mjs';
 import { tryConsumeDaily, dayKey } from './_shared/quota.mjs';
 
@@ -209,50 +209,23 @@ export const handler = async (event) => {
     
     searchQueriesToTry.push('Mittelstand Unternehmen Expansion ODER Übernahme ODER Investition');
 
-    // Multi-key Tavily with failover & DuckDuckGo fallback
-    // (Keys via _shared/search-core.mjs — auch VITE_TAVILY_API_KEY beruecksichtigt)
-
-    let tavilyData = null;
-    let searchSource = 'Tavily Deep Search';
-
-    const B2B_NEWS_DOMAINS = [
-      'pressebox.de', 'openpr.de', 'it-business.de', 'crn.de', 'handelsblatt.com', 
-      'wiwo.de', 'unternehmensboerse.de', 'northdata.de', 'bundesanzeiger.de',
-      'heise.de', 'golem.de', 'computerwoche.de'
-    ];
+    // Kostenlose Multi-Quellen-Suche (Brave API -> DuckDuckGo -> Bing News RSS)
+    let searchData = null;
+    let searchSource = 'Web Search';
 
     for (const q of searchQueriesToTry) {
-      if (tavilyData && tavilyData.results && tavilyData.results.length > 0) break;
-
-      for (const key of getTavilyKeys()) {
-        // 1. Priorität: Gezielte Suche auf B2B- & Wirtschafts-Nachrichtenportalen
-        const domainHit = await tavilySearch(q, key, {
-          maxResults: 10, includeDomains: B2B_NEWS_DOMAINS, timeoutMs: 8000,
-        });
-        if (domainHit.ok) { tavilyData = { results: domainHit.results }; break; }
-
-        // 2. Priorität: Allgemeine Web-Suche
-        const generalHit = await tavilySearch(`${q} 2026`, key, { maxResults: 10, timeoutMs: 8000 });
-        if (generalHit.ok) { tavilyData = { results: generalHit.results }; break; }
+      if (searchData && searchData.results && searchData.results.length > 0) break;
+      const res = await searchWithFallback(q, { maxResults: 10, timeoutMs: 8000 });
+      if (res.results && res.results.length > 0) {
+        searchData = { results: res.results };
+        searchSource = res.source ? `Web Search (${res.source})` : 'Web Search';
+        break;
       }
     }
 
-    // Ultimativer Fallback: DuckDuckGo falls alle Tavily Keys erschöpft sind
-    if (!tavilyData || !tavilyData.results || tavilyData.results.length === 0) {
-      console.log(`[nexus-research] Alle Tavily Keys erschöpft/nicht verfügbar. Aktiviere DuckDuckGo Fallback-Suche...`);
-      for (const q of searchQueriesToTry) {
-        const ddgResults = await searchDuckDuckGo(q, { maxResults: 10, timeoutMs: 8000 });
-        if (ddgResults && ddgResults.length > 0) {
-          tavilyData = { results: ddgResults };
-          searchSource = 'DuckDuckGo Search (Fallback)';
-          break;
-        }
-      }
-    }
-
-    console.log('[nexus-research] tavilyData count:', tavilyData?.results?.length);
-    if (!tavilyData || !tavilyData.results || tavilyData.results.length === 0) {
-      console.log('[nexus-research] Returning early due to empty tavilyData');
+    console.log('[nexus-research] searchData count:', searchData?.results?.length);
+    if (!searchData || !searchData.results || searchData.results.length === 0) {
+      console.log('[nexus-research] Returning early due to empty searchData');
       return {
         statusCode: 200,
         body: JSON.stringify({ trigger_events: [] }),
@@ -275,7 +248,7 @@ export const handler = async (event) => {
       'pregnancy', 'schwangerschaft', 'depression'
     ];
 
-    const safeResults = tavilyData.results.filter(r => {
+    const safeResults = searchData.results.filter(r => {
       const lowerUrl = (r.url || '').toLowerCase();
       const lowerText = ((r.title || '') + ' ' + (r.content || '')).toLowerCase();
       
@@ -309,7 +282,7 @@ export const handler = async (event) => {
             offering_id: offeringId,
             url: r.url,
             url_hash: hash,
-            source: 'Tavily Deep Search',
+            source: r._source || searchSource || 'Web Search',
             title: r.title || '',
             raw_content: r.content || '',
             published_at: r.published_date || null,

@@ -98,6 +98,29 @@ export function extractQueriesFromStrategies(signalStrategies) {
 }
 
 /**
+ * Wandelt einen Suchbegriff in eine einfache, natürliche Phrase für Bing News um:
+ * Entfernt boolesche Operatoren, Klammern, Anführungszeichen und site:-Direktiven,
+ * da Bing News RSS (cc=DE&setlang=de) solche Operatoren nicht verarbeiten kann.
+ */
+export function simplifyForBingNews(q) {
+  if (!q || typeof q !== 'string') return '';
+  const cleaned = q
+    .replace(/\(site:[^)]+\)/gi, '')
+    .replace(/site:\S+/gi, '')
+    .replace(/[-+]/g, ' ')
+    .replace(/\b(OR|AND|NOT)\b/g, ' ')
+    .replace(/[()"\[\]]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!cleaned) return '';
+  if (!/\b(deutschland|österreich|schweiz|dach)\b/i.test(cleaned)) {
+    return `${cleaned} Deutschland`;
+  }
+  return cleaned;
+}
+
+/**
  * Baut die finalen Suchabfragen für Bing News und DuckDuckGo auf.
  * Berücksichtigt vorhandene Strategien ODER erzeugt einen differenzierten Fallback.
  */
@@ -110,13 +133,17 @@ export function buildDachScanQueries({ offering, signalStrategies = [], manualQu
     const ddgQueries = [];
 
     strategyQueries.forEach((q, idx) => {
-      // Stellen sicher, dass DACH-Fokus vorhanden ist
+      // Für Web/DDG: DACH-Fokus mit site-Operator
       const dachQuery = q.includes('site:') || q.includes('Deutschland') || q.includes('DACH')
         ? q
         : `${q} ${DACH_SITE_OPERATOR}`;
 
+      // Für Bing News: Einfache, bereinigte deutsche Phrase ohne boolesche Operatoren
       if (idx % 2 === 0 && newsQueries.length < 4) {
-        newsQueries.push(dachQuery);
+        const cleanNewsQ = simplifyForBingNews(q);
+        if (cleanNewsQ.length >= 3) {
+          newsQueries.push(cleanNewsQ);
+        }
       }
       ddgQueries.push({ q: dachQuery, type: 'STRATEGY' });
     });
@@ -126,6 +153,16 @@ export function buildDachScanQueries({ offering, signalStrategies = [], manualQu
       const kwList = extractOfferingContext(offering, manualQuery, branche);
       const focusWord = kwList[0] || 'Mittelstand';
       ddgQueries.push({ q: `"${focusWord}" ${DACH_MEDIA_OPERATOR}`, type: 'NEWS' });
+    }
+
+    // Sicherstellen, dass mindestens 3 News-Queries existieren
+    if (newsQueries.length < 3) {
+      const kwList = extractOfferingContext(offering, manualQuery, branche);
+      const focusWord = kwList[0] || 'Unternehmen';
+      newsQueries.push(`${focusWord} Investition Deutschland`);
+      if (newsQueries.length < 3) {
+        newsQueries.push(`${focusWord} Neubau Standort Deutschland`);
+      }
     }
 
     return {
@@ -165,10 +202,12 @@ export function buildDachScanQueries({ offering, signalStrategies = [], manualQu
   // 5. Achse: Renommierte DACH-Wirtschaftsmedien & Ad-hoc
   const mediaQuery = `${combinedContext} (Expansion OR Übernahme OR Investition) ${DACH_MEDIA_OPERATOR}`;
 
+  // Für Bing News: Einfache, hochrelevante deutsche Phrasen ohne boolesche Klammern / site:-Operatoren
   const newsQueries = [
-    `${primaryTopic} expandiert (Deutschland OR Österreich OR Schweiz)`,
-    expansionQuery,
-    investmentQuery
+    `${primaryTopic} Investition Deutschland`,
+    `${primaryTopic} Neubau Spatenstich Deutschland`,
+    `${secondaryTopic || primaryTopic} Expansion Standort Deutschland`,
+    'Unternehmen neues Werk Deutschland'
   ];
 
   const ddgQueries = [

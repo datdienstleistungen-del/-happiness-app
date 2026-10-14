@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import { createClient } from '@supabase/supabase-js';
 import { callLLM as callProviderChain } from './_shared/llm-core.mjs';
-import { getTavilyKeys, tavilySearch, searchDuckDuckGo } from './_shared/search-core.mjs';
+import { searchBrave, searchDuckDuckGo } from './_shared/search-core.mjs';
 import { resolveCompanyWebsite } from './nexus-domain-discovery.mjs';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
@@ -74,29 +74,19 @@ async function callLLM(prompt, temperature = 0.3) {
 }
 
 // ============================================================================
-// WEB SEARCH HELPER (Tavily Multi-Key via _shared/search-core.mjs, dann
-// DuckDuckGo-Fallback — Tavily-Keys koennen gesperrt/leer sein: 402/432)
+// WEB SEARCH HELPER (Brave Search API -> DuckDuckGo Fallback)
 // ============================================================================
 async function searchWeb(query, options = {}) {
   const { maxResults = 5 } = options;
 
-  for (const key of getTavilyKeys()) {
-    const out = await tavilySearch(query, key, {
-      maxResults,
-      searchDepth: 'basic',
-      includeRawContent: false,
-      includeDomains: options.includeDomains,
-      excludeDomains: options.excludeDomains,
-      timeoutMs: 5000,
-    });
-    if (out.ok) {
-      return out.results.map(r => ({
-        title: r.title,
-        url: r.url,
-        snippet: r.content,
-        date: r.published_date || null
-      }));
-    }
+  const brave = await searchBrave(query, { maxResults, timeoutMs: 5000 });
+  if (brave.ok && brave.results.length > 0) {
+    return brave.results.map(r => ({
+      title: r.title,
+      url: r.url,
+      snippet: r.content,
+      date: r.published_date || null
+    }));
   }
 
   const ddg = await searchDuckDuckGo(query, { maxResults });

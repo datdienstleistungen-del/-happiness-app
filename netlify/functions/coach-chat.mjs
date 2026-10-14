@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { checkTextGroundedInSource, detectConcreteNumbers } from './grounding-helpers.mjs'
 import { callLLM } from './_shared/llm-core.mjs'
-import { getTavilyKeys, tavilySearch, searchDuckDuckGo } from './_shared/search-core.mjs'
+import { searchBrave, searchDuckDuckGo, searchBingNewsRss } from './_shared/search-core.mjs'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const CORS_HEADERS = {
@@ -146,15 +146,18 @@ async function crawlTargetWebsite(rawUrl) {
   return collectedText.length > 0 ? collectedText.join('\n\n') : null
 }
 
-async function performTavilySearch(query) {
-  for (const key of getTavilyKeys()) {
-    const out = await tavilySearch(query, key, { maxResults: 6, includeRawContent: false, daysBack: 30, timeoutMs: 5000 });
-    if (out.ok && out.results && out.results.length > 0) {
-      return out.results.map(r => `Titel: ${r.title}\nInhalt: ${r.content}\nURL: ${r.url}`).join('\n\n');
+async function performWebSearch(query) {
+  // 1. Brave Search API (Freikontingent)
+  try {
+    const brave = await searchBrave(query, { maxResults: 6, timeoutMs: 5000 });
+    if (brave.ok && brave.results?.length > 0) {
+      return brave.results.map(r => `Titel: ${r.title}\nInhalt: ${r.content}\nURL: ${r.url}`).join('\n\n');
     }
+  } catch (e) {
+    console.warn('[CoachChat] Brave search error:', e.message);
   }
 
-  // Fallback to DuckDuckGo when Tavily keys are exhausted or unavailable
+  // 2. DuckDuckGo (HTML keyless)
   try {
     const ddg = await searchDuckDuckGo(query, { maxResults: 6, timeoutMs: 6000 });
     if (ddg.length > 0) {
@@ -162,6 +165,17 @@ async function performTavilySearch(query) {
     }
   } catch (e) {
     console.warn('[CoachChat] DuckDuckGo fallback error:', e.message);
+  }
+
+  // 3. Bing News RSS (keyless)
+  try {
+    const cleanQ = query.replace(/\(site:[^)]+\)/gi, '').replace(/site:\S+/gi, '').replace(/[-+()]/g, ' ').trim();
+    const bing = await searchBingNewsRss(cleanQ || query, { maxResults: 6, timeoutMs: 5000 });
+    if (bing.length > 0) {
+      return bing.map(r => `Titel: ${r.title}\nInhalt: ${r.content}\nURL: ${r.url}`).join('\n\n');
+    }
+  } catch (e) {
+    console.warn('[CoachChat] Bing News fallback error:', e.message);
   }
 
   return "Keine aktuellen Suchergebnisse gefunden.";
@@ -339,9 +353,9 @@ export const handler = async (event) => {
           liveContext += `\n\n[LIVE CRAWL DER ZIEL-WEBSITE (${foundUrl})]:\n${crawlContent}\n\n`
         }
 
-        // Also search Tavily for company background & LinkedIn profiles
+        // Also search web for company background & LinkedIn profiles
         const domainClean = foundUrl.replace(/^https?:\/\//, '').replace(/\/.*$/, '')
-        const searchResults = await performTavilySearch(`${domainClean} Geschäftsführer Head of Sales LinkedIn`)
+        const searchResults = await performWebSearch(`${domainClean} Geschäftsführer Head of Sales LinkedIn`)
         if (searchResults && !searchResults.includes("Fehlt im Backend") && !searchResults.includes("Keine aktuellen")) {
           liveContext += `\n\n[WEB-RECHERCHE ERGEBNISSE FÜR ${domainClean}]:\n${searchResults}\n\n`
         }
@@ -351,7 +365,7 @@ export const handler = async (event) => {
         const userMessageLower = userMessageText.toLowerCase();
         if (!image_url && searchKeywords.some(kw => userMessageLower.includes(kw))) {
           console.log('[coach-chat] User message triggered auto-search for:', userMessageText);
-          const searchResults = await performTavilySearch(userMessageText);
+          const searchResults = await performWebSearch(userMessageText);
           if (searchResults && !searchResults.includes("Fehlt im Backend") && !searchResults.includes("Keine aktuellen")) {
             liveContext += `\n\n[WEB-RECHERCHE ERGEBNISSE]:\n${searchResults}\n\n`;
           }
@@ -405,7 +419,7 @@ export const handler = async (event) => {
         const match = responseText.match(/##SEARCH##\s*\((.*?)\)/)
         if (match && match[1]) {
           const query = match[1]
-          const searchResults = await performTavilySearch(query)
+          const searchResults = await performWebSearch(query)
           llmMessages.push({ role: 'assistant', content: responseText })
           llmMessages.push({ role: 'user', content: `[SYSTEM-INTERN: Web-Recherche Ergebnisse für "${query}"]:\n\n${searchResults}\n\nBitte erstelle nun basierend auf diesen Fakten die vollständige Recherche-Tabelle mit 1-Klick-Links.` })
           await executeChain()
