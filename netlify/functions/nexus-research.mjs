@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { callLLM } from './_shared/llm-core.mjs';
 import { searchDuckDuckGo, getTavilyKeys, tavilySearch } from './_shared/search-core.mjs';
 import { isPlaceholderCompany } from './_shared/validation.mjs';
+import { tryConsumeDaily, dayKey } from './_shared/quota.mjs';
 
 let inFlightResearch = 0;
 const MAX_CONCURRENT_RESEARCH = 20;
@@ -74,9 +75,25 @@ export const handler = async (event) => {
       }
     }
 
-    if (!user && !isPreview) {
-      // If not authenticated and not explicitly in preview mode, default to preview if on landing page
-      isPreview = true;
+    if (!user) {
+      if (!isLandingPreview) {
+        return {
+          statusCode: 401,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ error: 'Unauthorized: Bitte melde dich an, um NeXus Research zu nutzen.' })
+        };
+      }
+      // Schutz für Landing Page Live-Test: Maximal 3 Scans pro IP pro Tag
+      const clientIp = (reqHeaders['x-forwarded-for'] || reqHeaders['client-ip'] || 'anonymous').split(',')[0].trim();
+      const ipKey = `preview:research:${clientIp}:${dayKey()}`;
+      const ipQuota = await tryConsumeDaily(ipKey, 3);
+      if (!ipQuota.allowed) {
+        return {
+          statusCode: 429,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ error: 'Kostenloses Test-Limit für Gäste erreicht (max. 3 Scans pro Tag). Bitte melde dich kostenlos an, um fortzufahren.' })
+        };
+      }
     }
 
     // 2. Rate Limiting Check (only for authenticated non-preview users via PostgREST)

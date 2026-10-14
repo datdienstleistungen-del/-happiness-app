@@ -281,6 +281,7 @@ export const handler = async (event) => {
     const fullMessage = message + WIDERSPRUCHSHINWEIS;
     
     console.log(`[MessageGen] Generated message: ${fullMessage.length} chars (incl. Widerspruchshinweis)`);
+    recordTokenUsage(user.id, Math.round(fullMessage.length / 2), 'llm', 'message_generation').catch(() => {});
     
     return {
       statusCode: 200,

@@ -63,7 +63,7 @@ async function callLLM(prompt, temperature = 0.3) {
     { role: 'system', content: 'You are an elite B2B sales copywriter and strategist. Output valid JSON only.' },
     { role: 'user', content: prompt }
   ], {
-    providers: ['groq', 'deepseek', 'mistral', 'openrouter'],
+    providers: ['groq', 'openrouter', 'mistral', 'deepseek'],
     temperature,
     jsonMode: true,
     totalBudgetMs: 30000,
@@ -574,8 +574,45 @@ Return VALID JSON ONLY with your actual customized generated content (do NOT out
 // NETLIFY HANDLER
 // ============================================================================
 export const handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+      },
+      body: ''
+    };
+  }
+
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
+  }
+
+  // ── 0. Zwingende Authentifizierung (Verhindert unautorisierten Bot-/Crawler-Zugriff) ──
+  const authHeader = (event.headers && (event.headers.authorization || event.headers.Authorization)) || '';
+  const token = authHeader ? authHeader.replace('Bearer ', '').trim() : '';
+
+  if (!token || !SUPABASE_URL) {
+    return {
+      statusCode: 401,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Unauthorized: Anmeldung erforderlich.' })
+    };
+  }
+
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || SUPABASE_SERVICE_KEY;
+  const userClient = createClient(SUPABASE_URL, anonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } }
+  });
+  const { data: { user }, error: authErr } = await userClient.auth.getUser();
+  if (authErr || !user) {
+    return {
+      statusCode: 401,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: 'Unauthorized: Ungültiges oder abgelaufenes Token.' })
+    };
   }
 
   try {

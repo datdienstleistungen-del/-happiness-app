@@ -101,19 +101,49 @@ export async function handler(event) {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  const userToken = event.headers?.authorization?.replace('Bearer ', '') || SUPABASE_KEY;
-  const headers = authHeaders(SUPABASE_KEY);
+  // ── 0. Zwingende Autorisierungsprüfung (Nur autorisierte Cron-Scheduler oder eingeloggte User) ──
+  const reqHeaders = event?.headers || {};
+  const authHeader = reqHeaders.authorization || reqHeaders.Authorization || '';
+  const cronSecret = reqHeaders['x-cron-secret'] || reqHeaders['X-Cron-Secret'] || '';
+  const expectedSecret = process.env.CRON_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
-  // User-ID aus JWT dekodieren
+  const isSecretValid = Boolean(expectedSecret && cronSecret && cronSecret === expectedSecret);
   let userId = null;
-  try {
-    const parts = userToken.split('.');
-    if (parts.length === 3) {
-      const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
-      userId = payload.sub;
+  let userToken = null;
+
+  if (authHeader) {
+    const rawToken = authHeader.replace('Bearer ', '').trim();
+    try {
+      const authRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: {
+          'apikey': process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || SUPABASE_KEY,
+          'Authorization': `Bearer ${rawToken}`
+        }
+      });
+      if (authRes.ok) {
+        const u = await authRes.json();
+        userId = u?.id;
+        userToken = rawToken;
+      }
+    } catch (e) {
+      console.warn('[Event Search] Token verification failed:', e.message);
     }
-  } catch (e) { /* fallback below */ }
-  if (!userId) userId = '00000000-0000-0000-0000-000000000000';
+  }
+
+  if (!isSecretValid && !userId) {
+    return {
+      statusCode: 401,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Unauthorized: Anmeldung oder gültiges Cron-Secret erforderlich.' })
+    };
+  }
+
+  if (isSecretValid && !userId) {
+    userId = 'system-cron';
+    userToken = SUPABASE_KEY;
+  }
+
+  const headers = authHeaders(userToken || SUPABASE_KEY);
 
   try {
     const { event_type, region, time_range } = JSON.parse(event.body || '{}');

@@ -1261,10 +1261,10 @@ Nur relevante Kandidaten (Score > 40).`;
 // ============================================================================
 
 async function callLLM(prompt, temperature = 0.3) {
-  // Kette DeepSeek -> Mistral via _shared/llm-core.mjs (DEEPSEEK_ENABLED=false
-  // sperrt die DeepSeek-Stufe wie bisher). Liefert parsedes JSON, { raw } bei
-  // unbrauchbarem Output oder null, wenn alle Provider versagen.
-  const providers = process.env.DEEPSEEK_ENABLED === 'false' ? ['mistral'] : ['deepseek', 'mistral'];
+  // Kette: Groq -> OpenRouter -> Mistral -> DeepSeek (nur Fallback).
+  const providers = process.env.DEEPSEEK_ENABLED === 'false'
+    ? ['groq', 'openrouter', 'mistral']
+    : ['groq', 'openrouter', 'mistral', 'deepseek'];
   try {
     const { text } = await callProviderChain([
       { role: 'system', content: 'Du gibst IMMER valides JSON zurück, ohne Markdown-Blöcke.' },

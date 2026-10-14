@@ -98,18 +98,70 @@ export async function tryConsumeHourly(bucket, limit) {
   return { allowed: true, used: used + 1, limit };
 }
 
-// Token-Budget-Tracking (Standard: 100.000 Token/Tag pro Nutzer)
+// Token-Budget-Tracking (Standard: 100.000 Token/Tag pro Nutzer, persistent in Supabase)
 export async function checkDailyTokenBudget(userId, maxDailyTokens = 100000) {
-  const key = `tokens:${userId}:${dayKey()}`;
-  const used = parseInt(await readRaw(key), 10) || 0;
-  return { allowed: used < maxDailyTokens, used, limit: maxDailyTokens };
+  const today = dayKey();
+  let dbUsed = 0;
+
+  const sUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const sKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+
+  if (sUrl && sKey && userId) {
+    try {
+      const res = await fetch(`${sUrl}/rest/v1/nexus_cost_log?user_id=eq.${userId}&created_at=gte.${today}T00:00:00Z&select=tokens_in,tokens_out`, {
+        headers: { apikey: sKey, Authorization: `Bearer ${sKey}` }
+      });
+      if (res.ok) {
+        const rows = await res.json();
+        for (const r of rows) {
+          dbUsed += (r.tokens_in || 0) + (r.tokens_out || 0);
+        }
+      }
+    } catch (e) {
+      console.warn('[Quota] Failed to fetch token usage from Supabase:', e.message);
+    }
+  }
+
+  const key = `tokens:${userId}:${today}`;
+  const memUsed = parseInt(await readRaw(key), 10) || 0;
+  const totalUsed = Math.max(dbUsed, memUsed);
+
+  return { allowed: totalUsed < maxDailyTokens, used: totalUsed, limit: maxDailyTokens };
 }
 
-export async function recordTokenUsage(userId, tokens) {
+export async function recordTokenUsage(userId, tokens, provider = 'llm', operation = 'request') {
   if (!tokens || tokens <= 0) return;
-  const key = `tokens:${userId}:${dayKey()}`;
-  const used = parseInt(await readRaw(key), 10) || 0;
-  await writeRaw(key, used + tokens);
+  const today = dayKey();
+  const key = `tokens:${userId}:${today}`;
+  const memUsed = parseInt(await readRaw(key), 10) || 0;
+  await writeRaw(key, memUsed + tokens);
+
+  const sUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const sKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+
+  if (sUrl && sKey && userId) {
+    try {
+      await fetch(`${sUrl}/rest/v1/nexus_cost_log`, {
+        method: 'POST',
+        headers: {
+          apikey: sKey,
+          Authorization: `Bearer ${sKey}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          provider: provider || 'llm',
+          operation: operation || 'request',
+          tokens_in: Math.round(tokens * 0.75),
+          tokens_out: Math.round(tokens * 0.25),
+          cost_usd: 0
+        })
+      });
+    } catch (e) {
+      console.warn('[Quota] Failed to log token usage to Supabase:', e.message);
+    }
+  }
 }
 
 export function tavilyDailyLimit() {

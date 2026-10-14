@@ -2,6 +2,38 @@ import { callLLM } from './_shared/llm-core.mjs';
 import { extractJson, radarHitClassificationSchema } from './_shared/schemas.mjs';
 
 export async function handler(event, context) {
+  // ── 0. Zwingende Autorisierungsprüfung (Nur autorisierte Cron-Scheduler oder Admins) ──
+  const reqHeaders = event?.headers || {};
+  const cronSecret = reqHeaders['x-cron-secret'] || reqHeaders['X-Cron-Secret'] || '';
+  const expectedSecret = process.env.CRON_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+  const authHeader = reqHeaders.authorization || reqHeaders.Authorization || '';
+
+  const isSecretValid = Boolean(expectedSecret && cronSecret && cronSecret === expectedSecret);
+  let isAdmin = false;
+  if (!isSecretValid && authHeader) {
+    const token = authHeader.replace('Bearer ', '').trim();
+    const sUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+    const sKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || expectedSecret;
+    try {
+      const userRes = await fetch(`${sUrl}/auth/v1/user`, {
+        headers: { 'apikey': sKey, 'Authorization': `Bearer ${token}` }
+      });
+      if (userRes.ok) {
+        const u = await userRes.json();
+        const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'harro@happiness.de').split(',');
+        if (u?.email && ADMIN_EMAILS.includes(u.email)) isAdmin = true;
+      }
+    } catch(e) {}
+  }
+
+  if (!isSecretValid && !isAdmin) {
+    return {
+      statusCode: 403,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Forbidden: Cron-Secret oder Admin-Rechte erforderlich.' })
+    };
+  }
+
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 

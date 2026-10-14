@@ -147,7 +147,7 @@ export async function handler(event) {
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: fullPrompt }
     ], {
-      providers: ['groq', 'deepseek', 'mistral'],
+      providers: ['groq', 'mistral', 'deepseek'],
       temperature: 0.7,
       jsonMode: true,
       acceptText: (t) => Boolean(cleanJson(t)),
