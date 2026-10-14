@@ -78,7 +78,7 @@ function decodeEntities(s) {
 async function searchBingNews(query, maxResults = 10, timeoutMs = 3000) {
   try {
     const res = await fetchWithTimeout(
-      `https://www.bing.com/news/search?q=${encodeURIComponent(query)}&format=rss&count=${maxResults * 2}`,
+      `https://www.bing.com/news/search?q=${encodeURIComponent(query)}&format=rss&count=${maxResults * 2}&cc=DE&setlang=de`,
       { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' } },
       timeoutMs
     );
@@ -238,22 +238,31 @@ export const handler = async (event) => {
     const kwOk = kw.trim().length > 2;
     console.log(`[ScanStart] Query: "${searchQuery}" | kw="${kw}"`);
 
-    // Alle keyless-Quellen PARALLEL: Bing News (14d frisch) + DuckDuckGo (Web/PR/Jobs)
+    // DACH-Operatoren & Wirtschaftsmedien / Register
+    const DACH_SITE_OPERATOR = '(site:de OR site:at OR site:ch)';
+    const DACH_MEDIA_OPERATOR = '(site:presseportal.de OR site:openpr.de OR site:unternehmensregister.de OR site:handelsblatt.com OR site:wiwo.de OR site:manager-magazin.de OR site:bundesanzeiger.de OR site:northdata.de)';
+
+    // Alle keyless-Quellen PARALLEL mit DACH-Fokus: Bing News (14d frisch, CC=DE) + DuckDuckGo (Web/PR/Jobs)
     const newsQueries = kwOk
-      ? [...new Set([kw, `${kw} expandiert`, `${kw} stellt ein`])].slice(0, 3)
-      : [searchQuery];
-    // Echte, ungesperrte Stellen- und Wachstumsrecherchen statt blockierter Aggregatoren
+      ? [
+          `${kw} expandiert (Deutschland OR Österreich OR Schweiz)`,
+          `${kw} stellt ein ${DACH_SITE_OPERATOR}`,
+          `${kw} ("Neubau" OR "Investition" OR "Erweiterung") ${DACH_SITE_OPERATOR}`
+        ]
+      : [`${searchQuery} ${DACH_SITE_OPERATOR}`];
+
+    // Echte, ungesperrte Stellen- und Wachstumsrecherchen statt blockierter Aggregatoren (DACH)
     const hiringQueries = kwOk ? [
-      { q: `"${kw}" ("wir suchen" OR "Stellenangebote" OR "Karriere") -site:stepstone.de -site:indeed.com -site:arbeitsagentur.de`, type: 'JOB_PORTAL' },
-      { q: `"${kw}" ("schafft neue Stellen" OR "baut Team aus" OR "stellt ein" OR "Personalaufbau")`, type: 'NEWS' },
-      { q: `"${kw}" ("Head of" OR "Leiter" OR "Director" OR "VP" OR "Manager") ("wir suchen" OR "Stellenanzeige")`, type: 'JOB_PORTAL' }
+      { q: `"${kw}" ("wir suchen" OR "Stellenangebote" OR "Karriere") ${DACH_SITE_OPERATOR} -site:stepstone.de -site:indeed.com -site:arbeitsagentur.de`, type: 'JOB_PORTAL' },
+      { q: `"${kw}" ("schafft neue Stellen" OR "baut Team aus" OR "stellt ein" OR "Personalaufbau") ${DACH_SITE_OPERATOR}`, type: 'NEWS' },
+      { q: `"${kw}" ("Head of" OR "Leiter" OR "Geschäftsführer" OR "Director") ("wir suchen" OR "Stellenanzeige") ${DACH_SITE_OPERATOR}`, type: 'JOB_PORTAL' }
     ] : [];
 
     const ddgQueries = [
-      { q: searchQuery, type: 'GENERAL_WEB' },
-      { q: `${branche || searchQuery} Pressemitteilung`, type: 'GENERAL_WEB' },
+      { q: `"${kwOk ? kw : searchQuery}" (Investition OR Expansion OR Neubau OR Standort) ${DACH_SITE_OPERATOR}`, type: 'NEWS' },
+      { q: `"${kwOk ? kw : searchQuery}" ${DACH_MEDIA_OPERATOR}`, type: 'NEWS' },
       ...hiringQueries,
-      ...(kwOk ? [{ q: `${kw} site:openpr.de OR site:presseportal.de`, type: 'NEWS' }] : [])
+      ...(kwOk ? [{ q: `"${kw}" ${DACH_MEDIA_OPERATOR}`, type: 'NEWS' }] : [])
     ];
 
     const [newsSets, ddgSets] = await Promise.all([
@@ -287,8 +296,7 @@ export const handler = async (event) => {
     });
 
     // Blocklist-Filter (Phase 5a): nur fuer Suchergebnisse — die synthetischen
-    // URLs unten bleiben bewusst erhalten (StepStone/XING/LinkedIn/NorthData
-    // sind gesetzte HIRING-/Register-Quellen, kein Rauschen).
+    // URLs unten bleiben bewusst erhalten (NorthData ist gesetzte Register-Quelle).
     const newsKept = newsResults.filter(r => !isBlockedUrl(r.url));
     const webKept = webResults.filter(r => !isBlockedUrl(r.url));
     const blockedCount = (newsResults.length - newsKept.length) + (webResults.length - webKept.length);
@@ -296,7 +304,7 @@ export const handler = async (event) => {
       console.log(`[ScanStart] ${blockedCount} Suchtreffer durch URL-Blocklist gefiltert.`);
     }
 
-    // Synthetische URLs (nur barrierefreie Register-Quellen wie NorthData; Job-Portale werden oben organisch gesucht)
+    // Synthetische URLs (nur barrierefreie Register-Quellen wie NorthData)
     const syntheticUrls = kwOk ? [
       { url: `https://www.northdata.de/suche?q=${encodeURIComponent(kw)}`, title: `NorthData Firmensuche: ${kw}`, source_type: 'REGISTER' }
     ] : [];
@@ -309,6 +317,18 @@ export const handler = async (event) => {
     ];
     console.log(`[ScanStart] Sources: NEWS=${newsResults.length} WEB/JOBS=${webResults.length} SYNTH=${syntheticUrls.length}`);
 
+    // DACH-Domain-Erkennung
+    function isDachDomain(urlStr) {
+      try {
+        const host = new URL(urlStr).hostname.toLowerCase();
+        if (host.endsWith('.de') || host.endsWith('.at') || host.endsWith('.ch')) return true;
+        if (/\b(handelsblatt|wiwo|manager-magazin|presseportal|openpr|unternehmensregister|bundesanzeiger|northdata|xing|gtai)\b/.test(host)) return true;
+        return false;
+      } catch {
+        return false;
+      }
+    }
+
     // Dedupliziere URLs (erste Quelle gewinnt)
     const seenUrls = new Set();
     const uniqueResults = [];
@@ -319,7 +339,20 @@ export const handler = async (event) => {
       }
     }
 
-    if (uniqueResults.length === 0) {
+    // DACH-Fokus-Garantie: Mindestens 80 % der gescannten URLs müssen von DACH-Domains stammen
+    const dachCandidates = uniqueResults.filter(r => isDachDomain(r.url));
+    const nonDachCandidates = uniqueResults.filter(r => !isDachDomain(r.url));
+
+    let finalCandidates = [];
+    if (dachCandidates.length > 0) {
+      // Maximal 20% Non-DACH beimischen, um mindestens 80% DACH-Quote zu garantieren
+      const allowedNonDach = Math.floor(dachCandidates.length * 0.25);
+      finalCandidates = [...dachCandidates, ...nonDachCandidates.slice(0, allowedNonDach)];
+    } else {
+      finalCandidates = uniqueResults;
+    }
+
+    if (finalCandidates.length === 0) {
       return {
         statusCode: 200,
         body: JSON.stringify({
@@ -330,7 +363,7 @@ export const handler = async (event) => {
       };
     }
 
-    // Erstelle Scan-Job
+    // Erstelle Scan-Job mit DACH-priorisierten Kandidaten
     const jobRes = await userSupabase
       .from('nexus_scan_jobs')
       .insert({
@@ -338,10 +371,10 @@ export const handler = async (event) => {
         offering_id,
         status: 'running',
         current_step: 0,
-        total_steps: uniqueResults.length,
-        pending_urls: uniqueResults.map(r => ({ url: r.url, title: r.title || '', source_type: r.source_type || 'NEWS' })),
+        total_steps: finalCandidates.length,
+        pending_urls: finalCandidates.map(r => ({ url: r.url, title: r.title || '', source_type: r.source_type || 'NEWS' })),
         partial_results: [],
-        last_message: `Suche gestartet: ${uniqueResults.length} Kandidaten gefunden...`,
+        last_message: `Suche gestartet: ${finalCandidates.length} Kandidaten (${dachCandidates.length} DACH-Quellen) gefunden...`,
         updated_at: new Date().toISOString()
       })
       .select('id')

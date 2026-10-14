@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Radar, Search, ArrowRight, Building2, AlertCircle, RefreshCw, Briefcase, Globe, CheckCircle, Sparkles, User, Mail, Copy, HelpCircle, Brain, Clock, ExternalLink } from 'lucide-react'
+import { Radar, Search, ArrowRight, Building2, AlertCircle, RefreshCw, Briefcase, Globe, CheckCircle, Sparkles, User, Mail, Copy, HelpCircle, Brain, Clock, ExternalLink, Download } from 'lucide-react'
 import { callContactIntelligence, runResearchPipeline } from '../lib/nexus-ai'
 import { trackRadarScan } from '../lib/nexus-analytics'
 import { supabase } from '../lib/supabase'
@@ -487,15 +487,19 @@ export default function NexusLeadRadarPage() {
               const matchScore = isKnownVendor ? 25 : (typeof t.target_group_match === 'number' ? t.target_group_match : (t.prioritaet === 1 ? 88 : t.prioritaet === 2 ? 72 : 55));
               return {
                 company: t.firmenname || 'Unbekanntes Unternehmen',
+                branche: t.branche || activeOffering?.target_industry || 'B2B',
                 prioritaet: t.prioritaet || 99,
                 target_group_match: matchScore,
                 match_reason: t.match_reason || '',
                 bewertung: t.bewertung || '',
                 signal: t.signal || '',
-                signal_kategorie: t.signal_kategorie || null,
+                signal_kategorie: t.signal_kategorie || 'EXPANSION',
+                event_date: t.event_date || t.published_at || (r.extracted_at ? r.extracted_at.slice(0, 10) : new Date().toISOString().slice(0, 10)),
+                evidence: t.evidence || t.match_reason || '',
+                position: t.position || t.contact?.role || (typeof t.ansprechpartner === 'string' ? t.ansprechpartner : null) || 'Geschäftsführung / Vertriebsleitung',
                 psychologische_ansprache: t.psychologische_ansprache || '',
                 quelle: t.quelle || r.url || null,
-                published_at: t.published_at || new Date().toISOString(),
+                published_at: t.event_date || t.published_at || new Date().toISOString(),
                 ansprechpartner: {
                   name: t.contact?.name || t.ansprechpartner || null,
                   rolle: t.contact?.role || t.position || null,
@@ -603,15 +607,19 @@ export default function NexusLeadRadarPage() {
                 const matchScore = isKnownVendor ? 25 : (typeof t.target_group_match === 'number' ? t.target_group_match : (t.prioritaet === 1 ? 88 : t.prioritaet === 2 ? 72 : 55));
                 return {
                   company: t.firmenname || 'Unbekanntes Unternehmen',
+                  branche: t.branche || activeOffering?.target_industry || 'B2B',
                   prioritaet: t.prioritaet || 99,
                   target_group_match: matchScore,
                   match_reason: t.match_reason || '',
                   bewertung: t.bewertung || '',
                   signal: t.signal || '',
-                  signal_kategorie: t.signal_kategorie || null,
+                  signal_kategorie: t.signal_kategorie || 'EXPANSION',
+                  event_date: t.event_date || t.published_at || (r.extracted_at ? r.extracted_at.slice(0, 10) : new Date().toISOString().slice(0, 10)),
+                  evidence: t.evidence || t.match_reason || '',
+                  position: t.position || (typeof t.ansprechpartner === 'string' ? t.ansprechpartner : null) || 'Geschäftsführung / Vertriebsleitung',
                   psychologische_ansprache: t.psychologische_ansprache || '',
                   quelle: t.quelle || r.url || null,
-                  published_at: t.published_at || r.extracted_at || new Date().toISOString(),
+                  published_at: t.event_date || t.published_at || r.extracted_at || new Date().toISOString(),
                   ansprechpartner: {
                     name: t.ansprechpartner || null,
                     rolle: t.position || null,
@@ -642,15 +650,19 @@ export default function NexusLeadRadarPage() {
                 const matchScore = isKnownVendor ? 25 : (typeof t.target_group_match === 'number' ? t.target_group_match : (t.prioritaet === 1 ? 88 : t.prioritaet === 2 ? 72 : 55));
                 return {
                   company: t.firmenname || 'Unbekanntes Unternehmen',
+                  branche: t.branche || activeOffering?.target_industry || 'B2B',
                   prioritaet: t.prioritaet || 99,
                   target_group_match: matchScore,
                   match_reason: t.match_reason || '',
                   bewertung: t.bewertung || '',
                   signal: t.signal || '',
-                  signal_kategorie: t.signal_kategorie || null,
+                  signal_kategorie: t.signal_kategorie || 'EXPANSION',
+                  event_date: t.event_date || t.published_at || (r.extracted_at ? r.extracted_at.slice(0, 10) : new Date().toISOString().slice(0, 10)),
+                  evidence: t.evidence || t.match_reason || '',
+                  position: t.position || (typeof t.ansprechpartner === 'string' ? t.ansprechpartner : null) || 'Geschäftsführung / Vertriebsleitung',
                   psychologische_ansprache: t.psychologische_ansprache || '',
                   quelle: t.quelle || r.url || null,
-                  published_at: t.published_at || r.extracted_at || new Date().toISOString(),
+                  published_at: t.event_date || t.published_at || r.extracted_at || new Date().toISOString(),
                   ansprechpartner: {
                     name: t.ansprechpartner || null,
                     rolle: t.position || null,
@@ -686,6 +698,81 @@ export default function NexusLeadRadarPage() {
       }
     }
   }, [])
+
+  // CSV-Export für Signal-Reports (Productised Service)
+  const handleExportCsv = () => {
+    const visibleTriggers = triggers.filter(t => {
+      const match = computeTargetMatchScore(t.company, t.target_group_match);
+      if (radarFilter === 'relevant') return match >= 50;
+      if (radarFilter === 'unclear') return match < 50;
+      return true;
+    });
+
+    if (visibleTriggers.length === 0) {
+      alert('Keine Signale zum Exportieren vorhanden.');
+      return;
+    }
+
+    const headers = [
+      'Firma',
+      'Branche',
+      'Anlass (Signal)',
+      'Kategorie',
+      'Event-Datum',
+      'Quellen-URL',
+      'Beleg-Satz',
+      'Ziel-Entscheiderrolle'
+    ];
+
+    const escapeCell = (val) => {
+      const str = String(val ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ').trim();
+      return `"${str}"`;
+    };
+
+    const rows = visibleTriggers.map(t => {
+      const rawDate = t.event_date || t.published_at;
+      let formattedDate = '';
+      if (rawDate) {
+        try {
+          formattedDate = new Date(rawDate).toISOString().slice(0, 10);
+        } catch {
+          formattedDate = String(rawDate).slice(0, 10);
+        }
+      }
+
+      const firma = t.company || 'Unbekannt';
+      const branche = t.branche || activeOffering?.target_industry || 'B2B';
+      const anlass = t.signal || '';
+      const kategorie = t.signal_kategorie || 'EXPANSION';
+      const quelle = t.quelle || '';
+      const beleg = t.evidence || t.match_reason || '';
+      const rolle = t.position || t.ansprechpartner?.rolle || 'Geschäftsführung / Vertriebsleitung';
+
+      return [
+        escapeCell(firma),
+        escapeCell(branche),
+        escapeCell(anlass),
+        escapeCell(kategorie),
+        escapeCell(formattedDate),
+        escapeCell(quelle),
+        escapeCell(beleg),
+        escapeCell(rolle)
+      ].join(';');
+    });
+
+    // UTF-8 BOM (\uFEFF) sichert einwandfreie deutsche Umlaute in Excel (Windows & Mac)
+    const csvContent = '\uFEFF' + [headers.map(escapeCell).join(';'), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStr = new Date().toISOString().slice(0, 10);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `NeXus-Signal-Report-${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="lead-radar-page">
@@ -844,23 +931,33 @@ export default function NexusLeadRadarPage() {
       {/* Results */}
       {triggers.length > 0 && !loading && (
         <div className="lead-radar-results">
-          <div className="results-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="results-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
             <h2>{triggers.length} {t('nexus.signalsFound')}</h2>
-            <button 
-              className="btn-secondary"
-              onClick={() => {
-                localStorage.removeItem('nexus:radar_state')
-                localStorage.removeItem('nexus:radar_triggers')
-                setTriggers([])
-                setScanStatus(null)
-                setHasSearched(false)
-                startChunkedScan(true)
-              }}
-              style={{ fontSize: '0.85rem', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
-              disabled={loading}
-            >
-              <RefreshCw size={13} className={loading ? 'spinning' : ''} /> {t('nexus.rescan', 'Neu scannen')}
-            </button>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button 
+                className="btn-primary nexus-csv-export-btn"
+                onClick={handleExportCsv}
+                title="Diesen Signal-Report als CSV für Excel herunterladen"
+                style={{ fontSize: '0.85rem', padding: '6px 14px', display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(135deg, #38bdf8 0%, #0284c7 100%)', color: '#04101e', fontWeight: 600, borderRadius: '6px' }}
+              >
+                <Download size={13} /> {t('nexus.exportCsv', 'Report als CSV exportieren')}
+              </button>
+              <button 
+                className="btn-secondary"
+                onClick={() => {
+                  localStorage.removeItem('nexus:radar_state')
+                  localStorage.removeItem('nexus:radar_triggers')
+                  setTriggers([])
+                  setScanStatus(null)
+                  setHasSearched(false)
+                  startChunkedScan(true)
+                }}
+                style={{ fontSize: '0.85rem', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                disabled={loading}
+              >
+                <RefreshCw size={13} className={loading ? 'spinning' : ''} /> {t('nexus.rescan', 'Neu scannen')}
+              </button>
+            </div>
           </div>
 
           {/* Baustelle 3: Filter für Zielgruppen-Match */}

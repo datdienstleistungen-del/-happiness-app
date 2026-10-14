@@ -236,6 +236,9 @@ export async function processNextUrl(client, job) {
     }
   }
 
+  const currentDate = new Date().toISOString().split('T')[0];
+  const currentYear = new Date().getFullYear();
+
   const extractPrompt = `Du bist die Intelligence Engine für NeXus Sales. Analysiere diesen Web-Inhalt und finde B2B-Kaufsignale.
 ${offeringContext}
 QUELLE: ${nextUrl.url}
@@ -256,14 +259,24 @@ REGELN:
    - 0-49: Zielgruppe unklar / Anbieter / Wettbewerber / Fehlmatch
 4. "ansprechpartner" nur wenn Name WÖRTLICH im Text steht, sonst null
 5. "quelle" MUSS die echte URL sein
-6. Klassifiziere jedes Signal in eine der 5 Kategorien
+6. Klassifiziere jedes Signal in eine konkrete Kategorie (z.B. EXPANSION, NEUBAU, INVESTITION, HIRING, M_A, TECH_MIGRATION, REGULATION).
+7. EVENT-DATUM ALS STRIKTES PFLICHTFELD (WICHTIG):
+   - Du MUSST das konkrete Veröffentlichungs- oder Ereignisdatum ("event_date") im Format "YYYY-MM-DD" angeben.
+   - Suche im Text nach Datumsangaben (z.B. "12. Oktober 2026", "14.10.2026", "vor 3 Tagen", "im September 2026", "2026-10-11").
+   - Heutiges Referenzdatum: ${currentDate} (${currentYear}).
+   - Das Event darf NICHT älter als 60 Tage sein!
+   - Wenn im Quelltext absolut KEIN Datum auffindbar ist oder das Ereignis älter als 60 Tage ist:
+     Setze "trigger_events": [] (Signal verwerfen!).
+8. BELEG-SATZ (EVIDENCE):
+   - Zitiere im Feld "evidence" den konkreten 1-2 Sätze langen Textauszug aus dem Quelltext, der das Ereignis und das Datum belegt.
 
 KAUFSIGNAL-KATEGORIEN:
-1. HIRING — Strategische Stellenanzeigen & Personalaufbau (z.B. Head of Sales, IT-Leitung, Expansion)
-2. FUNDING — Finanzierungsrunden, Investitionen, Förderungen
-3. TECH_MIGRATION — Cloud-Migration, Systemwechsel, ERP/CRM-Einführung
-4. REGULATION — Neue Gesetze, Compliance-Pflichten, Zertifizierungen
-5. M_A — Übernahmen, Fusionen, Joint Ventures, Partnerschaften
+1. EXPANSION / NEUBAU — Neue Standorte, Werksneubau, Vergrößerung, Büros
+2. INVESTITION / FUNDING — Finanzierungsrunden, Investitionen, Maschinenkauf
+3. HIRING — Strategische Stellenanzeigen & Personalaufbau
+4. M_A — Übernahmen, Fusionen, Joint Ventures, Partnerschaften
+5. TECH_MIGRATION — Cloud-Migration, Systemwechsel, ERP/CRM-Einführung
+6. REGULATION — Neue Gesetze, Compliance-Pflichten, Zertifizierungen
 
 Gib ein JSON zurück:
 {
@@ -273,14 +286,16 @@ Gib ein JSON zurück:
       "branche": "Branche",
       "prioritaet": 1,
       "bewertung": "B - Hohe Chance. Warum?",
-      "signal": "Was ist passiert? (Konkretes Ereignis)",
-      "signal_kategorie": "HIRING | FUNDING | TECH_MIGRATION | REGULATION | M_A",
+      "signal": "Was ist passiert? (Konkretes Ereignis / Anlass)",
+      "signal_kategorie": "EXPANSION | NEUBAU | INVESTITION | HIRING | M_A | TECH_MIGRATION | REGULATION",
       "relevanz": "Konkretes Kaufsignal & Relevanz für den B2B-Vertrieb",
       "target_group_match": 85,
       "is_potential_buyer": true,
       "match_reason": "Begründung: Warum ist die Firma ein Käufer und kein Anbieter?",
+      "event_date": "YYYY-MM-DD",
+      "evidence": "Wörtlicher Beleg-Satz aus dem Quelltext",
       "ansprechpartner": null,
-      "position": "Ziel-Entscheiderrolle",
+      "position": "Ziel-Entscheiderrolle (z.B. Geschäftsführung, Werkleiter, Head of Sales)",
       "kontakt": null,
       "quelle": "${nextUrl.url}",
       "psychologische_ansprache": "Was ist der emotionale Zustand und unsichtbare Schmerz des Entscheiders?"
@@ -305,15 +320,43 @@ Gib ein JSON zurück:
     extracted = parseScanTriggers(llmResult.text);
   }
 
-  // Baustelle 1 & 3: Platzhalter filtern und Zielgruppen-Match absichern
+  // Datums-Validierung: Max. 60 Tage alt und valides ISO-Format (YYYY-MM-DD)
+  const MAX_AGE_DAYS = 60;
+  const nowMs = Date.now();
+  const maxAgeMs = MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
+
+  function validateEventDate(rawDate) {
+    if (!rawDate || typeof rawDate !== 'string') return null;
+    const trimmed = rawDate.trim();
+    // Regex für YYYY-MM-DD oder Standard-ISO-Datum
+    const ts = Date.parse(trimmed);
+    if (Number.isNaN(ts)) return null;
+    const diff = nowMs - ts;
+    // Wenn älter als 60 Tage in der Vergangenheit -> ungültig / zu alt
+    if (diff > maxAgeMs) return null;
+    // Wenn mehr als 365 Tage in der Zukunft -> ungültig
+    if (diff < -365 * 24 * 60 * 60 * 1000) return null;
+    return new Date(ts).toISOString().slice(0, 10);
+  }
+
+  // Baustelle 1 & 3: Platzhalter filtern, Datum als Pflichtfeld (max. 60 Tage) und Zielgruppen-Match absichern
   const cleanTriggers = (extracted.trigger_events || [])
     .filter(t => !isPlaceholderCompany(t.firmenname))
+    .filter(t => {
+      // PFLICHTFELD-REGEL: Ohne gültiges Datum innerhalb der letzten 60 Tage wird das Signal verworfen!
+      const validDate = validateEventDate(t.event_date || t.published_at || t.datum);
+      return Boolean(validDate);
+    })
     .map(t => {
       // Heuristik-Check: Wenn Firma Ricoh oder reiner IT-Hersteller ist und sales-software gesucht wird
       const isKnownVendor = /^(ricoh|canon|konica minolta|xerox|bechtle|computacenter)$/i.test((t.firmenname || '').trim());
       const matchScore = isKnownVendor ? 25 : (typeof t.target_group_match === 'number' ? Math.max(0, Math.min(100, t.target_group_match)) : 75);
+      const validDate = validateEventDate(t.event_date || t.published_at || t.datum);
       return {
         ...t,
+        event_date: validDate,
+        published_at: validDate,
+        evidence: t.evidence || t.beleg || t.match_reason || '',
         target_group_match: matchScore,
         is_potential_buyer: !isKnownVendor && (t.is_potential_buyer !== false),
         quelle: t.quelle || nextUrl.url

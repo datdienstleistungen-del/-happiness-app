@@ -34,6 +34,7 @@ const translations = {
       "simulation": "Simulation",
       "switchMode": "Modus wechseln",
       "signalsFound": "Kaufsignale gefunden",
+      "exportCsv": "Report als CSV exportieren",
       "hideSearch": "Suche ausblenden",
       "manualSearch": "Manuell suchen",
       "rescan": "Erneut scannen",
