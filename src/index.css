@@ -99,3 +99,7 @@ input, textarea, select {
   font-family: inherit;
   color: var(--text-primary);
 }
+
+img, video {
+  max-width: 100%;
+}

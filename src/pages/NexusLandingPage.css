@@ -6,6 +6,10 @@
 .nexus-lp-wrapper {
   background: transparent;
   min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: var(--text-primary, #f8fafc);
   -webkit-font-smoothing: antialiased;
@@ -1310,3 +1314,135 @@
   line-height: 1.55;
   margin: 0;
 }
+
+/* --- Sightseeing Tour Section & Video --- */
+.nexus-sightseeing-section {
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 60px 20px;
+  box-sizing: border-box;
+}
+
+.nexus-sightseeing-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.nexus-sightseeing-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: var(--accent-blue, #38bdf8);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.nexus-sightseeing-title {
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 800;
+  color: #f8fafc;
+  margin: 0 0 10px;
+  letter-spacing: -0.02em;
+}
+
+.nexus-sightseeing-subtitle {
+  font-size: 15px;
+  color: #94a3b8;
+  max-width: 640px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+.nexus-tour-video-card {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #0d1117;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(56, 189, 248, 0.15);
+  box-sizing: border-box;
+}
+
+.nexus-tour-video-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  overflow: hidden;
+}
+
+.nexus-tour-video-element {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  display: block;
+  object-fit: contain;
+}
+
+.nexus-tour-chapters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.nexus-tour-chapter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(17, 24, 39, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.nexus-tour-chapter-pill .pill-num {
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.nexus-tour-cta-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 28px;
+}
+
+.nexus-tour-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #38bdf8 0%, #06b6d4 100%);
+  color: #04101e;
+  font-weight: 700;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(6, 182, 212, 0.4);
+  transition: all 0.2s ease;
+}
+
+.nexus-tour-action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(6, 182, 212, 0.55);
+}
+
+.nexus-tour-duration-hint {
+  font-size: 12px;
+  color: #64748b;
+}
+
