@@ -8,8 +8,10 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/prerender.js",
+    "build": "node scripts/nexus-guard.mjs && vite build && node scripts/prerender.js",
     "preview": "vite preview",
+    "guard": "node scripts/nexus-guard.mjs --auto-close",
+    "guard:check": "node scripts/nexus-guard.mjs",
     "check:syntax": "node scripts/check-syntax.mjs",
     "check:leak": "node scripts/check-bundle-leak.mjs",
     "test": "npx playwright test",

@@ -17,6 +17,7 @@ import {
   OPENAI_DEFAULT_MODEL,
 } from '../nexus-models.mjs';
 import { setCooldown, cooldownRemaining, recordProviderError } from './quota.mjs';
+import { isPaidApiKillswitchTripped, tripPaidApiKillswitch } from './circuit-breaker.mjs';
 
 // --- Quota/Cooldown (Phase 5b) -------------------------------------------
 // 429 = Rate-Limit -> kurze Sperre pro Modell (Limit ist meist TPM-pro-Modell).
@@ -32,6 +33,8 @@ async function noteQuotaStatus(provider, model, status) {
     await setCooldown(`${provider}:*`, COOLDOWN_402_MS);
     await setCooldown(`${provider}:${model}`, COOLDOWN_402_MS);
     await recordProviderError(provider, `Payment required (402) on ${model}`);
+    // ERKENNEN UND SOFORT SCHLIESSEN: Sofortiger Not-Aus für alle Bezahl-APIs
+    await tripPaidApiKillswitch(`Bezahl-Provider ${provider} meldet 402 (Guthaben aufgebraucht / Payment required)`);
   } else if (status >= 500) {
     await recordProviderError(provider, `Server error (${status}) on ${model}`);
   }
@@ -178,6 +181,11 @@ async function stageMistral(ctx) {
 }
 
 async function stageOpenAI(ctx) {
+  const killswitch = await isPaidApiKillswitchTripped();
+  if (killswitch.tripped) {
+    ctx.fail(`openai:killswitch (${killswitch.reason})`);
+    return null;
+  }
   const keys = [process.env.OPENAI_API_KEY, process.env.OPENAI_API_KEY_2].filter(Boolean);
   if (keys.length === 0) { ctx.fail('openai:kein-key'); return null; }
   if (ctx.remaining() < 1000) { ctx.fail('openai:budget'); return null; }
@@ -207,6 +215,11 @@ async function stageOpenAI(ctx) {
 }
 
 async function stageDeepSeek(ctx) {
+  const killswitch = await isPaidApiKillswitchTripped();
+  if (killswitch.tripped) {
+    ctx.fail(`deepseek:killswitch (${killswitch.reason})`);
+    return null;
+  }
   const key = process.env.DEEPSEEK_API_KEY;
   if (!key || process.env.DEEPSEEK_ENABLED === 'false') {
     ctx.fail(key ? 'deepseek:disabled' : 'deepseek:kein-key');

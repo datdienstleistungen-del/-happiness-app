@@ -44,6 +44,11 @@ async function polishText(text, lang = 'de') {
   }
 }
 
+import { checkIpSafety } from './_shared/circuit-breaker.mjs';
+
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: CORS_HEADERS, body: '' };
@@ -54,6 +59,46 @@ export const handler = async (event) => {
       statusCode: 405,
       headers: CORS_HEADERS,
       body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
+  // 1. IP Burst Protection
+  const ipSafety = await checkIpSafety(event, { maxPerMinute: 20 });
+  if (!ipSafety.allowed) {
+    return {
+      statusCode: ipSafety.status || 429,
+      headers: CORS_HEADERS,
+      body: JSON.stringify({ error: ipSafety.error })
+    };
+  }
+
+  // 2. Auth Check
+  const authHeader = event.headers.authorization || event.headers.Authorization || '';
+  const token = authHeader.replace('Bearer ', '').trim();
+  if (!token) {
+    return {
+      statusCode: 401,
+      headers: CORS_HEADERS,
+      body: JSON.stringify({ error: 'Nicht authentifiziert' })
+    };
+  }
+
+  try {
+    const authRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_ANON_KEY }
+    });
+    if (!authRes.ok) {
+      return {
+        statusCode: 401,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ error: 'Ungültiges Token' })
+      };
+    }
+  } catch (err) {
+    return {
+      statusCode: 401,
+      headers: CORS_HEADERS,
+      body: JSON.stringify({ error: 'Auth-Prüfung fehlgeschlagen' })
     };
   }
 

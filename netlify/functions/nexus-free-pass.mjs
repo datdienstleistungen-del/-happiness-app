@@ -1,4 +1,5 @@
-﻿import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
+import { checkIpSafety } from './_shared/circuit-breaker.mjs'
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
@@ -16,6 +17,16 @@ export async function handler(event) {
 
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' }
+  }
+
+  // IP Burst Safety Check
+  const ipSafety = await checkIpSafety(event, { maxPerMinute: 15 });
+  if (!ipSafety.allowed) {
+    return {
+      statusCode: ipSafety.status || 429,
+      headers,
+      body: JSON.stringify({ error: ipSafety.error })
+    };
   }
 
   try {

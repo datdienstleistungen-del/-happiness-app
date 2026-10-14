@@ -3,6 +3,17 @@ import { getTavilyKeys, searchWithFallback } from './_shared/search-core.mjs';
 import { isBlockedUrl } from './_shared/url-rules.mjs';
 
 export async function handler(event, context) {
+  // 0. Security Guard: Nur autorisierte Cron-Trigger zulassen
+  const cronSecret = event.headers['x-cron-secret'] || event.queryStringParameters?.secret;
+  const expectedSecret = process.env.CRON_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+  if (!cronSecret || cronSecret !== expectedSecret) {
+    return {
+      statusCode: 403,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Forbidden: Ungültiges oder fehlendes Cron-Secret' })
+    };
+  }
+
   // 1. Setup & Environment
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;

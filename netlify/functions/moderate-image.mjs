@@ -91,24 +91,38 @@ export const handler = async (event) => {
     }
   }
 
-  let userId = null
-
   try {
-    const authHeader = event.headers.authorization || ''
-    const token = authHeader.replace('Bearer ', '')
+    const authHeader = event.headers.authorization || event.headers.Authorization || '';
+    const token = authHeader.replace('Bearer ', '').trim();
+    if (!token) {
+      return {
+        statusCode: 401,
+        headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Nicht authentifiziert' })
+      };
+    }
 
-    if (token && SUPABASE_SERVICE_KEY) {
+    let userId = null;
+    if (SUPABASE_SERVICE_KEY) {
       try {
         const authRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
           headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_SERVICE_KEY }
-        })
+        });
         if (authRes.ok) {
-          const userData = await authRes.json()
-          userId = userData.id
+          const userData = await authRes.json();
+          userId = userData.id;
         }
       } catch (e) {
-        console.error('Moderation auth check failed:', e.message)
+        console.error('Moderation auth check failed:', e.message);
       }
+    }
+
+    if (!userId) {
+      return {
+        statusCode: 401,
+        headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Ungültiges Token' })
+      };
     }
 
     const body = JSON.parse(event.body || '{}')
