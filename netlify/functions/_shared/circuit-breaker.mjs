@@ -11,9 +11,9 @@
 
 import { tryConsumeHourly, setCooldown, cooldownRemaining, dayKey, hourKey } from './quota.mjs';
 
-const IP_QUARANTINE_MS = 30 * 60 * 1000; // 30 Minuten Quarantäne bei Bot-Flooding
-const MAX_REQUESTS_PER_MINUTE_PER_IP = 20; // Max 20 Requests/Minute pro IP für unauthentifizierte Anfragen
-const MAX_REQUESTS_PER_HOUR_PER_IP = 120; // Max 120 Requests/Stunde pro IP
+const IP_QUARANTINE_MS = 24 * 60 * 60 * 1000; // 24 Stunden Vollsperre bei Missbrauch / Bot-Bursts
+const MAX_REQUESTS_PER_MINUTE_PER_IP = 4; // Max 3-4 Anfragen/Minute pro IP (menschliches Arbeitstempo)
+const MAX_REQUESTS_PER_HOUR_PER_IP = 60; // Max 60 Requests/Stunde pro IP
 
 // Speicher für In-Memory Rate-Limiting
 const ipMinuteBuckets = new Map();
@@ -43,7 +43,8 @@ export async function isIpQuarantined(ip) {
  * Erkennt Anomalien und sperrt eine auffällige IP sofort
  */
 export async function quarantineIp(ip, reason) {
-  console.warn(`[CIRCUIT-BREAKER] 🚨 ANOMALIE ERKANNT: Sperre IP ${ip} sofort für ${IP_QUARANTINE_MS / 60000} Minuten. Grund: ${reason}`);
+  const hours = Math.round(IP_QUARANTINE_MS / 3600000);
+  console.warn(`[CIRCUIT-BREAKER] 🚨 ANOMALIE ERKANNT: Sperre IP ${ip} sofort für ${hours} Stunden. Grund: ${reason}`);
   await setCooldown(`quarantine:ip:${ip}`, IP_QUARANTINE_MS);
 }
 
@@ -60,10 +61,11 @@ export async function checkIpSafety(event, options = {}) {
   // 1. Prüfen, ob IP bereits in Quarantäne ist
   if (await isIpQuarantined(ip)) {
     const remainingMs = await cooldownRemaining(`quarantine:ip:${ip}`);
+    const remainingHours = Math.ceil(remainingMs / 3600000);
     return {
       allowed: false,
-      status: 429,
-      error: `IP temporär gesperrt wegen auffälliger Aktivität. Bitte warte ${Math.ceil(remainingMs / 60000)} Minuten.`
+      status: 403,
+      error: `Zugriff für diese IP gesperrt wegen wiederholter automatisierter Anfragen. Sperre aktiv für noch ca. ${remainingHours} Stunden.`
     };
   }
 
@@ -85,11 +87,11 @@ export async function checkIpSafety(event, options = {}) {
   const maxPerMin = options.maxPerMinute || MAX_REQUESTS_PER_MINUTE_PER_IP;
   if (minuteCount > maxPerMin) {
     // ERKENNEN UND SOFORT SCHLIESSEN:
-    await quarantineIp(ip, `Burst-Limit überschritten (${minuteCount} Requests in 1 Minute, Limit: ${maxPerMin})`);
+    await quarantineIp(ip, `Burst-Limit überschritten (${minuteCount} Requests in 1 Minute, menschliches Limit: ${maxPerMin})`);
     return {
       allowed: false,
-      status: 429,
-      error: 'Zu viele Anfragen in kurzer Zeit. IP wurde automatisch für 30 Minuten unter Quarantäne gestellt.'
+      status: 403,
+      error: 'Zu viele Anfragen in kurzer Zeit (menschliches Limit überschritten). Diese IP wurde für 24 Stunden gesperrt.'
     };
   }
 

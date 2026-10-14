@@ -13,6 +13,7 @@ import { trackPageView, checkAndTrackReturnVisit, getVisitorId } from './intelli
 import { trackNexusPageView } from './lib/nexus-analytics'
 import AppRoutes from './routes/AppRoutes'
 import AppLayout from './components/layout/AppLayout'
+import CookieConsent from './components/CookieConsent'
 import './App.css'
 
 class ErrorBoundary extends Component {
@@ -187,11 +188,14 @@ export default function App() {
                   {loading ? (
                     <LoadingScreen />
                   ) : (
-                    <AppLayout>
-                      <ErrorBoundary>
-                        <AppRoutes />
-                      </ErrorBoundary>
-                    </AppLayout>
+                    <>
+                      <CookieConsent />
+                      <AppLayout>
+                        <ErrorBoundary>
+                          <AppRoutes />
+                        </ErrorBoundary>
+                      </AppLayout>
+                    </>
                   )}
                 </GuideProvider>
               </LeadProvider>
