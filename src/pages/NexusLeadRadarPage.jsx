@@ -494,12 +494,12 @@ export default function NexusLeadRadarPage() {
                 bewertung: t.bewertung || '',
                 signal: t.signal || '',
                 signal_kategorie: t.signal_kategorie || 'EXPANSION',
-                event_date: t.event_date || t.published_at || (r.extracted_at ? r.extracted_at.slice(0, 10) : new Date().toISOString().slice(0, 10)),
+                event_date: t.event_date || null,
                 evidence: t.evidence || t.match_reason || '',
                 position: t.position || t.contact?.role || (typeof t.ansprechpartner === 'string' ? t.ansprechpartner : null) || 'Geschäftsführung / Vertriebsleitung',
                 psychologische_ansprache: t.psychologische_ansprache || '',
                 quelle: t.quelle || r.url || null,
-                published_at: t.event_date || t.published_at || new Date().toISOString(),
+                published_at: t.published_at || (r.extracted_at ? r.extracted_at.slice(0, 10) : null),
                 ansprechpartner: {
                   name: t.contact?.name || t.ansprechpartner || null,
                   rolle: t.contact?.role || t.position || null,
@@ -614,12 +614,12 @@ export default function NexusLeadRadarPage() {
                   bewertung: t.bewertung || '',
                   signal: t.signal || '',
                   signal_kategorie: t.signal_kategorie || 'EXPANSION',
-                  event_date: t.event_date || t.published_at || (r.extracted_at ? r.extracted_at.slice(0, 10) : new Date().toISOString().slice(0, 10)),
+                  event_date: t.event_date || null,
                   evidence: t.evidence || t.match_reason || '',
                   position: t.position || (typeof t.ansprechpartner === 'string' ? t.ansprechpartner : null) || 'Geschäftsführung / Vertriebsleitung',
                   psychologische_ansprache: t.psychologische_ansprache || '',
                   quelle: t.quelle || r.url || null,
-                  published_at: t.event_date || t.published_at || r.extracted_at || new Date().toISOString(),
+                  published_at: t.published_at || (r.extracted_at ? r.extracted_at.slice(0, 10) : null),
                   ansprechpartner: {
                     name: t.ansprechpartner || null,
                     rolle: t.position || null,
@@ -657,12 +657,12 @@ export default function NexusLeadRadarPage() {
                   bewertung: t.bewertung || '',
                   signal: t.signal || '',
                   signal_kategorie: t.signal_kategorie || 'EXPANSION',
-                  event_date: t.event_date || t.published_at || (r.extracted_at ? r.extracted_at.slice(0, 10) : new Date().toISOString().slice(0, 10)),
+                  event_date: t.event_date || null,
                   evidence: t.evidence || t.match_reason || '',
                   position: t.position || (typeof t.ansprechpartner === 'string' ? t.ansprechpartner : null) || 'Geschäftsführung / Vertriebsleitung',
                   psychologische_ansprache: t.psychologische_ansprache || '',
                   quelle: t.quelle || r.url || null,
-                  published_at: t.event_date || t.published_at || r.extracted_at || new Date().toISOString(),
+                  published_at: t.published_at || (r.extracted_at ? r.extracted_at.slice(0, 10) : null),
                   ansprechpartner: {
                     name: t.ansprechpartner || null,
                     rolle: t.position || null,
@@ -725,12 +725,27 @@ export default function NexusLeadRadarPage() {
     ];
 
     const escapeCell = (val) => {
-      const str = String(val ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ').trim();
-      return `"${str}"`;
+      if (val == null) return '""';
+      // 1. In String konvertieren, Zeilenumbrüche durch Leerzeichen ersetzen
+      let str = String(val).replace(/\r?\n/g, ' ');
+      // 2. Nicht-druckbare ASCII-Steuerzeichen entfernen (außer normalem Leerzeichen)
+      str = str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+      // 3. Führende und abschließende Leerzeichen trimmen
+      str = str.trim();
+      // 4. OWASP CSV Formula Injection (CWE-1236) Neutralisierung:
+      // Führende Zeichen '=', '+', '-', '@', '\t', '\r', '|', '%' werden durch
+      // ein vorangestelltes Apostroph (') neutralisiert. Excel, Calc & Co. interpretieren
+      // die Zelle dadurch zwingend als Text und führen keine Formeln, DDE-Befehle oder Hyperlinks aus.
+      if (/^[=+\-@\t\r|%]/.test(str)) {
+        str = `'` + str;
+      }
+      // 5. RFC 4180 Escaping: Doppelte Anführungszeichen verdoppeln und gesamte Zelle in Anführungszeichen fassen
+      return `"${str.replace(/"/g, '""')}"`;
     };
 
     const rows = visibleTriggers.map(t => {
-      const rawDate = t.event_date || t.published_at;
+      // Striktes Ereignisdatum: Niemals stillschweigend auf Veröffentlichungsdatum oder Crawldatum zurückfallen
+      const rawDate = t.event_date;
       let formattedDate = '';
       if (rawDate) {
         try {

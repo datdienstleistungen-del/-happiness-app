@@ -20,15 +20,36 @@ import { setCooldown, cooldownRemaining, recordProviderError } from './quota.mjs
 import { isPaidApiKillswitchTripped, tripPaidApiKillswitch } from './circuit-breaker.mjs';
 
 // --- Quota/Cooldown (Phase 5b) -------------------------------------------
-// 429 = Rate-Limit -> kurze Sperre pro Modell (Limit ist meist TPM-pro-Modell).
+// 429 = Rate-Limit -> kurze Sperre pro Modell (default 30s statt 10min, bzw. dynamisch nach Retry-After).
 // 402 = kein Guthaben -> lange, providerweite Sperre (betrifft alle Modelle).
-const COOLDOWN_429_MS = Number(process.env.LLM_COOLDOWN_429_MS) || 10 * 60 * 1000;
+const COOLDOWN_429_MS = Number(process.env.LLM_COOLDOWN_429_MS) || 30 * 1000;
 const COOLDOWN_402_MS = Number(process.env.LLM_COOLDOWN_402_MS) || 60 * 60 * 1000;
 
-async function noteQuotaStatus(provider, model, status) {
+export function parseRetryAfter(res) {
+  if (!res?.headers) return null;
+  const header = typeof res.headers.get === 'function' ? res.headers.get('retry-after') : null;
+  if (!header) return null;
+  const asSec = parseFloat(header);
+  if (!Number.isNaN(asSec) && asSec > 0) {
+    return Math.ceil(asSec * 1000);
+  }
+  const asDate = Date.parse(header);
+  if (!Number.isNaN(asDate)) {
+    const diff = asDate - Date.now();
+    if (diff > 0) return diff;
+  }
+  return null;
+}
+
+async function noteQuotaStatus(provider, model, status, res = null) {
   if (status === 429) {
-    await setCooldown(`${provider}:${model}`, COOLDOWN_429_MS);
-    await recordProviderError(provider, `Rate limit (429) on ${model}`);
+    const retryAfterMs = parseRetryAfter(res);
+    // Wenn Retry-After vorhanden: daran orientieren (+ 500ms Puffer/Jitter), bounded auf 1.5s .. 120s
+    const cooldownMs = retryAfterMs != null
+      ? Math.min(Math.max(retryAfterMs + 500, 1500), 120000)
+      : COOLDOWN_429_MS;
+    await setCooldown(`${provider}:${model}`, cooldownMs);
+    await recordProviderError(provider, `Rate limit (429) on ${model} (cooldown: ${Math.round(cooldownMs / 1000)}s)`);
   } else if (status === 402) {
     await setCooldown(`${provider}:*`, COOLDOWN_402_MS);
     await setCooldown(`${provider}:${model}`, COOLDOWN_402_MS);
@@ -98,8 +119,15 @@ async function stageGroq(ctx) {
             chatBody(model, ctx.messages, ctx.temperature, ctx.max_tokens, withJson, ctx.extraBody),
             Math.min(9000, ctx.remaining())
           );
-          await noteQuotaStatus('groq', model, res.status);
-          if (res.status === 429) break;            // -> naechstes Modell
+          await noteQuotaStatus('groq', model, res.status, res);
+          if (res.status === 429) {
+            const retryAfterMs = parseRetryAfter(res);
+            if (retryAfterMs != null && retryAfterMs <= 2500 && ctx.remaining() > retryAfterMs + 2000) {
+              const jitter = Math.floor(Math.random() * 300);
+              await new Promise(r => setTimeout(r, retryAfterMs + jitter));
+            }
+            break; // -> naechstes Modell
+          }
           if (res.status === 400 && withJson) { ctx.fail(`groq:${model}:400-json`); continue; }
           if (!res.ok) { ctx.fail(`groq:${model}:${res.status}`); break; }
           const data = await res.json();
@@ -136,7 +164,7 @@ async function stageOpenRouter(ctx) {
           chatBody(model, ctx.messages, ctx.temperature, ctx.max_tokens, false, ctx.extraBody),
           Math.min(4000, ctx.remaining())
         );
-        await noteQuotaStatus('openrouter', model, res.status);
+        await noteQuotaStatus('openrouter', model, res.status, res);
         if (res.status === 429) { ctx.fail(`openrouter:429-${model}`); break; }
         if (!res.ok) { ctx.fail(`openrouter:${model}:${res.status}`); continue; }
         const data = await res.json();
@@ -164,7 +192,7 @@ async function stageMistral(ctx) {
         chatBody(MISTRAL_DEFAULT_MODEL, ctx.messages, ctx.temperature, ctx.max_tokens, ctx.jsonMode, ctx.extraBody),
         Math.min(4000, ctx.remaining())
       );
-      await noteQuotaStatus('mistral', MISTRAL_DEFAULT_MODEL, res.status);
+      await noteQuotaStatus('mistral', MISTRAL_DEFAULT_MODEL, res.status, res);
       if (res.ok) {
         const data = await res.json();
         const text = firstText(data);
@@ -198,7 +226,7 @@ async function stageOpenAI(ctx) {
         chatBody(OPENAI_DEFAULT_MODEL, ctx.messages, ctx.temperature, ctx.max_tokens, ctx.jsonMode, ctx.extraBody),
         Math.min(4000, ctx.remaining())
       );
-      await noteQuotaStatus('openai', OPENAI_DEFAULT_MODEL, res.status);
+      await noteQuotaStatus('openai', OPENAI_DEFAULT_MODEL, res.status, res);
       if (res.ok) {
         const data = await res.json();
         const text = firstText(data);
@@ -234,7 +262,7 @@ async function stageDeepSeek(ctx) {
       chatBody('deepseek-chat', ctx.messages, ctx.temperature, ctx.max_tokens, ctx.jsonMode, ctx.extraBody),
       Math.min(4000, ctx.remaining())
     );
-    await noteQuotaStatus('deepseek', 'deepseek-chat', res.status);
+    await noteQuotaStatus('deepseek', 'deepseek-chat', res.status, res);
     if (res.ok) {
     const data = await res.json();
     const text = firstText(data);
@@ -308,5 +336,8 @@ export async function callLLM(messages, {
     if (out) return out;
   }
 
-  throw new Error(`Alle KI-Provider sind derzeit ausgelastet oder nicht erreichbar. (${errors.slice(0, 10).join(', ')})`);
+  const err = new Error(`Alle KI-Provider sind derzeit ausgelastet oder nicht erreichbar. (${errors.slice(0, 10).join(', ')})`);
+  err.code = 'ALL_PROVIDERS_UNAVAILABLE';
+  err.providerErrors = errors;
+  throw err;
 }
