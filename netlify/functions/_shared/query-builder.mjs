@@ -394,14 +394,29 @@ export function buildDachScanQueries({ offering, signalStrategies = [], manualQu
     const ddgQueries = [];
 
     strategyQueries.forEach((q, idx) => {
-      // Für Web/DDG: DACH-Fokus mit site-Operator
-      const dachQuery = q.includes('site:') || q.includes('Deutschland') || q.includes('DACH')
-        ? q
-        : `${q} ${DACH_SITE_OPERATOR}`;
+      // Verhindere zu generische 2-Wort-Queries (z.B. "Markt" "Erweiterung" ohne Branchenbezug),
+      // indem wir bei fehlendem Branchenanker den Haupt-Branchenbegriff voranstellen.
+      const normQ = q.toLowerCase();
+      const hasBranchContext = anchors.branche && (
+        normQ.includes(anchors.branche.toLowerCase()) ||
+        normQ.includes('agentur') ||
+        normQ.includes('vertrieb') ||
+        normQ.includes('industrie') ||
+        normQ.includes('software') ||
+        normQ.includes('gmbh')
+      );
+      const effectiveQ = (!hasBranchContext && anchors.branche && anchors.branche !== 'Mittelstand')
+        ? `"${anchors.branche}" ${q}`
+        : q;
+
+      // Für Web/DDG: DACH-Fokus mit site-Operator & gezieltem Ausschluss von Startup-/Ratgeber-Portalen
+      const dachQuery = effectiveQ.includes('site:') || effectiveQ.includes('Deutschland') || effectiveQ.includes('DACH')
+        ? effectiveQ
+        : `${effectiveQ} ${DACH_SITE_OPERATOR} -site:fuer-gruender.de -site:business-wissen.de -site:wikipedia.org`;
 
       // Für Bing News: Einfache, bereinigte deutsche Phrase ohne boolesche Operatoren
       if (idx % 2 === 0 && newsQueries.length < 4) {
-        const cleanNewsQ = simplifyForBingNews(q);
+        const cleanNewsQ = simplifyForBingNews(effectiveQ);
         if (cleanNewsQ.length >= 3) {
           newsQueries.push(cleanNewsQ);
         }
