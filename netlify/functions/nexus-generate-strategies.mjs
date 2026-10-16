@@ -23,8 +23,51 @@ export const handler = async (event, context) => {
     const user = await userRes.json();
 
     const { offeringId, aiUnderstanding, targetMarkets, uiLanguage } = JSON.parse(event.body);
-    if (!offeringId || !aiUnderstanding) {
-      return { statusCode: 400, body: JSON.stringify({ error: "Missing offering details or AI understanding" }) };
+    if (!offeringId) {
+      return { statusCode: 400, body: JSON.stringify({ error: "Missing offering details" }) };
+    }
+
+    let effectiveUnderstanding = aiUnderstanding;
+    const hasContexts = effectiveUnderstanding &&
+      typeof effectiveUnderstanding === 'object' &&
+      Array.isArray(effectiveUnderstanding.demand_contexts) &&
+      effectiveUnderstanding.demand_contexts.length > 0;
+
+    if (!hasContexts) {
+      let offeringData = null;
+      if (offeringId) {
+        const offRes = await fetch(`${supabaseUrl}/rest/v1/nexus_offerings?id=eq.${offeringId}&select=*`, {
+          headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}` }
+        });
+        if (offRes.ok) {
+          const list = await offRes.json();
+          offeringData = list[0];
+        }
+      }
+      const offName = effectiveUnderstanding?.offering_name || offeringData?.offering_name || 'B2B Angebot';
+      const audience = effectiveUnderstanding?.target_audience || offeringData?.target_audience || 'B2B Unternehmen';
+      const pos = effectiveUnderstanding?.positioning || offeringData?.positioning || offName;
+
+      effectiveUnderstanding = {
+        offering_name: offName,
+        core_offering: offName,
+        target_audience: audience,
+        positioning: pos,
+        demand_contexts: [
+          `Wachstum und Expansion in der Zielgruppe ${audience}`,
+          `Erhöhter Bedarf an: ${pos}`,
+          `Einstellung von Führungskräften / Vertriebsausbau`,
+          `Neukundengewinnung & Expansion in neue Märkte`
+        ]
+      };
+
+      if (offeringId) {
+        fetch(`${supabaseUrl}/rest/v1/nexus_offerings?id=eq.${offeringId}`, {
+          method: 'PATCH',
+          headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ai_understanding: effectiveUnderstanding })
+        }).catch(() => {});
+      }
     }
 
     const marketsString = Array.isArray(targetMarkets) && targetMarkets.length > 0 ? targetMarkets.join(", ") : "Worldwide / Global";
@@ -35,7 +78,7 @@ HEUTIGES DATUM / AKTUELLER ZEITHORIZONT: Jahr ${currentYear}.
 Deine Aufgabe: Entwickle auf Basis des tiefen semantischen Verständnisses (Offering Understanding) eine umfassende Liste von "Signal Strategies" (Suchstrategien), um im Internet nach passenden, hochaktuellen Trigger-Ereignissen (Jahr ${currentYear}) zu suchen.
 
 ANGEBOTS-VERSTÄNDNIS (Wahrheitsschicht):
-${JSON.stringify(aiUnderstanding, null, 2)}
+${JSON.stringify(effectiveUnderstanding, null, 2)}
 
 ZIELMÄRKTE FÜR DIE SUCHE:
 ${marketsString}

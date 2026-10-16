@@ -35,11 +35,19 @@ export default function SignalStrategiesManager({ offering }) {
     setGenerating(true);
     setError(null);
     try {
-      const aiUnderstanding = offering.ai_understanding || {
+      const rawAi = offering.ai_understanding;
+      const hasDemandContexts = rawAi && typeof rawAi === 'object' && Array.isArray(rawAi.demand_contexts) && rawAi.demand_contexts.length > 0;
+      const aiUnderstanding = hasDemandContexts ? rawAi : {
         offering_name: offering.offering_name,
-        target_audience: offering.target_audience,
-        positioning: offering.positioning,
-        demand_contexts: []
+        core_offering: offering.offering_name,
+        target_audience: offering.target_audience || 'B2B',
+        positioning: offering.positioning || offering.offering_name,
+        demand_contexts: [
+          `Wachstum und Expansion in der Zielgruppe ${offering.target_audience || 'B2B'}`,
+          `Erhöhter Bedarf an: ${offering.positioning || offering.offering_name}`,
+          `Einstellung von Führungskräften / Vertriebsausbau`,
+          `Neukundengewinnung & Expansion in neue Märkte`
+        ]
       };
       const newStrats = await generateSignalStrategies(offering.id, aiUnderstanding, offering.target_markets, activeLang);
       if (newStrats && newStrats.length > 0) {

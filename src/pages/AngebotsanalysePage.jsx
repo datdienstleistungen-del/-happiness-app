@@ -172,10 +172,31 @@ export default function AngebotsanalysePage() {
     setError(null)
 
     try {
+      const triggers = analysisResult?.trigger_events || analysisResult?.relevante_trigger || []
+      const offName = formOfferingName.trim() || angebotInput.trim().slice(0, 50)
+      const targetAudience = formTargetAudience.trim() || 'B2B Entscheider'
+      const pos = formPositioning.trim() || angebotInput.trim()
+
+      const aiUnderstanding = {
+        offering_name: offName,
+        core_offering: offName,
+        target_audience: targetAudience,
+        positioning: pos,
+        demand_contexts: Array.isArray(triggers) && triggers.length > 0
+          ? triggers.map(t => typeof t === 'string' ? t : (t.signal || t.event || t.trigger_name || ''))
+          : [
+              `Wachstum und Expansion in der Zielgruppe ${targetAudience}`,
+              `Erhöhter Bedarf an: ${pos}`,
+              `Einstellung von Führungskräften / Vertriebsausbau`,
+              `Neukundengewinnung & Expansion in neue Märkte`
+            ]
+      }
+
       const payload = {
-        offering_name: formOfferingName.trim() || angebotInput.trim().slice(0, 50),
-        target_audience: formTargetAudience.trim() || 'B2B Entscheider',
-        positioning: formPositioning.trim() || angebotInput.trim()
+        offering_name: offName,
+        target_audience: targetAudience,
+        positioning: pos,
+        ai_understanding: aiUnderstanding
       }
 
       const savedOffering = await createOffering(user.id, payload)
@@ -185,13 +206,6 @@ export default function AngebotsanalysePage() {
 
       // Automatically generate initial signal strategies & V3 Filter Profile
       try {
-        const triggers = analysisResult?.trigger_events || analysisResult?.relevante_trigger || []
-        const aiUnderstanding = {
-          offering_name: savedOffering.offering_name,
-          target_audience: savedOffering.target_audience,
-          positioning: savedOffering.positioning,
-          demand_contexts: triggers
-        }
         await generateSignalStrategies(savedOffering.id, aiUnderstanding, null, lang || 'de')
 
         // V3 Multi-Tenant Filter Profile anlegen
