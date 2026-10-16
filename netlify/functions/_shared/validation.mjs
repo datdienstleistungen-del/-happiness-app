@@ -205,7 +205,7 @@ export function normalizeCompanyName(name) {
     .replace(/\bco\.?\s*(kgaa|kg)\b/gi, '')
     .replace(/\bco\.?\s*,?\s*ltd\.?\b/gi, '')
     // 4. Einzelne Rechtsform-Kürzel national und international (inkl. gepunkteter Kürzel)
-    .replace(/\b(gmbh|ag|se|kgaa|kg|ohg|ug|e\.?\s*k\.?|e\.?\s*kfr\.?|e\.?\s*kfm\.?|e\.?\s*v\.?|eg|partg(\s*mbb)?|inc\.?|ltd\.?|corp\.?|llc|p\.?l\.?c\.?|s\.?a\.?r\.?l\.?|b\.?v\.?|n\.?v\.?|s\.?r\.?l\.?|s\.?p\.?a\.?|s\.?a\.?)(\b|$)/gi, '')
+    .replace(/\b(gmbh|ag|se|kgaa|kg|ohg|ug|e\.?\s*k\.?|e\.?\s*kfr\.?|e\.?\s*kfm\.?|e\.?\s*v\.?|eg|partg(\s*mbb)?|inc\.?|ltd\.?|corp\.?|llc|p\.?l\.?c\.?|s\.?a\.?r\.?l\.?|b\.?v\.?|n\.?v\.?|s\.?r\.?l\.?|s\.?p\.?a\.?|s\.?a\.?|s\.?l\.?)(\b|$)/gi, '')
     // 5. Sonderzeichen und Whitespace säubern (Unicode \p{L} für alle europäischen Alphabete)
     .replace(/[^\p{L}0-9]+/gu, ' ')
     .replace(/\s+/g, ' ')
