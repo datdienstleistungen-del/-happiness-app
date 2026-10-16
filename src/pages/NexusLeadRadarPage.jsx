@@ -952,7 +952,7 @@ export default function NexusLeadRadarPage() {
         <div className="error-message">
           <AlertCircle size={16} />
           {error}
-          <button onClick={() => { setError(null); setScanStatus(null); startChunkedScan() }}>
+          <button onClick={() => { setError(null); setScanStatus(null); startChunkedScan(true) }}>
             <RefreshCw size={14} /> {t('nexus.rescan')}
           </button>
         </div>
@@ -966,7 +966,7 @@ export default function NexusLeadRadarPage() {
           <button 
             className="btn-primary" 
             style={{ marginTop: '15px' }}
-            onClick={() => { setError(null); setScanStatus(null); startChunkedScan() }}
+            onClick={() => { setError(null); setScanStatus(null); startChunkedScan(true) }}
           >
             <RefreshCw size={14} style={{ marginRight: '8px' }} />
             {t('nexus.rescan', 'Nochmal scannen')}

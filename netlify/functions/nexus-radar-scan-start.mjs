@@ -19,7 +19,7 @@ import {
   searchBingNewsRss
 } from './_shared/search-core.mjs';
 import { isBlockedUrl } from './_shared/url-rules.mjs';
-import { buildDachScanQueries } from './_shared/query-builder.mjs';
+import { buildDachScanQueries, simplifyForBingNews } from './_shared/query-builder.mjs';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
@@ -97,7 +97,7 @@ async function searchBingNews(query, maxResults = 10, timeoutMs = 4000) {
 async function searchWebWithFallback(query, maxResults = 8, timeoutMs = 5000) {
   // 1. Brave Search API (falls serverseitiger Key konfiguriert)
   try {
-    const braveRes = await searchBrave(query, { maxResults, country: 'DE', timeoutMs: 3500 });
+    const braveRes = await searchBrave(query, { maxResults, country: 'DE', timeoutMs: 5000 });
     if (braveRes.ok && braveRes.results.length > 0) {
       return braveRes.results.map(r => ({ url: r.url, title: r.title }));
     }
@@ -113,15 +113,17 @@ async function searchWebWithFallback(query, maxResults = 8, timeoutMs = 5000) {
 
   // 3. Bing News RSS Fallback für DACH-Märkte (de-DE, de-AT, de-CH)
   try {
-    const cleanQ = query.replace(/\(site:[^)]+\)/gi, '').replace(/site:\S+/gi, '').replace(/[-+()]/g, ' ').trim();
-    const bingResults = await searchBingNewsRss(cleanQ || query, {
-      maxResults,
-      markets: ['de-DE', 'de-AT', 'de-CH'],
-      cutoffDays: 60,
-      timeoutMs: 3500
-    });
-    if (bingResults && bingResults.length > 0) {
-      return bingResults.map(r => ({ url: r.url, title: r.title }));
+    const cleanQ = simplifyForBingNews(query);
+    if (cleanQ) {
+      const bingResults = await searchBingNewsRss(cleanQ, {
+        maxResults,
+        markets: ['de-DE', 'de-AT', 'de-CH'],
+        cutoffDays: 60,
+        timeoutMs: 4000
+      });
+      if (bingResults && bingResults.length > 0) {
+        return bingResults.map(r => ({ url: r.url, title: r.title }));
+      }
     }
   } catch {}
 
@@ -192,7 +194,10 @@ export const handler = async (event) => {
         .limit(1)
         .maybeSingle();
 
-      if (cachedJob && Array.isArray(cachedJob.partial_results) && cachedJob.partial_results.length > 0) {
+      const hasActualTriggers = cachedJob && Array.isArray(cachedJob.partial_results) &&
+        cachedJob.partial_results.some(r => Array.isArray(r.triggers) && r.triggers.length > 0);
+
+      if (hasActualTriggers) {
         console.log(`[ScanStart] 24h-Cache Hit für Offering ${offering_id} (Job ${cachedJob.id}, ${cachedJob.partial_results.length} Treffer)`);
         return {
           statusCode: 200,

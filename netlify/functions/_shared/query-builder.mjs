@@ -359,17 +359,17 @@ export function simplifyForBingNews(q) {
   const cleaned = q
     .replace(/\(site:[^)]+\)/gi, '')
     .replace(/site:\S+/gi, '')
-    .replace(/[-+&]/g, ' ')
-    .replace(/\b(OR|AND|NOT)\b/g, ' ')
+    .replace(/\b(202[3-9])\b/g, '')
+    .replace(/\b(deutschland|österreich|schweiz|germany|austria|switzerland|dach)\b/gi, '')
+    .replace(/[-+&_]/g, ' ')
+    .replace(/\b(OR|AND|NOT|wir suchen|looking for|hiring)\b/gi, ' ')
     .replace(/[()"\[\]]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
   if (!cleaned) return '';
-  if (!/\b(deutschland|österreich|schweiz|dach)\b/i.test(cleaned)) {
-    return `${cleaned} Deutschland`;
-  }
-  return cleaned;
+  const words = cleaned.split(/\s+/).filter(w => w.length > 2);
+  return words.slice(0, 3).join(' ');
 }
 
 /**
@@ -429,16 +429,19 @@ export function buildDachScanQueries({ offering, signalStrategies = [], manualQu
       ddgQueries.push({ q: `"${anchors.branche}" ${DACH_MEDIA_OPERATOR}`, type: 'NEWS' });
     }
 
-    // Sicherstellen, dass mindestens 3 News-Queries existieren (immer mit Branchenanker!)
-    if (newsQueries.length < 3) {
-      newsQueries.push(`${anchors.branche} Investition Deutschland`);
-      if (newsQueries.length < 3) {
-        newsQueries.push(`${anchors.branche} ${anchors.anlass} Deutschland`);
+    // Ergänze immer bewährte hochrelevante Trigger-Suchbegriffe für Wirtschaftsnews
+    const naturalTriggers = /vertrieb|sales|agentur|lead/i.test(anchors.branche)
+      ? ['Vertriebsausbau', 'Vertriebsleiter', 'neuer Vertriebsleiter', 'Vertrieb expansion']
+      : [`${anchors.branche} Investition`, `${anchors.branche} Expansion`, `${anchors.branche} Übernahme`];
+
+    for (const t of naturalTriggers) {
+      if (newsQueries.length < 5 && !newsQueries.includes(t)) {
+        newsQueries.push(t);
       }
     }
 
     const result = {
-      newsQueries: newsQueries.slice(0, 4),
+      newsQueries: newsQueries.slice(0, 5),
       ddgQueries: ddgQueries.slice(0, 7),
       strategySource: 'nexus_signal_strategies',
       semanticCore: core
@@ -469,14 +472,22 @@ export function buildDachScanQueries({ offering, signalStrategies = [], manualQu
   // 5. Achse: Renommierte DACH-Wirtschaftsmedien & Ad-hoc
   const mediaQuery = `"${brancheTerm}" (Expansion OR Übernahme OR Investition OR Neubau) ${DACH_MEDIA_OPERATOR}`;
 
-  // Für Bing News: Einfache, hochrelevante deutsche Phrasen ohne boolesche Klammern / site:-Operatoren
-  // IMMER mit Branchenanker + Produkt + Anlass
-  const newsQueries = [
-    `${brancheTerm} ${produktTerm} ${anlassTerm} Deutschland`.replace(/\s+/g, ' ').trim(),
-    `${brancheTerm} Investition Deutschland`,
-    `${brancheTerm} Neubau Spatenstich Deutschland`,
-    `${brancheTerm} Expansion Standort Deutschland`
-  ];
+  // Für Bing News: Prägnante 2-Wort-Phrasen für DACH-Wirtschaftsnews
+  const cleanBranche = (brancheTerm || 'Mittelstand').replace(/B2B|Agenturen|Unternehmen|Dienstleister/gi, '').trim() || (brancheTerm || 'Mittelstand');
+  const isSales = /vertrieb|sales|agentur|lead/i.test(brancheTerm) || /vertrieb|sales|lead/i.test(produktTerm);
+  const newsQueries = isSales
+    ? [
+        `${cleanBranche} Vertriebsausbau`.trim(),
+        `${cleanBranche} Vertriebsleiter`.trim(),
+        'neuer Vertriebsleiter',
+        `${cleanBranche} Expansion`.trim()
+      ]
+    : [
+        `${cleanBranche} Investition`,
+        `${cleanBranche} Expansion`,
+        `${cleanBranche} ${anlassTerm || 'Wachstum'}`,
+        `${cleanBranche} Übernahme`
+      ];
 
   const ddgQueries = [
     { q: techQuery, type: 'TECH_MIGRATION' },
