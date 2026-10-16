@@ -390,7 +390,7 @@ export const handler = async (event) => {
       { role: "user", content: `Web-Recherche Ergebnisse:\n\n${webContext}` }
     ], {
       profile: 'json',
-      providers: ['groq', 'openrouter', 'mistral', 'openai'],
+      providers: ['deepseek', 'groq', 'openrouter', 'mistral', 'openai'],
       temperature: 0.3,
       max_tokens: 4096,
       jsonMode: true,
@@ -414,7 +414,7 @@ export const handler = async (event) => {
           .filter(t => !isPlaceholderCompany(t.firmenname))
           .map((t, idx) => {
             const matchedSource = safeResults.find(r => r.url === t.quelle) || safeResults[idx % safeResults.length];
-            const isKnownVendor = /^(ricoh|canon|konica minolta|xerox|bechtle|computacenter)$/i.test((t.firmenname || '').trim());
+            const isKnownVendor = /\b(ricoh|canon|konica minolta|xerox|bechtle|computacenter)\b/i.test((t.firmenname || '').trim());
             const matchScore = isKnownVendor ? 25 : (typeof t.target_group_match === 'number' ? Math.max(0, Math.min(100, t.target_group_match)) : 75);
 
             return {
@@ -429,11 +429,16 @@ export const handler = async (event) => {
               quelle: matchedSource ? matchedSource.url : (t.quelle || 'https://www.bundesanzeiger.de'),
               published_at: matchedSource?.published_date || new Date().toISOString()
             };
-          });
+          })
+          .filter(t => t.is_potential_buyer && t.target_group_match >= 50);
 
-        // Update DB status for relevant hits (only if user and db present)
+        // Update DB status for ALL hits: Relevante -> 'relevant', Verworfene -> 'irrelevant' (Cron-Leck-Schutz)
         if (user && user.id && supabaseUrl && supabaseKey) {
+          const allInsertedIds = Object.values(hitIdMap).filter(id => id && id !== 'none');
           const relevantIds = parsed.trigger_events.map(t => t.hit_id).filter(id => id && id !== 'none');
+          const relevantSet = new Set(relevantIds);
+          const irrelevantIds = allInsertedIds.filter(id => !relevantSet.has(id));
+
           if (relevantIds.length > 0) {
             try {
               await fetch(`${supabaseUrl}/rest/v1/nexus_radar_hits?id=in.(${relevantIds.join(',')})`, {
@@ -447,7 +452,24 @@ export const handler = async (event) => {
                 body: JSON.stringify({ status: 'relevant' })
               });
             } catch (e) {
-              console.error("Fehler beim Update des Hit-Status:", e.message);
+              console.error("Fehler beim Update des Hit-Status (relevant):", e.message);
+            }
+          }
+
+          if (irrelevantIds.length > 0) {
+            try {
+              await fetch(`${supabaseUrl}/rest/v1/nexus_radar_hits?id=in.(${irrelevantIds.join(',')})`, {
+                method: 'PATCH',
+                headers: { 
+                  'apikey': supabaseKey, 
+                  'Authorization': `Bearer ${token}`, 
+                  'Content-Type': 'application/json',
+                  'Prefer': 'return=minimal'
+                },
+                body: JSON.stringify({ status: 'irrelevant' })
+              });
+            } catch (e) {
+              console.error("Fehler beim Update des Hit-Status (irrelevant):", e.message);
             }
           }
         }
@@ -455,6 +477,17 @@ export const handler = async (event) => {
     } catch (e) {
       console.error("Fehler beim Parsen der LLM-Antwort (Research):", content);
       parsed = { trigger_events: [] };
+      // Fallback: Alle eingefügten Hits auf 'irrelevant' setzen, um Cron-Lecks zu verhindern
+      const allInsertedIds = Object.values(hitIdMap).filter(id => id && id !== 'none');
+      if (allInsertedIds.length > 0 && user && user.id && supabaseUrl && supabaseKey) {
+        try {
+          await fetch(`${supabaseUrl}/rest/v1/nexus_radar_hits?id=in.(${allInsertedIds.join(',')})`, {
+            method: 'PATCH',
+            headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ status: 'irrelevant' })
+          });
+        } catch (_) {}
+      }
     }
 
     return {

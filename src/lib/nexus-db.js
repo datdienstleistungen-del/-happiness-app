@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { assertQualifiedOpportunity } from './nexus-validation'
 
 /**
  * NeXus Database Helper V2 (Revenue OS Architecture)
@@ -286,6 +287,9 @@ export async function createResearch(userId, triggerId, data) {
 // -----------------------------------------------------------------------------
 
 export async function createOpportunity(userId, companyId, data) {
+  // Zentrale DB-Schranke: Fail-closed Käufer- & Score-Prüfung
+  assertQualifiedOpportunity(data);
+
   const { data: result, error } = await supabase
     .from('nexus_opportunities')
     .insert({ user_id: userId, company_id: companyId, ...data, updated_at: new Date().toISOString() })

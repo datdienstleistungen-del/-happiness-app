@@ -4,7 +4,7 @@ import { Radar, Search, ArrowRight, Building2, AlertCircle, RefreshCw, Briefcase
 import { callContactIntelligence, runResearchPipeline } from '../lib/nexus-ai'
 import { trackRadarScan } from '../lib/nexus-analytics'
 import { supabase } from '../lib/supabase'
-import { isPlaceholderCompany, computeTargetMatchScore, normalizeCompanyName, deduplicateAndMergeTriggers } from '../lib/nexus-validation'
+import { isPlaceholderCompany, computeTargetMatchScore, normalizeCompanyName, deduplicateAndMergeTriggers, buildCompositeEventKey, formatBusinessOpportunity, generateSignalReportCsv } from '../lib/nexus-validation'
 import { formatEventDate, extractDomain } from '../lib/nexus-dates'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import SetupWizard from '../components/SetupWizard'
@@ -13,7 +13,7 @@ import { useLead } from '../context/LeadContext'
 import { useLanguage } from '../i18n/translations.jsx'
 import './NexusLeadRadarPage.css'
 
-export { normalizeCompanyName, deduplicateAndMergeTriggers }
+export { normalizeCompanyName, deduplicateAndMergeTriggers, buildCompositeEventKey }
 
 export default function NexusLeadRadarPage() {
   const { t, lang } = useLanguage()
@@ -132,8 +132,9 @@ export default function NexusLeadRadarPage() {
       let result = await runResearchPipeline(query, branche, lang, offering.id)
 
       const parsed = parseTriggerResult(result)
-      setTriggers(parsed)
-      trackRadarScan(branche, parsed?.length || 0, true)
+      const deduplicated = deduplicateAndMergeTriggers(parsed)
+      setTriggers(deduplicated)
+      trackRadarScan(branche, deduplicated?.length || 0, true)
     } catch (err) {
       console.error('Lead Radar Fehler:', err)
       if (err.name === 'RateLimitError') {
@@ -169,7 +170,7 @@ export default function NexusLeadRadarPage() {
     // Helper für Zielgruppen-Match Heuristik
     const calcMatch = (t) => {
       const compName = (t.firmenname || t.company || '').trim();
-      const isKnownVendor = /^(ricoh|canon|konica minolta|xerox|bechtle|computacenter)$/i.test(compName);
+      const isKnownVendor = /\b(ricoh|canon|konica minolta|xerox|bechtle|computacenter)\b/i.test(compName);
       if (isKnownVendor) return 25; // Anti-Ricoh Filter: Bekannte Großanbieter sind keine Käufer
       if (typeof t.target_group_match === 'number') return Math.max(0, Math.min(100, t.target_group_match));
       return t.prioritaet === 1 ? 88 : t.prioritaet === 2 ? 72 : 55;
@@ -182,6 +183,9 @@ export default function NexusLeadRadarPage() {
           .filter(t => !isPlaceholderCompany(t.firmenname || t.company))
           .map(t => {
             const emailFound = t.contact?.email || (typeof t.kontakt === 'string' && t.kontakt.includes('@') ? t.kontakt : (typeof t.email === 'string' && t.email.includes('@') ? t.email : null))
+            const intentStatus = t.purchase_intent_status || 'TRIGGER_EVENT'
+            const bo = formatBusinessOpportunity(t.business_opportunity || t.relevanz, intentStatus)
+            const isUnverifiedDate = Boolean(t.event_date_unverified || !t.event_date)
             return {
               company: t.firmenname || t.company || 'Unbekanntes Unternehmen',
               prioritaet: t.prioritaet || 99,
@@ -189,9 +193,18 @@ export default function NexusLeadRadarPage() {
               match_reason: t.match_reason || '',
               bewertung: t.bewertung || '',
               signal: t.signal || t.beschreibung || t.event || '',
+              event_fact: t.event_fact || t.signal || '',
+              business_opportunity: bo,
+              purchase_intent_status: intentStatus,
+              event_date: isUnverifiedDate ? null : (t.event_date || null),
+              event_date_unverified: isUnverifiedDate,
+              evidence: t.evidence || '',
+              signal_kategorie: t.signal_kategorie || '',
+              dach_status: t.dach_status || '',
               psychologische_ansprache: t.psychologische_ansprache || '',
               quelle: t.quelle || null,
-              published_at: t.published_at || new Date().toISOString(),
+              all_sources: Array.isArray(t.all_sources) && t.all_sources.length > 0 ? t.all_sources : (t.quelle ? [t.quelle] : []),
+              published_at: t.published_at || null,
               ansprechpartner: {
                 name: t.contact?.name || t.ansprechpartner || null,
                 rolle: t.contact?.role || t.position || null,
@@ -217,6 +230,9 @@ export default function NexusLeadRadarPage() {
             .filter(t => !isPlaceholderCompany(t.firmenname || t.company))
             .map(t => {
               const emailFound = t.contact?.email || (typeof t.kontakt === 'string' && t.kontakt.includes('@') ? t.kontakt : (typeof t.email === 'string' && t.email.includes('@') ? t.email : null))
+              const intentStatus = t.purchase_intent_status || 'TRIGGER_EVENT'
+              const bo = formatBusinessOpportunity(t.business_opportunity || t.relevanz, intentStatus)
+              const isUnverifiedDate = Boolean(t.event_date_unverified || !t.event_date)
               return {
                 company: t.firmenname || t.company || 'Unbekanntes Unternehmen',
                 prioritaet: t.prioritaet || 99,
@@ -224,9 +240,18 @@ export default function NexusLeadRadarPage() {
                 match_reason: t.match_reason || '',
                 bewertung: t.bewertung || '',
                 signal: t.signal || t.beschreibung || t.event || '',
+                event_fact: t.event_fact || t.signal || '',
+                business_opportunity: bo,
+                purchase_intent_status: intentStatus,
+                event_date: isUnverifiedDate ? null : (t.event_date || null),
+                event_date_unverified: isUnverifiedDate,
+                evidence: t.evidence || '',
+                signal_kategorie: t.signal_kategorie || '',
+                dach_status: t.dach_status || '',
                 psychologische_ansprache: t.psychologische_ansprache || '',
                 quelle: t.quelle || null,
-                published_at: t.published_at || new Date().toISOString(),
+                all_sources: Array.isArray(t.all_sources) && t.all_sources.length > 0 ? t.all_sources : (t.quelle ? [t.quelle] : []),
+                published_at: t.published_at || null,
                 ansprechpartner: {
                   name: t.contact?.name || t.ansprechpartner || null,
                   rolle: t.contact?.role || t.position || null,
@@ -485,22 +510,43 @@ export default function NexusLeadRadarPage() {
           (r.triggers || [])
             .filter(t => !isPlaceholderCompany(t.firmenname || t.company))
             .map(t => {
-              const isKnownVendor = /^(ricoh|canon|konica minolta|xerox|bechtle|computacenter)$/i.test((t.firmenname || '').trim());
-              const matchScore = isKnownVendor ? 25 : (typeof t.target_group_match === 'number' ? t.target_group_match : (t.prioritaet === 1 ? 88 : t.prioritaet === 2 ? 72 : 55));
+              const compName = (t.firmenname || t.company || '').trim();
+              const isKnownVendor = /\b(ricoh|canon|konica minolta|xerox|bechtle|computacenter)\b/i.test(compName);
+              const rawScore = typeof t.target_group_match === 'number' ? t.target_group_match : (t.prioritaet === 1 ? 88 : t.prioritaet === 2 ? 72 : 55);
+              const matchScore = isKnownVendor ? 25 : rawScore;
+              const isExplicitNonBuyer = t.is_potential_buyer === false || isKnownVendor || matchScore < 50;
+              const isInvalidDach = t.dach_status === 'FOREIGN_MENTIONED' || t.dach_status === 'DACH_UNVERIFIED';
+              const isDisqualified = isExplicitNonBuyer || isInvalidDach;
+              const exclusionReason = isKnownVendor
+                ? 'Wettbewerber/Anbieter (kein Käufer)'
+                : (t.is_potential_buyer === false
+                  ? 'Kein potenzieller Käufer'
+                  : (matchScore < 50
+                    ? 'Zielgruppen-Match unter 50%'
+                    : (isInvalidDach ? 'Kein DACH-Standort verifiziert' : null)));
+
               return {
-                company: t.firmenname || 'Unbekanntes Unternehmen',
+                company: t.firmenname || t.company || 'Unbekanntes Unternehmen',
                 branche: t.branche || activeOffering?.target_industry || 'B2B',
                 prioritaet: t.prioritaet || 99,
                 target_group_match: matchScore,
+                is_potential_buyer: !isExplicitNonBuyer,
+                is_disqualified: isDisqualified,
+                exclusion_reason: exclusionReason,
                 match_reason: t.match_reason || '',
                 bewertung: t.bewertung || '',
                 signal: t.signal || '',
                 signal_kategorie: t.signal_kategorie || 'EXPANSION',
-                event_date: t.event_date || null,
+                event_fact: t.event_fact || t.signal || '',
+                business_opportunity: formatBusinessOpportunity(t.business_opportunity || t.relevanz, t.purchase_intent_status),
+                purchase_intent_status: t.purchase_intent_status || 'TRIGGER_EVENT',
+                event_date: t.event_date_unverified ? null : (t.event_date || null),
+                event_date_unverified: Boolean(t.event_date_unverified || !t.event_date),
                 evidence: t.evidence || t.match_reason || '',
                 position: t.position || t.contact?.role || (typeof t.ansprechpartner === 'string' ? t.ansprechpartner : null) || 'Geschäftsführung / Vertriebsleitung',
                 psychologische_ansprache: t.psychologische_ansprache || '',
                 quelle: t.quelle || r.url || null,
+                all_sources: Array.isArray(t.all_sources) && t.all_sources.length > 0 ? t.all_sources : (t.quelle || r.url ? [t.quelle || r.url] : []),
                 published_at: t.published_at || (r.extracted_at ? r.extracted_at.slice(0, 10) : null),
                 ansprechpartner: {
                   name: t.contact?.name || t.ansprechpartner || null,
@@ -606,22 +652,43 @@ export default function NexusLeadRadarPage() {
             (r.triggers || [])
               .filter(t => !isPlaceholderCompany(t.firmenname || t.company))
               .map(t => {
-                const isKnownVendor = /^(ricoh|canon|konica minolta|xerox|bechtle|computacenter)$/i.test((t.firmenname || '').trim());
-                const matchScore = isKnownVendor ? 25 : (typeof t.target_group_match === 'number' ? t.target_group_match : (t.prioritaet === 1 ? 88 : t.prioritaet === 2 ? 72 : 55));
+                const compName = (t.firmenname || t.company || '').trim();
+                const isKnownVendor = /\b(ricoh|canon|konica minolta|xerox|bechtle|computacenter)\b/i.test(compName);
+                const rawScore = typeof t.target_group_match === 'number' ? t.target_group_match : (t.prioritaet === 1 ? 88 : t.prioritaet === 2 ? 72 : 55);
+                const matchScore = isKnownVendor ? 25 : rawScore;
+                const isExplicitNonBuyer = t.is_potential_buyer === false || isKnownVendor || matchScore < 50;
+                const isInvalidDach = t.dach_status === 'FOREIGN_MENTIONED' || t.dach_status === 'DACH_UNVERIFIED';
+                const isDisqualified = isExplicitNonBuyer || isInvalidDach;
+                const exclusionReason = isKnownVendor
+                  ? 'Wettbewerber/Anbieter (kein Käufer)'
+                  : (t.is_potential_buyer === false
+                    ? 'Kein potenzieller Käufer'
+                    : (matchScore < 50
+                      ? 'Zielgruppen-Match unter 50%'
+                      : (isInvalidDach ? 'Kein DACH-Standort verifiziert' : null)));
+
                 return {
-                  company: t.firmenname || 'Unbekanntes Unternehmen',
+                  company: t.firmenname || t.company || 'Unbekanntes Unternehmen',
                   branche: t.branche || activeOffering?.target_industry || 'B2B',
                   prioritaet: t.prioritaet || 99,
                   target_group_match: matchScore,
+                  is_potential_buyer: !isExplicitNonBuyer,
+                  is_disqualified: isDisqualified,
+                  exclusion_reason: exclusionReason,
                   match_reason: t.match_reason || '',
                   bewertung: t.bewertung || '',
                   signal: t.signal || '',
                   signal_kategorie: t.signal_kategorie || 'EXPANSION',
-                  event_date: t.event_date || null,
+                  event_fact: t.event_fact || t.signal || '',
+                  business_opportunity: formatBusinessOpportunity(t.business_opportunity || t.relevanz, t.purchase_intent_status),
+                  purchase_intent_status: t.purchase_intent_status || 'TRIGGER_EVENT',
+                  event_date: t.event_date_unverified ? null : (t.event_date || null),
+                  event_date_unverified: Boolean(t.event_date_unverified || !t.event_date),
                   evidence: t.evidence || t.match_reason || '',
                   position: t.position || (typeof t.ansprechpartner === 'string' ? t.ansprechpartner : null) || 'Geschäftsführung / Vertriebsleitung',
                   psychologische_ansprache: t.psychologische_ansprache || '',
                   quelle: t.quelle || r.url || null,
+                  all_sources: Array.isArray(t.all_sources) && t.all_sources.length > 0 ? t.all_sources : (t.quelle || r.url ? [t.quelle || r.url] : []),
                   published_at: t.published_at || (r.extracted_at ? r.extracted_at.slice(0, 10) : null),
                   ansprechpartner: {
                     name: t.ansprechpartner || null,
@@ -649,22 +716,43 @@ export default function NexusLeadRadarPage() {
             (r.triggers || [])
               .filter(t => !isPlaceholderCompany(t.firmenname || t.company))
               .map(t => {
-                const isKnownVendor = /^(ricoh|canon|konica minolta|xerox|bechtle|computacenter)$/i.test((t.firmenname || '').trim());
-                const matchScore = isKnownVendor ? 25 : (typeof t.target_group_match === 'number' ? t.target_group_match : (t.prioritaet === 1 ? 88 : t.prioritaet === 2 ? 72 : 55));
+                const compName = (t.firmenname || t.company || '').trim();
+                const isKnownVendor = /\b(ricoh|canon|konica minolta|xerox|bechtle|computacenter)\b/i.test(compName);
+                const rawScore = typeof t.target_group_match === 'number' ? t.target_group_match : (t.prioritaet === 1 ? 88 : t.prioritaet === 2 ? 72 : 55);
+                const matchScore = isKnownVendor ? 25 : rawScore;
+                const isExplicitNonBuyer = t.is_potential_buyer === false || isKnownVendor || matchScore < 50;
+                const isInvalidDach = t.dach_status === 'FOREIGN_MENTIONED' || t.dach_status === 'DACH_UNVERIFIED';
+                const isDisqualified = isExplicitNonBuyer || isInvalidDach;
+                const exclusionReason = isKnownVendor
+                  ? 'Wettbewerber/Anbieter (kein Käufer)'
+                  : (t.is_potential_buyer === false
+                    ? 'Kein potenzieller Käufer'
+                    : (matchScore < 50
+                      ? 'Zielgruppen-Match unter 50%'
+                      : (isInvalidDach ? 'Kein DACH-Standort verifiziert' : null)));
+
                 return {
-                  company: t.firmenname || 'Unbekanntes Unternehmen',
+                  company: t.firmenname || t.company || 'Unbekanntes Unternehmen',
                   branche: t.branche || activeOffering?.target_industry || 'B2B',
                   prioritaet: t.prioritaet || 99,
                   target_group_match: matchScore,
+                  is_potential_buyer: !isExplicitNonBuyer,
+                  is_disqualified: isDisqualified,
+                  exclusion_reason: exclusionReason,
                   match_reason: t.match_reason || '',
                   bewertung: t.bewertung || '',
                   signal: t.signal || '',
                   signal_kategorie: t.signal_kategorie || 'EXPANSION',
-                  event_date: t.event_date || null,
+                  event_fact: t.event_fact || t.signal || '',
+                  business_opportunity: formatBusinessOpportunity(t.business_opportunity || t.relevanz, t.purchase_intent_status),
+                  purchase_intent_status: t.purchase_intent_status || 'TRIGGER_EVENT',
+                  event_date: t.event_date_unverified ? null : (t.event_date || null),
+                  event_date_unverified: Boolean(t.event_date_unverified || !t.event_date),
                   evidence: t.evidence || t.match_reason || '',
                   position: t.position || (typeof t.ansprechpartner === 'string' ? t.ansprechpartner : null) || 'Geschäftsführung / Vertriebsleitung',
                   psychologische_ansprache: t.psychologische_ansprache || '',
                   quelle: t.quelle || r.url || null,
+                  all_sources: Array.isArray(t.all_sources) && t.all_sources.length > 0 ? t.all_sources : (t.quelle || r.url ? [t.quelle || r.url] : []),
                   published_at: t.published_at || (r.extracted_at ? r.extracted_at.slice(0, 10) : null),
                   ansprechpartner: {
                     name: t.ansprechpartner || null,
@@ -704,12 +792,14 @@ export default function NexusLeadRadarPage() {
 
   // CSV-Export für Signal-Reports (Productised Service)
   const handleExportCsv = () => {
-    const deduplicated = deduplicateAndMergeTriggers(triggers);
+    const deduplicated = deduplicateAndMergeTriggers(triggers, { activeOfferingId: activeOffering?.id });
     const visibleTriggers = deduplicated.filter(t => {
       const match = computeTargetMatchScore(t.company, t.target_group_match);
-      if (radarFilter === 'relevant') return match >= 50;
-      if (radarFilter === 'unclear') return match < 50;
-      return true;
+      const isDisq = Boolean(t.is_disqualified || match < 50 || t.is_potential_buyer === false);
+      if (radarFilter === 'relevant') return !isDisq && match >= 50;
+      if (radarFilter === 'unclear') return isDisq || match < 50;
+      // Im 'all'-Modus nur verifizierte, qualifizierte Leads exportieren
+      return !isDisq && match >= 50;
     });
 
     if (visibleTriggers.length === 0) {
@@ -717,70 +807,7 @@ export default function NexusLeadRadarPage() {
       return;
     }
 
-    const headers = [
-      'Firma',
-      'Branche',
-      'Anlass (Signal)',
-      'Kategorie',
-      'Event-Datum',
-      'Quellen-URL',
-      'Beleg-Satz',
-      'Ziel-Entscheiderrolle'
-    ];
-
-    const escapeCell = (val) => {
-      if (val == null) return '""';
-      // 1. In String konvertieren, Zeilenumbrüche durch Leerzeichen ersetzen
-      let str = String(val).replace(/\r?\n/g, ' ');
-      // 2. Nicht-druckbare ASCII-Steuerzeichen entfernen (außer normalem Leerzeichen)
-      str = str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
-      // 3. Führende und abschließende Leerzeichen trimmen
-      str = str.trim();
-      // 4. OWASP CSV Formula Injection (CWE-1236) Neutralisierung:
-      // Führende Zeichen '=', '+', '-', '@', '\t', '\r', '|', '%' werden durch
-      // ein vorangestelltes Apostroph (') neutralisiert. Excel, Calc & Co. interpretieren
-      // die Zelle dadurch zwingend als Text und führen keine Formeln, DDE-Befehle oder Hyperlinks aus.
-      if (/^[=+\-@\t\r|%]/.test(str)) {
-        str = `'` + str;
-      }
-      // 5. RFC 4180 Escaping: Doppelte Anführungszeichen verdoppeln und gesamte Zelle in Anführungszeichen fassen
-      return `"${str.replace(/"/g, '""')}"`;
-    };
-
-    const rows = visibleTriggers.map(t => {
-      // Striktes Ereignisdatum: Niemals stillschweigend auf Veröffentlichungsdatum oder Crawldatum zurückfallen
-      const rawDate = t.event_date;
-      let formattedDate = '';
-      if (rawDate) {
-        try {
-          formattedDate = new Date(rawDate).toISOString().slice(0, 10);
-        } catch {
-          formattedDate = String(rawDate).slice(0, 10);
-        }
-      }
-
-      const firma = t.company || 'Unbekannt';
-      const branche = t.branche || activeOffering?.target_industry || 'B2B';
-      const anlass = t.signal || '';
-      const kategorie = t.signal_kategorie || 'EXPANSION';
-      const quelle = t.quelle || '';
-      const beleg = t.evidence || t.match_reason || '';
-      const rolle = t.position || t.ansprechpartner?.rolle || 'Geschäftsführung / Vertriebsleitung';
-
-      return [
-        escapeCell(firma),
-        escapeCell(branche),
-        escapeCell(anlass),
-        escapeCell(kategorie),
-        escapeCell(formattedDate),
-        escapeCell(quelle),
-        escapeCell(beleg),
-        escapeCell(rolle)
-      ].join(';');
-    });
-
-    // UTF-8 BOM (\uFEFF) sichert einwandfreie deutsche Umlaute in Excel (Windows & Mac)
-    const csvContent = '\uFEFF' + [headers.map(escapeCell).join(';'), ...rows].join('\r\n');
+    const csvContent = generateSignalReportCsv(visibleTriggers, { activeOffering });
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -1017,42 +1044,55 @@ export default function NexusLeadRadarPage() {
             {triggers
               .filter(t => {
                 const match = computeTargetMatchScore(t.company, t.target_group_match);
-                if (radarFilter === 'relevant') return match >= 50;
-                if (radarFilter === 'unclear') return match < 50;
+                const isDisq = Boolean(t.is_disqualified || match < 50 || t.is_potential_buyer === false);
+                if (radarFilter === 'relevant') return !isDisq && match >= 50;
+                if (radarFilter === 'unclear') return isDisq || match < 50;
                 return true;
               })
               .map((trigger, index) => {
                 const matchScore = computeTargetMatchScore(trigger.company, trigger.target_group_match);
+                const isDisqualified = Boolean(trigger.is_disqualified || matchScore < 50 || trigger.is_potential_buyer === false);
                 const dateInfo = formatEventDate(trigger.published_at || trigger.event_date);
                 const domain = extractDomain(trigger.quelle);
 
                 return (
-                  <div key={index} className="trigger-card" style={{ opacity: trigger.prioritaet > 3 ? 0.6 : 1 }}>
+                  <div key={index} className="trigger-card" style={{ opacity: isDisqualified ? 0.65 : (trigger.prioritaet > 3 ? 0.6 : 1), border: isDisqualified ? '1px dashed rgba(239, 68, 68, 0.4)' : undefined }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
                       <div className="trigger-significance" style={{ 
-                        background: trigger.prioritaet === 1 ? '#EF444420' : trigger.prioritaet === 2 ? '#F59E0B20' : '#3B82F620',
-                        color: trigger.prioritaet === 1 ? '#EF4444' : trigger.prioritaet === 2 ? '#F59E0B' : '#3B82F6',
+                        background: isDisqualified ? '#6b728020' : (trigger.prioritaet === 1 ? '#EF444420' : trigger.prioritaet === 2 ? '#F59E0B20' : '#3B82F620'),
+                        color: isDisqualified ? '#6b7280' : (trigger.prioritaet === 1 ? '#EF4444' : trigger.prioritaet === 2 ? '#F59E0B' : '#3B82F6'),
                         fontSize: '0.8rem',
                         fontWeight: 700,
                         padding: '4px 8px',
                         borderRadius: '6px',
                         display: 'inline-block'
                       }}>
-                        {trigger.prioritaet === 1 ? 'HOHE PRIORITÄT' : trigger.prioritaet === 2 ? 'MITTLERE PRIORITÄT' : 'NIEDRIGE PRIORITÄT'}
+                        {isDisqualified ? 'UNGEPRÜFTER ROHFUND / AUSSCHLUSS' : (trigger.prioritaet === 1 ? 'HOHE PRIORITÄT' : trigger.prioritaet === 2 ? 'MITTLERE PRIORITÄT' : 'NIEDRIGE PRIORITÄT')}
                       </div>
 
                       {/* Baustelle 3: Zielgruppen-Match Score */}
-                      {matchScore >= 70 ? (
+                      {!isDisqualified && matchScore >= 70 ? (
                         <span className="badge-match-high" title={trigger.match_reason || 'Hohe Passgenauigkeit zum Zielkundenprofil'}>
                           <CheckCircle size={12} /> Zielgruppen-Match: {matchScore}%
                         </span>
-                      ) : matchScore >= 50 ? (
+                      ) : !isDisqualified && matchScore >= 50 ? (
                         <span className="badge-match-mid" title={trigger.match_reason || 'Guter Zielgruppen-Match'}>
                           <Sparkles size={12} /> Zielgruppen-Match: {matchScore}%
                         </span>
                       ) : (
-                        <span className="badge-match-low" title={trigger.match_reason || 'Unternehmen ist möglicherweise Anbieter/Wettbewerber oder passt nicht zur Zielgruppe'}>
-                          <AlertCircle size={12} /> Zielgruppe unklar ({matchScore}%)
+                        <span style={{
+                          background: '#ef444415',
+                          color: '#dc2626',
+                          border: '1px solid #ef444430',
+                          borderRadius: '6px',
+                          padding: '3px 8px',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }} title={trigger.exclusion_reason || trigger.match_reason || 'Kandidat erfüllt verbindliche Käuferkriterien nicht'}>
+                          <AlertCircle size={12} /> Ausgeschlossen ({trigger.exclusion_reason || `Match: ${matchScore}%`})
                         </span>
                       )}
                     </div>
@@ -1090,6 +1130,52 @@ export default function NexusLeadRadarPage() {
 
                     <div className="trigger-body">
                       <p className="trigger-desc">{trigger.signal}</p>
+
+                      {trigger.business_opportunity && (
+                        <div className="trigger-opportunity-box" style={{
+                          margin: '10px 0',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          background: trigger.business_opportunity.startsWith('[Hypothese]') ? 'rgba(234, 179, 8, 0.08)' : 'rgba(59, 130, 246, 0.08)',
+                          borderLeft: trigger.business_opportunity.startsWith('[Hypothese]') ? '3px solid #eab308' : '3px solid #3b82f6',
+                          fontSize: '0.88rem',
+                          lineHeight: 1.45
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                            {trigger.business_opportunity.startsWith('[Hypothese]') ? (
+                              <span style={{
+                                background: '#eab308',
+                                color: '#1a1a1a',
+                                fontSize: '0.68rem',
+                                fontWeight: 800,
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                letterSpacing: '0.04em'
+                              }}>
+                                HYPOTHESE
+                              </span>
+                            ) : (
+                              <span style={{
+                                background: '#3b82f6',
+                                color: '#ffffff',
+                                fontSize: '0.68rem',
+                                fontWeight: 800,
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                letterSpacing: '0.04em'
+                              }}>
+                                KAUFABSICHT
+                              </span>
+                            )}
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                              {trigger.business_opportunity.startsWith('[Hypothese]') ? 'Abgeleitete Vertriebschance (kein Quelltext-Fakt)' : 'Bestätigter Bedarf'}
+                            </span>
+                          </div>
+                          <p style={{ margin: 0, color: 'var(--text-primary)' }}>
+                            {trigger.business_opportunity.replace(/^\[Hypothese\]\s*/, '')}
+                          </p>
+                        </div>
+                      )}
                       
                       {trigger.psychologische_ansprache && (
                         <div className="trigger-strategy" style={{ background: 'var(--bg-elevated)', padding: '10px', borderRadius: '8px', marginTop: '10px' }}>
@@ -1192,11 +1278,100 @@ export default function NexusLeadRadarPage() {
                               ⚠️ Keine Quelle verfügbar – Opportunity nicht testreif.
                             </div>
                           )}
+
+                          {/* Weitere Quellen aufklappbar anzeigen */}
+                          {Array.isArray(trigger.all_sources) && trigger.all_sources.filter(s => s && s !== trigger.quelle).length > 0 && (
+                            <details className="trigger-extra-sources" style={{ margin: '0' }}>
+                              <summary style={{
+                                cursor: 'pointer',
+                                fontSize: '0.78rem',
+                                color: '#38bdf8',
+                                fontWeight: 600,
+                                userSelect: 'none',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                background: 'rgba(56, 189, 248, 0.08)',
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                border: '1px solid rgba(56, 189, 248, 0.2)'
+                              }}>
+                                <span>Weitere Quellen: {trigger.all_sources.filter(s => s && s !== trigger.quelle).length}</span>
+                              </summary>
+                              <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '4px',
+                                marginTop: '6px',
+                                paddingLeft: '8px',
+                                borderLeft: '2px solid rgba(56, 189, 248, 0.3)'
+                              }}>
+                                {trigger.all_sources.filter(s => s && s !== trigger.quelle).map((srcUrl, sIdx) => {
+                                  const extraDomain = extractDomain(srcUrl);
+                                  return (
+                                    <a
+                                      key={sIdx}
+                                      href={srcUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="trigger-source-link"
+                                      style={{ fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                      title={srcUrl}
+                                    >
+                                      <Globe size={11} />
+                                      <span>{extraDomain || srcUrl}</span>
+                                      <ExternalLink size={10} />
+                                    </a>
+                                  );
+                                })}
+                              </div>
+                            </details>
+                          )}
                           
-                          <div className="trigger-date-info">
-                            <Clock size={13} />
-                            <span>{dateInfo.formattedDate} ({dateInfo.relativeTime})</span>
-                          </div>
+                          {trigger.event_date_unverified ? (
+                            <div className="trigger-date-info" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              <span style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                color: '#d97706',
+                                background: 'rgba(217, 119, 6, 0.12)',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                fontSize: '0.75rem',
+                                fontWeight: 600
+                              }}>
+                                <AlertCircle size={12} color="#d97706" />
+                                Datum nicht verifiziert
+                              </span>
+                              {trigger.published_at && (
+                                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                                  Veröffentlicht am: {formatEventDate(trigger.published_at).formattedDate}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="trigger-date-info">
+                              <Clock size={13} />
+                              <span>{dateInfo.formattedDate} ({dateInfo.relativeTime})</span>
+                            </div>
+                          )}
+                          {trigger.has_date_conflict && trigger.conflicting_dates && trigger.conflicting_dates.length > 1 && (
+                            <div style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              color: '#b45309',
+                              background: '#fef3c7',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              fontSize: '0.72rem',
+                              fontWeight: 600
+                            }} title={`Abweichende Fundstellen in Artikeln: ${trigger.conflicting_dates.join(', ')}`}>
+                              <AlertCircle size={11} color="#b45309" />
+                              <span>Datumskonflikt ({trigger.conflicting_dates.join(' vs. ')})</span>
+                            </div>
+                          )}
                         </div>
 
                         {dateInfo.isExpired && (
@@ -1240,6 +1415,17 @@ export default function NexusLeadRadarPage() {
                         <ArrowRight size={14} />
                       </button>
                     </div>
+                  ) : isDisqualified ? (
+                    <button 
+                      type="button"
+                      className="action-btn action-btn-secondary" 
+                      style={{ opacity: 0.65, cursor: 'not-allowed', background: 'rgba(239, 68, 68, 0.08)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.25)', fontSize: '0.85rem' }} 
+                      disabled
+                      title={trigger.exclusion_reason || 'Kandidat erfüllt verbindliche Käuferkriterien nicht'}
+                    >
+                      <AlertCircle size={14} />
+                      <span>Nicht qualifiziert (Kein Käufer)</span>
+                    </button>
                   ) : (
                     <button className="action-btn action-btn-primary" onClick={() => handleProcessSignal(trigger)}>
                       <ArrowRight size={16} />

@@ -1,5 +1,6 @@
 import { callLLM } from './_shared/llm-core.mjs';
 import { extractJson, radarHitClassificationSchema } from './_shared/schemas.mjs';
+import { assertQualifiedOpportunity, validatePurchaseIntent } from './_shared/validation.mjs';
 
 export async function handler(event, context) {
   // ── 0. Zwingende Autorisierungsprüfung (Nur autorisierte Cron-Scheduler oder Admins) ──
@@ -50,12 +51,12 @@ export async function handler(event, context) {
     }
   }
   
-  // AI Provider: Groq (primary, free) → Mistral → DeepSeek
+  // AI Provider: DeepSeek (primary, hohe Argumentationstiefe) → Groq → Mistral
+  const deepseekKey = process.env.DEEPSEEK_API_KEY;
   const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
   const mistralKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
-  const deepseekKey = process.env.DEEPSEEK_API_KEY;
 
-  if (!supabaseUrl || !supabaseKey || (!groqKey && !mistralKey && !deepseekKey)) {
+  if (!supabaseUrl || !supabaseKey || (!deepseekKey && !groqKey && !mistralKey)) {
     return { statusCode: 500, body: JSON.stringify({ error: "Missing config for B2 Eval Cron" }) };
   }
 
@@ -126,22 +127,34 @@ Text: ${contentExcerpt}
 
 Bewerte, ob dieser Text ein konkretes Ereignis (Trigger) oder einen Bedarf enthält, der zeigt, dass der Verfasser oder das genannte Unternehmen das obige Angebot des Nutzers jetzt brauchen könnte.
 
-WICHTIG - KEINE ERFUNDENEN DATEN:
-Erfinde NICHTS. Nutze NUR echte Firmennamen aus dem Text. Findest du keine konkrete Firma, gib null zurück.
+WICHTIG - KÄUFER-PRÜFUNG & KEINE ERFUNDENEN DATEN (FAIL-CLOSED):
+1. KÄUFER-FILTER (ANTI-RICOH-FILTER - FAIL-CLOSED):
+   Ist das gefundene Unternehmen ein potenzieller KÄUFER des Angebots?
+   - Wenn das gefundene Unternehmen ein Anbieter, IT-Dienstleister, Softwarehaus, Wettbewerber oder Hersteller eigener Lösungen ist (z.B. Ricoh, Canon, Konica Minolta, Bechtle) oder eigene Produkte bewirbt:
+     Setze "is_potential_buyer": false, "status": "irrelevant", "relevance_score": 0 und "relevance_reason": "Kein potenzieller Käufer (Anbieter/Wettbewerber)".
+   - Nur wenn das gefundene Unternehmen ein tatsächlicher externer Nachfrager/Kunde für das Angebot ist:
+     Setze "is_potential_buyer": true.
+   - Wenn die Käuferqualifikation unklar, zweifelhaft oder nicht eindeutig aus dem Text belegt ist:
+     Setze "is_potential_buyer": false und "status": "irrelevant".
+2. Erfinde NICHTS. Nutze NUR echte Firmennamen aus dem Text. Findest du keine konkrete Firma, gib null zurück.
 
-Antworte strikt in JSON mit exakt diesen 6 Feldern:
+Antworte strikt in JSON mit exakt diesen Feldern:
 1. "status": "relevant" oder "irrelevant"
-2. "relevance_score": Zahl zwischen 0 und 100
-3. "relevance_reason": Warum ist es relevant? Beziehe dich explizit auf das Angebot des Nutzers. (oder "N/A" falls irrelevant)
-4. "trigger_type": Benenne die Art des Ereignisses in 1-3 Worten (z.B. "Stellenanzeige / Hiring", "Expansion", "IT-Migration", "Führungswechsel"). (oder "N/A")
-5. "firmenname": Der exakte Name des B2B-Unternehmens, um das es in dem Text geht. WICHTIG: Nutze NUR echte Firmennamen aus dem Text. (oder null, falls keine konkrete Firma genannt wird)
-6. "domain": Die Web-Domain der gefundenen Firma, falls sie im Text erwähnt wird (z.B. "firma.de"). (oder null)`;
+2. "relevance_score": Zahl zwischen 0 und 100 (0 wenn irrelevant)
+3. "is_potential_buyer": true oder false (Muss im Text belegt sein, sonst zwingend false)
+4. "buyer_evidence": Belegsatz oder Begründung für die Käufereigenschaft (oder "N/A")
+5. "relevance_reason": Warum ist es relevant? Beziehe dich explizit auf das Angebot des Nutzers. (oder "N/A" falls irrelevant)
+6. "trigger_type": Benenne die Art des Ereignisses in 1-3 Worten (z.B. "Stellenanzeige / Hiring", "Expansion", "IT-Migration", "Führungswechsel"). (oder "N/A")
+7. "firmenname": Der exakte Name des B2B-Unternehmens, um das es in dem Text geht. WICHTIG: Nutze NUR echte Firmennamen aus dem Text. (oder null, falls keine konkrete Firma genannt wird)
+8. "domain": Die Web-Domain der gefundenen Firma, falls sie im Text erwähnt wird (z.B. "firma.de"). (oder null)
+9. "purchase_intent_status": "EXPLICIT_INTENT" (nur bei expliziter Ausschreibung/Beschaffungsabsicht mit Beleg), "TRIGGER_EVENT" (bei operativem Anlass/Veränderung), oder "PURE_MENTION" (reine PR/Erwähnung ohne Anlass).
+10. "evidence": Wörtliches Zitat (min. 15 Zeichen) aus dem Text, das das Ereignis oder die Kaufabsicht belegt.`;
 
       try {
         let aiResult = null;
         const llmMessages = [{ role: 'system', content: 'Du bist ein Vertriebsassistent. Antworte immer im JSON-Format.' }, { role: 'user', content: prompt }];
 
-        // Kette via _shared/llm-core: Groq -> Mistral -> DeepSeek (wie bisher),
+        // Kette via _shared/llm-core: DeepSeek (primär) -> Groq -> Mistral,
         // json_object-Mode. Ausgabe serverseitig per Zod geprueft
         // (relevance_score wird koerziert und auf 0-100 geclamped).
         try {
@@ -151,7 +164,7 @@ Antworte strikt in JSON mit exakt diesen 6 Feldern:
             temperature: 0.2,
             max_tokens: 1000,
             totalBudgetMs: 20000,
-            providers: ['groq', 'mistral', 'deepseek'],
+            providers: ['deepseek', 'groq', 'mistral'],
           });
           const parsed = extractJson(aiRes.text);
           if (parsed && typeof parsed === 'object') {
@@ -174,16 +187,24 @@ Antworte strikt in JSON mit exakt diesen 6 Feldern:
 
         console.log(`DEBUG: AI Result für Hit ${hit.id}:`, JSON.stringify(aiResult));
 
-        // 4. Update in Supabase
-        const finalStatus = (aiResult.status === 'relevant' && aiResult.relevance_score >= 50) ? 'relevant' : 'irrelevant';
-        await updateHit(hit.id, finalStatus, aiResult.relevance_score, aiResult.relevance_reason, aiResult.trigger_type, supabaseUrl, supabaseKey, authToken);
-
-        // 5. Automatische Opportunity erstellen (wenn relevant und Firma oder Domain erkannt)
-        const companyName = (aiResult.firmenname && aiResult.firmenname !== 'N/A' && String(aiResult.firmenname).toLowerCase() !== 'null')
-          ? aiResult.firmenname
+        // 4. Update in Supabase (mit verbindlicher Fail-Closed Käufer- und Anbieterprüfung)
+        const rawComp = (aiResult.firmenname && aiResult.firmenname !== 'N/A' && String(aiResult.firmenname).toLowerCase() !== 'null')
+          ? aiResult.firmenname.trim()
           : (aiResult.domain && aiResult.domain !== 'N/A' && String(aiResult.domain).toLowerCase() !== 'null' ? aiResult.domain.replace(/^www\./, '').split('.')[0] : null);
+        const companyName = rawComp && rawComp.length >= 2 ? rawComp : null;
 
-        if (finalStatus === 'relevant' && companyName) {
+        const isKnownVendor = /\b(ricoh|canon|konica minolta|xerox|bechtle|computacenter)\b/i.test(companyName || '');
+        const isPlaceholder = !companyName || /^(echter firmenname|musterfirma|test gmbh|unbekannt|firma|unternehmen)$/i.test(companyName);
+        const isBuyerExplicit = Boolean(aiResult.is_potential_buyer === true && !isKnownVendor && !isPlaceholder);
+        const score = Number(aiResult.relevance_score) || 0;
+        const isBuyerValid = isBuyerExplicit && aiResult.status === 'relevant' && score >= 50;
+
+        const finalStatus = isBuyerValid ? 'relevant' : 'irrelevant';
+        const finalScore = isBuyerValid ? score : 0;
+        await updateHit(hit.id, finalStatus, finalScore, aiResult.relevance_reason, aiResult.trigger_type, supabaseUrl, supabaseKey, authToken);
+
+        // 5. Automatische Opportunity erstellen (nur wenn fail-closed Käufer-Prüfung bestanden und Firma vorhanden)
+        if (isBuyerValid && companyName) {
           aiResult.firmenname = companyName;
           await createOpportunityFromHit(hit, offering, aiResult, supabaseUrl, supabaseKey, authToken);
         }
@@ -209,6 +230,44 @@ Antworte strikt in JSON mit exakt diesen 6 Feldern:
 
 async function createOpportunityFromHit(hit, offering, aiResult, supabaseUrl, supabaseKey, authToken) {
   try {
+    const compName = (aiResult.firmenname || '').trim();
+    const score = Number(aiResult.relevance_score) || 0;
+
+    // Verbindliche Schutzschranke (Fail-Closed):
+    try {
+      assertQualifiedOpportunity({
+        company_name: compName,
+        is_potential_buyer: aiResult.is_potential_buyer,
+        relevance_score: score,
+        purchase_intent_status: aiResult.purchase_intent_status
+      });
+    } catch (qualErr) {
+      console.warn(`B2 Cron: Blockiere Opportunity (Fail-Closed) für unqualifizierten Hit ${hit.id}: ${qualErr.message}`);
+      return;
+    }
+
+    if (aiResult.status !== 'relevant') {
+      console.warn(`B2 Cron: Hit ${hit.id} hat status !== 'relevant', erstelle keine Opportunity.`);
+      return;
+    }
+
+    // Gemeinsame Kaufabsichts-Validierung (Fail-Closed):
+    const intent = validatePurchaseIntent({
+      ...aiResult,
+      quelle: hit.url,
+      evidence: aiResult.evidence || aiResult.buyer_evidence || ''
+    }, { sourceText: hit.raw_content });
+
+    if (!intent.isQualified || intent.status === 'PURE_MENTION') {
+      console.warn(`B2 Cron: Hit ${hit.id} ist PURE_MENTION / nicht qualifiziert für Opportunity (${intent.reason}).`);
+      return;
+    }
+
+    const stage = intent.status === 'EXPLICIT_INTENT' ? 'opportunity' : 'signal';
+    const oppLeadScore = intent.status === 'EXPLICIT_INTENT'
+      ? (score || 85)
+      : Math.round(0.5 * (score || 70) + 0.5 * 50);
+
     const headers = { 'apikey': supabaseKey, 'Authorization': `Bearer ${authToken || supabaseKey}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' };
     
     // 1. Company dedup (by domain or name+user_id)
@@ -356,7 +415,8 @@ async function createOpportunityFromHit(hit, offering, aiResult, supabaseUrl, su
           user_id: hit.user_id,
           company_id: company.id,
           offering_id: offering.id,
-          pipeline_stage: 'opportunity',
+          pipeline_stage: stage,
+          lead_score: oppLeadScore,
           source: 'Trigger Radar',
           created_from: 'AI'
         })

@@ -89,31 +89,28 @@ for (const file of files) {
   }
 
   // 3. CHECK: KOSTENLECK (Falsche Provider-Reihenfolge)
-  // DeepSeek / OpenAI darf NIEMALS an 1. Stelle stehen, Groq MUSS vor DeepSeek stehen.
+  // OpenAI darf NIEMALS an 1. Stelle stehen. DeepSeek ist nutzerautorisiert als primärer Provider.
   const providerMatches = content.matchAll(/providers:\s*\[([^\]]+)\]/g);
   for (const m of providerMatches) {
     const rawList = m[1];
     const providers = rawList.replace(/['"\s]/g, '').split(',');
-    const deepseekIdx = providers.indexOf('deepseek');
-    const groqIdx = providers.indexOf('groq');
+    const openaiIdx = providers.indexOf('openai');
 
-    if (deepseekIdx === 0 || (deepseekIdx !== -1 && groqIdx !== -1 && deepseekIdx < groqIdx)) {
+    if (openaiIdx === 0) {
       leaksFound++;
-      const problem = `Kostenleck in Provider-Kette: [${providers.join(', ')}]`;
+      const problem = `Kostenleck in Provider-Kette: OpenAI an Position 1 [${providers.join(', ')}]`;
 
       if (AUTO_CLOSE) {
-        // SOFORT SCHLIESSEN: Kaskade automatisch korrigieren
-        // Groq nach vorne, DeepSeek ganz nach hinten
+        // SOFORT SCHLIESSEN: OpenAI nach hinten verschieben
         const reordered = [...providers];
-        const ds = reordered.splice(reordered.indexOf('deepseek'), 1)[0];
-        if (!reordered.includes('groq')) reordered.unshift('groq');
-        reordered.push(ds);
+        const oai = reordered.splice(openaiIdx, 1)[0];
+        reordered.push(oai);
 
         const newChain = `providers: [${reordered.map(p => `'${p}'`).join(', ')}]`;
         content = content.replace(m[0], newChain);
         fileModified = true;
         leaksClosed++;
-        console.log(`⚡ [AUTO-CLOSE] ${file}: Provider-Kette automatisch korrigiert zu: [${reordered.join(', ')}]`);
+        console.log(`⚡ [AUTO-CLOSE] ${file}: Provider-Kette korrigiert zu: [${reordered.join(', ')}]`);
       } else {
         issues.push({
           file,
@@ -174,7 +171,7 @@ if (leaksClosed > 0) {
 if (issues.length === 0) {
   console.log('\n✅ STATUS: ALLES SAUBER & WASSERDICHT GESCHÜTZT.');
   console.log('   - Alle Endpoints authentifiziert');
-  console.log('   - Kosten-Kaskade 100% sicher (Groq zuerst, DeepSeek geschützt)');
+  console.log('   - Kosten-Kaskade 100% sicher (DeepSeek autorisiert, OpenAI geschützt)');
   console.log('   - Keine Klartext-Schlüssel im Code');
   console.log('   - Automatischer Not-Aus (Circuit Breaker) aktiv\n');
   process.exit(0);

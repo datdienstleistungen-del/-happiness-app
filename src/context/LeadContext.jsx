@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { useAuth } from './AuthContext'
 import * as db from '../lib/nexus-db'
-import { isPlaceholderCompany, computeTargetMatchScore } from '../lib/nexus-validation'
+import { isPlaceholderCompany, computeTargetMatchScore, isVendorCompany, assertQualifiedOpportunity, validatePurchaseIntent } from '../lib/nexus-validation'
 
 /**
  * NeXus LeadContext (Revenue OS)
@@ -60,10 +60,28 @@ export function LeadProvider({ children }) {
   const processSignalToOpportunity = useCallback(async (offeringId, companyData, signalData, contactData = null) => {
     if (!user) return null
 
-    // Baustelle 1: Keine Platzhalter-Firmen anlegen
-    if (isPlaceholderCompany(companyData.name)) {
-      console.warn('[LeadContext] Abgelehnt: Firmenname ist ein Platzhalter:', companyData.name);
-      alert("Test- oder Platzhalter-Einträge ('Echter Firmenname', etc.) können nicht in den Sales Workspace übernommen werden.");
+    // 1. Zentrale Sicherheits- und Käuferschranke (Fail-Closed):
+    const compName = (companyData?.name || '').trim();
+    try {
+      assertQualifiedOpportunity({
+        company_name: compName,
+        is_disqualified: signalData?.is_disqualified,
+        is_potential_buyer: signalData?.is_potential_buyer,
+        target_group_match: signalData?.target_group_match,
+        trigger_score: signalData?.trigger_score,
+        purchase_intent_status: signalData?.purchase_intent_status
+      });
+    } catch (err) {
+      console.warn(`[LeadContext] Opportunity blockiert (Käuferschutz):`, err.message);
+      alert(`Opportunity kann nicht erstellt werden: ${err.message}`);
+      return null;
+    }
+
+    // Gemeinsame Kaufabsichts-Validierung (Fail-Closed):
+    const intent = validatePurchaseIntent(signalData);
+    if (!intent.isQualified || intent.status === 'PURE_MENTION') {
+      console.warn(`[LeadContext] Signal nicht qualifiziert für Opportunity (${intent.status}):`, intent.reason);
+      alert(`Opportunity kann nicht erstellt werden: ${intent.reason}`);
       return null;
     }
 
@@ -108,13 +126,19 @@ export function LeadProvider({ children }) {
         return null;
       }
 
-      // 4. Opportunity erzeugen (mit Baustelle 3: lead_score = Zielgruppen-Match)
+      // 4. Opportunity erzeugen (differenzierte Stage und kalibrierter Lead-Score)
+      const isExplicit = intent.status === 'EXPLICIT_INTENT';
+      const stage = isExplicit ? 'opportunity' : 'signal';
+      const finalScore = isExplicit 
+        ? targetMatchScore 
+        : Math.round(0.5 * targetMatchScore + 0.5 * 50);
+
       const opp = await db.createOpportunity(user.id, company.id, {
         offering_id: offeringId,
-        pipeline_stage: 'opportunity',
+        pipeline_stage: stage,
         source: cleanSourceUrl || 'Trigger Radar',
         created_from: 'AI',
-        lead_score: targetMatchScore
+        lead_score: finalScore
       })
 
       if (opp && triggerEvent) {

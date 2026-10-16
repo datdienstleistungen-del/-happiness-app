@@ -127,6 +127,127 @@ export function validateEventDate(rawDate, now = new Date()) {
   return parsed.isoDate;
 }
 
+function extractEventKeywords(text) {
+  if (!text || typeof text !== 'string') return [];
+  const stopWords = new Set([
+    'im', 'in', 'der', 'die', 'das', 'und', 'für', 'fuer', 'mit', 'von', 'aus', 'am', 'an', 'zu',
+    'den', 'des', 'dem', 'bereich', 'branche', 'unternehmen', 'firmen', 'kunden', 'gmbh', 'ag',
+    'ein', 'eine', 'einen', 'einem', 'einer', 'eines', 'sich', 'ist', 'hat', 'wird', 'werden',
+    'über', 'ueber', 'nach', 'vor', 'bei', 'zum', 'zur', 'vom', 'ins', 'dass', 'nicht', 'auch',
+    'euro', 'million', 'millionen', 'standort', 'deutschland'
+  ]);
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9äöüß\s]/g, ' ')
+    .split(/\s+/)
+    .map(w => w.trim())
+    .filter(w => w.length > 3 && !stopWords.has(w));
+}
+
+/**
+ * Prüft, ob ein ISO-Datum (YYYY-MM-DD) im Text vorkommt (als ISO, TT.MM.JJJJ oder Monatsname)
+ * und eindeutig mit dem konkreten Ereignis verknüpft ist.
+ * Verhindert Halluzinationen und Fehlzuordnungen fremder Daten bei Artikeln mit mehreren Terminen.
+ * 
+ * @param {string} isoDateStr 
+ * @param {string} text 
+ * @param {Object} options 
+ * @returns {boolean}
+ */
+export function isDateGroundedInText(isoDateStr, text, { evidence = '', company = '', eventFact = '' } = {}) {
+  if (!isoDateStr || typeof isoDateStr !== 'string') return false;
+  const match = isoDateStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return false;
+  const [_, y, m, d] = match;
+  const dayNum = parseInt(d, 10);
+  const monthNum = parseInt(m, 10);
+  if (monthNum < 1 || monthNum > 12) return false;
+
+  const germanMonths = [
+    'Januar', 'Februar', '(?:März|Maerz)', 'April', 'Mai', 'Juni',
+    'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+  ];
+  const germanMonthShort = [
+    'Jan', 'Feb', '(?:Mär|Mrz)', 'Apr', 'Mai', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
+  ];
+  const monthName = germanMonths[monthNum - 1];
+  const monthShort = germanMonthShort[monthNum - 1];
+
+  const patterns = [
+    // ISO format: 2026-10-15
+    new RegExp(`${y}-${m}-${d}`, 'i'),
+    // German dots: 15.10.2026, 15.10.26, 15. 10. 2026
+    new RegExp(`(?:^|\\D)0?${dayNum}\\.\\s*0?${monthNum}\\.\\s*(?:${y}|${y.slice(2)})(?:\\D|$)`, 'i'),
+    // Written month: 15. September 2026, 29. September, 27. September
+    new RegExp(`(?:^|\\D)0?${dayNum}\\.?\\s*(?:${monthName}|${monthShort})(?:\\D|$)`, 'i'),
+    // Slashes: 15/10/2026
+    new RegExp(`(?:^|\\D)0?${dayNum}/0?${monthNum}/(?:${y}|${y.slice(2)})(?:\\D|$)`, 'i')
+  ];
+
+  const testMatch = (str) => typeof str === 'string' && patterns.some(p => p.test(str));
+
+  // 1. Wenn der Belegsatz (evidence) oder das konkrete Ereignis (eventFact) das Datum direkt enthält -> Höchste Evidenz!
+  if (evidence && testMatch(evidence)) return true;
+  if (eventFact && testMatch(eventFact)) return true;
+
+  if (!text || typeof text !== 'string') return false;
+
+  // 2. Extrahiere spezifische Inhaltsbegriffe dieses Ereignisses, um Multi-Ereignis-Falschzuordnungen auszuschließen
+  const eventKeywords = extractEventKeywords(`${eventFact} ${evidence}`);
+
+  // 3. Volltext-Prüfung mit semantischem Kontext- und Boilerplate-Schutz:
+  let hasValidMatch = false;
+  for (const pattern of patterns) {
+    const regex = new RegExp(pattern.source, 'gi');
+    let mResult;
+    while ((mResult = regex.exec(text)) !== null) {
+      const idx = mResult.index;
+      // Umkreis von bis zu 90 Zeichen, aber nicht über Absatzgrenzen (\n\n oder \r\n\r\n) hinaus
+      const prevBreak = Math.max(text.lastIndexOf('\n\n', idx), text.lastIndexOf('\r\n\r\n', idx));
+      const nextBreakIdx1 = text.indexOf('\n\n', idx);
+      const nextBreakIdx2 = text.indexOf('\r\n\r\n', idx);
+      let nextBreak = -1;
+      if (nextBreakIdx1 !== -1 && nextBreakIdx2 !== -1) {
+        nextBreak = Math.min(nextBreakIdx1, nextBreakIdx2);
+      } else if (nextBreakIdx1 !== -1) {
+        nextBreak = nextBreakIdx1;
+      } else if (nextBreakIdx2 !== -1) {
+        nextBreak = nextBreakIdx2;
+      }
+
+      const snippetStart = Math.max(prevBreak !== -1 ? prevBreak + 2 : 0, idx - 90);
+      const snippetEnd = Math.min(nextBreak !== -1 ? nextBreak : text.length, idx + mResult[0].length + 90);
+      const snippet = text.slice(snippetStart, snippetEnd);
+      const snippetLower = snippet.toLowerCase();
+
+      // Boilerplate-Filter: Impressum, Copyright, Datenschutz, Stand/Aktualisiert am, Navigation
+      const isBoilerplate = /\b(impressum|datenschutz|copyright|©|alle rechte vorbehalten|agb|stand:\s*|zuletzt aktualisiert|redaktion|autor:|kontakt|newsletter|cookie)\b/i.test(snippet);
+      if (isBoilerplate) continue;
+
+      // Wenn spezifische Event-Keywords vorhanden sind: Das Datum MUSS sich im Umfeld dieses konkreten Events befinden!
+      if (eventKeywords.length > 0) {
+        const hasSpecificToken = eventKeywords.some(kw => snippetLower.includes(kw));
+        if (hasSpecificToken) {
+          hasValidMatch = true;
+          break;
+        }
+      } else {
+        // Fallback für kurze Testschnipsel ohne übergebene Keywords
+        const hasGeneralEvent = /\b(eröffn|spatenstich|bau|invest|gründ|start|übernahm|fusion|stell|hiring|werk)\b/i.test(snippet);
+        const hasCompanyContext = company && company.length > 2 && snippetLower.includes(company.toLowerCase().slice(0, 10));
+        if (hasGeneralEvent || hasCompanyContext || text.length < 300) {
+          hasValidMatch = true;
+          break;
+        }
+      }
+    }
+    if (hasValidMatch) break;
+  }
+
+  return hasValidMatch;
+}
+
 // Job laden. Mit userId (scan-step, user-RLS-Client) nur eigene Jobs, ohne
 // userId (Queue, service-Client) alle. Liefert null wenn nicht gefunden.
 export async function fetchJob(client, jobId, userId = null) {
@@ -227,10 +348,14 @@ export async function claimJob(client, job) {
 // (cron-evaluate) bewertet sie im naechsten 15-Min-Lauf automatisch mit.
 // Genau der Row-Shape wie cron-search (B1), inkl. url_hash + ignore-duplicates,
 // damit B1-Doppelfunde nicht doppelt landen. Pro URL, nicht erst bei Job-Done.
-async function insertRadarHit(client, job, url, title, pageText) {
+// Wichtig: Verworfene Hits (z.B. Nicht-Käufer) werden mit status='irrelevant' abgelegt,
+// um ein Umgehen der Filter-Pipeline durch nachgelagerte Cronjobs zu verhindern.
+async function insertRadarHit(client, job, url, title, pageText, hitMeta = {}) {
   if (!job.offering_id || !job.user_id || !pageText) return;
   try {
     const crypto = await import('crypto');
+    const isRejected = Boolean(hitMeta.isRejected);
+    const status = isRejected ? 'irrelevant' : (hitMeta.status || 'pending');
     const row = {
       user_id: job.user_id,
       offering_id: job.offering_id,
@@ -240,7 +365,7 @@ async function insertRadarHit(client, job, url, title, pageText) {
       title: title || '',
       raw_content: pageText,
       published_at: null,
-      status: 'pending'
+      status
     };
     const res = await client
       .from('nexus_radar_hits')
@@ -252,6 +377,161 @@ async function insertRadarHit(client, job, url, title, pageText) {
   } catch (e) {
     console.warn(`[ScanJob] radar_hit insert Fehler (${url}):`, e.message);
   }
+}
+
+/**
+ * Filter-Pipeline für extrahierte Signal-Trigger (Phase 2B: Käufer-Prüfung & Zielgruppen-Match).
+ * Verwirft:
+ * - Platzhalter-Firmen
+ * - Ungültige oder veraltete Ereignisdaten (>60d)
+ * - Signale ohne konkreten Belegsatz (<10 Zeichen)
+ * - Signale ohne verifizierten DACH-Hauptsitz / DACH-Niederlassung
+ * - Reine PR-Erwähnungen ohne Veränderungsanlass (PURE_MENTION)
+ * - Bedingung a: Nicht-Käufer (is_potential_buyer === false)
+ * - Bedingung b: Unpassende Zielgruppen (target_group_match < 50)
+ *
+ * Dokumentiert jeden Verwerfungsgrund in rejectedTriggers für den Prüfbericht.
+ */
+export function filterAndCleanTriggers(rawTriggers = [], { url = '', now = new Date() } = {}) {
+  const cleanTriggers = [];
+  const rejectedTriggers = [];
+
+  for (const t of rawTriggers) {
+    // 1. Platzhalter filtern
+    if (isPlaceholderCompany(t.firmenname)) {
+      rejectedTriggers.push({
+        ...t,
+        rejection_reason: 'Platzhalter-Firmenname'
+      });
+      continue;
+    }
+
+    // 2. Ereignisdatum & Veröffentlichungsdatum prüfen (max. 60 Kalendertage bzw. Zukunft <= 365d)
+    const validEventDate = validateEventDate(t.event_date, now);
+    const validPubDate = validateEventDate(t.published_at, now);
+
+    let isUnverifiedDate = Boolean(t.event_date_unverified);
+    let finalEventDate = validEventDate;
+
+    if (!finalEventDate || isUnverifiedDate) {
+      if (validPubDate) {
+        // Fallback: Kein/ungültiges Ereignisdatum, aber belegtes Veröffentlichungsdatum <= 60d
+        finalEventDate = null;
+        isUnverifiedDate = true;
+      } else {
+        // Weder Ereignisdatum noch Veröffentlichungsdatum <= 60 Tage
+        rejectedTriggers.push({
+          ...t,
+          rejection_reason: 'Weder gültiges Ereignisdatum noch Veröffentlichungsdatum (max. 60 Tage)'
+        });
+        continue;
+      }
+    }
+
+    // 3. Belegbarkeit: Das Signal MUSS einen konkreten Belegsatz haben (mind. 10 Zeichen)
+    const evidence = (t.evidence || t.beleg || '').trim();
+    if (!evidence || evidence.length < 10) {
+      rejectedTriggers.push({
+        ...t,
+        rejection_reason: 'Kein konkreter Belegsatz (mind. 10 Zeichen)'
+      });
+      continue;
+    }
+
+    // 4. DACH-Verifikation: Nur verifizierte DACH-Hauptsitze oder DACH-Niederlassungen zulassen!
+    const dachStatus = t.dach_status;
+    if (dachStatus === 'FOREIGN_MENTIONED' || dachStatus === 'DACH_UNVERIFIED') {
+      rejectedTriggers.push({
+        ...t,
+        rejection_reason: 'Kein verifizierter DACH-Standort (FOREIGN_MENTIONED / DACH_UNVERIFIED)'
+      });
+      continue;
+    }
+    if (dachStatus && dachStatus !== 'DACH_HEADQUARTERS' && dachStatus !== 'DACH_SUBSIDIARY') {
+      rejectedTriggers.push({
+        ...t,
+        rejection_reason: 'Kein verifizierter DACH-Hauptsitz oder Niederlassung'
+      });
+      continue;
+    }
+
+    // 5. Kaufabsicht/Erwähnung: Reine PR-Erwähnungen ohne geschäftlichen Veränderungsanlass verwerfen
+    if (t.purchase_intent_status === 'PURE_MENTION') {
+      rejectedTriggers.push({
+        ...t,
+        rejection_reason: 'Reine PR-Erwähnung ohne geschäftlichen Veränderungsanlass (PURE_MENTION)'
+      });
+      continue;
+    }
+
+    // 6. Bedingung a: Wenn is_potential_buyer === false -> Signal verwerfen
+    const isKnownVendor = /\b(ricoh|canon|konica minolta|xerox|bechtle|computacenter)\b/i.test((t.firmenname || '').trim());
+    if (t.is_potential_buyer === false || isKnownVendor) {
+      rejectedTriggers.push({
+        ...t,
+        is_potential_buyer: false,
+        rejection_reason: 'Kein potenzieller Käufer'
+      });
+      continue;
+    }
+
+    // 7. Bedingung b: Wenn target_group_match < 50 -> Signal verwerfen
+    const matchScore = typeof t.target_group_match === 'number'
+      ? Math.max(0, Math.min(100, t.target_group_match))
+      : 75;
+    if (matchScore < 50) {
+      rejectedTriggers.push({
+        ...t,
+        target_group_match: matchScore,
+        rejection_reason: 'Zielgruppen-Match unter 50'
+      });
+      continue;
+    }
+
+    // Phase 2B: Hypothesen-Kennzeichnung für business_opportunity
+    const purchaseIntentStatus = t.purchase_intent_status || 'TRIGGER_EVENT';
+    let opportunity = (t.business_opportunity || t.relevanz || '').trim();
+    if (opportunity) {
+      if (purchaseIntentStatus === 'EXPLICIT_INTENT') {
+        opportunity = opportunity.replace(/^\[Hypothese\]\s*/i, '');
+      } else if (!opportunity.startsWith('[Hypothese]')) {
+        opportunity = `[Hypothese] ${opportunity}`;
+      }
+    }
+
+    // Qualifiziertes Signal normalisieren
+    cleanTriggers.push({
+      ...t,
+      event_date: finalEventDate,
+      published_at: validPubDate || null,
+      event_date_unverified: isUnverifiedDate,
+      evidence,
+      target_group_match: matchScore,
+      is_potential_buyer: true,
+      quelle: t.quelle || url,
+      dach_status: t.dach_status || 'DACH_UNVERIFIED',
+      company_hq_country: t.company_hq_country || null,
+      company_hq_city: t.company_hq_city || null,
+      dach_evidence: (t.dach_evidence || '').trim() || null,
+      event_fact: (t.event_fact || t.signal || '').trim(),
+      business_opportunity: opportunity,
+      purchase_intent_status: purchaseIntentStatus
+    });
+  }
+
+  return { cleanTriggers, rejectedTriggers };
+}
+
+/**
+ * cleanTriggers Wrapper für Kompatibilität mit Array- und Objekt-Zugriff.
+ */
+export function cleanTriggers(rawTriggers = [], opts = {}) {
+  const { cleanTriggers: clean, rejectedTriggers: rejected } = filterAndCleanTriggers(rawTriggers, opts);
+  const arr = [...clean];
+  arr.rejected_triggers = rejected;
+  arr.rejected = rejected;
+  arr.cleanTriggers = clean;
+  return arr;
 }
 
 // Eine URL verarbeiten (Volltext -> LLM-Extraktion -> DB-Update). Darf nur mit
@@ -365,17 +645,18 @@ REGELN:
 4. "ansprechpartner" nur wenn Name WÖRTLICH im Text steht, sonst null
 5. "quelle" MUSS die echte URL sein
 6. Klassifiziere jedes Signal in eine konkrete Kategorie (z.B. EXPANSION, NEUBAU, INVESTITION, HIRING, M_A, TECH_MIGRATION, REGULATION).
-7. EREIGNISDATUM ALS STRIKTES PFLICHTFELD (WICHTIG):
-   - Du MUSST das konkrete Datum des EREIGNISSES ("event_date") im Format "YYYY-MM-DD" angeben (wann fand das Event statt, z.B. Spatenstich, Finanzierung, Relaunch, Übernahme).
-   - "published_at" (optional): Veröffentlichungsdatum des Artikels ("YYYY-MM-DD"). Verwende das Veröffentlichungsdatum NIEMALS als Ersatz für das Ereignisdatum!
-   - Suche im Text nach Datumsangaben (z.B. "12. Oktober 2026", "14.10.2026", "vor 3 Tagen", "im September 2026", "2026-10-11").
+7. EREIGNISDATUM vs. VERÖFFENTLICHUNGSDATUM (KEINE HALLUZINATIONEN):
+   - "event_date": Das konkrete Datum des EREIGNISSES ("YYYY-MM-DD"), wann das Event tatsächlich stattfand oder stattfinden wird (z.B. Spatenstich, Eröffnung, Finanzierungsrunde).
+     STRIKTE REGEL: Wenn im Quelltext KEIN konkretes Kalenderdatum (z.B. TT.MM.JJJJ oder JJJJ-MM-TT) für das Ereignis steht, darf event_date NICHT erfunden, geschätzt oder berechnet werden!
+     Stattdessen: Setze "event_date": null!
+   - "published_at": Das Veröffentlichungsdatum des Artikels ("YYYY-MM-DD" oder null). Wird separat erfasst.
    - Heutiges Referenzdatum: ${currentDate} (${currentYear}).
-   - Das Ereignis darf NICHT älter als 60 Kalendertage sein (bzw. bei angekündigten Vorhaben max. 12 Monate in der Zukunft).
-   - Wenn im Quelltext absolut KEIN belegbares Ereignisdatum auffindbar ist oder das Ereignis älter als 60 Tage ist:
+   - Weder das Ereignis noch der Artikel dürfen älter als 60 Kalendertage sein (bei angekündigten Vorhaben max. 12 Monate in der Zukunft).
+   - Wenn weder ein belegbares Ereignisdatum noch ein Veröffentlichungsdatum auffindbar ist oder beide älter als 60 Tage sind:
      Setze "trigger_events": [] (Signal verwerfen!).
 8. BELEG-SATZ (EVIDENCE):
-   - Zitiere im Feld "evidence" den konkreten 1-2 Sätze langen Textauszug aus dem Quelltext, der das Ereignis und das Datum belegt.
-   - Ein Signal ohne belegbaren Satz oder ohne Datumsbezug im Text ist unzulässig!
+   - Zitiere im Feld "evidence" den konkreten 1-2 Sätze langen Textauszug aus dem Quelltext, der das Ereignis belegt.
+   - Ein Signal ohne belegbaren Satz im Text ist unzulässig!
 9. DACH-BEZUG-VERIFIKATION (WICHTIG - KEINE BLINDEN DOMAIN-ANNAHMEN):
    Unterscheide strikt zwischen 4 Fällen und setze "dach_status":
    - "DACH_HEADQUARTERS": Das Unternehmen hat seinen belegten Hauptsitz in Deutschland (DE), Österreich (AT) oder der Schweiz (CH).
@@ -387,7 +668,12 @@ REGELN:
    * Bei "FOREIGN_MENTIONED" oder "DACH_UNVERIFIED": Setze "target_group_match" auf unter 40 und "is_potential_buyer" auf false!
 10. DREISTUFIGE SIGNAL-TRENNUNG (EREIGNIS vs. CHANCE vs. KAUFABSICHT):
    - "event_fact": Das tatsächliche, objektiv im Text belegte Ereignis (Was ist passiert? z.B. "Start eines neuen B2B-Shops im November 2026").
-   - "business_opportunity": Die daraus abgeleitete geschäftliche Chance für unser Angebot (Warum könnte Bedarf entstehen? Hypothese). Eine abgeleitete Chance ist KEINE belegte Kaufabsicht!
+   - "business_opportunity": Die daraus abgeleitete geschäftliche Chance für unser Angebot.
+     WICHTIGE REGEL: Wenn purchase_intent_status !== 'EXPLICIT_INTENT', muss business_opportunity ZWINGEND mit dem Präfix "[Hypothese] " beginnen.
+     Beispiel:
+     event_fact: "Deutsche Aircraft eröffnet Werk in Leipzig/Halle."
+     business_opportunity: "[Hypothese] Ein neues Werk erzeugt typischerweise Bedarf an Dokumentenmanagement-Systemen."
+     STRIKTES VERBOT: Keine Formulierung, die einen konkreten Bedarf behauptet, wenn dieser nicht im Quelltext belegt ist!
    - "purchase_intent_status":
      * "TRIGGER_EVENT": Konkreter operativer Veränderungsanlass (Expansion, Neubau, Systemwechsel, Führungswechsel), aber keine explizite Ausschreibung/Kaufabsicht geäußert.
      * "EXPLICIT_INTENT": Das Unternehmen sucht im Text wörtlich nach einer Lösung/Software/Ausschreibung.
@@ -416,8 +702,8 @@ Gib ein JSON zurück:
       "target_group_match": 85,
       "is_potential_buyer": true,
       "match_reason": "Begründung: Warum ist die Firma ein Käufer und kein Anbieter?",
-      "event_date": "YYYY-MM-DD",
-      "published_at": "YYYY-MM-DD oder null",
+      "event_date": "YYYY-MM-DD oder null (wenn kein konkretes Datum im Text steht)",
+      "published_at": "YYYY-MM-DD oder null (Veröffentlichungsdatum des Beitrags)",
       "evidence": "Wörtlicher Beleg-Satz aus dem Quelltext",
       "ansprechpartner": null,
       "position": "Ziel-Entscheiderrolle (z.B. Geschäftsführung, Werkleiter, Head of Sales)",
@@ -428,8 +714,8 @@ Gib ein JSON zurück:
       "company_hq_country": "DE | AT | CH | ANDERES | UNBEKANNT",
       "company_hq_city": "Stadt des Sitzes oder null",
       "dach_evidence": "Wörtlicher Belegsatz für den DACH-Sitz/Niederlassung",
-      "event_fact": "Objektiv belegtes Ereignis",
-      "business_opportunity": "Abgeleitete Chance (Hypothese)",
+      "event_fact": "Objektiv belegtes Ereignis (z.B. Deutsche Aircraft eröffnet Werk in Leipzig/Halle)",
+      "business_opportunity": "[Hypothese] Ein neues Werk erzeugt typischerweise Bedarf an Dokumentenmanagement-Systemen",
       "purchase_intent_status": "TRIGGER_EVENT | EXPLICIT_INTENT | PURE_MENTION"
     }
   ]
@@ -557,67 +843,34 @@ Gib ein JSON zurück:
   }
   const extracted = parseScanTriggers(llmResult.text);
 
-  // Baustelle 1 & 3 + Phase 2A: Platzhalter filtern, DACH-Status prüfen, striktes Ereignisdatum (max. 60 Tage) und Kaufanlass absichern
-  const cleanTriggers = (extracted.trigger_events || [])
-    .filter(t => !isPlaceholderCompany(t.firmenname))
-    .filter(t => {
-      // PFLICHTFELD: Striktes Ereignisdatum (max. 60 Kalendertage alt oder geplantes Zukunftsevent <= 365d)
-      // Das Veröffentlichungsdatum darf NIEMALS als Ersatz für das Ereignisdatum herangezogen werden!
-      const validEventDate = validateEventDate(t.event_date);
-      if (!validEventDate) return false;
-
-      // Belegbarkeit: Das Signal MUSS einen konkreten Belegsatz haben (mind. 10 Zeichen)
-      const evidence = (t.evidence || t.beleg || '').trim();
-      if (!evidence || evidence.length < 10) return false;
-
-      // Phase 2A: DACH-Verifikation: Nur verifizierte DACH-Hauptsitze oder DACH-Niederlassungen zulassen!
-      // Ausländische Unternehmen ohne DACH-Präsenz (FOREIGN_MENTIONED) oder unbestätigter Standort (DACH_UNVERIFIED) verwerfen
-      const dachStatus = t.dach_status;
-      if (dachStatus === 'FOREIGN_MENTIONED' || dachStatus === 'DACH_UNVERIFIED') {
-        return false;
+  const verifiedTriggers = (extracted.trigger_events || []).map(t => {
+    if (t.event_date) {
+      const isGrounded = isDateGroundedInText(t.event_date, pageText, { 
+        evidence: t.evidence, 
+        company: t.firmenname,
+        eventFact: t.event_fact || t.signal
+      });
+      if (!isGrounded) {
+        return {
+          ...t,
+          event_date: null,
+          event_date_unverified: true
+        };
       }
-      if (dachStatus && dachStatus !== 'DACH_HEADQUARTERS' && dachStatus !== 'DACH_SUBSIDIARY') {
-        return false;
-      }
+    }
+    return t;
+  });
 
-      // Phase 2A: Kaufabsicht/Erwähnung: Reine PR-Erwähnungen ohne geschäftlichen Veränderungsanlass verwerfen
-      if (t.purchase_intent_status === 'PURE_MENTION') {
-        return false;
-      }
+  // Baustelle 1 & 3 + Phase 2A & 2B: Filter-Pipeline mit Käufer-Prüfung & Zielgruppen-Match
+  const { cleanTriggers: filteredTriggers, rejectedTriggers } = filterAndCleanTriggers(verifiedTriggers, {
+    url: nextUrl.url
+  });
 
-      return true;
-    })
-    .map(t => {
-      // Heuristik-Check: Wenn Firma Ricoh oder reiner IT-Hersteller ist und sales-software gesucht wird
-      const isKnownVendor = /^(ricoh|canon|konica minolta|xerox|bechtle|computacenter)$/i.test((t.firmenname || '').trim());
-      const matchScore = isKnownVendor ? 25 : (typeof t.target_group_match === 'number' ? Math.max(0, Math.min(100, t.target_group_match)) : 75);
-      const validEventDate = validateEventDate(t.event_date);
-      // published_at separat validieren, NIEMALS mit event_date vermischen
-      const validPubDate = validateEventDate(t.published_at);
-      return {
-        ...t,
-        event_date: validEventDate,
-        published_at: validPubDate || null,
-        evidence: (t.evidence || t.beleg || '').trim(),
-        target_group_match: matchScore,
-        is_potential_buyer: !isKnownVendor && (t.is_potential_buyer !== false),
-        quelle: t.quelle || nextUrl.url,
-        // Phase 2A: Strukturierte Felder
-        dach_status: t.dach_status || 'DACH_UNVERIFIED',
-        company_hq_country: t.company_hq_country || null,
-        company_hq_city: t.company_hq_city || null,
-        dach_evidence: (t.dach_evidence || '').trim() || null,
-        event_fact: (t.event_fact || t.signal || '').trim(),
-        business_opportunity: (t.business_opportunity || t.relevanz || '').trim(),
-        purchase_intent_status: t.purchase_intent_status || 'TRIGGER_EVENT'
-      };
-    });
-
-  // Phase 2A: Deduplizierung innerhalb derselben Quellseite nach Firma + Event-Datum
+  // Phase 2A: Deduplizierung innerhalb derselben Quellseite nach Firma + Event-Datum / Veröffentlichungsdatum
   const seenPageEvents = new Set();
   const deduplicatedTriggers = [];
-  for (const t of cleanTriggers) {
-    const key = `${(t.firmenname || '').toLowerCase().trim()}::${t.event_date || ''}`;
+  for (const t of filteredTriggers) {
+    const key = `${(t.firmenname || '').toLowerCase().trim()}::${t.event_date || t.published_at || ''}`;
     if (!seenPageEvents.has(key)) {
       seenPageEvents.add(key);
       deduplicatedTriggers.push(t);
@@ -632,6 +885,7 @@ Gib ein JSON zurück:
     status: 'completed',
     analysis_status: 'completed',
     triggers: deduplicatedTriggers,
+    rejected_triggers: rejectedTriggers,
     extracted_at: new Date().toISOString()
   }];
 
@@ -643,7 +897,14 @@ Gib ein JSON zurück:
     : `${domain} — keine qualifizierten Signale erkannt.`;
 
   // B2-Bruecke: Treffer-Pending-Row fuer cron-evaluate (Phase 3b).
-  await insertRadarHit(client, job, nextUrl.url, nextUrl.title, pageText);
+  // Verhindert Cron-Leck: Nur Seiten mit tatsächlich qualifizierten Signalen (deduplicatedTriggers > 0)
+  // dürfen als 'pending' abgelegt werden. Alle anderen Seiten (verworfen oder ohne Kaufsignal)
+  // werden ausnahmslos mit status='irrelevant' persistiert!
+  const hasQualifiedTriggers = deduplicatedTriggers.length > 0;
+  await insertRadarHit(client, job, nextUrl.url, nextUrl.title, pageText, {
+    isRejected: !hasQualifiedTriggers,
+    status: hasQualifiedTriggers ? 'pending' : 'irrelevant'
+  });
 
   await client
     .from('nexus_scan_jobs')
@@ -662,6 +923,7 @@ Gib ein JSON zurück:
     current_step: newStep,
     total_steps: job.total_steps,
     last_message: message,
-    partial_results: newResults
+    partial_results: newResults,
+    rejected_triggers: rejectedTriggers
   };
 }

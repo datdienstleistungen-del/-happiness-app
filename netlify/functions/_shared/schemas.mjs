@@ -110,6 +110,10 @@ export const radarHitClassificationSchema = z.object({
   trigger_type: z.string().catch('N/A'),
   firmenname: z.string().nullable().catch(null),
   domain: z.string().nullable().catch(null),
+  is_potential_buyer: z.boolean().catch(false),
+  buyer_evidence: z.string().catch(''),
+  purchase_intent_status: z.enum(['TRIGGER_EVENT', 'EXPLICIT_INTENT', 'PURE_MENTION']).catch('TRIGGER_EVENT'),
+  evidence: z.string().catch('')
 }).passthrough();
 
 // Firmenprofil (nexus-company-profile-step): Booleans/Arrays landen direkt in
