@@ -99,7 +99,7 @@ async function classifyGoalWithLLM(message) {
     const { text } = await callLLM([
       { role: 'system', content: GOAL_PROMPT },
       { role: 'user', content: message.substring(0, 500) }
-    ], { providers: ['groq', 'mistral'], temperature: 0, max_tokens: 20, totalBudgetMs: 9000 })
+    ], { providers: ['deepseek', 'mistral', 'groq'], temperature: 0, max_tokens: 20, totalBudgetMs: 9000 })
     return parseGoalResponse(text.trim())
   } catch (err) {
     console.warn('[H.I.T.] Goal classification failed:', err.message)

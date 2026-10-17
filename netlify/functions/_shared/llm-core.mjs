@@ -285,7 +285,7 @@ const STAGES = {
   deepseek: stageDeepSeek,
 };
 
-export const DEFAULT_PROVIDERS = ['deepseek', 'groq', 'openrouter', 'mistral', 'openai'];
+export const DEFAULT_PROVIDERS = ['deepseek', 'mistral', 'openrouter', 'groq', 'openai'];
 
 /**
  * Fuehrt die Kette aus. Wirft mit aggregiertem Fehler-Protokoll, wenn alle

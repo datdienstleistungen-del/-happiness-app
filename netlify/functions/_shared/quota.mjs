@@ -198,7 +198,7 @@ export async function recordProviderError(provider, errorMsg) {
 }
 
 // Provider Health Snapshot fuer Monitoring-Endpoints
-export async function getProviderHealthSnapshot(providers = ['groq', 'openrouter', 'mistral', 'openai', 'deepseek']) {
+export async function getProviderHealthSnapshot(providers = ['deepseek', 'mistral', 'openrouter', 'groq', 'openai']) {
   const today = dayKey();
   const summary = {};
   for (const p of providers) {

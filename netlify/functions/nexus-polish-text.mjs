@@ -19,14 +19,14 @@ Deine Aufgaben:
 5. Gib AUSSCHLIESSLICH den bereinigten, korrigierten Text zurück.`;
 
 async function polishText(text, lang = 'de') {
-  // Schnelle Kette Groq -> Mistral -> OpenRouter via _shared/llm-core.mjs.
+  // Schnelle Kette DeepSeek -> Mistral -> OpenRouter -> Groq via _shared/llm-core.mjs.
   // Rueckfall: null, wenn alle Provider versagen (Handler gibt Originaltext zurueck).
   try {
     const { text: out } = await callLLM([
       { role: 'system', content: SYSTEM_INSTRUCTION },
       { role: 'user', content: `Bitte korrigiere folgenden Text (Sprache: ${lang}):\n\n"${text}"` }
     ], {
-      providers: ['groq', 'mistral', 'openrouter'],
+      providers: ['deepseek', 'mistral', 'openrouter', 'groq'],
       temperature: 0.1,
       max_tokens: 2048,
       totalBudgetMs: 12000,

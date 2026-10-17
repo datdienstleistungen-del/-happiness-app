@@ -67,7 +67,7 @@ Zeitraum: Letzte 30 Tage`
       temperature: 0.3,
       max_tokens: 800,
       totalBudgetMs: 12000,
-      providers: ['groq'],
+      providers: ['deepseek', 'mistral', 'groq'],
     });
     const parsed = extractJson(aiRes.text);
     if (!parsed) return null;

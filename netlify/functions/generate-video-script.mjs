@@ -157,7 +157,7 @@ async function generateScript(systemPrompt) {
       { role: 'user', content: 'Erstelle das Drehbuch basierend auf der Szenen-Analyse.' }
     ],
     {
-      providers: ['groq', 'mistral', 'openrouter', 'deepseek'],
+      providers: ['deepseek', 'mistral', 'openrouter', 'groq'],
       temperature: 0.5,
       max_tokens: 4096,
       xTitle: 'Happiness Video Script',

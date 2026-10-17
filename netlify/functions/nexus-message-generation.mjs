@@ -21,7 +21,7 @@ const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
 async function callLLM(prompt, temperature = 0.7) {
-  // Kette Groq -> OpenRouter -> Mistral -> DeepSeek -> OpenAI via
+  // Kette DeepSeek -> Mistral -> OpenRouter -> Groq -> OpenAI via
   // _shared/llm-core.mjs (die toten OR-Modelle der alten Tabelle entfaellt,
   // Modelllisten kommen aus der Registry). Liefert parsedes JSON, { raw } bei
   // unbrauchbarem Output oder null, wenn alle Provider versagen.
@@ -30,7 +30,7 @@ async function callLLM(prompt, temperature = 0.7) {
       { role: 'system', content: 'Du gibst IMMER valides JSON zurück, ohne Markdown-Blöcke.' },
       { role: 'user', content: prompt }
     ], {
-      providers: ['groq', 'openrouter', 'mistral', 'deepseek', 'openai'],
+      providers: ['deepseek', 'mistral', 'openrouter', 'groq', 'openai'],
       temperature,
       max_tokens: 1500,
       totalBudgetMs: 20000,

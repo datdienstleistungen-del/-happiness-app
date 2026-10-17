@@ -164,7 +164,7 @@ Antworte strikt in JSON mit exakt diesen Feldern:
             temperature: 0.2,
             max_tokens: 1000,
             totalBudgetMs: 20000,
-            providers: ['deepseek', 'groq', 'mistral'],
+            providers: ['deepseek', 'mistral', 'groq'],
           });
           const parsed = extractJson(aiRes.text);
           if (parsed && typeof parsed === 'object') {

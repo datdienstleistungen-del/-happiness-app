@@ -390,11 +390,11 @@ export const handler = async (event) => {
 
       const executeChain = async () => {
         responseText = null
-        // Stufen: Bei anonymen Gästen nur kostenlose Free-Tier-Modelle (Groq/OpenRouter).
-        // Bei eingeloggten Nutzern mit Bild zuerst OpenAI (Vision-Route), sonst Groq -> Mistral -> OpenRouter.
+        // Stufen: Bei anonymen Gästen nur kostenlose Free-Tier-Modelle (OpenRouter/Groq).
+        // Bei eingeloggten Nutzern mit Bild zuerst OpenAI (Vision-Route), sonst DeepSeek -> Mistral -> OpenRouter -> Groq.
         const defaultProviders = user
-          ? (image_url ? ['openai', 'groq', 'mistral', 'openrouter'] : ['groq', 'mistral', 'openrouter'])
-          : ['groq', 'openrouter'];
+          ? (image_url ? ['openai', 'openrouter', 'groq', 'mistral'] : ['deepseek', 'mistral', 'openrouter', 'groq'])
+          : ['openrouter', 'groq'];
         const providers = defaultProviders;
         const out = await callLLM(llmMessages, {
           profile: 'coach',

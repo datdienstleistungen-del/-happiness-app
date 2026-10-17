@@ -43,8 +43,8 @@ export const handler = async (event) => {
             },
             cost_control: {
               max_tokens_per_user_per_day: 100000,
-              primary_provider: 'groq (free/low-cost)',
-              fallback_chain: ['groq', 'openrouter', 'mistral', 'deepseek', 'openai']
+              primary_provider: 'deepseek (v3 reasoning/chat)',
+              fallback_chain: ['deepseek', 'mistral', 'openrouter', 'groq', 'openai']
             },
             caching: {
               scan_cache_ttl_hours: 24,

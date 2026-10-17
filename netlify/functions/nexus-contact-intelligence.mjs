@@ -1254,10 +1254,10 @@ Nur relevante Kandidaten (Score > 40).`;
 // ============================================================================
 
 async function callLLM(prompt, temperature = 0.3) {
-  // Kette: Groq -> OpenRouter -> Mistral -> DeepSeek (nur Fallback).
+  // Kette: DeepSeek -> Mistral -> OpenRouter -> Groq.
   const providers = process.env.DEEPSEEK_ENABLED === 'false'
-    ? ['groq', 'openrouter', 'mistral']
-    : ['groq', 'openrouter', 'mistral', 'deepseek'];
+    ? ['mistral', 'openrouter', 'groq']
+    : ['deepseek', 'mistral', 'openrouter', 'groq'];
   try {
     const { text } = await callProviderChain([
       { role: 'system', content: 'Du gibst IMMER valides JSON zurück, ohne Markdown-Blöcke.' },

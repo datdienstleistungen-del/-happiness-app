@@ -55,7 +55,7 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 7000) {
 const parseSocialJson = (t) => JSON.parse(t.replace(/^\s*```json\s*/i, '').replace(/\s*```\s*$/i, '').trim());
 
 async function callLLM(prompt, temperature = 0.3) {
-  // Kette Groq -> DeepSeek -> Mistral -> OpenRouter via _shared/llm-core.mjs.
+  // Kette DeepSeek -> Mistral -> OpenRouter -> Groq via _shared/llm-core.mjs.
   // Die fruehere optionale Gemini-Stufe entfaellt (Core-Kette ist
   // OpenAI-kompatibel). acceptText: unbrauchbares JSON -> naechste Stufe;
   // wirft, wenn alle Provider versagen (wie bisher).
@@ -63,7 +63,7 @@ async function callLLM(prompt, temperature = 0.3) {
     { role: 'system', content: 'You are an elite B2B sales copywriter and strategist. Output valid JSON only.' },
     { role: 'user', content: prompt }
   ], {
-    providers: ['groq', 'openrouter', 'mistral', 'deepseek'],
+    providers: ['deepseek', 'mistral', 'openrouter', 'groq'],
     temperature,
     jsonMode: true,
     totalBudgetMs: 30000,

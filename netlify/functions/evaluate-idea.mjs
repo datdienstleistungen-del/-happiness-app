@@ -82,7 +82,7 @@ async function evaluateIdea(systemPrompt) {
       { role: 'user', content: 'Bewerte diese Content-Idee.' }
     ],
     {
-      providers: ['groq', 'mistral', 'openrouter', 'deepseek'],
+      providers: ['deepseek', 'mistral', 'openrouter', 'groq'],
       temperature: 0.3,
       max_tokens: 2048,
       xTitle: 'Happiness Idea Evaluation',

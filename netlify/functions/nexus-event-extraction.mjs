@@ -115,7 +115,7 @@ export async function extractEventFromRaw(rawEventId, token, userId) {
       jsonMode: true,
       temperature: 0.2,
       max_tokens: 1500,
-      providers: ['deepseek', 'groq', 'openrouter', 'mistral'],
+      providers: ['deepseek', 'mistral', 'openrouter', 'groq'],
     });
   } catch (e) {
     return { error: 'LLM failed', detail: e.message };

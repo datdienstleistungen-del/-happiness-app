@@ -390,7 +390,7 @@ export const handler = async (event) => {
       { role: "user", content: `Web-Recherche Ergebnisse:\n\n${webContext}` }
     ], {
       profile: 'json',
-      providers: ['deepseek', 'groq', 'openrouter', 'mistral', 'openai'],
+      providers: ['deepseek', 'mistral', 'openrouter', 'groq', 'openai'],
       temperature: 0.3,
       max_tokens: 4096,
       jsonMode: true,

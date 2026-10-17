@@ -138,7 +138,7 @@ NUR das JSON Array. Kein Text davor oder danach. Kein markdown.`
       const { text: content } = await callLLM(
         [{ role: 'user', content: prompt }],
         {
-          providers: ['groq', 'mistral'],
+          providers: ['deepseek', 'mistral', 'groq'],
           temperature: 0.8,
           max_tokens: 2048,
           acceptText: (t) => /\[[\s\S]*\]/.test(t),

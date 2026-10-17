@@ -142,12 +142,12 @@ export async function handler(event) {
   // Kette Groq -> DeepSeek -> Mistral via _shared/llm-core.mjs; acceptText
   // faehrt wie bisher zum naechsten Provider, wenn das JSON unbrauchbar ist.
   try {
-    console.log('[CAPCUT-RECIPE] Trying LLM chain (groq -> deepseek -> mistral)...');
+    console.log('[CAPCUT-RECIPE] Trying LLM chain (deepseek -> mistral -> groq)...');
     const { text, provider } = await callLLM([
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: fullPrompt }
     ], {
-      providers: ['groq', 'mistral', 'deepseek'],
+      providers: ['deepseek', 'mistral', 'groq'],
       temperature: 0.7,
       jsonMode: true,
       acceptText: (t) => Boolean(cleanJson(t)),

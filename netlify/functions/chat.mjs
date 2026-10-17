@@ -280,10 +280,10 @@ ${message}`
       let leadModel = ''
       let leadUsage = null
 
-      // Kette: Mistral -> Groq -> OpenRouter -> DeepSeek via _shared/llm-core.mjs
+      // Kette: DeepSeek -> Mistral -> OpenRouter -> Groq via _shared/llm-core.mjs
       try {
         const r = await callLLM(leadMessages, {
-          providers: ['mistral', 'groq', 'openrouter', 'deepseek'],
+          providers: ['deepseek', 'mistral', 'openrouter', 'groq'],
           temperature: 0.1,
           max_tokens: 1024,
           totalBudgetMs: 30000,
@@ -587,15 +587,12 @@ ${message}`
         }
       }
     } else {
-      // Text-only request: Kette Groq -> OpenRouter -> Mistral -> OpenAI ->
-      // DeepSeek via _shared/llm-core.mjs (Skript-Audits ueberspringen OR).
-      // Hinweis: die alte Stage 0 referenzierte das unbeschriebene reqMaxTokens
-      // und war damit stillschweigend immer defekt — die Kette startet nun
-      // wie dokumentiert wieder bei Groq.
+      // Text-only request: Kette DeepSeek -> Mistral -> OpenRouter -> Groq -> OpenAI
+      // via _shared/llm-core.mjs (Skript-Audits ueberspringen OR).
       const isScriptAudit = systemPrompt && (systemPrompt.includes('Retention-Coach') || systemPrompt.includes('REICHWEITEN-PROGNOSE'))
       const textProviders = isScriptAudit
-        ? ['groq', 'mistral', 'openai', 'deepseek']
-        : ['groq', 'openrouter', 'mistral', 'openai', 'deepseek']
+        ? ['deepseek', 'mistral', 'groq', 'openai']
+        : ['deepseek', 'mistral', 'openrouter', 'groq', 'openai']
 
       try {
         const r = await callLLM(buildMessages(historyLimit), {
