@@ -290,9 +290,17 @@ export async function createOpportunity(userId, companyId, data) {
   // Zentrale DB-Schranke: Fail-closed Käufer- & Score-Prüfung
   assertQualifiedOpportunity(data);
 
+  const payload = {
+    user_id: userId,
+    company_id: companyId,
+    review_status: 'unreviewed',
+    ...data,
+    updated_at: new Date().toISOString()
+  };
+
   const { data: result, error } = await supabase
     .from('nexus_opportunities')
-    .insert({ user_id: userId, company_id: companyId, ...data, updated_at: new Date().toISOString() })
+    .insert(payload)
     .select()
     .single()
   

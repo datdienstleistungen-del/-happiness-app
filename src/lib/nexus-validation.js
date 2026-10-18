@@ -611,7 +611,9 @@ export function generateSignalReportCsv(triggers = [], { activeOffering = null }
     'Anzahl Quellen',
     'Weitere Quellen',
     'Beleg-Satz',
-    'Ziel-Entscheiderrolle'
+    'Ziel-Entscheiderrolle',
+    'Prüfstatus',
+    'Prüfnotizen'
   ];
 
   const escapeCell = (val) => {
@@ -686,6 +688,14 @@ export function generateSignalReportCsv(triggers = [], { activeOffering = null }
     const additionalUrls = allUrls.filter(u => u !== quelle);
     const weitereQuellen = anzahlQuellen > 1 ? (additionalUrls.length > 0 ? additionalUrls.join(', ') : (t.all_sources || []).slice(1).join(', ')) : '';
 
+    let pruefstatus = 'Ungeprüft';
+    if (t.review_status === 'reviewed') {
+      pruefstatus = 'Geprüft';
+    } else if (t.review_status === 'rejected') {
+      pruefstatus = 'Abgelehnt';
+    }
+    const pruefnotizen = t.review_notes || '';
+
     return [
       escapeCell(firma),
       escapeCell(branche),
@@ -699,7 +709,9 @@ export function generateSignalReportCsv(triggers = [], { activeOffering = null }
       escapeCell(anzahlQuellen),
       escapeCell(weitereQuellen),
       escapeCell(beleg),
-      escapeCell(rolle)
+      escapeCell(rolle),
+      escapeCell(pruefstatus),
+      escapeCell(pruefnotizen)
     ].join(';');
   });
 

@@ -35,7 +35,6 @@ const CoachChatPage = lazy(() => import('../pages/CoachChatPage'))
 const KiVisibilityPage = lazy(() => import('../pages/KiVisibilityPage'))
 const VideoScriptPage = lazy(() => import('../pages/VideoScriptPage'))
 const IdeenschmiedePage = lazy(() => import('../pages/IdeenschmiedePage'))
-const NexusLandingPage = lazy(() => import('../pages/NexusLandingPage'))
 const AngebotsanalysePage = lazy(() => import('../pages/AngebotsanalysePage'))
 const SalesWorkspacePage = lazy(() => import('../pages/SalesWorkspacePage'))
 const LeadIntelligencePage = lazy(() => import('../pages/NexusLeadIntelligencePage'))
@@ -62,10 +61,10 @@ export default function AppRoutes() {
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/nexus/dashboard" /> : <LoginPage />} />
         <Route path="/register" element={user ? <Navigate to="/nexus/dashboard" /> : <RegisterPage />} />
-        <Route path="/" element={<NexusLandingPage />} />
+        <Route path="/" element={user ? <Navigate to="/nexus/dashboard" /> : <LoginPage />} />
         <Route path="/coach" element={<ProtectedRoute><CoachChatPage /></ProtectedRoute>} />
         <Route path="/nexus/sales-workspace/coach/:leadId?" element={<ProtectedRoute><CoachChatPage /></ProtectedRoute>} />
-        <Route path="/nexus" element={<NexusLandingPage />} />
+        <Route path="/nexus" element={user ? <Navigate to="/nexus/dashboard" /> : <LoginPage />} />
         <Route path="/nexus/dashboard" element={<ProtectedRoute><NexusDashboard /></ProtectedRoute>} />
         <Route path="/nexus/angebotsanalyse" element={<ProtectedRoute><AngebotsanalysePage /></ProtectedRoute>} />
         <Route path="/nexus/lead-radar" element={<ProtectedRoute><LeadRadarPage /></ProtectedRoute>} />

@@ -29,12 +29,23 @@ export default function SalesWorkspacePage() {
   const oppIdFromUrl = searchParams.get('opportunityId')
   const { t, lang } = useLanguage()
   const { user } = useAuth()
-  const { opportunities, triggers, deleteOpportunity } = useLead()
+  const { opportunities, triggers, deleteOpportunity, refreshData } = useLead()
   
   const [selectedMode, setSelectedMode] = useState('sales_pitch')
   const [activeOppId, setActiveOppId] = useState(oppIdFromUrl || null)
-  const [activeTab, setActiveTab] = useState('aktion') // 'historie', 'aktion', 'intelligence'
-  const [queueFilter, setQueueFilter] = useState('relevant') // Baustelle 3: 'relevant' (>= 50) | 'all' | 'unclear' (< 50)
+  const [activeTab, setActiveTab] = useState('aktion') // 'historie', 'aktion', 'pruefung', 'intelligence'
+  const [queueFilter, setQueueFilter] = useState('relevant') // Baustelle 3: 'relevant' (>= 50) | 'all' | 'unclear' (< 50) | 'rejected'
+
+  // Manuelle Lead-Prüfung (5-Punkte Checkliste)
+  const [reviewChecklist, setReviewChecklist] = useState({
+    duplicate: null,
+    plausibility: null,
+    source: null,
+    date: null,
+    relevance: null
+  })
+  const [reviewNotes, setReviewNotes] = useState('')
+  const [isReviewSaving, setIsReviewSaving] = useState(false)
 
 
   useEffect(() => {
@@ -77,6 +88,96 @@ export default function SalesWorkspacePage() {
   const [generatedMessage, setGeneratedMessage] = useState(null) // Generierte Nachricht
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false) // Nachricht wird generiert
   const [editedMessage, setEditedMessage] = useState('')
+
+  // Synchronisiere Checkliste und Notizen mit dem aktiven Lead
+  useEffect(() => {
+    if (activeOpp) {
+      setReviewNotes(activeOpp.review_notes || '')
+      if (activeOpp.review_status === 'reviewed') {
+        setReviewChecklist({
+          duplicate: 'pass',
+          plausibility: 'pass',
+          source: 'pass',
+          date: 'pass',
+          relevance: 'pass'
+        })
+      } else {
+        setReviewChecklist({
+          duplicate: null,
+          plausibility: null,
+          source: null,
+          date: null,
+          relevance: null
+        })
+      }
+    }
+  }, [activeOpp?.id, activeOpp?.review_status])
+
+  const handleMarkReviewed = async () => {
+    if (!activeOpp?.id) return
+    setIsReviewSaving(true)
+    try {
+      const now = new Date().toISOString()
+      const updates = {
+        review_status: 'reviewed',
+        review_notes: reviewNotes,
+        reviewed_at: now
+      }
+      await db.updateOpportunity(activeOpp.id, updates)
+      setActiveOpp(prev => ({ ...prev, ...updates }))
+      if (refreshData) await refreshData()
+    } catch (err) {
+      console.error('Error marking opportunity as reviewed:', err)
+    } finally {
+      setIsReviewSaving(false)
+    }
+  }
+
+  const handleReject = async () => {
+    if (!activeOpp?.id) return
+    setIsReviewSaving(true)
+    try {
+      const now = new Date().toISOString()
+      const updates = {
+        review_status: 'rejected',
+        review_notes: reviewNotes,
+        reviewed_at: now
+      }
+      await db.updateOpportunity(activeOpp.id, updates)
+      setActiveOpp(prev => ({ ...prev, ...updates }))
+      if (refreshData) await refreshData()
+    } catch (err) {
+      console.error('Error rejecting opportunity:', err)
+    } finally {
+      setIsReviewSaving(false)
+    }
+  }
+
+  const handleResetReview = async () => {
+    if (!activeOpp?.id) return
+    setIsReviewSaving(true)
+    try {
+      const updates = {
+        review_status: 'unreviewed',
+        review_notes: reviewNotes,
+        reviewed_at: null
+      }
+      await db.updateOpportunity(activeOpp.id, updates)
+      setActiveOpp(prev => ({ ...prev, ...updates }))
+      setReviewChecklist({
+        duplicate: null,
+        plausibility: null,
+        source: null,
+        date: null,
+        relevance: null
+      })
+      if (refreshData) await refreshData()
+    } catch (err) {
+      console.error('Error resetting review:', err)
+    } finally {
+      setIsReviewSaving(false)
+    }
+  }
 
   const [translatedIntelligence, setTranslatedIntelligence] = useState({})
   const [translatingIntel, setTranslatingIntel] = useState(false)
@@ -374,7 +475,7 @@ export default function SalesWorkspacePage() {
           }));
           
           setResult(null);
-          setActiveTab('aktion');
+          setActiveTab(prev => (prev === 'pruefung' || prev === 'intelligence' || prev === 'historie' ? prev : 'aktion'));
 
           // Auto-Übersetzung für fremdsprachige Leads (z.B. Spanisch / Polnisch), wenn der Nutzer auf Deutsch arbeitet
           const isForeign = /\b(empresa|innovación|desarrollo|soluciones|crecimiento|financiamiento|adquisición|nueva|nuevo|sede|sociedad|productos|fabricación|distribución|ventures|partnership|spółka|zarząd|inwestycje)\b/i.test((latestTrigger?.content || '') + ' ' + (ctx.offering?.positioning || ''));
@@ -993,11 +1094,15 @@ export default function SalesWorkspacePage() {
             <h3>{t('nexus.yourPipeline')}</h3>
           </div>
 
-          {/* Baustelle 3: Filter für Zielgruppen-Match in der Pipeline */}
+          {/* Baustelle 3: Filter für Zielgruppen-Match & Review-Status in der Pipeline */}
           {(() => {
             const validOpps = (opportunities || []).filter(o => !isPlaceholderCompany(o.nexus_companies?.name || o.company?.name));
-            const relevantCount = validOpps.filter(o => computeTargetMatchScore(o.nexus_companies?.name || o.company?.name, o.lead_score) >= 50).length;
-            const unclearCount = validOpps.filter(o => computeTargetMatchScore(o.nexus_companies?.name || o.company?.name, o.lead_score) < 50).length;
+            const activeOpps = validOpps.filter(o => o.review_status !== 'rejected');
+            const rejectedOpps = validOpps.filter(o => o.review_status === 'rejected');
+
+            const relevantCount = activeOpps.filter(o => computeTargetMatchScore(o.nexus_companies?.name || o.company?.name, o.lead_score) >= 50).length;
+            const unclearCount = activeOpps.filter(o => computeTargetMatchScore(o.nexus_companies?.name || o.company?.name, o.lead_score) < 50).length;
+            const rejectedCount = rejectedOpps.length;
             
             return (
               <div className="ws-queue-filter-tabs">
@@ -1013,9 +1118,9 @@ export default function SalesWorkspacePage() {
                   type="button"
                   className={`ws-queue-tab ${queueFilter === 'all' ? 'active' : ''}`}
                   onClick={() => setQueueFilter('all')}
-                  title="Alle Opportunities"
+                  title="Alle aktiven Opportunities"
                 >
-                  Alle ({validOpps.length})
+                  Alle ({activeOpps.length})
                 </button>
                 {unclearCount > 0 && (
                   <button 
@@ -1028,6 +1133,17 @@ export default function SalesWorkspacePage() {
                     ⚠️ Unklar ({unclearCount})
                   </button>
                 )}
+                {rejectedCount > 0 && (
+                  <button 
+                    type="button"
+                    className={`ws-queue-tab ${queueFilter === 'rejected' ? 'active' : ''}`}
+                    onClick={() => setQueueFilter('rejected')}
+                    title="Abgelehnte Leads"
+                    style={{ color: queueFilter === 'rejected' ? '#050608' : '#f87171' }}
+                  >
+                    ❌ Abgelehnt ({rejectedCount})
+                  </button>
+                )}
               </div>
             );
           })()}
@@ -1035,12 +1151,19 @@ export default function SalesWorkspacePage() {
           <div className="queue-list">
             {(() => {
               const validOpps = (opportunities || []).filter(o => !isPlaceholderCompany(o.nexus_companies?.name || o.company?.name));
-              const displayedOpps = validOpps.filter(o => {
-                const match = computeTargetMatchScore(o.nexus_companies?.name || o.company?.name, o.lead_score);
-                if (queueFilter === 'relevant') return match >= 50;
-                if (queueFilter === 'unclear') return match < 50;
-                return true;
-              });
+              const activeOpps = validOpps.filter(o => o.review_status !== 'rejected');
+              const rejectedOpps = validOpps.filter(o => o.review_status === 'rejected');
+
+              let displayedOpps = [];
+              if (queueFilter === 'rejected') {
+                displayedOpps = rejectedOpps;
+              } else if (queueFilter === 'relevant') {
+                displayedOpps = activeOpps.filter(o => computeTargetMatchScore(o.nexus_companies?.name || o.company?.name, o.lead_score) >= 50);
+              } else if (queueFilter === 'unclear') {
+                displayedOpps = activeOpps.filter(o => computeTargetMatchScore(o.nexus_companies?.name || o.company?.name, o.lead_score) < 50);
+              } else {
+                displayedOpps = activeOpps;
+              }
 
               if (displayedOpps.length === 0) {
                 return (
@@ -1070,7 +1193,7 @@ export default function SalesWorkspacePage() {
                       </div>
 
                       {/* Baustelle 3: Zielgruppen-Match Badge & Veraltet-Kennzeichnung */}
-                      <div className="queue-item-meta">
+                      <div className="queue-item-meta" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                         {matchScore >= 70 ? (
                           <span className="queue-badge-high" title="Hoher Zielgruppen-Match">
                             {matchScore}% Match
@@ -1082,6 +1205,21 @@ export default function SalesWorkspacePage() {
                         ) : (
                           <span className="queue-badge-low" title="Zielgruppe unklar">
                             ⚠️ Unklar ({matchScore}%)
+                          </span>
+                        )}
+
+                        {/* Status-Badge: unreviewed, reviewed, rejected */}
+                        {opp.review_status === 'reviewed' ? (
+                          <span className="queue-badge-reviewed" style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 600 }}>
+                            ✅ Geprüft
+                          </span>
+                        ) : opp.review_status === 'rejected' ? (
+                          <span className="queue-badge-rejected" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 600 }}>
+                            ❌ Abgelehnt
+                          </span>
+                        ) : (
+                          <span className="queue-badge-unreviewed" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#facc15', border: '1px solid rgba(234, 179, 8, 0.3)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 600 }}>
+                            🟡 Ungeprüft
                           </span>
                         )}
 
@@ -1149,6 +1287,16 @@ export default function SalesWorkspacePage() {
                   {t('nexus.wsTabPitch')}
                 </button>
                 <button 
+                  className={`tab-btn ${activeTab === 'pruefung' ? 'active' : ''}`} 
+                  onClick={() => setActiveTab('pruefung')}
+                  style={{ background: activeTab === 'pruefung' ? 'var(--accent-blue, #38bdf8)' : '#0e1015', color: activeTab === 'pruefung' ? '#050608' : 'var(--text-secondary, #94a3b8)', border: '1px solid var(--border-subtle, #1e232d)', padding: '8px 18px', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  📋 Prüfung
+                  {activeOpp?.review_status === 'reviewed' && <span style={{ color: '#22c55e', fontSize: '0.75rem' }}>●</span>}
+                  {activeOpp?.review_status === 'rejected' && <span style={{ color: '#ef4444', fontSize: '0.75rem' }}>●</span>}
+                  {(!activeOpp?.review_status || activeOpp?.review_status === 'unreviewed') && <span style={{ color: '#eab308', fontSize: '0.75rem' }}>●</span>}
+                </button>
+                <button 
                   className={`tab-btn ${activeTab === 'intelligence' ? 'active' : ''}`} 
                   onClick={() => setActiveTab('intelligence')}
                   style={{ background: activeTab === 'intelligence' ? 'var(--accent-blue, #38bdf8)' : '#0e1015', color: activeTab === 'intelligence' ? '#050608' : 'var(--text-secondary, #94a3b8)', border: '1px solid var(--border-subtle, #1e232d)', padding: '8px 18px', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s ease' }}
@@ -1159,6 +1307,21 @@ export default function SalesWorkspacePage() {
               
               {activeOpp && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                  {/* Status-Badge: unreviewed, reviewed, rejected */}
+                  {activeOpp.review_status === 'reviewed' ? (
+                    <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <CheckCircle size={13} /> Geprüft
+                    </span>
+                  ) : activeOpp.review_status === 'rejected' ? (
+                    <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <AlertCircle size={13} /> Abgelehnt
+                    </span>
+                  ) : (
+                    <span style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#facc15', border: '1px solid rgba(234, 179, 8, 0.3)', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <Clock size={13} /> Ungeprüft
+                    </span>
+                  )}
+
                   {/* Baustelle 3: Zielgruppen-Match Badge im CRM Header */}
                   {(() => {
                     const matchScore = computeTargetMatchScore(activeOpp.company?.name || activeOpp.nexus_companies?.name, activeOpp.lead_score ?? activeTrigger?.trigger_score);
@@ -1762,6 +1925,459 @@ export default function SalesWorkspacePage() {
                   )}
                 </main>
                 )}
+              </div>
+            )}
+
+            {/* Tab: Prüfung */}
+            {activeTab === 'pruefung' && activeOpp && (
+              <div className="tab-content-pruefung" style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
+                {/* Status-Banner */}
+                {activeOpp.review_status === 'reviewed' ? (
+                  <div style={{ padding: '14px 18px', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#4ade80', fontWeight: 600 }}>
+                      <CheckCircle size={20} />
+                      <span>Dieser Lead wurde erfolgreich GEPRÜFT und für den Vertrieb freigegeben.{activeOpp.reviewed_at ? ` (${new Date(activeOpp.reviewed_at).toLocaleString()})` : ''}</span>
+                    </div>
+                  </div>
+                ) : activeOpp.review_status === 'rejected' ? (
+                  <div style={{ padding: '14px 18px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f87171', fontWeight: 600 }}>
+                      <AlertCircle size={20} />
+                      <span>Dieser Lead wurde ABGELEHNT und wird in der Hauptliste ausgeblendet.{activeOpp.reviewed_at ? ` (${new Date(activeOpp.reviewed_at).toLocaleString()})` : ''}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ padding: '12px 16px', background: 'rgba(234, 179, 8, 0.08)', border: '1px solid rgba(234, 179, 8, 0.25)', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '10px', color: '#facc15', fontSize: '0.9rem' }}>
+                    <Clock size={18} />
+                    <span>Dieser Lead ist <strong>UNGEPRÜFT</strong>. Bitte durchlaufe die 5 Prüfschritte, bevor der Lead freigegeben wird.</span>
+                  </div>
+                )}
+
+                <div style={{ background: '#0a0c0f', borderRadius: '12px', border: '1px solid #1e232d', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                  <div style={{ borderBottom: '1px solid #1e232d', paddingBottom: '12px' }}>
+                    <h3 style={{ margin: '0 0 6px 0', fontSize: '1.15rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      📋 5-Punkte Qualitätsprüfung
+                    </h3>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary, #94a3b8)' }}>
+                      Führe die Qualitätskontrolle durch. Der Lead kann erst als "geprüft" markiert werden, wenn alle fünf Prüfpunkte bestanden wurden.
+                    </p>
+                  </div>
+
+                  {/* a) Dubletten-Check */}
+                  <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.duplicate === 'pass' ? '#22c55e' : reviewChecklist.duplicate === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ flex: 1, minWidth: '240px' }}>
+                        <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.95rem' }}>a) Dubletten-Check</div>
+                        <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem', marginTop: '4px' }}>
+                          "Ist dieses Ereignis schon einmal in der Liste? Wenn ja: Zusammenführen."
+                        </div>
+                        <div style={{ fontSize: '0.82rem', marginTop: '6px', color: '#94a3b8' }}>
+                          Unternehmen: <strong style={{ color: '#38bdf8' }}>{activeOpp.company?.name || activeOpp.nexus_companies?.name || formData.company || 'Unbekannt'}</strong>
+                          {(() => {
+                            const compName = (activeOpp.company?.name || activeOpp.nexus_companies?.name || formData.company || '').toLowerCase().trim();
+                            const dups = (opportunities || []).filter(o => o.id !== activeOpp.id && (o.nexus_companies?.name || o.company?.name || '').toLowerCase().trim() === compName);
+                            return dups.length > 0 ? (
+                              <span style={{ color: '#f87171', marginLeft: '10px', fontWeight: 600 }}>
+                                ⚠️ {dups.length} weitere Lead(s) mit gleichem Namen in Pipeline
+                              </span>
+                            ) : (
+                              <span style={{ color: '#4ade80', marginLeft: '10px' }}>
+                                ✓ Keine Namensdopplung gefunden
+                              </span>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setReviewChecklist(prev => ({ ...prev, duplicate: 'pass' }))}
+                          style={{
+                            background: reviewChecklist.duplicate === 'pass' ? 'rgba(34, 197, 94, 0.25)' : '#181d26',
+                            color: reviewChecklist.duplicate === 'pass' ? '#4ade80' : '#94a3b8',
+                            border: `1px solid ${reviewChecklist.duplicate === 'pass' ? '#22c55e' : '#2d3748'}`,
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '0.85rem'
+                          }}
+                        >
+                          ✅ Bestanden
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReviewChecklist(prev => ({ ...prev, duplicate: 'fail' }))}
+                          style={{
+                            background: reviewChecklist.duplicate === 'fail' ? 'rgba(239, 68, 68, 0.25)' : '#181d26',
+                            color: reviewChecklist.duplicate === 'fail' ? '#f87171' : '#94a3b8',
+                            border: `1px solid ${reviewChecklist.duplicate === 'fail' ? '#ef4444' : '#2d3748'}`,
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '0.85rem'
+                          }}
+                        >
+                          ❌ Nicht bestanden
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* b) Plausibilitäts-Check */}
+                  <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.plausibility === 'pass' ? '#22c55e' : reviewChecklist.plausibility === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ flex: 1, minWidth: '240px' }}>
+                        <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.95rem' }}>b) Plausibilitäts-Check</div>
+                        <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem', marginTop: '4px' }}>
+                          "Passt das Ereignis zum Angebot?"
+                        </div>
+                        <div style={{ fontSize: '0.82rem', marginTop: '6px', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                          <div>Angebot: <strong style={{ color: '#f8fafc' }}>{activeOffering?.title || fullContext?.offering?.title || 'Standard B2B Angebot'}</strong></div>
+                          <div>Ereignis: <span style={{ color: '#cbd5e1' }}>{activeTrigger?.content || activeTrigger?.event_fact || formData.situation || 'Keine Angabe'}</span></div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setReviewChecklist(prev => ({ ...prev, plausibility: 'pass' }))}
+                          style={{
+                            background: reviewChecklist.plausibility === 'pass' ? 'rgba(34, 197, 94, 0.25)' : '#181d26',
+                            color: reviewChecklist.plausibility === 'pass' ? '#4ade80' : '#94a3b8',
+                            border: `1px solid ${reviewChecklist.plausibility === 'pass' ? '#22c55e' : '#2d3748'}`,
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '0.85rem'
+                          }}
+                        >
+                          ✅ Bestanden
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReviewChecklist(prev => ({ ...prev, plausibility: 'fail' }))}
+                          style={{
+                            background: reviewChecklist.plausibility === 'fail' ? 'rgba(239, 68, 68, 0.25)' : '#181d26',
+                            color: reviewChecklist.plausibility === 'fail' ? '#f87171' : '#94a3b8',
+                            border: `1px solid ${reviewChecklist.plausibility === 'fail' ? '#ef4444' : '#2d3748'}`,
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '0.85rem'
+                          }}
+                        >
+                          ❌ Nicht bestanden
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* c) Quellen-Check */}
+                  <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.source === 'pass' ? '#22c55e' : reviewChecklist.source === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ flex: 1, minWidth: '240px' }}>
+                        <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.95rem' }}>c) Quellen-Check</div>
+                        <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem', marginTop: '4px' }}>
+                          "Ist die Quelle erreichbar? Zeigt sie das behauptete Ereignis?"
+                        </div>
+                        <div style={{ fontSize: '0.82rem', marginTop: '6px', color: '#94a3b8' }}>
+                          {(() => {
+                            const sUrl = (activeTrigger?.source?.startsWith('http') ? activeTrigger.source : null) || (activeTrigger?.source_url?.startsWith('http') ? activeTrigger.source_url : null) || (activeOpp?.source?.startsWith('http') ? activeOpp.source : null);
+                            return (
+                              <div>
+                                Quelle:{' '}
+                                {sUrl ? (
+                                  <a href={sUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#38bdf8', textDecoration: 'underline' }}>
+                                    {sUrl} ↗
+                                  </a>
+                                ) : (
+                                  <span style={{ color: '#f87171' }}>⚠️ Keine Quell-URL verknüpft</span>
+                                )}
+                                {activeTrigger?.evidence && (
+                                  <div style={{ marginTop: '4px', fontStyle: 'italic', color: '#cbd5e1' }}>
+                                    Beleg: "{activeTrigger.evidence}"
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setReviewChecklist(prev => ({ ...prev, source: 'pass' }))}
+                          style={{
+                            background: reviewChecklist.source === 'pass' ? 'rgba(34, 197, 94, 0.25)' : '#181d26',
+                            color: reviewChecklist.source === 'pass' ? '#4ade80' : '#94a3b8',
+                            border: `1px solid ${reviewChecklist.source === 'pass' ? '#22c55e' : '#2d3748'}`,
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '0.85rem'
+                          }}
+                        >
+                          ✅ Bestanden
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReviewChecklist(prev => ({ ...prev, source: 'fail' }))}
+                          style={{
+                            background: reviewChecklist.source === 'fail' ? 'rgba(239, 68, 68, 0.25)' : '#181d26',
+                            color: reviewChecklist.source === 'fail' ? '#f87171' : '#94a3b8',
+                            border: `1px solid ${reviewChecklist.source === 'fail' ? '#ef4444' : '#2d3748'}`,
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '0.85rem'
+                          }}
+                        >
+                          ❌ Nicht bestanden
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* d) Datums-Check */}
+                  <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.date === 'pass' ? '#22c55e' : reviewChecklist.date === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ flex: 1, minWidth: '240px' }}>
+                        <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.95rem' }}>d) Datums-Check</div>
+                        <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem', marginTop: '4px' }}>
+                          "Ist das Datum aktuell (max. 60 Tage)?"
+                        </div>
+                        <div style={{ fontSize: '0.82rem', marginTop: '6px', color: '#94a3b8' }}>
+                          {(() => {
+                            const rawDate = activeTrigger?.event_date || activeTrigger?.published_at || activeTrigger?.created_at || activeOpp?.created_at;
+                            const dateObj = rawDate ? new Date(rawDate) : null;
+                            const isValidDate = dateObj && !isNaN(dateObj.getTime());
+                            const daysAgo = isValidDate ? Math.max(0, Math.round((Date.now() - dateObj.getTime()) / (1000 * 60 * 60 * 24))) : null;
+                            const isFresh = daysAgo !== null && daysAgo <= 60;
+                            return (
+                              <div>
+                                Datum:{' '}
+                                <strong style={{ color: isValidDate ? '#f8fafc' : '#f87171' }}>
+                                  {isValidDate ? dateObj.toLocaleDateString() : 'Kein Datum verfügbar'}
+                                </strong>
+                                {daysAgo !== null && (
+                                  <span style={{ marginLeft: '8px', color: isFresh ? '#4ade80' : '#f87171', fontWeight: 600 }}>
+                                    ({daysAgo} Tage her – {isFresh ? '✓ aktuell ≤ 60 Tage' : '⚠️ älter als 60 Tage!'})
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setReviewChecklist(prev => ({ ...prev, date: 'pass' }))}
+                          style={{
+                            background: reviewChecklist.date === 'pass' ? 'rgba(34, 197, 94, 0.25)' : '#181d26',
+                            color: reviewChecklist.date === 'pass' ? '#4ade80' : '#94a3b8',
+                            border: `1px solid ${reviewChecklist.date === 'pass' ? '#22c55e' : '#2d3748'}`,
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '0.85rem'
+                          }}
+                        >
+                          ✅ Bestanden
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReviewChecklist(prev => ({ ...prev, date: 'fail' }))}
+                          style={{
+                            background: reviewChecklist.date === 'fail' ? 'rgba(239, 68, 68, 0.25)' : '#181d26',
+                            color: reviewChecklist.date === 'fail' ? '#f87171' : '#94a3b8',
+                            border: `1px solid ${reviewChecklist.date === 'fail' ? '#ef4444' : '#2d3748'}`,
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '0.85rem'
+                          }}
+                        >
+                          ❌ Nicht bestanden
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* e) Relevanz-Check */}
+                  <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.relevance === 'pass' ? '#22c55e' : reviewChecklist.relevance === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ flex: 1, minWidth: '240px' }}>
+                        <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.95rem' }}>e) Relevanz-Check</div>
+                        <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem', marginTop: '4px' }}>
+                          "Würdest du anrufen? Warum ja, warum nein?"
+                        </div>
+                        <div style={{ fontSize: '0.82rem', marginTop: '6px', color: '#94a3b8' }}>
+                          {(() => {
+                            const matchScore = computeTargetMatchScore(activeOpp.company?.name || activeOpp.nexus_companies?.name, activeOpp.lead_score ?? activeTrigger?.trigger_score);
+                            return (
+                              <div>
+                                Zielgruppen-Match: <strong style={{ color: matchScore >= 50 ? '#4ade80' : '#f87171' }}>{matchScore}%</strong>
+                                <span style={{ marginLeft: '8px', color: '#94a3b8' }}>
+                                  – Bietet dieser Trigger einen echten, überzeugenden Gesprächsaufhänger?
+                                </span>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setReviewChecklist(prev => ({ ...prev, relevance: 'pass' }))}
+                          style={{
+                            background: reviewChecklist.relevance === 'pass' ? 'rgba(34, 197, 94, 0.25)' : '#181d26',
+                            color: reviewChecklist.relevance === 'pass' ? '#4ade80' : '#94a3b8',
+                            border: `1px solid ${reviewChecklist.relevance === 'pass' ? '#22c55e' : '#2d3748'}`,
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '0.85rem'
+                          }}
+                        >
+                          ✅ Bestanden
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReviewChecklist(prev => ({ ...prev, relevance: 'fail' }))}
+                          style={{
+                            background: reviewChecklist.relevance === 'fail' ? 'rgba(239, 68, 68, 0.25)' : '#181d26',
+                            color: reviewChecklist.relevance === 'fail' ? '#f87171' : '#94a3b8',
+                            border: `1px solid ${reviewChecklist.relevance === 'fail' ? '#ef4444' : '#2d3748'}`,
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '0.85rem'
+                          }}
+                        >
+                          ❌ Nicht bestanden
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Freitextfeld für Notizen */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
+                    <label style={{ fontWeight: 600, color: 'var(--text-primary, #f8fafc)', fontSize: '0.9rem' }}>
+                      Prüfnotizen:
+                    </label>
+                    <textarea
+                      value={reviewNotes}
+                      onChange={(e) => setReviewNotes(e.target.value)}
+                      placeholder="Notizen zur manuellen Prüfung, Begründung für Annahme oder Ablehnung..."
+                      rows={3}
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        background: '#0e1015',
+                        border: '1px solid #1e232d',
+                        borderRadius: '8px',
+                        color: '#f8fafc',
+                        fontSize: '0.9rem',
+                        resize: 'vertical',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+
+                  {/* Action Buttons */}
+                  {(() => {
+                    const allPassed = reviewChecklist.duplicate === 'pass' &&
+                                      reviewChecklist.plausibility === 'pass' &&
+                                      reviewChecklist.source === 'pass' &&
+                                      reviewChecklist.date === 'pass' &&
+                                      reviewChecklist.relevance === 'pass';
+
+                    return (
+                      <div style={{ display: 'flex', gap: '12px', marginTop: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          disabled={!allPassed || isReviewSaving}
+                          onClick={handleMarkReviewed}
+                          style={{
+                            background: allPassed ? '#22c55e' : '#1e293b',
+                            color: allPassed ? '#050608' : '#64748b',
+                            border: 'none',
+                            padding: '10px 22px',
+                            borderRadius: '8px',
+                            fontWeight: 700,
+                            cursor: allPassed ? 'pointer' : 'not-allowed',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            transition: 'all 0.2s ease',
+                            boxShadow: allPassed ? '0 0 15px rgba(34, 197, 94, 0.4)' : 'none'
+                          }}
+                          title={allPassed ? 'Als geprüft markieren und freigeben' : 'Erst aktiv, wenn alle fünf Punkte bestanden sind'}
+                        >
+                          <CheckCircle size={16} />
+                          {isReviewSaving ? 'Speichern...' : 'Als geprüft markieren'}
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={isReviewSaving}
+                          onClick={handleReject}
+                          style={{
+                            background: 'rgba(239, 68, 68, 0.15)',
+                            color: '#f87171',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            padding: '10px 22px',
+                            borderRadius: '8px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            transition: 'all 0.2s ease'
+                          }}
+                          title="Diesen Lead ablehnen (wird aus der Hauptliste ausgeblendet)"
+                        >
+                          <AlertCircle size={16} />
+                          {isReviewSaving ? 'Speichern...' : 'Ablehnen'}
+                        </button>
+
+                        {activeOpp.review_status && activeOpp.review_status !== 'unreviewed' && (
+                          <button
+                            type="button"
+                            disabled={isReviewSaving}
+                            onClick={handleResetReview}
+                            style={{
+                              background: '#0e1015',
+                              color: '#94a3b8',
+                              border: '1px solid #1e232d',
+                              padding: '10px 16px',
+                              borderRadius: '8px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px'
+                            }}
+                            title="Prüfstatus zurücksetzen auf Ungeprüft"
+                          >
+                            <RefreshCw size={14} />
+                            Zurücksetzen
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
             )}
 
