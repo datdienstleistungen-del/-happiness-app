@@ -1,50 +1,43 @@
 import { test, expect } from '@playwright/test'
 
 // Smoke-Tests gegen die Live-Seite (https://nexus-hit.netlify.app).
-// Angepasst an die NeXus-Revenue-OS-UI (2026-09); die alte Happiness/H.I.T.-
-// Spec pruefte Elemente, die es im Code nicht mehr gibt (mobile-bottom-nav,
-// demo-output-text, platform cards).
+// Angepasst an die NeXus-Revenue-OS-UI (Abgeschotteter Zustand / Route-Guards aktiv).
 
 test.describe('NeXus Landing & Core Pages (Smoke)', () => {
 
-  test('landing page laedt mit NeXus-Branding', async ({ page }) => {
+  test('root page leitet anonyme Nutzer zu /login um', async ({ page }) => {
     await page.goto('/')
-    await expect(page).toHaveTitle(/NeXus Revenue OS/)
-    await expect(page.locator('h1').first()).toContainText('NeXus Revenue OS')
-  })
-
-  test('landing page zeigt die primaeren CTAs', async ({ page }) => {
-    await page.goto('/')
+    await expect(page).toHaveURL(/\/login/)
+    await expect(page.locator('input[type="email"]').first()).toBeVisible()
+    await expect(page.locator('input[type="password"]').first()).toBeVisible()
     await expect(page.getByRole('button', { name: 'Einloggen' }).first()).toBeVisible()
-    await expect(page.locator('a[href="/register"]').first()).toBeVisible()
   })
 
   test('login page rendert', async ({ page }) => {
     await page.goto('/login')
     await expect(page.locator('input[type="email"]').first()).toBeVisible()
     await expect(page.locator('input[type="password"]').first()).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Einloggen' }).first()).toBeVisible()
   })
 
-  test('register page rendert', async ({ page }) => {
+  test('register route leitet geschuetzt auf /login um (Registrierung deaktiviert)', async ({ page }) => {
     await page.goto('/register')
-    await expect(page.locator('input[type="email"]').first()).toBeVisible()
-    await expect(page.locator('button:has-text("Registrieren")').first()).toBeVisible()
+    await expect(page).toHaveURL(/\/login/)
   })
 
-  test('marketplace page laedt', async ({ page }) => {
+  test('marketplace route leitet geschuetzt auf /login um', async ({ page }) => {
     await page.goto('/marketplace')
-    await expect(page.locator('text=Marktplatz').first()).toBeVisible()
+    await expect(page).toHaveURL(/\/login/)
   })
 
-  test('community page laedt', async ({ page }) => {
+  test('community route leitet geschuetzt auf /login um', async ({ page }) => {
     await page.goto('/community')
-    await expect(page.locator('text=Community').first()).toBeVisible()
+    await expect(page).toHaveURL(/\/login/)
   })
 
   test('legal pages laden (Impressum + Datenschutz)', async ({ page }) => {
     await page.goto('/impressum')
     await expect(page.locator('text=Impressum').first()).toBeVisible()
-    await expect(page.locator('h1').first()).toBeVisible()
 
     await page.goto('/datenschutz')
     await expect(page.locator('text=Datenschutz').first()).toBeVisible()
@@ -56,10 +49,9 @@ test.describe('NeXus Landing & Core Pages (Smoke)', () => {
     await expect(page.locator('input[type="email"]').first()).toBeVisible()
   })
 
-  test('unbekannte Route faengt auf Landing-Seite', async ({ page }) => {
+  test('unbekannte Route leitet geschuetzt auf /login um', async ({ page }) => {
     await page.goto('/diese-seite-gibt-es-nicht')
-    await expect(page).toHaveURL(/\/$/)
-    await expect(page.locator('h1').first()).toBeVisible()
+    await expect(page).toHaveURL(/\/login/)
   })
 
 })
