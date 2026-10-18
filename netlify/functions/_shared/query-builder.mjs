@@ -398,10 +398,21 @@ export function buildDachScanQueries({ offering, signalStrategies = [], manualQu
     const ddgQueries = [];
 
     // Relevante Fachbegriffe extrahieren (ohne Stoppwörter & Trigger-Schlüsselwörter)
-    const searchTokens = extractCleanKeywords(fullText).filter(
-      w => !/^(jobanzeigen?|stellenanzeigen?|hiring|stellenangebot[e]?|recruiting|neubau|investition|investitionen|spatenstich|hallenbau|suchauftrag)$/i.test(w)
-    );
-    const specificTopic = searchTokens.slice(0, 3).join(' ') || anchors.branche || 'Mittelstand';
+    const contextTokens = extractOfferingContext(offering, manualQuery, branche);
+    const seenWords = new Set();
+    const searchTokens = contextTokens
+      .filter(w => !/^(jobanzeigen?|stellenanzeigen?|hiring|stellenangebot[e]?|recruiting|neubau|investition|investitionen|spatenstich|hallenbau|suchauftrag)$/i.test(w))
+      .filter(w => {
+        const lower = w.toLowerCase();
+        if (seenWords.has(lower)) return false;
+        seenWords.add(lower);
+        return true;
+      });
+
+    // Füllwörter wie "B2B" nicht in die primäre Fachphrase aufnehmen, wenn andere Fachbegriffe vorliegen
+    const domainTokens = searchTokens.filter(w => w.toLowerCase() !== 'b2b');
+    const finalTokens = domainTokens.length > 0 ? domainTokens : searchTokens;
+    const specificTopic = finalTokens.slice(0, 3).join(' ') || anchors.branche || 'Mittelstand';
     const brancheTerm = anchors.branche || 'Mittelstand';
 
     if (isJobSearch) {
@@ -426,8 +437,12 @@ export function buildDachScanQueries({ offering, signalStrategies = [], manualQu
         });
       }
       newsQueries.push(`${specificTopic} stellt ein`.trim());
-      newsQueries.push(`${specificTopic} Expansion`.trim());
-      newsQueries.push(`${specificTopic} Vertriebsleiter`.trim());
+      if (!/expansion/i.test(specificTopic)) {
+        newsQueries.push(`${specificTopic} Expansion`.trim());
+      }
+      if (!/vertriebsleiter/i.test(specificTopic)) {
+        newsQueries.push(`${specificTopic} Vertriebsleiter`.trim());
+      }
     }
 
     if (isNeubauInvestSearch) {
@@ -445,8 +460,12 @@ export function buildDachScanQueries({ offering, signalStrategies = [], manualQu
         q: `"${specificTopic}" (Ausschreibung OR Vergabe OR Neubau) ${DACH_SITE_OPERATOR}`,
         type: 'TENDER'
       });
-      newsQueries.push(`${specificTopic} Neubau`.trim());
-      newsQueries.push(`${specificTopic} Investition`.trim());
+      if (!/neubau/i.test(specificTopic)) {
+        newsQueries.push(`${specificTopic} Neubau`.trim());
+      }
+      if (!/investition/i.test(specificTopic)) {
+        newsQueries.push(`${specificTopic} Investition`.trim());
+      }
     }
 
     const result = {

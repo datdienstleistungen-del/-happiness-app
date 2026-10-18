@@ -407,10 +407,31 @@ export function filterAndCleanTriggers(rawTriggers = [], { url = '', now = new D
     }
 
     // 2. Ereignisdatum & Veröffentlichungsdatum prüfen (max. 3 Kalendertage / 72h bzw. Zukunft <= 365d)
-    const validEventDate = validateEventDate(t.event_date, now);
-    const validPubDate = validateEventDate(t.published_at, now);
+    const sourceUrl = t.quelle || url || '';
+    const isJobPortal = /\b(stepstone|indeed|linkedin\.com\/jobs|xing\.com\/jobs|jobs\.ch|karriere\.at|jobboerse|monster)\b/i.test(sourceUrl);
+    const isHiringTrigger = t.signal_kategorie === 'HIRING' || isJobPortal;
 
+    let validEventDate = validateEventDate(t.event_date, now);
+    let validPubDate = validateEventDate(t.published_at, now);
     let isUnverifiedDate = Boolean(t.event_date_unverified);
+
+    // Sonderregel für Jobanzeigen:
+    // Wenn signal_kategorie === 'HIRING' oder der Trigger von einem Jobportal stammt:
+    // Und wenn kein gültiges event_date / published_at vorhanden ist:
+    // Dann setze das heutige Datum (new Date()) als "Abrufdatum" und markiere es als "frisch abgerufen".
+    // Begründung: Eine heute abgerufene Stellenanzeige ist ein heutiger Trigger, auch wenn kein explizites Datum im Text steht.
+    // Nur bei HIRING-Triggern anwenden. Bei Bau/News-Triggern bleibt der strikte 3-Tage-Filter.
+    if (isHiringTrigger && !validEventDate && !validPubDate) {
+      const todayIso = (now instanceof Date ? now : new Date()).toISOString().slice(0, 10);
+      validEventDate = todayIso;
+      validPubDate = todayIso;
+      isUnverifiedDate = false;
+      t.event_date = todayIso;
+      t.published_at = t.published_at || todayIso;
+      t.event_date_unverified = false;
+      t.is_freshly_fetched_job = true;
+    }
+
     let finalEventDate = validEventDate;
 
     if (!finalEventDate || isUnverifiedDate) {
