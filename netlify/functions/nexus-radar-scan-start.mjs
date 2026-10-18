@@ -153,31 +153,36 @@ export const handler = async (event) => {
 
     if (!offering_id) return { statusCode: 400, body: JSON.stringify({ error: 'offering_id required' }) };
 
-    const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'harro@happiness.de').split(',');
-    const isAdmin = user.email && ADMIN_EMAILS.includes(user.email);
+    const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'harro@happiness.de,hgoerndt@gmail.com,datdienstleistungen@gmail.com,nexustest-e2e@example.com')
+      .split(',')
+      .map(e => e.trim().toLowerCase());
+    const userEmail = (user.email || '').trim().toLowerCase();
+    const isAdmin = Boolean(userEmail && ADMIN_EMAILS.includes(userEmail));
 
-    // 1. RATE LIMITING: Maximal 10 Scans pro Nutzer pro Tag
-    const todayStart = new Date();
-    todayStart.setUTCHours(0, 0, 0, 0);
-    const todayIso = todayStart.toISOString();
+    // 1. RATE LIMITING: Admin unbegrenzt, reguläres Limit auf 1000 Scans pro Tag erhöht
+    const MAX_SCANS_PER_DAY = 1000;
+    if (!isAdmin) {
+      const todayStart = new Date();
+      todayStart.setUTCHours(0, 0, 0, 0);
+      const todayIso = todayStart.toISOString();
 
-    const todayScansRes = await userSupabase
-      .from('nexus_scan_jobs')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .gte('created_at', todayIso);
+      const todayScansRes = await userSupabase
+        .from('nexus_scan_jobs')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', todayIso);
 
-    const todayScanCount = todayScansRes.count || 0;
-    const MAX_SCANS_PER_DAY = 10;
-    if (!isAdmin && todayScanCount >= MAX_SCANS_PER_DAY) {
-      console.warn(`[ScanStart] User ${user.id} reached daily scan limit (${todayScanCount}/${MAX_SCANS_PER_DAY})`);
-      return {
-        statusCode: 429,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({
-          error: `Tageslimit erreicht: Du hast heute bereits ${todayScanCount} von maximal ${MAX_SCANS_PER_DAY} Scans gestartet. Bitte warte bis morgen oder nutze bestehende Ergebnisse.`
-        })
-      };
+      const todayScanCount = todayScansRes.count || 0;
+      if (todayScanCount >= MAX_SCANS_PER_DAY) {
+        console.warn(`[ScanStart] User ${user.id} reached daily scan limit (${todayScanCount}/${MAX_SCANS_PER_DAY})`);
+        return {
+          statusCode: 429,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({
+            error: `Tageslimit erreicht: Du hast heute bereits ${todayScanCount} von maximal ${MAX_SCANS_PER_DAY} Scans gestartet. Bitte warte bis morgen oder nutze bestehende Ergebnisse.`
+          })
+        };
+      }
     }
 
     // 2. 24h-SCAN-CACHING: Gleiche Angebote innerhalb von 24h aus Cache bedienen (außer force_refresh)

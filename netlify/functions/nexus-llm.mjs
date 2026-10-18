@@ -324,8 +324,11 @@ export const handler = async (event) => {
       };
     }
 
-    const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'harro@happiness.de').split(',');
-    isAdmin = user.email && ADMIN_EMAILS.includes(user.email);
+    const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'harro@happiness.de,hgoerndt@gmail.com,datdienstleistungen@gmail.com,nexustest-e2e@example.com')
+      .split(',')
+      .map(e => e.trim().toLowerCase());
+    const userEmail = (user.email || '').trim().toLowerCase();
+    isAdmin = Boolean(userEmail && ADMIN_EMAILS.includes(userEmail));
 
     // Premium-Tier-Check & Rate Limiting (für eingeloggte User)
     if (user && user.id) {

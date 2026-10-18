@@ -162,8 +162,11 @@ export const handler = async (event) => {
       return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
     }
 
-    const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'harro@happiness.de').split(',');
-    const isAdmin = user.email && ADMIN_EMAILS.includes(user.email);
+    const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'harro@happiness.de,hgoerndt@gmail.com,datdienstleistungen@gmail.com,nexustest-e2e@example.com')
+      .split(',')
+      .map(e => e.trim().toLowerCase());
+    const userEmail = (user.email || '').trim().toLowerCase();
+    const isAdmin = Boolean(userEmail && ADMIN_EMAILS.includes(userEmail));
 
     // 1. RATE LIMITING: Maximal 5 Nachrichten/Pitches pro Stunde
     if (!isAdmin) {
