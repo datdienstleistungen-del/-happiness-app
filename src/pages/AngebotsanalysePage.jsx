@@ -18,20 +18,20 @@ import './AngebotsanalysePage.css'
 
 const PRESET_IDEAS = [
   {
-    label: "B2B SaaS / CRM",
-    text: "Cloudbasierte Vertriebs- und CRM-Software für wachsende IT-Unternehmen"
+    label: "Vertriebsexpansion",
+    text: "Jobanzeigen Vertriebsleiter Expansion DACH"
   },
   {
-    label: "Industrie-Wartung",
-    text: "IoT-Sensorik und vorausschauende Wartung für Maschinenbau-Fertigungsstraßen"
+    label: "Neubau Industriehalle",
+    text: "Neubau Industriehalle Werkserweiterung Bayern"
   },
   {
-    label: "Vertriebsberatung",
-    text: "Outbound-Vertriebsoptimierung und B2B-Terminierung für Dienstleister"
+    label: "IT-Leitung / CISO",
+    text: "Stellenanzeigen IT-Leiter CISO Cloud Transformation"
   },
   {
-    label: "IT-Security & DSGVO",
-    text: "Automatisierte Pentests und DSGVO-Compliance-Audits für den Mittelstand"
+    label: "Investition & M&A",
+    text: "Millionen Investition Übernahme Mittelstand Deutschland"
   }
 ]
 
@@ -127,7 +127,7 @@ export default function AngebotsanalysePage() {
   const handleRunAnalysis = async (e) => {
     if (e) e.preventDefault()
     if (!angebotInput.trim()) {
-      setError('Bitte gib kurz ein, was du anbietest.')
+      setError('Bitte gib kurz deinen Suchauftrag ein.')
       return
     }
 
@@ -303,8 +303,8 @@ export default function AngebotsanalysePage() {
           <div className="single-input-header">
             <Sparkles size={20} className="text-[#155DFC]" />
             <div>
-              <h2>{t('nexus.offeringAnalysis.singleInputTitle', 'Was bietest du an?')}</h2>
-              <p>{t('nexus.offeringAnalysis.singleInputSubtitle', 'Beschreibe dein Produkt oder deine Dienstleistung in 1–2 Sätzen. NeXus ermittelt Zielgruppe, Schmerzpunkte und Kaufauslöser automatisch.')}</p>
+              <h2>{t('nexus.offeringAnalysis.singleInputTitle', 'Was suchst du? (Suchauftrag)')}</h2>
+              <p>{t('nexus.offeringAnalysis.singleInputSubtitle', 'Beschreibe die gesuchten Trigger, Anlässe oder Signale in 1–2 Sätzen. NeXus ermittelt Zielgruppe, Schmerzpunkte und Kaufauslöser automatisch.')}</p>
             </div>
           </div>
 
@@ -313,7 +313,7 @@ export default function AngebotsanalysePage() {
               <textarea
                 className="single-input-textarea"
                 rows={3}
-                placeholder={t('nexus.offeringAnalysis.placeholder', 'z. B. Cloudbasierte CRM- und Vertriebssoftware für wachsende IT-Unternehmen...')}
+                placeholder={t('nexus.offeringAnalysis.placeholder', 'z.B. Jobanzeigen Vertriebsleiter Expansion, Neubau Industriehalle Bayern')}
                 value={angebotInput}
                 onChange={(e) => setAngebotInput(e.target.value)}
                 disabled={isAnalyzing}
@@ -346,12 +346,12 @@ export default function AngebotsanalysePage() {
                 {isAnalyzing ? (
                   <>
                     <RefreshCw size={16} className="spin" />
-                    <span>{t('nexus.offeringAnalysis.btnAnalyzing', 'NeXus analysiert dein Angebot …')}</span>
+                    <span>{t('nexus.offeringAnalysis.btnAnalyzing', 'NeXus analysiert deinen Suchauftrag …')}</span>
                   </>
                 ) : (
                   <>
                     <Zap size={16} />
-                    <span>{t('nexus.offeringAnalysis.btnAnalyze', 'Angebot analysieren')}</span>
+                    <span>{t('nexus.offeringAnalysis.btnAnalyze', 'Suchauftrag analysieren')}</span>
                   </>
                 )}
               </button>

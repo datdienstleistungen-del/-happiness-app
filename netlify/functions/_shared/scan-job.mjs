@@ -109,7 +109,7 @@ export function parseStrictIsoDate(str) {
 }
 
 // Validiert ein Ereignisdatum auf Kalendertagebene (unabhängig von UTC-Tageszeit):
-// - Maximal 60 Kalendertage in der Vergangenheit
+// - Maximal 3 Kalendertage (72 Stunden) in der Vergangenheit
 // - Maximal 365 Kalendertage in der Zukunft (für geplante Vorhaben/Investitionen/Neubau)
 export function validateEventDate(rawDate, now = new Date()) {
   const parsed = parseStrictIsoDate(rawDate);
@@ -119,8 +119,8 @@ export function validateEventDate(rawDate, now = new Date()) {
   const targetDayNum = Math.floor(Date.UTC(parsed.year, parsed.month - 1, parsed.day) / 86400000);
   const diffDays = todayDayNum - targetDayNum;
 
-  // Älter als 60 Kalendertage -> ungültig
-  if (diffDays > 60) return null;
+  // Älter als 3 Kalendertage (72 Stunden) -> ungültig
+  if (diffDays > 3) return null;
   // Mehr als 365 Kalendertage in der Zukunft -> ungültig
   if (diffDays < -365) return null;
 
@@ -406,7 +406,7 @@ export function filterAndCleanTriggers(rawTriggers = [], { url = '', now = new D
       continue;
     }
 
-    // 2. Ereignisdatum & Veröffentlichungsdatum prüfen (max. 60 Kalendertage bzw. Zukunft <= 365d)
+    // 2. Ereignisdatum & Veröffentlichungsdatum prüfen (max. 3 Kalendertage / 72h bzw. Zukunft <= 365d)
     const validEventDate = validateEventDate(t.event_date, now);
     const validPubDate = validateEventDate(t.published_at, now);
 
@@ -415,14 +415,14 @@ export function filterAndCleanTriggers(rawTriggers = [], { url = '', now = new D
 
     if (!finalEventDate || isUnverifiedDate) {
       if (validPubDate) {
-        // Fallback: Kein/ungültiges Ereignisdatum, aber belegtes Veröffentlichungsdatum <= 60d
+        // Fallback: Kein/ungültiges Ereignisdatum, aber belegtes Veröffentlichungsdatum <= 3 Tage (72h)
         finalEventDate = null;
         isUnverifiedDate = true;
       } else {
-        // Weder Ereignisdatum noch Veröffentlichungsdatum <= 60 Tage
+        // Weder Ereignisdatum noch Veröffentlichungsdatum <= 3 Tage (72h)
         rejectedTriggers.push({
           ...t,
-          rejection_reason: 'Weder gültiges Ereignisdatum noch Veröffentlichungsdatum (max. 60 Tage)'
+          rejection_reason: 'Älter als 72 Stunden - veraltet'
         });
         continue;
       }
@@ -651,8 +651,8 @@ REGELN:
      Stattdessen: Setze "event_date": null!
    - "published_at": Das Veröffentlichungsdatum des Artikels ("YYYY-MM-DD" oder null). Wird separat erfasst.
    - Heutiges Referenzdatum: ${currentDate} (${currentYear}).
-   - Weder das Ereignis noch der Artikel dürfen älter als 60 Kalendertage sein (bei angekündigten Vorhaben max. 12 Monate in der Zukunft).
-   - Wenn weder ein belegbares Ereignisdatum noch ein Veröffentlichungsdatum auffindbar ist oder beide älter als 60 Tage sind:
+   - Weder das Ereignis noch der Artikel dürfen älter als 3 Kalendertage (72 Stunden) sein (bei angekündigten Vorhaben max. 12 Monate in der Zukunft).
+   - Wenn weder ein belegbares Ereignisdatum noch ein Veröffentlichungsdatum auffindbar ist oder beide älter als 3 Tage (72 Stunden) sind:
      Setze "trigger_events": [] (Signal verwerfen!).
 8. BELEG-SATZ (EVIDENCE):
    - Zitiere im Feld "evidence" den konkreten 1-2 Sätze langen Textauszug aus dem Quelltext, der das Ereignis belegt.
@@ -679,6 +679,12 @@ REGELN:
      * "EXPLICIT_INTENT": Das Unternehmen sucht im Text wörtlich nach einer Lösung/Software/Ausschreibung.
      * "PURE_MENTION": Reiner PR-Artikel, Speaker-Auftritt (z.B. Keynote auf DMEXCO), allgemeine Produktwerbung, Thought-Leadership ohne konkretes Investitions-/Veränderungsereignis.
    * REGEL: "PURE_MENTION" ist KEIN Kaufsignal! Wenn kein konkretes geschäftliches Veränderungsereignis vorliegt, setze "trigger_events": [].
+11. PAIN POINT FÜR DEN ENDKÄUFER (KONKRETE SCHMERZPUNKTE ABLEITEN):
+   - Leite für JEDEN gefundenen Trigger zwingend einen konkreten operativen Schmerzpunkt ("pain_point") ab, der durch diesen Anlass im Unternehmen entsteht.
+   - Frage: Welches akute Problem, welcher Engpass oder Schmerzpunkt entsteht für das Unternehmen durch dieses Ereignis?
+   - Beispiel Job/Hiring: "Firma X sucht 5 Vertriebler. Pain Point: Onboarding-Chaos, Bedarf an skalierbaren Prozessen."
+   - Beispiel Neubau/Expansion: "Neubau Werk. Pain Point: Abstimmungsaufwand Gewerke, Verzögerungsrisiko, Bedarf an standardisierter Dokumentation und Baustellenlogistik."
+   - Beispiel Investition: "Millionenfinanzierung erhalten. Pain Point: Hoher Erwartungsdruck der Investoren, Notwendigkeit schneller Skalierung bei begrenzten internen Ressourcen."
 
 KAUFSIGNAL-KATEGORIEN:
 1. EXPANSION / NEUBAU — Neue Standorte, Werksneubau, Vergrößerung, Büros
@@ -716,6 +722,7 @@ Gib ein JSON zurück:
       "dach_evidence": "Wörtlicher Belegsatz für den DACH-Sitz/Niederlassung",
       "event_fact": "Objektiv belegtes Ereignis (z.B. Deutsche Aircraft eröffnet Werk in Leipzig/Halle)",
       "business_opportunity": "[Hypothese] Ein neues Werk erzeugt typischerweise Bedarf an Dokumentenmanagement-Systemen",
+      "pain_point": "Konkreter operativer Schmerzpunkt des Endkäufers (z.B. Onboarding-Chaos, Bedarf an skalierbaren Prozessen)",
       "purchase_intent_status": "TRIGGER_EVENT | EXPLICIT_INTENT | PURE_MENTION"
     }
   ]

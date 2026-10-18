@@ -12,6 +12,8 @@ import { callLLM } from './llm-core.mjs';
 
 export const DACH_SITE_OPERATOR = '(site:de OR site:at OR site:ch)';
 export const DACH_MEDIA_OPERATOR = '(site:presseportal.de OR site:openpr.de OR site:unternehmensregister.de OR site:handelsblatt.com OR site:wiwo.de OR site:manager-magazin.de OR site:bundesanzeiger.de OR site:eqs-news.com OR site:dgap.de)';
+export const JOB_PORTALS_OPERATOR = '(site:linkedin.com/jobs OR site:stepstone.de OR site:indeed.com OR site:xing.com/jobs)';
+export const AUSSCHREIBUNG_OPERATOR = '(site:vergabe24.de OR site:dtvp.de OR site:had.de OR site:ausschreibungen-deutschland.de OR site:competitionline.com OR site:bund.de)';
 
 // Stoppwörter, die semantisch keinen Suchwert bieten
 export const STOP_WORDS = new Set([
@@ -385,6 +387,79 @@ export function buildDachScanQueries({ offering, signalStrategies = [], manualQu
   // 1. Semantischen Kern ermitteln
   const core = extractSemanticCoreSync(offering, branche, manualQuery);
   const anchors = buildSearchAnchors(core);
+  const fullText = extractFullOfferingText(offering, manualQuery, branche);
+
+  // 2. Multi-Source-Erkennung für Lead-Broker-Suchaufträge
+  const isJobSearch = /\b(jobanzeigen?|stellenanzeigen?|hiring|stellenangebot[e]?|recruiting)\b/i.test(fullText);
+  const isNeubauInvestSearch = /\b(neubau|investition|investitionen|spatenstich|hallenbau|standorterweiterung)\b/i.test(fullText);
+
+  if (isJobSearch || isNeubauInvestSearch) {
+    const newsQueries = [];
+    const ddgQueries = [];
+
+    // Relevante Fachbegriffe extrahieren (ohne Stoppwörter & Trigger-Schlüsselwörter)
+    const searchTokens = extractCleanKeywords(fullText).filter(
+      w => !/^(jobanzeigen?|stellenanzeigen?|hiring|stellenangebot[e]?|recruiting|neubau|investition|investitionen|spatenstich|hallenbau|suchauftrag)$/i.test(w)
+    );
+    const specificTopic = searchTokens.slice(0, 3).join(' ') || anchors.branche || 'Mittelstand';
+    const brancheTerm = anchors.branche || 'Mittelstand';
+
+    if (isJobSearch) {
+      // a) Queries für Jobportale (LinkedIn Jobs, StepStone, Indeed, XING)
+      ddgQueries.push({
+        q: `"${specificTopic}" ${JOB_PORTALS_OPERATOR}`,
+        type: 'JOB_PORTAL'
+      });
+      // b) Generische Suchbegriffe ("wir stellen ein")
+      ddgQueries.push({
+        q: `"wir stellen ein" "${specificTopic}" ${DACH_SITE_OPERATOR}`,
+        type: 'HIRING_GENERIC'
+      });
+      ddgQueries.push({
+        q: `"wir suchen" "${specificTopic}" ${DACH_SITE_OPERATOR}`,
+        type: 'HIRING_GENERIC'
+      });
+      if (brancheTerm && !specificTopic.toLowerCase().includes(brancheTerm.toLowerCase())) {
+        ddgQueries.push({
+          q: `"${brancheTerm}" "wir stellen ein" ${DACH_SITE_OPERATOR}`,
+          type: 'HIRING_GENERIC'
+        });
+      }
+      newsQueries.push(`${specificTopic} stellt ein`.trim());
+      newsQueries.push(`${specificTopic} Expansion`.trim());
+      newsQueries.push(`${specificTopic} Vertriebsleiter`.trim());
+    }
+
+    if (isNeubauInvestSearch) {
+      // c) Wirtschaftsmedien & Ad-hoc
+      ddgQueries.push({
+        q: `"${specificTopic}" (Neubau OR Investition OR Spatenstich) ${DACH_MEDIA_OPERATOR}`,
+        type: 'NEWS'
+      });
+      // d) Ausschreibungsportale & Vergabe
+      ddgQueries.push({
+        q: `"${specificTopic}" (Neubau OR Investition OR Gewerbebau) ${AUSSCHREIBUNG_OPERATOR}`,
+        type: 'TENDER'
+      });
+      ddgQueries.push({
+        q: `"${specificTopic}" (Ausschreibung OR Vergabe OR Neubau) ${DACH_SITE_OPERATOR}`,
+        type: 'TENDER'
+      });
+      newsQueries.push(`${specificTopic} Neubau`.trim());
+      newsQueries.push(`${specificTopic} Investition`.trim());
+    }
+
+    const result = {
+      newsQueries: newsQueries.slice(0, 5),
+      ddgQueries: ddgQueries.slice(0, 7),
+      strategySource: 'multi_source_broker',
+      semanticCore: core
+    };
+
+    const promise = Promise.resolve(result);
+    Object.assign(promise, result);
+    return promise;
+  }
 
   const strategyQueries = extractQueriesFromStrategies(signalStrategies);
 

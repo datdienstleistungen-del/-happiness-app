@@ -84,7 +84,7 @@ async function searchBingNews(query, maxResults = 10, timeoutMs = 4000) {
   const hits = await searchBingNewsRss(query, {
     maxResults,
     markets: ['de-DE', 'de-AT', 'de-CH'],
-    cutoffDays: 60,
+    cutoffDays: 3,
     timeoutMs
   });
   return hits.map(h => ({ url: h.url, title: h.title, published_date: h.published_date }));
@@ -118,7 +118,7 @@ async function searchWebWithFallback(query, maxResults = 8, timeoutMs = 5000) {
       const bingResults = await searchBingNewsRss(cleanQ, {
         maxResults,
         markets: ['de-DE', 'de-AT', 'de-CH'],
-        cutoffDays: 60,
+        cutoffDays: 3,
         timeoutMs: 4000
       });
       if (bingResults && bingResults.length > 0) {
@@ -302,7 +302,7 @@ export const handler = async (event) => {
     // Blocklist-Filter (Phase 5a): nur fuer Suchergebnisse — die synthetischen
     // URLs unten bleiben bewusst erhalten (NorthData ist gesetzte Register-Quelle).
     const newsKept = newsResults.filter(r => !isBlockedUrl(r.url));
-    const webKept = webResults.filter(r => !isBlockedUrl(r.url));
+    const webKept = webResults.filter(r => !isBlockedUrl(r.url, { allowJobPortals: r.source_type === 'JOB_PORTAL' || r.source_type === 'HIRING_GENERIC' || r.source_type === 'HIRING' }));
     const blockedCount = (newsResults.length - newsKept.length) + (webResults.length - webKept.length);
     if (blockedCount > 0) {
       console.log(`[ScanStart] ${blockedCount} Suchtreffer durch URL-Blocklist gefiltert.`);

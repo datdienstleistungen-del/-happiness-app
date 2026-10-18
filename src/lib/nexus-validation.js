@@ -558,6 +558,9 @@ export function deduplicateAndMergeTriggers(rawTriggers, { activeOfferingId = nu
       if (!existing.business_opportunity && item.business_opportunity) {
         existing.business_opportunity = item.business_opportunity;
       }
+      if (!existing.pain_point && item.pain_point) {
+        existing.pain_point = item.pain_point;
+      }
     }
   }
 
@@ -603,6 +606,7 @@ export function generateSignalReportCsv(triggers = [], { activeOffering = null }
     'Branche',
     'Anlass (Signal)',
     'Geschäftliche Chance (Hypothese)',
+    'Pain Point (Endkäufer)',
     'Kategorie',
     'Event-Datum',
     'Ereignisdatum verifiziert',
@@ -701,6 +705,7 @@ export function generateSignalReportCsv(triggers = [], { activeOffering = null }
       escapeCell(branche),
       escapeCell(anlass),
       escapeCell(chance),
+      escapeCell(t.pain_point || ''),
       escapeCell(kategorie),
       escapeCell(formattedEventDate),
       escapeCell(verifiziertText),

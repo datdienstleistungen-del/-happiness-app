@@ -82,7 +82,7 @@ export async function searchBrave(query, {
 export async function searchBingNewsRss(query, {
   maxResults = 10,
   markets = ['de-DE', 'de-AT', 'de-CH'],
-  cutoffDays = 60,
+  cutoffDays = 3,
   timeoutMs = 5000
 } = {}) {
   const cutoff = Date.now() - cutoffDays * 24 * 3600 * 1000;

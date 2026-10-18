@@ -159,7 +159,7 @@ export default function NexusLeadIntelligencePage() {
               type="text"
               value={angebot}
               onChange={(e) => setAngebot(e.target.value)}
-              placeholder="Was bietest du an?"
+              placeholder="Was suchst du? (Suchauftrag)"
             />
           </div>
         </div>

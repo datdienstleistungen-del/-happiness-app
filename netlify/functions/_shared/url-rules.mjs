@@ -46,14 +46,23 @@ export function getBlockedDomains() {
   return [...BLOCKED_DOMAINS];
 }
 
+const JOB_PORTAL_DOMAINS = new Set([
+  'stepstone.de', 'stepstone.at', 'stepstone.co.uk',
+  'indeed.com', 'indeed.de',
+  'xing.com', 'linkedin.com'
+]);
+
 // true wenn die URL-Domain auf eine geblockte Domain zulaeuft
 // (exakter Treffer oder Subdomain: jobs.stepstone.de -> stepstone.de).
-export function isBlockedUrl(url) {
+export function isBlockedUrl(url, { allowJobPortals = false } = {}) {
   if (!url) return true;
   try {
     const host = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
     for (const d of BLOCKED_DOMAINS) {
-      if (host === d || host.endsWith('.' + d)) return true;
+      if (host === d || host.endsWith('.' + d)) {
+        if (allowJobPortals && JOB_PORTAL_DOMAINS.has(d)) return false;
+        return true;
+      }
     }
     return false;
   } catch {

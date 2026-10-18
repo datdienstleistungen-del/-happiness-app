@@ -51,8 +51,8 @@ export function formatEventDate(dateInput) {
     relativeTime = `vor ${years} ${years === 1 ? 'Jahr' : 'Jahren'}`;
   }
 
-  // Sales Window Regel: Älter als 90 Tage = Veraltet
-  const isExpired = diffDays > 90;
+  // Sales Window Regel für Lead-Broker Radar: Älter als 3 Tage (72h) = Veraltet
+  const isExpired = diffDays > 3;
 
   return {
     formattedDate,

@@ -2035,7 +2035,16 @@ export default function SalesWorkspacePage() {
                         </div>
                         <div style={{ fontSize: '0.82rem', marginTop: '6px', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '3px' }}>
                           <div>Angebot: <strong style={{ color: '#f8fafc' }}>{activeOffering?.title || fullContext?.offering?.title || 'Standard B2B Angebot'}</strong></div>
-                          <div>Ereignis: <span style={{ color: '#cbd5e1' }}>{activeTrigger?.content || activeTrigger?.event_fact || formData.situation || 'Keine Angabe'}</span></div>
+                          <div>Ereignis: <span style={{ color: '#cbd5e1' }}>{activeTrigger?.content ? activeTrigger.content.split('\n\n[PAIN_POINT]:')[0] : (activeTrigger?.event_fact || formData.situation || 'Keine Angabe')}</span></div>
+                          {(() => {
+                            const pp = activeTrigger?.pain_point || activeOpp?.pain_point || (typeof activeTrigger?.content === 'string' && activeTrigger.content.includes('[PAIN_POINT]:') ? activeTrigger.content.split('[PAIN_POINT]:')[1]?.trim() : '');
+                            if (!pp) return null;
+                            return (
+                              <div style={{ marginTop: '2px' }}>
+                                Pain Point (Endkäufer): <strong style={{ color: '#fbbf24' }}>{pp}</strong>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '8px' }}>
@@ -2149,7 +2158,7 @@ export default function SalesWorkspacePage() {
                       <div style={{ flex: 1, minWidth: '240px' }}>
                         <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.95rem' }}>d) Datums-Check</div>
                         <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem', marginTop: '4px' }}>
-                          "Ist das Datum aktuell (max. 60 Tage)?"
+                          "Ist das Datum aktuell (max. 3 Tage)?"
                         </div>
                         <div style={{ fontSize: '0.82rem', marginTop: '6px', color: '#94a3b8' }}>
                           {(() => {
@@ -2157,7 +2166,7 @@ export default function SalesWorkspacePage() {
                             const dateObj = rawDate ? new Date(rawDate) : null;
                             const isValidDate = dateObj && !isNaN(dateObj.getTime());
                             const daysAgo = isValidDate ? Math.max(0, Math.round((Date.now() - dateObj.getTime()) / (1000 * 60 * 60 * 24))) : null;
-                            const isFresh = daysAgo !== null && daysAgo <= 60;
+                            const isFresh = daysAgo !== null && daysAgo <= 3;
                             return (
                               <div>
                                 Datum:{' '}
@@ -2166,7 +2175,7 @@ export default function SalesWorkspacePage() {
                                 </strong>
                                 {daysAgo !== null && (
                                   <span style={{ marginLeft: '8px', color: isFresh ? '#4ade80' : '#f87171', fontWeight: 600 }}>
-                                    ({daysAgo} Tage her – {isFresh ? '✓ aktuell ≤ 60 Tage' : '⚠️ älter als 60 Tage!'})
+                                    ({daysAgo} Tage her – {isFresh ? '✓ aktuell ≤ 3 Tage' : '⚠️ älter als 3 Tage (72h)!'})
                                   </span>
                                 )}
                               </div>
@@ -2699,12 +2708,12 @@ export default function SalesWorkspacePage() {
                               </p>
                             </div>
                             <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                              <strong>{t('nexus.wsOriginal')}</strong> {activeTrigger.content}
+                              <strong>{t('nexus.wsOriginal')}</strong> {activeTrigger.content ? activeTrigger.content.split('\n\n[PAIN_POINT]:')[0] : ''}
                             </div>
                           </div>
                         ) : (
                           <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.5', margin: '0 0 16px 0', fontSize: '0.95rem' }}>
-                            {activeTrigger.content}
+                            {activeTrigger.content ? activeTrigger.content.split('\n\n[PAIN_POINT]:')[0] : ''}
                           </p>
                         )}
                         
@@ -2747,8 +2756,8 @@ export default function SalesWorkspacePage() {
                                   <span style={{ color: 'var(--text-primary)' }}>{dateInfo.formattedDate}</span>
                                   <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>({dateInfo.relativeTime})</span>
                                   {dateInfo.isExpired && (
-                                    <span className="badge-expired" title="Signal ist älter als 90 Tage">
-                                      🚨 Veraltet (&gt;90 Tage)
+                                    <span className="badge-expired" title="Signal ist älter als 3 Tage (72h)">
+                                      🚨 Veraltet (&gt;3 Tage)
                                     </span>
                                   )}
                                 </div>
@@ -2790,6 +2799,21 @@ export default function SalesWorkspacePage() {
                             )}
                           </div>
                         </div>
+
+                        {(() => {
+                          const pp = activeTrigger.pain_point || activeOpp?.pain_point || (typeof activeTrigger.content === 'string' && activeTrigger.content.includes('[PAIN_POINT]:') ? activeTrigger.content.split('[PAIN_POINT]:')[1]?.trim() : '');
+                          if (!pp) return null;
+                          return (
+                            <div style={{ marginTop: '14px', padding: '12px 14px', background: 'rgba(245, 158, 11, 0.08)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.25)' }}>
+                              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fbbf24', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                🔥 Pain Point für den Endkäufer:
+                              </div>
+                              <div style={{ fontSize: '0.9rem', color: '#f8fafc', lineHeight: 1.5 }}>
+                                {pp}
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
 

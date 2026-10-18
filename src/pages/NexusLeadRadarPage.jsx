@@ -417,13 +417,19 @@ export default function NexusLeadRadarPage() {
       domain: trigger.domain || (trigger.quelle?.startsWith('http') ? extractDomain(trigger.quelle) : '')
     }
     
+    let content = trigger.signal || trigger.event || `Priorität: ${trigger.prioritaet}\n\nBewertung: ${trigger.bewertung}\n\nSignal: ${trigger.signal}\n\nPsychologie: ${trigger.psychologische_ansprache}`;
+    if (trigger.pain_point && !content.includes('[PAIN_POINT]:')) {
+      content = `${content}\n\n[PAIN_POINT]: ${trigger.pain_point}`;
+    }
+
     const signalData = {
       signal_type: 'KI_DETECTED',
-      content: trigger.signal || trigger.event || `Priorität: ${trigger.prioritaet}\n\nBewertung: ${trigger.bewertung}\n\nSignal: ${trigger.signal}\n\nPsychologie: ${trigger.psychologische_ansprache}`,
+      content,
       source: trigger.quelle || 'NeXus Radar Scan',
       source_url: trigger.quelle?.startsWith('http') ? trigger.quelle : null,
       confidence_score: trigger.prioritaet === 1 ? 0.9 : trigger.prioritaet === 2 ? 0.7 : 0.5,
-      target_group_match: trigger.target_group_match || 75
+      target_group_match: trigger.target_group_match || 75,
+      pain_point: trigger.pain_point || ''
     }
 
     const contactData = trigger.ansprechpartner || null
@@ -545,6 +551,7 @@ export default function NexusLeadRadarPage() {
                 evidence: t.evidence || t.match_reason || '',
                 position: t.position || t.contact?.role || (typeof t.ansprechpartner === 'string' ? t.ansprechpartner : null) || 'Geschäftsführung / Vertriebsleitung',
                 psychologische_ansprache: t.psychologische_ansprache || '',
+                pain_point: t.pain_point || '',
                 quelle: t.quelle || r.url || null,
                 all_sources: Array.isArray(t.all_sources) && t.all_sources.length > 0 ? t.all_sources : (t.quelle || r.url ? [t.quelle || r.url] : []),
                 published_at: t.published_at || (r.extracted_at ? r.extracted_at.slice(0, 10) : null),
@@ -687,6 +694,7 @@ export default function NexusLeadRadarPage() {
                   evidence: t.evidence || t.match_reason || '',
                   position: t.position || (typeof t.ansprechpartner === 'string' ? t.ansprechpartner : null) || 'Geschäftsführung / Vertriebsleitung',
                   psychologische_ansprache: t.psychologische_ansprache || '',
+                  pain_point: t.pain_point || '',
                   quelle: t.quelle || r.url || null,
                   all_sources: Array.isArray(t.all_sources) && t.all_sources.length > 0 ? t.all_sources : (t.quelle || r.url ? [t.quelle || r.url] : []),
                   published_at: t.published_at || (r.extracted_at ? r.extracted_at.slice(0, 10) : null),
@@ -751,6 +759,7 @@ export default function NexusLeadRadarPage() {
                   evidence: t.evidence || t.match_reason || '',
                   position: t.position || (typeof t.ansprechpartner === 'string' ? t.ansprechpartner : null) || 'Geschäftsführung / Vertriebsleitung',
                   psychologische_ansprache: t.psychologische_ansprache || '',
+                  pain_point: t.pain_point || '',
                   quelle: t.quelle || r.url || null,
                   all_sources: Array.isArray(t.all_sources) && t.all_sources.length > 0 ? t.all_sources : (t.quelle || r.url ? [t.quelle || r.url] : []),
                   published_at: t.published_at || (r.extracted_at ? r.extracted_at.slice(0, 10) : null),
@@ -1176,6 +1185,38 @@ export default function NexusLeadRadarPage() {
                           </p>
                         </div>
                       )}
+
+                      {trigger.pain_point && (
+                        <div className="trigger-pain-box" style={{
+                          margin: '10px 0',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          background: 'rgba(245, 158, 11, 0.08)',
+                          borderLeft: '3px solid #f59e0b',
+                          fontSize: '0.88rem',
+                          lineHeight: 1.45
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                            <span style={{
+                              background: '#f59e0b',
+                              color: '#1a1a1a',
+                              fontSize: '0.68rem',
+                              fontWeight: 800,
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              letterSpacing: '0.04em'
+                            }}>
+                              PAIN POINT (ENDKÄUFER)
+                            </span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                              Konkreter Schmerzpunkt
+                            </span>
+                          </div>
+                          <p style={{ margin: 0, color: 'var(--text-primary)' }}>
+                            {trigger.pain_point}
+                          </p>
+                        </div>
+                      )}
                       
                       {trigger.psychologische_ansprache && (
                         <div className="trigger-strategy" style={{ background: 'var(--bg-elevated)', padding: '10px', borderRadius: '8px', marginTop: '10px' }}>
@@ -1390,6 +1431,7 @@ export default function NexusLeadRadarPage() {
                       const params = new URLSearchParams()
                       params.set('company', trigger.company)
                       if (trigger.signal) params.set('trigger', `${trigger.signal} | ${trigger.psychologische_ansprache || ''}`)
+                      if (trigger.pain_point) params.set('pain_point', trigger.pain_point)
                       navigate(`/nexus/lead-intelligence?${params.toString()}`)
                     }}
                   >
