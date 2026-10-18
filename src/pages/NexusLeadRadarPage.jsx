@@ -70,6 +70,7 @@ export default function NexusLeadRadarPage() {
   const [scanMessage, setScanMessage] = useState('')
   const [scanResults, setScanResults] = useState([])
   const scanPollingRef = useRef(null)
+  const isPollingRef = useRef(false)
 
   // State Persistence: Save ALL state to localStorage on every change
   useEffect(() => {
@@ -611,12 +612,16 @@ export default function NexusLeadRadarPage() {
   const startPolling = (jobId) => {
     // Altes Polling stoppen
     if (scanPollingRef.current) {
-      clearInterval(scanPollingRef.current)
+      clearTimeout(scanPollingRef.current)
+      scanPollingRef.current = null
     }
 
     let consecutiveFailures = 0
 
-    scanPollingRef.current = setInterval(async () => {
+    const pollNextStep = async () => {
+      if (isPollingRef.current) return
+      isPollingRef.current = true
+
       try {
         const res = await fetch('/.netlify/functions/nexus-radar-scan-step', {
           method: 'POST',
@@ -633,12 +638,14 @@ export default function NexusLeadRadarPage() {
           consecutiveFailures++
           console.error('[ScanStep] Error response:', res.status, data.error || '')
           if (consecutiveFailures >= 8) {
-            clearInterval(scanPollingRef.current)
             scanPollingRef.current = null
             setScanStatus(null)
             setScanMessage('')
             setError(data.error || `Scan-Step-Fehler (${res.status}).`)
+            return
           }
+          // Bei temporärem Fehler nach Pause erneut anfragen
+          scanPollingRef.current = setTimeout(pollNextStep, 2000)
           return
         }
 
@@ -650,7 +657,6 @@ export default function NexusLeadRadarPage() {
         setScanResults(data.partial_results || [])
 
         if (data.status === 'done') {
-          clearInterval(scanPollingRef.current)
           scanPollingRef.current = null
           setScanStatus('done')
 
@@ -711,10 +717,10 @@ export default function NexusLeadRadarPage() {
           ).sort((a, b) => a.prioritaet - b.prioritaet);
           const deduplicated = deduplicateAndMergeTriggers(allTriggers);
           setTriggers(deduplicated);
+          return
         }
 
         if (data.status === 'error') {
-          clearInterval(scanPollingRef.current)
           scanPollingRef.current = null
           setScanStatus('error')
           setError(data.error_message || 'Scan abgebrochen.')
@@ -775,26 +781,37 @@ export default function NexusLeadRadarPage() {
               })
           ).sort((a, b) => a.prioritaet - b.prioritaet)
           if (partialTriggers.length > 0) setTriggers(deduplicateAndMergeTriggers(partialTriggers));
+          return
         }
+
+        // Job läuft noch: nächsten Step erst 1000ms nach Erhalt dieser Antwort anfragen
+        scanPollingRef.current = setTimeout(pollNextStep, 1000)
       } catch (e) {
         consecutiveFailures++
         console.error('[ScanStep] Polling error:', e)
         if (consecutiveFailures >= 8) {
-          clearInterval(scanPollingRef.current)
           scanPollingRef.current = null
           setScanStatus(null)
           setScanMessage('')
           setError('Scan-Step liefert keine gültigen Antworten. Bitte versuche es erneut.')
+          return
         }
+        scanPollingRef.current = setTimeout(pollNextStep, 2000)
+      } finally {
+        isPollingRef.current = false
       }
-    }, 500) // Alle 500ms pollen
+    }
+
+    // Erstes Polling sofort starten
+    pollNextStep()
   }
 
   // Cleanup polling on unmount
   useEffect(() => {
     return () => {
       if (scanPollingRef.current) {
-        clearInterval(scanPollingRef.current)
+        clearTimeout(scanPollingRef.current)
+        scanPollingRef.current = null
       }
     }
   }, [])
