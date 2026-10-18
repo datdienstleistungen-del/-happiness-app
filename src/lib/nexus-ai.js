@@ -22,6 +22,7 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
   let mode, params
   let targetLang = null
   let imageUrl = null
+  let maxAgeDays = null
   
   // Handle both object and parameter-based calls
   if (typeof modeOrParams === 'object' && modeOrParams !== null) {
@@ -29,6 +30,7 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
     mode = modeOrParams.mode
     lang = modeOrParams.lang || lang || 'de'
     targetLang = modeOrParams.targetLang || lang
+    maxAgeDays = modeOrParams.max_age_days || modeOrParams.maxAgeDays || null
     imageUrl = modeOrParams.imageUrl || modeOrParams.image_url || modeOrParams.context?.imageUrl || modeOrParams.context?.image_url || null
     const imageUrls = modeOrParams.imageUrls || modeOrParams.image_urls || modeOrParams.context?.imageUrls || modeOrParams.context?.image_urls || (imageUrl ? [imageUrl] : null)
     const { mode: _, targetLang: __, lang: ___, imageUrl: ____, image_url: _____, imageUrls: ______, image_urls: _______, ...rest } = modeOrParams
@@ -41,7 +43,8 @@ export async function callNexusAI(modeOrParams, message = null, context = null, 
     } else if (rest.prompt) {
       message = rest.prompt
     } else if (mode === 'angebotsanalyse') {
-      message = `Analysiere folgendes Angebot:\n\nAngebot: ${rest.angebot || ''}\nBranche: ${rest.branche || ''}`
+      const maxAge = rest.max_age_days || rest.maxAgeDays;
+      message = `Analysiere folgendes Angebot:\n\nAngebot: ${rest.angebot || ''}\nBranche: ${rest.branche || ''}${maxAge ? `\nMaximales Alter des Triggers (in Tagen): ${maxAge}` : ''}`
     } else if (mode === 'trigger_detection') {
       message = rest.query || rest.searchQuery || ''
     } else if (mode === 'find_contact') {
@@ -532,7 +535,8 @@ Du musst ein JSON-Objekt mit EXAKT folgender Struktur zurückgeben:
           targetLang: targetLang,
           imageUrl: imageUrl,
           imageUrls: (typeof imageUrls !== 'undefined' && imageUrls) ? imageUrls : (imageUrl ? [imageUrl] : (context?.imageUrls || null)),
-          isLandingPreview: !token || mode === 'trigger_hypotheses' || mode === 'angebotsanalyse' || mode === 'trigger_detection'
+          isLandingPreview: !token || mode === 'trigger_hypotheses' || mode === 'angebotsanalyse' || mode === 'trigger_detection',
+          max_age_days: maxAgeDays || 14
         }),
         signal: controller.signal
       });

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { 
   Target, Sparkles, RefreshCw, CheckCircle2, ArrowRight, 
   Save, AlertCircle, Edit3, Plus, ChevronDown, ChevronUp,
-  Layers, Zap, ShieldCheck, Globe
+  Layers, Zap, ShieldCheck, Globe, Clock
 } from 'lucide-react'
 import { callNexusAI } from '../lib/nexus-ai'
 import { createOffering, generateSignalStrategies, createOrUpdateFilterProfile } from '../lib/nexus-db'
@@ -52,6 +52,7 @@ export default function AngebotsanalysePage() {
   const [formOfferingName, setFormOfferingName] = useState('')
   const [formTargetAudience, setFormTargetAudience] = useState('')
   const [formPositioning, setFormPositioning] = useState('')
+  const [maxAgeDays, setMaxAgeDays] = useState(14)
   
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -83,6 +84,10 @@ export default function AngebotsanalysePage() {
       setFormOfferingName(activeOffering.offering_name || '')
       setFormTargetAudience(activeOffering.target_audience || '')
       setFormPositioning(activeOffering.positioning || '')
+      const savedMaxAge = activeOffering.max_age_days || activeOffering.ai_understanding?.max_age_days
+      if (savedMaxAge) {
+        setMaxAgeDays(Math.max(1, Math.min(30, Number(savedMaxAge) || 14)))
+      }
     }
   }, [activeOffering, isCreatingNew])
 
@@ -140,7 +145,8 @@ export default function AngebotsanalysePage() {
         mode: 'angebotsanalyse',
         angebot: angebotInput.trim(),
         branche: 'B2B',
-        lang: lang || 'de'
+        lang: lang || 'de',
+        max_age_days: maxAgeDays
       })
 
       if (!data) {
@@ -182,6 +188,7 @@ export default function AngebotsanalysePage() {
         core_offering: offName,
         target_audience: targetAudience,
         positioning: pos,
+        max_age_days: maxAgeDays,
         demand_contexts: Array.isArray(triggers) && triggers.length > 0
           ? triggers.map(t => typeof t === 'string' ? t : (t.signal || t.event || t.trigger_name || ''))
           : [
@@ -249,6 +256,7 @@ export default function AngebotsanalysePage() {
     setFormOfferingName('')
     setFormTargetAudience('')
     setFormPositioning('')
+    setMaxAgeDays(14)
     setError(null)
     setIsCreatingNew(true)
   }
@@ -334,6 +342,33 @@ export default function AngebotsanalysePage() {
                     {preset.label}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Aktualitäts-Regler (Slider) */}
+            <div className="max-age-slider-group">
+              <div className="max-age-slider-header">
+                <label htmlFor="maxAgeSlider" className="max-age-slider-label">
+                  <Clock size={15} className="text-[#38bdf8]" />
+                  <span>Maximales Alter des Triggers (in Tagen):</span>
+                  <span className="max-age-slider-value">{maxAgeDays} {maxAgeDays === 1 ? 'Tag' : 'Tage'}</span>
+                </label>
+                <span className="max-age-slider-hint">Standard: 14 Tage (1 bis 30 Tage)</span>
+              </div>
+              <input
+                id="maxAgeSlider"
+                type="range"
+                min="1"
+                max="30"
+                value={maxAgeDays}
+                onChange={(e) => setMaxAgeDays(parseInt(e.target.value, 10))}
+                disabled={isAnalyzing}
+                className="max-age-slider-input"
+              />
+              <div className="max-age-slider-ticks">
+                <span>1 Tag (Ultra-frisch)</span>
+                <span>14 Tage (Standard)</span>
+                <span>30 Tage</span>
               </div>
             </div>
 
@@ -429,6 +464,21 @@ export default function AngebotsanalysePage() {
                         placeholder="z. B. Automatisiert die Akquise und eliminiert manuelle Recherche."
                       />
                     </div>
+
+                    <div className="review-field">
+                      <label htmlFor="formMaxAgeDays">
+                        Maximales Alter des Triggers (in Tagen): <strong>{maxAgeDays} {maxAgeDays === 1 ? 'Tag' : 'Tage'}</strong>
+                      </label>
+                      <input 
+                        id="formMaxAgeDays"
+                        type="range"
+                        min="1"
+                        max="30"
+                        value={maxAgeDays} 
+                        onChange={(e) => setMaxAgeDays(parseInt(e.target.value, 10))}
+                        className="max-age-slider-input"
+                      />
+                    </div>
                   </div>
                 )}
               </div>
@@ -512,6 +562,11 @@ export default function AngebotsanalysePage() {
                 <span className="profile-label">{t('nexus.offeringAnalysis.valueProp', 'Value Proposition / Positionierung')}</span>
                 <p className="profile-text">{activeOffering?.positioning || 'Noch keine Positionierung hinterlegt.'}</p>
               </div>
+            </div>
+
+            <div className="profile-meta-row" style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--border-subtle, #1e232d)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary, #94a3b8)' }}>
+              <Clock size={14} className="text-[#38bdf8]" />
+              <span>Maximales Alter des Triggers (in Tagen): <strong style={{ color: 'var(--text-primary, #f8fafc)' }}>{activeOffering?.ai_understanding?.max_age_days || activeOffering?.max_age_days || 14} Tage</strong></span>
             </div>
           </div>
 

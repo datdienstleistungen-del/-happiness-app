@@ -177,8 +177,12 @@ export const scanTriggerItemSchema = z.object({
   event_fact: z.string().catch(''),
   business_opportunity: z.string().catch(''),
   purchase_intent_status: z.enum(['TRIGGER_EVENT', 'EXPLICIT_INTENT', 'PURE_MENTION']).catch('TRIGGER_EVENT'),
-  // Lead Broker: Abgeleiteter Schmerzpunkt des Endkäufers
-  pain_point: z.string().catch('')
+  // Lead Broker: Abgeleiteter Schmerzpunkt des Endkäufers & 5-Schritte-Verkaufspaket
+  pain_point: z.string().catch(''),
+  blind_company: z.string().catch(''),
+  blind_location: z.string().catch(''),
+  blind_quantity: z.string().catch(''),
+  target_buyers: z.array(z.string()).catch([])
 }).passthrough();
 
 // Scan-Extraktion (nexus-radar-scan-step): sichert, dass trigger_events ein

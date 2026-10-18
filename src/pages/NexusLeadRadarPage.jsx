@@ -422,6 +422,18 @@ export default function NexusLeadRadarPage() {
     if (trigger.pain_point && !content.includes('[PAIN_POINT]:')) {
       content = `${content}\n\n[PAIN_POINT]: ${trigger.pain_point}`;
     }
+    if (trigger.blind_company && !content.includes('[BLIND_COMPANY]:')) {
+      content = `${content}\n\n[BLIND_COMPANY]: ${trigger.blind_company}`;
+    }
+    if (trigger.blind_location && !content.includes('[BLIND_LOCATION]:')) {
+      content = `${content}\n\n[BLIND_LOCATION]: ${trigger.blind_location}`;
+    }
+    if (trigger.blind_quantity && !content.includes('[BLIND_QUANTITY]:')) {
+      content = `${content}\n\n[BLIND_QUANTITY]: ${trigger.blind_quantity}`;
+    }
+    if (Array.isArray(trigger.target_buyers) && trigger.target_buyers.length > 0 && !content.includes('[TARGET_BUYERS]:')) {
+      content = `${content}\n\n[TARGET_BUYERS]: ${trigger.target_buyers.join(', ')}`;
+    }
 
     const signalData = {
       signal_type: 'KI_DETECTED',
@@ -430,7 +442,11 @@ export default function NexusLeadRadarPage() {
       source_url: trigger.quelle?.startsWith('http') ? trigger.quelle : null,
       confidence_score: trigger.prioritaet === 1 ? 0.9 : trigger.prioritaet === 2 ? 0.7 : 0.5,
       target_group_match: trigger.target_group_match || 75,
-      pain_point: trigger.pain_point || ''
+      pain_point: trigger.pain_point || '',
+      blind_company: trigger.blind_company || '',
+      blind_location: trigger.blind_location || '',
+      blind_quantity: trigger.blind_quantity || '',
+      target_buyers: Array.isArray(trigger.target_buyers) ? trigger.target_buyers : []
     }
 
     const contactData = trigger.ansprechpartner || null
@@ -482,7 +498,8 @@ export default function NexusLeadRadarPage() {
           offering_id: activeOffering.id,
           query,
           branche,
-          force_refresh: forceRefresh
+          force_refresh: forceRefresh,
+          max_age_days: activeOffering?.ai_understanding?.max_age_days || activeOffering?.max_age_days || 14
         })
       })
 
@@ -553,6 +570,10 @@ export default function NexusLeadRadarPage() {
                 position: t.position || t.contact?.role || (typeof t.ansprechpartner === 'string' ? t.ansprechpartner : null) || 'Geschäftsführung / Vertriebsleitung',
                 psychologische_ansprache: t.psychologische_ansprache || '',
                 pain_point: t.pain_point || '',
+                blind_company: t.blind_company || '',
+                blind_location: t.blind_location || '',
+                blind_quantity: t.blind_quantity || '',
+                target_buyers: Array.isArray(t.target_buyers) ? t.target_buyers : [],
                 quelle: t.quelle || r.url || null,
                 all_sources: Array.isArray(t.all_sources) && t.all_sources.length > 0 ? t.all_sources : (t.quelle || r.url ? [t.quelle || r.url] : []),
                 published_at: t.published_at || (r.extracted_at ? r.extracted_at.slice(0, 10) : null),
@@ -701,6 +722,10 @@ export default function NexusLeadRadarPage() {
                   position: t.position || (typeof t.ansprechpartner === 'string' ? t.ansprechpartner : null) || 'Geschäftsführung / Vertriebsleitung',
                   psychologische_ansprache: t.psychologische_ansprache || '',
                   pain_point: t.pain_point || '',
+                  blind_company: t.blind_company || '',
+                  blind_location: t.blind_location || '',
+                  blind_quantity: t.blind_quantity || '',
+                  target_buyers: Array.isArray(t.target_buyers) ? t.target_buyers : [],
                   quelle: t.quelle || r.url || null,
                   all_sources: Array.isArray(t.all_sources) && t.all_sources.length > 0 ? t.all_sources : (t.quelle || r.url ? [t.quelle || r.url] : []),
                   published_at: t.published_at || (r.extracted_at ? r.extracted_at.slice(0, 10) : null),
@@ -766,6 +791,10 @@ export default function NexusLeadRadarPage() {
                   position: t.position || (typeof t.ansprechpartner === 'string' ? t.ansprechpartner : null) || 'Geschäftsführung / Vertriebsleitung',
                   psychologische_ansprache: t.psychologische_ansprache || '',
                   pain_point: t.pain_point || '',
+                  blind_company: t.blind_company || '',
+                  blind_location: t.blind_location || '',
+                  blind_quantity: t.blind_quantity || '',
+                  target_buyers: Array.isArray(t.target_buyers) ? t.target_buyers : [],
                   quelle: t.quelle || r.url || null,
                   all_sources: Array.isArray(t.all_sources) && t.all_sources.length > 0 ? t.all_sources : (t.quelle || r.url ? [t.quelle || r.url] : []),
                   published_at: t.published_at || (r.extracted_at ? r.extracted_at.slice(0, 10) : null),
@@ -1232,6 +1261,65 @@ export default function NexusLeadRadarPage() {
                           <p style={{ margin: 0, color: 'var(--text-primary)' }}>
                             {trigger.pain_point}
                           </p>
+                        </div>
+                      )}
+
+                      {(trigger.blind_company || trigger.blind_location || trigger.blind_quantity || (Array.isArray(trigger.target_buyers) && trigger.target_buyers.length > 0)) && (
+                        <div className="trigger-blind-box" style={{
+                          margin: '10px 0',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          background: 'rgba(56, 189, 248, 0.07)',
+                          borderLeft: '3px solid #0284c7',
+                          fontSize: '0.88rem',
+                          lineHeight: 1.45
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                            <span style={{
+                              background: '#0284c7',
+                              color: '#ffffff',
+                              fontSize: '0.68rem',
+                              fontWeight: 800,
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              letterSpacing: '0.04em'
+                            }}>
+                              BLIND PROFILE &amp; MATCHMAKING
+                            </span>
+                            {trigger.blind_location && (
+                              <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 600 }}>
+                                📍 {trigger.blind_location}
+                              </span>
+                            )}
+                          </div>
+                          {trigger.blind_company && (
+                            <div style={{ margin: '0 0 6px 0', color: 'var(--text-primary)', fontWeight: 600 }}>
+                              🏢 {trigger.blind_company}
+                              {trigger.blind_quantity && (
+                                <span style={{ color: 'var(--text-secondary)', fontWeight: 400, marginLeft: '6px' }}>
+                                  ({trigger.blind_quantity})
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          {Array.isArray(trigger.target_buyers) && trigger.target_buyers.length > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '6px' }}>
+                              <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Target Buyers:</span>
+                              {trigger.target_buyers.map((tb, idx) => (
+                                <span key={idx} style={{
+                                  background: 'rgba(56, 189, 248, 0.15)',
+                                  color: '#38bdf8',
+                                  fontSize: '0.72rem',
+                                  padding: '1px 7px',
+                                  borderRadius: '12px',
+                                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                                  fontWeight: 500
+                                }}>
+                                  {tb}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                       

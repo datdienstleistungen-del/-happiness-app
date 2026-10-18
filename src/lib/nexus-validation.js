@@ -561,6 +561,18 @@ export function deduplicateAndMergeTriggers(rawTriggers, { activeOfferingId = nu
       if (!existing.pain_point && item.pain_point) {
         existing.pain_point = item.pain_point;
       }
+      if (!existing.blind_company && item.blind_company) {
+        existing.blind_company = item.blind_company;
+      }
+      if (!existing.blind_location && item.blind_location) {
+        existing.blind_location = item.blind_location;
+      }
+      if (!existing.blind_quantity && item.blind_quantity) {
+        existing.blind_quantity = item.blind_quantity;
+      }
+      if ((!existing.target_buyers || existing.target_buyers.length === 0) && item.target_buyers?.length > 0) {
+        existing.target_buyers = item.target_buyers;
+      }
     }
   }
 
@@ -595,6 +607,8 @@ export function formatBusinessOpportunity(opportunity = '', purchaseIntentStatus
 /**
  * Erzeugt den CSV-Inhalt für den Signal-Report inklusive OWASP-Schutz und BOM.
  * Schreibt das Feld business_opportunity inklusive "[Hypothese]" in die CSV.
+ * Enthält die 5-Schritte-Assets: Blind Company, Blind Location, Blind Quantity,
+ * Target Buyers und Pain Point.
  * 
  * @param {Array} triggers
  * @param {Object} options
@@ -604,9 +618,13 @@ export function generateSignalReportCsv(triggers = [], { activeOffering = null }
   const headers = [
     'Firma',
     'Branche',
+    'Blind Company (Anonymisiert)',
+    'Blind Location (Region)',
+    'Blind Quantity (Fuzzy-Größe)',
+    'Target Buyers (Matchmaking)',
+    'Pain Point (Endkäufer)',
     'Anlass (Signal)',
     'Geschäftliche Chance (Hypothese)',
-    'Pain Point (Endkäufer)',
     'Kategorie',
     'Event-Datum',
     'Ereignisdatum verifiziert',
@@ -700,12 +718,37 @@ export function generateSignalReportCsv(triggers = [], { activeOffering = null }
     }
     const pruefnotizen = t.review_notes || '';
 
+    // Metadaten für Lead Brokerage & 5-Schritte-Assets
+    const extractMeta = (tag) => {
+      if (typeof t.content !== 'string') return '';
+      const match = t.content.match(new RegExp(`\\[${tag}\\]:\\s*([^\\n\\r]+)`, 'i'));
+      return match ? match[1].trim() : '';
+    };
+
+    const blindCompany = t.blind_company || extractMeta('BLIND_COMPANY') || '';
+    const blindLocation = t.blind_location || extractMeta('BLIND_LOCATION') || '';
+    const blindQuantity = t.blind_quantity || extractMeta('BLIND_QUANTITY') || '';
+    const painPoint = t.pain_point || extractMeta('PAIN_POINT') || '';
+
+    let targetBuyersStr = '';
+    if (Array.isArray(t.target_buyers) && t.target_buyers.length > 0) {
+      targetBuyersStr = t.target_buyers.join(', ');
+    } else if (typeof t.target_buyers === 'string' && t.target_buyers) {
+      targetBuyersStr = t.target_buyers;
+    } else {
+      targetBuyersStr = extractMeta('TARGET_BUYERS');
+    }
+
     return [
       escapeCell(firma),
       escapeCell(branche),
+      escapeCell(blindCompany),
+      escapeCell(blindLocation),
+      escapeCell(blindQuantity),
+      escapeCell(targetBuyersStr),
+      escapeCell(painPoint),
       escapeCell(anlass),
       escapeCell(chance),
-      escapeCell(t.pain_point || ''),
       escapeCell(kategorie),
       escapeCell(formattedEventDate),
       escapeCell(verifiziertText),

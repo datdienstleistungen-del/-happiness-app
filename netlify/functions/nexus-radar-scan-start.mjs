@@ -80,11 +80,11 @@ function decodeEntities(s) {
 }
 
 // Bing News RSS (kostenlos, keyless) für DACH-Märkte (de-DE, de-AT, de-CH)
-async function searchBingNews(query, maxResults = 10, timeoutMs = 4000) {
+async function searchBingNews(query, maxResults = 10, timeoutMs = 4000, cutoffDays = 14) {
   const hits = await searchBingNewsRss(query, {
     maxResults,
     markets: ['de-DE', 'de-AT', 'de-CH'],
-    cutoffDays: 3,
+    cutoffDays,
     timeoutMs
   });
   return hits.map(h => ({ url: h.url, title: h.title, published_date: h.published_date }));
@@ -94,7 +94,7 @@ async function searchBingNews(query, maxResults = 10, timeoutMs = 4000) {
 // 1. Brave Search API (falls serverseitig BRAVE_SEARCH_API_KEY konfiguriert ist)
 // 2. DuckDuckGo HTML-Suche (kostenlos, keyless)
 // 3. Bing News RSS Fallback für DACH-Märkte
-async function searchWebWithFallback(query, maxResults = 8, timeoutMs = 5000) {
+async function searchWebWithFallback(query, maxResults = 8, timeoutMs = 5000, cutoffDays = 14) {
   // 1. Brave Search API (falls serverseitiger Key konfiguriert)
   try {
     const braveRes = await searchBrave(query, { maxResults, country: 'DE', timeoutMs: 5000 });
@@ -118,7 +118,7 @@ async function searchWebWithFallback(query, maxResults = 8, timeoutMs = 5000) {
       const bingResults = await searchBingNewsRss(cleanQ, {
         maxResults,
         markets: ['de-DE', 'de-AT', 'de-CH'],
-        cutoffDays: 3,
+        cutoffDays,
         timeoutMs: 4000
       });
       if (bingResults && bingResults.length > 0) {
@@ -139,7 +139,7 @@ export const handler = async (event) => {
   }
 
   try {
-    const { offering_id, query, branche, force_refresh = false } = JSON.parse(event.body || '{}');
+    const { offering_id, query, branche, force_refresh = false, max_age_days } = JSON.parse(event.body || '{}');
 
     // Auth check
     const authHeader = event.headers.authorization;
@@ -274,6 +274,10 @@ export const handler = async (event) => {
       .eq('id', offering_id)
       .maybeSingle();
 
+    const maxAgeDays = Math.max(1, Math.min(30, Number(
+      max_age_days || offering?.ai_understanding?.max_age_days || 14
+    )));
+
     const { data: signalStrategies } = await userSupabase
       .from('nexus_signal_strategies')
       .select('signal_category, trigger_name, search_queries, why_relevant')
@@ -286,14 +290,14 @@ export const handler = async (event) => {
       branche
     });
 
-    console.log(`[ScanStart] Query-Strategie (${strategySource}): ${newsQueries.length} News-Queries, ${ddgQueries.length} Web-Queries`);
+    console.log(`[ScanStart] Query-Strategie (${strategySource}): ${newsQueries.length} News-Queries, ${ddgQueries.length} Web-Queries (maxAgeDays=${maxAgeDays})`);
 
     const [newsSets, ddgSets] = await Promise.all([
-      Promise.allSettled(newsQueries.map(q => searchBingNews(q, 8))),
+      Promise.allSettled(newsQueries.map(q => searchBingNews(q, 8, 4000, maxAgeDays))),
       // Web-Suche leicht versetzt abfragen (429-Rate-Limit bei parallelen Anfragen)
       Promise.allSettled(ddgQueries.map((d, i) => (async () => {
         if (i > 0) await new Promise(r => setTimeout(r, i * 350));
-        return searchWebWithFallback(d.q, 8);
+        return searchWebWithFallback(d.q, 8, 5000, maxAgeDays);
       })()))
     ]);
 
@@ -399,9 +403,14 @@ export const handler = async (event) => {
         status: 'running',
         current_step: 0,
         total_steps: finalCandidates.length,
-        pending_urls: finalCandidates.map(r => ({ url: r.url, title: r.title || '', source_type: r.source_type || 'NEWS' })),
+        pending_urls: finalCandidates.map(r => ({
+          url: r.url,
+          title: r.title || '',
+          source_type: r.source_type || 'NEWS',
+          max_age_days: maxAgeDays
+        })),
         partial_results: [],
-        last_message: `Suche gestartet: ${finalCandidates.length} Kandidaten (${dachCandidates.length} DACH-Quellen) gefunden...`,
+        last_message: `Suche gestartet: ${finalCandidates.length} Kandidaten (${dachCandidates.length} DACH-Quellen, max. ${maxAgeDays} Tage alt) gefunden...`,
         updated_at: new Date().toISOString()
       })
       .select('id')

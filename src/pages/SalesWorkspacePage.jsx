@@ -23,6 +23,35 @@ const MODI = [
 
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
+export function extractTriggerMeta(content = '') {
+  if (typeof content !== 'string') {
+    return { cleanText: '', painPoint: '', blindCompany: '', blindLocation: '', blindQuantity: '', targetBuyers: [] };
+  }
+  const painMatch = content.match(/\[PAIN_POINT\]:\s*([^\n\r]+)/i);
+  const companyMatch = content.match(/\[BLIND_COMPANY\]:\s*([^\n\r]+)/i);
+  const locationMatch = content.match(/\[BLIND_LOCATION\]:\s*([^\n\r]+)/i);
+  const quantityMatch = content.match(/\[BLIND_QUANTITY\]:\s*([^\n\r]+)/i);
+  const buyersMatch = content.match(/\[TARGET_BUYERS\]:\s*([^\n\r]+)/i);
+
+  const cleanText = content
+    .replace(/\n\n\[(PAIN_POINT|BLIND_COMPANY|BLIND_LOCATION|BLIND_QUANTITY|TARGET_BUYERS)\]:[^\n\r]*/gi, '')
+    .replace(/\[(PAIN_POINT|BLIND_COMPANY|BLIND_LOCATION|BLIND_QUANTITY|TARGET_BUYERS)\]:[^\n\r]*/gi, '')
+    .trim();
+
+  const targetBuyers = buyersMatch 
+    ? buyersMatch[1].split(',').map(s => s.trim()).filter(Boolean)
+    : [];
+
+  return {
+    cleanText,
+    painPoint: painMatch ? painMatch[1].trim() : '',
+    blindCompany: companyMatch ? companyMatch[1].trim() : '',
+    blindLocation: locationMatch ? locationMatch[1].trim() : '',
+    blindQuantity: quantityMatch ? quantityMatch[1].trim() : '',
+    targetBuyers
+  };
+}
+
 export default function SalesWorkspacePage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -81,6 +110,7 @@ export default function SalesWorkspacePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [copied, setCopied] = useState(false)
+  const [packageCopied, setPackageCopied] = useState(false)
   const [findingContact, setFindingContact] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
   const [foundContact, setFoundContact] = useState(null) // Speichert den gefundenen Kontakt für Bestätigung
@@ -660,6 +690,13 @@ export default function SalesWorkspacePage() {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopyPackage = (text) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setPackageCopied(true);
+    setTimeout(() => setPackageCopied(false), 2000);
   };
 
   const handleRunResearch = async () => {
@@ -2035,14 +2072,32 @@ export default function SalesWorkspacePage() {
                         </div>
                         <div style={{ fontSize: '0.82rem', marginTop: '6px', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '3px' }}>
                           <div>Angebot: <strong style={{ color: '#f8fafc' }}>{activeOffering?.offering_name || activeOffering?.title || fullContext?.offering?.offering_name || fullContext?.offering?.title || 'Standard B2B Angebot'}</strong></div>
-                          <div>Ereignis: <span style={{ color: '#cbd5e1' }}>{activeTrigger?.content ? activeTrigger.content.split('\n\n[PAIN_POINT]:')[0] : (activeTrigger?.event_fact || formData.situation || 'Keine Angabe')}</span></div>
+                          <div>Ereignis: <span style={{ color: '#cbd5e1' }}>{activeTrigger?.content ? extractTriggerMeta(activeTrigger.content).cleanText : (activeTrigger?.event_fact || formData.situation || 'Keine Angabe')}</span></div>
                           {(() => {
-                            const pp = activeTrigger?.pain_point || activeOpp?.pain_point || (typeof activeTrigger?.content === 'string' && activeTrigger.content.includes('[PAIN_POINT]:') ? activeTrigger.content.split('[PAIN_POINT]:')[1]?.trim() : '');
-                            if (!pp) return null;
+                            const meta = extractTriggerMeta(activeTrigger?.content || '');
+                            const pp = activeTrigger?.pain_point || activeOpp?.pain_point || meta.painPoint;
+                            const bc = activeTrigger?.blind_company || meta.blindCompany;
+                            const bl = activeTrigger?.blind_location || meta.blindLocation;
+                            const bq = activeTrigger?.blind_quantity || meta.blindQuantity;
+                            const tb = (Array.isArray(activeTrigger?.target_buyers) && activeTrigger.target_buyers.length > 0) ? activeTrigger.target_buyers : meta.targetBuyers;
                             return (
-                              <div style={{ marginTop: '2px' }}>
-                                Pain Point (Endkäufer): <strong style={{ color: '#fbbf24' }}>{pp}</strong>
-                              </div>
+                              <>
+                                {pp && (
+                                  <div style={{ marginTop: '2px' }}>
+                                    Pain Point (Endkäufer): <strong style={{ color: '#fbbf24' }}>{pp}</strong>
+                                  </div>
+                                )}
+                                {(bc || bl || bq) && (
+                                  <div style={{ marginTop: '2px' }}>
+                                    Blind Profile: <span style={{ color: '#38bdf8' }}>{bc || 'Anonymisiert'} {bl ? `(${bl})` : ''} {bq ? `· ${bq}` : ''}</span>
+                                  </div>
+                                )}
+                                {tb && tb.length > 0 && (
+                                  <div style={{ marginTop: '2px' }}>
+                                    Target Buyers: <span style={{ color: '#4ade80' }}>{tb.join(', ')}</span>
+                                  </div>
+                                )}
+                              </>
                             );
                           })()}
                         </div>
@@ -2708,12 +2763,12 @@ export default function SalesWorkspacePage() {
                               </p>
                             </div>
                             <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                              <strong>{t('nexus.wsOriginal')}</strong> {activeTrigger.content ? activeTrigger.content.split('\n\n[PAIN_POINT]:')[0] : ''}
+                              <strong>{t('nexus.wsOriginal')}</strong> {activeTrigger.content ? extractTriggerMeta(activeTrigger.content).cleanText : ''}
                             </div>
                           </div>
                         ) : (
                           <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.5', margin: '0 0 16px 0', fontSize: '0.95rem' }}>
-                            {activeTrigger.content ? activeTrigger.content.split('\n\n[PAIN_POINT]:')[0] : ''}
+                            {activeTrigger.content ? extractTriggerMeta(activeTrigger.content).cleanText : ''}
                           </p>
                         )}
                         
@@ -2800,17 +2855,150 @@ export default function SalesWorkspacePage() {
                           </div>
                         </div>
 
+                        {/* 5-Schritte-Prozess: Blind Profile, Impact-Analyse, Matchmaking */}
                         {(() => {
-                          const pp = activeTrigger.pain_point || activeOpp?.pain_point || (typeof activeTrigger.content === 'string' && activeTrigger.content.includes('[PAIN_POINT]:') ? activeTrigger.content.split('[PAIN_POINT]:')[1]?.trim() : '');
-                          if (!pp) return null;
+                          const meta = extractTriggerMeta(activeTrigger?.content || '');
+                          const pp = activeTrigger?.pain_point || activeOpp?.pain_point || meta.painPoint;
+                          const bc = activeTrigger?.blind_company || meta.blindCompany;
+                          const bl = activeTrigger?.blind_location || meta.blindLocation;
+                          const bq = activeTrigger?.blind_quantity || meta.blindQuantity;
+                          const tb = (Array.isArray(activeTrigger?.target_buyers) && activeTrigger.target_buyers.length > 0) ? activeTrigger.target_buyers : meta.targetBuyers;
+
+                          if (!pp && !bc && !bl && !bq && tb.length === 0) return null;
+
                           return (
-                            <div style={{ marginTop: '14px', padding: '12px 14px', background: 'rgba(245, 158, 11, 0.08)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.25)' }}>
-                              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fbbf24', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                🔥 Pain Point für den Endkäufer:
+                            <div className="ws-sales-package-card" style={{
+                              marginTop: '16px',
+                              background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(99, 102, 241, 0.08) 100%)',
+                              border: '1px solid rgba(56, 189, 248, 0.3)',
+                              borderRadius: '10px',
+                              padding: '16px',
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span style={{
+                                    background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
+                                    color: '#ffffff',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 800,
+                                    padding: '3px 10px',
+                                    borderRadius: '4px',
+                                    letterSpacing: '0.05em'
+                                  }}>
+                                    VERKAUFS-ASSET (LEAD-PAKET)
+                                  </span>
+                                  <span style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 600 }}>
+                                    Blind Profile &amp; Matchmaking
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const text = [
+                                      `BLIND PROFILE:`,
+                                      bc ? `• Anonymisierte Firma: ${bc}` : null,
+                                      bl ? `• Region: ${bl}` : null,
+                                      bq ? `• Kennzahl/Größe: ${bq}` : null,
+                                      pp ? `\nIMPACT-ANALYSE (PAIN POINT / HANDLUNGSDRUCK):\n• ${pp}` : null,
+                                      tb.length > 0 ? `\nMATCHMAKING (TARGET BUYERS):\n• ${tb.join(', ')}` : null
+                                    ].filter(Boolean).join('\n');
+                                    handleCopyPackage(text);
+                                  }}
+                                  className="btn-secondary"
+                                  style={{ fontSize: '0.75rem', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '5px' }}
+                                  title="Verkaufs-Paket in die Zwischenablage kopieren"
+                                >
+                                  {packageCopied ? <CheckCircle size={12} color="#22c55e" /> : <Copy size={12} />}
+                                  <span>{packageCopied ? 'Kopiert!' : 'Paket kopieren'}</span>
+                                </button>
                               </div>
-                              <div style={{ fontSize: '0.9rem', color: '#f8fafc', lineHeight: 1.5 }}>
-                                {pp}
-                              </div>
+
+                              {/* Blind Profile Grid */}
+                              {(bc || bl || bq) && (
+                                <div style={{
+                                  display: 'grid',
+                                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                                  gap: '12px',
+                                  background: 'rgba(10, 12, 15, 0.7)',
+                                  padding: '12px',
+                                  borderRadius: '8px',
+                                  border: '1px solid rgba(255, 255, 255, 0.05)',
+                                  marginBottom: '12px'
+                                }}>
+                                  <div>
+                                    <span style={{ fontSize: '0.73rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '2px' }}>
+                                      🏢 Anonymisierte Firma
+                                    </span>
+                                    <strong style={{ color: '#f8fafc', fontSize: '0.9rem' }}>
+                                      {bc || 'DACH-Unternehmen'}
+                                    </strong>
+                                  </div>
+                                  <div>
+                                    <span style={{ fontSize: '0.73rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '2px' }}>
+                                      📍 Region / Standort
+                                    </span>
+                                    <strong style={{ color: '#f8fafc', fontSize: '0.9rem' }}>
+                                      {bl || 'DACH'}
+                                    </strong>
+                                  </div>
+                                  <div>
+                                    <span style={{ fontSize: '0.73rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '2px' }}>
+                                      📊 Fuzzy-Größe / Kennzahl
+                                    </span>
+                                    <strong style={{ color: '#f8fafc', fontSize: '0.9rem' }}>
+                                      {bq || 'Mittelstand'}
+                                    </strong>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Impact Analysis / Pain Point */}
+                              {pp && (
+                                <div style={{
+                                  padding: '10px 12px',
+                                  background: 'rgba(245, 158, 11, 0.09)',
+                                  borderLeft: '3px solid #f59e0b',
+                                  borderRadius: '6px',
+                                  marginBottom: tb.length > 0 ? '12px' : 0
+                                }}>
+                                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#fbbf24', textTransform: 'uppercase', marginBottom: '3px' }}>
+                                    ⚡ Impact-Analyse (Akuter Handlungsdruck / Pain Point):
+                                  </div>
+                                  <div style={{ fontSize: '0.88rem', color: '#f8fafc', lineHeight: 1.45 }}>
+                                    {pp}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Matchmaking / Target Buyers */}
+                              {tb.length > 0 && (
+                                <div style={{
+                                  padding: '10px 12px',
+                                  background: 'rgba(16, 185, 129, 0.08)',
+                                  borderLeft: '3px solid #10b981',
+                                  borderRadius: '6px'
+                                }}>
+                                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#34d399', textTransform: 'uppercase', marginBottom: '6px' }}>
+                                    🎯 Matchmaking: Wer verdient an diesem Signal? (Target Buyers):
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                    {tb.map((bItem, idx) => (
+                                      <span key={idx} style={{
+                                        background: 'rgba(16, 185, 129, 0.15)',
+                                        color: '#6ee7b7',
+                                        border: '1px solid rgba(16, 185, 129, 0.35)',
+                                        borderRadius: '20px',
+                                        padding: '3px 10px',
+                                        fontSize: '0.78rem',
+                                        fontWeight: 600
+                                      }}>
+                                        ✓ {bItem}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           );
                         })()}

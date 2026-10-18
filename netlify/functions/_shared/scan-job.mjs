@@ -109,9 +109,9 @@ export function parseStrictIsoDate(str) {
 }
 
 // Validiert ein Ereignisdatum auf Kalendertagebene (unabhängig von UTC-Tageszeit):
-// - Maximal 3 Kalendertage (72 Stunden) in der Vergangenheit
+// - Maximal maxAgeDays Kalendertage in der Vergangenheit (Standard: 14)
 // - Maximal 365 Kalendertage in der Zukunft (für geplante Vorhaben/Investitionen/Neubau)
-export function validateEventDate(rawDate, now = new Date()) {
+export function validateEventDate(rawDate, now = new Date(), maxAgeDays = 14) {
   const parsed = parseStrictIsoDate(rawDate);
   if (!parsed) return null;
 
@@ -119,8 +119,8 @@ export function validateEventDate(rawDate, now = new Date()) {
   const targetDayNum = Math.floor(Date.UTC(parsed.year, parsed.month - 1, parsed.day) / 86400000);
   const diffDays = todayDayNum - targetDayNum;
 
-  // Älter als 3 Kalendertage (72 Stunden) -> ungültig
-  if (diffDays > 3) return null;
+  // Älter als maxAgeDays Kalendertage -> ungültig
+  if (diffDays > maxAgeDays) return null;
   // Mehr als 365 Kalendertage in der Zukunft -> ungültig
   if (diffDays < -365) return null;
 
@@ -392,7 +392,7 @@ async function insertRadarHit(client, job, url, title, pageText, hitMeta = {}) {
  *
  * Dokumentiert jeden Verwerfungsgrund in rejectedTriggers für den Prüfbericht.
  */
-export function filterAndCleanTriggers(rawTriggers = [], { url = '', now = new Date() } = {}) {
+export function filterAndCleanTriggers(rawTriggers = [], { url = '', now = new Date(), maxAgeDays = 14 } = {}) {
   const cleanTriggers = [];
   const rejectedTriggers = [];
 
@@ -406,13 +406,13 @@ export function filterAndCleanTriggers(rawTriggers = [], { url = '', now = new D
       continue;
     }
 
-    // 2. Ereignisdatum & Veröffentlichungsdatum prüfen (max. 3 Kalendertage / 72h bzw. Zukunft <= 365d)
+    // 2. Ereignisdatum & Veröffentlichungsdatum prüfen (max. maxAgeDays Kalendertage bzw. Zukunft <= 365d)
     const sourceUrl = t.quelle || url || '';
     const isJobPortal = /\b(stepstone|indeed|linkedin\.com\/jobs|xing\.com\/jobs|jobs\.ch|karriere\.at|jobboerse|monster)\b/i.test(sourceUrl);
     const isHiringTrigger = t.signal_kategorie === 'HIRING' || isJobPortal;
 
-    let validEventDate = validateEventDate(t.event_date, now);
-    let validPubDate = validateEventDate(t.published_at, now);
+    let validEventDate = validateEventDate(t.event_date, now, maxAgeDays);
+    let validPubDate = validateEventDate(t.published_at, now, maxAgeDays);
     let isUnverifiedDate = Boolean(t.event_date_unverified);
 
     // Sonderregel für Jobanzeigen:
@@ -420,7 +420,7 @@ export function filterAndCleanTriggers(rawTriggers = [], { url = '', now = new D
     // Und wenn kein gültiges event_date / published_at vorhanden ist:
     // Dann setze das heutige Datum (new Date()) als "Abrufdatum" und markiere es als "frisch abgerufen".
     // Begründung: Eine heute abgerufene Stellenanzeige ist ein heutiger Trigger, auch wenn kein explizites Datum im Text steht.
-    // Nur bei HIRING-Triggern anwenden. Bei Bau/News-Triggern bleibt der strikte 3-Tage-Filter.
+    // Nur bei HIRING-Triggern anwenden. Bei Bau/News-Triggern bleibt der strikte maxAgeDays-Filter.
     if (isHiringTrigger && !validEventDate && !validPubDate) {
       const todayIso = (now instanceof Date ? now : new Date()).toISOString().slice(0, 10);
       validEventDate = todayIso;
@@ -436,14 +436,14 @@ export function filterAndCleanTriggers(rawTriggers = [], { url = '', now = new D
 
     if (!finalEventDate || isUnverifiedDate) {
       if (validPubDate) {
-        // Fallback: Kein/ungültiges Ereignisdatum, aber belegtes Veröffentlichungsdatum <= 3 Tage (72h)
+        // Fallback: Kein/ungültiges Ereignisdatum, aber belegtes Veröffentlichungsdatum <= maxAgeDays Tage
         finalEventDate = null;
         isUnverifiedDate = true;
       } else {
-        // Weder Ereignisdatum noch Veröffentlichungsdatum <= 3 Tage (72h)
+        // Weder Ereignisdatum noch Veröffentlichungsdatum <= maxAgeDays Tage
         rejectedTriggers.push({
           ...t,
-          rejection_reason: 'Älter als 72 Stunden - veraltet'
+          rejection_reason: `Älter als ${maxAgeDays} Tage - veraltet`
         });
         continue;
       }
@@ -536,7 +536,12 @@ export function filterAndCleanTriggers(rawTriggers = [], { url = '', now = new D
       dach_evidence: (t.dach_evidence || '').trim() || null,
       event_fact: (t.event_fact || t.signal || '').trim(),
       business_opportunity: opportunity,
-      purchase_intent_status: purchaseIntentStatus
+      purchase_intent_status: purchaseIntentStatus,
+      pain_point: (t.pain_point || '').trim(),
+      blind_company: (t.blind_company || '').trim(),
+      blind_location: (t.blind_location || '').trim(),
+      blind_quantity: (t.blind_quantity || '').trim(),
+      target_buyers: Array.isArray(t.target_buyers) ? t.target_buyers.map(b => String(b).trim()).filter(Boolean) : []
     });
   }
 
@@ -628,19 +633,27 @@ export async function processNextUrl(client, job) {
 
   // Baustelle 3: Offering-Kontext laden für Zielgruppen- und Käufer-Matching
   let offeringContext = '';
+  let offeringMaxAge = null;
   if (job.offering_id) {
     try {
-      const offRes = await client.from('nexus_offerings').select('offering_name, target_audience, positioning').eq('id', job.offering_id).single();
+      const offRes = await client.from('nexus_offerings').select('offering_name, target_audience, positioning, ai_understanding').eq('id', job.offering_id).single();
       if (offRes.data) {
         offeringContext = `\nUNSER ANGEBOT (DARAUF BASIERT DAS MATCHING):
 - Produkt/Dienstleistung: ${offRes.data.offering_name || 'B2B Lösung'}
 - Definierte Zielgruppe: ${offRes.data.target_audience || 'Mittelständische Unternehmen'}
 - Positionierung: ${offRes.data.positioning || 'B2B Vertrieb'}\n`;
+        if (offRes.data.ai_understanding?.max_age_days) {
+          offeringMaxAge = Number(offRes.data.ai_understanding.max_age_days);
+        }
       }
     } catch (e) {
       console.warn('[ScanJob] Konnte Offering-Kontext nicht laden:', e.message);
     }
   }
+
+  const effectiveMaxAgeDays = Math.max(1, Math.min(30, Number(
+    nextUrl?.max_age_days || job.max_age_days || offeringMaxAge || 14
+  )));
 
   const currentDate = new Date().toISOString().split('T')[0];
   const currentYear = new Date().getFullYear();
@@ -672,8 +685,8 @@ REGELN:
      Stattdessen: Setze "event_date": null!
    - "published_at": Das Veröffentlichungsdatum des Artikels ("YYYY-MM-DD" oder null). Wird separat erfasst.
    - Heutiges Referenzdatum: ${currentDate} (${currentYear}).
-   - Weder das Ereignis noch der Artikel dürfen älter als 3 Kalendertage (72 Stunden) sein (bei angekündigten Vorhaben max. 12 Monate in der Zukunft).
-   - Wenn weder ein belegbares Ereignisdatum noch ein Veröffentlichungsdatum auffindbar ist oder beide älter als 3 Tage (72 Stunden) sind:
+   - Weder das Ereignis noch der Artikel dürfen älter als ${effectiveMaxAgeDays} Kalendertage sein (bei angekündigten Vorhaben max. 12 Monate in der Zukunft).
+   - Wenn weder ein belegbares Ereignisdatum noch ein Veröffentlichungsdatum auffindbar ist oder beide älter als ${effectiveMaxAgeDays} Tage sind:
      Setze "trigger_events": [] (Signal verwerfen!).
 8. BELEG-SATZ (EVIDENCE):
    - Zitiere im Feld "evidence" den konkreten 1-2 Sätze langen Textauszug aus dem Quelltext, der das Ereignis belegt.
@@ -700,12 +713,25 @@ REGELN:
      * "EXPLICIT_INTENT": Das Unternehmen sucht im Text wörtlich nach einer Lösung/Software/Ausschreibung.
      * "PURE_MENTION": Reiner PR-Artikel, Speaker-Auftritt (z.B. Keynote auf DMEXCO), allgemeine Produktwerbung, Thought-Leadership ohne konkretes Investitions-/Veränderungsereignis.
    * REGEL: "PURE_MENTION" ist KEIN Kaufsignal! Wenn kein konkretes geschäftliches Veränderungsereignis vorliegt, setze "trigger_events": [].
-11. PAIN POINT FÜR DEN ENDKÄUFER (KONKRETE SCHMERZPUNKTE ABLEITEN):
-   - Leite für JEDEN gefundenen Trigger zwingend einen konkreten operativen Schmerzpunkt ("pain_point") ab, der durch diesen Anlass im Unternehmen entsteht.
-   - Frage: Welches akute Problem, welcher Engpass oder Schmerzpunkt entsteht für das Unternehmen durch dieses Ereignis?
-   - Beispiel Job/Hiring: "Firma X sucht 5 Vertriebler. Pain Point: Onboarding-Chaos, Bedarf an skalierbaren Prozessen."
-   - Beispiel Neubau/Expansion: "Neubau Werk. Pain Point: Abstimmungsaufwand Gewerke, Verzögerungsrisiko, Bedarf an standardisierter Dokumentation und Baustellenlogistik."
-   - Beispiel Investition: "Millionenfinanzierung erhalten. Pain Point: Hoher Erwartungsdruck der Investoren, Notwendigkeit schneller Skalierung bei begrenzten internen Ressourcen."
+11. IMPACT-ANALYSE / OPERATIVER PAIN POINT (HANDLUNGSDRUCK):
+   - Leite für JEDEN gefundenen Trigger zwingend das operative Hauptziel bzw. den akuten Handlungsdruck ("pain_point") ab, der durch diesen Anlass im Unternehmen entsteht.
+   - Branchenunabhängig für ALLE Trigger-Typen:
+     * HIRING / JOB: Welches operative Problem soll die Besetzung lösen? Welcher Engpass drückt bis zur Besetzung? (z.B. "Umsatzstagnation in Region Süd, Vakanzkosten und fehlende Vertriebskapazität").
+     * NEUBAU / EXPANSION: Welche operativen Risiken & Anforderungen entstehen? (z.B. "Termindruck bei Gewerkeabstimmung, Risiko von Bauverzögerungen, Bedarf an Baustellenlogistik und Brandschutz").
+     * M&A / INVESTITION: Was ist die Integrations- oder Skalierungsherausforderung? (z.B. "Post-Merger-Systemintegration, Konsolidierung heterogener IT-Infrastrukturen und hohes Investoren-Reporting").
+     * TECH_MIGRATION / REGULATION: Welche Umstellungs- oder Haftungsrisiken drängen? (z.B. "Ablauf von Support-Fristen, drohende Bußgelder oder Betriebsunterbrechung").
+12. BLIND PROFILE (ANONYMISIERUNG FÜR LEAD-BROKERAGE):
+   - Erstelle für jeden Trigger ein branchenagnostisches Blindprofil, sodass das Lead-Signal vorab anonymisiert an potenzielle B2B-Käufer/Dienstleister vermarktet werden kann:
+     * "blind_company": Anonymisierte, aussagekräftige Beschreibung des Unternehmens OHNE Nennung des Eigennamens (z.B. "Führender D-A-CH-Hörgeräteakustiker", "Spezialisierter Automobilzulieferer für Antriebstechnik", "Mittelständisches Logistikunternehmen").
+     * "blind_location": Anonymisierte regionale Angabe (z.B. "Westschweiz", "Metropolregion Stuttgart", "Großraum München", "Nordrhein-Westfalen").
+     * "blind_quantity": Fuzzy-Größenordnung oder Kennzahl aus dem Signal oder Kontext (z.B. "zweistelliges Filialnetz (>20 Standorte)", "ca. 150-200 Mitarbeiter", "Investitionsvolumen im mittleren einstelligen Millionenbereich", "Team von >50 Entwicklern"). Wenn keine Zahl im Text steht, schätze eine plausible Spanne basierend auf Unternehmensart.
+13. MATCHMAKING (TARGET BUYERS / ANBIETER-TYPEN):
+   - "target_buyers": Array von 2-3 konkreten B2B-Anbieter- bzw. Dienstleister-Kategorien, die von diesem Signal geschäftlich profitieren und daran verdienen können.
+   - Beispiele branchenübergreifend:
+     * Bei Expansion/Neubau: ["Ladenbauer & Innenausstatter", "Gewerbe-Elektroinstallateure", "Brandschutz- & Sicherheitstechnik"]
+     * Bei Hiring/Jobanzeige: ["Executive Search & Personalberater", "Interim-Management-Provider", "Mitarbeiter-Onboarding-Software"]
+     * Bei M&A / Übernahme: ["M&A-Integrationsberater", "IT-Konsolidierungs-Dienstleister", "Change-Management-Consultants"]
+     * Bei Tech-Migration / Investition: ["Cloud-Architekten", "ERP-Implementierungspartner", "Cybersecurity-Dienstleister"]
 
 KAUFSIGNAL-KATEGORIEN:
 1. EXPANSION / NEUBAU — Neue Standorte, Werksneubau, Vergrößerung, Büros
@@ -743,7 +769,11 @@ Gib ein JSON zurück:
       "dach_evidence": "Wörtlicher Belegsatz für den DACH-Sitz/Niederlassung",
       "event_fact": "Objektiv belegtes Ereignis (z.B. Deutsche Aircraft eröffnet Werk in Leipzig/Halle)",
       "business_opportunity": "[Hypothese] Ein neues Werk erzeugt typischerweise Bedarf an Dokumentenmanagement-Systemen",
-      "pain_point": "Konkreter operativer Schmerzpunkt des Endkäufers (z.B. Onboarding-Chaos, Bedarf an skalierbaren Prozessen)",
+      "pain_point": "Operatives Hauptziel & akuter Handlungsdruck (branchenunabhängig)",
+      "blind_company": "Anonymisierte Unternehmensbeschreibung (z.B. Führender D-A-CH-Hörgeräteakustiker)",
+      "blind_location": "Anonymisierte Region (z.B. Westschweiz, Metropolregion Stuttgart)",
+      "blind_quantity": "Fuzzy-Kennzahl/Größenordnung (z.B. zweistelliges Filialnetz (>20 Standorte) oder 100-250 MA)",
+      "target_buyers": ["Anbieter-Typ 1", "Anbieter-Typ 2", "Anbieter-Typ 3"],
       "purchase_intent_status": "TRIGGER_EVENT | EXPLICIT_INTENT | PURE_MENTION"
     }
   ]
@@ -767,7 +797,7 @@ Gib ein JSON zurück:
       ], {
         profile: 'json',
         temperature: 0.3,
-        max_tokens: 2000,
+        max_tokens: 2500,
         jsonMode: true,
         totalBudgetMs: Math.min(remainingBudget - 500, 18000),
         xTitle: 'NeXus Research'
@@ -891,7 +921,8 @@ Gib ein JSON zurück:
 
   // Baustelle 1 & 3 + Phase 2A & 2B: Filter-Pipeline mit Käufer-Prüfung & Zielgruppen-Match
   const { cleanTriggers: filteredTriggers, rejectedTriggers } = filterAndCleanTriggers(verifiedTriggers, {
-    url: nextUrl.url
+    url: nextUrl.url,
+    maxAgeDays: effectiveMaxAgeDays
   });
 
   // Phase 2A: Deduplizierung innerhalb derselben Quellseite nach Firma + Event-Datum / Veröffentlichungsdatum
