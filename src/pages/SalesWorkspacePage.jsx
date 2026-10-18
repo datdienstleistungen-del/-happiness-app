@@ -29,7 +29,7 @@ export default function SalesWorkspacePage() {
   const oppIdFromUrl = searchParams.get('opportunityId')
   const { t, lang } = useLanguage()
   const { user } = useAuth()
-  const { opportunities, triggers, deleteOpportunity, refreshData } = useLead()
+  const { opportunities, triggers, deleteOpportunity, refreshData, activeOffering } = useLead()
   
   const [selectedMode, setSelectedMode] = useState('sales_pitch')
   const [activeOppId, setActiveOppId] = useState(oppIdFromUrl || null)
@@ -2034,7 +2034,7 @@ export default function SalesWorkspacePage() {
                           "Passt das Ereignis zum Angebot?"
                         </div>
                         <div style={{ fontSize: '0.82rem', marginTop: '6px', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                          <div>Angebot: <strong style={{ color: '#f8fafc' }}>{activeOffering?.title || fullContext?.offering?.title || 'Standard B2B Angebot'}</strong></div>
+                          <div>Angebot: <strong style={{ color: '#f8fafc' }}>{activeOffering?.offering_name || activeOffering?.title || fullContext?.offering?.offering_name || fullContext?.offering?.title || 'Standard B2B Angebot'}</strong></div>
                           <div>Ereignis: <span style={{ color: '#cbd5e1' }}>{activeTrigger?.content ? activeTrigger.content.split('\n\n[PAIN_POINT]:')[0] : (activeTrigger?.event_fact || formData.situation || 'Keine Angabe')}</span></div>
                           {(() => {
                             const pp = activeTrigger?.pain_point || activeOpp?.pain_point || (typeof activeTrigger?.content === 'string' && activeTrigger.content.includes('[PAIN_POINT]:') ? activeTrigger.content.split('[PAIN_POINT]:')[1]?.trim() : '');

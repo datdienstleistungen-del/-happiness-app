@@ -21,9 +21,7 @@ export async function handler(event, context) {
       });
       if (userRes.ok) {
         const u = await userRes.json();
-        const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'harro@happiness.de,hgoerndt@gmail.com,datdienstleistungen@gmail.com,nexustest-e2e@example.com')
-          .split(',')
-          .map(e => e.trim().toLowerCase());
+        const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
         const uEmail = (u?.email || '').trim().toLowerCase();
         if (uEmail && ADMIN_EMAILS.includes(uEmail)) isAdmin = true;
       }

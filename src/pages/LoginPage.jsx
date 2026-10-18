@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations.jsx'
 
@@ -124,10 +124,6 @@ export default function LoginPage() {
             {loading ? (t('auth.logging') || 'Wird eingeloggt...') : (t('auth.login') || 'Einloggen')}
           </button>
         </form>
-
-        <p className="link" style={{ marginTop: '16px' }}>
-          {t('auth.noAccount') || 'Noch kein Konto?'} <Link to="/register">{t('auth.registerHere') || 'Hier kostenlos registrieren'}</Link>
-        </p>
       </div>
     </div>
   )

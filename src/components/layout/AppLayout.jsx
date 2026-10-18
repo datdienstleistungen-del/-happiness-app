@@ -283,10 +283,7 @@ export default function AppLayout({ children }) {
           </div>
           <div className="public-topbar-actions">
             {!user && (
-              <>
-                <Link to="/login" className="btn btn-outline btn-sm">Anmelden</Link>
-                <Link to="/register" className="btn btn-primary btn-sm">Registrieren</Link>
-              </>
+              <Link to="/login" className="btn btn-primary btn-sm">Anmelden</Link>
             )}
             {user && (
               <Link to="/" className="btn btn-primary btn-sm">Zum Coach</Link>

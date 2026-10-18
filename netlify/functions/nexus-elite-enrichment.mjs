@@ -56,7 +56,11 @@ export const handler = async (event) => {
       return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
     }
 
-    // 2. Tier-Check: freeUser darf keine Elite-Calls machen
+    // 2. Tier-Check: freeUser darf keine Elite-Calls machen (Admin über ADMIN_EMAILS unbegrenzt)
+    const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+    const userEmail = (user.email || '').trim().toLowerCase();
+    const isAdmin = Boolean(userEmail && ADMIN_EMAILS.includes(userEmail));
+
     const serviceClient = createClient(supabaseUrl, supabaseKey);
     const { data: settings } = await serviceClient
       .from('ai_settings')
@@ -65,9 +69,9 @@ export const handler = async (event) => {
       .single();
 
     const premiumTier = settings?.premium_tier || 'free';
-    const maxEliteCalls = ELITE_TIER_LIMITS[premiumTier] || 0;
+    const maxEliteCalls = isAdmin ? Infinity : (ELITE_TIER_LIMITS[premiumTier] || 0);
 
-    if (maxEliteCalls === 0) {
+    if (!isAdmin && maxEliteCalls === 0) {
       return {
         statusCode: 403,
         body: JSON.stringify({
@@ -90,7 +94,7 @@ export const handler = async (event) => {
       eliteCallsToday = usage.last_request_date === today ? (usage.elite_calls_today || 0) : 0;
     }
 
-    if (eliteCallsToday >= maxEliteCalls) {
+    if (!isAdmin && eliteCallsToday >= maxEliteCalls) {
       return {
         statusCode: 429,
         body: JSON.stringify({

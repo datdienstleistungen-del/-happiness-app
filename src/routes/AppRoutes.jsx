@@ -46,10 +46,10 @@ const NexusDashboard = lazy(() => import('../pages/NexusDashboard'))
 
 
 function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth()
+  const { user, profile, loading } = useAuth()
   const { t } = useLanguage()
-  if (loading) return <div className="loading">{t('auth.logging')}</div>
-  if (!user) return <Navigate to="/login" />
+  if (loading) return <div className="loading">{t('auth.logging') || 'Laden...'}</div>
+  if (!user || profile?.banned) return <Navigate to="/login" replace />
   return children
 }
 
@@ -59,30 +59,39 @@ export default function AppRoutes() {
   return (
     <Suspense fallback={<div className="loading">Laden...</div>}>
       <Routes>
-        <Route path="/login" element={user ? <Navigate to="/nexus/dashboard" /> : <LoginPage />} />
-        <Route path="/register" element={user ? <Navigate to="/nexus/dashboard" /> : <RegisterPage />} />
-        <Route path="/" element={user ? <Navigate to="/nexus/dashboard" /> : <LoginPage />} />
-        <Route path="/coach" element={<ProtectedRoute><CoachChatPage /></ProtectedRoute>} />
-        <Route path="/nexus/sales-workspace/coach/:leadId?" element={<ProtectedRoute><CoachChatPage /></ProtectedRoute>} />
-        <Route path="/nexus" element={user ? <Navigate to="/nexus/dashboard" /> : <LoginPage />} />
+        {/* Öffentliche Auth-Route: Nur Login */}
+        <Route path="/login" element={user ? <Navigate to="/nexus/dashboard" replace /> : <LoginPage />} />
+        
+        {/* Registrierung deaktiviert -> Weiterleitung auf /login */}
+        <Route path="/register" element={<Navigate to="/login" replace />} />
+
+        {/* Startseite und NeXus Root -> Weiterleitung auf Dashboard (falls eingeloggt) oder Login */}
+        <Route path="/" element={user ? <Navigate to="/nexus/dashboard" replace /> : <Navigate to="/login" replace />} />
+        <Route path="/nexus" element={user ? <Navigate to="/nexus/dashboard" replace /> : <Navigate to="/login" replace />} />
+
+        {/* NeXus Core Routes (vollständig geschützt) */}
         <Route path="/nexus/dashboard" element={<ProtectedRoute><NexusDashboard /></ProtectedRoute>} />
         <Route path="/nexus/angebotsanalyse" element={<ProtectedRoute><AngebotsanalysePage /></ProtectedRoute>} />
         <Route path="/nexus/lead-radar" element={<ProtectedRoute><LeadRadarPage /></ProtectedRoute>} />
         <Route path="/nexus/events" element={<ProtectedRoute><EventExplorerPage /></ProtectedRoute>} />
         <Route path="/nexus/sales-workspace" element={<ProtectedRoute><SalesWorkspacePage /></ProtectedRoute>} />
+        <Route path="/nexus/sales-workspace/coach/:leadId?" element={<ProtectedRoute><CoachChatPage /></ProtectedRoute>} />
         <Route path="/nexus/lead-intelligence" element={<ProtectedRoute><LeadIntelligencePage /></ProtectedRoute>} />
-        <Route path="/landing" element={<LandingPage />} />
+        <Route path="/coach" element={<ProtectedRoute><CoachChatPage /></ProtectedRoute>} />
+
+        {/* Alle sonstigen App-Routen (vollständig geschützt) */}
+        <Route path="/landing" element={<ProtectedRoute><LandingPage /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><PlatformEngine /></ProtectedRoute>} />
         <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
         <Route path="/today-question" element={<ProtectedRoute><TodayQuestionPage /></ProtectedRoute>} />
-        <Route path="/community" element={<CommunityPage />} />
+        <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
         <Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
-        <Route path="/marketplace" element={<MarketplacePage />} />
-        <Route path="/jobs" element={<JobsPage />} />
-        <Route path="/courses" element={<CoursesPage />} />
-        <Route path="/housing" element={<HousingPage />} />
+        <Route path="/marketplace" element={<ProtectedRoute><MarketplacePage /></ProtectedRoute>} />
+        <Route path="/jobs" element={<ProtectedRoute><JobsPage /></ProtectedRoute>} />
+        <Route path="/courses" element={<ProtectedRoute><CoursesPage /></ProtectedRoute>} />
+        <Route path="/housing" element={<ProtectedRoute><HousingPage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-        <Route path="/wissenschaft" element={<WissenschaftPage />} />
+        <Route path="/wissenschaft" element={<ProtectedRoute><WissenschaftPage /></ProtectedRoute>} />
         <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
         <Route path="/admin/creator-success" element={<ProtectedRoute><CreatorSuccessPage /></ProtectedRoute>} />
@@ -94,9 +103,9 @@ export default function AppRoutes() {
         <Route path="/post-preparation" element={<ProtectedRoute><PostPreparationPage /></ProtectedRoute>} />
         <Route path="/capcut-studio" element={<ProtectedRoute><TikTokVideoPage /></ProtectedRoute>} />
         <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
-        <Route path="/tour" element={<TourPage />} />
-        <Route path="/video-finder" element={<VideoFinderPage />} />
-        <Route path="/video-script" element={<VideoScriptPage />} />
+        <Route path="/tour" element={<ProtectedRoute><TourPage /></ProtectedRoute>} />
+        <Route path="/video-finder" element={<ProtectedRoute><VideoFinderPage /></ProtectedRoute>} />
+        <Route path="/video-script" element={<ProtectedRoute><VideoScriptPage /></ProtectedRoute>} />
         <Route path="/ideenschmiede" element={<ProtectedRoute><IdeenschmiedePage /></ProtectedRoute>} />
         <Route path="/ki-sichtbarkeit" element={<ProtectedRoute><KiVisibilityPage /></ProtectedRoute>} />
         <Route path="/admin/lead-radar" element={<ProtectedRoute><LeadRadarPage /></ProtectedRoute>} />
@@ -105,8 +114,8 @@ export default function AppRoutes() {
         <Route path="/datenschutz" element={<LegalPage />} />
         <Route path="/agb" element={<LegalPage />} />
 
-        {/* Catch-all: Redirect unknown URLs to landing page */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Catch-all: Alle unbekannten URLs zwingend auf /login leiten */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Suspense>
   )

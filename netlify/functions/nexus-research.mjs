@@ -111,8 +111,12 @@ export const handler = async (event) => {
         }
       } catch(e) {}
 
+      const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+      const userEmail = (user.email || '').trim().toLowerCase();
+      const isAdmin = Boolean(userEmail && ADMIN_EMAILS.includes(userEmail));
+
       const TIER_LIMITS = { free: 5, pro: 100, enterprise: 500 };
-      const MAX_REQUESTS = TIER_LIMITS[premiumTier] || 5;
+      const MAX_REQUESTS = isAdmin ? Infinity : (TIER_LIMITS[premiumTier] || 5);
       const today = new Date().toISOString().split('T')[0];
       
       const usageRes = await fetch(`${supabaseUrl}/rest/v1/nexus_api_usage?user_id=eq.${user.id}&select=*`, {
@@ -137,7 +141,7 @@ export const handler = async (event) => {
             newCount += 1;
           }
           
-          if (newCount > MAX_REQUESTS) {
+          if (!isAdmin && newCount > MAX_REQUESTS) {
             return { statusCode: 429, body: JSON.stringify({ error: `Rate limit exceeded. Max ${MAX_REQUESTS} requests per day.` }) };
           }
           

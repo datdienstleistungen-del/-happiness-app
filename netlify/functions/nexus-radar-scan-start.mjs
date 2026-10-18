@@ -153,14 +153,11 @@ export const handler = async (event) => {
 
     if (!offering_id) return { statusCode: 400, body: JSON.stringify({ error: 'offering_id required' }) };
 
-    const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'harro@happiness.de,hgoerndt@gmail.com,datdienstleistungen@gmail.com,nexustest-e2e@example.com')
-      .split(',')
-      .map(e => e.trim().toLowerCase());
+    const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
     const userEmail = (user.email || '').trim().toLowerCase();
     const isAdmin = Boolean(userEmail && ADMIN_EMAILS.includes(userEmail));
 
-    // 1. RATE LIMITING: Admin unbegrenzt, reguläres Limit auf 1000 Scans pro Tag erhöht
-    const MAX_SCANS_PER_DAY = 1000;
+    // 1. RATE LIMITING: Maximal 10 Scans pro Nutzer pro Tag (Admin über ADMIN_EMAILS unbegrenzt)
     if (!isAdmin) {
       const todayStart = new Date();
       todayStart.setUTCHours(0, 0, 0, 0);
@@ -173,8 +170,9 @@ export const handler = async (event) => {
         .gte('created_at', todayIso);
 
       const todayScanCount = todayScansRes.count || 0;
+      const MAX_SCANS_PER_DAY = 10;
       if (todayScanCount >= MAX_SCANS_PER_DAY) {
-        console.warn(`[ScanStart] User ${user.id} reached daily scan limit (${todayScanCount}/${MAX_SCANS_PER_DAY})`);
+        console.warn(`[ScanStart] User ${user.id} (${userEmail}) reached daily scan limit (${todayScanCount}/${MAX_SCANS_PER_DAY})`);
         return {
           statusCode: 429,
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
@@ -183,6 +181,8 @@ export const handler = async (event) => {
           })
         };
       }
+    } else {
+      console.log(`[ScanStart] Admin-Bypass aktiv für ${userEmail} (unbegrenzte Scans).`);
     }
 
     // 2. 24h-SCAN-CACHING: Gleiche Angebote innerhalb von 24h aus Cache bedienen (außer force_refresh)

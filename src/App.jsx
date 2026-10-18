@@ -150,20 +150,8 @@ export default function App() {
     return await supabase.auth.signInWithPassword({ email, password })
   }
 
-  async function signUp(email, password, name) {
-    const cleanUser = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '') || 'user'
-    const username = `${cleanUser}_${Math.floor(1000 + Math.random() * 9000)}`
-    return await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name: name || cleanUser,
-          username: username
-        },
-        emailRedirectTo: `${window.location.origin}/nexus/dashboard`
-      }
-    })
+  async function signUp() {
+    return { data: null, error: new Error('Registrierung ist deaktiviert.') }
   }
 
   useOneSignal(user)
