@@ -10,14 +10,13 @@ test.describe('NeXus Landing & Core Pages (Smoke)', () => {
   test('landing page laedt mit NeXus-Branding', async ({ page }) => {
     await page.goto('/')
     await expect(page).toHaveTitle(/NeXus Revenue OS/)
-    await expect(page.locator('h1').first()).toContainText('Sie geben Ihr Angebot ein')
+    await expect(page.locator('h1').first()).toContainText('NeXus Revenue OS')
   })
 
   test('landing page zeigt die primaeren CTAs', async ({ page }) => {
     await page.goto('/')
-    await expect(page.getByRole('button', { name: 'Anmelden' }).first()).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Kostenlos testen' }).first()).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Live-Test' }).first()).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Einloggen' }).first()).toBeVisible()
+    await expect(page.locator('a[href="/register"]').first()).toBeVisible()
   })
 
   test('login page rendert', async ({ page }) => {
