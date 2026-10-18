@@ -155,7 +155,21 @@ export const handler = async (event) => {
 
     const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
     const userEmail = (user.email || '').trim().toLowerCase();
-    const isAdmin = Boolean(userEmail && ADMIN_EMAILS.includes(userEmail));
+    let isAdmin = Boolean(userEmail && ADMIN_EMAILS.includes(userEmail));
+
+    // Robuster Fallback: Prüfe profiles-Rolle in der Datenbank
+    if (!isAdmin && user.id) {
+      try {
+        const { data: prof } = await userSupabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (prof?.role === 'admin') isAdmin = true;
+      } catch (e) {
+        // Fallback falls profiles-Abfrage fehlschlägt
+      }
+    }
 
     // 1. RATE LIMITING: Maximal 10 Scans pro Nutzer pro Tag (Admin über ADMIN_EMAILS unbegrenzt)
     if (!isAdmin) {
