@@ -17,8 +17,8 @@ export function generateSignalSlug(companyName = '', eventHeadline = '') {
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
+    .slice(0, 80)
     .replace(/^-|-$/g, '')
-    .slice(0, 50)
 
   return clean || `b2b-signal-${Date.now().toString().slice(-6)}`
 }
