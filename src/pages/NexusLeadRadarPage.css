@@ -7,6 +7,8 @@
   width: 100%;
   margin: 0 auto;
   padding: 28px 32px 100px;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .lead-radar-header {
@@ -154,19 +156,27 @@
 .triggers-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .trigger-card {
   display: flex;
-  align-items: flex-start;
-  gap: 18px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
   padding: 22px;
   background: var(--bg-card, #11141a);
   border: 1px solid var(--border-subtle, #1e232d);
   border-radius: 12px;
   transition: all 0.2s ease;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .trigger-card:hover {
@@ -174,8 +184,28 @@
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
 }
 
-.trigger-significance {
+.trigger-card-top {
   display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 14px;
+  width: 100%;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 14px;
+  box-sizing: border-box;
+}
+
+.trigger-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 260px;
+}
+
+.trigger-significance {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 4px 10px;
@@ -188,25 +218,29 @@
 }
 
 .trigger-content {
-  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .trigger-company {
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 800;
   color: var(--text-primary, #f8fafc);
-  margin: 0 0 6px;
+  margin: 4px 0 0;
+  letter-spacing: -0.01em;
 }
 
 .trigger-rating {
   font-style: italic;
   color: var(--text-secondary, #94a3b8);
-  margin-bottom: 8px;
+  margin: 4px 0 0;
   font-size: 0.9rem;
 }
 
 .trigger-body {
-  margin-top: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 4px;
 }
 
 .trigger-desc {
@@ -231,7 +265,8 @@
 .trigger-actions {
   display: flex;
   gap: 8px;
-  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .action-btn {

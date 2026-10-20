@@ -1187,78 +1187,138 @@ export default function NexusLeadRadarPage() {
 
                 return (
                   <div key={index} className="trigger-card" style={{ opacity: isDisqualified ? 0.65 : (trigger.prioritaet > 3 ? 0.6 : 1), border: isDisqualified ? '1px dashed rgba(239, 68, 68, 0.4)' : undefined }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                      <div className="trigger-significance" style={{ 
-                        background: isDisqualified ? '#6b728020' : (trigger.prioritaet === 1 ? '#EF444420' : trigger.prioritaet === 2 ? '#F59E0B20' : '#3B82F620'),
-                        color: isDisqualified ? '#6b7280' : (trigger.prioritaet === 1 ? '#EF4444' : trigger.prioritaet === 2 ? '#F59E0B' : '#3B82F6'),
-                        fontSize: '0.8rem',
-                        fontWeight: 700,
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        display: 'inline-block'
-                      }}>
-                        {isDisqualified ? 'UNGEPRÜFTER ROHFUND / AUSSCHLUSS' : (trigger.prioritaet === 1 ? 'HOHE PRIORITÄT' : trigger.prioritaet === 2 ? 'MITTLERE PRIORITÄT' : 'NIEDRIGE PRIORITÄT')}
+                    
+                    {/* Header: Status-Badges, Firmenname & Quick Actions */}
+                    <div className="trigger-card-top">
+                      <div className="trigger-card-info">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                          <div className="trigger-significance" style={{ 
+                            background: isDisqualified ? '#6b728020' : (trigger.prioritaet === 1 ? '#EF444420' : trigger.prioritaet === 2 ? '#F59E0B20' : '#3B82F620'),
+                            color: isDisqualified ? '#6b7280' : (trigger.prioritaet === 1 ? '#EF4444' : trigger.prioritaet === 2 ? '#F59E0B' : '#3B82F6'),
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            display: 'inline-block'
+                          }}>
+                            {isDisqualified ? 'UNGEPRÜFTER ROHFUND / AUSSCHLUSS' : (trigger.prioritaet === 1 ? 'HOHE PRIORITÄT' : trigger.prioritaet === 2 ? 'MITTLERE PRIORITÄT' : 'NIEDRIGE PRIORITÄT')}
+                          </div>
+
+                          {/* Baustelle 3: Zielgruppen-Match Score */}
+                          {!isDisqualified && matchScore >= 70 ? (
+                            <span className="badge-match-high" title={trigger.match_reason || 'Hohe Passgenauigkeit zum Zielkundenprofil'}>
+                              <CheckCircle size={12} /> Zielgruppen-Match: {matchScore}%
+                            </span>
+                          ) : !isDisqualified && matchScore >= 50 ? (
+                            <span className="badge-match-mid" title={trigger.match_reason || 'Guter Zielgruppen-Match'}>
+                              <Sparkles size={12} /> Zielgruppen-Match: {matchScore}%
+                            </span>
+                          ) : (
+                            <span style={{
+                              background: '#ef444415',
+                              color: '#dc2626',
+                              border: '1px solid #ef444430',
+                              borderRadius: '6px',
+                              padding: '3px 8px',
+                              fontSize: '0.75rem',
+                              fontWeight: 700,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }} title={trigger.exclusion_reason || trigger.match_reason || 'Kandidat erfüllt verbindliche Käuferkriterien nicht'}>
+                              <AlertCircle size={12} /> Ausgeschlossen ({trigger.exclusion_reason || `Match: ${matchScore}%`})
+                            </span>
+                          )}
+
+                          {trigger.signal_kategorie && (
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '3px 8px',
+                              background: trigger.signal_kategorie === 'HIRING' ? '#05966920' :
+                                          trigger.signal_kategorie === 'FUNDING' ? '#7c3aed20' :
+                                          trigger.signal_kategorie === 'TECH_MIGRATION' ? '#2563eb20' :
+                                          trigger.signal_kategorie === 'REGULATION' ? '#d9770620' :
+                                          trigger.signal_kategorie === 'M_A' ? '#dc262620' : 'rgba(56, 189, 248, 0.15)',
+                              color: trigger.signal_kategorie === 'HIRING' ? '#059669' :
+                                     trigger.signal_kategorie === 'FUNDING' ? '#7c3aed' :
+                                     trigger.signal_kategorie === 'TECH_MIGRATION' ? '#2563eb' :
+                                     trigger.signal_kategorie === 'REGULATION' ? '#d97706' :
+                                     trigger.signal_kategorie === 'M_A' ? '#dc2626' : '#38bdf8',
+                              borderRadius: '6px',
+                              fontSize: '0.74rem',
+                              fontWeight: 700
+                            }}>
+                              {trigger.signal_kategorie.replace(/_/g, ' ')}
+                            </span>
+                          )}
+                        </div>
+
+                        <h3 className="trigger-company">{trigger.company}</h3>
+
+                        {trigger.bewertung && (
+                          <p className="trigger-rating" style={{ fontStyle: 'italic', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
+                            "{trigger.bewertung}"
+                          </p>
+                        )}
                       </div>
 
-                      {/* Baustelle 3: Zielgruppen-Match Score */}
-                      {!isDisqualified && matchScore >= 70 ? (
-                        <span className="badge-match-high" title={trigger.match_reason || 'Hohe Passgenauigkeit zum Zielkundenprofil'}>
-                          <CheckCircle size={12} /> Zielgruppen-Match: {matchScore}%
-                        </span>
-                      ) : !isDisqualified && matchScore >= 50 ? (
-                        <span className="badge-match-mid" title={trigger.match_reason || 'Guter Zielgruppen-Match'}>
-                          <Sparkles size={12} /> Zielgruppen-Match: {matchScore}%
-                        </span>
-                      ) : (
-                        <span style={{
-                          background: '#ef444415',
-                          color: '#dc2626',
-                          border: '1px solid #ef444430',
-                          borderRadius: '6px',
-                          padding: '3px 8px',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }} title={trigger.exclusion_reason || trigger.match_reason || 'Kandidat erfüllt verbindliche Käuferkriterien nicht'}>
-                          <AlertCircle size={12} /> Ausgeschlossen ({trigger.exclusion_reason || `Match: ${matchScore}%`})
-                        </span>
-                      )}
+                      {/* Header Actions */}
+                      <div className="trigger-actions">
+                        <button
+                          type="button"
+                          className="action-btn action-btn-secondary"
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 12px' }}
+                          onClick={() => {
+                            const params = new URLSearchParams()
+                            params.set('company', trigger.company)
+                            if (trigger.signal) params.set('trigger', `${trigger.signal} | ${trigger.psychologische_ansprache || ''}`)
+                            if (trigger.pain_point) params.set('pain_point', trigger.pain_point)
+                            navigate(`/nexus/lead-intelligence?${params.toString()}`)
+                          }}
+                        >
+                          <Brain size={14} />
+                          <span>Lead Intelligence</span>
+                        </button>
+                        {(Array.isArray(savedLeads) ? savedLeads.includes(trigger.company) : Boolean(savedLeads?.[trigger.company])) ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <button className="action-btn action-btn-primary" style={{ background: '#10B981', borderColor: '#10B981', cursor: 'default' }} disabled>
+                              <CheckCircle size={16} />
+                              {t('nexus.radar.saved', 'Übernommen')}
+                            </button>
+                            <button 
+                              type="button"
+                              className="action-btn action-btn-secondary" 
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 12px' }}
+                              onClick={() => {
+                                const oppId = (!Array.isArray(savedLeads) && savedLeads?.[trigger.company]) || null
+                                navigate(oppId ? `/nexus/workspace?opportunityId=${oppId}` : '/nexus/workspace')
+                              }}
+                            >
+                              <span>{t('nexus.radar.openWorkspace', 'Im Sales Workspace öffnen')}</span>
+                              <ArrowRight size={14} />
+                            </button>
+                          </div>
+                        ) : isDisqualified ? (
+                          <button 
+                            type="button"
+                            className="action-btn action-btn-secondary" 
+                            style={{ opacity: 0.65, cursor: 'not-allowed', background: 'rgba(239, 68, 68, 0.08)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.25)', fontSize: '0.85rem' }} 
+                            disabled
+                            title={trigger.exclusion_reason || 'Kandidat erfüllt verbindliche Käuferkriterien nicht'}
+                          >
+                            <AlertCircle size={14} />
+                            <span>Nicht qualifiziert</span>
+                          </button>
+                        ) : (
+                          <button className="action-btn action-btn-primary" onClick={() => handleProcessSignal(trigger)}>
+                            <ArrowRight size={16} />
+                            {t('nexus.radar.saveToPipeline', 'In Pipeline übernehmen')}
+                          </button>
+                        )}
+                      </div>
                     </div>
 
-                    <h3 className="trigger-company">{trigger.company}</h3>
-
-                    {trigger.signal_kategorie && (
-                      <span style={{
-                        display: 'inline-block',
-                        padding: '2px 8px',
-                        background: trigger.signal_kategorie === 'HIRING' ? '#05966920' :
-                                    trigger.signal_kategorie === 'FUNDING' ? '#7c3aed20' :
-                                    trigger.signal_kategorie === 'TECH_MIGRATION' ? '#2563eb20' :
-                                    trigger.signal_kategorie === 'REGULATION' ? '#d9770620' :
-                                    trigger.signal_kategorie === 'M_A' ? '#dc262620' : '#6b728020',
-                        color: trigger.signal_kategorie === 'HIRING' ? '#059669' :
-                               trigger.signal_kategorie === 'FUNDING' ? '#7c3aed' :
-                               trigger.signal_kategorie === 'TECH_MIGRATION' ? '#2563eb' :
-                               trigger.signal_kategorie === 'REGULATION' ? '#d97706' :
-                               trigger.signal_kategorie === 'M_A' ? '#dc2626' : '#6b7280',
-                        borderRadius: '6px',
-                        fontSize: '0.72rem',
-                        fontWeight: 700,
-                        marginBottom: '6px'
-                      }}>
-                        {trigger.signal_kategorie.replace('_', ' ')}
-                      </span>
-                    )}
-                    
-                    {trigger.bewertung && (
-                      <p className="trigger-rating" style={{ fontStyle: 'italic', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                        "{trigger.bewertung}"
-                      </p>
-                    )}
-
-                    <div className="trigger-body">
+                    <div className="trigger-body" style={{ width: '100%', boxSizing: 'border-box' }}>
                       <p className="trigger-desc">{trigger.signal}</p>
 
                       {trigger.business_opportunity && (
@@ -1603,66 +1663,14 @@ export default function NexusLeadRadarPage() {
                       </div>
                     </div>
 
-                    {/* Human-Verified Freigabe & Veröffentlichung auf dat-dat.de */}
-                    <SignalPublishSection
-                      trigger={trigger}
-                      userId={user?.id}
-                    />
-
-                <div className="trigger-actions">
-                  <button
-                    type="button"
-                    className="action-btn action-btn-secondary"
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 12px' }}
-                    onClick={() => {
-                      const params = new URLSearchParams()
-                      params.set('company', trigger.company)
-                      if (trigger.signal) params.set('trigger', `${trigger.signal} | ${trigger.psychologische_ansprache || ''}`)
-                      if (trigger.pain_point) params.set('pain_point', trigger.pain_point)
-                      navigate(`/nexus/lead-intelligence?${params.toString()}`)
-                    }}
-                  >
-                    <Brain size={14} />
-                    <span>Lead Intelligence</span>
-                  </button>
-                  {(Array.isArray(savedLeads) ? savedLeads.includes(trigger.company) : Boolean(savedLeads?.[trigger.company])) ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                      <button className="action-btn action-btn-primary" style={{ background: '#10B981', borderColor: '#10B981', cursor: 'default' }} disabled>
-                        <CheckCircle size={16} />
-                        {t('nexus.radar.saved', 'Übernommen')}
-                      </button>
-                      <button 
-                        type="button"
-                        className="action-btn action-btn-secondary" 
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '0.85rem', padding: '8px 12px' }}
-                        onClick={() => {
-                          const oppId = (!Array.isArray(savedLeads) && savedLeads?.[trigger.company]) || null
-                          navigate(oppId ? `/nexus/workspace?opportunityId=${oppId}` : '/nexus/workspace')
-                        }}
-                      >
-                        <span>{t('nexus.radar.openWorkspace', 'Im Sales Workspace öffnen')}</span>
-                        <ArrowRight size={14} />
-                      </button>
+                    {/* Human-Verified Freigabe & Veröffentlichung auf dat-dat.de (Arbeitsfeld 100% Breite) */}
+                    <div className="trigger-publish-container" style={{ width: '100%', boxSizing: 'border-box', marginTop: '14px' }}>
+                      <SignalPublishSection
+                        trigger={trigger}
+                        userId={user?.id}
+                      />
                     </div>
-                  ) : isDisqualified ? (
-                    <button 
-                      type="button"
-                      className="action-btn action-btn-secondary" 
-                      style={{ opacity: 0.65, cursor: 'not-allowed', background: 'rgba(239, 68, 68, 0.08)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.25)', fontSize: '0.85rem' }} 
-                      disabled
-                      title={trigger.exclusion_reason || 'Kandidat erfüllt verbindliche Käuferkriterien nicht'}
-                    >
-                      <AlertCircle size={14} />
-                      <span>Nicht qualifiziert (Kein Käufer)</span>
-                    </button>
-                  ) : (
-                    <button className="action-btn action-btn-primary" onClick={() => handleProcessSignal(trigger)}>
-                      <ArrowRight size={16} />
-                      {t('nexus.radar.saveToPipeline', 'In Pipeline übernehmen')}
-                    </button>
-                  )}
-                </div>
-              </div>
+                  </div>
             );
           })}
           </div>

@@ -89,7 +89,9 @@ export default function SignalPublishSection({
         border: '1px solid rgba(56, 189, 248, 0.35)',
         borderRadius: '10px',
         padding: '16px',
-        boxShadow: '0 4px 14px rgba(0, 0, 0, 0.25)'
+        boxShadow: '0 4px 14px rgba(0, 0, 0, 0.25)',
+        width: '100%',
+        boxSizing: 'border-box'
       }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
