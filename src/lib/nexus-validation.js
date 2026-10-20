@@ -358,6 +358,156 @@ export function identifyTriggerCategory(input) {
   return null;
 }
 
+/**
+ * B2B Opportunity Lifecycle Matrix (Kategorie-spezifische Handlungsfenster):
+ * 1. C-Level / Vakanzen: Breaking: 1–14 Tage | Hot Window: 15–90 Tage | Ab Tag 91: Expired
+ * 2. Expansion / Bau: Breaking: 1–30 Tage | Hot Window: 31–150 Tage | Ab Tag 151: Expired
+ * 3. M&A / Nachfolge: Breaking: 1–30 Tage | Hot Window: 31–120 Tage | Ab Tag 121: Expired
+ * 4. Sanierung / Eigenverwaltung: Breaking: 1–14 Tage | Hot Window: 15–90 Tage | Ab Tag 91: Expired
+ * 5. Stellenwachstum (5+): Breaking: 1–14 Tage | Hot Window: 15–45 Tage | Ab Tag 46: Expired
+ */
+export const B2B_LIFECYCLE_WINDOWS = {
+  clevel_vakanzen: {
+    id: 'clevel_vakanzen',
+    name: 'C-Level / Vakanzen',
+    categoryNumber: 1,
+    breakingDays: 14,
+    hotWindowDays: 90,
+    maxExpiredDays: 90
+  },
+  bau_kapazitaet: {
+    id: 'bau_kapazitaet',
+    name: 'Expansion / Bau',
+    categoryNumber: 2,
+    breakingDays: 30,
+    hotWindowDays: 150,
+    maxExpiredDays: 150
+  },
+  m_and_a_nachfolge: {
+    id: 'm_and_a_nachfolge',
+    name: 'M&A / Nachfolge',
+    categoryNumber: 3,
+    breakingDays: 30,
+    hotWindowDays: 120,
+    maxExpiredDays: 120
+  },
+  insolvenz_sanierung: {
+    id: 'insolvenz_sanierung',
+    name: 'Sanierung / Eigenverwaltung',
+    categoryNumber: 4,
+    breakingDays: 14,
+    hotWindowDays: 90,
+    maxExpiredDays: 90
+  },
+  stellenwachstum: {
+    id: 'stellenwachstum',
+    name: 'Stellenwachstum (5+)',
+    categoryNumber: 5,
+    breakingDays: 14,
+    hotWindowDays: 45,
+    maxExpiredDays: 45
+  }
+};
+
+export function getCategoryLifecycleConfig(categoryInput) {
+  const identified = identifyTriggerCategory(categoryInput);
+  if (identified && B2B_LIFECYCLE_WINDOWS[identified.id]) {
+    return B2B_LIFECYCLE_WINDOWS[identified.id];
+  }
+
+  const catStr = String(categoryInput || '').toLowerCase();
+  if (catStr.includes('bau') || catStr.includes('halle') || catStr.includes('kapazität') || catStr === '2' || catStr.includes('expansion')) {
+    return B2B_LIFECYCLE_WINDOWS.bau_kapazitaet;
+  }
+  if (catStr.includes('m&a') || catStr.includes('übernahme') || catStr.includes('nachfolge') || catStr.includes('fusion') || catStr === '3') {
+    return B2B_LIFECYCLE_WINDOWS.m_and_a_nachfolge;
+  }
+  if (catStr.includes('insolvenz') || catStr.includes('sanierung') || catStr.includes('schutzschirm') || catStr.includes('eigenverwaltung') || catStr === '4') {
+    return B2B_LIFECYCLE_WINDOWS.insolvenz_sanierung;
+  }
+  if (catStr.includes('stellen') || catStr.includes('hiring') || catStr.includes('recruiting') || catStr === '5') {
+    return B2B_LIFECYCLE_WINDOWS.stellenwachstum;
+  }
+  return B2B_LIFECYCLE_WINDOWS.clevel_vakanzen;
+}
+
+/**
+ * Klassifiziert ein B2B-Kaufsignal automatisch anhand seines Lebenszyklus:
+ * - 🟢 Brandaktuell (Breaking)
+ * - 🔵 Strategisches Handlungsfenster (Hoher Aktionsdruck)
+ * - ❌ Expired (Veraltet / Handlungsfenster geschlossen)
+ */
+export function classifyB2BLifecycle(categoryInput, dateInput, now = new Date()) {
+  const config = getCategoryLifecycleConfig(categoryInput);
+
+  if (!dateInput) {
+    return {
+      status: 'HOT_WINDOW',
+      badge: '🔵 Strategisches Handlungsfenster (Hoher Aktionsdruck)',
+      daysAgo: null,
+      isActionable: true,
+      phase: 'hot',
+      categoryName: config.name,
+      maxExpiredDays: config.maxExpiredDays,
+      description: 'Aktives B2B-Handlungsfenster'
+    };
+  }
+
+  const dateObj = new Date(dateInput);
+  if (isNaN(dateObj.getTime())) {
+    return {
+      status: 'HOT_WINDOW',
+      badge: '🔵 Strategisches Handlungsfenster (Hoher Aktionsdruck)',
+      daysAgo: null,
+      isActionable: true,
+      phase: 'hot',
+      categoryName: config.name,
+      maxExpiredDays: config.maxExpiredDays,
+      description: 'Aktives B2B-Handlungsfenster'
+    };
+  }
+
+  const nowDate = now instanceof Date ? now : new Date();
+  const diffMs = nowDate.getTime() - dateObj.getTime();
+  const daysAgo = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+
+  if (daysAgo <= config.breakingDays) {
+    return {
+      status: 'BREAKING',
+      badge: '🟢 Brandaktuell (Breaking)',
+      daysAgo,
+      isActionable: true,
+      phase: 'breaking',
+      categoryName: config.name,
+      maxExpiredDays: config.maxExpiredDays,
+      description: `Ereignis vor ${daysAgo} Tagen (Brandaktuell ≤ ${config.breakingDays} Tage)`
+    };
+  } else if (daysAgo <= config.hotWindowDays) {
+    return {
+      status: 'HOT_WINDOW',
+      badge: '🔵 Strategisches Handlungsfenster (Hoher Aktionsdruck)',
+      daysAgo,
+      isActionable: true,
+      phase: 'hot',
+      categoryName: config.name,
+      maxExpiredDays: config.maxExpiredDays,
+      description: `Ereignis vor ${daysAgo} Tagen (Aktives Verkaufsfenster ${config.breakingDays + 1}–${config.hotWindowDays} Tage)`
+    };
+  } else {
+    return {
+      status: 'EXPIRED',
+      badge: '❌ Expired (Veraltet)',
+      daysAgo,
+      isActionable: false,
+      phase: 'expired',
+      categoryName: config.name,
+      maxExpiredDays: config.maxExpiredDays,
+      description: `Älter als ${config.maxExpiredDays} Tage (${daysAgo} Tage her) – Zeitfenster geschlossen`,
+      rejectionReason: `Älter als ${config.maxExpiredDays} Tage für ${config.name} (Ereignis vor ${daysAgo} Tagen)`
+    };
+  }
+}
+
 const VENDOR_PATTERNS = [
   'ricoh', 'canon', 'konica minolta', 'xerox', 'bechtle', 'computacenter',
   'atlassian', 'lg electronics', 'lg', 'salesforce', 'hubspot', 'microsoft',

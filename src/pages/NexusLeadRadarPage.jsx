@@ -4,7 +4,7 @@ import { Radar, Search, ArrowRight, Building2, AlertCircle, RefreshCw, Briefcase
 import { callContactIntelligence, runResearchPipeline } from '../lib/nexus-ai'
 import { trackRadarScan } from '../lib/nexus-analytics'
 import { supabase } from '../lib/supabase'
-import { isPlaceholderCompany, computeTargetMatchScore, normalizeCompanyName, deduplicateAndMergeTriggers, buildCompositeEventKey, formatBusinessOpportunity, generateSignalReportCsv, TRIGGER_CATEGORIES } from '../lib/nexus-validation'
+import { isPlaceholderCompany, computeTargetMatchScore, normalizeCompanyName, deduplicateAndMergeTriggers, buildCompositeEventKey, formatBusinessOpportunity, generateSignalReportCsv, TRIGGER_CATEGORIES, classifyB2BLifecycle } from '../lib/nexus-validation'
 import { formatEventDate, extractDomain } from '../lib/nexus-dates'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import SetupWizard from '../components/SetupWizard'
@@ -578,6 +578,10 @@ export default function NexusLeadRadarPage() {
                 bewertung: t.bewertung || '',
                 signal: t.signal || '',
                 signal_kategorie: t.signal_kategorie || 'EXPANSION',
+                lifecycle_status: t.lifecycle_status || null,
+                lifecycle_badge: t.lifecycle_badge || null,
+                lifecycle_phase: t.lifecycle_phase || null,
+                days_ago: t.days_ago ?? null,
                 event_fact: t.event_fact || t.signal || '',
                 business_opportunity: formatBusinessOpportunity(t.business_opportunity || t.relevanz, t.purchase_intent_status),
                 purchase_intent_status: t.purchase_intent_status || 'TRIGGER_EVENT',
@@ -730,6 +734,10 @@ export default function NexusLeadRadarPage() {
                   bewertung: t.bewertung || '',
                   signal: t.signal || '',
                   signal_kategorie: t.signal_kategorie || 'EXPANSION',
+                  lifecycle_status: t.lifecycle_status || null,
+                  lifecycle_badge: t.lifecycle_badge || null,
+                  lifecycle_phase: t.lifecycle_phase || null,
+                  days_ago: t.days_ago ?? null,
                   event_fact: t.event_fact || t.signal || '',
                   business_opportunity: formatBusinessOpportunity(t.business_opportunity || t.relevanz, t.purchase_intent_status),
                   purchase_intent_status: t.purchase_intent_status || 'TRIGGER_EVENT',
@@ -1184,6 +1192,10 @@ export default function NexusLeadRadarPage() {
                 const isDisqualified = Boolean(trigger.is_disqualified || matchScore < 50 || trigger.is_potential_buyer === false);
                 const dateInfo = formatEventDate(trigger.published_at || trigger.event_date);
                 const domain = extractDomain(trigger.quelle);
+                const lifecycle = classifyB2BLifecycle(
+                  trigger.signal_kategorie || selectedRadarCategory,
+                  trigger.event_date || trigger.published_at
+                );
 
                 return (
                   <div key={index} className="trigger-card" style={{ opacity: isDisqualified ? 0.65 : (trigger.prioritaet > 3 ? 0.6 : 1), border: isDisqualified ? '1px dashed rgba(239, 68, 68, 0.4)' : undefined }}>
@@ -1251,6 +1263,22 @@ export default function NexusLeadRadarPage() {
                               {trigger.signal_kategorie.replace(/_/g, ' ')}
                             </span>
                           )}
+
+                          {/* B2B Opportunity Lifecycle Badge */}
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '3px 8px',
+                            background: lifecycle.status === 'BREAKING' ? 'rgba(34, 197, 94, 0.15)' : lifecycle.status === 'HOT_WINDOW' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                            color: lifecycle.status === 'BREAKING' ? '#4ade80' : lifecycle.status === 'HOT_WINDOW' ? '#38bdf8' : '#f87171',
+                            border: `1px solid ${lifecycle.status === 'BREAKING' ? 'rgba(34, 197, 94, 0.3)' : lifecycle.status === 'HOT_WINDOW' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                            borderRadius: '6px',
+                            fontSize: '0.74rem',
+                            fontWeight: 700
+                          }} title={lifecycle.description}>
+                            {trigger.lifecycle_badge || lifecycle.badge}
+                          </span>
                         </div>
 
                         <h3 className="trigger-company">{trigger.company}</h3>
@@ -1655,9 +1683,9 @@ export default function NexusLeadRadarPage() {
                           )}
                         </div>
 
-                        {dateInfo.isExpired && (
-                          <span className="badge-expired" title="Signal ist älter als 90 Tage">
-                            🚨 Veraltet (&gt;90 Tage)
+                        {lifecycle.status === 'EXPIRED' && (
+                          <span className="badge-expired" title={lifecycle.description}>
+                            🚨 {lifecycle.badge}
                           </span>
                         )}
                       </div>

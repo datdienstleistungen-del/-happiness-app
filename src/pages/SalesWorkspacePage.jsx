@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Briefcase, Mail, MessageSquare, Send, Copy, CheckCircle, AlertCircle, List, Trash2, ArrowRight, Search, Share2, ExternalLink, Video, Globe, Sparkles, RefreshCw, Clock, Check, Loader2, X } from 'lucide-react'
 import { callNexusAI, runDeepResearch, callContactIntelligence, callMessageGeneration, callSocialIntelligence } from '../lib/nexus-ai'
-import { isPlaceholderCompany, computeTargetMatchScore } from '../lib/nexus-validation'
+import { isPlaceholderCompany, computeTargetMatchScore, classifyB2BLifecycle, getCategoryLifecycleConfig } from '../lib/nexus-validation'
 import { formatEventDate, extractDomain } from '../lib/nexus-dates'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import { useLead } from '../context/LeadContext'
@@ -78,6 +78,8 @@ export default function SalesWorkspacePage() {
   })
   const [reviewNotes, setReviewNotes] = useState('')
   const [isReviewSaving, setIsReviewSaving] = useState(false)
+  const [customEventDate, setCustomEventDate] = useState('')
+  const [isEditingEventDate, setIsEditingEventDate] = useState(false)
 
   // Direkt-Veröffentlichung State & Modal
   const [isDirectPublishing, setIsDirectPublishing] = useState(false)
@@ -131,6 +133,8 @@ export default function SalesWorkspacePage() {
   // Synchronisiere Checkliste und Notizen mit dem aktiven Lead NUR bei Lead-Wechsel
   useEffect(() => {
     if (activeOpp?.id) {
+      setCustomEventDate('')
+      setIsEditingEventDate(false)
       setReviewNotes(activeOpp.review_notes || '')
       if (activeOpp.review_status === 'reviewed' || activeOpp.review_status === 'verified') {
         setReviewChecklist({
@@ -272,9 +276,13 @@ export default function SalesWorkspacePage() {
         }
       }
 
+      const effectiveTrigger = activeTrigger
+        ? { ...activeTrigger, ...(customEventDate ? { event_date: customEventDate } : {}) }
+        : (customEventDate ? { event_date: customEventDate } : null);
+
       const signalPayload = buildSignalPayload({
         opportunity: activeOpp,
-        trigger: activeTrigger,
+        trigger: effectiveTrigger,
         foundContact,
         analystName: 'Harro Goerndt',
         verificationNote: noteToUse,
@@ -2509,32 +2517,143 @@ export default function SalesWorkspacePage() {
                     </div>
                   </div>
 
-                  {/* d) Datums-Check */}
+                  {/* d) Datums-Check (B2B Opportunity Lifecycle) */}
                   <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.date === 'pass' ? '#22c55e' : reviewChecklist.date === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
                       <div style={{ flex: 1, minWidth: '240px' }}>
-                        <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.95rem' }}>d) Datums-Check</div>
-                        <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem', marginTop: '4px' }}>
-                          "Ist das Datum aktuell (max. 3 Tage)?"
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.95rem' }}>d) Datums-Check (B2B Opportunity Lifecycle)</span>
                         </div>
-                        <div style={{ fontSize: '0.82rem', marginTop: '6px', color: '#94a3b8' }}>
+                        <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem', marginTop: '4px' }}>
+                          "Liegt das Ereignis im aktiven B2B-Handlungsfenster?"
+                        </div>
+                        <div style={{ fontSize: '0.82rem', marginTop: '8px', color: '#94a3b8' }}>
                           {(() => {
-                            const rawDate = activeTrigger?.event_date || activeTrigger?.published_at || activeTrigger?.created_at || activeOpp?.created_at;
+                            const rawDate = customEventDate || activeTrigger?.event_date || activeTrigger?.published_at || activeTrigger?.created_at || activeOpp?.created_at;
+                            const category = activeTrigger?.signal_kategorie || activeTrigger?.kategorie || activeOpp?.category || activeOpp?.branche || 'clevel_vakanzen';
+                            const lifecycleConfig = getCategoryLifecycleConfig(category);
+                            const lifecycle = classifyB2BLifecycle(category, rawDate);
                             const dateObj = rawDate ? new Date(rawDate) : null;
                             const isValidDate = dateObj && !isNaN(dateObj.getTime());
-                            const daysAgo = isValidDate ? Math.max(0, Math.round((Date.now() - dateObj.getTime()) / (1000 * 60 * 60 * 24))) : null;
-                            const isFresh = daysAgo !== null && daysAgo <= 3;
+                            const formattedDateStr = isValidDate ? dateObj.toLocaleDateString('de-DE') : 'Kein Datum verfügbar';
+
                             return (
-                              <div>
-                                Datum:{' '}
-                                <strong style={{ color: isValidDate ? '#f8fafc' : '#f87171' }}>
-                                  {isValidDate ? dateObj.toLocaleDateString() : 'Kein Datum verfügbar'}
-                                </strong>
-                                {daysAgo !== null && (
-                                  <span style={{ marginLeft: '8px', color: isFresh ? '#4ade80' : '#f87171', fontWeight: 600 }}>
-                                    ({daysAgo} Tage her – {isFresh ? '✓ aktuell ≤ 3 Tage' : '⚠️ älter als 3 Tage (72h)!'})
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                  <span>Kategorie:</span>
+                                  <strong style={{ color: '#f8fafc' }}>{lifecycleConfig.name}</strong>
+                                  <span style={{ color: '#64748b', fontSize: '0.78rem' }}>
+                                    (Breaking: 1–{lifecycleConfig.breakingDays}d | Hot Window: {lifecycleConfig.breakingDays + 1}–{lifecycleConfig.hotWindowDays}d | Expired: ab {lifecycleConfig.maxExpiredDays + 1}d)
                                   </span>
-                                )}
+                                </div>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                  <span>Datum:</span>
+                                  <strong style={{ color: isValidDate ? '#f8fafc' : '#f87171' }}>
+                                    {formattedDateStr}
+                                  </strong>
+                                  {customEventDate && (
+                                    <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 600 }}>
+                                      (Manuell angepasst)
+                                    </span>
+                                  )}
+                                  
+                                  {/* B2B Lifecycle Badge */}
+                                  <span style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '3px 8px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 700,
+                                    background: lifecycle.status === 'BREAKING' ? 'rgba(34, 197, 94, 0.15)' : lifecycle.status === 'HOT_WINDOW' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                                    color: lifecycle.status === 'BREAKING' ? '#4ade80' : lifecycle.status === 'HOT_WINDOW' ? '#38bdf8' : '#f87171',
+                                    border: `1px solid ${lifecycle.status === 'BREAKING' ? 'rgba(34, 197, 94, 0.3)' : lifecycle.status === 'HOT_WINDOW' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
+                                  }}>
+                                    {lifecycle.badge}
+                                  </span>
+
+                                  {lifecycle.daysAgo !== null && (
+                                    <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>
+                                      ({lifecycle.daysAgo} Tage her)
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Datum manuell anpassen Toggle & Input */}
+                                <div style={{ marginTop: '2px' }}>
+                                  {!isEditingEventDate ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setIsEditingEventDate(true)}
+                                      style={{
+                                        background: 'transparent',
+                                        border: '1px solid #334155',
+                                        color: '#38bdf8',
+                                        padding: '3px 10px',
+                                        borderRadius: '5px',
+                                        fontSize: '0.76rem',
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '5px'
+                                      }}
+                                    >
+                                      ✏️ Datum manuell korrigieren (z. B. echtes Ereignisdatum aus September)
+                                    </button>
+                                  ) : (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px', background: '#131720', padding: '8px 12px', borderRadius: '6px', border: '1px solid #1e293b' }}>
+                                      <label style={{ fontSize: '0.78rem', color: '#e2e8f0', fontWeight: 600 }}>Echtes Ereignisdatum:</label>
+                                      <input
+                                        type="date"
+                                        value={customEventDate || (isValidDate ? dateObj.toISOString().slice(0, 10) : '')}
+                                        onChange={(e) => setCustomEventDate(e.target.value)}
+                                        style={{
+                                          background: '#0a0d14',
+                                          border: '1px solid #3b82f6',
+                                          color: '#f8fafc',
+                                          padding: '4px 8px',
+                                          borderRadius: '4px',
+                                          fontSize: '0.8rem'
+                                        }}
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => setIsEditingEventDate(false)}
+                                        style={{
+                                          background: '#3b82f6',
+                                          color: '#ffffff',
+                                          border: 'none',
+                                          padding: '4px 10px',
+                                          borderRadius: '4px',
+                                          fontSize: '0.76rem',
+                                          fontWeight: 600,
+                                          cursor: 'pointer'
+                                        }}
+                                      >
+                                        ✓ Übernehmen
+                                      </button>
+                                      {customEventDate && (
+                                        <button
+                                          type="button"
+                                          onClick={() => { setCustomEventDate(''); setIsEditingEventDate(false); }}
+                                          style={{
+                                            background: 'transparent',
+                                            color: '#94a3b8',
+                                            border: '1px solid #475569',
+                                            padding: '4px 10px',
+                                            borderRadius: '4px',
+                                            fontSize: '0.76rem',
+                                            cursor: 'pointer'
+                                          }}
+                                        >
+                                          Zurücksetzen
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             );
                           })()}

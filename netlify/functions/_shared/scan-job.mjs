@@ -10,7 +10,7 @@
 // ============================================================================
 import { callLLM } from './llm-core.mjs';
 import { parseScanTriggers, extractJson } from './schemas.mjs';
-import { isPlaceholderCompany } from './validation.mjs';
+import { isPlaceholderCompany, getCategoryLifecycleConfig, classifyB2BLifecycle } from './validation.mjs';
 
 export const STALE_MS = 5 * 60 * 1000;   // Job-Alter ab dem status='error'
 export const HARD_CAP = 25;              // max. current_step
@@ -406,21 +406,23 @@ export function filterAndCleanTriggers(rawTriggers = [], { url = '', now = new D
       continue;
     }
 
-    // 2. Ereignisdatum & Veröffentlichungsdatum prüfen (max. maxAgeDays Kalendertage bzw. Zukunft <= 365d)
+    // 2. Ereignisdatum & Veröffentlichungsdatum prüfen (Kategorie-spezifisches B2B Handlungsfenster)
     const sourceUrl = t.quelle || url || '';
     const isJobPortal = /\b(stepstone|indeed|linkedin\.com\/jobs|xing\.com\/jobs|jobs\.ch|karriere\.at|jobboerse|monster)\b/i.test(sourceUrl);
     const isHiringTrigger = t.signal_kategorie === 'HIRING' || isJobPortal;
 
-    let validEventDate = validateEventDate(t.event_date, now, maxAgeDays);
-    let validPubDate = validateEventDate(t.published_at, now, maxAgeDays);
+    // Ermittle Lebenszyklus-Konfiguration anhand der Trigger-Kategorie
+    const lifecycleConfig = getCategoryLifecycleConfig(t.signal_kategorie || t.category);
+    const effectiveCategoryMaxAge = Math.max(maxAgeDays || 14, lifecycleConfig.maxExpiredDays);
+
+    let validEventDate = validateEventDate(t.event_date, now, effectiveCategoryMaxAge);
+    let validPubDate = validateEventDate(t.published_at, now, effectiveCategoryMaxAge);
     let isUnverifiedDate = Boolean(t.event_date_unverified);
 
     // Sonderregel für Jobanzeigen:
     // Wenn signal_kategorie === 'HIRING' oder der Trigger von einem Jobportal stammt:
     // Und wenn kein gültiges event_date / published_at vorhanden ist:
     // Dann setze das heutige Datum (new Date()) als "Abrufdatum" und markiere es als "frisch abgerufen".
-    // Begründung: Eine heute abgerufene Stellenanzeige ist ein heutiger Trigger, auch wenn kein explizites Datum im Text steht.
-    // Nur bei HIRING-Triggern anwenden. Bei Bau/News-Triggern bleibt der strikte maxAgeDays-Filter.
     if (isHiringTrigger && !validEventDate && !validPubDate) {
       const todayIso = (now instanceof Date ? now : new Date()).toISOString().slice(0, 10);
       validEventDate = todayIso;
@@ -436,17 +438,36 @@ export function filterAndCleanTriggers(rawTriggers = [], { url = '', now = new D
 
     if (!finalEventDate || isUnverifiedDate) {
       if (validPubDate) {
-        // Fallback: Kein/ungültiges Ereignisdatum, aber belegtes Veröffentlichungsdatum <= maxAgeDays Tage
+        // Fallback: Kein/ungültiges Ereignisdatum, aber belegtes Veröffentlichungsdatum <= effectiveCategoryMaxAge Tage
         finalEventDate = null;
         isUnverifiedDate = true;
       } else {
-        // Weder Ereignisdatum noch Veröffentlichungsdatum <= maxAgeDays Tage
+        // Weder Ereignisdatum noch Veröffentlichungsdatum im Handlungsfenster
         rejectedTriggers.push({
           ...t,
-          rejection_reason: `Älter als ${maxAgeDays} Tage - veraltet`
+          rejection_reason: `Älter als ${effectiveCategoryMaxAge} Tage für ${lifecycleConfig.name} - veraltet (Expired)`
         });
         continue;
       }
+    }
+
+    // B2B Opportunity Lifecycle Klassifizierung (Breaking / Hot Window / Expired)
+    const lifecycle = classifyB2BLifecycle(
+      t.signal_kategorie || t.category,
+      finalEventDate || validPubDate,
+      now
+    );
+
+    // Filter für Müll / Kalt-Leads:
+    // Signale, die die Expired-Grenze überschritten haben, werden von NeXus automatisch verworfen (KEIN_VALIDES_SIGNAL)
+    if (!lifecycle.isActionable || lifecycle.status === 'EXPIRED') {
+      rejectedTriggers.push({
+        ...t,
+        lifecycle_status: 'EXPIRED',
+        lifecycle_badge: lifecycle.badge,
+        rejection_reason: lifecycle.rejectionReason || `Älter als ${lifecycle.maxExpiredDays} Tage für ${lifecycle.categoryName} (Expired)`
+      });
+      continue;
     }
 
     // 3. Belegbarkeit: Das Signal MUSS einen konkreten Belegsatz haben (mind. 10 Zeichen)
@@ -538,6 +559,10 @@ export function filterAndCleanTriggers(rawTriggers = [], { url = '', now = new D
       business_opportunity: opportunity,
       purchase_intent_status: purchaseIntentStatus,
       pain_point: (t.pain_point || '').trim(),
+      lifecycle_status: lifecycle.status,
+      lifecycle_badge: lifecycle.badge,
+      lifecycle_phase: lifecycle.phase,
+      days_ago: lifecycle.daysAgo,
       blind_company: (t.blind_company || '').trim(),
       blind_location: (t.blind_location || '').trim(),
       blind_quantity: (t.blind_quantity || '').trim(),
@@ -631,9 +656,9 @@ export async function processNextUrl(client, job) {
     };
   }
 
-  // Baustelle 3: Offering-Kontext laden für Zielgruppen- und Käufer-Matching
   let offeringContext = '';
   let offeringMaxAge = null;
+  let offeringCategory = null;
   if (job.offering_id) {
     try {
       const offRes = await client.from('nexus_offerings').select('offering_name, target_audience, positioning, ai_understanding').eq('id', job.offering_id).single();
@@ -645,14 +670,18 @@ export async function processNextUrl(client, job) {
         if (offRes.data.ai_understanding?.max_age_days) {
           offeringMaxAge = Number(offRes.data.ai_understanding.max_age_days);
         }
+        if (offRes.data.ai_understanding?.category_id) {
+          offeringCategory = offRes.data.ai_understanding.category_id;
+        }
       }
     } catch (e) {
       console.warn('[ScanJob] Konnte Offering-Kontext nicht laden:', e.message);
     }
   }
 
-  const effectiveMaxAgeDays = Math.max(1, Math.min(30, Number(
-    nextUrl?.max_age_days || job.max_age_days || offeringMaxAge || 14
+  const categoryLifecycle = getCategoryLifecycleConfig(job.category_id || offeringCategory || nextUrl?.category || job.offering_id);
+  const effectiveMaxAgeDays = Math.max(1, Math.min(180, Number(
+    nextUrl?.max_age_days || job.max_age_days || offeringMaxAge || categoryLifecycle.maxExpiredDays || 90
   )));
 
   const currentDate = new Date().toISOString().split('T')[0];

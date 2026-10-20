@@ -1,4 +1,5 @@
 import { supabase } from './supabase.js'
+import { classifyB2BLifecycle } from './nexus-validation.js'
 
 /**
  * Erzeugt einen sauberen URL-Slug aus einem String.
@@ -247,6 +248,11 @@ export function buildSignalPayload({
   const valueHook = `„Unternehmen in genau dieser dynamischen Phase stehen vor der Herausforderung, dass herkömmliche Besetzungs- und Rollout-Prozesse Monate in Anspruch nehmen und opportunistische Vakanzkosten verursachen. Wir unterstützen Firmen in Ihrer Branche dabei, binnen 14 Tagen die passenden Partner und Führungskräfte an Bord zu holen.“`
   const callToAction = `„Hätten Sie diesen Donnerstag um 10:30 Uhr 10 Minuten Zeit für eine kurze Ersteinschätzung?“`
 
+  // B2B Lifecycle Handlungsfenster berechnen
+  const eventDate = trigger?.event_date || trigger?.datum || trigger?.published_at || opportunity?.datum || null
+  const eventCategory = trigger?.signal_kategorie || trigger?.kategorie || trigger?.category || opportunity?.category || industry
+  const lifecycle = classifyB2BLifecycle(eventCategory, eventDate, today)
+
   // Gesamtes Signal-Objekt
   const signalObj = {
     id: signalId,
@@ -260,8 +266,10 @@ export function buildSignalPayload({
       industry: `${industry} · ${blindLocation}`,
       region: blindLocation,
       eventSummary: cleanEvent,
-      signalCategory: 'EXPANSION & STRATEGISCHES HIRING',
-      detectedAt: 'Vor wenigen Tagen (< 30 Tage)',
+      signalCategory: trigger?.signal_kategorie || 'EXPANSION & STRATEGISCHES HIRING',
+      lifecycleBadge: lifecycle.badge,
+      lifecycleStatus: lifecycle.status,
+      detectedAt: `${lifecycle.badge} · ${lifecycle.description}`,
       verifiedAt: `✓ Human-Verified Signal – Geprüft am ${todayStr} durch ${analystName}`,
       urgencyBadge: '🟢 Noch 5 von 5 Lizenzen verfügbar (78 €)',
       allocationStatus: 'Noch 5 von 5 Lizenzen verfügbar (78 €) · Exklusiv-Kauf möglich (249 €)',
@@ -313,15 +321,17 @@ export function buildSignalPayload({
       },
       primarySource: {
         outlet: 'Wirtschaftspresse / Bundesanzeiger / Offizielle Mitteilung',
-        publishedDate: 'Vor wenigen Tagen (< 30 Tage)',
+        publishedDate: eventDate ? `${new Date(eventDate).toLocaleDateString('de-DE')} (${lifecycle.description})` : 'Aktuelles Handlungsfenster',
         url: sourceUrl,
         verbatimEvidence: sourceEvidence
       },
       decisionMakers: decisionMakers,
       painPointAnalysis: {
         coreProblem: painPoint,
-        urgencyLevel: 'Kritisch / Sehr hoch (Akuter Handlungsdruck)',
-        decisionWindow: 'Nächste 2 bis 4 Wochen für Erstgespräche optimal',
+        urgencyLevel: lifecycle.status === 'BREAKING' ? 'Brandaktuell (Breaking Window)' : 'Kritisch / Sehr hoch (Strategisches Handlungsfenster)',
+        timingWindow: lifecycle.badge,
+        lifecycleDescription: lifecycle.description,
+        decisionWindow: lifecycle.status === 'BREAKING' ? 'Sofortige Kontaktaufnahme (Breaking 1–14 Tage)' : 'Aktives Zeitfenster für Erstgespräche und Vergaben',
         salesAngle: 'Direkte Ansprache über Beschleunigung der Besetzung und Minimierung von Vakanzkosten.'
       },
       preparedPitch: {
