@@ -251,6 +251,9 @@ export function buildSignalPayload({
   const signalObj = {
     id: signalId,
     slug: slug,
+    maxAllocations: 5,
+    remainingAllocations: 5,
+    isExclusivelySold: false,
     // 1. ÖFFENTLICHE VORSCHAU (Frei sichtbar)
     teaser: {
       headline: `${blindCompany} sucht Vertriebsleiter & Expansionspartner`,
@@ -260,19 +263,34 @@ export function buildSignalPayload({
       signalCategory: 'EXPANSION & STRATEGISCHES HIRING',
       detectedAt: 'Vor wenigen Tagen (< 30 Tage)',
       verifiedAt: `✓ Human-Verified Signal – Geprüft am ${todayStr} durch ${analystName}`,
-      urgencyBadge: 'Exklusiv: Max. 3 Zuteilungen im DACH-Raum',
-      allocationStatus: 'Noch 3 von 3 Zuteilungen verfügbar · Branchenschutz aktiv',
-      includedDataSummary: 'Enthält: Decision-Maker-Mapping, Pain-Point-Analyse, fertig ausgearbeiteter Pitch',
+      urgencyBadge: '🟢 Noch 5 von 5 Lizenzen verfügbar (78 €)',
+      allocationStatus: 'Noch 5 von 5 Lizenzen verfügbar (78 €) · Exklusiv-Kauf möglich (249 €)',
+      includedDataSummary: '4 verifizierte Lieferbestandteile: 1. Ziel-Account & Primärquelle, 2. Hintergrund & Anlass, 3. Rollen-Targeting, 4. Anschreiben-Vorlage / Pitch',
       features: [
-        'Decision-Maker-Mapping für HR, GF & Sales',
-        'Operative Pain-Point- & Dringlichkeits-Analyse',
-        'Fertig ausgearbeiteter Gesprächseinstieg & Telefon-Pitch',
-        'Verifizierter Primärquellen-Nachweis mit wörtlichem Belegsatz',
-        'Direkte Kontaktdaten (Telefon, E-Mail, Anschrift, LinkedIn)'
+        '1. Ziel-Account & Primärquelle (verifizierter Link & wörtlicher Belegsatz)',
+        '2. Hintergrund & Anlass (operativer Handlungsdruck & Timing-Fenster)',
+        '3. Rollen-Targeting (konkrete funktionale Entscheider-Rolle & Telefonzentrale)',
+        '4. Anschreiben-Vorlage (maßgeschneiderter LinkedIn- & Telefon-Pitch)',
+        'DSGVO-Sicherheitsgarantie: Rechtssichere B2B-Intelligence statt unzulässiger Namenslisten'
       ],
       targetBuyers: targetBuyers
     },
     pricing: {
+      standard: {
+        netto: 78.0,
+        mwst: 14.82,
+        brutto: 92.82,
+        currency: 'EUR',
+        label: '78,00 € zzgl. USt.',
+        maxBuyers: 5
+      },
+      exclusive: {
+        netto: 249.0,
+        mwst: 47.31,
+        brutto: 296.31,
+        currency: 'EUR',
+        label: '249,00 € zzgl. USt.'
+      },
       netto: 78.0,
       mwst: 14.82,
       brutto: 92.82,
@@ -381,30 +399,17 @@ export async function publishSignalToDatWebsite({
     console.log('[Publisher] Lokaler Netlify-Sync übersprungen (Client-Modus).')
   }
 
-  // 3. Generiere personalisiertes LinkedIn-Anschreiben (100% STRENG ANONYMISIERT - KEIN KLARNAME!)
-  const industryClean = signalObj.teaser?.industry?.split('·')[0]?.trim() || 'Finanzdienstleistung & Banking'
-  
-  const isSwiss = (signalObj.unlockedDossier?.company?.address?.includes('Schweiz') ||
-                   signalObj.teaser?.region?.includes('Schweiz') ||
-                   signalObj.teaser?.region?.includes('Nordwestschweiz') ||
-                   signalObj.teaser?.eventSummary?.includes('Schweiz') ||
-                   signalObj.unlockedDossier?.primarySource?.url?.includes('.ch') ||
-                   signalObj.unlockedDossier?.company?.legalName?.toLowerCase().includes('raiffeisen'))
+  // 3. Generiere diebstahlsichere Nachricht an potentielle Lead-Käufer (Headhunter/Vertriebler auf LinkedIn)
+  const industryClean = signalObj.teaser?.industry?.split('·')[0]?.trim() || 'B2B & Technologie'
+  const regionClean = signalObj.teaser?.region?.split('/')[0]?.trim() || 'DACH-Raum'
+  const categoryClean = signalObj.teaser?.signalCategory || 'EXPANSION & STRATEGISCHES HIRING'
 
-  const recipientTarget = isSwiss 
-    ? 'als Schweizer Personalberater / Interim Manager' 
-    : 'als Personalberater, Headhunter & Interim Manager'
+  const linkedInMessage = `Guten Tag [Name], wir beobachten über DAT Dienstleistungen laufend den B2B-Markt und haben aktuell ein verifiziertes Kaufsignal (< 30 Tage) in Ihrer Zielbranche identifiziert (${industryClean} · Region ${regionClean}: ${categoryClean}).
 
-  const marketRegion = isSwiss ? 'im Schweizer Markt' : `in der Branche ${industryClean}`
+Um die Identität des Ziel-Accounts und Ihren Erstkontaktsvorteil zu schützen, ist das Unternehmen in unserer Vorschau geblurt und auf max. 5 Zuteilungen limitiert.
 
-  // Streng anonymisierte Institution und Region (Paywall-Schutz: Kein Firmen-Klarname!)
-  const blindComp = signalObj.teaser?.headline?.split('sucht')[0]?.trim() || (isSwiss ? 'Regionale Genossenschaftsbank' : 'Führendes Unternehmen')
-  const blindLoc = signalObj.teaser?.region || (isSwiss ? 'Nordwestschweiz' : 'D-A-CH Region')
-  const anonymousCoreNeed = isSwiss 
-    ? 'Vakanz in der Leitung Vertriebsentwicklung & -steuerung' 
-    : 'Akuter Besetzungs- & Expansionsbedarf in Führungsposition'
-
-  const linkedInMessage = `Guten Tag [Name], wir haben über NeXus HIT ein aktuelles B2B-Kaufsignal (< 30 Tage) ${marketRegion} identifiziert (${blindComp}, ${blindLoc}: ${anonymousCoreNeed}). Da Sie ${recipientTarget} in diesem Segment besetzen: Hier finden Sie die anonymisierte Vorschau und das verifizierte Decision-Maker-Dossier: ${liveUrl}`
+Hier können Sie die geblurte Vorschau prüfen und das verifizierte Dossier (inkl. Primärquelle, Hintergrund & Rollen-Targeting) freischalten:
+${liveUrl}`
 
   return {
     success: true,

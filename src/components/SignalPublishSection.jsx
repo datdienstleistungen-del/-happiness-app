@@ -373,16 +373,19 @@ export default function SignalPublishSection({
               </div>
             </div>
 
-            {/* ELEMENT 2: ✉️ GEGENSTANDSBEZOGENES LINKEDIN-ANSCHREIBEN */}
+            {/* ELEMENT 2: ✉️ VERKAUFSVORLAGE FÜR LEAD-KÄUFER (LINKEDIN) */}
             <div style={{ background: '#11141a', border: '1px solid #1e232d', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px' }}>
                 <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  ✉️ 2. Gegenstandsbezogenes LinkedIn-Anschreiben (Sofortversand)
+                  ✉️ 2. Outreach-Vorlage: Signal an Käufer / Headhunter anbieten (LinkedIn)
                 </span>
-                <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-                  Für Personalberater / Headhunter / Interim-Manager
+                <span style={{ fontSize: '0.72rem', color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '4px' }}>
+                  ✓ 100% Geblurt (Kein Google-Leak des Ziel-Accounts)
                 </span>
               </div>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.4 }}>
+                Nutzen Sie diesen Text, um Headhunter oder Vertriebler auf LinkedIn anzuschreiben. Der Firmenname bleibt geheim, bis der Interessent das Dossier für 78 € freischaltet.
+              </p>
 
               <textarea
                 readOnly
