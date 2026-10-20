@@ -53,8 +53,8 @@ export default function LoginPage() {
         <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
           <img src="/nexus-logo-official.png" alt="NeXus" style={{ height: '36px', width: 'auto' }} />
         </div>
-        <h1 style={{ textAlign: 'center', fontSize: '1.5rem', marginTop: '8px' }}>NeXus Revenue OS</h1>
-        <p className="subtitle">{t('auth.loginSubtitle') || 'Willkommen zurück'}</p>
+        <h1 style={{ textAlign: 'center', fontSize: '1.5rem', marginTop: '8px' }}>D.A.T. Workspace</h1>
+        <p className="subtitle">Geschützter Admin-Bereich</p>
 
         {/* Google 1-Tap Button */}
         <button

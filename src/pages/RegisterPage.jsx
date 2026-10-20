@@ -1,9 +1,12 @@
-import { Navigate } from 'react-router-dom'
+import React, { useEffect } from 'react'
 
 /**
- * Registrierung ist dauerhaft deaktiviert (Abschottung für NeXus).
- * Leitet alle Aufrufe sofort auf /login um.
+ * Registrierung ist dauerhaft deaktiviert.
+ * Leitet unbefugte Gäste sofort auf https://dat-dat.de um.
  */
 export default function RegisterPage() {
-  return <Navigate to="/login" replace />
+  useEffect(() => {
+    window.location.replace('https://dat-dat.de')
+  }, [])
+  return null
 }

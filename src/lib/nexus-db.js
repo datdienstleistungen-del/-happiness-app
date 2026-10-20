@@ -312,17 +312,38 @@ export async function createOpportunity(userId, companyId, data) {
 }
 
 export async function updateOpportunity(id, updates) {
-  const { data, error } = await supabase
+  const dbUpdates = { ...updates };
+  
+  let { data, error } = await supabase
     .from('nexus_opportunities')
-    .update({ ...updates, updated_at: new Date().toISOString() })
+    .update({ ...dbUpdates, updated_at: new Date().toISOString() })
     .eq('id', id)
     .select()
-    .single()
-  return error ? null : data;
+    .single();
+
+  // Falls eine veraltete DB noch den alten Check-Constraint hat, der nur 'reviewed' kennt:
+  if (error && dbUpdates.review_status === 'verified') {
+    console.warn('[NeXus DB] Falling back to review_status: reviewed for DB compatibility:', error.message);
+    const fallbackUpdates = { ...dbUpdates, review_status: 'reviewed' };
+    const res = await supabase
+      .from('nexus_opportunities')
+      .update({ ...fallbackUpdates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    data = res.data;
+    error = res.error;
+  }
+
+  if (error) {
+    console.error('[NeXus DB] Update opportunity error:', error.message);
+    return null;
+  }
+  return { ...data, review_status: updates.review_status || data?.review_status };
 }
 
 export async function getOpportunities(userId, pipelineStage = null) {
-  let query = supabase.from('nexus_opportunities').select('*, nexus_companies(*)').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false });
+  let query = supabase.from('nexus_opportunities').select('*, nexus_companies(*), triggers:nexus_opportunity_triggers(nexus_trigger_events(*))').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false });
   if (pipelineStage) query = query.eq('pipeline_stage', pipelineStage);
   const { data, error } = await query;
   return error ? [] : data;

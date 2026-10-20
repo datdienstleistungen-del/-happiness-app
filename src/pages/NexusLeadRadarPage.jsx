@@ -10,13 +10,16 @@ import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import SetupWizard from '../components/SetupWizard'
 import UpgradeModal from '../components/UpgradeModal'
 import { useLead } from '../context/LeadContext'
+import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations.jsx'
+import SignalPublishSection from '../components/SignalPublishSection'
 import './NexusLeadRadarPage.css'
 
 export { normalizeCompanyName, deduplicateAndMergeTriggers, buildCompositeEventKey }
 
 export default function NexusLeadRadarPage() {
   const { t, lang } = useLanguage()
+  const { user } = useAuth() || {}
   const navigate = useNavigate()
   const { offerings, processSignalToOpportunity } = useLead()
   
@@ -1527,6 +1530,13 @@ export default function NexusLeadRadarPage() {
                         )}
                       </div>
                     </div>
+
+                    {/* Human-Verified Freigabe & Veröffentlichung auf dat-dat.de */}
+                    <SignalPublishSection
+                      trigger={trigger}
+                      userId={user?.id}
+                    />
+
                 <div className="trigger-actions">
                   <button
                     type="button"

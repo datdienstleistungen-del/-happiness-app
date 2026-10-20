@@ -45,11 +45,30 @@ const NexusDashboard = lazy(() => import('../pages/NexusDashboard'))
 
 
 
+function ExternalRedirect({ to = 'https://dat-dat.de' }) {
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      return;
+    }
+    window.location.replace(to)
+  }, [to])
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return <Navigate to="/login" replace />
+  }
+  return null
+}
+
 function ProtectedRoute({ children }) {
   const { user, profile, loading } = useAuth()
   const { t } = useLanguage()
   if (loading) return <div className="loading">{t('auth.logging') || 'Laden...'}</div>
-  if (!user || profile?.banned) return <Navigate to="/login" replace />
+  if (!user || profile?.banned) {
+    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      return <Navigate to="/login" replace />
+    }
+    window.location.replace('https://dat-dat.de')
+    return null
+  }
   return children
 }
 
@@ -59,15 +78,15 @@ export default function AppRoutes() {
   return (
     <Suspense fallback={<div className="loading">Laden...</div>}>
       <Routes>
-        {/* Öffentliche Auth-Route: Nur Login */}
+        {/* Öffentliche Admin-Auth-Route */}
         <Route path="/login" element={user ? <Navigate to="/nexus/dashboard" replace /> : <LoginPage />} />
         
-        {/* Registrierung deaktiviert -> Weiterleitung auf /login */}
-        <Route path="/register" element={<Navigate to="/login" replace />} />
+        {/* Registrierung & Gast-Aufrufe -> Sofortige Weiterleitung auf dat-dat.de */}
+        <Route path="/register" element={<ExternalRedirect to="https://dat-dat.de" />} />
 
-        {/* Startseite und NeXus Root -> Weiterleitung auf Dashboard (falls eingeloggt) oder Login */}
-        <Route path="/" element={user ? <Navigate to="/nexus/dashboard" replace /> : <Navigate to="/login" replace />} />
-        <Route path="/nexus" element={user ? <Navigate to="/nexus/dashboard" replace /> : <Navigate to="/login" replace />} />
+        {/* Startseite und NeXus Root -> Dashboard für Admin oder Weiterleitung auf dat-dat.de */}
+        <Route path="/" element={user ? <Navigate to="/nexus/dashboard" replace /> : <ExternalRedirect to="https://dat-dat.de" />} />
+        <Route path="/nexus" element={user ? <Navigate to="/nexus/dashboard" replace /> : <ExternalRedirect to="https://dat-dat.de" />} />
 
         {/* NeXus Core Routes (vollständig geschützt) */}
         <Route path="/nexus/dashboard" element={<ProtectedRoute><NexusDashboard /></ProtectedRoute>} />

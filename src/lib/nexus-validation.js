@@ -711,8 +711,8 @@ export function generateSignalReportCsv(triggers = [], { activeOffering = null }
     const weitereQuellen = anzahlQuellen > 1 ? (additionalUrls.length > 0 ? additionalUrls.join(', ') : (t.all_sources || []).slice(1).join(', ')) : '';
 
     let pruefstatus = 'Ungeprüft';
-    if (t.review_status === 'reviewed') {
-      pruefstatus = 'Geprüft';
+    if (t.review_status === 'reviewed' || t.review_status === 'verified') {
+      pruefstatus = t.review_status === 'verified' ? 'Verifiziert' : 'Geprüft';
     } else if (t.review_status === 'rejected') {
       pruefstatus = 'Abgelehnt';
     }
