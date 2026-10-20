@@ -139,7 +139,7 @@ export const handler = async (event) => {
   }
 
   try {
-    const { offering_id, query, branche, force_refresh = false, max_age_days } = JSON.parse(event.body || '{}');
+    const { offering_id, query, branche, force_refresh = false, max_age_days, category_id } = JSON.parse(event.body || '{}');
 
     // Auth check
     const authHeader = event.headers.authorization;
@@ -283,11 +283,14 @@ export const handler = async (event) => {
       .select('signal_category, trigger_name, search_queries, why_relevant')
       .eq('offering_id', offering_id);
 
+    const effectiveCategoryId = category_id || offering?.ai_understanding?.category_id || null;
+
     const { newsQueries, ddgQueries, strategySource } = buildDachScanQueries({
       offering,
       signalStrategies: signalStrategies || [],
       manualQuery: query,
-      branche
+      branche,
+      categoryId: effectiveCategoryId
     });
 
     console.log(`[ScanStart] Query-Strategie (${strategySource}): ${newsQueries.length} News-Queries, ${ddgQueries.length} Web-Queries (maxAgeDays=${maxAgeDays})`);
@@ -353,7 +356,7 @@ export const handler = async (event) => {
       try {
         const host = new URL(urlStr).hostname.toLowerCase();
         if (host.endsWith('.de') || host.endsWith('.at') || host.endsWith('.ch')) return true;
-        if (/\b(handelsblatt|wiwo|manager-magazin|presseportal|openpr|unternehmensregister|bundesanzeiger|northdata|xing|gtai)\b/.test(host)) return true;
+        if (/\b(handelsblatt|wiwo|manager-magazin|presseportal|openpr|unternehmensregister|bundesanzeiger|northdata|xing|gtai|eqs-news|insolvenzbekanntmachungen)\b/.test(host)) return true;
         return false;
       } catch {
         return false;

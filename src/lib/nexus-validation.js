@@ -59,7 +59,22 @@ export const TRIGGER_CATEGORIES = [
     targetAudience: 'Headhunter / Interim',
     label: '1. Führungskräftewechsel / C-Level Vakanzen (Ziel: Headhunter / Interim)',
     searchQuery: 'Führungskräftewechsel C-Level Vakanz Vorstand Geschäftsführung Vertriebsleitung DACH',
-    triggerType: 'Führungskräftewechsel / C-Level Vakanzen'
+    triggerType: 'Führungskräftewechsel / C-Level Vakanzen',
+    primaryOperator: 'site:presseportal.de OR site:eqs-news.com "tritt zurück" OR "neuer Geschäftsführer" OR "Aufsichtsrat" OR "Vakanz"',
+    crawlerQueries: {
+      web: [
+        'site:presseportal.de OR site:eqs-news.com "tritt zurück" OR "neuer Geschäftsführer" OR "Aufsichtsrat" OR "Vakanz"',
+        '"neuer Geschäftsführer" (site:presseportal.de OR site:eqs-news.com)',
+        '"tritt zurück" (Vorstand OR Geschäftsführer) (site:de OR site:at OR site:ch)',
+        '"Vakanz" (Vertriebsleitung OR Geschäftsführung) (site:de OR site:at OR site:ch)'
+      ],
+      news: [
+        'neuer Geschäftsführer',
+        'tritt zurück Vorstand',
+        'Vakanz Geschäftsführung',
+        'neue Vertriebsleitung'
+      ]
+    }
   },
   {
     id: 'bau_kapazitaet',
@@ -68,7 +83,22 @@ export const TRIGGER_CATEGORIES = [
     targetAudience: 'Industrie-Bauer / Logistik',
     label: '2. Kapazitätserweiterung & Bau / Hallen (> 2.000 m²) (Ziel: Industrie-Bauer / Logistik)',
     searchQuery: 'Neubau Industriehalle Werkserweiterung Logistikzentrum Gewerbebau DACH',
-    triggerType: 'Kapazitätserweiterung & Bau / Hallen'
+    triggerType: 'Kapazitätserweiterung & Bau / Hallen',
+    primaryOperator: '"Spatenstich" OR "Richtfest" OR "Investition in Höhe von" OR "neues Logistikzentrum" OR "Neubau"',
+    crawlerQueries: {
+      web: [
+        '"Spatenstich" OR "Richtfest" OR "Investition in Höhe von" OR "neues Logistikzentrum" OR "Neubau"',
+        '("Spatenstich" OR "Richtfest") (site:de OR site:at OR site:ch)',
+        '("neues Logistikzentrum" OR "Hallenbau") (site:de OR site:at OR site:ch)',
+        '"Investition in Höhe von" Neubau (site:de OR site:at OR site:ch)'
+      ],
+      news: [
+        'Spatenstich Neubau',
+        'neues Logistikzentrum',
+        'Richtfest Gewerbebau',
+        'Investition in Höhe von Neubau'
+      ]
+    }
   },
   {
     id: 'm_and_a_nachfolge',
@@ -77,7 +107,22 @@ export const TRIGGER_CATEGORIES = [
     targetAudience: 'M&A / IT-Integratoren',
     label: '3. M&A / Übernahmen / Nachfolge im Mittelstand (Ziel: M&A / IT-Integratoren)',
     searchQuery: 'Übernahme Unternehmensnachfolge Fusion M&A Mittelstand DACH',
-    triggerType: 'M&A / Übernahmen / Nachfolge im Mittelstand'
+    triggerType: 'M&A / Übernahmen / Nachfolge im Mittelstand',
+    primaryOperator: '"übernimmt" OR "Mehrheitsbeteiligung" OR "Unternehmensnachfolge" OR "Fusion" OR "Asset Deal"',
+    crawlerQueries: {
+      web: [
+        '"übernimmt" OR "Mehrheitsbeteiligung" OR "Unternehmensnachfolge" OR "Fusion" OR "Asset Deal"',
+        '("Unternehmensnachfolge" OR "Mehrheitsbeteiligung") Mittelstand (site:de OR site:at OR site:ch)',
+        '"übernimmt" (Mittelstand OR GmbH) (site:de OR site:at OR site:ch)',
+        '("Asset Deal" OR "Fusion") (site:de OR site:at OR site:ch)'
+      ],
+      news: [
+        'Unternehmensnachfolge Mittelstand',
+        'übernimmt Mittelstand',
+        'Mehrheitsbeteiligung',
+        'Asset Deal Fusion'
+      ]
+    }
   },
   {
     id: 'insolvenz_sanierung',
@@ -86,7 +131,22 @@ export const TRIGGER_CATEGORIES = [
     targetAudience: 'Sanierungsberater / Anwälte',
     label: '4. Insolvenz in Eigenverwaltung / Sanierung (Ziel: Sanierungsberater / Anwälte)',
     searchQuery: 'Insolvenz in Eigenverwaltung Schutzschirmverfahren Restrukturierung Sanierung DACH',
-    triggerType: 'Insolvenz in Eigenverwaltung / Sanierung'
+    triggerType: 'Insolvenz in Eigenverwaltung / Sanierung',
+    primaryOperator: 'site:insolvenzbekanntmachungen.de OR "Schutzschirmverfahren" OR "Insolvenz in Eigenverwaltung" OR "Sanierungsexperte"',
+    crawlerQueries: {
+      web: [
+        'site:insolvenzbekanntmachungen.de OR "Schutzschirmverfahren" OR "Insolvenz in Eigenverwaltung" OR "Sanierungsexperte"',
+        '("Schutzschirmverfahren" OR "Insolvenz in Eigenverwaltung") (site:de OR site:at OR site:ch)',
+        '("Sanierungsexperte" OR "Eigenverwaltung") (site:de OR site:at OR site:ch)',
+        'site:insolvenzbekanntmachungen.de'
+      ],
+      news: [
+        'Insolvenz in Eigenverwaltung',
+        'Schutzschirmverfahren Sanierung',
+        'Sanierungsexperte Eigenverwaltung',
+        'Restrukturierung Eigenverwaltung'
+      ]
+    }
   },
   {
     id: 'stellenwachstum',
@@ -95,9 +155,56 @@ export const TRIGGER_CATEGORIES = [
     targetAudience: 'Recruiting-Agenturen',
     label: '5. Exponentielles Stellenwachstum (5+ offene Rollen) (Ziel: Recruiting-Agenturen)',
     searchQuery: 'Stellenanzeigen massiver Ausbau 5 offene Stellen Expansion Recruiting DACH',
-    triggerType: 'Exponentielles Stellenwachstum (5+ offene Rollen)'
+    triggerType: 'Exponentielles Stellenwachstum (5+ offene Rollen)',
+    primaryOperator: '"Wir stellen ein" OR "Expansionskurs"',
+    crawlerQueries: {
+      web: [
+        '"Wir stellen ein" OR "Expansionskurs"',
+        '("Wir stellen ein" OR "Expansionskurs") (site:linkedin.com/jobs OR site:stepstone.de OR site:indeed.com OR site:xing.com/jobs)',
+        '("Wir stellen ein" OR "Expansionskurs") (site:de OR site:at OR site:ch)',
+        '("5 offene Stellen" OR "massiver Ausbau") (site:de OR site:at OR site:ch)'
+      ],
+      news: [
+        'Wir stellen ein Expansion',
+        'Expansionskurs Stellen',
+        'massiver Personalaufbau',
+        'Stellenwachstum Expansion'
+      ]
+    }
   }
 ];
+
+export function identifyTriggerCategory(input) {
+  if (!input) return null;
+  const str = String(input).trim().toLowerCase();
+
+  const byId = TRIGGER_CATEGORIES.find(c => c.id.toLowerCase() === str);
+  if (byId) return byId;
+
+  if (str === '1' || str === 'kat 1' || str === 'kategorie 1') return TRIGGER_CATEGORIES[0];
+  if (str === '2' || str === 'kat 2' || str === 'kategorie 2') return TRIGGER_CATEGORIES[1];
+  if (str === '3' || str === 'kat 3' || str === 'kategorie 3') return TRIGGER_CATEGORIES[2];
+  if (str === '4' || str === 'kat 4' || str === 'kategorie 4') return TRIGGER_CATEGORIES[3];
+  if (str === '5' || str === 'kat 5' || str === 'kategorie 5') return TRIGGER_CATEGORIES[4];
+
+  if (/\b(führungskräftewechsel|c-level|vakanz|vakanzen|vorstand|geschäftsführer|neuer geschäftsführer|tritt zurück|aufsichtsrat|headhunter|interim)\b/i.test(str)) {
+    return TRIGGER_CATEGORIES[0];
+  }
+  if (/\b(kapazitätserweiterung|hallen|hallenbau|spatenstich|richtfest|logistikzentrum|neubau|gewerbebau|industriebau|werkserweiterung)\b/i.test(str)) {
+    return TRIGGER_CATEGORIES[1];
+  }
+  if (/\b(m&a|m_and_a|übernahme|übernahmen|nachfolge|unternehmensnachfolge|mehrheitsbeteiligung|asset deal|fusion)\b/i.test(str)) {
+    return TRIGGER_CATEGORIES[2];
+  }
+  if (/\b(insolvenz|eigenverwaltung|sanierung|schutzschirmverfahren|sanierungsberater|sanierungsexperte|insolvenzbekanntmachungen)\b/i.test(str)) {
+    return TRIGGER_CATEGORIES[3];
+  }
+  if (/\b(stellenwachstum|offene rollen|offene stellen|stellenanzeigen|wir stellen ein|expansionskurs|recruiting)\b/i.test(str)) {
+    return TRIGGER_CATEGORIES[4];
+  }
+
+  return null;
+}
 
 const VENDOR_PATTERNS = [
   'ricoh', 'canon', 'konica minolta', 'xerox', 'bechtle', 'computacenter',

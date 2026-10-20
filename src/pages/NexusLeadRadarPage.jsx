@@ -4,7 +4,7 @@ import { Radar, Search, ArrowRight, Building2, AlertCircle, RefreshCw, Briefcase
 import { callContactIntelligence, runResearchPipeline } from '../lib/nexus-ai'
 import { trackRadarScan } from '../lib/nexus-analytics'
 import { supabase } from '../lib/supabase'
-import { isPlaceholderCompany, computeTargetMatchScore, normalizeCompanyName, deduplicateAndMergeTriggers, buildCompositeEventKey, formatBusinessOpportunity, generateSignalReportCsv } from '../lib/nexus-validation'
+import { isPlaceholderCompany, computeTargetMatchScore, normalizeCompanyName, deduplicateAndMergeTriggers, buildCompositeEventKey, formatBusinessOpportunity, generateSignalReportCsv, TRIGGER_CATEGORIES } from '../lib/nexus-validation'
 import { formatEventDate, extractDomain } from '../lib/nexus-dates'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import SetupWizard from '../components/SetupWizard'
@@ -54,8 +54,21 @@ export default function NexusLeadRadarPage() {
   const [triggers, setTriggers] = useState(radarState.triggers || [])
   const [savedLeads, setSavedLeads] = useState(radarState.savedLeads || [])
   const [manualQuery, setManualQuery] = useState(radarState.manualQuery || '')
+  const [selectedRadarCategory, setSelectedRadarCategory] = useState(
+    activeOffering?.ai_understanding?.category_id || ''
+  )
   const [hasSearched, setHasSearched] = useState(radarState.hasSearched || false)
   const [radarFilter, setRadarFilter] = useState('relevant') // 'relevant' (>=50) | 'all' | 'unclear' (<50)
+
+  const handleSelectCategory = (cat) => {
+    if (selectedRadarCategory === cat.id) {
+      setSelectedRadarCategory('')
+      setManualQuery('')
+    } else {
+      setSelectedRadarCategory(cat.id)
+      setManualQuery(cat.searchQuery)
+    }
+  }
   
   const [rawResult, setRawResult] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -501,6 +514,7 @@ export default function NexusLeadRadarPage() {
           offering_id: activeOffering.id,
           query,
           branche,
+          category_id: selectedRadarCategory || activeOffering?.ai_understanding?.category_id || null,
           force_refresh: forceRefresh,
           max_age_days: activeOffering?.ai_understanding?.max_age_days || activeOffering?.max_age_days || 14
         })
@@ -922,6 +936,64 @@ export default function NexusLeadRadarPage() {
           </div>
         </div>
       </header>
+
+      {/* 5 B2B-Kern-Kategorien Bar für punktgenaues Crawlen mit spezifischen Operatoren */}
+      {activeOffering && (
+        <div className="radar-category-bar" style={{
+          background: 'linear-gradient(135deg, rgba(17, 24, 39, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%)',
+          border: '1px solid rgba(56, 189, 248, 0.25)',
+          borderRadius: '12px',
+          padding: '14px 18px',
+          marginTop: '16px',
+          marginBottom: '8px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.25)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Sparkles size={14} color="#38bdf8" />
+              <span>Ziel-Crawler nach B2B-Kaufkategorie ausrichten (Spezifische Search-Operatoren):</span>
+            </span>
+            <span style={{ fontSize: '0.72rem', color: selectedRadarCategory ? '#10b981' : '#94a3b8', fontFamily: 'monospace', fontWeight: 600 }}>
+              {selectedRadarCategory ? '✓ 100% fokussierte B2B-Suchoperatoren aktiv' : 'Standard-Suche (Kategorie wählen zum Verfeinern)'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {TRIGGER_CATEGORIES.map(cat => {
+              const isActive = selectedRadarCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => {
+                    handleSelectCategory(cat);
+                  }}
+                  disabled={scanStatus === 'starting' || scanStatus === 'running'}
+                  style={{
+                    padding: '7px 13px',
+                    fontSize: '0.78rem',
+                    borderRadius: '8px',
+                    background: isActive ? 'linear-gradient(135deg, rgba(56, 189, 248, 0.25) 0%, rgba(2, 132, 199, 0.25) 100%)' : 'rgba(255, 255, 255, 0.04)',
+                    border: `1px solid ${isActive ? '#38bdf8' : 'rgba(255, 255, 255, 0.08)'}`,
+                    color: isActive ? '#38bdf8' : '#cbd5e1',
+                    fontWeight: isActive ? 700 : 500,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <span>{cat.number}. {cat.title}</span>
+                  {isActive && <span style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 700 }}>✓</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* No Offering State */}
       {!activeOffering && !loading && (

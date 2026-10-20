@@ -188,11 +188,16 @@ export default function AngebotsanalysePage() {
       const targetAudience = formTargetAudience.trim() || 'B2B Entscheider'
       const pos = formPositioning.trim() || angebotInput.trim()
 
+      const selectedCategoryObj = TRIGGER_CATEGORIES.find(c => c.id === selectedCategoryId) || null;
+
       const aiUnderstanding = {
         offering_name: offName,
         core_offering: offName,
         target_audience: targetAudience,
         positioning: pos,
+        category_id: selectedCategoryId || null,
+        trigger_category: selectedCategoryObj?.title || null,
+        crawler_operators: selectedCategoryObj?.primaryOperator || null,
         max_age_days: maxAgeDays,
         demand_contexts: Array.isArray(triggers) && triggers.length > 0
           ? triggers.map(t => typeof t === 'string' ? t : (t.signal || t.event || t.trigger_name || ''))

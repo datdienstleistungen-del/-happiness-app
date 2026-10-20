@@ -9,6 +9,7 @@
 // ============================================================================
 
 import { callLLM } from './llm-core.mjs';
+import { TRIGGER_CATEGORIES, identifyTriggerCategory } from './validation.mjs';
 
 export const DACH_SITE_OPERATOR = '(site:de OR site:at OR site:ch)';
 export const DACH_MEDIA_OPERATOR = '(site:presseportal.de OR site:openpr.de OR site:unternehmensregister.de OR site:handelsblatt.com OR site:wiwo.de OR site:manager-magazin.de OR site:bundesanzeiger.de OR site:eqs-news.com OR site:dgap.de)';
@@ -383,11 +384,75 @@ export function simplifyForBingNews(q) {
  * Gibt ein synchron destrukturierbares Objekt zurück, das zugleich ein aufgelöstes
  * Promise ist (volle Abwärtskompatibilität für synchrone und asynchrone Aufrufer).
  */
-export function buildDachScanQueries({ offering, signalStrategies = [], manualQuery = '', branche = '' } = {}) {
+export function buildDachScanQueries({ offering, signalStrategies = [], manualQuery = '', branche = '', categoryId = '' } = {}) {
   // 1. Semantischen Kern ermitteln
   const core = extractSemanticCoreSync(offering, branche, manualQuery);
   const anchors = buildSearchAnchors(core);
   const fullText = extractFullOfferingText(offering, manualQuery, branche);
+
+  // 1b. Strikte Trigger-Kategorien-Erkennung (5 Kern-Kategorien mit B2B-Search-Operatoren)
+  const categoryMatch = identifyTriggerCategory(
+    categoryId ||
+    offering?.ai_understanding?.category_id ||
+    offering?.ai_understanding?.trigger_category ||
+    manualQuery ||
+    fullText
+  );
+
+  if (categoryMatch) {
+    const newsQueries = [...categoryMatch.crawlerQueries.news];
+    const ddgQueries = categoryMatch.crawlerQueries.web.map((q, idx) => ({
+      q,
+      type: idx === 0 ? 'PRIMARY_OPERATOR' : categoryMatch.id.toUpperCase()
+    }));
+
+    // Falls ein spezifischer Branchenbezug vorliegt (z.B. "Logistik", "Maschinenbau"), 
+    // reichern wir eine optionale Spezial-Query an:
+    const brancheTerm = (branche || anchors.branche || '').trim();
+    const isSpecificBranch = brancheTerm && !/^(b2b|mittelstand|unternehmen)$/i.test(brancheTerm);
+
+    if (isSpecificBranch && ddgQueries.length < 7) {
+      if (categoryMatch.id === 'clevel_vakanzen') {
+        ddgQueries.push({
+          q: `"${brancheTerm}" (site:presseportal.de OR site:eqs-news.com) ("neuer Geschäftsführer" OR "Vakanz")`,
+          type: 'BRANCH_TARGETED'
+        });
+      } else if (categoryMatch.id === 'bau_kapazitaet') {
+        ddgQueries.push({
+          q: `"${brancheTerm}" ("Spatenstich" OR "Richtfest" OR "Neubau") ${DACH_SITE_OPERATOR}`,
+          type: 'BRANCH_TARGETED'
+        });
+      } else if (categoryMatch.id === 'm_and_a_nachfolge') {
+        ddgQueries.push({
+          q: `"${brancheTerm}" ("übernimmt" OR "Unternehmensnachfolge" OR "Mehrheitsbeteiligung") ${DACH_SITE_OPERATOR}`,
+          type: 'BRANCH_TARGETED'
+        });
+      } else if (categoryMatch.id === 'insolvenz_sanierung') {
+        ddgQueries.push({
+          q: `"${brancheTerm}" ("Insolvenz in Eigenverwaltung" OR "Schutzschirmverfahren") ${DACH_SITE_OPERATOR}`,
+          type: 'BRANCH_TARGETED'
+        });
+      } else if (categoryMatch.id === 'stellenwachstum') {
+        ddgQueries.push({
+          q: `"${brancheTerm}" ("Wir stellen ein" OR "Expansionskurs") ${JOB_PORTALS_OPERATOR}`,
+          type: 'JOB_PORTAL'
+        });
+      }
+      newsQueries.unshift(`${brancheTerm} ${categoryMatch.crawlerQueries.news[0]}`.trim());
+    }
+
+    const result = {
+      newsQueries: newsQueries.slice(0, 5),
+      ddgQueries: ddgQueries.slice(0, 7),
+      strategySource: `category_crawler_${categoryMatch.id}`,
+      semanticCore: core,
+      category: categoryMatch
+    };
+
+    const promise = Promise.resolve(result);
+    Object.assign(promise, result);
+    return promise;
+  }
 
   // 2. Multi-Source-Erkennung für Lead-Broker-Suchaufträge
   const isJobSearch = /\b(jobanzeigen?|stellenanzeigen?|hiring|stellenangebot[e]?|recruiting)\b/i.test(fullText);

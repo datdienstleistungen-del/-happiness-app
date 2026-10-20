@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { callLLM } from './_shared/llm-core.mjs';
 import { searchDuckDuckGo, searchBrave, searchBingNewsRss, searchWithFallback } from './_shared/search-core.mjs';
-import { isPlaceholderCompany } from './_shared/validation.mjs';
+import { isPlaceholderCompany, identifyTriggerCategory } from './_shared/validation.mjs';
 import { tryConsumeDaily, dayKey } from './_shared/quota.mjs';
 
 let inFlightResearch = 0;
@@ -51,6 +51,7 @@ export const handler = async (event) => {
     const offeringId = body.offeringId || ctx.offering_id || ctx.offering?.id || null;
     const isLandingPreview = body.isLandingPreview === true;
     const angebot = body.angebot || ctx.offering?.offering_name || (typeof ctx.offering === 'string' ? ctx.offering : '') || ctx.angebot || '';
+    const categoryId = body.categoryId || body.category_id || ctx.category_id || null;
 
     const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
     const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
@@ -191,7 +192,15 @@ export const handler = async (event) => {
     const contextText = `${searchQuery || ''} ${branche || ''} ${angebot || ''}`.toLowerCase();
     const searchQueriesToTry = [];
     
-    if (contextText.includes('it') || contextText.includes('software') || contextText.includes('crm') || contextText.includes('cloud') || contextText.includes('saas') || contextText.includes('tech')) {
+    const matchedCategory = identifyTriggerCategory(categoryId || searchQuery || angebot || branche);
+    if (matchedCategory) {
+      searchQueriesToTry.push(matchedCategory.primaryOperator);
+      for (const wq of matchedCategory.crawlerQueries.web) {
+        if (!searchQueriesToTry.includes(wq)) {
+          searchQueriesToTry.push(wq);
+        }
+      }
+    } else if (contextText.includes('it') || contextText.includes('software') || contextText.includes('crm') || contextText.includes('cloud') || contextText.includes('saas') || contextText.includes('tech')) {
       searchQueriesToTry.push('IT-Dienstleister OR Softwarehaus OR IT-Systemhaus expandiert ODER Übernahme ODER Wachstum');
       searchQueriesToTry.push('IT-Systemhaus expandiert ODER neue Niederlassung ODER Übernahme');
       searchQueriesToTry.push('Softwareunternehmen Wachstum Finanzierung Neugeschäft');
@@ -207,11 +216,13 @@ export const handler = async (event) => {
       searchQueriesToTry.push(`${branche} expandiert ODER Übernahme ODER Wachstum ODER Neueröffnung`);
     }
 
-    if (searchQuery && searchQuery.length < 80 && !searchQuery.toLowerCase().includes('cloudbasierte')) {
+    if (searchQuery && searchQuery.length < 80 && !searchQuery.toLowerCase().includes('cloudbasierte') && !searchQueriesToTry.includes(searchQuery)) {
       searchQueriesToTry.unshift(searchQuery);
     }
     
-    searchQueriesToTry.push('Mittelstand Unternehmen Expansion ODER Übernahme ODER Investition');
+    if (searchQueriesToTry.length === 0) {
+      searchQueriesToTry.push('Mittelstand Unternehmen Expansion ODER Übernahme ODER Investition');
+    }
 
     // Kostenlose Multi-Quellen-Suche (Brave API -> DuckDuckGo -> Bing News RSS)
     let searchData = null;

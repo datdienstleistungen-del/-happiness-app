@@ -736,13 +736,12 @@ REGELN:
      * Bei M&A / Übernahme: ["M&A-Integrationsberater", "IT-Konsolidierungs-Dienstleister", "Change-Management-Consultants"]
      * Bei Tech-Migration / Investition: ["Cloud-Architekten", "ERP-Implementierungspartner", "Cybersecurity-Dienstleister"]
 
-KAUFSIGNAL-KATEGORIEN:
-1. EXPANSION / NEUBAU — Neue Standorte, Werksneubau, Vergrößerung, Büros
-2. INVESTITION / FUNDING — Finanzierungsrunden, Investitionen, Maschinenkauf
-3. HIRING — Strategische Stellenanzeigen & Personalaufbau
-4. M_A — Übernahmen, Fusionen, Joint Ventures, Partnerschaften
-5. TECH_MIGRATION — Cloud-Migration, Systemwechsel, ERP/CRM-Einführung
-6. REGULATION — Neue Gesetze, Compliance-Pflichten, Zertifizierungen
+KAUFSIGNAL-KATEGORIEN (5 B2B-KERN-BEREICHE):
+1. FÜHRUNGSKRÄFTEWECHSEL — C-Level Vakanzen, Vorstand, neuer Geschäftsführer, Aufsichtsrat, Vertriebsleitung
+2. KAPAZITÄTSERWEITERUNG & BAU — Spatenstich, Richtfest, Hallenbau (> 2.000 m²), neues Logistikzentrum, Neubau
+3. M&A / NACHFOLGE — Übernahmen, Mehrheitsbeteiligungen, Fusionen, Unternehmensnachfolge Mittelstand, Asset Deal
+4. SANIERUNG / EIGENVERWALTUNG — Insolvenz in Eigenverwaltung, Schutzschirmverfahren, Sanierungsexperte
+5. STELLENWACHSTUM — "Wir stellen ein", Expansionskurs, 5+ offene Stellen, massiver Personalaufbau
 
 Gib ein JSON zurück:
 {
@@ -753,7 +752,7 @@ Gib ein JSON zurück:
       "prioritaet": 1,
       "bewertung": "B - Hohe Chance. Warum?",
       "signal": "Was ist passiert? (Konkretes Ereignis / Anlass)",
-      "signal_kategorie": "EXPANSION | NEUBAU | INVESTITION | HIRING | M_A | TECH_MIGRATION | REGULATION",
+      "signal_kategorie": "Führungskräftewechsel / C-Level Vakanzen | Kapazitätserweiterung & Bau / Hallen | M&A / Übernahmen / Nachfolge | Insolvenz in Eigenverwaltung / Sanierung | Exponentielles Stellenwachstum",
       "relevanz": "Konkretes Kaufsignal & Relevanz für den B2B-Vertrieb",
       "target_group_match": 85,
       "is_potential_buyer": true,
