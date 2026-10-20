@@ -14,26 +14,8 @@ import { useLead } from '../context/LeadContext'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations.jsx'
 import { ContextHelpButton } from '../context/GuideContext'
+import { TRIGGER_CATEGORIES } from '../lib/nexus-validation'
 import './AngebotsanalysePage.css'
-
-const PRESET_IDEAS = [
-  {
-    label: "Vertriebsexpansion",
-    text: "Jobanzeigen Vertriebsleiter Expansion DACH"
-  },
-  {
-    label: "Neubau Industriehalle",
-    text: "Neubau Industriehalle Werkserweiterung Bayern"
-  },
-  {
-    label: "IT-Leitung / CISO",
-    text: "Stellenanzeigen IT-Leiter CISO Cloud Transformation"
-  },
-  {
-    label: "Investition & M&A",
-    text: "Millionen Investition Übernahme Mittelstand Deutschland"
-  }
-]
 
 export default function AngebotsanalysePage() {
   const { t, lang } = useLanguage()
@@ -43,6 +25,7 @@ export default function AngebotsanalysePage() {
   
   // View states: false = show active profile; true = create / analyze new offering
   const [isCreatingNew, setIsCreatingNew] = useState(false)
+  const [selectedCategoryId, setSelectedCategoryId] = useState('')
   const [angebotInput, setAngebotInput] = useState('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisResult, setAnalysisResult] = useState(null)
@@ -95,11 +78,24 @@ export default function AngebotsanalysePage() {
   const applyAiResult = (data, rawInput) => {
     setAnalysisResult(data)
 
-    // 1. Offering Name
+    // 1. Kompaktes Token-Spar-Format ({ trigger_type, company_name, region, industry, buyer_target_group, ... })
+    if (data?.trigger_type || data?.buyer_target_group) {
+      const nameCandidate = data.company_name || data.trigger_type || rawInput?.split(/[,.\n]/)[0]?.trim() || 'NeXus B2B Signal'
+      setFormOfferingName(nameCandidate.slice(0, 60))
+      
+      const audience = data.buyer_target_group || (data.industry ? `B2B-Entscheider (${data.industry})` : 'B2B Dienstleister')
+      setFormTargetAudience(audience)
+
+      const pos = `${data.trigger_type || 'Kaufsignal'} · Branche: ${data.industry || 'B2B'} · Region: ${data.region || 'DACH'}${data.evidence_quote ? ` — "${data.evidence_quote}"` : ''}`
+      setFormPositioning(pos)
+      trackOfferingAnalyzed(nameCandidate, audience)
+      return
+    }
+
+    // 2. Standard-Format Fallback
     const nameCandidate = rawInput?.split(/[,.\n]/)[0]?.trim() || 'NeXus B2B Angebot'
     setFormOfferingName(nameCandidate.slice(0, 60))
 
-    // 2. Target Audience
     let audienceStr = ''
     if (typeof data.zielgruppe === 'string') {
       audienceStr = data.zielgruppe
@@ -113,7 +109,6 @@ export default function AngebotsanalysePage() {
     }
     setFormTargetAudience(audienceStr)
 
-    // 3. Positioning / Value Proposition
     let posStr = ''
     if (data.pitch_grundlage?.value_proposition) {
       posStr = data.pitch_grundlage.value_proposition
@@ -132,7 +127,7 @@ export default function AngebotsanalysePage() {
   const handleRunAnalysis = async (e) => {
     if (e) e.preventDefault()
     if (!angebotInput.trim()) {
-      setError('Bitte gib kurz deinen Suchauftrag ein.')
+      setError('Bitte wähle eine Kategorie aus dem Katalog oder gib kurz deinen Suchauftrag ein.')
       return
     }
 
@@ -148,6 +143,16 @@ export default function AngebotsanalysePage() {
         lang: lang || 'de',
         max_age_days: maxAgeDays
       })
+
+      const rawText = typeof data === 'string'
+        ? data
+        : (data?.response || data?.text || data?.content || '');
+
+      if (rawText.trim().includes('KEIN_VALIDES_SIGNAL') || data?.is_valid_signal === false) {
+        setError('Token-Bremse aktiv: Kein valides B2B-Kaufsignal erkannt. Das Ereignis ist entweder nicht exakt belegbar (Datum, Ort, Unternehmen) oder erzeugt keinen geschäftlichen Handlungsdruck. Es wurden keine weiteren Token verbraucht.')
+        setIsAnalyzing(false)
+        return
+      }
 
       if (!data) {
         throw new Error('Keine Antwort von der NeXus AI erhalten.')
@@ -317,32 +322,112 @@ export default function AngebotsanalysePage() {
           </div>
 
           <form onSubmit={handleRunAnalysis} className="single-input-form">
-            <div className="textarea-wrapper">
-              <textarea
-                className="single-input-textarea"
-                rows={3}
-                placeholder={t('nexus.offeringAnalysis.placeholder', 'z.B. Jobanzeigen Vertriebsleiter Expansion, Neubau Industriehalle Bayern')}
-                value={angebotInput}
-                onChange={(e) => setAngebotInput(e.target.value)}
-                disabled={isAnalyzing}
-                autoFocus
-              />
+            
+            {/* 1. Dropdown-Katalog statt Freitext-Eingabe (5 Kern-Kategorien) */}
+            <div className="trigger-catalog-wrapper" style={{
+              background: 'linear-gradient(135deg, rgba(17, 20, 26, 0.95) 0%, rgba(9, 13, 22, 0.95) 100%)',
+              border: '1px solid rgba(56, 189, 248, 0.35)',
+              borderRadius: '12px',
+              padding: '16px 18px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.35)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                <label htmlFor="triggerCategoryDropdown" style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Layers size={16} color="#38bdf8" />
+                  <span>Vorgegebene Kern-Kategorie wählen (Dropdown-Katalog):</span>
+                </label>
+                <span style={{ fontSize: '0.72rem', color: '#10b981', fontFamily: 'monospace', fontWeight: 700, background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                  ✓ Strikter B2B-Katalog (Token-Bremse aktiv)
+                </span>
+              </div>
 
-              {/* Inspiration Chips */}
-              <div className="preset-chips-row">
-                <span className="preset-label">{t('nexus.offeringAnalysis.inspiration', 'Inspiration:')}</span>
-                {PRESET_IDEAS.map((preset, idx) => (
+              <select
+                id="triggerCategoryDropdown"
+                value={selectedCategoryId}
+                onChange={(e) => {
+                  const catId = e.target.value;
+                  setSelectedCategoryId(catId);
+                  const found = TRIGGER_CATEGORIES.find(c => c.id === catId);
+                  if (found) {
+                    setAngebotInput(found.searchQuery);
+                  }
+                }}
+                disabled={isAnalyzing}
+                style={{
+                  width: '100%',
+                  padding: '11px 14px',
+                  background: '#090d16',
+                  border: '1px solid #334155',
+                  borderRadius: '8px',
+                  color: '#f8fafc',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  outline: 'none',
+                  boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.4)'
+                }}
+              >
+                <option value="">-- Bitte eine der 5 B2B-Kern-Kategorien wählen --</option>
+                {TRIGGER_CATEGORIES.map(cat => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+
+              {/* 1-Click Schnellauswahl-Pills */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>1-Klick-Auswahl:</span>
+                {TRIGGER_CATEGORIES.map(cat => (
                   <button
-                    key={idx}
+                    key={cat.id}
                     type="button"
-                    className="preset-chip-btn"
-                    onClick={() => setAngebotInput(preset.text)}
+                    onClick={() => {
+                      setSelectedCategoryId(cat.id);
+                      setAngebotInput(cat.searchQuery);
+                    }}
                     disabled={isAnalyzing}
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: '0.73rem',
+                      borderRadius: '6px',
+                      background: selectedCategoryId === cat.id ? 'rgba(56, 189, 248, 0.2)' : 'rgba(255, 255, 255, 0.04)',
+                      border: `1px solid ${selectedCategoryId === cat.id ? '#38bdf8' : 'rgba(255, 255, 255, 0.08)'}`,
+                      color: selectedCategoryId === cat.id ? '#38bdf8' : '#cbd5e1',
+                      fontWeight: selectedCategoryId === cat.id ? 700 : 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
                   >
-                    {preset.label}
+                    Kat. {cat.number}: {cat.title}
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Manuelle Verfeinerung (Optionales Freitext-Feld) */}
+            <div className="textarea-wrapper">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 500 }}>
+                  Suchauftrag / Prompt-Details (automatisch durch Katalog befüllt, editierbar):
+                </span>
+                {selectedCategoryId && (
+                  <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace' }}>
+                    Katalog-Preset aktiv
+                  </span>
+                )}
+              </div>
+              <textarea
+                className="single-input-textarea"
+                rows={3}
+                placeholder="Wähle oben eine Kern-Kategorie oder gib hier eigene Stichworte ein..."
+                value={angebotInput}
+                onChange={(e) => setAngebotInput(e.target.value)}
+                disabled={isAnalyzing}
+              />
             </div>
 
             {/* Aktualitäts-Regler (Slider) */}

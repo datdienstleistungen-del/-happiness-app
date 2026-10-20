@@ -667,6 +667,9 @@ INHALT:
 ${pageText.substring(0, 3000)}
 
 REGELN:
+0. TOKEN-SPAR-FILTER (SOFORTABBRUCH):
+   - Ist das Ereignis exakt belegbar (Datum, Ort, Unternehmen)? -> Falls NEIN, antworte NUR: "KEIN_VALIDES_SIGNAL"
+   - Besteht dadurch geschäftlicher Handlungsdruck für B2B-Dienstleister? -> Falls NEIN, antworte NUR: "KEIN_VALIDES_SIGNAL"
 1. NUR echte Firmennamen aus dem Text. Erfinde KEINE Unternehmen und nutze NIEMALS Platzhalter wie "Echter Firmenname", "Musterfirma" oder "Test GmbH".
 2. KÄUFER-VS-ANBIETER FILTER (WICHTIG - ANTI-RICOH-FILTER):
    - Ist das gefundene Unternehmen ein potenzieller KÄUFER des Angebots?
@@ -895,7 +898,47 @@ Gib ein JSON zurück:
     };
   }
 
-  // Fall 3: LLM lieferte Antwort -> Zod-Parsing und strenge Datumsvalidierung
+  // Fall 3: Sofortiger Token-Spar-Abbruch bei unqualifizierten Inhalten
+  if (llmResult?.text && (llmResult.text.includes('KEIN_VALIDES_SIGNAL') || llmResult.text.trim() === 'KEIN_VALIDES_SIGNAL')) {
+    console.log(`[ScanJob] Token-Spar-Bremse aktiv für ${domain}: KEIN_VALIDES_SIGNAL`);
+    const updatedPending = pendingUrls.slice(1);
+    const isDone = updatedPending.length === 0;
+    const last_message = `${domain} — kein valides B2B-Signal (Token-Spar-Bremse aktiv).`;
+
+    const newResults = [...partialResults, {
+      url: nextUrl.url,
+      title: nextUrl.title,
+      domain,
+      source_type: nextUrl.source_type || 'NEWS',
+      status: 'skipped',
+      analysis_status: 'skipped',
+      reason: 'kein_valides_signal',
+      triggers: [],
+      extracted_at: new Date().toISOString()
+    }];
+
+    await client
+      .from('nexus_scan_jobs')
+      .update({
+        pending_urls: updatedPending,
+        partial_results: newResults,
+        current_step: job.current_step + 1,
+        last_message,
+        status: isDone ? 'done' : 'running',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', job.id);
+
+    return {
+      status: isDone ? 'done' : 'running',
+      current_step: job.current_step + 1,
+      total_steps: job.total_steps,
+      last_message,
+      partial_results: newResults
+    };
+  }
+
+  // Fall 4: LLM lieferte Antwort -> Zod-Parsing und strenge Datumsvalidierung
   if (extractJson(llmResult.text) === null) {
     console.warn(`[ScanJob] JSON parse error for ${domain}: kein valides JSON`);
   }

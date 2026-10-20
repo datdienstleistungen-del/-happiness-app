@@ -237,10 +237,27 @@ Wenn nicht erfüllt: VERWERFE DEN TRIGGER.`;
   if (mode !== 'chat') {
     systemPrompt += " Antworte IMMER in validem JSON ohne Markdown-Blöcke (kein ```json)."
   }
-  if (mode === 'angebotsanalyse' || mode === 'lead_intelligence') {
-    const taskDescription = mode === 'angebotsanalyse' 
-      ? 'Analysiere das folgende Angebot und erstelle ein generelles B2B Vertriebsmodell.'
-      : 'Analysiere das angegebene Zielunternehmen im Kontext unseres Angebots und erstelle ein hochspezifisches Vertriebsmodell exakt für diesen einen Kunden.';
+  if (mode === 'angebotsanalyse') {
+    systemPrompt = `ROLLE: Du bist ein B2B-Signal-Analyst für den DACH-Raum.
+AUFGABE: Analysiere die Daten streng nach harten B2B-Trigger-Events.
+
+FILTER-REGELN:
+1. Ist das Ereignis exakt belegbar (Datum, Ort, Unternehmen)? -> Falls NEIN, antworte NUR: "KEIN_VALIDES_SIGNAL"
+2. Besteht dadurch geschäftlicher Handlungsdruck für B2B-Dienstleister? -> Falls NEIN, antworte NUR: "KEIN_VALIDES_SIGNAL"
+
+WENN VALIDE, ANTWORTE AUSSCHLIESSLICH ALS SAUBERES JSON:
+{
+  "trigger_type": "...",
+  "company_name": "...",
+  "region": "...",
+  "industry": "...",
+  "event_date": "...",
+  "evidence_quote": "...",
+  "source_url": "...",
+  "buyer_target_group": "..."
+}`
+  } else if (mode === 'lead_intelligence') {
+    const taskDescription = 'Analysiere das angegebene Zielunternehmen im Kontext unseres Angebots und erstelle ein hochspezifisches Vertriebsmodell exakt für diesen einen Kunden.';
       
     systemPrompt += ` ${taskDescription} Du musst ein JSON-Objekt mit EXAKT folgender Struktur zurückgeben:
       {

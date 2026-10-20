@@ -197,6 +197,31 @@ export function parseScanTriggers(text) {
   if (parsed === null || parsed === undefined) {
     return { trigger_events: [] };
   }
+  // Single JSON Support für das kompakte Token-Spar-Format
+  if (parsed && (parsed.trigger_type || parsed.company_name)) {
+    return {
+      trigger_events: [{
+        firmenname: parsed.company_name || 'Unbekanntes Unternehmen',
+        branche: parsed.industry || 'B2B',
+        prioritaet: 1,
+        bewertung: parsed.trigger_type ? `Verifiziertes Signal: ${parsed.trigger_type}` : 'B - Hohe Chance',
+        signal: parsed.evidence_quote || parsed.trigger_type || '',
+        signal_kategorie: parsed.trigger_type || 'EXPANSION',
+        relevanz: parsed.buyer_target_group || 'Hohe Vertriebsrelevanz',
+        target_group_match: 85,
+        is_potential_buyer: true,
+        match_reason: `Zielgruppe: ${parsed.buyer_target_group || 'B2B Dienstleister'}`,
+        event_date: parsed.event_date || null,
+        published_at: parsed.event_date || null,
+        evidence: parsed.evidence_quote || '',
+        quelle: parsed.source_url || null,
+        blind_location: parsed.region || '',
+        event_fact: parsed.evidence_quote || parsed.trigger_type || '',
+        business_opportunity: `[Hypothese] ${parsed.buyer_target_group ? `Bedarf für ${parsed.buyer_target_group}` : 'Geschäftlicher Handlungsdruck'}`,
+        target_buyers: parsed.buyer_target_group ? [parsed.buyer_target_group] : []
+      }]
+    };
+  }
   const result = scanTriggerExtractionSchema.safeParse(parsed);
   return result.success ? result.data : { trigger_events: [] };
 }

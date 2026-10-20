@@ -51,6 +51,54 @@ export function isPlaceholderCompany(name) {
   });
 }
 
+export const TRIGGER_CATEGORIES = [
+  {
+    id: 'clevel_vakanzen',
+    number: 1,
+    title: 'Führungskräftewechsel / C-Level Vakanzen',
+    targetAudience: 'Headhunter / Interim',
+    label: '1. Führungskräftewechsel / C-Level Vakanzen (Ziel: Headhunter / Interim)',
+    searchQuery: 'Führungskräftewechsel C-Level Vakanz Vorstand Geschäftsführung Vertriebsleitung DACH',
+    triggerType: 'Führungskräftewechsel / C-Level Vakanzen'
+  },
+  {
+    id: 'bau_kapazitaet',
+    number: 2,
+    title: 'Kapazitätserweiterung & Bau / Hallen (> 2.000 m²)',
+    targetAudience: 'Industrie-Bauer / Logistik',
+    label: '2. Kapazitätserweiterung & Bau / Hallen (> 2.000 m²) (Ziel: Industrie-Bauer / Logistik)',
+    searchQuery: 'Neubau Industriehalle Werkserweiterung Logistikzentrum Gewerbebau DACH',
+    triggerType: 'Kapazitätserweiterung & Bau / Hallen'
+  },
+  {
+    id: 'm_and_a_nachfolge',
+    number: 3,
+    title: 'M&A / Übernahmen / Nachfolge im Mittelstand',
+    targetAudience: 'M&A / IT-Integratoren',
+    label: '3. M&A / Übernahmen / Nachfolge im Mittelstand (Ziel: M&A / IT-Integratoren)',
+    searchQuery: 'Übernahme Unternehmensnachfolge Fusion M&A Mittelstand DACH',
+    triggerType: 'M&A / Übernahmen / Nachfolge im Mittelstand'
+  },
+  {
+    id: 'insolvenz_sanierung',
+    number: 4,
+    title: 'Insolvenz in Eigenverwaltung / Sanierung',
+    targetAudience: 'Sanierungsberater / Anwälte',
+    label: '4. Insolvenz in Eigenverwaltung / Sanierung (Ziel: Sanierungsberater / Anwälte)',
+    searchQuery: 'Insolvenz in Eigenverwaltung Schutzschirmverfahren Restrukturierung Sanierung DACH',
+    triggerType: 'Insolvenz in Eigenverwaltung / Sanierung'
+  },
+  {
+    id: 'stellenwachstum',
+    number: 5,
+    title: 'Exponentielles Stellenwachstum (5+ offene Rollen)',
+    targetAudience: 'Recruiting-Agenturen',
+    label: '5. Exponentielles Stellenwachstum (5+ offene Rollen) (Ziel: Recruiting-Agenturen)',
+    searchQuery: 'Stellenanzeigen massiver Ausbau 5 offene Stellen Expansion Recruiting DACH',
+    triggerType: 'Exponentielles Stellenwachstum (5+ offene Rollen)'
+  }
+];
+
 const VENDOR_PATTERNS = [
   'ricoh', 'canon', 'konica minolta', 'xerox', 'bechtle', 'computacenter',
   'atlassian', 'lg electronics', 'lg', 'salesforce', 'hubspot', 'microsoft',
