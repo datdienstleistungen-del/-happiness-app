@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { assertQualifiedOpportunity } from './nexus-validation'
+import { assertQualifiedOpportunity, isTestOffering } from './nexus-validation'
 
 /**
  * NeXus Database Helper V2 (Revenue OS Architecture)
@@ -90,7 +90,9 @@ export async function getOfferings(userId) {
     .eq('user_id', userId)
     .is('deleted_at', null)
     .order('created_at', { ascending: false });
-  return error ? [] : data;
+  if (error || !data) return [];
+  // Automatische Bereinigung: Schließe Dummy-/Test-Einträge von vornherein aus
+  return data.filter(o => !isTestOffering(o));
 }
 
 export async function getOfferingById(id) {
@@ -108,6 +110,54 @@ export async function updateOffering(offeringId, data) {
   
   if (error) { console.error('[NeXus DB] Update offering error:', error.message); return null; }
   return result;
+}
+
+export async function deleteOffering(offeringId) {
+  const { data, error } = await supabase
+    .from('nexus_offerings')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', offeringId)
+    .select();
+  
+  if (error) {
+    console.error('[NeXus DB] Delete offering error:', error.message);
+    const { error: hardErr } = await supabase.from('nexus_offerings').delete().eq('id', offeringId);
+    if (hardErr) console.error('[NeXus DB] Hard delete offering error:', hardErr.message);
+    return !hardErr;
+  }
+  return true;
+}
+
+export async function cleanupTestOfferings(userId) {
+  try {
+    const { data: offs, error } = await supabase
+      .from('nexus_offerings')
+      .select('id, offering_name, target_audience, positioning, raw_description')
+      .eq('user_id', userId)
+      .is('deleted_at', null);
+
+    if (error || !offs) return { deletedCount: 0, deletedIds: [] };
+
+    const testOfferings = offs.filter(isTestOffering);
+    const testIds = testOfferings.map(o => o.id);
+
+    if (testIds.length === 0) return { deletedCount: 0, deletedIds: [] };
+
+    const { error: patchError } = await supabase
+      .from('nexus_offerings')
+      .update({ deleted_at: new Date().toISOString() })
+      .in('id', testIds);
+
+    if (patchError) {
+      console.warn('[NeXus DB] Soft-delete error, attempting hard delete:', patchError.message);
+      await supabase.from('nexus_offerings').delete().in('id', testIds);
+    }
+
+    return { deletedCount: testIds.length, deletedIds: testIds };
+  } catch (err) {
+    console.error('[NeXus DB] cleanupTestOfferings error:', err);
+    return { deletedCount: 0, deletedIds: [], error: err.message };
+  }
 }
 
 // -----------------------------------------------------------------------------

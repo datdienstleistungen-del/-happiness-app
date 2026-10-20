@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { useAuth } from './AuthContext'
 import * as db from '../lib/nexus-db'
-import { isPlaceholderCompany, computeTargetMatchScore, isVendorCompany, assertQualifiedOpportunity, validatePurchaseIntent } from '../lib/nexus-validation'
+import { isPlaceholderCompany, computeTargetMatchScore, isVendorCompany, assertQualifiedOpportunity, validatePurchaseIntent, isTestOffering } from '../lib/nexus-validation'
 
 /**
  * NeXus LeadContext (Revenue OS)
@@ -36,14 +36,19 @@ export function LeadProvider({ children }) {
       // Baustelle 1: Filtere Platzhalter-Einträge ("Echter Firmenname", etc.) aus Produktivansicht
       const cleanOpps = (opps || []).filter(o => !isPlaceholderCompany(o.nexus_companies?.name || o.company?.name));
       const cleanTrigs = (trigs || []).filter(t => !isPlaceholderCompany(t.company_name || t.nexus_companies?.name));
+      const cleanOffs = (offs || []).filter(o => !isTestOffering(o));
 
       setOpportunities(cleanOpps)
       setTriggers(cleanTrigs)
-      setOfferings(offs || [])
+      setOfferings(cleanOffs)
       setRadarHits(hits || [])
       
-      if (offs && offs.length > 0 && !activeOfferingId) {
-        setActiveOfferingId(offs[0].id)
+      if (cleanOffs && cleanOffs.length > 0) {
+        if (!activeOfferingId || !cleanOffs.some(o => o.id === activeOfferingId)) {
+          setActiveOfferingId(cleanOffs[0].id)
+        }
+      } else {
+        setActiveOfferingId(null)
       }
     } catch (err) {
       console.error('[LeadContext] Error loading data:', err)

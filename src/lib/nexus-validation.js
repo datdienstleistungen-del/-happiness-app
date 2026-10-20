@@ -51,6 +51,158 @@ export function isPlaceholderCompany(name) {
   });
 }
 
+/**
+ * Erkennt unvollständige Angebote, Test-Einträge oder fehlerhafte Dummy-Profile
+ * (z. B. "bitte um infö", "software käufer", "testangebot", Platzhalter).
+ * @param {object} offering
+ * @returns {boolean} true wenn Test- oder Dummy-Eintrag
+ */
+export function isTestOffering(offering) {
+  if (!offering) return true;
+  const name = (offering.offering_name || offering.product_name || '').toLowerCase().trim();
+  const audience = (offering.target_audience || '').toLowerCase().trim();
+  const pos = (offering.positioning || '').toLowerCase().trim();
+  const raw = (offering.raw_description || '').toLowerCase().trim();
+
+  // 1. Phrasen und Signalwörter für alte Test- und Support-Eingaben
+  const testPatterns = [
+    'bitte um inf',
+    'software käufer',
+    'software kaeufer',
+    'testangebot',
+    'test-lead',
+    'test lead',
+    'test analyst',
+    '*„bitte',
+    'analyst@test',
+    'test@',
+    '@test-nexus.de',
+    'e2e test'
+  ];
+
+  if (testPatterns.some(p => name.includes(p) || audience.includes(p) || pos.includes(p) || raw.includes(p))) {
+    return true;
+  }
+
+  // 2. Unvollständige oder zu kurze Einträge
+  if (name === 'test' || name.startsWith('test ')) return true;
+  if (name.length < 4) return true;
+  if (!audience && !pos) return true;
+
+  return false;
+}
+
+/**
+ * 5 Standardisierte B2B Trigger-Vorlagen (Presets) für die Angebotsanalyse
+ */
+export const B2B_TRIGGER_PRESETS = [
+  {
+    id: 'clevel_vakanzen',
+    key: 'clevel',
+    number: 1,
+    badge: '[C-LEVEL WECHSEL]',
+    title: 'Führungskräftewechsel & Vakanzen',
+    label: '1. [C-LEVEL WECHSEL] Führungskräftewechsel & Vakanzen (Ziel: Headhunter / Interim)',
+    shortLabel: '[C-LEVEL WECHSEL] Führungskräftewechsel & Vakanzen',
+    offeringName: '[C-LEVEL WECHSEL] Führungskräftewechsel & Vakanzen',
+    targetAudience: 'Headhunter / Interim / Executive Search (Entscheider: Managing Partner, Personalberater)',
+    positioning: 'Echtzeit-Identifikation von Vakanzen, Abgängen und Neubesetzungen in Vorstand und Geschäftsführung im DACH-Raum.',
+    searchQuery: 'site:presseportal.de OR site:eqs-news.com "tritt zurück" OR "neuer Geschäftsführer" OR "Aufsichtsrat" OR "Vakanz"',
+    crawlerOperator: 'site:presseportal.de OR site:eqs-news.com "tritt zurück" OR "neuer Geschäftsführer" OR "Aufsichtsrat" OR "Vakanz"',
+    maxAgeDays: 14,
+    demandContexts: [
+      'Geschäftsführer-Wechsel und Vakanzen',
+      'Neubesetzung von C-Level Rollen und Vorstand',
+      'Interim-Management Bedarf bei Umstrukturierungen',
+      'Suche nach spezialisierten Headhuntern'
+    ]
+  },
+  {
+    id: 'bau_kapazitaet',
+    key: 'bau',
+    number: 2,
+    badge: '[EXPANSION & BAU]',
+    title: 'Werkserweiterung, Hallenneubau & Logistik (> 2.000 m²)',
+    label: '2. [EXPANSION & BAU] Werkserweiterung, Hallenneubau & Logistik (> 2.000 m²) (Ziel: Industrie-Bau / Logistik)',
+    shortLabel: '[EXPANSION & BAU] Werkserweiterung & Hallenneubau (> 2.000 m²)',
+    offeringName: '[EXPANSION & BAU] Werkserweiterung & Hallenneubau (> 2.000 m²)',
+    targetAudience: 'Industrie-Bau / Logistik / Generalunternehmer (Entscheider: Geschäftsführung, Bauleitung, Expansionsleiter)',
+    positioning: 'Identifikation von Spatenstichen, Hallenneubauten und Standorterweiterungen im produzierenden Gewerbe.',
+    searchQuery: '"Spatenstich" OR "Richtfest" OR "Investition in Höhe von" OR "neues Logistikzentrum" OR "Neubau"',
+    crawlerOperator: '"Spatenstich" OR "Richtfest" OR "Investition in Höhe von" OR "neues Logistikzentrum" OR "Neubau"',
+    maxAgeDays: 21,
+    demandContexts: [
+      'Neubau von Gewerbe- und Industriehallen',
+      'Werkserweiterungen und Standorterschließung',
+      'Investitionen in Logistik- und Produktionskapazitäten',
+      'Ausschreibungen für Generalunternehmer und Hallenbau'
+    ]
+  },
+  {
+    id: 'm_and_a_nachfolge',
+    key: 'm_and_a',
+    number: 3,
+    badge: '[M&A / NACHFOLGE]',
+    title: 'Übernahmen, Nachfolge & Fusionen im Mittelstand',
+    label: '3. [M&A / NACHFOLGE] Übernahmen, Nachfolge & Fusionen im Mittelstand (Ziel: M&A / IT-Integratoren)',
+    shortLabel: '[M&A / NACHFOLGE] Übernahmen & Nachfolge im Mittelstand',
+    offeringName: '[M&A / NACHFOLGE] Übernahmen & Nachfolge im Mittelstand',
+    targetAudience: 'M&A-Berater / Corporate Finance / IT-Integratoren (Entscheider: M&A Partner, Beteiligungsmanager)',
+    positioning: 'Frühwarnsystem für Unternehmensnachfolgen, Fusionen, Mehrheitsübernahmen und Carve-outs im Mittelstand.',
+    searchQuery: '"übernimmt" OR "Mehrheitsbeteiligung" OR "Unternehmensnachfolge" OR "Fusion" OR "Asset Deal"',
+    crawlerOperator: '"übernimmt" OR "Mehrheitsbeteiligung" OR "Unternehmensnachfolge" OR "Fusion" OR "Asset Deal"',
+    maxAgeDays: 30,
+    demandContexts: [
+      'Unternehmensnachfolgen im Mittelstand',
+      'Strategische Übernahmen und Beteiligungskäufe',
+      'Post-Merger IT-Integration und Restrukturierung',
+      'M&A-Beratung und Due-Diligence Mandate'
+    ]
+  },
+  {
+    id: 'insolvenz_sanierung',
+    key: 'sanierung',
+    number: 4,
+    badge: '[SANIERUNG]',
+    title: 'Schutzschirmverfahren & Insolvenz in Eigenverwaltung',
+    label: '4. [SANIERUNG] Schutzschirmverfahren & Insolvenz in Eigenverwaltung (Ziel: Sanierungsberater / Anwälte)',
+    shortLabel: '[SANIERUNG] Schutzschirmverfahren & Insolvenz in Eigenverwaltung',
+    offeringName: '[SANIERUNG] Schutzschirmverfahren & Insolvenz in Eigenverwaltung',
+    targetAudience: 'Sanierungsberater / Restrukturierungs-Anwälte / Interim-CFOs (Entscheider: Insolvenzverwalter, Sanierungsexperten)',
+    positioning: 'Echtzeit-Signale zu Sanierungsfällen in Eigenverwaltung und Schutzschirmverfahren vor der Zerschlagung.',
+    searchQuery: 'site:insolvenzbekanntmachungen.de OR "Schutzschirmverfahren" OR "Insolvenz in Eigenverwaltung" OR "Sanierungsexperte"',
+    crawlerOperator: 'site:insolvenzbekanntmachungen.de OR "Schutzschirmverfahren" OR "Insolvenz in Eigenverwaltung" OR "Sanierungsexperte"',
+    maxAgeDays: 14,
+    demandContexts: [
+      'Schutzschirmverfahren und Eigenverwaltung',
+      'Restrukturierungs- und Sanierungsberatung',
+      'Fortführungskonzepte und M&A aus der Insolvenz',
+      'Interim-Management für Krisensituationen'
+    ]
+  },
+  {
+    id: 'stellenwachstum',
+    key: 'stellenwachstum',
+    number: 5,
+    badge: '[HIRING SURGE]',
+    title: 'Exponentielles Stellenwachstum (5+ offene Positionen)',
+    label: '5. [HIRING SURGE] Exponentielles Stellenwachstum (5+ offene Positionen) (Ziel: Recruiting-Agenturen)',
+    shortLabel: '[HIRING SURGE] Exponentielles Stellenwachstum (5+ Positionen)',
+    offeringName: '[HIRING SURGE] Exponentielles Stellenwachstum (5+ Positionen)',
+    targetAudience: 'Recruiting-Agenturen / Personalvermittler / RPO-Dienstleister (Entscheider: HR-Leiter, Talent Acquisition)',
+    positioning: 'Aufspüren von Unternehmen auf starkem Expansionskurs mit 5+ zeitgleich offenen Schlüsselpositionen.',
+    searchQuery: '"Wir stellen ein" OR "Expansionskurs" OR 5+ parallele Stellenanzeigen',
+    crawlerOperator: '"Wir stellen ein" OR "Expansionskurs" OR 5+ parallele Stellenanzeigen',
+    maxAgeDays: 14,
+    demandContexts: [
+      'Akuter Personalbedarf und Recruiting-Engpässe',
+      'Schnelles Teamwachstum bei Expansionsfinanzierung',
+      'Unterstützung durch externe Headhunter und Personalagenturen',
+      'Aufbau neuer Vertriebs- oder Entwicklungsstandorte'
+    ]
+  }
+];
+
 export const TRIGGER_CATEGORIES = [
   {
     id: 'clevel_vakanzen',
