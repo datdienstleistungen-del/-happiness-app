@@ -14,7 +14,8 @@ export default function SignalPublishSection({
   overrideCompany = null,
   onPublished = null
 }) {
-  const [isChecked, setIsChecked] = useState(Boolean(isPreVerified))
+  // Expliziter Schutz: Checkbox startet IMMER unchecked! Keine automatische Vor-Aktivierung.
+  const [isChecked, setIsChecked] = useState(false)
   const [analystName, setAnalystName] = useState('Harro Goerndt')
   const [verificationNote, setVerificationNote] = useState('Primärquelle & Datum validiert – 100% faktengeprüft')
   const [isPublishing, setIsPublishing] = useState(false)
@@ -24,17 +25,14 @@ export default function SignalPublishSection({
   const [copiedLink, setCopiedLink] = useState(false)
   const [copiedMessage, setCopiedMessage] = useState(false)
 
-  // Wenn von der 5-Punkte-Prüfung oder Lead-Status verifiziert, automatisch freischalten
-  React.useEffect(() => {
-    if (isPreVerified) {
-      setIsChecked(true)
-    }
-  }, [isPreVerified])
-
   const resolvedCompName = overrideCompany || resolveTriggerCompanyName(trigger, opportunity)
 
   const handlePublish = async () => {
-    if (!isChecked && !isPreVerified) return
+    // Erzwingt, dass Harro die Checkbox AKTIV und BEWUSST angeklickt hat
+    if (!isChecked) {
+      alert('Bitte bestätigen Sie die Prüfung der Primärquelle durch Aktivieren der Checkbox.');
+      return;
+    }
 
     setIsPublishing(true)
     try {

@@ -202,40 +202,36 @@ export function buildSignalPayload({
   const slug = generateSignalSlug(blindCompany, `${topicKeyword}-${blindLocation}`)
   const signalId = `sig-${slug}-${Date.now().toString().slice(-4)}`
 
-  // Decision Maker Mapping
-  const dmName = foundContact?.name || trigger?.ansprechpartner?.name || 'Dr. M. Weber'
-  const dmRole = foundContact?.role || trigger?.ansprechpartner?.rolle || 'Geschäftsführung / Head of Business Unit'
-  const dmEmail = (foundContact?.email && foundContact.email !== 'UNKNOWN') 
+  // Decision Maker Mapping: Strikt wahrheitsgetreu - NIEMALS erfundene Namen oder Fake-Nummern!
+  const realContactName = foundContact?.name || trigger?.ansprechpartner?.name || null
+  const realContactRole = foundContact?.role || trigger?.ansprechpartner?.rolle || null
+  const realContactEmail = (foundContact?.email && foundContact.email !== 'UNKNOWN') 
     ? foundContact.email 
-    : trigger?.ansprechpartner?.email || `kontakt@${companyName.toLowerCase().replace(/[^a-z0-9]/g, '')}.de`
-  const dmPhone = foundContact?.phone || trigger?.ansprechpartner?.telefon || '+49 (0) 89 2400-00'
+    : trigger?.ansprechpartner?.email || null
+  const realContactPhone = foundContact?.phone || trigger?.ansprechpartner?.telefon || null
 
-  const decisionMakers = [
-    {
-      name: dmName,
-      role: dmRole,
-      email: dmEmail,
-      phone: dmPhone,
-      linkedIn: `linkedin.com/search/results/all/?keywords=${encodeURIComponent(companyName + ' ' + dmName)}`,
-      responsibility: 'Gesamtverantwortung für Initiierung, Budgetallokation und externe Vergaben'
-    },
-    {
-      name: 'Leitung Personal / Talent Acquisition (verifiziert)',
-      role: 'Head of People & Organization / HR-Director',
-      email: `hr-leitung@${companyName.toLowerCase().replace(/[^a-z0-9]/g, '')}.de`,
-      phone: dmPhone.slice(0, -2) + '22',
-      linkedIn: `linkedin.com/search/results/all/?keywords=${encodeURIComponent(companyName + ' HR Director')}`,
-      responsibility: 'Operative Besetzungsprozesse & Freigabe externer Headhunter-Mandate'
-    },
-    {
-      name: 'Leitung Finanzen / Controlling (verifiziert)',
-      role: 'Chief Financial Officer (CFO)',
-      email: `cfo@${companyName.toLowerCase().replace(/[^a-z0-9]/g, '')}.de`,
-      phone: dmPhone.slice(0, -2) + '19',
-      linkedIn: `linkedin.com/search/results/all/?keywords=${encodeURIComponent(companyName + ' CFO')}`,
-      responsibility: 'Kostenstellen-Freigabe und Investitionsgenehmigung'
-    }
-  ]
+  const decisionMakers = []
+  
+  if (realContactName) {
+    decisionMakers.push({
+      name: realContactName,
+      role: realContactRole || 'Verifizierter Entscheider / Ansprechpartner',
+      email: realContactEmail || 'Verifizierung über Telefonzentrale',
+      phone: realContactPhone || 'Zentrale des Zielunternehmens',
+      linkedIn: `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(companyName + ' ' + realContactName)}`,
+      responsibility: 'Verantwortlich für fachliche Prüfung, Initiierung und Vergabe'
+    })
+  } else {
+    // Wenn kein konkreter Personenname ermittelt werden konnte: Funktionale Rolle ohne Personen-Erfindung
+    decisionMakers.push({
+      name: 'Funktionale Entscheider-Ebene (Kein Personen-Datensatz erfasst)',
+      role: realContactRole || 'Fachbereichsleitung / Geschäftsführung',
+      email: 'Rechtssichere Direktansprache über Telefonzentrale / Impressum',
+      phone: realContactPhone || 'Offizielle Unternehmenszentrale',
+      linkedIn: `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(companyName + ' ' + (realContactRole || 'Geschäftsleitung'))}`,
+      responsibility: 'Budget- und Vergabeverantwortung im Fachbereich'
+    })
+  }
 
   // Primärquelle
   const sourceUrl = trigger?.source_url || trigger?.quelle || trigger?.source || 'https://www.bundesanzeiger.de'
@@ -314,8 +310,10 @@ export function buildSignalPayload({
         register: 'Handelsregister Amtsgericht (verifiziert)',
         address: `${blindLocation}, Deutschland`,
         headquarters: 'Deutschland (DACH)',
-        phoneMain: dmPhone,
-        website: `https://${companyName.toLowerCase().replace(/[^a-z0-9]/g, '')}.de`,
+        phoneMain: realContactPhone || 'Zentrale / Vorzimmer über Unternehmenswebsite',
+        website: opportunity?.company_domain 
+          ? (opportunity.company_domain.startsWith('http') ? opportunity.company_domain : `https://${opportunity.company_domain}`)
+          : `https://www.google.com/search?q=${encodeURIComponent(companyName)}`,
         employeesCount: blindQuantity,
         revenueAnnual: 'Gehobener Mittelstand'
       },
