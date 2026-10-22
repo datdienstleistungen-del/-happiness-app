@@ -639,6 +639,7 @@ export default function SalesWorkspacePage() {
 
           // Dynamische Unternehmensauflösung: Priorität hat das aktuell geladene Trigger-Event!
           const resolvedCompanyName = resolveTriggerCompanyName(latestTrigger, ctx);
+          const companyName = resolvedCompanyName || ctx.company?.name || '';
           const industry = ctx.company?.industry || '';
 
           // Prüfe, ob es schon einen Kontakt gibt
