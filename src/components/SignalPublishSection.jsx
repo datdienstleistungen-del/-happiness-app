@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { 
   ShieldCheck, CheckCircle, Copy, ExternalLink, 
-  Check, Loader2, Sparkles, Send, FileText, X, AlertCircle 
+  Check, Loader2, Sparkles, Send, FileText, X, AlertCircle,
+  Eye, Building2, Phone, Download, Printer
 } from 'lucide-react'
 import { buildSignalPayload, publishSignalToDatWebsite, resolveTriggerCompanyName } from '../lib/nexus-signal-publisher'
 
@@ -21,6 +22,7 @@ export default function SignalPublishSection({
   const [isPublishing, setIsPublishing] = useState(false)
   const [publishResult, setPublishResult] = useState(null)
   const [showModal, setShowModal] = useState(false)
+  const [showAdminPreview, setShowAdminPreview] = useState(false)
   
   const [copiedLink, setCopiedLink] = useState(false)
   const [copiedMessage, setCopiedMessage] = useState(false)
@@ -209,41 +211,263 @@ export default function SignalPublishSection({
             )}
           </div>
 
-          <button
-            type="button"
-            disabled={!isChecked || isPublishing}
-            onClick={handlePublish}
-            style={{
-              background: isChecked 
-                ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' 
-                : '#1e293b',
-              color: isChecked ? '#ffffff' : '#64748b',
-              border: isChecked ? '1px solid #38bdf8' : '1px solid #334155',
-              padding: '9px 18px',
-              borderRadius: '8px',
-              fontWeight: 700,
-              fontSize: '0.85rem',
-              cursor: isChecked && !isPublishing ? 'pointer' : 'not-allowed',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              boxShadow: isChecked ? '0 0 16px rgba(2, 132, 199, 0.4)' : 'none',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            {isPublishing ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                <span>Veröffentliche auf dat-dat.de...</span>
-              </>
-            ) : (
-              <>
-                <span>🚀 Als Human-Verified Dossier auf dat-dat.de veröffentlichen</span>
-              </>
-            )}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => setShowAdminPreview(true)}
+              style={{
+                background: '#0a0c0f',
+                color: '#38bdf8',
+                border: '1px solid #38bdf8',
+                padding: '9px 15px',
+                borderRadius: '8px',
+                fontWeight: 700,
+                fontSize: '0.82rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Eye size={15} />
+              <span>👁️ Käuferansicht (Dossier-Vorschau)</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={!isChecked || isPublishing}
+              onClick={handlePublish}
+              style={{
+                background: isChecked 
+                  ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' 
+                  : '#1e293b',
+                color: isChecked ? '#ffffff' : '#64748b',
+                border: isChecked ? '1px solid #38bdf8' : '1px solid #334155',
+                padding: '9px 18px',
+                borderRadius: '8px',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                cursor: isChecked && !isPublishing ? 'pointer' : 'not-allowed',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: isChecked ? '0 0 16px rgba(2, 132, 199, 0.4)' : 'none',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {isPublishing ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Veröffentliche auf dat-dat.de...</span>
+                </>
+              ) : (
+                <>
+                  <span>🚀 Als Human-Verified Dossier auf dat-dat.de veröffentlichen</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* =========================================================================
+          2b. ADMIN-VORSCHAU: KÄUFERANSICHT (NUR FÜR EINGELOGGTEN ADMIN IN NEXUS)
+          ========================================================================= */}
+      {showAdminPreview && (() => {
+        const previewPayload = buildSignalPayload({
+          opportunity,
+          trigger,
+          foundContact,
+          analystName: analystName.trim() || 'Harro Goerndt',
+          verificationNote: verificationNote.trim(),
+          overrideCompany: resolvedCompName
+        });
+        const d = previewPayload.unlockedDossier;
+        const t = previewPayload.teaser;
+
+        return (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 10000,
+            background: 'rgba(0, 0, 0, 0.88)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            overflowY: 'auto'
+          }}>
+            <div style={{
+              background: '#0a0c0f',
+              border: '1px solid #38bdf8',
+              borderRadius: '16px',
+              maxWidth: '820px',
+              width: '100%',
+              padding: '24px',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(56, 189, 248, 0.25)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}>
+              
+              {/* Modal Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1e232d', paddingBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38bdf8' }}>
+                    <Eye size={20} />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#f8fafc', fontWeight: 800 }}>
+                      Admin-Vorschau: Käuferansicht (Dossier-Vorschau)
+                    </h3>
+                    <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', color: '#94a3b8' }}>
+                      Exakte Ansicht, wie der Käufer das freigeschaltete Dossier nach der Zahlung sieht (Nur intern in NeXus).
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAdminPreview(false)}
+                  style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '6px' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Dossier Header */}
+              <div style={{ background: '#11141a', border: '1px solid #1e232d', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '2px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                    {t.signalCategory}
+                  </span>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '4px' }}>
+                    ✓ Freigeschaltet
+                  </span>
+                </div>
+                <h4 style={{ margin: 0, fontSize: '1.05rem', color: '#f8fafc', fontWeight: 800 }}>
+                  {t.headline}
+                </h4>
+                <p style={{ margin: 0, fontSize: '0.78rem', color: '#94a3b8' }}>
+                  {t.eventSummary}
+                </p>
+              </div>
+
+              {/* 1. Zielunternehmen & Primärquelle */}
+              <div style={{ background: '#11141a', border: '1px solid #1e232d', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase' }}>
+                  1. Konkretes Zielunternehmen &amp; Primärquelle
+                </span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                  <div>
+                    <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block' }}>Firma:</span>
+                    <strong style={{ color: '#ffffff' }}>{d.company?.legalName}</strong>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{d.company?.register}</div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block' }}>Standort / Anschrift:</span>
+                    <span>{d.company?.address}</span>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block' }}>Telefonzentrale / Website:</span>
+                    <span>{d.company?.phoneMain} · {d.company?.website}</span>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block' }}>Größe &amp; Umsatz:</span>
+                    <span>{d.company?.employeesCount} ({d.company?.revenueAnnual})</span>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #1e232d', fontSize: '0.78rem', color: '#cbd5e1' }}>
+                  <strong style={{ color: '#38bdf8' }}>Primärquelle: </strong>
+                  <span>{d.primarySource?.outlet} ({d.primarySource?.publishedDate})</span><br />
+                  <a href={d.primarySource?.url} target="_blank" rel="noreferrer" style={{ color: '#38bdf8', textDecoration: 'underline', fontSize: '0.72rem' }}>
+                    Originalquelle öffnen ↗
+                  </a>
+                  <div style={{ marginTop: '4px', fontStyle: 'italic', color: '#f8fafc' }}>
+                    {d.primarySource?.verbatimEvidence}
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Hintergrund & Anlass */}
+              <div style={{ background: '#11141a', border: '1px solid #1e232d', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase' }}>
+                  2. Hintergrund &amp; Anlass
+                </span>
+                <div><strong>Akuter Handlungsdruck:</strong> {d.painPointAnalysis?.coreProblem}</div>
+                <div><strong>Dringlichkeit:</strong> <span style={{ color: '#f59e0b' }}>{d.painPointAnalysis?.urgencyLevel}</span> · Zeitfenster: {d.painPointAnalysis?.decisionWindow}</div>
+                <div><strong>Vertriebsansatz:</strong> {d.painPointAnalysis?.salesAngle}</div>
+              </div>
+
+              {/* 3. Rollen-Targeting */}
+              <div style={{ background: '#11141a', border: '1px solid #1e232d', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase' }}>
+                  3. Rollen-Targeting (Funktionale Entscheider-Ebene)
+                </span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div style={{ background: '#0a0c0f', padding: '10px', borderRadius: '8px', border: '1px solid #1e232d' }}>
+                    <div style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: 700 }}>PRIMÄRE ROLLE:</div>
+                    <div style={{ color: '#ffffff', fontWeight: 700 }}>{d.roleTargeting?.primaryRole}</div>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{d.roleTargeting?.decisionMakerContext}</div>
+                  </div>
+                  <div style={{ background: '#0a0c0f', padding: '10px', borderRadius: '8px', border: '1px solid #1e232d' }}>
+                    <div style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: 700 }}>SEKUNDÄRE ROLLE:</div>
+                    <div style={{ color: '#ffffff', fontWeight: 700 }}>{d.roleTargeting?.secondaryRole}</div>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{d.roleTargeting?.alternateRoleContext}</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace' }}>
+                  <strong>Direktansprache:</strong> {d.roleTargeting?.switchboardDirect}
+                </div>
+              </div>
+
+              {/* 4. Pitch & Vorlage */}
+              <div style={{ background: '#11141a', border: '1px solid #1e232d', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase' }}>
+                  4. Anschreiben-Vorlage &amp; Gesprächsleitfaden
+                </span>
+                {d.preparedPitch?.linkedInHook && (
+                  <div style={{ background: '#0a0c0f', padding: '10px', borderRadius: '8px', borderLeft: '3px solid #38bdf8', fontStyle: 'italic' }}>
+                    {d.preparedPitch?.linkedInHook}
+                  </div>
+                )}
+                <div style={{ background: '#0a0c0f', padding: '10px', borderRadius: '8px', borderLeft: '3px solid #38bdf8', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div><strong>Einstieg:</strong> {d.preparedPitch?.phoneGreeting}</div>
+                  <div><strong>Value-Hook:</strong> {d.preparedPitch?.valueHook}</div>
+                  <div><strong>Call-to-Action:</strong> {d.preparedPitch?.callToAction}</div>
+                </div>
+              </div>
+
+              {/* Close Button */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAdminPreview(false)}
+                  style={{
+                    background: '#1e293b',
+                    color: '#ffffff',
+                    border: '1px solid #334155',
+                    padding: '8px 18px',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Schließen
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
 
       {/* =========================================================================
           3. BESTÄTIGUNGS-MODAL & LINK-GENERIERUNG IN NEXUS

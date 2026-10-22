@@ -126,6 +126,54 @@ export function resolveTriggerCompanyName(trigger = null, opportunity = null, fa
 }
 
 /**
+ * Ermittelt den treffenden B2B-Wirtschaftszweig aus Trigger, Text & Unternehmen.
+ */
+export function detectIndustry(companyName = '', trigger = null, opportunity = null, contentStr = '') {
+  const direct = trigger?.branche || trigger?.industry || opportunity?.industry || opportunity?.company?.industry;
+  if (direct && direct !== 'B2B & Technologie' && direct !== 'B2B' && direct.length > 2) {
+    return direct;
+  }
+
+  const text = `${companyName} ${trigger?.blind_company || ''} ${contentStr} ${trigger?.title || ''} ${opportunity?.title || ''}`.toLowerCase();
+
+  if (/maschinenbau|anlagenbau|fahrzeugwasch|zerspanung|hydraulik|antriebstechnik|metallverarbeitung|cnc/i.test(text)) {
+    return 'Maschinenbau';
+  }
+  if (/baustoff|entwässerung|tiefbau|hochbau|hallenbau|dach|fassade|bauunternehmen|beton|estrich|tga/i.test(text)) {
+    return 'Baustoffe & Bau';
+  }
+  if (/medien|verlag|zeitung|magazin|journalismus|redaktion|publikation/i.test(text)) {
+    return 'Medien & Verlagswesen';
+  }
+  if (/sport|fußball|bundesliga|stadion|athletik|verein|liga/i.test(text)) {
+    return 'Sport & Entertainment';
+  }
+  if (/stiftung|non-profit|gemeinnützig|förderung|philanthropie/i.test(text)) {
+    return 'Stiftung & Non-Profit';
+  }
+  if (/software|saas|cloud|cyber|ki|ai|daten|plattform|digital/i.test(text)) {
+    return 'IT & Software';
+  }
+  if (/medtech|pharma|biotech|diagnostik|klinik|hospital|krankenhaus|gesundheitswesen/i.test(text)) {
+    return 'MedTech & Healthcare';
+  }
+  if (/finanz|bank|fintech|investment|kapital|m&a|beratung|consulting|assurance/i.test(text)) {
+    return 'Finanzwesen & M&A';
+  }
+  if (/logistik|spedition|transport|flotte|lager/i.test(text)) {
+    return 'Logistik & Supply Chain';
+  }
+  if (/chemie|kunststoff|polymer|werkstoff/i.test(text)) {
+    return 'Chemie & Werkstoffe';
+  }
+  if (/energie|solar|photovoltaik|windkraft|versorgung/i.test(text)) {
+    return 'Energie & Cleantech';
+  }
+
+  return 'B2B & Industrie';
+}
+
+/**
  * Baut das vollständige DAT-Signal-Dossier (Teaser + Paywall) aus NeXus-Daten auf.
  */
 export function buildSignalPayload({
@@ -144,12 +192,10 @@ export function buildSignalPayload({
                       resolveTriggerCompanyName(trigger, opportunity) || 
                       'Unternehmen'
   
-  const industry = trigger?.branche || 
-                   opportunity?.industry || 
-                   opportunity?.company?.industry || 
-                   'B2B & Technologie'
-
   const contentStr = trigger?.nexus_trigger_events?.content || trigger?.content || opportunity?.triggers?.[0]?.nexus_trigger_events?.content || ''
+
+  // Treffenden Wirtschaftszweig dynamisch erkennen
+  const industry = detectIndustry(companyName, trigger, opportunity, contentStr)
 
   // Extrahiere Blind-Felder aus Trigger-Content ([BLIND_COMPANY], [BLIND_LOCATION], etc.)
   const extractTag = (text, tag) => {
@@ -184,15 +230,32 @@ export function buildSignalPayload({
   let cleanEvent = contentStr.replace(/\[(?:PAIN_POINT|BLIND_COMPANY|BLIND_LOCATION|BLIND_QUANTITY|TARGET_BUYERS)\]:[^\n\r]+/gi, '')
   cleanEvent = cleanEvent.replace(/\n+/g, ' ').trim()
 
+  // 1. Zensiere ALLE Firmen-Rechtsformen im Text (GmbH, AG, SE, KG, UG etc.), egal welche Firma
+  cleanEvent = cleanEvent.replace(/(?:(?:Die|Der|Das|dem|den)\s+)?(?:[A-ZÄÖÜ][a-zäöüß]+er\s+)?([A-ZÄÖÜ0-9][a-zA-Z0-9äöüß\s\.\-&]{1,40}?\s+(?:GmbH(?:\s*&\s*Co\.\s*KG)?|AG|SE|KG|UG|e\.K\.|GbR|Co\.\s*KG))/gi, 'einem etablierten Fachunternehmen')
+
+  // 2. Zensiere den ermittelten Firmennamen und Stammwörter
   if (companyName && companyName !== 'Unternehmen') {
     const escaped = companyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     cleanEvent = cleanEvent.replace(new RegExp(`bei\\s+${escaped}(?:\\s+in\\s+[A-ZÄÖÜ][a-zäöüß]+(?:\\s+[A-Z]{2})?)?`, 'gi'), `bei einer ${blindCompany} (${blindLocation})`)
     cleanEvent = cleanEvent.replace(new RegExp(escaped, 'gi'), blindCompany)
+
+    const short = companyName.replace(/\s+(?:Information\s+Management\s+Solutions|GmbH(?:\s*&\s*Co\.\s*KG)?|AG|SE|KG|UG|e\.K\.|GbR|Holding|Gruppe|Group).*$/i, '').trim()
+    if (short.length >= 3) {
+      const escShort = short.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      cleanEvent = cleanEvent.replace(new RegExp(escShort, 'gi'), blindCompany)
+    }
   }
+
+  // 3. Adjektiv-Städte
+  cleanEvent = cleanEvent.replace(/\b(?:Augsburger|Meringer|Wiener|Münchner|Stuttgarter|Frankfurter|Hamburger|Berliner|Zürcher)\b/gi, 'regionalen')
+
   if (blindLocation && blindLocation !== 'D-A-CH Region') {
     cleanEvent = cleanEvent.replace(/\bin\s+[A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-Z]{2})\b/g, `in ${blindLocation}`)
   }
-  if (!cleanEvent || cleanEvent.length < 15) {
+
+  // 4. Wenn der Text nach wie vor Rechtsformen enthält oder zu kurz ist:
+  // Fallback auf 100% blinde Beschreibung aus blindCompany und painPoint
+  if (!cleanEvent || cleanEvent.length < 15 || cleanEvent.includes('GmbH') || cleanEvent.includes('AG') || cleanEvent.includes('SE')) {
     cleanEvent = `${blindCompany} (${blindLocation}): ${painPoint}`
   }
   cleanEvent = cleanEvent.slice(0, 250)
@@ -202,36 +265,27 @@ export function buildSignalPayload({
   const slug = generateSignalSlug(blindCompany, `${topicKeyword}-${blindLocation}`)
   const signalId = `sig-${slug}-${Date.now().toString().slice(-4)}`
 
-  // Decision Maker Mapping: Strikt wahrheitsgetreu - NIEMALS erfundene Namen oder Fake-Nummern!
-  const realContactName = foundContact?.name || trigger?.ansprechpartner?.name || null
-  const realContactRole = foundContact?.role || trigger?.ansprechpartner?.rolle || null
-  const realContactEmail = (foundContact?.email && foundContact.email !== 'UNKNOWN') 
-    ? foundContact.email 
-    : trigger?.ansprechpartner?.email || null
-  const realContactPhone = foundContact?.phone || trigger?.ansprechpartner?.telefon || null
+  // Decision Maker Mapping: Strikt DSGVO-konforme funktionale Rollen (NIEMALS illegale Personenlisten oder Fake-Daten!)
+  const primaryRoleTitle = foundContact?.role || trigger?.ansprechpartner?.rolle || 'Fachbereichsleitung / Geschäftsführung'
+  const secondaryRoleTitle = 'Geschäftsleitung / C-Level'
+  const phoneText = foundContact?.phone || trigger?.ansprechpartner?.telefon || 'Offizielle Unternehmenszentrale'
 
-  const decisionMakers = []
-  
-  if (realContactName) {
-    decisionMakers.push({
-      name: realContactName,
-      role: realContactRole || 'Verifizierter Entscheider / Ansprechpartner',
-      email: realContactEmail || 'Verifizierung über Telefonzentrale',
-      phone: realContactPhone || 'Zentrale des Zielunternehmens',
-      linkedIn: `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(companyName + ' ' + realContactName)}`,
-      responsibility: 'Verantwortlich für fachliche Prüfung, Initiierung und Vergabe'
-    })
-  } else {
-    // Wenn kein konkreter Personenname ermittelt werden konnte: Funktionale Rolle ohne Personen-Erfindung
-    decisionMakers.push({
-      name: 'Funktionale Entscheider-Ebene (Kein Personen-Datensatz erfasst)',
-      role: realContactRole || 'Fachbereichsleitung / Geschäftsführung',
+  const decisionMakers = [
+    {
+      name: 'Funktionale Entscheider-Ebene',
+      role: primaryRoleTitle,
       email: 'Rechtssichere Direktansprache über Telefonzentrale / Impressum',
-      phone: realContactPhone || 'Offizielle Unternehmenszentrale',
-      linkedIn: `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(companyName + ' ' + (realContactRole || 'Geschäftsleitung'))}`,
-      responsibility: 'Budget- und Vergabeverantwortung im Fachbereich'
-    })
-  }
+      phone: phoneText,
+      responsibility: 'Verantwortlich für fachliche Prüfung, Initiierung und Vergabe im Fachbereich'
+    },
+    {
+      name: 'Funktionale Entscheider-Ebene (Management-Sponsor)',
+      role: secondaryRoleTitle,
+      email: 'Rechtssichere Direktansprache über Telefonzentrale / Impressum',
+      phone: phoneText,
+      responsibility: 'Gesamtverantwortung für Budgetallokation und Mandatierung externer Partner'
+    }
+  ]
 
   // Primärquelle
   const sourceUrl = trigger?.source_url || trigger?.quelle || trigger?.source || 'https://www.bundesanzeiger.de'
@@ -323,6 +377,13 @@ export function buildSignalPayload({
         url: sourceUrl,
         verbatimEvidence: sourceEvidence
       },
+      roleTargeting: {
+        primaryRole: primaryRoleTitle,
+        decisionMakerContext: 'Verantwortlich für fachliche Prüfung, Initiierung und Vergabe im Fachbereich.',
+        secondaryRole: secondaryRoleTitle,
+        alternateRoleContext: 'Gesamtverantwortung für Budgetallokation und Mandatierung externer Partner.',
+        switchboardDirect: phoneText
+      },
       decisionMakers: decisionMakers,
       painPointAnalysis: {
         coreProblem: painPoint,
@@ -377,16 +438,45 @@ export async function publishSignalToDatWebsite({
       updated_at: new Date().toISOString()
     }
 
-    const { data: dbData, error: dbError } = await supabase
+    // 1. Prüfen, ob bereits ein Lead für dieses Signal existiert (verhindert Duplikate)
+    const { data: existingPackages } = await supabase
       .from('nexus_lead_packages')
-      .insert(packageRecord)
-      .select()
-      .single()
+      .select('id, company_data, headline')
+      .limit(50)
 
-    if (dbError) {
-      console.warn('[Publisher] Supabase Ingestion Warnung:', dbError.message)
+    const existingMatch = existingPackages?.find(p => {
+      const cd = p.company_data || {}
+      return cd.slug === signalObj.slug || 
+             p.headline === signalObj.teaser.headline ||
+             (cd.unlockedDossier?.company?.legalName && signalObj.unlockedDossier?.company?.legalName &&
+              cd.unlockedDossier.company.legalName.toLowerCase() === signalObj.unlockedDossier.company.legalName.toLowerCase())
+    })
+
+    if (existingMatch) {
+      const { data: dbData, error: dbError } = await supabase
+        .from('nexus_lead_packages')
+        .update(packageRecord)
+        .eq('id', existingMatch.id)
+        .select()
+        .single()
+
+      if (dbError) {
+        console.warn('[Publisher] Supabase Update Warnung:', dbError.message)
+      } else {
+        console.log('[Publisher] Signal erfolgreich in nexus_lead_packages aktualisiert:', dbData?.id)
+      }
     } else {
-      console.log('[Publisher] Signal erfolgreich in nexus_lead_packages hinterlegt:', dbData?.id)
+      const { data: dbData, error: dbError } = await supabase
+        .from('nexus_lead_packages')
+        .insert(packageRecord)
+        .select()
+        .single()
+
+      if (dbError) {
+        console.warn('[Publisher] Supabase Ingestion Warnung:', dbError.message)
+      } else {
+        console.log('[Publisher] Signal erfolgreich in nexus_lead_packages neu hinterlegt:', dbData?.id)
+      }
     }
   } catch (err) {
     console.error('[Publisher] Fehler beim Speichern in Supabase:', err)

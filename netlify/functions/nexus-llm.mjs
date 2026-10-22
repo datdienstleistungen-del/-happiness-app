@@ -228,16 +228,45 @@ function isDegenerateText(text) {
 
 function extractJsonObject(text) {
   if (!text || typeof text !== 'string') return null;
-  const unfenced = text.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+  
+  // 1. Markdown-Codeblöcke und Fences bereinigen
+  let clean = text.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+  
+  // 2. Direkter Parse-Versuch
   try {
-    const p = JSON.parse(unfenced);
+    const p = JSON.parse(clean);
     if (p && typeof p === 'object' && !Array.isArray(p)) return p;
   } catch {}
-  const start = text.indexOf('{');
+
+  // 3. Trailing Commas bereinigen (z.B. {"a": 1,} -> {"a": 1})
+  try {
+    const sanitized = clean.replace(/,\s*([}\]])/g, '$1');
+    const p = JSON.parse(sanitized);
+    if (p && typeof p === 'object' && !Array.isArray(p)) return p;
+  } catch {}
+
+  // 4. Erstes '{' bis letztes '}' extrahieren
+  const firstBrace = clean.indexOf('{');
+  const lastBrace = clean.lastIndexOf('}');
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    const candidate = clean.slice(firstBrace, lastBrace + 1);
+    try {
+      const p = JSON.parse(candidate);
+      if (p && typeof p === 'object' && !Array.isArray(p)) return p;
+    } catch {}
+    try {
+      const sanitized = candidate.replace(/,\s*([}\]])/g, '$1');
+      const p = JSON.parse(sanitized);
+      if (p && typeof p === 'object' && !Array.isArray(p)) return p;
+    } catch {}
+  }
+
+  // 5. Balanced Braces Extraktion
+  const start = clean.indexOf('{');
   if (start >= 0) {
     let depth = 0, inStr = false, esc = false;
-    for (let i = start; i < text.length; i++) {
-      const ch = text[i];
+    for (let i = start; i < clean.length; i++) {
+      const ch = clean[i];
       if (esc) { esc = false; continue; }
       if (ch === '\\') { esc = true; continue; }
       if (ch === '"') { inStr = !inStr; continue; }
@@ -247,7 +276,8 @@ function extractJsonObject(text) {
         depth--;
         if (depth === 0) {
           try {
-            const p = JSON.parse(text.slice(start, i + 1));
+            const chunk = clean.slice(start, i + 1).replace(/,\s*([}\]])/g, '$1');
+            const p = JSON.parse(chunk);
             if (p && typeof p === 'object' && !Array.isArray(p)) return p;
           } catch {}
           break;
@@ -260,10 +290,25 @@ function extractJsonObject(text) {
 
 function validateStructuredResult(content, requiredKeys) {
   if (isDegenerateText(content)) return { ok: false, reason: 'wiederholte, degenerierte Antwort' };
+  
+  // Wenn KEIN_VALIDES_SIGNAL zurückgegeben wurde, ist das ein valides Antwortsignal (Token-Bremse)
+  if (typeof content === 'string' && content.includes('KEIN_VALIDES_SIGNAL')) {
+    return { ok: true, parsed: { is_valid_signal: false, response: 'KEIN_VALIDES_SIGNAL' } };
+  }
+
   const parsed = extractJsonObject(content);
   if (!parsed) return { ok: false, reason: 'kein valides JSON' };
-  const missing = requiredKeys.filter(k => !(k in parsed));
-  if (missing.length > 0) return { ok: false, reason: `Pflichtfelder fehlen: ${missing.join(', ')}` };
+  
+  if (Array.isArray(requiredKeys) && requiredKeys.length > 0) {
+    const missing = requiredKeys.filter(k => !(k in parsed));
+    // Wenn alle Pflichtfelder fehlen, prüfe ob alternative valide Signal-Keys existieren
+    if (missing.length === requiredKeys.length) {
+      const hasAlternativeSignalKey = ['trigger_type', 'company_name', 'buyer_target_group', 'zielgruppe', 'industry'].some(k => k in parsed);
+      if (!hasAlternativeSignalKey) {
+        return { ok: false, reason: `Pflichtfelder fehlen: ${missing.join(', ')}` };
+      }
+    }
+  }
   return { ok: true, parsed };
 }
 
@@ -630,7 +675,9 @@ Meine Frage: ${userMessage}`;
     console.log("[NEXUS] Starting callAI loop (hasImage=" + hasImage + ")");
     const wantsJsonMode = mode ? (mode !== 'chat' && mode !== 'assistant') : /validem JSON|EXAKT folgender Struktur/i.test(systemPrompt || '');
     const strictSchema = wantsJsonMode && (isIntelligenceMode || isAngebotsanalyse);
-    const requiredKeys = ['zielgruppe', 'schmerzpunkte', 'vertriebsstrategie', 'pitch_grundlage'];
+    const requiredKeys = isAngebotsanalyse
+      ? ['trigger_type', 'company_name']
+      : ['zielgruppe', 'schmerzpunkte', 'vertriebsstrategie', 'pitch_grundlage'];
     const callStart = Date.now();
 
     let result = await callAI(messages, temperature || 0.3, hasImage, { ...(testOptions || {}), preferJsonModels: wantsJsonMode });
