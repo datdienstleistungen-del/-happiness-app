@@ -18,6 +18,39 @@
   <!-- Lucide Icons via CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
+  <!-- Netlify Badge / HUD Blocker (Absolute Entfernung jeglicher Drittanbieter-Overlays) -->
+  <script>
+    (function() {
+      function purgeNetlifyBadge() {
+        const targets = document.querySelectorAll('#nl-badge-frame, #nl-hud-frame, iframe[title*="Netlify"], iframe[title*="Powered by"], script[src*="netlify/scripts/hud"]');
+        targets.forEach(function(el) { el.remove(); });
+      }
+      
+      const observer = new MutationObserver(function(mutations) {
+        for (var i = 0; i < mutations.length; i++) {
+          var added = mutations[i].addedNodes;
+          for (var j = 0; j < added.length; j++) {
+            var node = added[j];
+            if (node.nodeType === 1) {
+              if (node.id === 'nl-badge-frame' || node.id === 'nl-hud-frame' ||
+                  (node.tagName === 'IFRAME' && ((node.title || '').indexOf('Netlify') !== -1 || (node.title || '').indexOf('Powered by') !== -1)) ||
+                  (node.tagName === 'SCRIPT' && (node.src || '').indexOf('netlify/scripts/hud') !== -1)) {
+                node.remove();
+              }
+            }
+          }
+        }
+      });
+      
+      if (document.documentElement) {
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+      }
+      window.addEventListener('DOMContentLoaded', purgeNetlifyBadge);
+      window.addEventListener('load', purgeNetlifyBadge);
+      setInterval(purgeNetlifyBadge, 400);
+    })();
+  </script>
+
   <script>
     tailwind.config = {
       theme: {
@@ -57,6 +90,25 @@
   </script>
 
   <style>
+    /* Absolute Entfernung des Netlify-Badges & Overlays */
+    #nl-badge-frame,
+    #nl-hud-frame,
+    iframe[title*="Netlify"],
+    iframe[title*="Powered by Netlify"],
+    iframe[src*="netlify"],
+    [data-netlify-site-id],
+    .netlify-badge {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      width: 0 !important;
+      height: 0 !important;
+      position: absolute !important;
+      z-index: -999999 !important;
+      clip: rect(0, 0, 0, 0) !important;
+    }
+
     /* Sanfte Scrollbar & weiche Übergänge */
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: #F5F4EF; }
@@ -166,9 +218,9 @@
     <section class="relative pt-6 pb-20 md:pt-12 md:pb-32 overflow-hidden border-b border-stone-200">
       
       <!-- Hintergrund-Panorama mit weichem Auslauf nach unten -->
-      <div class="absolute inset-x-0 top-0 h-[520px] sm:h-[580px] md:h-[640px] overflow-hidden pointer-events-none z-0">
-        <img src="/kaiser-wilhelm-bruecke.jpg" alt="Wilhelmshaven Kaiser-Wilhelm-Brücke" class="w-full h-full object-cover object-[center_35%] opacity-60 sm:opacity-55 mix-blend-multiply scale-102">
-        <div class="absolute inset-0 bg-gradient-to-b from-[#FBFBF8]/15 via-[#FBFBF8]/50 to-[#FBFBF8]"></div>
+      <div class="absolute inset-x-0 top-0 h-[480px] sm:h-[540px] md:h-[620px] overflow-hidden pointer-events-none z-0">
+        <img src="/kaiser-wilhelm-bruecke.jpg" alt="Wilhelmshaven Kaiser-Wilhelm-Brücke" class="w-full h-full object-cover object-center opacity-20 sm:opacity-25 md:opacity-30 mix-blend-multiply scale-102">
+        <div class="absolute inset-0 bg-gradient-to-b from-[#FBFBF8]/35 via-[#FBFBF8]/85 to-[#FBFBF8]"></div>
       </div>
 
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -186,7 +238,7 @@
           <h1 class="text-3xl sm:text-5xl lg:text-6xl font-serif font-bold tracking-tight text-slate-900 leading-[1.15]" data-i18n="hero.headline">
             Frühzeitige Mandats-Intelligence aus vertrauensvollen Quellen.
           </h1>
-          <p class="mt-6 sm:mt-8 text-base sm:text-xl text-slate-600 font-normal leading-relaxed max-w-3xl" data-i18n="hero.subline">
+          <p class="mt-6 sm:mt-8 text-base sm:text-xl text-slate-800 sm:text-slate-700 font-normal leading-relaxed max-w-3xl" data-i18n="hero.subline">
             Diskrete Identifikation von C-Level-Vakanzen, Sondersituationen und Transformationsbedarf im europäischen Mittelstand – fundiert, vertraulich und partnerschaftlich.
           </p>
         </div>
@@ -509,7 +561,7 @@
   <!-- ========================================================================= -->
   <!-- 6. EXECUTIVE CONCIERGE (SCHWEBENDES DIALOG-WIDGET UNTEN RECHTS) -->
   <!-- ========================================================================= -->
-  <div class="fixed bottom-6 right-6 z-50">
+  <div class="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-[999999]">
     <button onclick="toggleConcierge()" class="flex items-center space-x-2.5 px-4 py-3 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-xl border border-stone-700 hover:border-brass-400 transition-all group">
       <span class="w-2 h-2 rounded-full bg-brass-400 animate-pulse"></span>
       <span class="font-serif italic text-sm tracking-wide text-brass-300">Executive Concierge</span>
@@ -518,7 +570,7 @@
   </div>
 
   <!-- Concierge Modal Dialog -->
-  <div id="conciergeModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4">
+  <div id="conciergeModal" class="fixed inset-0 z-[1000000] hidden bg-slate-950/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4">
     <div class="bg-[#FBFBF8] border border-stone-300 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
       
       <!-- Concierge Header -->
