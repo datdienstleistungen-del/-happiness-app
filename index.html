@@ -333,16 +333,16 @@
         
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
           
-          <!-- Bild-Block: Team-Meeting in Wilhelmshaven -->
+          <!-- Bild-Block: Inhaber-Meeting & Mandantendialog in Wilhelmshaven -->
           <div class="lg:col-span-6 relative">
             <div class="relative rounded-2xl overflow-hidden shadow-xl border border-stone-200 bg-white">
-              <img src="/team-meeting.jpg" alt="D.A.T. Dienstleistungen Team-Meeting in Wilhelmshaven" class="w-full h-[360px] sm:h-[460px] object-cover object-center">
+              <img src="/team-meeting.jpg" alt="D.A.T. Dienstleistungen · Bilateraler Mandantendialog in Wilhelmshaven" class="w-full h-[360px] sm:h-[460px] object-cover object-center">
               <div class="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent"></div>
               
               <!-- Bild-Caption -->
               <div class="absolute bottom-4 left-4 right-4 text-white text-xs sm:text-sm">
                 <div class="font-serif font-bold" data-i18n="about.photoTitle">D.A.T. Dienstleistungen · Standort Wilhelmshaven</div>
-                <div class="text-stone-300 text-xs mt-0.5" data-i18n="about.photoSubtitle">Persönliche Fallprüfung und mandatsgenaue Auswertung im Vier-Augen-Prinzip</div>
+                <div class="text-stone-300 text-xs mt-0.5" data-i18n="about.photoSubtitle">Bilateraler, vertrauensvoller Austausch mit Mandanten, Beiräten und Sparringspartnern auf Augenhöhe</div>
               </div>
             </div>
 
@@ -352,22 +352,22 @@
               <div class="text-xs">
                 <div class="font-bold text-slate-900">Harro Goerndt</div>
                 <div class="text-stone-500 text-[11px]" data-i18n="about.founderTitle">Inhaber & Senior Advisor</div>
-                <div class="text-brass-600 font-medium text-[10px] mt-0.5">30+ Jahre Praxiserfahrung</div>
+                <div class="text-brass-600 font-medium text-[10px] mt-0.5">Persönliche Analyse · Reine Chefsache</div>
               </div>
             </div>
           </div>
 
           <!-- Text-Block: Über uns & Kooperationsablauf -->
           <div id="ueber-uns" class="lg:col-span-6 space-y-6">
-            <div class="text-xs font-semibold uppercase tracking-widest text-brass-600" data-i18n="about.tag">Seniorität & Diskretion</div>
+            <div class="text-xs font-semibold uppercase tracking-widest text-brass-600" data-i18n="about.tag">Inhaber-Expertise & Diskretion</div>
             <h2 class="text-2xl sm:text-4xl font-serif font-bold text-slate-900 leading-tight" data-i18n="about.heading">
-              Verlässlicher Dealflow durch gewachsene Branchenkenntnis
+              Diskretion durch Unabhängigkeit: Analyse ist Chefsache.
             </h2>
             <p class="text-sm sm:text-base text-slate-600 leading-relaxed" data-i18n="about.text1">
-              D.A.T. Dienstleistungen agiert als unabhängiges, inhabergeführtes Advisory-Haus mit Sitz in Wilhelmshaven. Wir schlagen eine verlässliche Brücke zwischen akuten Sondersituationen im Mittelstand und führenden Interim-Providern sowie M&A-Boutiquen.
+              Im gehobenen Restrukturierungs- und C-Level-Umfeld duldet Vertraulichkeit keine Kompromisse. Bei D.A.T. Dienstleistungen durchläuft jeder wirtschaftsrechtliche Vorgang und jede Mandatsindikation die persönliche Analyse durch den Inhaber. Es gibt keine Weitergabe an Dritte oder unerfahrene Hilfskräfte.
             </p>
             <p class="text-sm sm:text-base text-slate-600 leading-relaxed" data-i18n="about.text2">
-              Jedes Signal wird von unserem erfahrenen Team manuell auf Plausibilität, Handlungsfenster und Gesellschafterkontext geprüft. Wir veröffentlichen keine Massenlisten, sondern stellen gezielt Kontakte dort her, wo beiderseitiges Interesse besteht.
+              Von der ersten Recherche über die operative Plausibilisierung bis zum bilateralen Erstkontakt liegt der gesamte Prozess in einer Hand – unabhängig, verlässlich und mit 100 % Mandatsschutz.
             </p>
 
             <!-- 3 Schritte der Partnerschaft -->
@@ -377,7 +377,7 @@
                 <span class="w-6 h-6 rounded-full bg-brass-400 text-slate-950 font-bold flex items-center justify-center shrink-0 text-xs">1</span>
                 <div>
                   <strong class="text-slate-900" data-i18n="about.step1Title">Bilateraler Erstkontakt & Profilabgleich:</strong>
-                  <span class="text-slate-600" data-i18n="about.step1Text"> Wir stimmen Ihren regionalen und branchenspezifischen Suchfokus vertraulich ab.</span>
+                  <span class="text-slate-600" data-i18n="about.step1Text"> Sie stimmen Ihren regionalen und branchenspezifischen Suchfokus direkt und vertraulich mit Herrn Goerndt ab.</span>
                 </div>
               </div>
 
@@ -551,23 +551,28 @@
         <!-- Schnellfragen (Quick-Answers) -->
         <div class="space-y-2 pt-2">
           
+          <button onclick="conciergeAnswer('structure')" class="w-full text-left p-3 rounded-lg bg-stone-100 hover:bg-white border border-stone-200/80 hover:border-brass-400 text-slate-800 transition-all flex items-center justify-between font-medium">
+            <span data-i18n="concierge.qStructure">Wer analysiert die Fälle & mit wem arbeite ich zusammen?</span>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-brass-600 shrink-0"></i>
+          </button>
+
           <button onclick="conciergeAnswer(1)" class="w-full text-left p-3 rounded-lg bg-stone-100 hover:bg-white border border-stone-200/80 hover:border-brass-400 text-slate-800 transition-all flex items-center justify-between font-medium">
-            <span>Wie ist der Mandats- und Kundenschutz geregelt?</span>
+            <span data-i18n="concierge.q1">Wie ist der Mandats- und Kundenschutz geregelt?</span>
             <i data-lucide="chevron-right" class="w-4 h-4 text-brass-600 shrink-0"></i>
           </button>
 
           <button onclick="conciergeAnswer(2)" class="w-full text-left p-3 rounded-lg bg-stone-100 hover:bg-white border border-stone-200/80 hover:border-brass-400 text-slate-800 transition-all flex items-center justify-between font-medium">
-            <span>Wie funktioniert der Vorkenntnis-Einspruch?</span>
+            <span data-i18n="concierge.q2">Wie funktioniert der Vorkenntnis-Einspruch?</span>
             <i data-lucide="chevron-right" class="w-4 h-4 text-brass-600 shrink-0"></i>
           </button>
 
           <button onclick="conciergeAnswer(3)" class="w-full text-left p-3 rounded-lg bg-stone-100 hover:bg-white border border-stone-200/80 hover:border-brass-400 text-slate-800 transition-all flex items-center justify-between font-medium">
-            <span>Welche Unternehmensgrößen und Mandate betreuen Sie?</span>
+            <span data-i18n="concierge.q3">Welche Unternehmensgrößen und Mandate betreuen Sie?</span>
             <i data-lucide="chevron-right" class="w-4 h-4 text-brass-600 shrink-0"></i>
           </button>
 
           <button onclick="conciergeAnswer(4)" class="w-full text-left p-3 rounded-lg bg-stone-100 hover:bg-white border border-stone-200/80 hover:border-brass-400 text-slate-800 transition-all flex items-center justify-between font-medium">
-            <span>Wie gestaltet sich die Vergütung bei erfolgreicher Mandatierung?</span>
+            <span data-i18n="concierge.q4">Wie gestaltet sich die Vergütung bei erfolgreicher Mandatierung?</span>
             <i data-lucide="chevron-right" class="w-4 h-4 text-brass-600 shrink-0"></i>
           </button>
 
@@ -780,19 +785,24 @@
         'comp.card3Title': 'M&A & Sondersituationen',
         'comp.card3Text': 'Carve-outs aus Konzernen oder Familienholdings, Post-Merger-Integrationsprogramme, ungeklärte Unternehmensnachfolgen und operative Day-1-Readiness bei Private-Equity-Transaktionen.',
         'comp.card3Target': 'Zielgruppe: M&A-Boutiquen & PE-Operating Partner',
-        'about.tag': 'Seniorität & Diskretion',
-        'about.heading': 'Verlässlicher Dealflow durch gewachsene Branchenkenntnis',
-        'about.text1': 'D.A.T. Dienstleistungen agiert als unabhängiges, inhabergeführtes Advisory-Haus mit Sitz in Wilhelmshaven. Wir schlagen eine verlässliche Brücke zwischen akuten Sondersituationen im Mittelstand und führenden Interim-Providern sowie M&A-Boutiquen.',
-        'about.text2': 'Jedes Signal wird von unserem erfahrenen Team manuell auf Plausibilität, Handlungsfenster und Gesellschafterkontext geprüft. Wir veröffentlichen keine Massenlisten, sondern stellen gezielt Kontakte dort her, wo beiderseitiges Interesse besteht.',
+        'about.tag': 'Inhaber-Expertise & Diskretion',
+        'about.heading': 'Diskretion durch Unabhängigkeit: Analyse ist Chefsache.',
+        'about.text1': 'Im gehobenen Restrukturierungs- und C-Level-Umfeld duldet Vertraulichkeit keine Kompromisse. Bei D.A.T. Dienstleistungen durchläuft jeder wirtschaftsrechtliche Vorgang und jede Mandatsindikation die persönliche Analyse durch den Inhaber. Es gibt keine Weitergabe an Dritte oder unerfahrene Hilfskräfte.',
+        'about.text2': 'Von der ersten Recherche über die operative Plausibilisierung bis zum bilateralen Erstkontakt liegt der gesamte Prozess in einer Hand – unabhängig, verlässlich und mit 100 % Mandatsschutz.',
         'about.photoTitle': 'D.A.T. Dienstleistungen · Standort Wilhelmshaven',
-        'about.photoSubtitle': 'Persönliche Fallprüfung und mandatsgenaue Auswertung im Vier-Augen-Prinzip',
+        'about.photoSubtitle': 'Bilateraler, vertrauensvoller Austausch mit Mandanten, Beiräten und Sparringspartnern auf Augenhöhe',
         'about.founderTitle': 'Inhaber & Senior Advisor',
         'about.step1Title': 'Bilateraler Erstkontakt & Profilabgleich:',
-        'about.step1Text': ' Wir stimmen Ihren regionalen und branchenspezifischen Suchfokus vertraulich ab.',
+        'about.step1Text': ' Sie stimmen Ihren regionalen und branchenspezifischen Suchfokus direkt und vertraulich mit Herrn Goerndt ab.',
         'about.step2Title': 'Standardisierte Rahmenvereinbarung:',
         'about.step2Text': ' Voller Mandats- und Kundenschutz mit vereinbarter Vorkenntnisprüffrist.',
         'about.step3Title': 'Diskrete Mandatszuordnung:',
         'about.step3Text': ' Qualifizierte Dossier-Übergabe mit direktem zeitlichem Vorlauf vor dem offenen Markt.',
+        'concierge.qStructure': 'Wer analysiert die Fälle & mit wem arbeite ich zusammen?',
+        'concierge.q1': 'Wie ist der Mandats- und Kundenschutz geregelt?',
+        'concierge.q2': 'Wie funktioniert der Vorkenntnis-Einspruch?',
+        'concierge.q3': 'Welche Unternehmensgrößen und Mandate betreuen Sie?',
+        'concierge.q4': 'Wie gestaltet sich die Vergütung bei erfolgreicher Mandatierung?',
         'form.tag': 'Direkter Vorstandskontakt',
         'form.title': 'Vertraulichen Dialog initiieren',
         'form.subtitle': 'Für Vorstände, Managing Partner und Investment-Professionals. Herr Harro Goerndt meldet sich persönlich bei Ihnen.',
@@ -846,19 +856,24 @@
         'comp.card3Title': 'M&A & Corporate Carve-outs',
         'comp.card3Text': 'Carve-outs from corporate or family holdings, post-merger integration programs, succession bottlenecks, and operational Day-1 readiness for private equity.',
         'comp.card3Target': 'Audience: M&A Boutiques & PE Operating Partners',
-        'about.tag': 'Seniority & Discretion',
-        'about.heading': 'Reliable Dealflow Rooted in Industry Acumen',
-        'about.text1': 'D.A.T. Dienstleistungen operates as an independent, owner-managed advisory firm based in Wilhelmshaven. We bridge acute mid-market leadership challenges with premier interim management providers and M&A boutiques.',
-        'about.text2': 'Every single mandate signal is scrutinized manually for credibility, decision windows, and shareholder context by our senior team. We deliver bespoke, bilateral connections.',
+        'about.tag': 'Owner-Led Seniority & Discretion',
+        'about.heading': 'Discretion Through Independence: Analysis is the Owner\'s Mandate.',
+        'about.text1': 'In high-stakes corporate restructuring and C-level environments, confidentiality tolerates no compromise. At D.A.T. Dienstleistungen, every corporate event and mandate indication undergoes personal analysis by the owner. There is no delegation to third parties or inexperienced junior staff.',
+        'about.text2': 'From primary research and operational plausibility assessments to confidential bilateral outreach, the entire process remains in one single pair of experienced hands – independent, reliable, and with 100% mandate protection.',
         'about.photoTitle': 'D.A.T. Dienstleistungen · Wilhelmshaven Headquarters',
-        'about.photoSubtitle': 'Four-eyes peer review and mandate-specific validation on site',
+        'about.photoSubtitle': 'Bilateral, high-trust dialogue with clients, advisory boards, and peer sparring partners.',
         'about.founderTitle': 'Founder & Senior Advisor',
         'about.step1Title': 'Bilateral Introduction & Scope:',
-        'about.step1Text': ' We align confidentially on your geographic and functional focus areas.',
+        'about.step1Text': ' You align your regional and industry-specific focus directly and confidentially with Mr. Goerndt.',
         'about.step2Title': 'Standardized Framework Agreement:',
         'about.step2Text': ' Comprehensive client protection with an agreed prior-knowledge objection period.',
         'about.step3Title': 'Discreet Mandate Allocation:',
         'about.step3Text': ' Qualified dossier briefing with a distinct time advantage prior to open market release.',
+        'concierge.qStructure': 'Who analyzes the cases and who is my direct counterpart?',
+        'concierge.q1': 'How are client protection and non-circumvention governed?',
+        'concierge.q2': 'How does the prior-knowledge objection process work?',
+        'concierge.q3': 'Which company sizes and mandate scopes do you cover?',
+        'concierge.q4': 'How is compensation structured upon successful engagement?',
         'form.tag': 'Direct Executive Contact',
         'form.title': 'Initiate Confidential Dialogue',
         'form.subtitle': 'For board members, managing partners, and investment professionals. Mr. Harro Goerndt will respond to you personally.',
@@ -912,19 +927,24 @@
         'comp.card3Title': 'M&A y Carve-Outs',
         'comp.card3Text': 'Separaciones corporativas (carve-outs), integración post-fusión, relevo generacional y preparación operativa Day-1 para Private Equity.',
         'comp.card3Target': 'Destinatarios: Boutiques de M&A y Socios Operativos de PE',
-        'about.tag': 'Seniority y Discreción',
-        'about.heading': 'Flujo de Oportunidades Fiable y Experiencia Consolidada',
-        'about.text1': 'D.A.T. Dienstleistungen opera como firma independiente de asesoramiento ejecutivo con sede en Wilhelmshaven. Conectamos situaciones empresariales complejas con los principales proveedores de interim management.',
-        'about.text2': 'Cada señal es examinada minuciosamente por nuestro equipo de expertos en cuanto a plausibilidad, ventana de actuación y contexto de accionistas.',
+        'about.tag': 'Liderazgo Directo y Discreción',
+        'about.heading': 'Discreción por Independencia: El Análisis es Responsabilidad del Titular.',
+        'about.text1': 'En el ámbito de la reestructuración corporativa y posiciones C-Level, la confidencialidad no admite concesiones. En D.A.T. Dienstleistungen, cada hecho corporativo e indicación de mandato pasa por el análisis personal del titular. No delegamos en terceros ni en analistas junior inexpertos.',
+        'about.text2': 'Desde la investigación inicial y la evaluación de plausibilidad hasta el contacto bilateral, todo el proceso permanece en una sola mano experimentada: independiente, fiable y con una protección del mandato del 100%.',
         'about.photoTitle': 'D.A.T. Dienstleistungen · Sede Wilhelmshaven',
-        'about.photoSubtitle': 'Validación personalizada bajo el principio de cuatro ojos',
+        'about.photoSubtitle': 'Diálogo bilateral confidencial con clientes, consejos asesores y homólogos de confianza.',
         'about.founderTitle': 'Fundador y Asesor Principal',
         'about.step1Title': 'Contacto Bilateral y Alineación:',
-        'about.step1Text': ' Definimos confidencialmente su enfoque geográfico y sectorial.',
+        'about.step1Text': ' Usted coordina su enfoque regional y sectorial de forma directa y confidencial con el Sr. Goerndt.',
         'about.step2Title': 'Acuerdo Marco Estandarizado:',
         'about.step2Text': ' Máxima protección con período de objeción por conocimiento previo.',
         'about.step3Title': 'Asignación Discreta:',
         'about.step3Text': ' Entrega cualificada de dosieres con clara ventaja temporal frente al mercado.',
+        'concierge.qStructure': '¿Quién analiza los casos y con quién colaboro directamente?',
+        'concierge.q1': '¿Cómo se rige la protección de mandatos y clientes?',
+        'concierge.q2': '¿Cómo funciona la objeción por conocimiento previo?',
+        'concierge.q3': '¿Qué dimensiones de empresa y mandatos gestionan?',
+        'concierge.q4': '¿Cómo se estructura la remuneración por éxito?',
         'form.tag': 'Contacto Directo',
         'form.title': 'Iniciar Diálogo Confidencial',
         'form.subtitle': 'Para directivos, socios gestores y profesionales de inversión. El Sr. Harro Goerndt se comunicará personalmente.',
@@ -987,26 +1007,77 @@
     }
 
     const conciergeKnowledge = {
-      1: {
-        title: 'Verlässlicher Kundenschutz & 12 Monate Ursächlichkeit',
-        text: 'Jede von uns übermittelte Mandatsopportunität ist mit einem 12-monatigen vertraglichen Ursächlichkeits- und Kundenschutz versehen. Sollte Ihr Haus das Mandat oder Folgeaufträge bei der Zielgesellschaft realisieren, ist die Zuordnung juristisch eindeutig und beiderseitig fair geschützt.'
+      de: {
+        'structure': {
+          title: 'Reine Chefsache: Direkte Zusammenarbeit mit dem Inhaber',
+          text: 'Bei D.A.T. Dienstleistungen spricht und arbeitet der Partner direkt mit dem Inhaber. Jede Analyse und Bewertung erfolgt persönlich durch Harro Goerndt. Es gibt keine Delegation an Junioren – höchste Diskretion und unternehmerische Erfahrung sind damit garantiert.'
+        },
+        1: {
+          title: 'Verlässlicher Kundenschutz & 12 Monate Ursächlichkeit',
+          text: 'Jede von uns übermittelte Mandatsopportunität ist mit einem 12-monatigen vertraglichen Ursächlichkeits- und Kundenschutz versehen. Sollte Ihr Haus das Mandat oder Folgeaufträge bei der Zielgesellschaft realisieren, ist die Zuordnung juristisch eindeutig und beiderseitig fair geschützt.'
+        },
+        2: {
+          title: '5 Werktage Vorkenntnisprüffrist',
+          text: 'Transparenz auf Augenhöhe: Nach Erhalt eines Dossiers haben Partner 5 Werktage Zeit, eine etwaige nachweisbare Vorbefassung mit dem Unternehmen geltend zu machen. Bei berechtigtem Vorkenntnisnachweis entstehen keinerlei Verpflichtungen.'
+        },
+        3: {
+          title: 'Fokus: Gehobener Mittelstand (50–500 Mio. € Umsatz)',
+          text: 'Wir konzentrieren uns auf eigentümergeführte Unternehmen, Konzerntöchter und Portfolio-Gesellschaften im DACH-Raum und europäischen Ausland. Typische Mandate sind Interim CEO/CFO bei Governance-Krisen, CROs in Restrukturierungen und Programmleiter bei Carve-Outs.'
+        },
+        4: {
+          title: 'Erfolgsbasierte Rahmenvereinbarung (Pay-as-you-get)',
+          text: 'Keine Abonnements, keine Vorabkosten, kein Risiko. Die Zusammenarbeit erfolgt auf Basis einer standardisierten bilateralen Rahmenvereinbarung mit rein erfolgsbasierter Vergütung, die erst und nur nach tatsächlichem Zahlungseingang durch den Kunden fällig wird.'
+        }
       },
-      2: {
-        title: '5 Werktage Vorkenntnisprüffrist',
-        text: 'Transparenz auf Augenhöhe: Nach Erhalt eines Dossiers haben Partner 5 Werktage Zeit, eine etwaige nachweisbare Vorbefassung mit dem Unternehmen geltend zu machen. Bei berechtigtem Vorkenntnisnachweis entstehen keinerlei Verpflichtungen.'
+      en: {
+        'structure': {
+          title: 'Exclusively Owner-Led: Direct Engagement with the Principal',
+          text: 'At D.A.T. Dienstleistungen, partners collaborate directly with the owner. Every analysis and evaluation is conducted personally by Harro Goerndt. There is no delegation to juniors – guaranteeing absolute discretion and seasoned executive acumen.'
+        },
+        1: {
+          title: 'Reliable Client Protection & 12-Month Causality',
+          text: 'Each mandate opportunity is backed by a 12-month contractual causality and non-circumvention clause. Any engagement secured with the target is legally unambiguous and mutually safeguarded.'
+        },
+        2: {
+          title: '5-Day Prior Knowledge Objection Window',
+          text: 'Fair peer-to-peer transparency: Upon dossier reception, partners have 5 business days to document prior involvement. Valid prior knowledge voids any claim without obligations.'
+        },
+        3: {
+          title: 'Focus: Mid-Market & Corporate Divisions (€50–500M)',
+          text: 'We target privately held champions, corporate subsidiaries, and PE portfolio companies across the DACH region and Europe requiring high-caliber leadership.'
+        },
+        4: {
+          title: 'Success-Aligned Framework (Pay-as-you-get)',
+          text: 'No subscriptions, no upfront fees, no downside. Co-operation is based on a standard bilateral agreement with compensation payable strictly upon successful engagement execution and cash receipt.'
+        }
       },
-      3: {
-        title: 'Fokus: Gehobener Mittelstand (50–500 Mio. € Umsatz)',
-        text: 'Wir konzentrieren uns auf eigentümergeführte Unternehmen, Konzerntöchter und Portfolio-Gesellschaften im DACH-Raum und europäischen Ausland. Typische Mandate sind Interim CEO/CFO bei Governance-Krisen, CROs in Restrukturierungen und Programmleiter bei Carve-Outs.'
-      },
-      4: {
-        title: 'Erfolgsbasierte Rahmenvereinbarung (Pay-as-you-get)',
-        text: 'Keine Abonnements, keine Vorabkosten, kein Risiko. Die Zusammenarbeit erfolgt auf Basis einer standardisierten bilateralen Rahmenvereinbarung mit rein erfolgsbasierter Vergütung, die erst und nur nach tatsächlichem Zahlungseingang durch den Kunden fällig wird.'
+      es: {
+        'structure': {
+          title: 'Liderazgo Directo: Colaboración Exclusiva con el Titular',
+          text: 'En D.A.T. Dienstleistungen, los socios colaboran directamente con el titular. Cada análisis y valoración es realizada personalmente por Harro Goerndt. No hay delegación en analistas junior: máxima discreción y experiencia empresarial garantizadas.'
+        },
+        1: {
+          title: 'Protección Fiable del Cliente y 12 Meses de Causalidad',
+          text: 'Cada oportunidad de mandato cuenta con una cláusula contractual de causalidad y protección del cliente de 12 meses, salvaguardando legalmente la asignación.'
+        },
+        2: {
+          title: 'Plazo de 5 Días Laborables para Conocimiento Previo',
+          text: 'Transparencia profesional: los socios disponen de 5 días hábiles para acreditar un contacto previo con la empresa objetivo sin ninguna obligación.'
+        },
+        3: {
+          title: 'Foco: Mediana Empresa Consolidada (50–500 M€ de Facturación)',
+          text: 'Nos centramos en empresas medianas, filiales de grupos y participadas de Private Equity en la región DACH y Europa con necesidades urgentes de gestión ejecutiva.'
+        },
+        4: {
+          title: 'Acuerdo Marco Basado en el Éxito',
+          text: 'Sin suscripciones, sin costes iniciales, sin riesgos. La remuneración es estrictamente a éxito y se devenga únicamente tras el cobro efectivo del cliente.'
+        }
       }
     };
 
     function conciergeAnswer(id) {
-      const item = conciergeKnowledge[id];
+      const langData = conciergeKnowledge[currentLang] || conciergeKnowledge['de'];
+      const item = langData[id] || conciergeKnowledge['de'][id];
       if (!item) return;
 
       const box = document.getElementById('conciergeAnswerBox');
