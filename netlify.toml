@@ -29,12 +29,6 @@
 
 
 [[redirects]]
-  from = "/"
-  to = "/dealflow.html"
-  status = 200
-  force = true
-
-[[redirects]]
   from = "/dealflow"
   to = "/dealflow.html"
   status = 200
