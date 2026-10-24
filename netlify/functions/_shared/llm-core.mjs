@@ -260,7 +260,7 @@ async function stageDeepSeek(ctx) {
       'https://api.deepseek.com/v1/chat/completions',
       { Authorization: `Bearer ${key}` },
       chatBody('deepseek-chat', ctx.messages, ctx.temperature, ctx.max_tokens, ctx.jsonMode, ctx.extraBody),
-      Math.min(6000, Math.max(1000, ctx.remaining() * 0.5))
+      Math.min(9000, Math.max(1500, ctx.remaining() - 1500))
     );
     await noteQuotaStatus('deepseek', 'deepseek-chat', res.status, res);
     if (res.ok) {
@@ -285,7 +285,7 @@ const STAGES = {
   deepseek: stageDeepSeek,
 };
 
-export const DEFAULT_PROVIDERS = ['groq', 'deepseek', 'mistral', 'openrouter', 'openai'];
+export const DEFAULT_PROVIDERS = ['groq', 'deepseek', 'openrouter', 'mistral', 'openai'];
 
 /**
  * Fuehrt die Kette aus. Wirft mit aggregiertem Fehler-Protokoll, wenn alle

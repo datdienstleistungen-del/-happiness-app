@@ -543,6 +543,7 @@ export default function NexusLeadRadarPage() {
       if (data.status === 'done' || data.is_cached) {
         setScanJobId(data.job_id)
         setScanStatus('done')
+        setError(null)
         setScanProgress({ current: data.total_steps || 1, total: data.total_steps || 1 })
         setScanMessage(data.message || 'Ergebnisse aus dem 24h-Cache geladen.')
         setScanResults(data.partial_results || [])
@@ -701,6 +702,7 @@ export default function NexusLeadRadarPage() {
         if (data.status === 'done') {
           scanPollingRef.current = null
           setScanStatus('done')
+          setError(null)
 
           // Trigger aus partial_results extrahieren
           const allTriggers = (data.partial_results || []).flatMap(r =>
@@ -838,8 +840,8 @@ export default function NexusLeadRadarPage() {
           return
         }
 
-        // Job läuft noch: nächsten Step erst 1000ms nach Erhalt dieser Antwort anfragen
-        scanPollingRef.current = setTimeout(pollNextStep, 1000)
+        // Job läuft noch: nächsten Step erst 2000ms nach Erhalt dieser Antwort anfragen (schont Groq TPM-Rate-Limits)
+        scanPollingRef.current = setTimeout(pollNextStep, 2000)
       } catch (e) {
         consecutiveFailures++
         console.error('[ScanStep] Polling error:', e)

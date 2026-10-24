@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#155DFC" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <title>D.A.T. Workspace (Intern)</title>
+
+    <script>
+      var hostname = window.location.hostname;
+      var environment = hostname === 'localhost' ? 'localhost'
+        : hostname.includes('preview--') ? 'preview'
+        : 'production';
+
+      var devMode = localStorage.getItem('developer_mode') === 'true';
+      var urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('developer') === 'true') {
+        devMode = true;
+        localStorage.setItem('developer_mode', 'true');
+      }
+      if (urlParams.get('developer') === 'false') {
+        devMode = false;
+        localStorage.removeItem('developer_mode');
+      }
+
+      // Check ignore-analytics URL parameter and localStorage
+      var ignoreAnalytics = localStorage.getItem('ignore-analytics') === 'true';
+      if (urlParams.get('ignore-analytics') === 'true') {
+        ignoreAnalytics = true;
+        localStorage.setItem('ignore-analytics', 'true');
+      }
+      if (urlParams.get('ignore-analytics') === 'false') {
+        ignoreAnalytics = false;
+        localStorage.removeItem('ignore-analytics');
+      }
+
+      var isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+      var shouldTrack = !isLocalhost && !ignoreAnalytics;
+
+      if (!shouldTrack) {
+        window.gtag = function() {};
+        console.log('%c Analytics Tracking: BLOCKED (ignore-analytics or localhost active)', 'color: #d97706; font-weight: bold;');
+      } else {
+        // Dynamically load Google Analytics script only when tracking is allowed
+        var script = document.createElement('script');
+        script.async = true;
+        script.src = "https://www.googletagmanager.com/gtag/js?id=G-47T32Z43L2";
+        document.head.appendChild(script);
+
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        var gaParams = {
+          user_properties: {
+            environment: environment,
+            app_version: '1.0.0'
+          }
+        };
+
+        if (devMode) {
+          gaParams.traffic_type = 'internal';
+          gaParams.debug_mode = true;
+          gaParams.user_properties.role = 'developer';
+          console.log('%c Developer Mode: ACTIVE', 'color: #1b6e6e; font-weight: bold; font-size: 14px;');
+        } else {
+          console.log('%c Developer Mode: OFF', 'color: #6b7280; font-weight: bold; font-size: 14px;');
+        }
+
+        gtag('config', 'G-47T32Z43L2', gaParams);
+
+        if (devMode) {
+          gtag('event', 'developer_mode_enabled', { environment: environment });
+        }
+      }
+    </script>
+    <script>
+      (function(){
+        var ua = navigator.userAgent.toLowerCase();
+        var botPatterns = /bot|spider|crawl|headless|phantom|selenium|puppeteer|webdriver|curl|wget|python|go-http|java|ruby|scalability|load.?test|monitoring|uptime|pingdom|uptimerobot|statuscake|netlify.*health|google.*analytics.*bot|whatsapp|facebookexternalhit|facebot|linkedin/i;
+        if (navigator.webdriver || botPatterns.test(ua)) {
+          window.gtag = function(){};
+          window._isBot = true;
+          console.log('Bot detected – GA4 tracking disabled');
+        }
+      })();
+    </script>
+    <style>
+      body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#fff}
+      .splash{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px}
+      .splash-h{font-size:48px;font-weight:700;letter-spacing:-1px}
+      .splash-h .c0{color:#085041}.splash-h .c1{color:#D85A30}.splash-h .c2{color:#1D9E75}.splash-h .c3{color:#BA7517}
+      .splash-bar{width:120px;height:3px;background:#e5e7eb;border-radius:2px;overflow:hidden}
+      .splash-fill{width:40%;height:100%;background:#085041;border-radius:2px;animation:slide 1s ease-in-out infinite}
+      @keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="splash">
+        <div class="splash-h">
+          <span class="c0">N</span><span class="c1">e</span><span class="c2">X</span><span class="c3">u</span><span class="c0">s</span>
+        </div>
+        <div class="splash-bar"><div class="splash-fill"></div></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

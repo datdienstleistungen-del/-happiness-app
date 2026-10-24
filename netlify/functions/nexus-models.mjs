@@ -13,11 +13,11 @@ export const GROQ_FREE_FIRST = [
 ];
 
 // 2. STRUCTURED JSON HEAVY: For complex multi-field JSON schema extraction & strategy generation
+// allam-2-7b rejects json_object response_format (HTTP 400), excluded from JSON heavy profile
 export const GROQ_JSON_HEAVY = [
   'qwen/qwen3.8-27b',
   'openai/gpt-oss-120b',
-  'openai/gpt-oss-20b',
-  'allam-2-7b'
+  'openai/gpt-oss-20b'
 ];
 
 // 3. Multimodal & Vision Models
@@ -35,9 +35,10 @@ export const GROQ_COACH = [
 
 // 5. OpenRouter Free Tier Fallback Models (Aktualisiert auf aktive Modelle)
 export const OPENROUTER_FREE_MODELS = [
-  'minimax/minimax-m3.1-flash:free',
-  'google/gemma-4-26b-a4b-it:free',
-  'nvidia/nemotron-3.5-lightning:free'
+  'nvidia/nemotron-3.5-lightning:free',
+  'nvidia/nemotron-3-ultra-550b-a55b:free',
+  'nvidia/nemotron-3.5-super-vl:free',
+  'liquid/lfm-2.5-2.6b:free'
 ];
 
 // 5. Mistral Default Model

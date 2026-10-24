@@ -313,9 +313,9 @@ export async function guardJob(client, job) {
     const last_message = `Fertig: ${partialResults.length} Leads gefunden.`;
     await client
       .from('nexus_scan_jobs')
-      .update({ status: 'done', last_message, updated_at: new Date().toISOString() })
+      .update({ status: 'done', last_message, error_message: null, updated_at: new Date().toISOString() })
       .eq('id', job.id);
-    return { finished: true, response: { ...readResponse(job), status: 'done', last_message } };
+    return { finished: true, response: { ...readResponse(job), status: 'done', last_message, error_message: null } };
   }
 
   return { finished: false };
@@ -814,7 +814,7 @@ Gib ein JSON zurück:
   let llmResult = null;
   let llmError = null;
   const maxAttempts = 2;
-  const stepBudgetMs = 22000;
+  const stepBudgetMs = 24000;
   const stepDeadline = Date.now() + stepBudgetMs;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -830,7 +830,7 @@ Gib ein JSON zurück:
         temperature: 0.3,
         max_tokens: 2500,
         jsonMode: true,
-        totalBudgetMs: Math.min(remainingBudget - 500, 18000),
+        totalBudgetMs: Math.min(remainingBudget - 500, 20000),
         xTitle: 'NeXus Research'
       });
       if (llmResult?.text) {
@@ -1043,6 +1043,7 @@ Gib ein JSON zurück:
       partial_results: newResults,
       current_step: newStep,
       last_message: message,
+      error_message: isDone ? null : (job.error_message ? null : undefined),
       status: isDone ? 'done' : 'running',
       updated_at: new Date().toISOString()
     })
@@ -1053,6 +1054,7 @@ Gib ein JSON zurück:
     current_step: newStep,
     total_steps: job.total_steps,
     last_message: message,
+    error_message: isDone ? null : (job.error_message ? null : undefined),
     partial_results: newResults,
     rejected_triggers: rejectedTriggers
   };
