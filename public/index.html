@@ -3,46 +3,52 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>D.A.T. DIENSTLEISTUNGEN · Mandats-Intelligence & Executive Signals Terminal</title>
-  <meta name="description" content="Diskretes B2B Dealflow & Intelligence Terminal für Vorstände führender Interim-Management-Provider, Private-Equity-Investoren und M&A-Boutiquen (DACH).">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2306b6d4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>">
-  
-  <!-- Google Fonts: Inter & Plus Jakarta Sans & JetBrains Mono -->
+  <title>D.A.T. Dienstleistungen · Executive Advisory & Mandate Intelligence</title>
+  <meta name="description" content="Diskrete Identifikation von C-Level-Vakanzen, Sondersituationen und Transformationsbedarf im europäischen Mittelstand – fundiert, vertraulich und partnerschaftlich.">
+  <link rel="icon" type="image/png" href="/dat-logo-corporate.png">
+
+  <!-- Google Fonts: Playfair Display, Plus Jakarta Sans, Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
+
   <!-- Lucide Icons via CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <script>
     tailwind.config = {
-      darkMode: 'class',
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
-            display: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
-            mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+            serif: ['"Playfair Display"', 'Georgia', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
+            body: ['Inter', 'system-ui', 'sans-serif']
           },
           colors: {
-            brand: {
-              50: '#ecfeff',
-              100: '#cffafe',
-              400: '#22d3ee',
-              500: '#06b6d4',
-              600: '#0891b2',
-              900: '#164e63',
+            stone: {
+              25: '#FCFCF9',
+              50: '#FBFBF8',
+              100: '#F5F4EF',
+              150: '#EDEBE3',
+              200: '#E4E1D5',
+              300: '#D1CCBC',
+              800: '#292524',
+              900: '#1C1917'
             },
-            terminal: {
-              950: '#020617', // slate-950
-              900: '#0B1120',
-              850: '#0F172A', // slate-900
-              800: '#1E293B', // slate-800
-              700: '#334155',
+            brass: {
+              300: '#D8C39D',
+              400: '#C5A880',
+              500: '#B08F60',
+              600: '#957342',
+              700: '#795B30'
+            },
+            navy: {
+              800: '#1E293B',
+              900: '#0F172A',
+              950: '#0A0F1D'
             }
           }
         }
@@ -51,734 +57,445 @@
   </script>
 
   <style>
-    /* Feine Bloomberg-Style Akzente & Scrollbars */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+    /* Sanfte Scrollbar & weiche Übergänge */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #F5F4EF; }
+    ::-webkit-scrollbar-thumb { background: #D1CCBC; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #B08F60; }
+    
+    .hero-mask {
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 100%);
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 100%);
     }
-    ::-webkit-scrollbar-track {
-      background: #020617;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #1e293b;
-      border-radius: 3px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #334155;
-    }
-    .grid-pattern {
-      background-image: radial-gradient(rgba(30, 41, 59, 0.45) 1px, transparent 1px);
-      background-size: 24px 24px;
-    }
-    .badge-amber {
-      background: rgba(245, 158, 11, 0.12);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      color: #fbbf24;
-    }
-    .badge-cyan {
-      background: rgba(6, 182, 212, 0.12);
-      border: 1px solid rgba(6, 182, 212, 0.3);
-      color: #22d3ee;
-    }
-    .badge-emerald {
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #34d399;
-    }
-    .card-border-glow:hover {
-      border-color: rgba(34, 211, 238, 0.4);
-      box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.15);
-    }
-    .blur-vault {
-      filter: blur(5px);
-      user-select: none;
-      pointer-events: none;
+
+    .editorial-quote::before {
+      content: "“";
+      font-family: "Playfair Display", serif;
+      font-size: 4rem;
+      position: absolute;
+      top: -1.5rem;
+      left: -1rem;
+      color: #C5A880;
+      opacity: 0.35;
+      line-height: 1;
     }
   </style>
 </head>
 
-<body class="bg-[#020617] text-slate-200 font-sans antialiased selection:bg-cyan-500 selection:text-slate-950 min-h-screen flex flex-col justify-between">
+<body class="bg-[#FBFBF8] text-slate-900 font-sans antialiased selection:bg-brass-400 selection:text-white min-h-screen flex flex-col justify-between">
 
   <!-- ========================================================================= -->
-  <!-- SEKTION A: MINIMALISTISCHER TERMINAL HEADER -->
+  <!-- 1. HEADER & NAVIGATION -->
   <!-- ========================================================================= -->
-  <header class="sticky top-0 z-40 bg-[#020617]/90 backdrop-blur-md border-b border-slate-800">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      
-      <!-- Logo / Wortmarke -->
-      <div class="flex items-center space-x-3">
-        <div class="w-9 h-9 rounded bg-slate-900 border border-slate-700 flex items-center justify-center text-cyan-400 shadow-inner">
-          <i data-lucide="layers" class="w-5 h-5"></i>
-        </div>
-        <div>
-          <div class="flex items-center space-x-2">
-            <span class="font-display font-extrabold tracking-wider text-slate-100 text-sm sm:text-base">D.A.T. DIENSTLEISTUNGEN</span>
-            <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-cyan-950/70 border border-cyan-800/80 text-cyan-300">Terminal v2.5</span>
+  <header class="sticky top-0 z-40 bg-[#FBFBF8]/95 backdrop-blur-md border-b border-stone-200/80 transition-all">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="h-20 flex items-center justify-between">
+        
+        <!-- Logo & Brand Mark -->
+        <a href="#" class="flex items-center space-x-3 group">
+          <img src="/dat-logo-corporate.png" alt="D.A.T. Dienstleistungen Logo" class="h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-102">
+          <div class="hidden sm:block border-l border-stone-300 pl-3.5">
+            <div class="font-serif font-bold text-slate-900 text-base sm:text-lg tracking-tight">D.A.T. DIENSTLEISTUNGEN</div>
+            <div class="text-[11px] uppercase tracking-widest text-brass-600 font-medium font-sans">Executive Advisory & Mandate Intelligence</div>
           </div>
-          <p class="text-[11px] text-slate-400 font-medium tracking-tight">B2B Intelligence & Executive Signals · Inh. Harro Goerndt</p>
-        </div>
-      </div>
+        </a>
 
-      <!-- Mitte: Standort & Live-Status (Auf Desktop sichtbar) -->
-      <div class="hidden lg:flex items-center space-x-4 bg-slate-900/80 px-3.5 py-1.5 rounded-full border border-slate-800 text-xs">
-        <div class="flex items-center space-x-2 text-slate-300 font-mono text-[11px]">
-          <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-500"></i>
-          <span>Standort: Wilhelmshaven · Weserstraße 16</span>
-        </div>
-        <span class="h-3 w-px bg-slate-800"></span>
-        <div class="flex items-center space-x-2">
-          <span class="relative flex h-2 w-2">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
-          <span class="text-emerald-400 font-mono text-[11px] font-medium tracking-wide">Verifizierte Signale aktiv</span>
-        </div>
-      </div>
-
-      <!-- Navigation & Action -->
-      <div class="flex items-center space-x-3 sm:space-x-6">
-        <nav class="hidden md:flex items-center space-x-5 text-xs font-medium text-slate-300">
-          <a href="#triggers" class="hover:text-cyan-400 transition-colors">Need Triggers</a>
-          <a href="#dealboard" class="hover:text-cyan-400 transition-colors flex items-center space-x-1">
-            <span>Live Dealboard</span>
-            <span class="px-1.5 py-0.2 rounded-full text-[9px] bg-cyan-900/60 text-cyan-300 border border-cyan-700/60 font-mono">6</span>
-          </a>
-          <a href="#verguetung" class="hover:text-cyan-400 transition-colors">5% Modell</a>
-          <a href="#compliance" class="hover:text-cyan-400 transition-colors">DSGVO-Audit</a>
+        <!-- Hauptnavigation (Desktop) -->
+        <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-700">
+          <a href="#kompetenzen" class="hover:text-brass-600 transition-colors" data-i18n="nav.competencies">Kompetenzfelder</a>
+          <a href="#arbeitsweise" class="hover:text-brass-600 transition-colors" data-i18n="nav.methodology">Arbeitsweise</a>
+          <a href="#ueber-uns" class="hover:text-brass-600 transition-colors" data-i18n="nav.about">Über uns</a>
+          <a href="#kontakt" class="hover:text-brass-600 transition-colors" data-i18n="nav.contact">Kontakt</a>
         </nav>
 
-        <button onclick="openModal('modal-login')" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 text-slate-200 text-xs font-mono transition-all">
-          <i data-lucide="lock" class="w-3.5 h-3.5 text-cyan-400"></i>
-          <span>Partner-Login</span>
-        </button>
-      </div>
+        <!-- Rechte Seite: Sprachwechsler, Inhaber-Signatur & Dialog-Button -->
+        <div class="flex items-center space-x-3 sm:space-x-5">
+          
+          <!-- Sprachwechsler DE | EN | ES -->
+          <div class="inline-flex items-center rounded-full bg-stone-100 p-0.5 border border-stone-200 text-xs font-semibold">
+            <button onclick="setLanguage('de')" id="lang-de" class="px-2.5 py-1 rounded-full bg-white text-slate-900 shadow-sm transition-all">DE</button>
+            <button onclick="setLanguage('en')" id="lang-en" class="px-2.5 py-1 rounded-full text-slate-500 hover:text-slate-900 transition-all">EN</button>
+            <button onclick="setLanguage('es')" id="lang-es" class="px-2.5 py-1 rounded-full text-slate-500 hover:text-slate-900 transition-all">ES</button>
+          </div>
 
+          <!-- Inhaber-Signatur mit Porträt (Harro Goerndt) -->
+          <div class="hidden xl:flex items-center space-x-2.5 bg-stone-100/90 py-1.5 px-3 rounded-full border border-stone-200/80">
+            <img src="/harro-portrait.jpg" alt="Harro Goerndt" class="w-7 h-7 rounded-full object-cover border border-brass-400">
+            <div class="text-[11px] leading-tight">
+              <span class="block font-semibold text-slate-900">Harro Goerndt</span>
+              <span class="text-stone-500">Inhabergeführt</span>
+            </div>
+          </div>
+
+          <!-- CTA Dialog-Button -->
+          <a href="#kontakt" class="hidden sm:inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-slate-900 hover:bg-brass-600 text-white text-xs sm:text-sm font-medium tracking-wide transition-all shadow-sm">
+            <i data-lucide="shield-check" class="w-4 h-4 text-brass-400"></i>
+            <span data-i18n="nav.cta">Vertraulicher Dialog</span>
+          </a>
+
+          <!-- Mobile Menü-Toggle -->
+          <button onclick="toggleMobileMenu()" class="md:hidden p-2 text-slate-700 hover:text-slate-900 focus:outline-none">
+            <i data-lucide="menu" id="menu-icon" class="w-6 h-6"></i>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Mobile Dropdown Navigation -->
+    <div id="mobile-menu" class="hidden md:hidden border-t border-stone-200 bg-stone-50 px-4 pt-3 pb-5 space-y-2 text-sm font-medium">
+      <a href="#kompetenzen" onclick="toggleMobileMenu()" class="block py-2 text-slate-800 hover:text-brass-600" data-i18n="nav.competencies">Kompetenzfelder</a>
+      <a href="#arbeitsweise" onclick="toggleMobileMenu()" class="block py-2 text-slate-800 hover:text-brass-600" data-i18n="nav.methodology">Arbeitsweise</a>
+      <a href="#ueber-uns" onclick="toggleMobileMenu()" class="block py-2 text-slate-800 hover:text-brass-600" data-i18n="nav.about">Über uns</a>
+      <a href="#kontakt" onclick="toggleMobileMenu()" class="block py-2 text-slate-800 hover:text-brass-600" data-i18n="nav.contact">Kontakt</a>
+      <div class="pt-3 border-t border-stone-200 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <img src="/harro-portrait.jpg" alt="Harro Goerndt" class="w-8 h-8 rounded-full object-cover border border-brass-400">
+          <span class="text-xs font-semibold text-slate-900">Harro Goerndt · Wilhelmshaven</span>
+        </div>
+        <a href="#kontakt" onclick="toggleMobileMenu()" class="px-3 py-1.5 rounded bg-slate-900 text-white text-xs font-medium">Dialog starten</a>
+      </div>
     </div>
   </header>
 
   <main class="flex-grow">
     
     <!-- ========================================================================= -->
-    <!-- SEKTION B: HERO-BEREICH (EXECUTIVE POSITIONING) -->
+    <!-- 2. HERO-SEKTION (MIT PANORAMA KAISER-WILHELM-BRÜCKE) -->
     <!-- ========================================================================= -->
-    <section class="relative pt-12 pb-16 md:pt-20 md:pb-24 border-b border-slate-800/80 overflow-hidden grid-pattern">
+    <section class="relative pt-6 pb-20 md:pt-12 md:pb-32 overflow-hidden border-b border-stone-200">
+      
+      <!-- Hintergrund-Panorama mit weichem Auslauf nach unten -->
+      <div class="absolute inset-x-0 top-0 h-[480px] sm:h-[540px] md:h-[620px] overflow-hidden pointer-events-none z-0">
+        <img src="/kaiser-wilhelm-bruecke.jpg" alt="Wilhelmshaven Kaiser-Wilhelm-Brücke" class="w-full h-full object-cover object-center opacity-30 md:opacity-25 mix-blend-multiply scale-102">
+        <div class="absolute inset-0 bg-gradient-to-b from-[#FBFBF8]/40 via-[#FBFBF8]/80 to-[#FBFBF8]"></div>
+      </div>
+
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
-        <!-- Institutional Badge -->
-        <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-800/70 text-cyan-300 text-xs font-mono mb-6 shadow-sm">
-          <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
-          <span>Institutional Leadflow · Exklusiv für Interim Provider & Executive Search</span>
+        <!-- Institutional Advisory Badge -->
+        <div class="inline-flex items-center space-x-2.5 px-3.5 py-1.5 rounded-full bg-white/90 border border-stone-200 text-slate-800 text-xs font-medium mb-8 shadow-sm backdrop-blur-sm">
+          <span class="w-2 h-2 rounded-full bg-brass-500 animate-pulse"></span>
+          <span class="tracking-wide uppercase text-[10px] font-semibold text-brass-700" data-i18n="hero.badge">Executive Advisory & Mandate Intelligence</span>
+          <span class="text-stone-300">|</span>
+          <span class="text-stone-600 text-[11px]" data-i18n="hero.location">Standort Wilhelmshaven · DACH & Europa</span>
         </div>
 
         <!-- Headline & Subline -->
         <div class="max-w-4xl">
-          <h1 class="text-3xl sm:text-5xl lg:text-6xl font-display font-extrabold tracking-tight text-slate-100 leading-[1.12]">
-            Verifizierte Mandats- und Vakanz-Intelligence für das gehobene Interim Management.
+          <h1 class="text-3xl sm:text-5xl lg:text-6xl font-serif font-bold tracking-tight text-slate-900 leading-[1.15]" data-i18n="hero.headline">
+            Frühzeitige Mandats-Intelligence aus vertrauensvollen Quellen.
           </h1>
-          <p class="mt-6 text-base sm:text-lg lg:text-xl text-slate-400 font-normal leading-relaxed max-w-3xl">
-            Strukturierte Primärsignale bei unbesetzten Organfunktionen, Restrukturierungsanlässen und Governance-Lücken im gehobenen Mittelstand (DACH) – <span class="text-slate-200 font-medium">100 % DSGVO-konform</span> und registergeprüft.
+          <p class="mt-6 sm:mt-8 text-base sm:text-xl text-slate-600 font-normal leading-relaxed max-w-3xl" data-i18n="hero.subline">
+            Diskrete Identifikation von C-Level-Vakanzen, Sondersituationen und Transformationsbedarf im europäischen Mittelstand – fundiert, vertraulich und partnerschaftlich.
           </p>
         </div>
 
-        <!-- Institutional CTAs -->
-        <div class="mt-9 flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 max-w-xl">
-          <a href="#dealboard" class="inline-flex justify-center items-center px-6 py-3.5 rounded bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-sm transition-all shadow-lg shadow-cyan-500/10 hover:shadow-cyan-400/20">
-            <span>Zum aktuellen Dealboard</span>
-            <i data-lucide="arrow-down" class="w-4 h-4 ml-2"></i>
+        <!-- Call to Action Buttons -->
+        <div class="mt-10 flex flex-col sm:flex-row items-stretch sm:items-center space-y-3.5 sm:space-y-0 sm:space-x-5 max-w-xl">
+          <a href="#kontakt" class="inline-flex justify-center items-center px-7 py-4 rounded-lg bg-slate-900 hover:bg-brass-600 text-white font-medium text-sm transition-all shadow-md hover:shadow-lg">
+            <span data-i18n="hero.primaryBtn">Vertraulichen Dialog anfordern</span>
+            <i data-lucide="arrow-right" class="w-4 h-4 ml-2.5"></i>
           </a>
-          <button onclick="openInquiryModal('', 'Modell A (5% Rahmenkooperation)')" class="inline-flex justify-center items-center px-6 py-3.5 rounded bg-slate-900 hover:bg-slate-850 border border-slate-700 hover:border-slate-600 text-slate-100 font-medium text-sm transition-all">
-            <i data-lucide="file-text" class="w-4 h-4 mr-2 text-cyan-400"></i>
-            <span>Rahmenvereinbarung anfordern (5% Modell)</span>
-          </button>
+          <a href="#arbeitsweise" class="inline-flex justify-center items-center px-6 py-4 rounded-lg bg-white/90 hover:bg-stone-100 border border-stone-300 text-slate-800 font-medium text-sm transition-all shadow-sm">
+            <span data-i18n="hero.secondaryBtn">Unsere Arbeitsweise</span>
+          </a>
         </div>
 
-        <!-- Bloomberg Metrics Bar -->
-        <div class="mt-14 pt-8 border-t border-slate-800/80 grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div class="border-l-2 border-cyan-500 pl-4">
-            <div class="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Erkennungsfenster</div>
-            <div class="text-xl sm:text-2xl font-bold font-mono text-slate-100 mt-1 tabular-nums">Ø 48h</div>
-            <div class="text-xs text-slate-400 mt-0.5">nach Organbeschluss / Registerakt</div>
-          </div>
-          <div class="border-l-2 border-slate-700 pl-4">
-            <div class="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Verifikationsquote</div>
-            <div class="text-xl sm:text-2xl font-bold font-mono text-emerald-400 mt-1 tabular-nums">100 %</div>
-            <div class="text-xs text-slate-400 mt-0.5">Vier-Augen-Primärquellen-Audit</div>
-          </div>
-          <div class="border-l-2 border-amber-500 pl-4">
-            <div class="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Mandatsschutz</div>
-            <div class="text-xl sm:text-2xl font-bold font-mono text-amber-400 mt-1 tabular-nums">12 Monate</div>
-            <div class="text-xs text-slate-400 mt-0.5">vertraglicher Ursächlichkeitsschutz</div>
-          </div>
-          <div class="border-l-2 border-slate-700 pl-4">
-            <div class="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Vergütungsmodell</div>
-            <div class="text-xl sm:text-2xl font-bold font-mono text-slate-100 mt-1 tabular-nums">0 € Vorab</div>
-            <div class="text-xs text-slate-400 mt-0.5">5 % rein erfolgsbasiert (Pay-as-you-get)</div>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-
-    <!-- ========================================================================= -->
-    <!-- SEKTION C: TRIGGER-KATEGORIEN (FEATURE BAND) -->
-    <!-- ========================================================================= -->
-    <section id="triggers" class="py-16 bg-[#0B1120] border-b border-slate-800">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        <div class="flex flex-col md:flex-row md:items-end justify-between mb-10">
-          <div>
-            <div class="text-xs font-mono uppercase text-cyan-400 tracking-wider">Systematische Ereignis-Früherkennung</div>
-            <h2 class="text-2xl sm:text-3xl font-display font-bold text-slate-100 mt-1">Die 5 primären Mandats-Auslöser („Need Triggers“)</h2>
-          </div>
-          <p class="text-xs sm:text-sm text-slate-400 max-w-md mt-2 md:mt-0">
-            NeXus HIT scannt täglich über 45 Register, Gerichtsbekanntmachungen und B2B-Datenquellen auf konkrete Handlungsauslöser im gehobenen Mittelstand.
-          </p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <!-- 3 Säulen der Diskretion (Vertrauens-Metriken) -->
+        <div class="mt-16 sm:mt-24 pt-8 border-t border-stone-200/90 grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
           
-          <!-- Trigger 1 -->
-          <div class="bg-slate-900/90 rounded-lg p-5 border border-slate-800 hover:border-slate-700 transition-all card-border-glow">
-            <div class="w-8 h-8 rounded bg-cyan-950/80 border border-cyan-800 flex items-center justify-center text-cyan-400 mb-4">
-              <i data-lucide="user-check" class="w-4 h-4"></i>
-            </div>
-            <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300">VAKANZ / ORGAN</span>
-            <h3 class="text-sm font-bold text-slate-100 mt-2">C-Level & Executive Vakanzen</h3>
-            <p class="text-xs text-slate-400 mt-2 leading-relaxed">
-              Unerwartete Organwechsel, plötzliche Amtsniederlegungen, Governance-Lücken (CEO, CFO, COO, Aufsichtsrat).
-            </p>
-            <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-cyan-300">
-              Profil: Interim CEO / CFO
-            </div>
-          </div>
-
-          <!-- Trigger 2 -->
-          <div class="bg-slate-900/90 rounded-lg p-5 border border-slate-800 hover:border-slate-700 transition-all card-border-glow">
-            <div class="w-8 h-8 rounded bg-blue-950/80 border border-blue-800 flex items-center justify-center text-blue-400 mb-4">
-              <i data-lucide="git-merge" class="w-4 h-4"></i>
-            </div>
-            <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300">M&A & INTEGRATION</span>
-            <h3 class="text-sm font-bold text-slate-100 mt-2">M&A & Post-Merger-Integration</h3>
-            <p class="text-xs text-slate-400 mt-2 leading-relaxed">
-              Carve-outs, Mehrheitsübernahmen durch Private Equity, Gesellschafterwechsel, PMI-Programme, Day-1-Readiness.
-            </p>
-            <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-blue-300">
-              Profil: Head of PMI / Carve-Out
-            </div>
-          </div>
-
-          <!-- Trigger 3 -->
-          <div class="bg-slate-900/90 rounded-lg p-5 border border-slate-800 hover:border-slate-700 transition-all card-border-glow">
-            <div class="w-8 h-8 rounded bg-amber-950/80 border border-amber-800 flex items-center justify-center text-amber-400 mb-4">
-              <i data-lucide="alert-triangle" class="w-4 h-4"></i>
-            </div>
-            <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-800 text-amber-300">SANIERUNG / TURNAROUND</span>
-            <h3 class="text-sm font-bold text-slate-100 mt-2">Sanierung & Restrukturierung</h3>
-            <p class="text-xs text-slate-400 mt-2 leading-relaxed">
-              Covenant-Brüche, Ertragsdruck, Liquiditätsengpässe, StaRUG-Verfahren, Sanierung in Eigenverwaltung (§ 270 InsO).
-            </p>
-            <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-amber-300">
-              Profil: Interim CRO / Sanierer
-            </div>
-          </div>
-
-          <!-- Trigger 4 -->
-          <div class="bg-slate-900/90 rounded-lg p-5 border border-slate-800 hover:border-slate-700 transition-all card-border-glow">
-            <div class="w-8 h-8 rounded bg-emerald-950/80 border border-emerald-800 flex items-center justify-center text-emerald-400 mb-4">
-              <i data-lucide="globe" class="w-4 h-4"></i>
-            </div>
-            <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300">EXPANSION / GROWTH</span>
-            <h3 class="text-sm font-bold text-slate-100 mt-2">Expansion & Internationalisierung</h3>
-            <p class="text-xs text-slate-400 mt-2 leading-relaxed">
-              Neuer Werksaufbau, Markterschließung, Verlagerungsprogramme, operative Skalierung und Rollout.
-            </p>
-            <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-emerald-300">
-              Profil: Interim Werkleiter / COO
-            </div>
-          </div>
-
-          <!-- Trigger 5 -->
-          <div class="bg-slate-900/90 rounded-lg p-5 border border-slate-800 hover:border-slate-700 transition-all card-border-glow">
-            <div class="w-8 h-8 rounded bg-purple-950/80 border border-purple-800 flex items-center justify-center text-purple-400 mb-4">
-              <i data-lucide="zap" class="w-4 h-4"></i>
-            </div>
-            <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300">SONDERPROJEKTE</span>
-            <h3 class="text-sm font-bold text-slate-100 mt-2">Hiring-Peaks & Sonderprojekte</h3>
-            <p class="text-xs text-slate-400 mt-2 leading-relaxed">
-              Akute Kapazitätsengpässe beim Hochlauf kritischer Geschäftsbereiche, Lieferkettensicherung, IT-Transformationen.
-            </p>
-            <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] font-mono text-purple-300">
-              Profil: Program Director / Taskforce
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-    </section>
-
-
-    <!-- ========================================================================= -->
-    <!-- SEKTION D: LIVE DEALBOARD (DAS KURATIERTE HERZSTÜCK) -->
-    <!-- ========================================================================= -->
-    <section id="dealboard" class="py-16 md:py-24 border-b border-slate-800 relative">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        <!-- Header & Diskreter Filter -->
-        <div class="flex flex-col lg:flex-row lg:items-end justify-between mb-8 pb-6 border-b border-slate-800/80">
-          <div>
-            <div class="flex items-center space-x-2 text-xs font-mono uppercase text-cyan-400 tracking-wider">
-              <i data-lucide="radar" class="w-3.5 h-3.5"></i>
-              <span>Kuratierte Vorab-Dossiers · Stand: Q4/2026</span>
-            </div>
-            <h2 class="text-2xl sm:text-4xl font-display font-extrabold text-slate-100 mt-1">Live Mandats- & Dealboard</h2>
-            <p class="text-sm text-slate-400 mt-2 max-w-2xl">
-              Anonymisierte Blind-Profile von Unternehmen mit verifiziertem Managementbedarf. Klarnamen und Primärquellen sind bis zur Abrufanforderung gesperrt.
-            </p>
-          </div>
-
-          <!-- Quick Search & Stats -->
-          <div class="mt-6 lg:mt-0 flex items-center space-x-3">
-            <div class="relative">
-              <i data-lucide="search" class="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2"></i>
-              <input type="text" id="dealSearch" placeholder="Stichwort / Signal-ID..." class="bg-slate-900 border border-slate-700 text-xs text-slate-200 pl-8 pr-3 py-2 rounded focus:outline-none focus:border-cyan-500 w-48 sm:w-60 font-mono">
-            </div>
-            <span class="text-xs font-mono text-slate-400 px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded">
-              <span id="activeCount" class="text-cyan-400 font-bold">6</span> Signale aktiv
-            </span>
-          </div>
-        </div>
-
-        <!-- Filter-Tabs (Interaktiv) -->
-        <div class="flex items-center space-x-2 overflow-x-auto pb-4 mb-6 scrollbar-none text-xs font-medium">
-          <button onclick="filterDeals('all')" class="filter-btn active whitespace-nowrap px-3.5 py-2 rounded bg-cyan-500 text-slate-950 font-semibold transition-all" data-category="all">
-            Alle Segmente (6)
-          </button>
-          <button onclick="filterDeals('maschinenbau')" class="filter-btn whitespace-nowrap px-3.5 py-2 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all" data-category="maschinenbau">
-            Maschinen- & Anlagenbau (2)
-          </button>
-          <button onclick="filterDeals('bau')" class="filter-btn whitespace-nowrap px-3.5 py-2 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all" data-category="bau">
-            Bau & Baustoffe (1)
-          </button>
-          <button onclick="filterDeals('handel')" class="filter-btn whitespace-nowrap px-3.5 py-2 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all" data-category="handel">
-            Handel & Konsumgüter (1)
-          </button>
-          <button onclick="filterDeals('automotive')" class="filter-btn whitespace-nowrap px-3.5 py-2 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all" data-category="automotive">
-            Automotive (1)
-          </button>
-          <button onclick="filterDeals('gesundheit')" class="filter-btn whitespace-nowrap px-3.5 py-2 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all" data-category="gesundheit">
-            Gesundheit & Pharma (1)
-          </button>
-        </div>
-
-        <!-- Dealboard Cards Grid -->
-        <div id="dealGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
-          <!-- Card 1: Maschinenbau -->
-          <div class="deal-card bg-slate-900/90 rounded-xl border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between p-6 card-border-glow" data-category="maschinenbau" data-id="#SIG-2610-ENG" data-title="Governance-Lücke / Unerwarteter Rücktritt Aufsichtsratsvorsitz & CEO" data-industry="Maschinen- & Anlagenbau" data-region="Bayern / Großraum Augsburg" data-urgency="Akut / Q4 Nachbesetzung" data-status="Verfügbar" data-role="Interim CEO / Organbrücke" data-revenue="85–120 Mio. €" data-headcount="ca. 450 Mitarbeiter" data-pain="Plötzliche Führungsvakanz gefährdet laufende Konsortialfinanzierung und wichtige Kundenaufträge in den USA.">
-            <div>
-              <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-                <span class="font-mono text-xs font-bold text-cyan-400">#SIG-2610-ENG</span>
-                <span class="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded text-[11px] font-mono badge-emerald">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span>Verfügbar</span>
-                </span>
-              </div>
-
-              <div class="mt-4">
-                <div class="text-[11px] font-mono uppercase text-slate-400">Maschinen- & Anlagenbau · Bayern / Großraum Augsburg</div>
-                <h3 class="text-base font-bold text-slate-100 mt-1 leading-snug">Governance-Lücke / Unerwarteter Rücktritt Aufsichtsratsvorsitz & CEO</h3>
-              </div>
-
-              <div class="mt-5 space-y-2 text-xs">
-                <div class="flex justify-between py-1 border-b border-slate-800/60">
-                  <span class="text-slate-400">Handlungsdruck:</span>
-                  <span class="font-mono text-slate-200 text-right">Akut / Q4 Nachbesetzung</span>
-                </div>
-                <div class="flex justify-between py-1 border-b border-slate-800/60">
-                  <span class="text-slate-400">Größenordnung:</span>
-                  <span class="font-mono text-slate-200 text-right">85–120 Mio. € · ~450 MA</span>
-                </div>
-                <div class="flex justify-between py-1">
-                  <span class="text-slate-400">Vorgeschlagene Rolle:</span>
-                  <span class="font-mono text-cyan-300 font-medium text-right">Interim CEO / Organbrücke</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
-              <span class="text-[11px] text-slate-400 font-mono">100% Registeraudit</span>
-              <button onclick="openDossierModal(this)" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 text-slate-200 text-xs font-semibold transition-all">
-                <span>Dossier-Vorschau</span>
-                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Card 2: Automotive (In Prüfung) -->
-          <div class="deal-card bg-slate-900/90 rounded-xl border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between p-6 card-border-glow" data-category="automotive" data-id="#SIG-2610-AUT" data-title="Restrukturierung / Covenant-Bruch & Werksumbau E-Mobility" data-industry="Automotive & Zulieferer" data-region="Baden-Württemberg / Großraum Stuttgart" data-urgency="Sehr Akut / 14-Tage-Fenster" data-status="In Prüfung (Sperrfrist aktiv)" data-role="Interim CRO / Turnaround CFO" data-revenue="140–180 Mio. €" data-headcount="ca. 850 Mitarbeiter" data-pain="Verhandlungsführung mit Bankenpool und OEM-Kunden über Kostenallokation bei drohendem Liquiditätsengpass.">
-            <div>
-              <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-                <span class="font-mono text-xs font-bold text-cyan-400">#SIG-2610-AUT</span>
-                <span class="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded text-[11px] font-mono badge-amber">
-                  <i data-lucide="clock" class="w-3 h-3"></i>
-                  <span>In Prüfung (Sperrfrist)</span>
-                </span>
-              </div>
-
-              <div class="mt-4">
-                <div class="text-[11px] font-mono uppercase text-slate-400">Automotive & Zulieferer · Baden-Württemberg / Stuttgart</div>
-                <h3 class="text-base font-bold text-slate-100 mt-1 leading-snug">Restrukturierung / Covenant-Bruch & Werksumbau E-Mobility</h3>
-              </div>
-
-              <div class="mt-5 space-y-2 text-xs">
-                <div class="flex justify-between py-1 border-b border-slate-800/60">
-                  <span class="text-slate-400">Handlungsdruck:</span>
-                  <span class="font-mono text-amber-300 text-right">Sehr Akut / 14-Tage-Fenster</span>
-                </div>
-                <div class="flex justify-between py-1 border-b border-slate-800/60">
-                  <span class="text-slate-400">Größenordnung:</span>
-                  <span class="font-mono text-slate-200 text-right">140–180 Mio. € · ~850 MA</span>
-                </div>
-                <div class="flex justify-between py-1">
-                  <span class="text-slate-400">Vorgeschlagene Rolle:</span>
-                  <span class="font-mono text-cyan-300 font-medium text-right">Interim CRO / Turnaround CFO</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
-              <span class="text-[11px] text-amber-400 font-mono">Vorprüffrist läuft (Tag 3/5)</span>
-              <button onclick="openDossierModal(this)" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 text-slate-200 text-xs font-semibold transition-all">
-                <span>Dossier-Vorschau</span>
-                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Card 3: Bau & Baustoffe -->
-          <div class="deal-card bg-slate-900/90 rounded-xl border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between p-6 card-border-glow" data-category="bau" data-id="#SIG-2610-BAU" data-title="Carve-Out / Ausgliederung Baustoffsparte aus Familienholding" data-industry="Bau & Baustoffe" data-region="Nordrhein-Westfalen / Ruhrgebiet" data-urgency="Geplant / Q1 Day-1-Readiness" data-status="Verfügbar" data-role="Program Director Carve-Out" data-revenue="60–90 Mio. €" data-headcount="ca. 320 Mitarbeiter" data-pain="Aufbau eigenständiger IT- und ERP-Infrastruktur sowie Neuausrichtung der Supply Chain binnen 9 Monaten erforderlich.">
-            <div>
-              <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-                <span class="font-mono text-xs font-bold text-cyan-400">#SIG-2610-BAU</span>
-                <span class="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded text-[11px] font-mono badge-emerald">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span>Verfügbar</span>
-                </span>
-              </div>
-
-              <div class="mt-4">
-                <div class="text-[11px] font-mono uppercase text-slate-400">Bau & Baustoffe · Nordrhein-Westfalen / Ruhrgebiet</div>
-                <h3 class="text-base font-bold text-slate-100 mt-1 leading-snug">Carve-Out / Ausgliederung Baustoffsparte aus Familienholding</h3>
-              </div>
-
-              <div class="mt-5 space-y-2 text-xs">
-                <div class="flex justify-between py-1 border-b border-slate-800/60">
-                  <span class="text-slate-400">Handlungsdruck:</span>
-                  <span class="font-mono text-slate-200 text-right">Geplant / Q1 Day-1-Readiness</span>
-                </div>
-                <div class="flex justify-between py-1 border-b border-slate-800/60">
-                  <span class="text-slate-400">Größenordnung:</span>
-                  <span class="font-mono text-slate-200 text-right">60–90 Mio. € · ~320 MA</span>
-                </div>
-                <div class="flex justify-between py-1">
-                  <span class="text-slate-400">Vorgeschlagene Rolle:</span>
-                  <span class="font-mono text-cyan-300 font-medium text-right">Program Director Carve-Out</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
-              <span class="text-[11px] text-slate-400 font-mono">Handelsregister-Auszug vorh.</span>
-              <button onclick="openDossierModal(this)" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 text-slate-200 text-xs font-semibold transition-all">
-                <span>Dossier-Vorschau</span>
-                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Card 4: Handel & Konsumgüter -->
-          <div class="deal-card bg-slate-900/90 rounded-xl border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between p-6 card-border-glow" data-category="handel" data-id="#SIG-2610-RET" data-title="Turnaround & Filialbereinigung nach Margeneinbruch" data-industry="Handel & Konsumgüter" data-region="Hessen / Großraum Frankfurt a. M." data-urgency="Akut / Sofortige Einleitung" data-status="Verfügbar" data-role="Interim COO / Retail Restructuring" data-revenue="210–260 Mio. €" data-headcount="ca. 1.200 Mitarbeiter" data-pain="Notwendigkeit der schnellen Schließung von 24 unrentablen Filialen und Neuverhandlung gewerblicher Mietverträge.">
-            <div>
-              <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-                <span class="font-mono text-xs font-bold text-cyan-400">#SIG-2610-RET</span>
-                <span class="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded text-[11px] font-mono badge-emerald">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span>Verfügbar</span>
-                </span>
-              </div>
-
-              <div class="mt-4">
-                <div class="text-[11px] font-mono uppercase text-slate-400">Handel & Konsumgüter · Hessen / Frankfurt a. M.</div>
-                <h3 class="text-base font-bold text-slate-100 mt-1 leading-snug">Turnaround & Filialbereinigung nach Margeneinbruch</h3>
-              </div>
-
-              <div class="mt-5 space-y-2 text-xs">
-                <div class="flex justify-between py-1 border-b border-slate-800/60">
-                  <span class="text-slate-400">Handlungsdruck:</span>
-                  <span class="font-mono text-slate-200 text-right">Akut / Sofortige Einleitung</span>
-                </div>
-                <div class="flex justify-between py-1 border-b border-slate-800/60">
-                  <span class="text-slate-400">Größenordnung:</span>
-                  <span class="font-mono text-slate-200 text-right">210–260 Mio. € · ~1.200 MA</span>
-                </div>
-                <div class="flex justify-between py-1">
-                  <span class="text-slate-400">Vorgeschlagene Rolle:</span>
-                  <span class="font-mono text-cyan-300 font-medium text-right">Interim COO / Restructuring</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
-              <span class="text-[11px] text-slate-400 font-mono">Bundesanzeiger-Jahresabschluss</span>
-              <button onclick="openDossierModal(this)" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 text-slate-200 text-xs font-semibold transition-all">
-                <span>Dossier-Vorschau</span>
-                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Card 5: Gesundheit & Pharma -->
-          <div class="deal-card bg-slate-900/90 rounded-xl border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between p-6 card-border-glow" data-category="gesundheit" data-id="#SIG-2610-MED" data-title="Vakanz CFO vor internationaler Serie-C / M&A-Dual-Track" data-industry="Gesundheit & Pharma" data-region="Schweiz / Kanton Zürich & Grenzregion" data-urgency="Mittelfristig / Q1 Besetzung" data-status="Verfügbar" data-role="Interim CFO / M&A Preparation" data-revenue="35–50 Mio. CHF" data-headcount="ca. 180 Mitarbeiter" data-pain="Aufbau eines bankenkonformen Data Rooms und Audit-Readiness für Due Diligence internationaler Bieter.">
-            <div>
-              <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-                <span class="font-mono text-xs font-bold text-cyan-400">#SIG-2610-MED</span>
-                <span class="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded text-[11px] font-mono badge-emerald">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span>Verfügbar</span>
-                </span>
-              </div>
-
-              <div class="mt-4">
-                <div class="text-[11px] font-mono uppercase text-slate-400">Gesundheit & Pharma · Schweiz / Kanton Zürich</div>
-                <h3 class="text-base font-bold text-slate-100 mt-1 leading-snug">Vakanz CFO vor internationaler Serie-C / M&A-Dual-Track</h3>
-              </div>
-
-              <div class="mt-5 space-y-2 text-xs">
-                <div class="flex justify-between py-1 border-b border-slate-800/60">
-                  <span class="text-slate-400">Handlungsdruck:</span>
-                  <span class="font-mono text-slate-200 text-right">Mittelfristig / Q1 Besetzung</span>
-                </div>
-                <div class="flex justify-between py-1 border-b border-slate-800/60">
-                  <span class="text-slate-400">Größenordnung:</span>
-                  <span class="font-mono text-slate-200 text-right">35–50 Mio. CHF · ~180 MA</span>
-                </div>
-                <div class="flex justify-between py-1">
-                  <span class="text-slate-400">Vorgeschlagene Rolle:</span>
-                  <span class="font-mono text-cyan-300 font-medium text-right">Interim CFO / M&A Dual-Track</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
-              <span class="text-[11px] text-slate-400 font-mono">SHAB-Meldung verifiziert</span>
-              <button onclick="openDossierModal(this)" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 text-slate-200 text-xs font-semibold transition-all">
-                <span>Dossier-Vorschau</span>
-                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Card 6: Maschinenbau (In Prüfung) -->
-          <div class="deal-card bg-slate-900/90 rounded-xl border border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between p-6 card-border-glow" data-category="maschinenbau" data-id="#SIG-2610-IND" data-title="Werkserweiterung & Kapazitätsengpass nach Großauftrag" data-industry="Maschinen- & Anlagenbau" data-region="Niedersachsen / Region Hannover" data-urgency="Akut / Hochlaufphase" data-status="In Prüfung (Sperrfrist aktiv)" data-role="Interim Werkleiter / Operations" data-revenue="110–140 Mio. €" data-headcount="ca. 600 Mitarbeiter" data-pain="Serienhochlauf hinkt aktuellem Zeitplan um 10 Wochen hinterher; empfindliche Pönalrisiken gegenüber Großkunden drohen.">
-            <div>
-              <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-                <span class="font-mono text-xs font-bold text-cyan-400">#SIG-2610-IND</span>
-                <span class="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded text-[11px] font-mono badge-amber">
-                  <i data-lucide="clock" class="w-3 h-3"></i>
-                  <span>In Prüfung (Sperrfrist)</span>
-                </span>
-              </div>
-
-              <div class="mt-4">
-                <div class="text-[11px] font-mono uppercase text-slate-400">Maschinen- & Anlagenbau · Niedersachsen / Hannover</div>
-                <h3 class="text-base font-bold text-slate-100 mt-1 leading-snug">Werkserweiterung & Kapazitätsengpass nach Großauftrag</h3>
-              </div>
-
-              <div class="mt-5 space-y-2 text-xs">
-                <div class="flex justify-between py-1 border-b border-slate-800/60">
-                  <span class="text-slate-400">Handlungsdruck:</span>
-                  <span class="font-mono text-amber-300 text-right">Akut / Hochlaufphase</span>
-                </div>
-                <div class="flex justify-between py-1 border-b border-slate-800/60">
-                  <span class="text-slate-400">Größenordnung:</span>
-                  <span class="font-mono text-slate-200 text-right">110–140 Mio. € · ~600 MA</span>
-                </div>
-                <div class="flex justify-between py-1">
-                  <span class="text-slate-400">Vorgeschlagene Rolle:</span>
-                  <span class="font-mono text-cyan-300 font-medium text-right">Interim Werkleiter / Operations</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
-              <span class="text-[11px] text-amber-400 font-mono">Exklusiv reserviert bis Fr.</span>
-              <button onclick="openDossierModal(this)" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 text-slate-200 text-xs font-semibold transition-all">
-                <span>Dossier-Vorschau</span>
-                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-              </button>
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-    </section>
-
-
-    <!-- ========================================================================= -->
-    <!-- SEKTION E: VERGÜTUNGS- & KOOPERATIONSSYSTEM (TRANSPARENZ STATT PREISSCHILDER) -->
-    <!-- ========================================================================= -->
-    <section id="verguetung" class="py-16 md:py-24 bg-[#0B1120] border-b border-slate-800">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        <div class="text-center max-w-3xl mx-auto mb-14">
-          <div class="text-xs font-mono uppercase text-cyan-400 tracking-wider">Diskrete Partnerschaft auf Augenhöhe</div>
-          <h2 class="text-2xl sm:text-4xl font-display font-extrabold text-slate-100 mt-2">Institutionelles Vergütungsmodell</h2>
-          <p class="text-sm sm:text-base text-slate-400 mt-3 leading-relaxed">
-            Keine Kleinstpreise, keine Abonnements und keine versteckten Kosten. Wir arbeiten nach bewährten M&A- und Tippgeber-Standards voll synchron zu Ihrem Cashflow.
-          </p>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          
-          <!-- Modell A: Institutional Partner -->
-          <div class="bg-slate-900 rounded-2xl border-2 border-cyan-500/80 p-8 flex flex-col justify-between relative shadow-xl shadow-cyan-500/5">
-            <div class="absolute -top-3.5 right-6 px-3 py-1 rounded bg-cyan-500 text-slate-950 font-mono font-bold text-xs uppercase tracking-wider">
-              Primärmodell für Provider
-            </div>
-
-            <div>
-              <div class="text-xs font-mono text-cyan-400 uppercase tracking-wider">Modell A · Rahmenvereinbarung</div>
-              <h3 class="text-2xl font-display font-bold text-slate-100 mt-1">Institutional Provider Partner</h3>
-              <p class="text-xs text-slate-400 mt-2">
-                Für etablierte Interim-Management-Provider und spezialisierte Executive Search Boutiquen (DACH).
-              </p>
-
-              <div class="my-6 p-4 rounded-xl bg-slate-950/80 border border-slate-800 flex items-baseline space-x-2">
-                <span class="text-3xl font-extrabold font-mono text-slate-100">5 %</span>
-                <span class="text-xs text-slate-400">Erfolgshonorar auf den abgerechneten Netto-Honorarsatz (Pay-as-you-get)</span>
-              </div>
-
-              <ul class="space-y-3.5 text-xs text-slate-300">
-                <li class="flex items-start space-x-2.5">
-                  <i data-lucide="check-circle-2" class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5"></i>
-                  <span><strong class="text-slate-100">0 € Vorabkosten:</strong> Keine monatlichen Grundgebühren, keine Setup-Kosten.</span>
-                </li>
-                <li class="flex items-start space-x-2.5">
-                  <i data-lucide="check-circle-2" class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5"></i>
-                  <span><strong class="text-slate-100">12 Monate Mandatsschutz:</strong> Vollständiger Ursächlichkeits- und Kundenschutz ab Erstübermittlung.</span>
-                </li>
-                <li class="flex items-start space-x-2.5">
-                  <i data-lucide="check-circle-2" class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5"></i>
-                  <span><strong class="text-slate-100">5 Werktage Vorkenntnisfrist:</strong> Kostenfreier Widerspruch bei nachweisbarer Vorbefassung mit dem Zielunternehmen.</span>
-                </li>
-                <li class="flex items-start space-x-2.5">
-                  <i data-lucide="check-circle-2" class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5"></i>
-                  <span><strong class="text-slate-100">Cashflow-Synchronisation:</strong> Abrechnung erst und nur nach tatsächlichem Zahlungseingang durch Ihren Kunden.</span>
-                </li>
-              </ul>
-            </div>
-
-            <div class="mt-8 pt-6 border-t border-slate-800">
-              <button onclick="openInquiryModal('', 'Modell A (5% Rahmenkooperation)')" class="w-full py-3.5 rounded bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm transition-all text-center">
-                Muster-Rahmenvertrag anfordern
-              </button>
-            </div>
-          </div>
-
-          <!-- Modell B: Exklusiv-Transaktionsabruf -->
-          <div class="bg-slate-900 rounded-2xl border border-slate-800 p-8 flex flex-col justify-between relative">
-            <div>
-              <div class="text-xs font-mono text-slate-400 uppercase tracking-wider">Modell B · Ad-hoc Abruf</div>
-              <h3 class="text-2xl font-display font-bold text-slate-100 mt-1">Exklusiv-Transaktionsabruf</h3>
-              <p class="text-xs text-slate-400 mt-2">
-                Für Private-Equity-Investoren, Family Offices und M&A-Boutiquen ohne laufendes Honorarbeteiligungsmodell.
-              </p>
-
-              <div class="my-6 p-4 rounded-xl bg-slate-950/80 border border-slate-800 flex items-baseline space-x-2">
-                <span class="text-xl sm:text-2xl font-extrabold font-mono text-slate-100">Transaktionspauschale</span>
-                <span class="text-xs text-slate-400">pro qualifiziertem Dossier (auf Anfrage)</span>
-              </div>
-
-              <ul class="space-y-3.5 text-xs text-slate-300">
-                <li class="flex items-start space-x-2.5">
-                  <i data-lucide="check-circle-2" class="w-4 h-4 text-slate-400 shrink-0 mt-0.5"></i>
-                  <span><strong class="text-slate-100">Vollabzug Primärquellen:</strong> Komplette Handelsregister-Urkunden, Gesellschafterlisten & Bilanzen.</span>
-                </li>
-                <li class="flex items-start space-x-2.5">
-                  <i data-lucide="check-circle-2" class="w-4 h-4 text-slate-400 shrink-0 mt-0.5"></i>
-                  <span><strong class="text-slate-100">Sofortige Marktsperre:</strong> 30 Tage Exklusivsperre gegen Übermittlung an konkurrierende Dritte.</span>
-                </li>
-                <li class="flex items-start space-x-2.5">
-                  <i data-lucide="check-circle-2" class="w-4 h-4 text-slate-400 shrink-0 mt-0.5"></i>
-                  <span><strong class="text-slate-100">Organisations-Kontext:</strong> Detailanalyse der Gesellschafterkonflikte und Bankenexposure.</span>
-                </li>
-                <li class="flex items-start space-x-2.5">
-                  <i data-lucide="check-circle-2" class="w-4 h-4 text-slate-400 shrink-0 mt-0.5"></i>
-                  <span><strong class="text-slate-100">Diskrete Übergabe:</strong> Bereitstellung via verschlüsseltem Einmal-Datenraum oder PGP.</span>
-                </li>
-              </ul>
-            </div>
-
-            <div class="mt-8 pt-6 border-t border-slate-800">
-              <button onclick="openInquiryModal('', 'Modell B (Exklusiv-Transaktion)')" class="w-full py-3.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold text-sm transition-all border border-slate-700 text-center">
-                Ad-hoc Konditionen anfragen
-              </button>
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-    </section>
-
-
-    <!-- ========================================================================= -->
-    <!-- SEKTION F: COMPLIANCE & TRUST-AUDIT -->
-    <!-- ========================================================================= -->
-    <section id="compliance" class="py-16 md:py-24 border-b border-slate-800">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        <div class="text-center max-w-3xl mx-auto mb-14">
-          <div class="text-xs font-mono uppercase text-cyan-400 tracking-wider">Institutionelle Standards</div>
-          <h2 class="text-2xl sm:text-4xl font-display font-extrabold text-slate-100 mt-2">Compliance, Rechtssicherheit & Audit</h2>
-          <p class="text-sm sm:text-base text-slate-400 mt-3 leading-relaxed">
-            Als Intelligence-Dienstleister unterliegen wir strengsten Qualitätskriterien. Diskretion und juristische Sauberkeit sind die Grundlage jeder Vermittlung.
-          </p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
-          <div class="bg-slate-900/80 rounded-xl p-6 border border-slate-800">
-            <div class="w-10 h-10 rounded bg-cyan-950 border border-cyan-800 flex items-center justify-center text-cyan-400 mb-4">
+          <div class="flex items-start space-x-4">
+            <div class="w-10 h-10 rounded-lg bg-stone-100 border border-stone-200 flex items-center justify-center text-brass-600 shrink-0 mt-0.5">
               <i data-lucide="shield-check" class="w-5 h-5"></i>
             </div>
-            <h3 class="text-base font-bold text-slate-100">100 % DSGVO-Audit</h3>
-            <p class="text-xs text-slate-400 mt-2 leading-relaxed">
-              Keine Speicherung oder Weitergabe personenbezogener Kontaktdaten. Analyse rein über öffentlich dokumentierte Organbeschlüsse und juristische Unternehmensdaten.
-            </p>
+            <div>
+              <h2 class="text-sm font-semibold text-slate-900" data-i18n="hero.trust1Title">100 % Vertraulichkeit</h2>
+              <p class="text-xs text-slate-600 mt-1 leading-relaxed" data-i18n="hero.trust1Text">
+                Verlässlicher Schutz für Gesellschafter, Beiräte und Vorstände. Kein offener Marktplatz, keine Datenstreuung.
+              </p>
+            </div>
           </div>
 
-          <div class="bg-slate-900/80 rounded-xl p-6 border border-slate-800">
-            <div class="w-10 h-10 rounded bg-cyan-950 border border-cyan-800 flex items-center justify-center text-cyan-400 mb-4">
-              <i data-lucide="file-check-2" class="w-5 h-5"></i>
+          <div class="flex items-start space-x-4">
+            <div class="w-10 h-10 rounded-lg bg-stone-100 border border-stone-200 flex items-center justify-center text-brass-600 shrink-0 mt-0.5">
+              <i data-lucide="compass" class="w-5 h-5"></i>
             </div>
-            <h3 class="text-base font-bold text-slate-100">Primärquellen-Verifikation</h3>
-            <p class="text-xs text-slate-400 mt-2 leading-relaxed">
-              Jedes Signal ist durch Handelsregister, Bundesanzeiger oder verifizierte Wirtschaftsmeldungen belegt und wird vorab im Vier-Augen-Audit geprüft.
-            </p>
+            <div>
+              <h2 class="text-sm font-semibold text-slate-900" data-i18n="hero.trust2Title">Fundierte Primärsignale</h2>
+              <p class="text-xs text-slate-600 mt-1 leading-relaxed" data-i18n="hero.trust2Text">
+                Validierte Anlässe und Handlungsimpulse noch vor der öffentlichen Ausschreibung im freien Markt.
+              </p>
+            </div>
           </div>
 
-          <div class="bg-slate-900/80 rounded-xl p-6 border border-slate-800">
-            <div class="w-10 h-10 rounded bg-cyan-950 border border-cyan-800 flex items-center justify-center text-cyan-400 mb-4">
-              <i data-lucide="scale" class="w-5 h-5"></i>
+          <div class="flex items-start space-x-4">
+            <div class="w-10 h-10 rounded-lg bg-stone-100 border border-stone-200 flex items-center justify-center text-brass-600 shrink-0 mt-0.5">
+              <i data-lucide="lock" class="w-5 h-5"></i>
             </div>
-            <h3 class="text-base font-bold text-slate-100">Rechtssicherer Kundenschutz</h3>
-            <p class="text-xs text-slate-400 mt-2 leading-relaxed">
-              Fest verankerte 12-monatige Schutzfristen sichern die Ursächlichkeit für beide Vertragsparteien verbindlich ab. Keine Doppelvergaben während aktiver Sperrfristen.
+            <div>
+              <h2 class="text-sm font-semibold text-slate-900" data-i18n="hero.trust3Title">Verankerter Mandatsschutz</h2>
+              <p class="text-xs text-slate-600 mt-1 leading-relaxed" data-i18n="hero.trust3Text">
+                Rechtssichere Kooperationsvereinbarungen mit Vorkenntnisprüffrist und fairem Ursächlichkeitsschutz.
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ========================================================================= -->
+    <!-- 3. KOMPETENZFELDER (3 REDAKTIONELLE SÄULEN) -->
+    <!-- ========================================================================= -->
+    <section id="kompetenzen" class="py-20 sm:py-28 bg-[#F5F4EF] border-b border-stone-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="max-w-3xl mb-16">
+          <div class="text-xs font-semibold uppercase tracking-widest text-brass-600" data-i18n="comp.sectionTag">Fokusbereiche</div>
+          <h2 class="text-2xl sm:text-4xl font-serif font-bold text-slate-900 mt-2" data-i18n="comp.title">
+            Diskrete Früherkennung für erfolgskritische Mandatssituationen
+          </h2>
+          <p class="mt-4 text-sm sm:text-base text-slate-600 leading-relaxed" data-i18n="comp.subtitle">
+            Unternehmen des gehobenen Mittelstands stehen in Phasen des Umbruchs unter extremem Handlungsdruck. Wir erfassen und verifizieren Signale dort, wo erfahrene Führungskompetenz unverzichtbar wird.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          
+          <!-- Säule 1 -->
+          <div class="bg-white rounded-xl p-8 border border-stone-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+            <div>
+              <div class="w-12 h-12 rounded-lg bg-stone-100 flex items-center justify-center text-brass-600 mb-6">
+                <i data-lucide="users" class="w-6 h-6"></i>
+              </div>
+              <span class="text-[11px] font-semibold tracking-wider uppercase text-brass-600" data-i18n="comp.card1Category">Organbesetzung & Governance</span>
+              <h3 class="text-xl font-serif font-bold text-slate-900 mt-2" data-i18n="comp.card1Title">Organvakanzen & Governance</h3>
+              <p class="text-xs sm:text-sm text-slate-600 mt-3 leading-relaxed" data-i18n="comp.card1Text">
+                Unerwartete Amtsniederlegungen, plötzliche Vakanzen auf Organebene (CEO, CFO, COO) sowie gezielte Nachbesetzungen in Beirats- und Aufsichtsgremien bei Generationswechseln.
+              </p>
+            </div>
+            <div class="mt-8 pt-5 border-t border-stone-100 text-xs font-medium text-slate-700 flex items-center justify-between">
+              <span data-i18n="comp.card1Target">Zielgruppe: Executive Search & Board Advisory</span>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-brass-500"></i>
+            </div>
+          </div>
+
+          <!-- Säule 2 -->
+          <div class="bg-white rounded-xl p-8 border border-stone-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+            <div>
+              <div class="w-12 h-12 rounded-lg bg-stone-100 flex items-center justify-center text-brass-600 mb-6">
+                <i data-lucide="trending-down" class="w-6 h-6"></i>
+              </div>
+              <span class="text-[11px] font-semibold tracking-wider uppercase text-brass-600" data-i18n="comp.card2Category">Turnaround & Sonderlagen</span>
+              <h3 class="text-xl font-serif font-bold text-slate-900 mt-2" data-i18n="comp.card2Title">Restrukturierung & Transformation</h3>
+              <p class="text-xs sm:text-sm text-slate-600 mt-3 leading-relaxed" data-i18n="comp.card2Text">
+                Ertrags- und Liquiditätsengpässe, StaRUG-Verfahren, Sanierung in Eigenverwaltung sowie akuter Bedarf an Chief Restructuring Officers (CRO) und krisenerfahrenen Sanierungs-CFOs.
+              </p>
+            </div>
+            <div class="mt-8 pt-5 border-t border-stone-100 text-xs font-medium text-slate-700 flex items-center justify-between">
+              <span data-i18n="comp.card2Target">Zielgruppe: Restrukturierungs- & Interim Provider</span>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-brass-500"></i>
+            </div>
+          </div>
+
+          <!-- Säule 3 -->
+          <div class="bg-white rounded-xl p-8 border border-stone-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+            <div>
+              <div class="w-12 h-12 rounded-lg bg-stone-100 flex items-center justify-center text-brass-600 mb-6">
+                <i data-lucide="git-merge" class="w-6 h-6"></i>
+              </div>
+              <span class="text-[11px] font-semibold tracking-wider uppercase text-brass-600" data-i18n="comp.card3Category">M&A & Transaktionen</span>
+              <h3 class="text-xl font-serif font-bold text-slate-900 mt-2" data-i18n="comp.card3Title">M&A & Sondersituationen</h3>
+              <p class="text-xs sm:text-sm text-slate-600 mt-3 leading-relaxed" data-i18n="comp.card3Text">
+                Carve-outs aus Konzernen oder Familienholdings, Post-Merger-Integrationsprogramme, ungeklärte Unternehmensnachfolgen und operative Day-1-Readiness bei Private-Equity-Transaktionen.
+              </p>
+            </div>
+            <div class="mt-8 pt-5 border-t border-stone-100 text-xs font-medium text-slate-700 flex items-center justify-between">
+              <span data-i18n="comp.card3Target">Zielgruppe: M&A-Boutiquen & PE-Operating Partner</span>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-brass-500"></i>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ========================================================================= -->
+    <!-- 4. ÜBER UNS & ARBEITSWEISE (MIT TEAM-FOTO) -->
+    <!-- ========================================================================= -->
+    <section id="arbeitsweise" class="py-20 sm:py-28 bg-[#FBFBF8] border-b border-stone-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+          
+          <!-- Bild-Block: Team-Meeting in Wilhelmshaven -->
+          <div class="lg:col-span-6 relative">
+            <div class="relative rounded-2xl overflow-hidden shadow-xl border border-stone-200 bg-white">
+              <img src="/team-meeting.jpg" alt="D.A.T. Dienstleistungen Team-Meeting in Wilhelmshaven" class="w-full h-[360px] sm:h-[460px] object-cover object-center">
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent"></div>
+              
+              <!-- Bild-Caption -->
+              <div class="absolute bottom-4 left-4 right-4 text-white text-xs sm:text-sm">
+                <div class="font-serif font-bold" data-i18n="about.photoTitle">D.A.T. Dienstleistungen · Standort Wilhelmshaven</div>
+                <div class="text-stone-300 text-xs mt-0.5" data-i18n="about.photoSubtitle">Persönliche Fallprüfung und mandatsgenaue Auswertung im Vier-Augen-Prinzip</div>
+              </div>
+            </div>
+
+            <!-- Dekorative Inhaber-Kachel -->
+            <div class="hidden sm:flex absolute -bottom-6 -right-6 bg-white p-4 rounded-xl shadow-lg border border-stone-200 items-center space-x-3 max-w-xs">
+              <img src="/harro-portrait.jpg" alt="Harro Goerndt" class="w-12 h-12 rounded-full object-cover border-2 border-brass-400 shrink-0">
+              <div class="text-xs">
+                <div class="font-bold text-slate-900">Harro Goerndt</div>
+                <div class="text-stone-500 text-[11px]" data-i18n="about.founderTitle">Inhaber & Senior Advisor</div>
+                <div class="text-brass-600 font-medium text-[10px] mt-0.5">30+ Jahre Praxiserfahrung</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Text-Block: Über uns & Kooperationsablauf -->
+          <div id="ueber-uns" class="lg:col-span-6 space-y-6">
+            <div class="text-xs font-semibold uppercase tracking-widest text-brass-600" data-i18n="about.tag">Seniorität & Diskretion</div>
+            <h2 class="text-2xl sm:text-4xl font-serif font-bold text-slate-900 leading-tight" data-i18n="about.heading">
+              Verlässlicher Dealflow durch gewachsene Branchenkenntnis
+            </h2>
+            <p class="text-sm sm:text-base text-slate-600 leading-relaxed" data-i18n="about.text1">
+              D.A.T. Dienstleistungen agiert als unabhängiges, inhabergeführtes Advisory-Haus mit Sitz in Wilhelmshaven. Wir schlagen eine verlässliche Brücke zwischen akuten Sondersituationen im Mittelstand und führenden Interim-Providern sowie M&A-Boutiquen.
             </p>
+            <p class="text-sm sm:text-base text-slate-600 leading-relaxed" data-i18n="about.text2">
+              Jedes Signal wird von unserem erfahrenen Team manuell auf Plausibilität, Handlungsfenster und Gesellschafterkontext geprüft. Wir veröffentlichen keine Massenlisten, sondern stellen gezielt Kontakte dort her, wo beiderseitiges Interesse besteht.
+            </p>
+
+            <!-- 3 Schritte der Partnerschaft -->
+            <div class="pt-4 space-y-4 text-xs sm:text-sm">
+              
+              <div class="flex items-start space-x-3.5">
+                <span class="w-6 h-6 rounded-full bg-brass-400 text-slate-950 font-bold flex items-center justify-center shrink-0 text-xs">1</span>
+                <div>
+                  <strong class="text-slate-900" data-i18n="about.step1Title">Bilateraler Erstkontakt & Profilabgleich:</strong>
+                  <span class="text-slate-600" data-i18n="about.step1Text"> Wir stimmen Ihren regionalen und branchenspezifischen Suchfokus vertraulich ab.</span>
+                </div>
+              </div>
+
+              <div class="flex items-start space-x-3.5">
+                <span class="w-6 h-6 rounded-full bg-brass-400 text-slate-950 font-bold flex items-center justify-center shrink-0 text-xs">2</span>
+                <div>
+                  <strong class="text-slate-900" data-i18n="about.step2Title">Standardisierte Rahmenvereinbarung:</strong>
+                  <span class="text-slate-600" data-i18n="about.step2Text"> Voller Mandats- und Kundenschutz mit vereinbarter Vorkenntnisprüffrist.</span>
+                </div>
+              </div>
+
+              <div class="flex items-start space-x-3.5">
+                <span class="w-6 h-6 rounded-full bg-brass-400 text-slate-950 font-bold flex items-center justify-center shrink-0 text-xs">3</span>
+                <div>
+                  <strong class="text-slate-900" data-i18n="about.step3Title">Diskrete Mandatszuordnung:</strong>
+                  <span class="text-slate-600" data-i18n="about.step3Text"> Qualifizierte Dossier-Übergabe mit direktem zeitlichem Vorlauf vor dem offenen Markt.</span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ========================================================================= -->
+    <!-- 5. VERTRAULICHES ANFRAGE-FORMULAR -->
+    <!-- ========================================================================= -->
+    <section id="kontakt" class="py-20 sm:py-28 bg-[#F5F4EF] border-b border-stone-200">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center mb-12">
+          <div class="text-xs font-semibold uppercase tracking-widest text-brass-600" data-i18n="form.tag">Direkter Vorstandskontakt</div>
+          <h2 class="text-2xl sm:text-4xl font-serif font-bold text-slate-900 mt-2" data-i18n="form.title">
+            Vertraulichen Dialog initiieren
+          </h2>
+          <p class="mt-3 text-sm sm:text-base text-slate-600 max-w-2xl mx-auto" data-i18n="form.subtitle">
+            Für Vorstände, Managing Partner und Investment-Professionals. Herr Harro Goerndt meldet sich persönlich bei Ihnen.
+          </p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-8 sm:p-12 border border-stone-200/90 shadow-sm">
+          
+          <form id="contactForm" onsubmit="handleContactSubmit(event)" class="space-y-6">
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-xs font-medium uppercase tracking-wider text-slate-700 mb-1.5" data-i18n="form.nameLabel">Ihr Name *</label>
+                <input type="text" required placeholder="Vorname Nachname" class="w-full bg-[#FBFBF8] border border-stone-300 rounded-lg px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-brass-500 focus:bg-white transition-all">
+              </div>
+              <div>
+                <label class="block text-xs font-medium uppercase tracking-wider text-slate-700 mb-1.5" data-i18n="form.institutionLabel">Institution / Organisation *</label>
+                <input type="text" required placeholder="z. B. Interim Provider, Advisory, Private Equity" class="w-full bg-[#FBFBF8] border border-stone-300 rounded-lg px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-brass-500 focus:bg-white transition-all">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-xs font-medium uppercase tracking-wider text-slate-700 mb-1.5" data-i18n="form.emailLabel">Dienstliche E-Mail-Adresse *</label>
+                <input type="email" required placeholder="name@institution.de" class="w-full bg-[#FBFBF8] border border-stone-300 rounded-lg px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-brass-500 focus:bg-white transition-all">
+              </div>
+              <div>
+                <label class="block text-xs font-medium uppercase tracking-wider text-slate-700 mb-1.5" data-i18n="form.phoneLabel">Telefon für vertraulichen Rückruf *</label>
+                <input type="tel" required placeholder="+49 (0) ..." class="w-full bg-[#FBFBF8] border border-stone-300 rounded-lg px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-brass-500 focus:bg-white transition-all">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium uppercase tracking-wider text-slate-700 mb-1.5" data-i18n="form.focusLabel">Ihr primärer Such- und Mandatsfokus</label>
+              <select class="w-full bg-[#FBFBF8] border border-stone-300 rounded-lg px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-brass-500 focus:bg-white transition-all">
+                <option value="interim" data-i18n="form.focusOpt1">C-Level Interim Management (CEO, CFO, CRO, COO)</option>
+                <option value="turnaround" data-i18n="form.focusOpt2">Sanierung, StaRUG & operative Restrukturierung</option>
+                <option value="carveout" data-i18n="form.focusOpt3">Carve-out, PMI & Transaktionsbegleitung</option>
+                <option value="search" data-i18n="form.focusOpt4">Executive Search & Beiratsbesetzungen</option>
+                <option value="general" data-i18n="form.focusOpt5">Allgemeiner bilateraler Partnerschaftsdialog</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium uppercase tracking-wider text-slate-700 mb-1.5" data-i18n="form.messageLabel">Vertrauliche Nachricht (Optional)</label>
+              <textarea rows="4" placeholder="Ihre Anmerkungen oder spezifische Zielbranchen..." class="w-full bg-[#FBFBF8] border border-stone-300 rounded-lg px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-brass-500 focus:bg-white transition-all resize-y"></textarea>
+            </div>
+
+            <div class="pt-2">
+              <label class="flex items-start space-x-3 text-xs text-slate-600 cursor-pointer">
+                <input type="checkbox" required class="mt-0.5 rounded border-stone-300 text-brass-600 focus:ring-0">
+                <span data-i18n="form.consent">Ich bestätige, dass diese Kontaktaufnahme im Namen einer professionellen Institution oder im Vorstandsauftrag erfolgt. Diskretion wird zugesichert.</span>
+              </label>
+            </div>
+
+            <div class="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div class="text-xs text-slate-500 flex items-center space-x-1.5">
+                <i data-lucide="lock" class="w-4 h-4 text-brass-600"></i>
+                <span data-i18n="form.securityNote">Vollständige Vertraulichkeit nach DSGVO</span>
+              </div>
+              <button type="submit" class="w-full sm:w-auto px-8 py-3.5 rounded-lg bg-slate-900 hover:bg-brass-600 text-white font-medium text-sm transition-all shadow-sm">
+                <span data-i18n="form.submitBtn">Dialog vertraulich anfordern</span>
+              </button>
+            </div>
+
+          </form>
+
+          <!-- Erfolgs-Meldung -->
+          <div id="contactSuccess" class="hidden p-8 text-center space-y-4">
+            <div class="w-12 h-12 rounded-full bg-stone-100 border border-brass-400 flex items-center justify-center text-brass-600 mx-auto">
+              <i data-lucide="check" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-xl font-serif font-bold text-slate-900" data-i18n="form.successTitle">Vielen Dank für Ihre Anfrage</h3>
+            <p class="text-sm text-slate-600 max-w-md mx-auto leading-relaxed" data-i18n="form.successText">
+              Ihre Nachricht wurde vertraulich an Herrn Harro Goerndt übermittelt. Wir setzen uns zeitnah mit Ihnen in Verbindung, um einen bilateralen Abstimmungstermin zu vereinbaren.
+            </p>
+            <div class="p-3 bg-stone-50 rounded-lg border border-stone-200 text-xs text-slate-700 font-mono inline-block">
+              Referenz: <span id="contactRefId">DAT-ADV-2026-9481</span>
+            </div>
           </div>
 
         </div>
@@ -790,23 +507,120 @@
 
 
   <!-- ========================================================================= -->
-  <!-- SEKTION G: FOOTER & IMPRESSUM -->
+  <!-- 6. EXECUTIVE CONCIERGE (SCHWEBENDES DIALOG-WIDGET UNTEN RECHTS) -->
   <!-- ========================================================================= -->
-  <footer class="bg-slate-950 border-t border-slate-800 pt-12 pb-8 text-xs text-slate-400">
+  <div class="fixed bottom-6 right-6 z-50">
+    <button onclick="toggleConcierge()" class="flex items-center space-x-2.5 px-4 py-3 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-xl border border-stone-700 hover:border-brass-400 transition-all group">
+      <span class="w-2 h-2 rounded-full bg-brass-400 animate-pulse"></span>
+      <span class="font-serif italic text-sm tracking-wide text-brass-300">Executive Concierge</span>
+      <i data-lucide="message-square" class="w-4 h-4 text-brass-400 group-hover:scale-110 transition-transform"></i>
+    </button>
+  </div>
+
+  <!-- Concierge Modal Dialog -->
+  <div id="conciergeModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4">
+    <div class="bg-[#FBFBF8] border border-stone-300 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
+      
+      <!-- Concierge Header -->
+      <div class="px-6 py-4 border-b border-stone-200 flex items-center justify-between bg-stone-100/90">
+        <div class="flex items-center space-x-3">
+          <img src="/harro-portrait.jpg" alt="Executive Concierge" class="w-9 h-9 rounded-full object-cover border border-brass-500">
+          <div>
+            <div class="font-serif font-bold text-slate-900 text-sm">Executive Concierge</div>
+            <div class="text-[11px] text-stone-500">D.A.T. Dienstleistungen · Wilhelmshaven</div>
+          </div>
+        </div>
+        <button onclick="toggleConcierge()" class="text-stone-400 hover:text-slate-900 p-1.5 rounded-lg hover:bg-stone-200 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Concierge Body / Dialogue -->
+      <div class="p-6 overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-700">
+        
+        <!-- Welcome Message -->
+        <div class="p-4 rounded-xl bg-white border border-stone-200 shadow-sm space-y-2">
+          <p class="font-serif italic text-slate-900 text-sm">
+            „Willkommen. Als Executive Concierge beantworte ich diskret Ihre Fragen zu unseren Arbeitsweisen, Kooperationsvereinbarungen und Schutzfristen.“
+          </p>
+          <p class="text-stone-500 text-xs">
+            Wählen Sie ein Themenfeld oder fordern Sie direkt ein persönliches Gespräch an:
+          </p>
+        </div>
+
+        <!-- Schnellfragen (Quick-Answers) -->
+        <div class="space-y-2 pt-2">
+          
+          <button onclick="conciergeAnswer(1)" class="w-full text-left p-3 rounded-lg bg-stone-100 hover:bg-white border border-stone-200/80 hover:border-brass-400 text-slate-800 transition-all flex items-center justify-between font-medium">
+            <span>Wie ist der Mandats- und Kundenschutz geregelt?</span>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-brass-600 shrink-0"></i>
+          </button>
+
+          <button onclick="conciergeAnswer(2)" class="w-full text-left p-3 rounded-lg bg-stone-100 hover:bg-white border border-stone-200/80 hover:border-brass-400 text-slate-800 transition-all flex items-center justify-between font-medium">
+            <span>Wie funktioniert der Vorkenntnis-Einspruch?</span>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-brass-600 shrink-0"></i>
+          </button>
+
+          <button onclick="conciergeAnswer(3)" class="w-full text-left p-3 rounded-lg bg-stone-100 hover:bg-white border border-stone-200/80 hover:border-brass-400 text-slate-800 transition-all flex items-center justify-between font-medium">
+            <span>Welche Unternehmensgrößen und Mandate betreuen Sie?</span>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-brass-600 shrink-0"></i>
+          </button>
+
+          <button onclick="conciergeAnswer(4)" class="w-full text-left p-3 rounded-lg bg-stone-100 hover:bg-white border border-stone-200/80 hover:border-brass-400 text-slate-800 transition-all flex items-center justify-between font-medium">
+            <span>Wie gestaltet sich die Vergütung bei erfolgreicher Mandatierung?</span>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-brass-600 shrink-0"></i>
+          </button>
+
+        </div>
+
+        <!-- Dynamische Antwortbox -->
+        <div id="conciergeAnswerBox" class="hidden p-4 rounded-xl bg-stone-900 text-stone-100 space-y-2 border border-brass-500/40 animate-in fade-in">
+          <div class="font-serif font-bold text-brass-300 text-sm" id="conciergeAnswerTitle"></div>
+          <div class="text-xs text-stone-300 leading-relaxed" id="conciergeAnswerText"></div>
+          <div class="pt-2">
+            <a href="#kontakt" onclick="toggleConcierge()" class="inline-flex items-center space-x-1.5 text-xs text-brass-400 hover:text-brass-300 font-semibold underline underline-offset-4">
+              <span>Direkt vertraulichen Dialog anfordern</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Concierge Footer -->
+      <div class="px-6 py-3.5 bg-stone-100 border-t border-stone-200 flex items-center justify-between text-xs text-stone-500">
+        <span>Strikte Vertraulichkeit nach § 5 DDG</span>
+        <a href="tel:+4944217784050" class="hover:text-slate-900 flex items-center space-x-1 text-slate-700 font-medium">
+          <i data-lucide="phone" class="w-3 h-3 text-brass-600"></i>
+          <span>+49 4421 7784050</span>
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- 7. FOOTER (VOLLSTÄNDIGES IMPRESSUM NACH § 5 DDG, KEINE DRITTANBIETER-BADGES) -->
+  <!-- ========================================================================= -->
+  <footer class="bg-stone-900 text-stone-300 pt-16 pb-12 text-xs border-t border-stone-800">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b border-slate-800/80">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-stone-800">
         
-        <!-- Spalte 1: Unternehmen -->
-        <div class="md:col-span-2">
-          <div class="flex items-center space-x-2 text-slate-200 font-display font-bold text-sm tracking-wide">
-            <div class="w-6 h-6 rounded bg-slate-900 border border-slate-700 flex items-center justify-center text-cyan-400 text-xs">D</div>
-            <span>D.A.T. DIENSTLEISTUNGEN</span>
+        <!-- Spalte 1: Unternehmen & Absender -->
+        <div class="md:col-span-2 space-y-3">
+          <div class="flex items-center space-x-3">
+            <img src="/dat-logo-corporate.png" alt="D.A.T. Dienstleistungen" class="h-9 w-auto object-contain brightness-110">
+            <div>
+              <div class="font-serif font-bold text-white text-base">D.A.T. DIENSTLEISTUNGEN</div>
+              <div class="text-[10px] tracking-widest uppercase text-brass-400 font-medium">Executive Advisory & Mandate Intelligence</div>
+            </div>
           </div>
-          <p class="mt-3 text-xs text-slate-400 leading-relaxed max-w-sm">
-            Diskrete B2B Mandats-Intelligence & Marktanalysen für Vorstände, Partner und Investoren im DACH-Raum.
+          <p class="text-stone-400 text-xs leading-relaxed max-w-sm pt-2">
+            Inhabergeführte Beratung für diskrete Mandats-Intelligence, C-Level-Vakanzen und Transformationssituationen im europäischen Mittelstand.
           </p>
-          <div class="mt-4 font-mono text-[11px] text-slate-400 space-y-1">
+          <div class="pt-2 text-stone-400 text-[11px] font-mono space-y-1">
             <p>Inhaber: Harro Goerndt</p>
             <p>Weserstraße 16 · 26382 Wilhelmshaven · Deutschland</p>
             <p>USt-IdNr.: DE (gemäß § 19 UStG / Kleinunternehmerregelung)</p>
@@ -814,43 +628,44 @@
         </div>
 
         <!-- Spalte 2: Direkter Kontakt -->
-        <div>
-          <div class="font-mono text-xs uppercase text-slate-300 font-bold tracking-wider mb-3">Direktkontakt</div>
-          <ul class="space-y-2 text-xs">
+        <div class="space-y-3">
+          <div class="font-serif font-bold text-white text-sm">Direkter Dialog</div>
+          <ul class="space-y-2 text-stone-400 text-xs">
             <li>
-              <a href="mailto:datdienstleistungen@gmail.com" class="hover:text-cyan-400 flex items-center space-x-1.5 transition-colors">
-                <i data-lucide="mail" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <a href="mailto:datdienstleistungen@gmail.com" class="hover:text-brass-400 flex items-center space-x-2 transition-colors">
+                <i data-lucide="mail" class="w-3.5 h-3.5 text-brass-400"></i>
                 <span>datdienstleistungen@gmail.com</span>
               </a>
             </li>
             <li>
-              <a href="tel:+4944217784050" class="hover:text-cyan-400 flex items-center space-x-1.5 transition-colors">
-                <i data-lucide="phone" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <a href="tel:+4944217784050" class="hover:text-brass-400 flex items-center space-x-2 transition-colors">
+                <i data-lucide="phone" class="w-3.5 h-3.5 text-brass-400"></i>
                 <span>+49 (0) 4421 / 778 40 50</span>
               </a>
             </li>
-            <li class="pt-1 text-[11px] text-slate-400">
-              Erreichbarkeit: Mo–Fr 08:30–18:00 Uhr
+            <li class="pt-2 text-[11px] text-stone-400">
+              Bürozeiten: Mo–Fr 08:30–18:00 Uhr MEZ
             </li>
           </ul>
         </div>
 
-        <!-- Spalte 3: Rechtliches -->
-        <div>
-          <div class="font-mono text-xs uppercase text-slate-300 font-bold tracking-wider mb-3">Rechtliches & Compliance</div>
-          <ul class="space-y-1.5 text-xs">
-            <li><a href="#compliance" class="hover:text-cyan-400 transition-colors">DSGVO & Datenschutz</a></li>
-            <li><a href="#verguetung" class="hover:text-cyan-400 transition-colors">Muster-Kooperationsvertrag</a></li>
-            <li><a href="#triggers" class="hover:text-cyan-400 transition-colors">Register-Prüfkriterien</a></li>
-            <li><button onclick="openModal('modal-impressum')" class="hover:text-cyan-400 transition-colors text-left">Vollständiges Impressum</button></li>
+        <!-- Spalte 3: Rechtliches & Compliance -->
+        <div class="space-y-3">
+          <div class="font-serif font-bold text-white text-sm">Rechtliches & Compliance</div>
+          <ul class="space-y-2 text-stone-400 text-xs">
+            <li><button onclick="openLegalModal('impressum')" class="hover:text-brass-400 transition-colors text-left">Vollständiges Impressum (§ 5 DDG)</button></li>
+            <li><button onclick="openLegalModal('datenschutz')" class="hover:text-brass-400 transition-colors text-left">Datenschutzerklärung (DSGVO)</button></li>
+            <li><button onclick="openLegalModal('vertraulichkeit')" class="hover:text-brass-400 transition-colors text-left">Vertraulichkeitsgrundsätze</button></li>
+            <li><button onclick="openLegalModal('haftung')" class="hover:text-brass-400 transition-colors text-left">Haftungsausschluss</button></li>
           </ul>
         </div>
 
       </div>
 
-      <div class="mt-8 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400">
-        <p>© 2026 D.A.T. Dienstleistungen · Alle Rechte vorbehalten. Diskreter B2B-Dealflow.</p>
-        <p class="mt-2 sm:mt-0 font-mono">Kein Angebot an Endverbraucher · Ausschließlich institutionelle B2B-Nutzung</p>
+      <!-- Copyright & Reinheitsversprechen (Kein Drittanbieter-Badge!) -->
+      <div class="mt-8 flex flex-col sm:flex-row items-center justify-between text-[11px] text-stone-400">
+        <p>© 2026 D.A.T. Dienstleistungen · Alle Rechte vorbehalten.</p>
+        <p class="mt-2 sm:mt-0 font-sans tracking-wide text-stone-400">Executive Advisory · Diskreter B2B-Dialog im gehobenen Mittelstand</p>
       </div>
 
     </div>
@@ -858,246 +673,22 @@
 
 
   <!-- ========================================================================= -->
-  <!-- MODAL 1: GATED DOSSIER-VORSCHAU -->
+  <!-- MODAL: RECHTLICHE HINWEISE & IMPRESSUM -->
   <!-- ========================================================================= -->
-  <div id="modal-dossier" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-slate-900 border border-slate-700 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-150">
+  <div id="legalModal" class="fixed inset-0 z-50 hidden bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white border border-stone-300 w-full max-w-2xl rounded-2xl shadow-2xl p-6 sm:p-8 my-8 text-slate-800">
       
-      <!-- Modal Header -->
-      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
-        <div class="flex items-center space-x-2">
-          <span id="modalDossierId" class="font-mono text-sm font-bold text-cyan-400">#SIG-0000-XXX</span>
-          <span id="modalDossierStatusBadge" class="px-2 py-0.5 rounded text-[10px] font-mono badge-emerald">Verfügbar</span>
-        </div>
-        <button onclick="closeModal('modal-dossier')" class="text-slate-400 hover:text-slate-100 p-1 rounded hover:bg-slate-800 transition-colors">
+      <div class="flex items-center justify-between pb-4 border-b border-stone-200">
+        <h3 id="legalModalTitle" class="font-serif font-bold text-lg text-slate-900">Impressum & Anbieterkennzeichnung</h3>
+        <button onclick="closeLegalModal()" class="text-stone-400 hover:text-slate-900 p-1 rounded hover:bg-stone-100">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <!-- Modal Body -->
-      <div class="p-6 space-y-6">
-        
+      <div id="legalModalContent" class="mt-6 space-y-4 text-xs leading-relaxed max-h-[65vh] overflow-y-auto pr-2 text-slate-600">
         <div>
-          <div id="modalDossierMeta" class="text-xs font-mono uppercase text-slate-400">Industrie · Region</div>
-          <h3 id="modalDossierTitle" class="text-lg font-bold text-slate-100 mt-1">Ereignis-Titel</h3>
-        </div>
-
-        <!-- Detail Parameters Grid -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-slate-950/70 border border-slate-800 text-xs font-mono">
-          <div>
-            <div class="text-slate-400 text-[10px] uppercase">Umsatzkorridor</div>
-            <div id="modalDossierRevenue" class="text-slate-100 font-semibold mt-0.5">85–120 Mio. €</div>
-          </div>
-          <div>
-            <div class="text-slate-400 text-[10px] uppercase">Belegschaft</div>
-            <div id="modalDossierHeadcount" class="text-slate-100 font-semibold mt-0.5">ca. 450 MA</div>
-          </div>
-          <div>
-            <div class="text-slate-400 text-[10px] uppercase">Handlungsdruck</div>
-            <div id="modalDossierUrgency" class="text-amber-400 font-semibold mt-0.5">Akut / Q4</div>
-          </div>
-        </div>
-
-        <!-- Schmerzpunkt-Analyse -->
-        <div>
-          <div class="text-xs font-mono uppercase text-slate-400 font-bold mb-1.5 flex items-center space-x-1.5">
-            <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-cyan-400"></i>
-            <span>Verifizierter Schmerzpunkt der Gesellschafter / Stakeholder</span>
-          </div>
-          <p id="modalDossierPain" class="text-xs sm:text-sm text-slate-300 leading-relaxed bg-slate-950/40 p-3.5 rounded border border-slate-800">
-            Detaillierte Analyse des aktuellen Bedarfsanlasses.
-          </p>
-        </div>
-
-        <!-- GESPERRTER BEREICH (GATED VAULT) -->
-        <div class="relative rounded-xl border border-dashed border-slate-700 bg-slate-950/90 p-5 overflow-hidden">
-          
-          <!-- Verschwommener Dummy-Content im Hintergrund -->
-          <div class="blur-vault space-y-2 text-xs font-mono text-slate-400 select-none">
-            <p><strong>Zielgesellschaft:</strong> Muster Präzisionstechnik Deutschland GmbH & Co. KG</p>
-            <p><strong>Handelsregister:</strong> Amtsgericht Augsburg · HRA 14920 · Veröffentlichung vom 14.10.2026</p>
-            <p><strong>Betroffene Organe:</strong> Dr. Michael Schmidt (ehem. CEO), Aufsichtsratsvorsitzender zurückgetreten</p>
-            <p><strong>Banken-Konsortium:</strong> Hauptgläubiger Deutsche Bank AG, Konsortialkredit fällig zum 31.12.2026</p>
-          </div>
-
-          <!-- Lock Overlay -->
-          <div class="absolute inset-0 bg-slate-950/85 flex flex-col items-center justify-center p-6 text-center">
-            <div class="w-10 h-10 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-amber-400 shadow-md mb-2">
-              <i data-lucide="lock" class="w-5 h-5"></i>
-            </div>
-            <h4 class="text-sm font-bold text-slate-100">Klarnamen & Primärquellen geschützt</h4>
-            <p class="text-xs text-slate-400 mt-1 max-w-md">
-              Klarnamendaten, Organigramm-Kontext und Primärquellen werden nach Zeichnung der Rahmen-Kooperationsvereinbarung (Modell A) oder Transaktionsabruf freigeschaltet.
-            </p>
-          </div>
-
-        </div>
-
-      </div>
-
-      <!-- Modal Footer -->
-      <div class="px-6 py-4 bg-slate-950/80 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <span class="text-[11px] font-mono text-slate-400">12 Monate Kundenschutz nach Abruf</span>
-        <button id="modalDossierActionBtn" onclick="requestCurrentDossier()" class="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-5 py-2.5 rounded bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition-all">
-          <i data-lucide="file-signature" class="w-4 h-4"></i>
-          <span>Exklusiv-Reservierung / Rahmenvertrag anfordern</span>
-        </button>
-      </div>
-
-    </div>
-  </div>
-
-
-  <!-- ========================================================================= -->
-  <!-- MODAL 2: RAHMENVEREINBARUNG & ANFRAGE (5% MODELL) -->
-  <!-- ========================================================================= -->
-  <div id="modal-inquiry" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-slate-900 border border-slate-700 w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-150">
-      
-      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
-        <div>
-          <h3 class="text-base font-bold text-slate-100">Rahmenvereinbarung / Signal-Abruf</h3>
-          <p class="text-xs text-slate-400 mt-0.5">Diskreter B2B-Prozess für Interim Provider & Investoren</p>
-        </div>
-        <button onclick="closeModal('modal-inquiry')" class="text-slate-400 hover:text-slate-100 p-1 rounded hover:bg-slate-800 transition-colors">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <form id="inquiryForm" onsubmit="handleInquirySubmit(event)" class="p-6 space-y-4">
-        
-        <div>
-          <label class="block text-xs font-mono text-slate-300 uppercase mb-1">Ausgewähltes Kooperationsmodell</label>
-          <select id="inquiryModelSelect" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500">
-            <option value="Modell A (5% Rahmenkooperation)">Modell A: Institutional Partner (0 € Vorab / 5% Erfolgshonorar)</option>
-            <option value="Modell B (Exklusiv-Transaktion)">Modell B: Exklusiv-Transaktionsabruf (Ad-hoc Pauschale)</option>
-          </select>
-        </div>
-
-        <div id="inquirySignalGroup">
-          <label class="block text-xs font-mono text-slate-300 uppercase mb-1">Signal-Referenz (Optional)</label>
-          <input type="text" id="inquirySignalRef" placeholder="z. B. #SIG-2610-ENG (leer lassen für Generalvereinbarung)" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 font-mono">
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-mono text-slate-300 uppercase mb-1">Ihr Name *</label>
-            <input type="text" required placeholder="Vorname Nachname" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500">
-          </div>
-          <div>
-            <label class="block text-xs font-mono text-slate-300 uppercase mb-1">Position / Rolle *</label>
-            <input type="text" required placeholder="Managing Partner, Vorstand..." class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500">
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-mono text-slate-300 uppercase mb-1">Firma / Interim Provider *</label>
-            <input type="text" required placeholder="z. B. taskforce, Atreus..." class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500">
-          </div>
-          <div>
-            <label class="block text-xs font-mono text-slate-300 uppercase mb-1">Dienstliche E-Mail *</label>
-            <input type="email" required placeholder="name@provider-domain.de" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 font-mono">
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-mono text-slate-300 uppercase mb-1">Telefon für vertraulichen Rückruf *</label>
-          <input type="tel" required placeholder="+49 ..." class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-500 font-mono">
-        </div>
-
-        <div class="pt-2">
-          <label class="flex items-start space-x-2.5 text-xs text-slate-400 cursor-pointer">
-            <input type="checkbox" required class="mt-0.5 rounded bg-slate-950 border-slate-700 text-cyan-500 focus:ring-0">
-            <span>Ich bestätige, dass diese Anfrage im Auftrag eines gewerblichen Interim-Management-Providers, einer Beratung oder eines institutionellen Investors erfolgt.</span>
-          </label>
-        </div>
-
-        <div class="pt-4 border-t border-slate-800 flex items-center justify-between">
-          <span class="text-[11px] text-slate-400 font-mono">Vertraulichkeit garantiert</span>
-          <button type="submit" class="px-5 py-2.5 rounded bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition-all">
-            Rahmenvereinbarung anfordern
-          </button>
-        </div>
-
-      </form>
-
-      <!-- Bestätigungsansicht nach Absenden -->
-      <div id="inquirySuccess" class="hidden p-8 text-center space-y-4">
-        <div class="w-12 h-12 rounded-full bg-emerald-950 border border-emerald-800 flex items-center justify-center text-emerald-400 mx-auto">
-          <i data-lucide="check" class="w-6 h-6"></i>
-        </div>
-        <h4 class="text-lg font-bold text-slate-100">Anfrage erfolgreich übermittelt</h4>
-        <p class="text-xs sm:text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
-          Vielen Dank. Wir haben Ihre Daten erfasst. Herr Harro Goerndt prüft Ihre Berechtigung und übersendet Ihnen die Rahmenvereinbarung inklusive 12-monatigem Kundenschutz binnen 4 Stunden.
-        </p>
-        <div class="p-3 bg-slate-950 rounded border border-slate-800 text-xs font-mono text-cyan-300 inline-block">
-          Referenz-Ticket: <span id="ticketNumber">#DAT-2026-9481</span>
-        </div>
-        <div class="pt-4">
-          <button onclick="closeModal('modal-inquiry')" class="px-4 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold">
-            Schließen
-          </button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-
-  <!-- ========================================================================= -->
-  <!-- MODAL 3: PARTNER LOGIN -->
-  <!-- ========================================================================= -->
-  <div id="modal-login" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl shadow-2xl p-6">
-      
-      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-        <div class="flex items-center space-x-2">
-          <i data-lucide="shield" class="w-4 h-4 text-cyan-400"></i>
-          <h3 class="text-sm font-bold text-slate-100">Partner-Login</h3>
-        </div>
-        <button onclick="closeModal('modal-login')" class="text-slate-400 hover:text-slate-100">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-
-      <div class="mt-4 space-y-4">
-        <p class="text-xs text-slate-400 leading-relaxed">
-          Geben Sie Ihre 12-stellige Partner-ID oder Ihren Mandats-Token ein, um direkte Vollabzüge freizuschalten.
-        </p>
-        <div>
-          <label class="block text-[11px] font-mono text-slate-400 uppercase mb-1">Partner-Token / Key</label>
-          <input type="password" placeholder="DAT-XXXX-XXXX-XXXX" class="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-cyan-500">
-        </div>
-        <button onclick="alert('Partner-Token nicht verifiziert. Bitte fordern Sie über das Kontaktformular die Rahmenvereinbarung an.'); closeModal('modal-login');" class="w-full py-2.5 rounded bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 text-slate-100 text-xs font-bold font-mono transition-all">
-          Sitzung starten
-        </button>
-        <p class="text-[10px] text-slate-400 text-center pt-2">
-          Noch kein Vertragspartner? <button onclick="closeModal('modal-login'); openInquiryModal('', 'Modell A (5% Rahmenkooperation)');" class="text-cyan-400 hover:underline">Hier registrieren</button>
-        </p>
-      </div>
-
-    </div>
-  </div>
-
-
-  <!-- ========================================================================= -->
-  <!-- MODAL 4: VOLLSTÄNDIGES IMPRESSUM -->
-  <!-- ========================================================================= -->
-  <div id="modal-impressum" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-slate-900 border border-slate-700 w-full max-w-xl rounded-2xl shadow-2xl p-6 my-8">
-      
-      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-        <h3 class="text-sm font-bold text-slate-100">Impressum & Anbieterkennzeichnung</h3>
-        <button onclick="closeModal('modal-impressum')" class="text-slate-400 hover:text-slate-100">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-
-      <div class="mt-4 space-y-4 text-xs text-slate-300 leading-relaxed max-h-[70vh] overflow-y-auto pr-2">
-        <div>
-          <h4 class="font-bold text-slate-100">Angaben gemäß § 5 TMG</h4>
-          <p class="mt-1 font-mono text-[11px]">
+          <h4 class="font-bold text-slate-900 text-sm">Angaben gemäß § 5 DDG (Digitale-Dienste-Gesetz)</h4>
+          <p class="mt-1 font-mono text-[11px] text-slate-700">
             D.A.T. Dienstleistungen<br>
             Inhaber: Harro Goerndt<br>
             Weserstraße 16<br>
@@ -1107,30 +698,38 @@
         </div>
 
         <div>
-          <h4 class="font-bold text-slate-100">Kontakt</h4>
-          <p class="mt-1 font-mono text-[11px]">
+          <h4 class="font-bold text-slate-900 text-sm">Kontakt</h4>
+          <p class="mt-1 font-mono text-[11px] text-slate-700">
             Telefon: +49 (0) 4421 / 778 40 50<br>
             E-Mail: datdienstleistungen@gmail.com
           </p>
         </div>
 
         <div>
-          <h4 class="font-bold text-slate-100">Umsatzsteuer</h4>
-          <p class="mt-1">
-            Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz: Entfällt / Kleinunternehmerregelung gemäß § 19 UStG.
+          <h4 class="font-bold text-slate-900 text-sm">Umsatzsteuer-Identifikation</h4>
+          <p class="mt-1 text-slate-600">
+            Umsatzsteuerbefreit nach § 19 UStG (Kleinunternehmerregelung) bzw. Ausweisung nach den gesetzlichen Bestimmungen der Bundesrepublik Deutschland.
           </p>
         </div>
 
         <div>
-          <h4 class="font-bold text-slate-100">Haftung für Inhalte und Verweise</h4>
-          <p class="mt-1">
-            Die auf diesem Terminal bereitgestellten Signale basieren auf sorgfältig geprüften Primärquellen (Handelsregister, amtliche Bekanntmachungen, Insolvenzregister). Es handelt sich um begründete Marktanalysen und Bedarfs-Hypothesen, nicht um gesicherte Auftragsvergaben der Zielgesellschaften.
+          <h4 class="font-bold text-slate-900 text-sm">Verantwortlich für redaktionelle Inhalte</h4>
+          <p class="mt-1 font-mono text-[11px] text-slate-700">
+            Harro Goerndt<br>
+            Weserstraße 16, 26382 Wilhelmshaven
+          </p>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-slate-900 text-sm">Berufshaftpflicht & Diskretion</h4>
+          <p class="mt-1 text-slate-600">
+            Als inhabergeführtes Executive-Advisory-Haus wahren wir bei allen Recherchen, Erstkontakten und Dossierübermittlungen strengste Vertraulichkeit gemäß den Standards des Bundesverbands Deutscher Unternehmensberater (BDU) und den Vorschriften der Datenschutz-Grundverordnung (DSGVO).
           </p>
         </div>
       </div>
 
-      <div class="mt-6 pt-4 border-t border-slate-800 text-right">
-        <button onclick="closeModal('modal-impressum')" class="px-4 py-2 rounded bg-slate-800 text-slate-200 text-xs font-semibold">
+      <div class="mt-6 pt-4 border-t border-stone-200 text-right">
+        <button onclick="closeLegalModal()" class="px-5 py-2 rounded-lg bg-slate-900 text-white text-xs font-medium hover:bg-brass-600 transition-colors">
           Schließen
         </button>
       </div>
@@ -1140,178 +739,337 @@
 
 
   <!-- ========================================================================= -->
-  <!-- MODULARES VANILLA JAVASCRIPT -->
+  <!-- VANILLA JAVASCRIPT: LOKALISIERUNG, CONCIERGE & MODALE -->
   <!-- ========================================================================= -->
   <script>
     // Initialisiere Lucide Icons
-    document.addEventListener('DOMContentLoaded', () => {
-      lucide.createIcons();
-    });
+    lucide.createIcons();
 
-    let currentSelectedSignalId = '';
-
-    // Filter-Funktion für das Dealboard
-    function filterDeals(category) {
-      const buttons = document.querySelectorAll('.filter-btn');
-      buttons.forEach(btn => {
-        if (btn.getAttribute('data-category') === category) {
-          btn.className = 'filter-btn active whitespace-nowrap px-3.5 py-2 rounded bg-cyan-500 text-slate-950 font-semibold transition-all';
-        } else {
-          btn.className = 'filter-btn whitespace-nowrap px-3.5 py-2 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all';
-        }
-      });
-
-      const cards = document.querySelectorAll('.deal-card');
-      let visibleCount = 0;
-
-      cards.forEach(card => {
-        const cardCat = card.getAttribute('data-category');
-        if (category === 'all' || cardCat === category) {
-          card.style.display = 'flex';
-          visibleCount++;
-        } else {
-          card.style.display = 'none';
-        }
-      });
-
-      document.getElementById('activeCount').innerText = visibleCount;
-    }
-
-    // Live-Suche im Dealboard
-    const searchInput = document.getElementById('dealSearch');
-    if (searchInput) {
-      searchInput.addEventListener('input', (e) => {
-        const val = e.target.value.toLowerCase().trim();
-        const cards = document.querySelectorAll('.deal-card');
-        let visibleCount = 0;
-
-        cards.forEach(card => {
-          const text = (card.getAttribute('data-id') + ' ' +
-                        card.getAttribute('data-title') + ' ' +
-                        card.getAttribute('data-industry') + ' ' +
-                        card.getAttribute('data-region') + ' ' +
-                        card.getAttribute('data-role')).toLowerCase();
-
-          if (!val || text.includes(val)) {
-            card.style.display = 'flex';
-            visibleCount++;
-          } else {
-            card.style.display = 'none';
-          }
-        });
-
-        document.getElementById('activeCount').innerText = visibleCount;
-      });
-    }
-
-    // Modal Controller
-    function openModal(modalId) {
-      const modal = document.getElementById(modalId);
-      if (modal) {
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
+    // 1. Mehrsprachigkeit / Internationalisierung (DE, EN, ES)
+    const translations = {
+      de: {
+        'nav.competencies': 'Kompetenzfelder',
+        'nav.methodology': 'Arbeitsweise',
+        'nav.about': 'Über uns',
+        'nav.contact': 'Kontakt',
+        'nav.cta': 'Vertraulicher Dialog',
+        'hero.badge': 'Executive Advisory & Mandate Intelligence',
+        'hero.location': 'Standort Wilhelmshaven · DACH & Europa',
+        'hero.headline': 'Frühzeitige Mandats-Intelligence aus vertrauensvollen Quellen.',
+        'hero.subline': 'Diskrete Identifikation von C-Level-Vakanzen, Sondersituationen und Transformationsbedarf im europäischen Mittelstand – fundiert, vertraulich und partnerschaftlich.',
+        'hero.primaryBtn': 'Vertraulichen Dialog anfordern',
+        'hero.secondaryBtn': 'Unsere Arbeitsweise',
+        'hero.trust1Title': '100 % Vertraulichkeit',
+        'hero.trust1Text': 'Verlässlicher Schutz für Gesellschafter, Beiräte und Vorstände. Kein offener Marktplatz, keine Datenstreuung.',
+        'hero.trust2Title': 'Fundierte Primärsignale',
+        'hero.trust2Text': 'Validierte Anlässe und Handlungsimpulse noch vor der öffentlichen Ausschreibung im freien Markt.',
+        'hero.trust3Title': 'Verankerter Mandatsschutz',
+        'hero.trust3Text': 'Rechtssichere Kooperationsvereinbarungen mit Vorkenntnisprüffrist und fairem Ursächlichkeitsschutz.',
+        'comp.sectionTag': 'Fokusbereiche',
+        'comp.title': 'Diskrete Früherkennung für erfolgskritische Mandatssituationen',
+        'comp.subtitle': 'Unternehmen des gehobenen Mittelstands stehen in Phasen des Umbruchs unter extremem Handlungsdruck. Wir erfassen und verifizieren Signale dort, wo erfahrene Führungskompetenz unverzichtbar wird.',
+        'comp.card1Category': 'Organbesetzung & Governance',
+        'comp.card1Title': 'Organvakanzen & Governance',
+        'comp.card1Text': 'Unerwartete Amtsniederlegungen, plötzliche Vakanzen auf Organebene (CEO, CFO, COO) sowie gezielte Nachbesetzungen in Beirats- und Aufsichtsgremien bei Generationswechseln.',
+        'comp.card1Target': 'Zielgruppe: Executive Search & Board Advisory',
+        'comp.card2Category': 'Turnaround & Sonderlagen',
+        'comp.card2Title': 'Restrukturierung & Transformation',
+        'comp.card2Text': 'Ertrags- und Liquiditätsengpässe, StaRUG-Verfahren, Sanierung in Eigenverwaltung sowie akuter Bedarf an Chief Restructuring Officers (CRO) und krisenerfahrenen Sanierungs-CFOs.',
+        'comp.card2Target': 'Zielgruppe: Restrukturierungs- & Interim Provider',
+        'comp.card3Category': 'M&A & Transaktionen',
+        'comp.card3Title': 'M&A & Sondersituationen',
+        'comp.card3Text': 'Carve-outs aus Konzernen oder Familienholdings, Post-Merger-Integrationsprogramme, ungeklärte Unternehmensnachfolgen und operative Day-1-Readiness bei Private-Equity-Transaktionen.',
+        'comp.card3Target': 'Zielgruppe: M&A-Boutiquen & PE-Operating Partner',
+        'about.tag': 'Seniorität & Diskretion',
+        'about.heading': 'Verlässlicher Dealflow durch gewachsene Branchenkenntnis',
+        'about.text1': 'D.A.T. Dienstleistungen agiert als unabhängiges, inhabergeführtes Advisory-Haus mit Sitz in Wilhelmshaven. Wir schlagen eine verlässliche Brücke zwischen akuten Sondersituationen im Mittelstand und führenden Interim-Providern sowie M&A-Boutiquen.',
+        'about.text2': 'Jedes Signal wird von unserem erfahrenen Team manuell auf Plausibilität, Handlungsfenster und Gesellschafterkontext geprüft. Wir veröffentlichen keine Massenlisten, sondern stellen gezielt Kontakte dort her, wo beiderseitiges Interesse besteht.',
+        'about.photoTitle': 'D.A.T. Dienstleistungen · Standort Wilhelmshaven',
+        'about.photoSubtitle': 'Persönliche Fallprüfung und mandatsgenaue Auswertung im Vier-Augen-Prinzip',
+        'about.founderTitle': 'Inhaber & Senior Advisor',
+        'about.step1Title': 'Bilateraler Erstkontakt & Profilabgleich:',
+        'about.step1Text': ' Wir stimmen Ihren regionalen und branchenspezifischen Suchfokus vertraulich ab.',
+        'about.step2Title': 'Standardisierte Rahmenvereinbarung:',
+        'about.step2Text': ' Voller Mandats- und Kundenschutz mit vereinbarter Vorkenntnisprüffrist.',
+        'about.step3Title': 'Diskrete Mandatszuordnung:',
+        'about.step3Text': ' Qualifizierte Dossier-Übergabe mit direktem zeitlichem Vorlauf vor dem offenen Markt.',
+        'form.tag': 'Direkter Vorstandskontakt',
+        'form.title': 'Vertraulichen Dialog initiieren',
+        'form.subtitle': 'Für Vorstände, Managing Partner und Investment-Professionals. Herr Harro Goerndt meldet sich persönlich bei Ihnen.',
+        'form.nameLabel': 'Ihr Name *',
+        'form.institutionLabel': 'Institution / Organisation *',
+        'form.emailLabel': 'Dienstliche E-Mail-Adresse *',
+        'form.phoneLabel': 'Telefon für vertraulichen Rückruf *',
+        'form.focusLabel': 'Ihr primärer Such- und Mandatsfokus',
+        'form.focusOpt1': 'C-Level Interim Management (CEO, CFO, CRO, COO)',
+        'form.focusOpt2': 'Sanierung, StaRUG & operative Restrukturierung',
+        'form.focusOpt3': 'Carve-out, PMI & Transaktionsbegleitung',
+        'form.focusOpt4': 'Executive Search & Beiratsbesetzungen',
+        'form.focusOpt5': 'Allgemeiner bilateraler Partnerschaftsdialog',
+        'form.messageLabel': 'Vertrauliche Nachricht (Optional)',
+        'form.consent': 'Ich bestätige, dass diese Kontaktaufnahme im Namen einer professionellen Institution oder im Vorstandsauftrag erfolgt. Diskretion wird zugesichert.',
+        'form.securityNote': 'Vollständige Vertraulichkeit nach DSGVO',
+        'form.submitBtn': 'Dialog vertraulich anfordern',
+        'form.successTitle': 'Vielen Dank für Ihre Anfrage',
+        'form.successText': 'Ihre Nachricht wurde vertraulich an Herrn Harro Goerndt übermittelt. Wir setzen uns zeitnah mit Ihnen in Verbindung, um einen bilateralen Abstimmungstermin zu vereinbaren.'
+      },
+      en: {
+        'nav.competencies': 'Focus Areas',
+        'nav.methodology': 'Methodology',
+        'nav.about': 'About Us',
+        'nav.contact': 'Contact',
+        'nav.cta': 'Confidential Dialogue',
+        'hero.badge': 'Executive Advisory & Mandate Intelligence',
+        'hero.location': 'Wilhelmshaven Headquarters · DACH & Europe',
+        'hero.headline': 'Early Mandate Intelligence from Trusted Sources.',
+        'hero.subline': 'Discreet identification of C-level vacancies, special situations, and transformation needs across European mid-market enterprises – sound, confidential, and collaborative.',
+        'hero.primaryBtn': 'Request Confidential Dialogue',
+        'hero.secondaryBtn': 'Our Methodology',
+        'hero.trust1Title': '100% Confidentiality',
+        'hero.trust1Text': 'Guaranteed protection for shareholders, advisory boards, and executives. No public marketplaces, no data scatter.',
+        'hero.trust2Title': 'Primary Signal Intelligence',
+        'hero.trust2Text': 'Validated momentum and trigger events well before formal tender announcements in the open market.',
+        'hero.trust3Title': 'Contractual Client Protection',
+        'hero.trust3Text': 'Legally secure framework agreements with prior-knowledge objection periods and fair causality clauses.',
+        'comp.sectionTag': 'Practice Areas',
+        'comp.title': 'Discreet Early Detection for High-Stakes Leadership Situations',
+        'comp.subtitle': 'Mid-market companies face urgent operational pressure during turning points. We detect and verify signals where seasoned executive leadership is imperative.',
+        'comp.card1Category': 'Leadership & Governance',
+        'comp.card1Title': 'Executive Vacancies & Governance',
+        'comp.card1Text': 'Unforeseen departures, sudden board-level vacancies (CEO, CFO, COO), and targeted succession appointments on advisory boards during ownership changes.',
+        'comp.card1Target': 'Audience: Executive Search & Board Advisory',
+        'comp.card2Category': 'Turnaround & Special Situations',
+        'comp.card2Title': 'Restructuring & Transformation',
+        'comp.card2Text': 'Margin and liquidity bottlenecks, statutory restructuring, debtor-in-possession proceedings, and acute demand for CROs and crisis-proven CFOs.',
+        'comp.card2Target': 'Audience: Restructuring & Interim Providers',
+        'comp.card3Category': 'M&A & Transactions',
+        'comp.card3Title': 'M&A & Corporate Carve-outs',
+        'comp.card3Text': 'Carve-outs from corporate or family holdings, post-merger integration programs, succession bottlenecks, and operational Day-1 readiness for private equity.',
+        'comp.card3Target': 'Audience: M&A Boutiques & PE Operating Partners',
+        'about.tag': 'Seniority & Discretion',
+        'about.heading': 'Reliable Dealflow Rooted in Industry Acumen',
+        'about.text1': 'D.A.T. Dienstleistungen operates as an independent, owner-managed advisory firm based in Wilhelmshaven. We bridge acute mid-market leadership challenges with premier interim management providers and M&A boutiques.',
+        'about.text2': 'Every single mandate signal is scrutinized manually for credibility, decision windows, and shareholder context by our senior team. We deliver bespoke, bilateral connections.',
+        'about.photoTitle': 'D.A.T. Dienstleistungen · Wilhelmshaven Headquarters',
+        'about.photoSubtitle': 'Four-eyes peer review and mandate-specific validation on site',
+        'about.founderTitle': 'Founder & Senior Advisor',
+        'about.step1Title': 'Bilateral Introduction & Scope:',
+        'about.step1Text': ' We align confidentially on your geographic and functional focus areas.',
+        'about.step2Title': 'Standardized Framework Agreement:',
+        'about.step2Text': ' Comprehensive client protection with an agreed prior-knowledge objection period.',
+        'about.step3Title': 'Discreet Mandate Allocation:',
+        'about.step3Text': ' Qualified dossier briefing with a distinct time advantage prior to open market release.',
+        'form.tag': 'Direct Executive Contact',
+        'form.title': 'Initiate Confidential Dialogue',
+        'form.subtitle': 'For board members, managing partners, and investment professionals. Mr. Harro Goerndt will respond to you personally.',
+        'form.nameLabel': 'Your Name *',
+        'form.institutionLabel': 'Institution / Organization *',
+        'form.emailLabel': 'Corporate Email Address *',
+        'form.phoneLabel': 'Direct Phone Number *',
+        'form.focusLabel': 'Primary Search & Mandate Scope',
+        'form.focusOpt1': 'C-Level Interim Management (CEO, CFO, CRO, COO)',
+        'form.focusOpt2': 'Restructuring & Operational Turnaround',
+        'form.focusOpt3': 'Carve-out, PMI & Transaction Execution',
+        'form.focusOpt4': 'Executive Search & Board Advisory',
+        'form.focusOpt5': 'General Bilateral Partnership Dialogue',
+        'form.messageLabel': 'Confidential Message (Optional)',
+        'form.consent': 'I confirm that this inquiry is made on behalf of an institutional provider or executive body. Discretion is guaranteed.',
+        'form.securityNote': 'Full confidentiality in compliance with GDPR',
+        'form.submitBtn': 'Submit Confidential Inquiry',
+        'form.successTitle': 'Thank You for Your Inquiry',
+        'form.successText': 'Your message has been transmitted confidentially to Mr. Harro Goerndt. We will reach out shortly to coordinate an introductory dialogue.'
+      },
+      es: {
+        'nav.competencies': 'Áreas de Práctica',
+        'nav.methodology': 'Metodología',
+        'nav.about': 'Nosotros',
+        'nav.contact': 'Contacto',
+        'nav.cta': 'Diálogo Confidencial',
+        'hero.badge': 'Executive Advisory & Mandate Intelligence',
+        'hero.location': 'Sede en Wilhelmshaven · DACH y Europa',
+        'hero.headline': 'Inteligencia de Mandatos Temprana de Fuentes Confiables.',
+        'hero.subline': 'Identificación discreta de vacantes de nivel C, situaciones especiales y necesidades de transformación en medianas empresas europeas.',
+        'hero.primaryBtn': 'Solicitar Diálogo Confidencial',
+        'hero.secondaryBtn': 'Nuestra Metodología',
+        'hero.trust1Title': '100 % Confidencialidad',
+        'hero.trust1Text': 'Protección rigurosa para accionistas y directivos. Sin mercados abiertos ni dispersión de datos.',
+        'hero.trust2Title': 'Señales Primarias Validadas',
+        'hero.trust2Text': 'Oportunidades verificadas con semanas de anticipación a cualquier licitación pública abierta.',
+        'hero.trust3Title': 'Protección de Mandato',
+        'hero.trust3Text': 'Acuerdos marco con cláusulas de protección de clientela y plazo de objeción por conocimiento previo.',
+        'comp.sectionTag': 'Áreas Clave',
+        'comp.title': 'Detección Temprana para Situaciones Críticas de Liderazgo',
+        'comp.subtitle': 'Las medianas empresas experimentan una alta presión operativa durante fases de cambio. Detectamos y validamos señales donde la experiencia ejecutiva es crucial.',
+        'comp.card1Category': 'Gobernanza y Dirección',
+        'comp.card1Title': 'Vacantes de Nivel C y Consejos',
+        'comp.card1Text': 'Renuncias imprevistas, vacantes repentinas en órganos de dirección (CEO, CFO, COO) y renovación de consejos consultivos.',
+        'comp.card1Target': 'Destinatarios: Executive Search y Consultoría de Consejos',
+        'comp.card2Category': 'Reestructuración y Turnaround',
+        'comp.card2Title': 'Reestructuración y Transformación',
+        'comp.card2Text': 'Tensiones de liquidez, procedimientos concursales preventivos y demanda urgente de directores de reestructuración (CRO).',
+        'comp.card2Target': 'Destinatarios: Proveedores de Interim Management y Reestructuración',
+        'comp.card3Category': 'M&A y Situaciones Especiales',
+        'comp.card3Title': 'M&A y Carve-Outs',
+        'comp.card3Text': 'Separaciones corporativas (carve-outs), integración post-fusión, relevo generacional y preparación operativa Day-1 para Private Equity.',
+        'comp.card3Target': 'Destinatarios: Boutiques de M&A y Socios Operativos de PE',
+        'about.tag': 'Seniority y Discreción',
+        'about.heading': 'Flujo de Oportunidades Fiable y Experiencia Consolidada',
+        'about.text1': 'D.A.T. Dienstleistungen opera como firma independiente de asesoramiento ejecutivo con sede en Wilhelmshaven. Conectamos situaciones empresariales complejas con los principales proveedores de interim management.',
+        'about.text2': 'Cada señal es examinada minuciosamente por nuestro equipo de expertos en cuanto a plausibilidad, ventana de actuación y contexto de accionistas.',
+        'about.photoTitle': 'D.A.T. Dienstleistungen · Sede Wilhelmshaven',
+        'about.photoSubtitle': 'Validación personalizada bajo el principio de cuatro ojos',
+        'about.founderTitle': 'Fundador y Asesor Principal',
+        'about.step1Title': 'Contacto Bilateral y Alineación:',
+        'about.step1Text': ' Definimos confidencialmente su enfoque geográfico y sectorial.',
+        'about.step2Title': 'Acuerdo Marco Estandarizado:',
+        'about.step2Text': ' Máxima protección con período de objeción por conocimiento previo.',
+        'about.step3Title': 'Asignación Discreta:',
+        'about.step3Text': ' Entrega cualificada de dosieres con clara ventaja temporal frente al mercado.',
+        'form.tag': 'Contacto Directo',
+        'form.title': 'Iniciar Diálogo Confidencial',
+        'form.subtitle': 'Para directivos, socios gestores y profesionales de inversión. El Sr. Harro Goerndt se comunicará personalmente.',
+        'form.nameLabel': 'Su Nombre *',
+        'form.institutionLabel': 'Institución / Organización *',
+        'form.emailLabel': 'Correo Electrónico Corporativo *',
+        'form.phoneLabel': 'Teléfono Directo *',
+        'form.focusLabel': 'Área de Interés Principal',
+        'form.focusOpt1': 'Interim Management Nivel C (CEO, CFO, CRO, COO)',
+        'form.focusOpt2': 'Reestructuración y Turnaround Operativo',
+        'form.focusOpt3': 'Carve-Outs, Integración PMI y M&A',
+        'form.focusOpt4': 'Executive Search y Consejos de Administración',
+        'form.focusOpt5': 'Diálogo General de Colaboración',
+        'form.messageLabel': 'Mensaje Confidencial (Opcional)',
+        'form.consent': 'Confirmo que esta consulta se realiza en nombre de una institución profesional. Se garantiza confidencialidad.',
+        'form.securityNote': 'Confidencialidad absoluta según RGPD',
+        'form.submitBtn': 'Solicitar Diálogo Confidencial',
+        'form.successTitle': 'Muchas Gracias por su Consulta',
+        'form.successText': 'Su mensaje ha sido transmitido confidencialmente al Sr. Harro Goerndt. Nos pondremos en contacto a la brevedad.'
       }
-    }
+    };
 
-    function closeModal(modalId) {
-      const modal = document.getElementById(modalId);
-      if (modal) {
-        modal.classList.add('hidden');
-        document.body.style.overflow = 'auto';
-      }
-    }
+    let currentLang = 'de';
 
-    // Dossier-Modal mit Daten der angeklickten Karte befüllen
-    function openDossierModal(btnElement) {
-      const card = btnElement.closest('.deal-card');
-      if (!card) return;
-
-      currentSelectedSignalId = card.getAttribute('data-id');
-      const title = card.getAttribute('data-title');
-      const industry = card.getAttribute('data-industry');
-      const region = card.getAttribute('data-region');
-      const urgency = card.getAttribute('data-urgency');
-      const status = card.getAttribute('data-status');
-      const role = card.getAttribute('data-role');
-      const revenue = card.getAttribute('data-revenue');
-      const headcount = card.getAttribute('data-headcount');
-      const pain = card.getAttribute('data-pain');
-
-      document.getElementById('modalDossierId').innerText = currentSelectedSignalId;
-      document.getElementById('modalDossierMeta').innerText = `${industry} · ${region}`;
-      document.getElementById('modalDossierTitle').innerText = title;
-      document.getElementById('modalDossierRevenue').innerText = revenue;
-      document.getElementById('modalDossierHeadcount').innerText = headcount;
-      document.getElementById('modalDossierUrgency').innerText = urgency;
-      document.getElementById('modalDossierPain').innerText = pain;
-
-      const badge = document.getElementById('modalDossierStatusBadge');
-      if (status.includes('Sperrfrist')) {
-        badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono badge-amber';
-        badge.innerText = status;
-      } else {
-        badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono badge-emerald';
-        badge.innerText = status;
-      }
-
-      openModal('modal-dossier');
-    }
-
-    // Von Dossier-Modal direkt in die Anfrage springen
-    function requestCurrentDossier() {
-      closeModal('modal-dossier');
-      openInquiryModal(currentSelectedSignalId, 'Modell A (5% Rahmenkooperation)');
-    }
-
-    // Anfrage-Modal öffnen mit Vorbelegung
-    function openInquiryModal(signalId = '', model = 'Modell A (5% Rahmenkooperation)') {
-      const signalRefInput = document.getElementById('inquirySignalRef');
-      if (signalRefInput) {
-        signalRefInput.value = signalId || '';
-      }
-
-      const modelSelect = document.getElementById('inquiryModelSelect');
-      if (modelSelect) {
-        modelSelect.value = model;
-      }
-
-      // Formular zurücksetzen
-      document.getElementById('inquiryForm').classList.remove('hidden');
-      document.getElementById('inquirySuccess').classList.add('hidden');
-
-      openModal('modal-inquiry');
-    }
-
-    // Formular-Submit Handling (Simulation des B2B-Prozesses)
-    function handleInquirySubmit(e) {
-      e.preventDefault();
+    function setLanguage(lang) {
+      if (!translations[lang]) return;
+      currentLang = lang;
       
-      const ticketId = '#DAT-2026-' + Math.floor(1000 + Math.random() * 9000);
-      document.getElementById('ticketNumber').innerText = ticketId;
+      // Buttons aktualisieren
+      ['de', 'en', 'es'].forEach(l => {
+        const btn = document.getElementById(`lang-${l}`);
+        if (btn) {
+          if (l === lang) {
+            btn.className = 'px-2.5 py-1 rounded-full bg-white text-slate-900 shadow-sm transition-all';
+          } else {
+            btn.className = 'px-2.5 py-1 rounded-full text-slate-500 hover:text-slate-900 transition-all';
+          }
+        }
+      });
 
-      document.getElementById('inquiryForm').classList.add('hidden');
-      document.getElementById('inquirySuccess').classList.remove('hidden');
+      // Texte austauschen
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[lang][key]) {
+          el.innerText = translations[lang][key];
+        }
+      });
     }
 
-    // ESC-Key Support für alle Modale
+    // Mobile Menü Toggle
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobile-menu');
+      menu.classList.toggle('hidden');
+    }
+
+    // 2. Executive Concierge Logik
+    function toggleConcierge() {
+      const modal = document.getElementById('conciergeModal');
+      modal.classList.toggle('hidden');
+    }
+
+    const conciergeKnowledge = {
+      1: {
+        title: 'Verlässlicher Kundenschutz & 12 Monate Ursächlichkeit',
+        text: 'Jede von uns übermittelte Mandatsopportunität ist mit einem 12-monatigen vertraglichen Ursächlichkeits- und Kundenschutz versehen. Sollte Ihr Haus das Mandat oder Folgeaufträge bei der Zielgesellschaft realisieren, ist die Zuordnung juristisch eindeutig und beiderseitig fair geschützt.'
+      },
+      2: {
+        title: '5 Werktage Vorkenntnisprüffrist',
+        text: 'Transparenz auf Augenhöhe: Nach Erhalt eines Dossiers haben Partner 5 Werktage Zeit, eine etwaige nachweisbare Vorbefassung mit dem Unternehmen geltend zu machen. Bei berechtigtem Vorkenntnisnachweis entstehen keinerlei Verpflichtungen.'
+      },
+      3: {
+        title: 'Fokus: Gehobener Mittelstand (50–500 Mio. € Umsatz)',
+        text: 'Wir konzentrieren uns auf eigentümergeführte Unternehmen, Konzerntöchter und Portfolio-Gesellschaften im DACH-Raum und europäischen Ausland. Typische Mandate sind Interim CEO/CFO bei Governance-Krisen, CROs in Restrukturierungen und Programmleiter bei Carve-Outs.'
+      },
+      4: {
+        title: 'Erfolgsbasierte Rahmenvereinbarung (Pay-as-you-get)',
+        text: 'Keine Abonnements, keine Vorabkosten, kein Risiko. Die Zusammenarbeit erfolgt auf Basis einer standardisierten bilateralen Rahmenvereinbarung mit rein erfolgsbasierter Vergütung, die erst und nur nach tatsächlichem Zahlungseingang durch den Kunden fällig wird.'
+      }
+    };
+
+    function conciergeAnswer(id) {
+      const item = conciergeKnowledge[id];
+      if (!item) return;
+
+      const box = document.getElementById('conciergeAnswerBox');
+      const title = document.getElementById('conciergeAnswerTitle');
+      const text = document.getElementById('conciergeAnswerText');
+
+      title.innerText = item.title;
+      text.innerText = item.text;
+      box.classList.remove('hidden');
+      box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // 3. Kontaktformular Submit
+    function handleContactSubmit(e) {
+      e.preventDefault();
+      const refId = 'DAT-ADV-' + new Date().getFullYear() + '-' + Math.floor(1000 + Math.random() * 9000);
+      document.getElementById('contactRefId').innerText = refId;
+      document.getElementById('contactForm').classList.add('hidden');
+      document.getElementById('contactSuccess').classList.remove('hidden');
+    }
+
+    // 4. Rechtliche Modale
+    function openLegalModal(type) {
+      const modal = document.getElementById('legalModal');
+      const title = document.getElementById('legalModalTitle');
+      
+      if (type === 'impressum') {
+        title.innerText = 'Impressum & Anbieterkennzeichnung (§ 5 DDG)';
+      } else if (type === 'datenschutz') {
+        title.innerText = 'Datenschutzerklärung & Vertraulichkeit (DSGVO)';
+      } else if (type === 'vertraulichkeit') {
+        title.innerText = 'Vertraulichkeitsgrundsätze im Executive Advisory';
+      } else {
+        title.innerText = 'Haftungsausschluss & Berufsrecht';
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeLegalModal() {
+      document.getElementById('legalModal').classList.add('hidden');
+    }
+
+    // ESC-Key Support
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        closeModal('modal-dossier');
-        closeModal('modal-inquiry');
-        closeModal('modal-login');
-        closeModal('modal-impressum');
+        closeLegalModal();
+        const concierge = document.getElementById('conciergeModal');
+        if (!concierge.classList.contains('hidden')) {
+          concierge.classList.add('hidden');
+        }
       }
     });
 
-    // Klick auf Backdrop schließt Modal
-    ['modal-dossier', 'modal-inquiry', 'modal-login', 'modal-impressum'].forEach(id => {
-      const modal = document.getElementById(id);
-      if (modal) {
-        modal.addEventListener('click', (e) => {
-          if (e.target === modal) {
-            closeModal(id);
-          }
-        });
+    // Klick außerhalb schließt Modal
+    document.getElementById('conciergeModal').addEventListener('click', (e) => {
+      if (e.target.id === 'conciergeModal') {
+        toggleConcierge();
+      }
+    });
+    document.getElementById('legalModal').addEventListener('click', (e) => {
+      if (e.target.id === 'legalModal') {
+        closeLegalModal();
       }
     });
   </script>
