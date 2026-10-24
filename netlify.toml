@@ -29,6 +29,17 @@
 
 
 [[redirects]]
+  from = "/"
+  to = "/dealflow.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/dealflow"
+  to = "/dealflow.html"
+  status = 200
+
+[[redirects]]
   from = "/api/reddit-proxy/*"
   to = "/.netlify/functions/reddit-proxy/:splat"
   status = 200
@@ -45,12 +56,8 @@
   status = 200
 
 [[redirects]]
-  from = "/dealflow"
-  to = "/dealflow.html"
-  status = 200
-
-[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
 
