@@ -51,12 +51,12 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
   const { activeOffering, opportunities, triggers } = useLead()
   const { t, lang } = useLanguage()
 
-  const SALES_QUICK_ACTIONS = [
-    { id: 'pitch', label: t('nexus.coach.actionPitch', 'Sales Pitch erstellen'), icon: MessageSquare, placeholder: t('nexus.coach.phPitch', 'Beschreibe dein Angebot und deine Zielgruppe...') },
-    { id: 'einwand', label: t('nexus.coach.actionObjection', 'Einwand behandeln'), icon: AlertCircle, placeholder: t('nexus.coach.phObjection', 'Was sagt der Kunde? z.B. "Ist zu teuer"...') },
-    { id: 'followup', label: t('nexus.coach.actionFollowup', 'Follow-Up Vorschlag'), icon: TrendingUp, placeholder: t('nexus.coach.phFollowup', 'Was war die letzte Aktion mit diesem Lead?') },
-    { id: 'analyse', label: t('nexus.coach.actionAnalyze', 'Lead analysieren'), icon: Users, placeholder: t('nexus.coach.phAnalyze', 'Firmenname, Branche, was weißt du über das Unternehmen?') },
-    { id: 'contract', label: t('nexus.coach.actionContract', 'Vertrag & AGB prüfen'), icon: FileCheck, placeholder: t('nexus.coach.phContract', 'Füge den Vertragstext ein oder lade einen Screenshot/PDF hoch...') },
+  const MANDATE_QUICK_ACTIONS = [
+    { id: 'vakuum', label: 'Vakuum- & Organ-Audit', icon: ShieldAlert, placeholder: 'Unternehmen & Vakanz beschreiben: Wer scheidet aus (CEO, CFO, CRO)? Droht sofortiger Stillstand oder geordnete Nachfolge?' },
+    { id: 'pitch', label: 'C-Level Mandats-Pitch', icon: MessageSquare, placeholder: 'Welche Organposition soll besetzt werden? Adressat angeben (z. B. Aufsichtsrat, Gesellschafter, Beirat)...' },
+    { id: 'governance', label: 'Not-Governance & Restrukturierung', icon: AlertCircle, placeholder: 'Restrukturierungsfall oder Krise beschreiben (z. B. StaRUG, CEO-Abberufung, Interim-Vorstand, Schutzschirm)...' },
+    { id: 'budget', label: 'Tier 1 / Tier 2 Budget-Check', icon: TrendingUp, placeholder: 'Unternehmensgröße & gesuchte Organ-Rolle angeben für Tagessatz- und Budget-Band-Kalkulation...' },
+    { id: 'dossier', label: 'Blind-Profil & Dealflow-Dossier', icon: FileCheck, placeholder: 'Lead-Daten für ein anonymisiertes Mandats-Dossier für Investoren und Vermittlungspartner eingeben...' },
   ]
   
   const [message, setMessage] = useState('')
@@ -604,9 +604,9 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
               <Target size={22} />
             </div>
             <div className="nexus-coach-info">
-              <h1>{currentLead ? `Coach: ${currentLead.nexus_companies?.name}` : 'NeXus DealCoach'}</h1>
+              <h1>{currentLead ? `DealCoach: ${currentLead.nexus_companies?.name || 'Mandatsfall'}` : 'NeXus DealCoach'}</h1>
               <span className="nexus-coach-subtitle">
-                {currentLead ? `Lead Intelligence für ${currentLead.nexus_companies?.industry || 'Unbekannte Branche'}` : 'Dein Vertriebs- & Content-Coach'}
+                {currentLead ? `Mandats- & Governance-Intelligence für ${currentLead.nexus_companies?.name || 'Mandatsfall'}` : 'Sparringspartner für Executive Mandate & Governance (Stufe 2)'}
               </span>
             </div>
           </div>
@@ -645,29 +645,52 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
             <div className="nexus-coach-welcome-icon">
               <Target size={48} />
             </div>
-            <h2>{currentLead ? `Coach: ${currentLead.nexus_companies?.name || 'Lead'}` : t('nexus.coach.welcomeTitle', 'Willkommen beim NeXus DealCoach')}</h2>
+            <h2>{currentLead ? `DealCoach: ${currentLead.nexus_companies?.name || 'Mandat'}` : 'Willkommen beim NeXus DealCoach'}</h2>
             <p>{currentLead 
-              ? `${t('nexus.coach.helpPrefix', 'Ich helfe dir beim Verkauf an')} ${currentLead.nexus_companies?.name || 'diesen Lead'}. ${t('nexus.coach.chooseAction', 'Wähle eine Aktion oder stelle mir eine Frage.')}`
-              : t('nexus.coach.generalHelp', 'Ich helfe dir bei Vertriebsoptimierung, Lead-Recherche & AGB-Checks. Füge Text, Screenshots (Strg+V) oder Dokumente ein.')
+              ? `Ich analysiere das Mandat für ${currentLead.nexus_companies?.name || 'diesen Fall'}. Wähle ein Governance-Audit, erstelle einen diskreten C-Level Pitch oder prüfe den Handlungsdruck.`
+              : 'Ich bin dein Sparringspartner für C-Level Organvakanzen, Interim-Mandate (CEO/CFO/CRO), Ad-hoc-Analysen und Governance-Strategien. Analysiere Mandatsanlässe, berechne Honorarbänder oder strukturiere diskrete Vorstands- & Aufsichtsratsansprachen.'
             }</p>
             
             {currentLead && (
               <div className="nexus-coach-context-hint" style={{ 
-                padding: '12px 16px', 
-                background: 'var(--bg-secondary, #f8f9fa)', 
+                padding: '12px 18px', 
+                background: 'rgba(56, 189, 248, 0.08)', 
                 borderRadius: '8px', 
                 marginBottom: '20px',
-                fontSize: '0.85rem',
-                color: 'var(--text-secondary, #666)',
-                border: '1px solid var(--border-light, #e0e0e0)'
+                fontSize: '0.86rem',
+                color: '#e2e8f0',
+                border: '1px solid rgba(56, 189, 248, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                flexWrap: 'wrap'
               }}>
-                <strong>{t('nexus.coach.context', 'Kontext')}:</strong> {currentLead.nexus_companies?.name || '?'} · {activeOffering?.offering_name || '?'}
-                {leadTriggers.length > 0 && ` · ${leadTriggers.length} Trigger`}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <strong style={{ color: '#38bdf8' }}>Unternehmen:</strong> {currentLead.nexus_companies?.name || currentLead.title || 'Mandat'}
+                </div>
+                {currentLead.priority && (
+                  <span style={{
+                    background: currentLead.priority.includes('TIER_1') ? 'rgba(168, 85, 247, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                    color: currentLead.priority.includes('TIER_1') ? '#c084fc' : '#60a5fa',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                    border: `1px solid ${currentLead.priority.includes('TIER_1') ? 'rgba(168, 85, 247, 0.4)' : 'rgba(59, 130, 246, 0.4)'}`
+                  }}>
+                    {currentLead.priority.includes('TIER_1') ? '👑 TIER 1 TOP' : '🏢 TIER 2 MID'}
+                  </span>
+                )}
+                {leadTriggers.length > 0 && (
+                  <span style={{ color: '#94a3b8' }}>
+                    · {leadTriggers.length} Ad-hoc-Signal(e)
+                  </span>
+                )}
               </div>
             )}
             
             <div className="nexus-coach-quick-actions">
-              {SALES_QUICK_ACTIONS.map(action => (
+              {MANDATE_QUICK_ACTIONS.map(action => (
                 <button
                   key={action.id}
                   className={`nexus-quick-action-btn ${activeQuickAction === action.id ? 'active' : ''}`}
@@ -777,7 +800,7 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
       {(chatHistory.length > 0 || true) && (
         <footer className="nexus-coach-footer">
           <div className="nexus-coach-quick-actions-row">
-            {SALES_QUICK_ACTIONS.map(action => (
+            {MANDATE_QUICK_ACTIONS.map(action => (
               <button
                 key={action.id}
                 className={`nexus-quick-action-sm ${activeQuickAction === action.id ? 'active' : ''}`}
@@ -833,7 +856,7 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
               type="button" 
               className="nexus-coach-attach-btn" 
               onClick={() => fileInputRef.current?.click()} 
-              title="Bilder oder Dokumente anhängen (bis zu 5 Screenshots/Frames per Strg+V)"
+              title="Ad-hoc-Meldungen, Beschlüsse oder Dokumente anhängen (Bilder/PDF per Strg+V)"
             >
               <Paperclip size={18} />
             </button>
@@ -873,10 +896,10 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
               placeholder={isListening 
                 ? "Höre zu... sprich jetzt frei ins Mikrofon..."
                 : (activeQuickAction 
-                    ? SALES_QUICK_ACTIONS.find(a => a.id === activeQuickAction)?.placeholder
+                    ? MANDATE_QUICK_ACTIONS.find(a => a.id === activeQuickAction)?.placeholder
                     : (attachments.length > 0 
-                        ? `${attachments.length} Bild(er)/Frame(s) bereit. Stelle eine Frage dazu oder drücke Enter...`
-                        : t('nexus.coach.inputPlaceholder', 'Frage stellen, Screenshots/Frames per Strg+V einfügen, sprechen oder Datei anhängen...')))}
+                        ? `${attachments.length} Anhang/Dokument(e) bereit. Stelle eine Mandatsfrage dazu oder drücke Enter...`
+                        : 'Mandatsfrage stellen, Ad-hoc-Meldung einfügen, sprechen oder Dokument anhängen...'))}
               disabled={loading}
               rows={2}
               style={{ flex: 1, resize: 'vertical', minHeight: '44px', maxHeight: '150px', padding: '10px 14px', borderRadius: '8px', border: 'none', background: 'transparent', color: 'var(--text-primary)', fontSize: '0.95rem', outline: 'none' }}
