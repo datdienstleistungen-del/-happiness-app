@@ -78,34 +78,37 @@ def run_ingestion(dry_run=False, skip_cleanup=False):
     total_raw_loaded = 0
 
     # 2. DACH - EQS News & Ad-hoc
-    if FEED_SOURCES.get("eqs_news_dach", {}).get("enabled"):
-        print("\n📡 [2/5] DACH: Frage EQS News & Corporate Ad-hoc Feeds ab...")
-        dach_items, dach_dropped = fetch_eqs_feed(FEED_SOURCES["eqs_news_dach"]["url"])
+    if FEED_SOURCES.get("eqs_news_dach", {}).get("enabled", True):
+        print("\n📡 [1/4] DACH (EQS): Frage EQS News & Corporate Ad-hoc Feeds ab...")
+        url = FEED_SOURCES.get("eqs_news_dach", {}).get("url", "https://www.eqs-news.com/de/rss/")
+        dach_items, dach_dropped = fetch_eqs_feed(url)
         total_raw_loaded += len(dach_items) + dach_dropped
         total_dropped_age += dach_dropped
         print(f"   -> {len(dach_items)} frische Meldungen empfangen ({dach_dropped} wegen Alter >48h verworfen).")
         all_fresh_items.extend(dach_items)
 
-    # 3. UK - LSE RNS
-    if FEED_SOURCES.get("uk_rns", {}).get("enabled"):
-        print("\n📡 [3/5] UK: Frage London Stock Exchange RNS (Executive Moves & Board Changes) ab...")
-        rns_items, rns_dropped = fetch_uk_rns_feed(FEED_SOURCES["uk_rns"]["url"])
+    # 3. UK - London Stock Exchange RNS & Investegate
+    if FEED_SOURCES.get("uk_rns", {}).get("enabled", True):
+        print("\n📡 [2/4] UK (RNS): Frage London Stock Exchange RNS (Executive Moves & Board Changes) ab...")
+        url = FEED_SOURCES.get("uk_rns", {}).get("url", "https://www.investegate.co.uk/Rss.aspx")
+        rns_items, rns_dropped = fetch_uk_rns_feed(url)
         total_raw_loaded += len(rns_items) + rns_dropped
         total_dropped_age += rns_dropped
         print(f"   -> {len(rns_items)} frische Meldungen empfangen ({rns_dropped} wegen Alter >48h verworfen).")
         all_fresh_items.extend(rns_items)
 
-    # 4. CH - SHAB Mutationen & Leadership
-    if FEED_SOURCES.get("swiss_shab", {}).get("enabled"):
-        print("\n📡 [4/5] CH: Frage Schweizer SHAB & Handelsregister Mutationen (Führung & Organe) ab...")
-        shab_items, shab_dropped = fetch_swiss_shab_feed(FEED_SOURCES["swiss_shab"]["url"])
+    # 4. CH - Schweizer SHAB Mutationen & Leadership
+    if FEED_SOURCES.get("swiss_shab", {}).get("enabled", True):
+        print("\n📡 [3/4] Schweiz (SHAB): Frage Schweizer SHAB & Handelsregister Mutationen (Führung & Organe) ab...")
+        url = FEED_SOURCES.get("swiss_shab", {}).get("url")
+        shab_items, shab_dropped = fetch_swiss_shab_feed(url)
         total_raw_loaded += len(shab_items) + shab_dropped
         total_dropped_age += shab_dropped
         print(f"   -> {len(shab_items)} frische Meldungen empfangen ({shab_dropped} wegen Alter >48h verworfen).")
         all_fresh_items.extend(shab_items)
 
-    # 5. Pan-European Markets: ES, FR, Pan-EU
-    print("\n📡 [5/5] EU: Frage paneuropäische Pflichtmitteilungen (Spanien CNMV, Frankreich AMF, Euronext/BusinessWire) ab...")
+    # 5. Südeuropa & EU: Spanien CNMV, Frankreich AMF, Euronext
+    print("\n📡 [4/4] Südeuropa / EU (CNMV & AMF): Frage CNMV (Spanien), AMF (Frankreich) und Euronext ab...")
     eu_items, eu_dropped = fetch_eu_markets_feeds()
     total_raw_loaded += len(eu_items) + eu_dropped
     total_dropped_age += eu_dropped

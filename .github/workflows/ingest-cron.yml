@@ -1,0 +1,44 @@
+name: NeXus European Feed Ingestion Cron (Every 3 Hours)
+
+on:
+  schedule:
+    # Runs every 3 hours: at 00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00 UTC
+    - cron: '0 */3 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry Run Mode (simulate scoring without saving to Supabase)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  run-european-ingest:
+    name: Run European Regulatory & C-Level Mandate Ingestion
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run Ingestion Pipeline (DACH, UK, Schweiz, Südeuropa/EU)
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://irumowvmhvrofezwvnop.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            python modules/feed_ingestion/run_ingest.py --dry-run
+          else
+            python modules/feed_ingestion/run_ingest.py
+          fi

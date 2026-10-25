@@ -12,21 +12,12 @@
  *
  * Flow:
  * 1. Event-Type & Geography → European Mandate Search Strategies (LLM + Deterministic Primary Feeds)
- * 2. Suchstrategien → Web Search (Brave / DDG / Bing News RSS)
- * 3. Rohdaten → nexus_raw_events (URL-Hash + Content-Hash Dedup)
- * 4. nexus_raw_events → Event Extraction (LLM Gatekeeper)
- * 5. Extrahierte Events → nexus_events (Entity Resolution)
- *
- * Input: {
- *   event_type: "organ_vakanz",
- *   event_label: "Abrupte Organ-Vakanz & Rücktritt",
- *   event_keywords: [...],
- *   region_id: "EU_UK",
- *   region: "Europa + UK (Gesamtmarkt)",
- *   target_sources: [...],
- *   source_keywords: "EQS, LSE RNS, SHAB, CNMV, AMF",
- *   time_range: "48h"
- * }
+ * 2. Direkte European Regulatory RSS Feeds (EQS, LSE RNS, SHAB, CNMV, AMF) abfragen
+ * 3. Suchstrategien → Web Search (Brave / DDG / Bing News RSS)
+ * 4. Rohdaten → nexus_raw_events (URL-Hash + Content-Hash Dedup)
+ * 5. nexus_raw_events → Event Extraction (LLM Gatekeeper)
+ * 6. Vorverifizierte Opportunities aus nexus_opportunities einbinden
+ * 7. Extrahierte Events → nexus_events (Entity Resolution)
  */
 
 import crypto from 'crypto';
@@ -44,6 +35,56 @@ function authHeaders(token) {
     'Content-Type': 'application/json',
     Prefer: 'return=representation'
   };
+}
+
+// --- Direct Live European Regulatory RSS Feeds ---
+
+async function fetchDirectRegulatoryRss(feedUrl, sourceLabel, region) {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+    const resp = await fetch(feedUrl, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) NeXusMandateRadar/2.0',
+        'Accept': 'application/rss+xml,application/xml,text/xml;q=0.9,*/*;q=0.8'
+      }
+    });
+    clearTimeout(timeout);
+    if (!resp.ok) return [];
+    const xml = await resp.text();
+    const items = [];
+    const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
+    let match;
+    while ((match = itemRegex.exec(xml)) !== null && items.length < 15) {
+      const block = match[1];
+      const titleMatch = /<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/i.exec(block);
+      const linkMatch = /<link>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/link>/i.exec(block);
+      const pubDateMatch = /<pubDate>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/pubDate>/i.exec(block);
+      const descMatch = /<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/i.exec(block);
+
+      const title = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim() : '';
+      const link = linkMatch ? linkMatch[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim() : '';
+      const pubDate = pubDateMatch ? pubDateMatch[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim() : null;
+      const desc = descMatch ? descMatch[1].replace(/<[^>]+>/g, '').replace(/<!\[CDATA\[|\]\]>/g, '').trim() : '';
+
+      if (title && link) {
+        items.push({
+          title,
+          url: link,
+          content: `${title}. ${desc}`.substring(0, 1500),
+          snippet: desc.substring(0, 300),
+          published_date: pubDate,
+          _source: sourceLabel,
+          _region: region
+        });
+      }
+    }
+    return items;
+  } catch (e) {
+    console.warn(`[Direct Regulatory RSS] Notice for ${sourceLabel}:`, e.message);
+    return [];
+  }
 }
 
 // --- Deterministic Primary Source Queries for European Mandate Desk ---
@@ -343,7 +384,38 @@ export async function handler(event) {
 
     console.log(`[Event Search] Start: type=${event_type}, region=${region || region_id || 'EU_UK'}, sources=${source_keywords || 'EQS, LSE RNS, SHAB, CNMV, AMF'}`);
 
-    // 1. Suchstrategien generieren (Europäische Primärquellen)
+    // 1. Direkte Europäische Primärquellen per Live-RSS abfragen
+    const directFeedPromises = [];
+    if (region_id === 'DACH' || region_id === 'EU_UK' || !region_id) {
+      directFeedPromises.push(
+        fetchDirectRegulatoryRss('https://news.google.com/rss/search?q=(%22EQS+News%22+OR+%22Ad-hoc%22+OR+%22DGAP%22)+AND+(Vorstand+OR+Aufsichtsrat+OR+CEO+OR+CFO+OR+Amtsniederlegung+OR+StaRUG)&hl=de&gl=DE&ceid=DE:de&tbs=qdr:d', 'EQS News & Ad-hoc (DACH)', 'DACH')
+      );
+    }
+    if (region_id === 'UK_IRL' || region_id === 'EU_UK' || !region_id) {
+      directFeedPromises.push(
+        fetchDirectRegulatoryRss('https://www.investegate.co.uk/Rss.aspx', 'London Stock Exchange RNS & Investegate (UK)', 'UK')
+      );
+    }
+    if (region_id === 'CH' || region_id === 'DACH' || region_id === 'EU_UK') {
+      directFeedPromises.push(
+        fetchDirectRegulatoryRss('https://news.google.com/rss/search?q=(%22Handelsregister%22+OR+%22SHAB%22+OR+%22Mutationen%22)+AND+(%22Amtsniederlegung%22+OR+%22R%C3%BCcktritt%22+OR+%22Vorstand%22+OR+%22Gesch%C3%A4ftsf%C3%BChrer%22+OR+%22Verwaltungsrat%22+OR+%22Ausscheiden%22+OR+%22Interim%22)&hl=de-CH&gl=CH&ceid=CH:de&tbs=qdr:d', 'Schweizer SHAB Mutationen (CH)', 'CH')
+      );
+    }
+    if (region_id === 'SOUTH_EU' || region_id === 'EU_UK') {
+      directFeedPromises.push(
+        fetchDirectRegulatoryRss('https://news.google.com/rss/search?q=(CNMV+OR+%22Mercado+Continuo%22+OR+%22Bolsas+y+Mercados%22)+AND+(dimision+OR+renuncia+OR+%22cese+de+funciones%22+OR+%22relevo+de+la+direccion%22+OR+%22nombramiento+interino%22+OR+%22consejero+delegado%22)&hl=es&gl=ES&ceid=ES:es&tbs=qdr:d', 'Mercado Continuo & CNMV (ES)', 'ES')
+      );
+    }
+    if (region_id === 'WEST_EU' || region_id === 'EU_UK') {
+      directFeedPromises.push(
+        fetchDirectRegulatoryRss('https://news.google.com/rss/search?q=(Euronext+OR+AMF+OR+%22communiqu%C3%A9%22)+AND+(%22d%C3%A9mission%22+OR+%22d%C3%A9part%22+OR+%22int%C3%A9rim%22+OR+%22directeur+g%C3%A9n%C3%A9ral%22+OR+%22vacance+de+poste%22)&hl=fr&gl=FR&ceid=FR:fr&tbs=qdr:d', 'Euronext Paris & AMF (FR)', 'FR')
+      );
+    }
+
+    const directRssResults = (await Promise.all(directFeedPromises)).flat();
+    console.log(`[Event Search] ${directRssResults.length} live items retrieved from European primary feeds`);
+
+    // 2. Suchstrategien generieren (Europäische Primärquellen)
     const strategies = await generateSearchStrategies({
       eventType: event_type,
       eventLabel: event_label,
@@ -355,27 +427,21 @@ export async function handler(event) {
       customKeyword: custom_keyword
     });
 
-    if (!strategies || strategies.length === 0) {
-      return { statusCode: 500, body: JSON.stringify({ error: 'Strategy generation failed' }) };
-    }
-
-    console.log(`[Event Search] ${strategies.length} strategies generated for European primary sources`);
-
-    // 2. Web Search via _shared/search-core.mjs (Brave -> DuckDuckGo -> Bing News RSS)
-    const allResults = [];
-    const maxQueries = Math.min(strategies.length, 10);
+    // 3. Web Search via _shared/search-core.mjs (Brave -> DuckDuckGo -> Bing News RSS)
+    const allResults = [...directRssResults];
+    const maxQueries = Math.min((strategies || []).length, 6);
 
     for (let i = 0; i < maxQueries; i++) {
       const query = strategies[i].query;
       console.log(`[Event Search] Query ${i + 1}/${maxQueries}: ${query}`);
 
-      const { results } = await searchWithFallback(query, { maxResults: 5 });
+      const { results } = await searchWithFallback(query, { maxResults: 4 });
       allResults.push(...results.map(r => ({ ...r, _query: query })));
     }
 
-    console.log(`[Event Search] ${allResults.length} raw results retrieved`);
+    console.log(`[Event Search] ${allResults.length} total raw results retrieved`);
 
-    // 3. Deduplizierung + Speicherung in nexus_raw_events
+    // 4. Deduplizierung + Speicherung in nexus_raw_events
     const rawEventIds = [];
     let deduplicated = 0;
 
@@ -406,7 +472,7 @@ export async function handler(event) {
           method: 'POST',
           headers: { ...headers, Prefer: 'return=representation' },
           body: JSON.stringify({
-            source_platform: 'european_regulatory_search',
+            source_platform: result._source || 'european_regulatory_search',
             source_url: result.url,
             title: result.title || '',
             raw_content: result.content || result.snippet || '',
@@ -431,13 +497,52 @@ export async function handler(event) {
 
     console.log(`[Event Search] ${rawEventIds.length} raw events stored, ${deduplicated} deduplicated`);
 
-    // 4. Event Extraction (async, für jedes Raw Event)
+    // 5. Vorverifizierte Opportunities aus nexus_opportunities abrufen
+    const existingOpportunities = [];
+    try {
+      const oppQuery = [
+        'select=id,title,company_name,notes,pain_point,summary,region,created_at,score,status,source',
+        'status=in.(pending,verified)',
+        'order=created_at.desc',
+        'limit=10'
+      ];
+      if (region_id && region_id !== 'EU_UK') {
+        oppQuery.push(`region=eq.${region_id}`);
+      }
+      const oppRes = await fetch(`${SUPABASE_URL}/rest/v1/nexus_opportunities?${oppQuery.join('&')}`, {
+        headers
+      });
+      if (oppRes.ok) {
+        const oppData = await oppRes.json();
+        if (Array.isArray(oppData)) {
+          for (const opp of oppData) {
+            existingOpportunities.push({
+              id: opp.id,
+              event_type: event_type,
+              title: opp.title,
+              description: opp.notes || opp.pain_point || opp.summary || 'Verifiziertes Signal aus der europäischen Pflichtmitteilungs-Pipeline',
+              company_name: opp.company_name || 'UNRESOLVED',
+              country: opp.region || 'EU',
+              event_date: opp.created_at,
+              confidence: (opp.score ? opp.score / 100 : 0.95),
+              verification_status: opp.status === 'verified' ? 'verified' : 'pending',
+              source_url: opp.source
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[Event Search] Notice on opportunities lookup:', e.message);
+    }
+
+    // 6. Event Extraction (async, für die frischesten Raw Events)
     const { extractEventFromRaw } = await import('./nexus-event-extraction.mjs');
 
     const extractedEvents = [];
     const extractionErrors = [];
 
-    for (const rawId of rawEventIds) {
+    // Limitiere Extraction auf maximal 8 frische Raw Events pro Klick für schnelle Response-Zeit
+    for (const rawId of rawEventIds.slice(0, 8)) {
       try {
         const result = await extractEventFromRaw(rawId, userToken, userId);
         if (result.error) {
@@ -450,20 +555,33 @@ export async function handler(event) {
       }
     }
 
-    console.log(`[Event Search] ${extractedEvents.length} events extracted, ${extractionErrors.length} errors`);
+    console.log(`[Event Search] ${extractedEvents.length} events extracted, ${existingOpportunities.length} opportunities merged`);
 
-    // 5. Ergebnis
+    // 7. Kombinieren und Deduplizieren nach Titel
+    const combinedEvents = [...existingOpportunities, ...extractedEvents];
+    const seenTitles = new Set();
+    const finalEvents = [];
+
+    for (const evt of combinedEvents) {
+      const key = (evt.title || '').trim().toLowerCase();
+      if (!seenTitles.has(key)) {
+        seenTitles.add(key);
+        finalEvents.push(evt);
+      }
+    }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        events: extractedEvents,
+        events: finalEvents,
         stats: {
-          strategies: strategies.length,
+          strategies: (strategies || []).length,
           searched: allResults.length,
           stored: rawEventIds.length,
           deduplicated,
           extracted: extractedEvents.length,
+          existing_signals: existingOpportunities.length,
           errors: extractionErrors.length
         }
       })
