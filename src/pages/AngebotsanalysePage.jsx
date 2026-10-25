@@ -19,7 +19,7 @@ import SignalStrategiesManager from '../components/nexus/SignalStrategiesManager
 import { useLead } from '../context/LeadContext'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations.jsx'
-import { ContextHelpButton } from '../context/GuideContext'
+import { ContextHelpButton } from '../components/ContextHelpButton'
 import { TRIGGER_CATEGORIES, B2B_TRIGGER_PRESETS, isTestOffering } from '../lib/nexus-validation'
 import './AngebotsanalysePage.css'
 

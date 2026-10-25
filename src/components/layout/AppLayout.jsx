@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import {
-  Heart, Users, Briefcase, BookOpen, Film, Settings,
-  User, ChevronLeft, ChevronRight, Menu, Radar, Target, LayoutDashboard, Search, Video
+  Heart, Briefcase, Settings,
+  User, ChevronLeft, ChevronRight, Menu, Radar, Target, LayoutDashboard
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useLanguage, LANGUAGES } from '../../i18n/translations.jsx'
 import Logo from '../Logo'
-import InstallButton from '../InstallButton'
 
 function Sidebar({ mobileOpen, setMobileOpen }) {
   const { user, profile, signOut } = useAuth()
@@ -51,29 +50,16 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
   }
 
   const nexusLinks = [
+    { to: '/nexus/sales-workspace', icon: Briefcase, label: t('nexus.nav.salesWorkspace', 'Sales Workspace') },
+    { to: '/nexus/lead-radar', icon: Radar, label: t('nexus.nav.leadRadar', 'Lead Radar') },
+    { to: '/nexus/events', icon: Target, label: t('nexus.nav.events', 'Mandatsereignisse') },
     { to: '/nexus/dashboard', icon: LayoutDashboard, label: t('nexus.nav.dashboard', 'NeXus Dashboard') },
     { to: '/nexus/angebotsanalyse', icon: Target, label: t('nexus.nav.offeringAnalysis', 'Angebotsanalyse') },
-    { to: '/nexus/lead-radar', icon: Radar, label: t('nexus.nav.leadRadar', 'Lead Radar') },
-    { to: '/nexus/sales-workspace', icon: Briefcase, label: t('nexus.nav.salesWorkspace', 'Sales Workspace') },
   ]
 
   const coachLinks = [
     { to: '/coach', icon: Heart, label: t('nexus.nav.coach', 'DealCoach') },
   ]
-
-  const contentLinks = [
-    { to: '/video-finder', icon: Search, label: t('nexus.nav.videoFinder', 'Video Finder') },
-    { to: '/video-script', icon: Video, label: t('nexus.nav.videoScript', 'Video Script'), badge: 'NEU' },
-    { to: '/capcut-studio', icon: Film, label: t('nexus.nav.capcutStudio', 'CapCut Studio') },
-  ]
-
-  const accountLinks = [
-    { to: '/wissenschaft', icon: BookOpen, label: t('nexus.nav.psychology', 'Vertriebspsychologie') },
-  ]
-
-  if (profile?.role === 'admin') {
-    accountLinks.push({ to: '/admin', icon: Settings, label: t('nav.admin') })
-  }
 
   const renderLinks = (links) => links.map((link) => (
     <Link
@@ -146,21 +132,6 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
         )}
         {renderLinks(coachLinks)}
 
-        <div className="sidebar-divider"></div>
-        {!collapsed && (
-          <div className="sidebar-section-title" style={{ display: 'flex', alignItems: 'center' }}>
-            {t('nexus.nav.videoIntelligence', 'Video Intelligence')}
-          </div>
-        )}
-        {renderLinks(contentLinks)}
-
-        <div className="sidebar-divider"></div>
-        {!collapsed && (
-          <div className="sidebar-section-title">
-            {t('nexus.nav.knowledge', 'Wissen')}
-          </div>
-        )}
-        {renderLinks(accountLinks)}
       </nav>
 
       <div className="sidebar-footer">
@@ -180,8 +151,6 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
             <option key={l.code} value={l.code}>{l.flag} {l.label}</option>
           ))}
         </select>
-
-        <InstallButton variant="sidebar" />
 
         <div className="sidebar-user">
           {user ? (
@@ -225,21 +194,21 @@ function MobileBar() {
   return (
     <>
       <nav className="mobile-bottom-nav">
-        <Link to="/nexus/dashboard" className={`mobile-nav-link ${location.pathname.startsWith('/nexus') ? 'active' : ''}`}>
+        <Link to="/nexus/sales-workspace" className={`mobile-nav-link ${location.pathname === '/nexus/sales-workspace' ? 'active' : ''}`}>
+          <Briefcase size={20} />
+          <span>Workspace</span>
+        </Link>
+        <Link to="/nexus/lead-radar" className={`mobile-nav-link ${location.pathname === '/nexus/lead-radar' ? 'active' : ''}`}>
           <Radar size={20} />
-          <span>NeXus</span>
+          <span>Radar</span>
+        </Link>
+        <Link to="/nexus/events" className={`mobile-nav-link ${location.pathname === '/nexus/events' ? 'active' : ''}`}>
+          <Target size={20} />
+          <span>Events</span>
         </Link>
         <Link to="/coach" className={`mobile-nav-link ${location.pathname === '/coach' ? 'active' : ''}`}>
           <Heart size={20} />
           <span>DealCoach</span>
-        </Link>
-        <Link to="/video-finder" className={`mobile-nav-link ${['/video-finder', '/video-script', '/capcut-studio'].includes(location.pathname) ? 'active' : ''}`}>
-          <Video size={20} />
-          <span>Studio</span>
-        </Link>
-        <Link to="/profile" className={`mobile-nav-link ${location.pathname === '/profile' ? 'active' : ''}`}>
-          <User size={20} />
-          <span>Profil</span>
         </Link>
       </nav>
       <div className="mobile-lang-bar">
@@ -262,12 +231,8 @@ export default function AppLayout({ children }) {
   const { user } = useAuth()
   const location = useLocation()
 
-  // Clean landing page: When visiting "/", "/nexus" or "/landing", NO sidebar
-  const isLandingPage = ['/', '/nexus', '/landing'].includes(location.pathname)
-  const isSpecialPage = ['/onboarding', '/today-question'].includes(location.pathname)
-
-  const shouldShowSidebar = user && !isSpecialPage && !isLandingPage
-  const shouldShowPublicTopbar = false
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register'
+  const shouldShowSidebar = user && !isAuthPage
   const isMainContentWithSidebar = shouldShowSidebar
 
   return (

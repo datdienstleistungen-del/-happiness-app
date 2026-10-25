@@ -212,6 +212,28 @@ MANDATORY_EVENT_KEYWORDS = [
     "verlässt das unternehmen", "verlaesst das unternehmen", "niederlegung des mandats"
 ]
 
+# Rechtsformen Whitelist (Nur institutionelle & kapitalmarktrelevante Rechtsformen)
+LEGAL_FORM_WHITELIST = [
+    # DACH
+    "AG", "SE", "GMBH", "KGAA", "GMBH & CO. KG", "GMBH & CO KG", "AG & CO. KG", "KGaA",
+    # UK / International
+    "PLC", "LTD", "LIMITED", "INC", "CORP", "CORPORATION", "HOLDING", "GROUP",
+    # France / BeNeLux
+    "SA", "SAS", "SARL", "NV", "BV",
+    # Spain / Italy
+    "SL", "SPA", "SRL",
+    # Nordics
+    "AB", "OYJ", "ASA", "AS"
+]
+
+# Rechtsformen Blacklist (Kleinstunternehmen, GbR, Einzelunternehmen, UG -> SOFORTIGER DROP)
+LEGAL_FORM_BLACKLIST = [
+    "e.k.", "e. k.", "eingetragener kaufmann", "eingetragene kauffrau",
+    "einzelunternehmen", "gbr", "gesellschaft bürgerlichen rechts", "gesbr",
+    "ug (haftungsbeschränkt)", "ug haftungsbeschraenkt", "unternehmergesellschaft",
+    "verein", "e.v.", "eingetragener verein", "ggmbh", "stiftung", "partg", "partgmbb"
+]
+
 
 # Pan-European Feed Sources Configuration
 FEED_SOURCES = {

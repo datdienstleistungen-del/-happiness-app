@@ -4,12 +4,14 @@ import unicodedata
 try:
     from modules.feed_ingestion.config import (
         SIGNAL_CATEGORIES, NEGATIVE_KEYWORDS,
-        ROLE_BLACKLIST, ROLE_WHITELIST, MANDATORY_EVENT_KEYWORDS
+        ROLE_BLACKLIST, ROLE_WHITELIST, MANDATORY_EVENT_KEYWORDS,
+        LEGAL_FORM_BLACKLIST, LEGAL_FORM_WHITELIST
     )
 except ImportError:
     from .config import (
         SIGNAL_CATEGORIES, NEGATIVE_KEYWORDS,
-        ROLE_BLACKLIST, ROLE_WHITELIST, MANDATORY_EVENT_KEYWORDS
+        ROLE_BLACKLIST, ROLE_WHITELIST, MANDATORY_EVENT_KEYWORDS,
+        LEGAL_FORM_BLACKLIST, LEGAL_FORM_WHITELIST
     )
 
 def normalize_text(text):
@@ -81,14 +83,29 @@ def check_mandatory_event(text):
             return True, kw
     return False, None
 
+def check_legal_form(company_name, text):
+    """
+    Validates company legal form:
+    - Drops if legal form blacklist matches (e.g. e.K., GbR, UG, Verein).
+    """
+    combined = f"{company_name} {text}".lower()
+    norm = normalize_text(combined)
+    for bl in LEGAL_FORM_BLACKLIST:
+        norm_b = normalize_text(bl)
+        pattern = r'(?:\b|^)' + re.escape(norm_b) + r'(?:\b|$)'
+        if re.search(pattern, norm):
+            return False, f"LEGAL_FORM_BLACKLIST: '{bl}'"
+    return True, "LEGAL_FORM_OK"
+
 def evaluate_signal(item):
     """
-    Zero-Tolerance Ingestion Evaluator:
+    Zero-Tolerance Ingestion Evaluator (Stufe 1):
     1. URL check: Rejects truncated URLs (ending in '...') and invalid sources.
     2. Mandatory Event Gatekeeper: Rejects empty or 'Keine Angabe' events.
-    3. Negative filter check: Discards retail/small business/how-to articles.
-    4. Seniority check: Blacklists middle management, enforces Organ/C-Level whitelist.
-    5. Event matching: Requires concrete verified Mandatsanlass.
+    3. Legal Form check: Rejects GbR, e.K., UG, Verein, etc.
+    4. Negative filter check: Discards retail/small business/how-to articles.
+    5. Seniority check: Blacklists middle management, enforces Organ/C-Level whitelist.
+    6. Event matching: Requires concrete verified Mandatsanlass.
     """
     url = (item.get('url') or '').strip()
     if not url or url.endswith('...') or url.endswith('…') or len(url) < 15:
@@ -97,6 +114,7 @@ def evaluate_signal(item):
 
     title = (item.get('title') or '').strip()
     snippet = (item.get('snippet') or '').strip()
+    company = (item.get('company') or '').strip()
     
     # Hard Event Gatekeeper: Title or Snippet must exist and not be dummy text
     if not title or title.lower() in ('keine angabe', 'none', 'null', 'unternehmen') or len(title) < 10:
@@ -107,17 +125,22 @@ def evaluate_signal(item):
     raw_text = f"{title} {snippet}".strip()
     norm_text = normalize_text(raw_text)
 
-    # 1. Negative Filter Check (Score 0 / Drop)
+    # 1. Legal Form Filter Check (Drop e.K., GbR, UG, Verein)
+    is_legal_ok, legal_reason = check_legal_form(company, raw_text)
+    if not is_legal_ok:
+        return None
+
+    # 2. Negative Filter Check (Score 0 / Drop)
     is_neg, neg_kw = check_negative_filter(raw_text)
     if is_neg:
         return None
 
-    # 2. Seniority Check (Organ/C-Level only; middle management blacklist)
+    # 3. Seniority Check (Organ/C-Level only; middle management blacklist)
     is_senior, senior_reason = check_role_seniority(raw_text)
     if not is_senior:
         return None
 
-    # 3. Mandatory Event Gatekeeper (Concrete verified anlass required)
+    # 4. Mandatory Event Gatekeeper (Concrete verified anlass required)
     has_event, event_kw = check_mandatory_event(raw_text)
     if not has_event:
         return None

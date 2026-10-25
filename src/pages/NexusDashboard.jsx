@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext'
 import { getDashboardStats, wipeAllUserData } from '../lib/nexus-db'
 import { useLead } from '../context/LeadContext'
 import { useLanguage } from '../i18n/translations.jsx'
-import { ContextHelpButton } from '../context/GuideContext'
+import { ContextHelpButton } from '../components/ContextHelpButton'
 import './NexusDashboard.css'
 
 export default function NexusDashboard() {

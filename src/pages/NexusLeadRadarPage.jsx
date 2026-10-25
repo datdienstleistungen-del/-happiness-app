@@ -7,7 +7,6 @@ import { supabase } from '../lib/supabase'
 import { isPlaceholderCompany, computeTargetMatchScore, normalizeCompanyName, deduplicateAndMergeTriggers, buildCompositeEventKey, formatBusinessOpportunity, generateSignalReportCsv, TRIGGER_CATEGORIES, classifyB2BLifecycle } from '../lib/nexus-validation'
 import { formatEventDate, extractDomain } from '../lib/nexus-dates'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
-import SetupWizard from '../components/SetupWizard'
 import UpgradeModal from '../components/UpgradeModal'
 import { useLead } from '../context/LeadContext'
 import { useAuth } from '../context/AuthContext'
@@ -940,8 +939,8 @@ export default function NexusLeadRadarPage() {
                 <RefreshCw size={15} className={loading || scanStatus === 'starting' || scanStatus === 'running' ? 'spinning' : ''} /> {t('nexus.rescan', 'Radar neu scannen')}
               </button>
             )}
-            <button className="btn-primary" onClick={() => setWizardOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Sparkles size={16} /> {t('nexus.setupAssistant', 'Setup-Assistent')}
+            <button className="btn-primary" onClick={() => navigate('/nexus/angebotsanalyse')} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Sparkles size={16} /> {t('nexus.setupAssistant', 'Angebotsanalyse')}
             </button>
           </div>
         </div>
@@ -1705,13 +1704,6 @@ export default function NexusLeadRadarPage() {
           })}
           </div>
         </div>
-      )}
-      
-      {wizardOpen && (
-        <SetupWizard
-          onComplete={handleWizardComplete}
-          onClose={() => setWizardOpen(false)}
-        />
       )}
     </div>
   )

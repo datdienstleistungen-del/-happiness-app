@@ -3,12 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { supabase } from './lib/supabase'
 import { LanguageProvider, useLanguage } from './i18n/translations.jsx'
 import AuthContext from './context/AuthContext'
-import { VideoFinderProvider } from './context/VideoFinderContext'
-import { VideoScriptProvider } from './context/VideoScriptContext'
-import { CapCutProvider } from './context/CapCutContext'
 import { LeadProvider } from './context/LeadContext'
-import { GuideProvider } from './context/GuideContext'
-import { useOneSignal } from './hooks/useOneSignal'
 import { trackPageView, checkAndTrackReturnVisit, getVisitorId } from './intelligence/analytics/custom'
 import { trackNexusPageView } from './lib/nexus-analytics'
 import AppRoutes from './routes/AppRoutes'
@@ -154,8 +149,6 @@ export default function App() {
     return { data: null, error: new Error('Registrierung ist deaktiviert.') }
   }
 
-  useOneSignal(user)
-
   return (
     <LanguageProvider>
       <AuthContext.Provider value={{
@@ -168,28 +161,20 @@ export default function App() {
         signInWithPassword,
         signUp
       }}>
-        <VideoFinderProvider>
-          <VideoScriptProvider>
-            <CapCutProvider>
-              <LeadProvider>
-                <GuideProvider>
-                  {loading ? (
-                    <LoadingScreen />
-                  ) : (
-                    <>
-                      <CookieConsent />
-                      <AppLayout>
-                        <ErrorBoundary>
-                          <AppRoutes />
-                        </ErrorBoundary>
-                      </AppLayout>
-                    </>
-                  )}
-                </GuideProvider>
-              </LeadProvider>
-            </CapCutProvider>
-          </VideoScriptProvider>
-        </VideoFinderProvider>
+        <LeadProvider>
+          {loading ? (
+            <LoadingScreen />
+          ) : (
+            <>
+              <CookieConsent />
+              <AppLayout>
+                <ErrorBoundary>
+                  <AppRoutes />
+                </ErrorBoundary>
+              </AppLayout>
+            </>
+          )}
+        </LeadProvider>
       </AuthContext.Provider>
     </LanguageProvider>
   )

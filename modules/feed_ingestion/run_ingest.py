@@ -31,6 +31,7 @@ try:
     from modules.feed_ingestion.sources.swiss_shab import fetch_swiss_shab_feed
     from modules.feed_ingestion.sources.eu_markets import fetch_eu_markets_feeds
     from modules.feed_ingestion.keyword_filter import evaluate_signal
+    from modules.feed_ingestion.gatekeeper import verify_mandate_signal_llm
     from modules.feed_ingestion.db_client import SupabaseClient
     from modules.feed_ingestion.telegram_notifier import send_telegram_alert
 except ImportError:
@@ -40,6 +41,7 @@ except ImportError:
     from .sources.swiss_shab import fetch_swiss_shab_feed
     from .sources.eu_markets import fetch_eu_markets_feeds
     from .keyword_filter import evaluate_signal
+    from .gatekeeper import verify_mandate_signal_llm
     from .db_client import SupabaseClient
     from .telegram_notifier import send_telegram_alert
 
@@ -124,31 +126,53 @@ def run_ingestion(dry_run=False, skip_cleanup=False):
 
     for item in all_fresh_items:
         eval_result = evaluate_signal(item)
-        if eval_result:
-            matched_signals.append((item, eval_result))
-            print(f"\n🎯 C-LEVEL VAKANZ IDENTIFIZIERT: [{eval_result['prio']}] {eval_result['category']}")
-            print(f"   Unternehmen: {item.get('company', 'N/A')} ({item.get('region', 'EU')})")
-            print(f"   Titel:       {item.get('title', '')[:85]}")
-            print(f"   Matches:     {', '.join(eval_result['matched_keywords'])}")
-            print(f"   Score:       {int(eval_result['confidence_score'] * 100)}% ({eval_result['relevance_logic']})")
+        if not eval_result:
+            continue
 
-            if not dry_run and db:
-                record, status = db.insert_opportunity(item, eval_result)
-                if status == "INSERTED":
-                    print(f"   -> 📥 Im Posteingang (PENDING_REVIEW) abgelegt. ID: {record.get('id')}")
-                    inserted_signals.append({
-                        'id': record.get('id'),
-                        'company': item.get('company'),
-                        'title': item.get('title'),
-                        'category': eval_result['category'],
-                        'prio': eval_result['prio'],
-                        'source': item.get('url')
-                    })
-                elif status == "DUPLICATE":
-                    print("   -> ⏩ Duplikat bereits in NeXus erfasst (übersprungen).")
-                    skipped_duplicates += 1
-                else:
-                    print(f"   -> ⚠️ Speichern fehlgeschlagen: {status}")
+        print(f"\n🎯 STUFE 1 TREFFER: [{eval_result['prio']}] {eval_result['category']}")
+        print(f"   Unternehmen: {item.get('company', 'N/A')} ({item.get('region', 'EU')})")
+        print(f"   Titel:       {item.get('title', '')[:85]}")
+
+        # STUFE 2: LLM Gatekeeper (Mistral / OpenRouter Free-Tier)
+        print("   -> 🤖 Prüfe mit Stufe 2 (LLM-Gatekeeper)...")
+        is_valid, reason, llm_data = verify_mandate_signal_llm(item, eval_result)
+        if not is_valid:
+            print(f"   -> 🛑 STUFE 2 DROP (LLM-Gatekeeper): {reason}")
+            continue
+
+        # Extrahierte saubere Fakten aus Stufe 2 übernehmen
+        if llm_data:
+            if llm_data.get('company_name'):
+                item['company'] = llm_data['company_name']
+            if llm_data.get('role'):
+                item['role'] = llm_data['role']
+            if llm_data.get('person_name'):
+                item['person'] = llm_data['person_name']
+            if llm_data.get('event_type'):
+                eval_result['event_type'] = llm_data['event_type']
+            if llm_data.get('confidence'):
+                eval_result['confidence_score'] = round(float(llm_data['confidence']), 2)
+
+        print(f"   -> ✅ STUFE 2 BESTANDEN: {item.get('company')} | {item.get('role', '')} | {item.get('person', '')} ({int(eval_result['confidence_score'] * 100)}%)")
+        matched_signals.append((item, eval_result))
+
+        if not dry_run and db:
+            record, status = db.insert_opportunity(item, eval_result)
+            if status == "INSERTED":
+                print(f"   -> 📥 Im Posteingang (PENDING_REVIEW) abgelegt. ID: {record.get('id')}")
+                inserted_signals.append({
+                    'id': record.get('id'),
+                    'company': item.get('company'),
+                    'title': item.get('title'),
+                    'category': eval_result['category'],
+                    'prio': eval_result['prio'],
+                    'source': item.get('url')
+                })
+            elif status == "DUPLICATE":
+                print("   -> ⏩ Duplikat bereits in NeXus erfasst (übersprungen).")
+                skipped_duplicates += 1
+            else:
+                print(f"   -> ⚠️ Speichern fehlgeschlagen: {status}")
 
     print("\n" + "=" * 75)
     print("📈 FINALE ZUSAMMENFASSUNG DES RADAR-LAUFS")
