@@ -268,7 +268,8 @@ export function buildSignalPayload({
   // Decision Maker Mapping: Strikt DSGVO-konforme funktionale Rollen (NIEMALS illegale Personenlisten oder Fake-Daten!)
   const primaryRoleTitle = foundContact?.role || trigger?.ansprechpartner?.rolle || 'Fachbereichsleitung / Geschäftsführung'
   const secondaryRoleTitle = 'Geschäftsleitung / C-Level'
-  const phoneText = foundContact?.phone || trigger?.ansprechpartner?.telefon || 'Offizielle Unternehmenszentrale'
+  const realContactPhone = foundContact?.phone || trigger?.ansprechpartner?.telefon || ''
+  const phoneText = realContactPhone || 'Offizielle Unternehmenszentrale'
 
   const decisionMakers = [
     {

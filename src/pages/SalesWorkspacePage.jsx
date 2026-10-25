@@ -14,6 +14,7 @@ import NexusLiveProgressBar from '../components/NexusLiveProgressBar'
 import { ContextHelpButton } from '../context/GuideContext'
 import SignalPublishSection from '../components/SignalPublishSection'
 import { resolveTriggerCompanyName, extractCompanyNameFromText, buildSignalPayload, publishSignalToDatWebsite } from '../lib/nexus-signal-publisher'
+import { trackSocialOutreachGenerated, trackSocialCommentCopied, trackSocialDmCopied, trackSocialOriginalOpened } from '../lib/nexus-analytics'
 import './SalesWorkspacePage.css'
 
 const MODI = [
