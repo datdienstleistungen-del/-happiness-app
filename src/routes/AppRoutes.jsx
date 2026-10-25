@@ -63,11 +63,7 @@ function ProtectedRoute({ children }) {
   const { t } = useLanguage()
   if (loading) return <div className="loading">{t('auth.logging') || 'Laden...'}</div>
   if (!user || profile?.banned) {
-    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-      return <Navigate to="/login" replace />
-    }
-    window.location.replace('https://dat-dat.de')
-    return null
+    return <Navigate to="/login" replace />
   }
   return children
 }
@@ -78,15 +74,15 @@ export default function AppRoutes() {
   return (
     <Suspense fallback={<div className="loading">Laden...</div>}>
       <Routes>
-        {/* Öffentliche Admin-Auth-Route */}
-        <Route path="/login" element={user ? <Navigate to="/nexus/dashboard" replace /> : <LoginPage />} />
+        {/* Öffentliche Admin-Auth-Route -> Nach Login direkt in den Sales Workspace */}
+        <Route path="/login" element={user ? <Navigate to="/nexus/sales-workspace" replace /> : <LoginPage />} />
         
-        {/* Registrierung & Gast-Aufrufe -> Sofortige Weiterleitung auf dat-dat.de */}
-        <Route path="/register" element={<ExternalRedirect to="https://dat-dat.de" />} />
+        {/* Registrierung -> Weiterleitung auf Login */}
+        <Route path="/register" element={<Navigate to="/login" replace />} />
 
-        {/* Startseite und NeXus Root -> Dashboard für Admin oder Weiterleitung auf dat-dat.de */}
-        <Route path="/" element={user ? <Navigate to="/nexus/dashboard" replace /> : <ExternalRedirect to="https://dat-dat.de" />} />
-        <Route path="/nexus" element={user ? <Navigate to="/nexus/dashboard" replace /> : <ExternalRedirect to="https://dat-dat.de" />} />
+        {/* Startseite und NeXus Root -> Direkt in den Sales Workspace oder auf Login */}
+        <Route path="/" element={user ? <Navigate to="/nexus/sales-workspace" replace /> : <Navigate to="/login" replace />} />
+        <Route path="/nexus" element={user ? <Navigate to="/nexus/sales-workspace" replace /> : <Navigate to="/login" replace />} />
 
         {/* NeXus Core Routes (vollständig geschützt) */}
         <Route path="/nexus/dashboard" element={<ProtectedRoute><NexusDashboard /></ProtectedRoute>} />
