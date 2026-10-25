@@ -1,12 +1,7 @@
-import React, { useEffect } from 'react'
+import React from 'react'
+import { Navigate } from 'react-router-dom'
 
-/**
- * Registrierung ist dauerhaft deaktiviert.
- * Leitet unbefugte Gäste sofort auf https://dat-dat.de um.
- */
 export default function RegisterPage() {
-  useEffect(() => {
-    window.location.replace('https://dat-dat.de')
-  }, [])
-  return null
+  return <Navigate to="/login" replace />
 }
+

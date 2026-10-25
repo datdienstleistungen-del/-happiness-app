@@ -45,18 +45,6 @@ const NexusDashboard = lazy(() => import('../pages/NexusDashboard'))
 
 
 
-function ExternalRedirect({ to = 'https://dat-dat.de' }) {
-  React.useEffect(() => {
-    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-      return;
-    }
-    window.location.replace(to)
-  }, [to])
-  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-    return <Navigate to="/login" replace />
-  }
-  return null
-}
 
 function ProtectedRoute({ children }) {
   const { user, profile, loading } = useAuth()
