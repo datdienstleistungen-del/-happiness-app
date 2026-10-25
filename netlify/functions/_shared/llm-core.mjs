@@ -14,6 +14,7 @@ import {
   GROQ_VISION_MODELS,
   OPENROUTER_FREE_MODELS,
   MISTRAL_DEFAULT_MODEL,
+  MISTRAL_FALLBACK_MODELS,
   OPENAI_DEFAULT_MODEL,
 } from '../nexus-models.mjs';
 import { setCooldown, cooldownRemaining, recordProviderError } from './quota.mjs';
@@ -183,26 +184,33 @@ async function stageMistral(ctx) {
   const keys = [process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY, process.env.MISTRAL_API_KEY_2].filter(Boolean);
   if (keys.length === 0) { ctx.fail('mistral:kein-key'); return null; }
   if (ctx.remaining() < 1200) { ctx.fail('mistral:budget'); return null; }
-  if (await isCooling('mistral', MISTRAL_DEFAULT_MODEL)) { ctx.fail('mistral:cooldown'); return null; }
+  const models = MISTRAL_FALLBACK_MODELS || [MISTRAL_DEFAULT_MODEL, 'open-mistral-7b'];
   for (const key of keys) {
-    try {
-      const res = await postJSON(
-        'https://api.mistral.ai/v1/chat/completions',
-        { Authorization: `Bearer ${key}` },
-        chatBody(MISTRAL_DEFAULT_MODEL, ctx.messages, ctx.temperature, ctx.max_tokens, ctx.jsonMode, ctx.extraBody),
-        Math.min(4000, ctx.remaining())
-      );
-      await noteQuotaStatus('mistral', MISTRAL_DEFAULT_MODEL, res.status, res);
-      if (res.ok) {
-        const data = await res.json();
-        const text = firstText(data);
-        if (accepted(ctx, text)) return { text, provider: 'mistral', model: MISTRAL_DEFAULT_MODEL, usage: firstUsage(data) };
-        ctx.fail('mistral:leer');
-      } else {
-        ctx.fail(`mistral:${res.status}`);
+    for (const model of models) {
+      if (await isCooling('mistral', model)) { ctx.fail(`mistral:cooldown:${model}`); continue; }
+      try {
+        const res = await postJSON(
+          'https://api.mistral.ai/v1/chat/completions',
+          { Authorization: `Bearer ${key}` },
+          chatBody(model, ctx.messages, ctx.temperature, ctx.max_tokens, ctx.jsonMode, ctx.extraBody),
+          Math.min(4000, ctx.remaining())
+        );
+        await noteQuotaStatus('mistral', model, res.status, res);
+        if (res.status === 429) {
+          ctx.fail(`mistral:429-${model}`);
+          continue;
+        }
+        if (res.ok) {
+          const data = await res.json();
+          const text = firstText(data);
+          if (accepted(ctx, text)) return { text, provider: 'mistral', model, usage: firstUsage(data) };
+          ctx.fail(`mistral:${model}:leer`);
+        } else {
+          ctx.fail(`mistral:${model}:${res.status}`);
+        }
+      } catch (e) {
+        ctx.fail(`mistral:${model}:${ERROR_TAG(e)}`);
       }
-    } catch (e) {
-      ctx.fail(`mistral:${ERROR_TAG(e)}`);
     }
   }
   return null;

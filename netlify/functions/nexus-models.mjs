@@ -35,14 +35,17 @@ export const GROQ_COACH = [
 
 // 5. OpenRouter Free Tier Fallback Models (Aktualisiert auf aktive Modelle)
 export const OPENROUTER_FREE_MODELS = [
-  'nvidia/nemotron-3.5-lightning:free',
-  'nvidia/nemotron-3-ultra-550b-a55b:free',
   'nvidia/nemotron-3.5-super-vl:free',
+  'recursive/flint-v1.0:free',
   'liquid/lfm-2.5-2.6b:free'
 ];
 
-// 5. Mistral Default Model
+// 5. Mistral Models (mit Failover auf open-mistral-7b bei 429)
 export const MISTRAL_DEFAULT_MODEL = 'mistral-small-latest';
+export const MISTRAL_FALLBACK_MODELS = [
+  'mistral-small-latest',
+  'open-mistral-7b'
+];
 
 // 6. OpenAI Default Model
 export const OPENAI_DEFAULT_MODEL = 'gpt-4o-mini';
