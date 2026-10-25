@@ -130,7 +130,7 @@ def run_ingestion(dry_run=False, skip_cleanup=False):
     skipped_duplicates = 0
     tier1_count = 0
     tier2_count = 0
-    rejected_count = 0
+    other_review_count = 0
 
     for idx, item in enumerate(all_fresh_items, 1):
         print(f"\n[{idx:02d}/{len(all_fresh_items)}] ⚖️ DealCoach-Revision: {item.get('company', 'N/A')} ({item.get('region', 'EU')})")
@@ -149,19 +149,34 @@ def run_ingestion(dry_run=False, skip_cleanup=False):
             }
 
         # STUFE 2: DealCoach Automatisierte Revision & Vorsortierungs-Instanz
+        # Keine Zensur: Harro ist der Revisor! DealCoach liefert nur die Voreinschätzung.
         is_valid, reason, deal_audit = audit_mandate_lead(item, eval_result)
-        if not is_valid or not deal_audit or deal_audit.get('tier') == 'REJECTED':
-            rejected_count += 1
-            print(f"   -> 🛑 DEALCOACH DROP ({deal_audit.get('tier', 'REJECTED') if deal_audit else 'REJECTED'}): {reason[:100]}")
-            continue
+        if not deal_audit:
+            deal_audit = {
+                'status': 'pending',
+                'tier': 'PRÜFUNG_EMPFOHLEN',
+                'company_name': item.get('company', ''),
+                'audit_rationale': reason or 'Zur manuellen Prüfung durch Harro vorgelegt.',
+                'vacuum_check': 'Manuelle Prüfung erforderlich',
+                'urgency_check': 'Zur Chefsache-Sichtung vorgelegt',
+                'audit_verdict': 'PRÜFUNG_EMPFOHLEN',
+                'estimated_budget': 'Auf Anfrage',
+                'confidence': 0.75
+            }
+
+        raw_tier = deal_audit.get('tier', 'PRÜFUNG_EMPFOHLEN')
+        if raw_tier in ('TIER_1_TOP', 'TIER_1'):
+            tier = 'TIER_1_TOP'
+            tier1_count += 1
+        elif raw_tier in ('TIER_2_MID', 'TIER_2'):
+            tier = 'TIER_2_MID'
+            tier2_count += 1
+        else:
+            tier = 'PRÜFUNG_EMPFOHLEN'
+            deal_audit['tier'] = tier
+            other_review_count += 1
 
         # Extrahierte Fakten und DealCoach-Audit übernehmen
-        tier = deal_audit.get('tier', 'TIER_2_MID')
-        if tier == 'TIER_1_TOP':
-            tier1_count += 1
-        elif tier == 'TIER_2_MID':
-            tier2_count += 1
-
         if deal_audit.get('company_name'):
             item['company'] = deal_audit['company_name']
         if deal_audit.get('role'):
@@ -180,8 +195,14 @@ def run_ingestion(dry_run=False, skip_cleanup=False):
         eval_result['tier'] = tier
         eval_result['priority_db'] = tier
 
-        dest_desc = "Mandats-Desk (Haupt-Posteingang)" if tier == "TIER_1_TOP" else "Boutique-Pool (Mandats-Archiv)"
-        print(f"   -> 🎯 DEALCOACH BESTANDEN: [{tier}] -> {dest_desc}")
+        if tier == "TIER_1_TOP":
+            dest_desc = "Mandats-Desk (Haupt-Posteingang · TIER 1)"
+        elif tier == "TIER_2_MID":
+            dest_desc = "Boutique-Pool (Mandats-Archiv · TIER 2)"
+        else:
+            dest_desc = "Mandats-Desk (Zur Prüfung · Voreinschätzung DealCoach)"
+
+        print(f"   -> 🎯 DEALCOACH VOREINSCHÄTZUNG: [{tier}] -> {dest_desc}")
         print(f"      • Zielgesellschaft: {item.get('company')} | {item.get('role', '')} ({int(eval_result['confidence_score'] * 100)}%)")
         print(f"      • Vakuum-Check:     {deal_audit.get('vacuum_check', 'N/A')}")
         print(f"      • Dringlichkeit:    {deal_audit.get('urgency_check', 'N/A')}")
@@ -215,7 +236,7 @@ def run_ingestion(dry_run=False, skip_cleanup=False):
     print(f"• Aspiranten im Zeitfenster geprüft:         {len(all_fresh_items)}")
     print(f"• 🏆 TIER_1_TOP (Mandats-Desk Posteingang):  {tier1_count}")
     print(f"• 💎 TIER_2_MID (Boutique-Pool Archiv):       {tier2_count}")
-    print(f"• 🛑 REJECTED (Routine / kein Organbedarf):  {rejected_count}")
+    print(f"• ⚖️ PRÜFUNG_EMPFOHLEN (Zur Prüfung Harro):   {other_review_count}")
     if not dry_run and not skip_cleanup:
         print(f"• Bereinigte Alt-Einträge im Posteingang:    {deleted_stale_count}")
     if dry_run:

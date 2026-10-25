@@ -81,10 +81,12 @@ export function extractDealCoachAudit(opp) {
   if (!tier && opp.priority) {
     if (opp.priority.toUpperCase().includes('TIER_1')) tier = 'TIER_1_TOP';
     else if (opp.priority.toUpperCase().includes('TIER_2')) tier = 'TIER_2_MID';
+    else if (opp.priority.toUpperCase().includes('PRÜFUNG') || opp.priority.toUpperCase().includes('PRUEFUNG') || opp.priority.toUpperCase().includes('FUNG') || opp.priority.toUpperCase().includes('REVIEW')) tier = 'PRÜFUNG_EMPFOHLEN';
   }
   if (!tier && Array.isArray(opp.tags)) {
     if (opp.tags.includes('TIER_1_TOP')) tier = 'TIER_1_TOP';
     else if (opp.tags.includes('TIER_2_MID')) tier = 'TIER_2_MID';
+    else if (opp.tags.some(t => t.includes('PRÜFUNG') || t.includes('PRUEFUNG') || t.includes('FUNG'))) tier = 'PRÜFUNG_EMPFOHLEN';
   }
 
   // Intelligenter Default basierend auf Lead-Score und Rechtsform
@@ -95,14 +97,15 @@ export function extractDealCoachAudit(opp) {
   }
 
   const isTier1 = tier === 'TIER_1_TOP';
+  const isTier2 = tier === 'TIER_2_MID';
 
   return {
     tier,
-    verdict: isTier1 ? 'AKUTER C-LEVEL / ORGAN-MANDATSBEDARF' : 'OPERATIVER INTERIM- & LEITUNGSBEDARF',
-    vacuum_check: vacMatch ? vacMatch[1].trim() : 'BESTANDEN: Organ-Position vakant / Stillstand droht (keine geordnete Nachfolge)',
-    urgency_check: urgMatch ? urgMatch[1].trim() : 'HOCH: Akute Not-Governance / Überbrückungsbedarf per sofort',
-    rationale: ratMatch ? ratMatch[1].trim() : (opp.strategic_angle || opp.notes || 'Akuter Mandatsbedarf durch unerwartete Organ-Vakanz ohne geordneten Nachfolger festgestellt.'),
-    estimated_budget: budMatch ? budMatch[1].trim() : (isTier1 ? '150.000 € – 320.000 €' : '80.000 € – 150.000 €')
+    verdict: isTier1 ? 'AKUTER C-LEVEL / ORGAN-MANDATSBEDARF' : isTier2 ? 'OPERATIVER INTERIM- & LEITUNGSBEDARF' : 'VOREINSCHÄTZUNG DEALCOACH (ZUR PRÜFUNG)',
+    vacuum_check: vacMatch ? vacMatch[1].trim() : (isTier1 || isTier2 ? 'BESTANDEN: Organ-Position vakant / Stillstand droht' : 'HINWEIS: Manuelle Sichtung durch Harro'),
+    urgency_check: urgMatch ? urgMatch[1].trim() : (isTier1 || isTier2 ? 'HOCH: Akute Not-Governance / Überbrückungsbedarf per sofort' : 'ROUTINE: Regulatorische Pflichtmitteilung zur Vorlage'),
+    rationale: ratMatch ? ratMatch[1].trim() : (opp.strategic_angle || opp.notes || 'DealCoach-Voreinschätzung zur manuellen Prüfung durch Harro im Mandats-Desk.'),
+    estimated_budget: budMatch ? budMatch[1].trim() : (isTier1 ? '150.000 € – 320.000 €' : isTier2 ? '80.000 € – 150.000 €' : 'Auf Anfrage')
   };
 }
 
@@ -1761,15 +1764,13 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
               o.nexus_companies?.name || o.company?.name || ''
             );
 
-            // Zero-Tolerance Filter: SOFORTIGER DROP VOR DER QUEUE bei fehlendem/ungültigem Event oder Blacklist-Rolle
+            // Zero-Tolerance Filter: Validierung von Unternehmen und Inhalten
             const isStrictValidOpportunity = (o) => {
               const comp = resolveOppCompany(o);
               if (!comp || isPlaceholderCompany(comp)) return false;
               
               const eventText = (o.triggers?.[0]?.nexus_trigger_events?.content || o.situation || o.title || '').trim();
-              if (!eventText || eventText.toLowerCase() === 'keine angabe' || eventText.length < 10) return false;
-              if (!hasConcreteVerifiedAnlass(eventText)) return false;
-              if (isBlacklistedRole(eventText)) return false;
+              if (!eventText || eventText.toLowerCase() === 'keine angabe' || eventText.length < 5) return false;
               if (o.source && (o.source.endsWith('...') || o.source.endsWith('…'))) return false;
 
               return true;
@@ -1856,9 +1857,7 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                 if (!comp || isPlaceholderCompany(comp)) return false;
                 
                 const eventText = (o.triggers?.[0]?.nexus_trigger_events?.content || o.situation || o.title || '').trim();
-                if (!eventText || eventText.toLowerCase() === 'keine angabe' || eventText.length < 10) return false;
-                if (!hasConcreteVerifiedAnlass(eventText)) return false;
-                if (isBlacklistedRole(eventText)) return false;
+                if (!eventText || eventText.toLowerCase() === 'keine angabe' || eventText.length < 5) return false;
                 if (o.source && (o.source.endsWith('...') || o.source.endsWith('…'))) return false;
 
                 return true;
@@ -1959,9 +1958,10 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                           const audit = extractDealCoachAudit(opp);
                           if (!audit || !audit.tier) return null;
                           const isT1 = audit.tier === 'TIER_1_TOP';
+                          const isT2 = audit.tier === 'TIER_2_MID';
                           return (
                             <span 
-                              className={`queue-badge-tier ${isT1 ? 'tier-1' : 'tier-2'}`}
+                              className={`queue-badge-tier ${isT1 ? 'tier-1' : isT2 ? 'tier-2' : 'tier-review'}`}
                               style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
@@ -1970,13 +1970,13 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                                 borderRadius: '4px',
                                 fontSize: '0.72rem',
                                 fontWeight: 700,
-                                background: isT1 ? 'rgba(168, 85, 247, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-                                color: isT1 ? '#c084fc' : '#60a5fa',
-                                border: `1px solid ${isT1 ? 'rgba(168, 85, 247, 0.45)' : 'rgba(59, 130, 246, 0.4)'}`
+                                background: isT1 ? 'rgba(168, 85, 247, 0.2)' : isT2 ? 'rgba(59, 130, 246, 0.2)' : 'rgba(148, 163, 184, 0.15)',
+                                color: isT1 ? '#c084fc' : isT2 ? '#60a5fa' : '#cbd5e1',
+                                border: `1px solid ${isT1 ? 'rgba(168, 85, 247, 0.45)' : isT2 ? 'rgba(59, 130, 246, 0.4)' : 'rgba(148, 163, 184, 0.3)'}`
                               }}
-                              title={`DealCoach Revisions-Stufe 2: ${isT1 ? 'Tier 1 Top (Großunternehmen/Börse, Budget 150k–320k €)' : 'Tier 2 Mid (Mittelstand ab 20 Mio. €, PMO / operative Leitung)'}`}
+                              title={`DealCoach Revisions-Stufe 2: ${isT1 ? 'Tier 1 Top (Großunternehmen/Börse, Budget 150k–320k €)' : isT2 ? 'Tier 2 Mid (Mittelstand ab 20 Mio. €, PMO / operative Leitung)' : 'Zur manuellen Prüfung durch Harro (Primärmeldung / Voreinschätzung)'}`}
                             >
-                              {isT1 ? '👑 TIER 1' : '🏢 TIER 2'}
+                              {isT1 ? '👑 TIER 1' : isT2 ? '🏢 TIER 2' : '⚖️ Zur Prüfung'}
                             </span>
                           );
                         })()}
@@ -2302,12 +2302,13 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
               const audit = extractDealCoachAudit(activeOpp);
               if (!audit) return null;
               const isTier1 = audit.tier === 'TIER_1_TOP';
+              const isTier2 = audit.tier === 'TIER_2_MID';
               const isInInbox = activeOpp.review_status === 'pending' || activeOpp.review_status === 'PENDING_REVIEW' || activeOpp.review_status === 'unreviewed';
 
               return (
                 <div className="dealcoach-audit-card" style={{
-                  background: isTier1 ? 'linear-gradient(135deg, rgba(88, 28, 135, 0.22) 0%, rgba(15, 23, 42, 0.8) 100%)' : 'linear-gradient(135deg, rgba(30, 58, 138, 0.2) 0%, rgba(15, 23, 42, 0.8) 100%)',
-                  border: `1px solid ${isTier1 ? 'rgba(168, 85, 247, 0.45)' : 'rgba(59, 130, 246, 0.4)'}`,
+                  background: isTier1 ? 'linear-gradient(135deg, rgba(88, 28, 135, 0.22) 0%, rgba(15, 23, 42, 0.8) 100%)' : isTier2 ? 'linear-gradient(135deg, rgba(30, 58, 138, 0.2) 0%, rgba(15, 23, 42, 0.8) 100%)' : 'linear-gradient(135deg, rgba(51, 65, 85, 0.3) 0%, rgba(15, 23, 42, 0.8) 100%)',
+                  border: `1px solid ${isTier1 ? 'rgba(168, 85, 247, 0.45)' : isTier2 ? 'rgba(59, 130, 246, 0.4)' : 'rgba(148, 163, 184, 0.35)'}`,
                   borderRadius: '12px',
                   padding: '16px 20px',
                   display: 'flex',
@@ -2319,27 +2320,27 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{
-                        background: isTier1 ? 'rgba(168, 85, 247, 0.25)' : 'rgba(59, 130, 246, 0.25)',
-                        border: `1px solid ${isTier1 ? '#a855f7' : '#3b82f6'}`,
+                        background: isTier1 ? 'rgba(168, 85, 247, 0.25)' : isTier2 ? 'rgba(59, 130, 246, 0.25)' : 'rgba(148, 163, 184, 0.2)',
+                        border: `1px solid ${isTier1 ? '#a855f7' : isTier2 ? '#3b82f6' : '#94a3b8'}`,
                         borderRadius: '8px',
                         padding: '6px 12px',
                         fontSize: '0.92rem',
                         fontWeight: 800,
-                        color: isTier1 ? '#f3e8ff' : '#dbeafe',
+                        color: isTier1 ? '#f3e8ff' : isTier2 ? '#dbeafe' : '#f1f5f9',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
                         letterSpacing: '0.02em'
                       }}>
-                        {isTier1 ? '👑 TIER 1 TOP' : '🏢 TIER 2 MID'}
+                        {isTier1 ? '👑 TIER 1 TOP' : isTier2 ? '🏢 TIER 2 MID' : '⚖️ PRÜFUNG EMPFOHLEN'}
                       </div>
                       <div>
                         <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#f8fafc', letterSpacing: '0.01em', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                           <span>DealCoach Revisions-Urteil:</span>
-                          <span style={{ color: isTier1 ? '#c084fc' : '#60a5fa' }}>{audit.verdict}</span>
+                          <span style={{ color: isTier1 ? '#c084fc' : isTier2 ? '#60a5fa' : '#cbd5e1' }}>{audit.verdict || 'VOREINSCHÄTZUNG'}</span>
                         </div>
                         <div style={{ fontSize: '0.82rem', color: '#94a3b8', marginTop: '2px' }}>
-                          Einstufung: <strong style={{ color: isTier1 ? '#d8b4fe' : '#93c5fd' }}>{isTier1 ? 'Großunternehmen / Börse (C-Level Organ)' : 'Mittelstand ab 20 Mio. € (PMO / Leitung)'}</strong> · Budget: <strong style={{ color: '#38bdf8' }}>{audit.estimated_budget}</strong>
+                          Einstufung: <strong style={{ color: isTier1 ? '#d8b4fe' : isTier2 ? '#93c5fd' : '#cbd5e1' }}>{isTier1 ? 'Großunternehmen / Börse (C-Level Organ)' : isTier2 ? 'Mittelstand ab 20 Mio. € (PMO / Leitung)' : 'Primärmitteilung (Sichtung durch Harro)'}</strong> · Budget: <strong style={{ color: '#38bdf8' }}>{audit.estimated_budget || 'Auf Anfrage'}</strong>
                         </div>
                       </div>
                     </div>
@@ -3510,9 +3511,9 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                                               activeOpp?.situation || 
                                               activeOpp?.title || 
                                               '';
-                        const isEvtValid = evtCandidate && evtCandidate.toLowerCase() !== 'keine angabe' && hasConcreteVerifiedAnlass(evtCandidate);
+                        const isEvtValid = evtCandidate && evtCandidate.toLowerCase() !== 'keine angabe';
                         return (
-                          <div>Ereignis: <span style={{ color: isEvtValid ? '#cbd5e1' : '#f87171', fontWeight: isEvtValid ? 400 : 700 }}>{isEvtValid ? evtCandidate : (evtCandidate || '⚠️ Kein verifizierter Anlass (SOFORT-DROP)')}</span></div>
+                          <div>Ereignis: <span style={{ color: isEvtValid ? '#cbd5e1' : '#f87171', fontWeight: isEvtValid ? 400 : 700 }}>{isEvtValid ? evtCandidate : (evtCandidate || '⚠️ Kein Ereignis hinterlegt')}</span></div>
                         );
                       })()}
                       {(() => {

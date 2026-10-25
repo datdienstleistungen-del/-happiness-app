@@ -1,4 +1,5 @@
 import os
+import re
 import urllib.request
 import urllib.parse
 import json
@@ -156,24 +157,29 @@ class SupabaseClient:
         if not company_name or company_name.lower() in ('unternehmen', 'dach unternehmen', 'uk enterprise', 'schweizer unternehmen', 'null'):
             return None, "DROPPED_NO_COMPANY"
         # ── 3-KLINGEN-FILTER VOR DB-INSERT ──
-        # Klinge 1 (Zeit): Strikt <= 48h bezogen auf das reale Ereignisdatum
+        # Klinge 1 (Zeit): Strikt <= 48h bezogen auf Publikation oder Vorfall
         event_date_val = (deal_audit.get('event_date') if deal_audit else None) or item.get('event_date') or item.get('published_at') or datetime.now(timezone.utc).strftime('%Y-%m-%d')
-        is_fresh, age_hours, parsed_dt = is_signal_fresh(event_date_val, max_hours=48)
+        pub_val = item.get('published_at') or event_date_val
+        is_fresh, age_hours, parsed_dt = is_signal_fresh(pub_val, max_hours=48)
         if not is_fresh:
-            return None, f"DROPPED_STALE_EVENT_DATE (>48h: {age_hours:.1f}h)"
+            is_fresh, age_hours, _ = is_signal_fresh(event_date_val, max_hours=48)
+            if not is_fresh:
+                return None, f"DROPPED_STALE_EVENT_DATE (>48h: {age_hours:.1f}h)"
 
-        # Klinge 2 (Rechtsform): Whitelist-Check auf Enterprise / Kapitalgesellschaften
+        # Klinge 2 (Rechtsform): Enterprise / Kapitalgesellschaften Check
         detected_form = (deal_audit.get('legal_form') or '').upper().strip() if deal_audit else ''
         norm_comp = f"{company_name} {detected_form}".upper()
-        has_form = any(bool(re.search(rf'\b{re.escape(f)}\b', norm_comp)) for f in LEGAL_FORM_WHITELIST)
-        if not has_form:
-            is_major = bool(re.search(r'\b(DAIMLER|SIEMENS|VOLKSWAGEN|BMW|BASF|BAYER|ALLIANZ|SAP|TELEKOM|E\.ON|RWE|AIRBUS|NESTLE|NOVARTIS|ROCHE|UBS|GLENCORE|ABB|SHELL|BP|VODAFONE|BARCLAYS|HSBC|SANTANDER|BBVA|TELEFONICA|TOTALENERGIES|SANOFI|AXA|BNP|STELLANTIS|ATLASSIAN|SITIME|PESCANOVA)\b', norm_comp))
-            if not is_major:
-                return None, "DROPPED_NON_WHITELIST_LEGAL_FORM"
+        # Drop only if explicitly blacklisted (GbR, e.K., Verein, Klein-Gewerbe)
+        if any(bool(re.search(rf'\b{re.escape(b.upper())}\b', norm_comp)) for b in LEGAL_FORM_BLACKLIST):
+            return None, "DROPPED_BLACKLISTED_LEGAL_FORM"
 
-        # Klinge 3 (Seniority/Organ-Ebene): Organvakanzen, Not-Governance, CRO, Board
-        if is_text_blacklisted_role(f"{title} {snippet}"):
-            return None, "DROPPED_BLACKLISTED_ROLE"
+        # Klinge 3 (Seniority/Organ-Ebene): Harro ist der Revisor!
+        # Kein automatischer Drop – DealCoach dokumentiert Voreinschätzung in audit_rationale
+        if is_text_blacklisted_role(f"{title} {snippet}") and deal_audit:
+            if deal_audit.get('tier') in ('TIER_1_TOP', 'TIER_2_MID'):
+                deal_audit['tier'] = 'PRÜFUNG_EMPFOHLEN'
+            if not deal_audit.get('audit_rationale'):
+                deal_audit['audit_rationale'] = 'Unterhalb Organ-Ebene – Zur manuellen Prüfung durch Harro'
 
         if self.opportunity_exists(source_url, title):
             return None, "DUPLICATE"
@@ -233,7 +239,7 @@ class SupabaseClient:
             'relevance_logic': relevance_logic_text,
             'strategic_angle': strategic_angle_text,
             'source': source_url,
-            'created_from': 'DealCoach',
+            'created_from': 'AI',
             'priority': tier,
             'tags': tags,
             'notes': audit_rationale,
@@ -261,6 +267,7 @@ class SupabaseClient:
                         trig_payload = {
                             'id': trigger_id,
                             'user_id': user_id,
+                            'company_id': company_id,
                             'title': title[:250],
                             'content': situation_text,
                             'company_name': company_name,
@@ -268,8 +275,7 @@ class SupabaseClient:
                             'source_url': source_url,
                             'confidence_score': evaluation.get('confidence_score', 0.85),
                             'trigger_score': lead_score,
-                            'signal_type': evaluation.get('category', 'ORGANVAKANZ & LEADERSHIP'),
-                            'event_date': event_date_val
+                            'signal_type': evaluation.get('category', 'ORGANVAKANZ & LEADERSHIP')
                         }
                         trig_req = urllib.request.Request(
                             f"{self.base_rest}/nexus_trigger_events",

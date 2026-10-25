@@ -180,7 +180,7 @@ def audit_mandate_lead(item, eval_result):
     now_utc = datetime.now(timezone.utc)
     today_str = now_utc.strftime('%Y-%m-%d')
 
-    # ── FAST-PATH REJECTION FÜR BEKANNTE BÖRSEN-ROUTINEMELDUNGEN OHNE ORGANBEDARF ──
+    # ── FAST-PATH FÜR BEKANNTE BÖRSEN-ROUTINEMELDUNGEN (VOREINSCHÄTZUNG) ──
     combined_lower = f"{title} {snippet}".lower()
     routine_patterns = [
         (r'transaction in own shares', 'Routine-Aktienrückkauf (Treasury) ohne Organ-Vakanz'),
@@ -196,52 +196,40 @@ def audit_mandate_lead(item, eval_result):
     for pattern, rationale in routine_patterns:
         if re.search(pattern, combined_lower):
             parsed = {
-                'status': 'REJECTED',
-                'tier': 'REJECTED',
-                'is_valid_mandate_event': False,
+                'status': 'pending',
+                'tier': 'PRÜFUNG_EMPFOHLEN',
+                'is_valid_mandate_event': True,
                 'is_fresh': True,
                 'company_name': company,
-                'vacuum_check': f'FEHLGESCHLAGEN: {rationale}',
-                'urgency_check': 'GERING: Reine Routine-Mitteilung',
-                'audit_verdict': 'REJECTED',
-                'audit_rationale': rationale,
-                'rejection_reason': rationale,
-                'confidence': 0.99
+                'role': 'Organ- / Börsenmeldung',
+                'event_type': 'Börsen- & Kapitalmarkt-Mitteilung',
+                'vacuum_check': f'HINWEIS: {rationale}',
+                'urgency_check': 'ROUTINE: Regulatorische Pflichtmitteilung (Sichtung durch Harro)',
+                'audit_verdict': 'PRÜFUNG_EMPFOHLEN',
+                'audit_rationale': f"DealCoach-Voreinschätzung: {rationale}. Zur manuellen Sichtung im Mandats-Desk.",
+                'rejection_reason': '',
+                'estimated_budget': 'Auf Anfrage / n.a.',
+                'confidence': 0.80
             }
-            return False, f"DEALCOACH_REJECTED (Routine): {rationale}", parsed
+            return True, f"DEALCOACH_VOREINSCHÄTZUNG: {rationale}", parsed
 
-    prompt = f"""Du bist der NeXus DealCoach. Analysiere diese europäische Wirtschaftsmeldung streng als automatisierte Revisions- und Vorsortierungs-Instanz:
+    prompt = f"""Du bist der NeXus DealCoach. Analysiere diese europäische Wirtschaftsmeldung als automatisierte Revisions- und Vorsortierungs-Instanz für Harros Mandats-Desk:
 HEUTIGES DATUM: {today_str}
 
 DEINE PRÜF-KRITERIEN:
 
 1. VAKUUM-CHECK:
-   - Ist der Organ-Posten (Vorstand, CEO, CFO, CRO, Aufsichtsrat, GF) TATSÄCHLICH unbesetzt oder droht sofortiger Stillstand?
-   - Sofortiger Ausschluss (tier: "REJECTED"):
-     * Planmäßige Wechsel mit monatelangem Vorlauf / reguläres Vertragsende zum Jahresende.
-     * Pensionierungen mit geordneter Übergabe.
-     * Wenn der Nachfolger bereits ernannt und voll im Amt ist (kein Führungs-Vakuum).
+   - Ist der Organ-Posten (Vorstand, CEO, CFO, CRO, Aufsichtsrat, GF) unbesetzt oder droht Stillstand?
+   - Oder handelt es sich um planmäßige Routine / keinen Organwechsel?
 
 2. DRINGLICHKEIT & HANDLUNGSDRUCK:
-   - Gibt es eine Notlösung / Not-Governance (z.B. Aufsichtsrat/Verwaltungsrat springt interimistisch ein)?
-   - Oder akuter Sanierungsdruck (StaRUG, Insolvenz in Eigenverwaltung, Schutzschirm, CRO-Bedarf, Schulden-Restrukturierung)?
-   - Per sofort wirksame Abberufung / Amtsniederlegung?
+   - Gibt es eine Notlösung (z.B. Aufsichtsrat springt interimistisch ein)?
+   - Akuter Sanierungsdruck (StaRUG, CRO-Bedarf, Schutzschirm)?
 
 3. KLASSIFIZIERUNG IN VERWERTUNGS-TÖPFE (tier):
-   - "TIER_1_TOP":
-     Großunternehmen / Börsennotiert (AG, SE, Plc, SA, NV, SpA, Corp, FTSE, DAX, SMI) oder Umsatz > 250 Mio. €.
-     Bedarf auf C-Level / Organ-Ebene (CEO, CFO, CRO, Board).
-     Mandatsbudget: 150.000 € – 320.000 €.
-   - "TIER_2_MID":
-     Gehobener Mittelstand (ab 20 Mio. €) / Groß-GmbH / Industrie-Mittelstand.
-     Operative Leitung, PMO, Restrukturierungs-Team oder Interims-Leitung.
-     Mandatsbudget: 80.000 € – 150.000 €.
-   - "REJECTED":
-     Kein akuter Handlungsdruck, geordnete Routine, Kleingewerbe oder kein Mandatsbedarf.
-
-4. HARTER REPUTATIONSSCHUTZ ('KALTER KAFFEE'):
-   - Extrahiere das reale 'event_date' (YYYY-MM-DD) des Beschlusses/Vorfalls.
-   - Liegt event_date mehr als 48 Stunden vor heute ({today_str}), gilt zwingend: tier: "REJECTED" und is_fresh: false!
+   - "TIER_1_TOP": Großunternehmen / Börsennotiert (AG, SE, Plc, DAX, FTSE), C-Level Organvakanz. Budget 150k – 320k €.
+   - "TIER_2_MID": Gehobener Mittelstand, operative Leitung / Interimsleitung. Budget 80k – 150k €.
+   - "PRÜFUNG_EMPFOHLEN": Routine-Börsenmeldung, Stimmrechte, Q3-Berichte oder unklarer Handlungsbedarf (zur Chefsache-Sichtung durch Harro).
 
 MELDUNG:
 Unternehmen: {company}
@@ -252,22 +240,22 @@ Publikationsdatum: {published_at or today_str}
 
 Antworte AUSSCHLIESSLICH in diesem JSON-Format:
 {{
-  "tier": "TIER_1_TOP" | "TIER_2_MID" | "REJECTED",
-  "is_valid_mandate_event": true | false,
-  "is_fresh": true | false,
-  "event_date": "YYYY-MM-DD des realen Vorfalls oder null",
+  "tier": "TIER_1_TOP" | "TIER_2_MID" | "PRÜFUNG_EMPFOHLEN",
+  "is_valid_mandate_event": true,
+  "is_fresh": true,
+  "event_date": "YYYY-MM-DD des Vorfalls oder null",
   "company_name": "Exakter Firmenname",
   "legal_form": "AG | SE | KGaA | Plc | SA | NV | SpA | Corp | Groß-GmbH | Unbekannt",
-  "role": "Organrolle (z.B. CEO, CFO, CRO, Aufsichtsrat)",
+  "role": "Organrolle (z.B. CEO, CFO, CRO, Aufsichtsrat, Board)",
   "person_name": "Name der Person oder leer",
-  "event_type": "Abrupte Organ-Vakanz & Rücktritt | Restrukturierung & CRO | Not-Governance & AR-Interim | M&A Board-Umbau | PE Carve-Out | Finanzielle Sondersituation",
-  "vacuum_check": "BESTANDEN: [Begründung, warum Vakuum droht]" | "FEHLGESCHLAGEN: [Grund]",
-  "urgency_check": "HOCH: [Grund für Handlungsdruck]" | "GERING: [Grund]",
-  "audit_verdict": "QUALIFIZIERT_MANDATSBEDARF" | "REJECTED",
-  "audit_rationale": "Prägnante 2-3 Sätze DealCoach-Begründung, warum akuter Mandatsbedarf besteht.",
-  "estimated_budget": "150k - 320k €" | "80k - 150k €" | "k.A.",
+  "event_type": "Abrupte Organ-Vakanz & Rücktritt | Restrukturierung & CRO | Not-Governance & AR-Interim | M&A Board-Umbau | PE Carve-Out | Pflichtmitteilung",
+  "vacuum_check": "Vakuum-Einschätzung",
+  "urgency_check": "Dringlichkeits-Einschätzung",
+  "audit_verdict": "QUALIFIZIERT_MANDATSBEDARF" | "PRÜFUNG_EMPFOHLEN",
+  "audit_rationale": "Prägnante DealCoach-Begründung für Harro.",
+  "estimated_budget": "150k - 320k €" | "80k - 150k €" | "Auf Anfrage",
   "confidence": 0.0 - 1.0,
-  "rejection_reason": "Grund falls REJECTED, sonst leer"
+  "rejection_reason": ""
 }}"""
 
     raw_response = None
@@ -289,79 +277,38 @@ Antworte AUSSCHLIESSLICH in diesem JSON-Format:
             if raw_response:
                 break
 
-    if not raw_response:
-        return False, "DEALCOACH_OFFLINE_SAFE_DROP", None
-
-    parsed = extract_json_from_text(raw_response)
+    parsed = extract_json_from_text(raw_response) if raw_response else None
     if not parsed or not isinstance(parsed, dict):
-        return False, "INVALID_DEALCOACH_JSON_RESPONSE", None
+        parsed = {
+            'status': 'pending',
+            'tier': 'PRÜFUNG_EMPFOHLEN',
+            'is_valid_mandate_event': True,
+            'is_fresh': True,
+            'company_name': company,
+            'role': 'Vorstand / Geschäftsführung / Board',
+            'event_type': 'Primärmeldung',
+            'vacuum_check': 'Manuelle Prüfung erforderlich',
+            'urgency_check': 'Primärmeldung zur Chefsache-Prüfung',
+            'audit_verdict': 'PRÜFUNG_EMPFOHLEN',
+            'audit_rationale': 'Primärmeldung aus Primärquelle. Zur manuellen Sichtung im Mandats-Desk vorgelegt.',
+            'estimated_budget': 'Auf Anfrage',
+            'confidence': 0.75
+        }
+        return True, "DEALCOACH_MANUELLE_PRÜFUNG", parsed
 
-    tier = parsed.get('tier', 'REJECTED')
-    is_valid = bool(parsed.get('is_valid_mandate_event')) and tier != 'REJECTED'
-    confidence = float(parsed.get('confidence', 0.0))
-    reason = parsed.get('rejection_reason') or parsed.get('audit_rationale') or 'DealCoach: Nicht qualifiziert'
+    raw_tier = parsed.get('tier', 'PRÜFUNG_EMPFOHLEN')
+    if raw_tier in ('TIER_1_TOP', 'TIER_1'):
+        tier = 'TIER_1_TOP'
+    elif raw_tier in ('TIER_2_MID', 'TIER_2'):
+        tier = 'TIER_2_MID'
+    else:
+        tier = 'PRÜFUNG_EMPFOHLEN'
 
-    if not is_valid or tier == 'REJECTED':
-        parsed['status'] = "REJECTED"
-        parsed['tier'] = "REJECTED"
-        parsed['is_fresh'] = False
-        return False, f"DEALCOACH_REJECTED: {reason}", parsed
-
-    # ── HARTER REPUTATIONSSCHUTZ: 48h Filter ──
-    if parsed.get('is_fresh') is False:
-        parsed['status'] = "REJECTED"
-        parsed['tier'] = "REJECTED"
-        parsed['is_fresh'] = False
-        return False, f"REJECTED_STALE_EVENT_DATE (Kalter Kaffee): Vorfall liegt >48h zurück ({parsed.get('event_date')})", parsed
-
-    extracted_date_str = parsed.get('event_date') or published_at
-    if not extracted_date_str:
-        parsed['status'] = "REJECTED"
-        parsed['tier'] = "REJECTED"
-        parsed['is_fresh'] = False
-        return False, "REJECTED_MISSING_EVENT_DATE: Kein verifizierbares Datum", parsed
-
-    if extracted_date_str and parse_date:
-        event_dt = parse_date(extracted_date_str)
-        if event_dt:
-            age_hours = (now_utc - event_dt).total_seconds() / 3600.0
-            if age_hours > 48.0:
-                parsed['is_fresh'] = False
-                parsed['status'] = "REJECTED"
-                parsed['tier'] = "REJECTED"
-                return False, f"REJECTED_STALE_EVENT_DATE (Kalter Kaffee): Vorfall {extracted_date_str} liegt {int(age_hours)}h zurück", parsed
-        else:
-            parsed['is_fresh'] = False
-            parsed['status'] = "REJECTED"
-            parsed['tier'] = "REJECTED"
-            return False, f"REJECTED_UNPARSEABLE_DATE: {extracted_date_str}", parsed
-
-    # ── RECHTSFORM-WHITELIST CHECK ──
-    detected_legal_form = (parsed.get('legal_form') or '').upper().strip()
-    comp_clean = (parsed.get('company_name') or company or '').upper().strip()
-    is_form_whitelisted = any(bool(re.search(rf'\b{re.escape(f)}\b', detected_legal_form) or re.search(rf'\b{re.escape(f)}\b', comp_clean)) for f in LEGAL_FORM_WHITELIST)
-
-    if not is_form_whitelisted:
-        is_major = bool(re.search(r'\b(DAIMLER|SIEMENS|VOLKSWAGEN|BMW|BASF|BAYER|ALLIANZ|SAP|TELEKOM|E\.ON|RWE|AIRBUS|NESTLE|NOVARTIS|ROCHE|UBS|GLENCORE|ABB|SHELL|BP|VODAFONE|BARCLAYS|HSBC|SANTANDER|BBVA|TELEFONICA|TOTALENERGIES|SANOFI|AXA|BNP|STELLANTIS|ATLASSIAN|SITIME|PESCANOVA)\b', comp_clean))
-        if not is_major:
-            parsed['status'] = "REJECTED"
-            parsed['tier'] = "REJECTED"
-            return False, f"REJECTED_NON_WHITELIST_LEGAL_FORM: '{detected_legal_form or comp_clean}'", parsed
-
-    # ── VAKUUM & DRINGLICHKEITS-VALIDIERUNG ──
-    vac_check = (parsed.get('vacuum_check') or '').upper()
-    if 'FEHLGESCHLAGEN' in vac_check:
-        parsed['status'] = "REJECTED"
-        parsed['tier'] = "REJECTED"
-        return False, f"DEALCOACH_VACUUM_CHECK_FAILED: {parsed.get('vacuum_check')}", parsed
-
-    if confidence < 0.82:
-        parsed['status'] = "REJECTED"
-        parsed['tier'] = "REJECTED"
-        return False, f"LOW_CONFIDENCE: {int(confidence*100)}% (< 82%)", parsed
-
+    parsed['status'] = 'pending'
+    parsed['tier'] = tier
+    parsed['is_valid_mandate_event'] = True
     parsed['is_fresh'] = True
-    parsed['status'] = "QUALIFIED"
-    parsed['tier'] = tier if tier in ("TIER_1_TOP", "TIER_2_MID") else "TIER_2_MID"
+    if not parsed.get('audit_rationale'):
+        parsed['audit_rationale'] = parsed.get('rejection_reason') or 'Zur manuellen Prüfung durch Harro im Mandats-Desk vorgelegt.'
 
-    return True, "DEALCOACH_QUALIFIED", parsed
+    return True, f"DEALCOACH_VOREINSCHÄTZUNG ({tier}): {parsed.get('audit_rationale')[:80]}", parsed
