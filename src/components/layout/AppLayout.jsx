@@ -238,24 +238,6 @@ export default function AppLayout({ children }) {
   return (
     <>
       {shouldShowSidebar && <Sidebar mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />}
-      
-      {shouldShowPublicTopbar && (
-        <nav className="public-topbar">
-          <Link to="/" className="public-topbar-brand">
-            <Logo />
-          </Link>
-          <div className="public-topbar-links">
-          </div>
-          <div className="public-topbar-actions">
-            {!user && (
-              <Link to="/login" className="btn btn-primary btn-sm">Anmelden</Link>
-            )}
-            {user && (
-              <Link to="/" className="btn btn-primary btn-sm">Zum Coach</Link>
-            )}
-          </div>
-        </nav>
-      )}
 
       <main className={isMainContentWithSidebar ? 'main-content with-sidebar' : 'main-content full'}>
         {shouldShowSidebar && (

@@ -165,14 +165,12 @@ export default function App() {
           {loading ? (
             <LoadingScreen />
           ) : (
-            <>
+            <ErrorBoundary>
               <CookieConsent />
               <AppLayout>
-                <ErrorBoundary>
-                  <AppRoutes />
-                </ErrorBoundary>
+                <AppRoutes />
               </AppLayout>
-            </>
+            </ErrorBoundary>
           )}
         </LeadProvider>
       </AuthContext.Provider>
