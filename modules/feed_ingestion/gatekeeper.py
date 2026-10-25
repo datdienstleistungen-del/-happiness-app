@@ -197,31 +197,51 @@ Antworte AUSSCHLIESSLICH im folgenden JSON-Format:
     reason = parsed.get('rejection_reason', 'Nicht qualifiziert')
 
     if not is_valid:
+        parsed['status'] = "REJECTED"
+        parsed['is_fresh'] = False
         return False, f"LLM_REJECTED: {reason}", parsed
 
     # ── HARTER REPUTATIONSSCHUTZ: Kalter Kaffee Filter (> 48h) ──
     if parsed.get('is_fresh') is False:
+        parsed['status'] = "REJECTED"
+        parsed['is_fresh'] = False
         return False, f"REJECTED_STALE_EVENT_DATE (Kalter Kaffee): Vorfall als veraltet eingestuft. Event-Datum: {parsed.get('event_date')}", parsed
 
     extracted_date_str = parsed.get('event_date') or published_at
+    if not extracted_date_str:
+        parsed['status'] = "REJECTED"
+        parsed['is_fresh'] = False
+        return False, "REJECTED_MISSING_EVENT_DATE (Kalter Kaffee): Kein verifizierbares Ereignisdatum vorhanden", parsed
+
     if extracted_date_str and parse_date:
         event_dt = parse_date(extracted_date_str)
         if event_dt:
             age_hours = (now_utc - event_dt).total_seconds() / 3600.0
             if age_hours > 48.0:
                 parsed['is_fresh'] = False
+                parsed['status'] = "REJECTED"
                 return False, f"REJECTED_STALE_EVENT_DATE (Kalter Kaffee): Ereignisdatum {extracted_date_str} liegt {int(age_hours)}h zurück (> 48h)", parsed
             if age_hours < -72.0:
                 # Mehr als 3 Tage in der Zukunft -> Datumsfehler
+                parsed['is_fresh'] = False
+                parsed['status'] = "REJECTED"
                 return False, f"REJECTED_INVALID_FUTURE_DATE: {extracted_date_str}", parsed
+        else:
+            # Datum nicht parsebar -> kein verifiziertes Datum
+            parsed['is_fresh'] = False
+            parsed['status'] = "REJECTED"
+            return False, f"REJECTED_UNPARSEABLE_DATE: {extracted_date_str}", parsed
 
     if confidence < 0.85:
+        parsed['status'] = "REJECTED"
         return False, f"LOW_CONFIDENCE: {int(confidence*100)}% (< 85%)", parsed
 
     # Check that event_type is not missing/empty
     event = (parsed.get('event_type') or '').strip()
     if not event or event.lower() in ('keine angabe', 'none', 'null'):
+        parsed['status'] = "REJECTED"
         return False, "MISSING_VERIFIED_EVENT", parsed
 
     parsed['is_fresh'] = True
+    parsed['status'] = "QUALIFIED"
     return True, "QUALIFIED", parsed
