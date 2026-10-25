@@ -56,6 +56,57 @@ export function extractTriggerMeta(content = '') {
   };
 }
 
+export function extractDealCoachAudit(opp) {
+  if (!opp) return null;
+
+  // 1. Aus review_notes JSON extrahieren falls vorhanden
+  if (opp.review_notes) {
+    try {
+      const parsed = typeof opp.review_notes === 'string' ? JSON.parse(opp.review_notes) : opp.review_notes;
+      if (parsed?.deal_coach) {
+        return parsed.deal_coach;
+      }
+    } catch (e) {}
+  }
+
+  // 2. Aus situation-Text parsen
+  const situation = opp.situation || '';
+  const tierMatch = situation.match(/\[DEALCOACH AUDIT\]:\s*([^\n\r]+)/i);
+  const vacMatch = situation.match(/\[VAKUUM-CHECK\]:\s*([^\n\r]+)/i);
+  const urgMatch = situation.match(/\[DRINGLICHKEIT\]:\s*([^\n\r]+)/i);
+  const ratMatch = situation.match(/\[MANDATS-BEGRÜNDUNG\]:\s*([^\n\r]+)/i);
+  const budMatch = situation.match(/\[BUDGET-SCHÄTZUNG\]:\s*([^\n\r]+)/i);
+
+  // 3. Fallback auf priority oder tags
+  let tier = tierMatch ? tierMatch[1].trim() : null;
+  if (!tier && opp.priority) {
+    if (opp.priority.toUpperCase().includes('TIER_1')) tier = 'TIER_1_TOP';
+    else if (opp.priority.toUpperCase().includes('TIER_2')) tier = 'TIER_2_MID';
+  }
+  if (!tier && Array.isArray(opp.tags)) {
+    if (opp.tags.includes('TIER_1_TOP')) tier = 'TIER_1_TOP';
+    else if (opp.tags.includes('TIER_2_MID')) tier = 'TIER_2_MID';
+  }
+
+  // Intelligenter Default basierend auf Lead-Score und Rechtsform
+  if (!tier) {
+    const comp = (opp.nexus_companies?.name || opp.company?.name || opp.title || '').toUpperCase();
+    const isMajor = /(AG|SE|PLC|SA|CORP|NV|SPA|SIEMENS|VOLKSWAGEN|DAIMLER|BMW|BASF|BAYER|ALLIANZ|SAP)/.test(comp);
+    tier = (opp.lead_score >= 80 || isMajor) ? 'TIER_1_TOP' : 'TIER_2_MID';
+  }
+
+  const isTier1 = tier === 'TIER_1_TOP';
+
+  return {
+    tier,
+    verdict: isTier1 ? 'AKUTER C-LEVEL / ORGAN-MANDATSBEDARF' : 'OPERATIVER INTERIM- & LEITUNGSBEDARF',
+    vacuum_check: vacMatch ? vacMatch[1].trim() : 'BESTANDEN: Organ-Position vakant / Stillstand droht (keine geordnete Nachfolge)',
+    urgency_check: urgMatch ? urgMatch[1].trim() : 'HOCH: Akute Not-Governance / Überbrückungsbedarf per sofort',
+    rationale: ratMatch ? ratMatch[1].trim() : (opp.strategic_angle || opp.notes || 'Akuter Mandatsbedarf durch unerwartete Organ-Vakanz ohne geordneten Nachfolger festgestellt.'),
+    estimated_budget: budMatch ? budMatch[1].trim() : (isTier1 ? '150.000 € – 320.000 €' : '80.000 € – 150.000 €')
+  };
+}
+
 export default function SalesWorkspacePage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -100,6 +151,9 @@ export default function SalesWorkspacePage() {
 
   // Harter Reputationsschutz ('Kalter Kaffee' Warn-Modal vor Export / Weitergabe bei >48h)
   const [staleWarningModal, setStaleWarningModal] = useState(null)
+
+  // DealCoach Stufe 2: Übertrag in Harros Prüf-Inbox
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false)
 
   useEffect(() => {
     if (oppIdFromUrl && oppIdFromUrl !== activeOppId) {
@@ -275,6 +329,41 @@ export default function SalesWorkspacePage() {
       setIsReviewSaving(false)
     }
   }
+
+  // DealCoach Stufe 2: Lead zur menschlichen Prüfung in Harros Prüf-Inbox vorlegen
+  const handleSubmitToHumanReview = async (opp = null, e = null) => {
+    if (e) e.stopPropagation();
+    const target = opp || activeOpp;
+    if (!target || !target.id) return;
+
+    setIsSubmittingReview(true);
+    try {
+      const nowIso = new Date().toISOString();
+      const existingNotes = target.review_notes || '';
+      const auditNote = `[DealCoach Revisions-Audit]: Zur menschlichen Prüfung in Harros Prüf-Inbox vorgelegt am ${new Date().toLocaleString('de-DE')}`;
+      const noteToSave = existingNotes.includes('Zur menschlichen Prüfung in Harros Prüf-Inbox vorgelegt')
+        ? existingNotes
+        : (existingNotes ? `${existingNotes}\n${auditNote}` : auditNote);
+
+      let updates = {
+        review_status: 'pending',
+        pipeline_stage: 'review',
+        review_notes: noteToSave
+      };
+
+      await db.updateOpportunity(target.id, updates);
+      if (refreshData) await refreshData();
+
+      setActiveOpp(prev => (prev && prev.id === target.id) ? { ...prev, ...updates } : prev);
+      setQueueFilter('inbox');
+      setActiveTab('pruefung');
+    } catch (err) {
+      console.error('Error submitting lead to human review:', err);
+      alert('Fehler beim Vorlegen zur Prüfung: ' + (err.message || 'Unbekannter Fehler'));
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
 
   // HITL Workflow: Signal aus Posteingang in aktive Pipeline übernehmen (Bestanden)
   const handleApproveToPipeline = async (oppId = null, e = null) => {
@@ -1854,6 +1943,33 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                           );
                         })()}
 
+                        {/* DealCoach Stufe 2: Tier-Klassifizierung Badge */}
+                        {(() => {
+                          const audit = extractDealCoachAudit(opp);
+                          if (!audit || !audit.tier) return null;
+                          const isT1 = audit.tier === 'TIER_1_TOP';
+                          return (
+                            <span 
+                              className={`queue-badge-tier ${isT1 ? 'tier-1' : 'tier-2'}`}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                background: isT1 ? 'rgba(168, 85, 247, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                                color: isT1 ? '#c084fc' : '#60a5fa',
+                                border: `1px solid ${isT1 ? 'rgba(168, 85, 247, 0.45)' : 'rgba(59, 130, 246, 0.4)'}`
+                              }}
+                              title={`DealCoach Revisions-Stufe 2: ${isT1 ? 'Tier 1 Top (Großunternehmen/Börse, Budget 150k–320k €)' : 'Tier 2 Mid (Mittelstand ab 20 Mio. €, PMO / operative Leitung)'}`}
+                            >
+                              {isT1 ? '👑 TIER 1' : '🏢 TIER 2'}
+                            </span>
+                          );
+                        })()}
+
                         {matchScore >= 70 ? (
                           <span className="queue-badge-high" title="Hoher Zielgruppen-Match">
                             {matchScore}% Match
@@ -2177,6 +2293,132 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                 );
               })()}
             </div>
+
+            {/* 🛡️ DEALCOACH STUFE 2 REVISIONS- & VORSORTIERUNGS-PANEL */}
+            {activeOpp && (() => {
+              const audit = extractDealCoachAudit(activeOpp);
+              if (!audit) return null;
+              const isTier1 = audit.tier === 'TIER_1_TOP';
+              const isInInbox = activeOpp.review_status === 'pending' || activeOpp.review_status === 'PENDING_REVIEW' || activeOpp.review_status === 'unreviewed';
+
+              return (
+                <div className="dealcoach-audit-card" style={{
+                  background: isTier1 ? 'linear-gradient(135deg, rgba(88, 28, 135, 0.22) 0%, rgba(15, 23, 42, 0.8) 100%)' : 'linear-gradient(135deg, rgba(30, 58, 138, 0.2) 0%, rgba(15, 23, 42, 0.8) 100%)',
+                  border: `1px solid ${isTier1 ? 'rgba(168, 85, 247, 0.45)' : 'rgba(59, 130, 246, 0.4)'}`,
+                  borderRadius: '12px',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  boxShadow: isTier1 ? '0 4px 20px rgba(147, 51, 234, 0.12)' : '0 4px 20px rgba(59, 130, 246, 0.1)',
+                  position: 'relative'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        background: isTier1 ? 'rgba(168, 85, 247, 0.25)' : 'rgba(59, 130, 246, 0.25)',
+                        border: `1px solid ${isTier1 ? '#a855f7' : '#3b82f6'}`,
+                        borderRadius: '8px',
+                        padding: '6px 12px',
+                        fontSize: '0.92rem',
+                        fontWeight: 800,
+                        color: isTier1 ? '#f3e8ff' : '#dbeafe',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        letterSpacing: '0.02em'
+                      }}>
+                        {isTier1 ? '👑 TIER 1 TOP' : '🏢 TIER 2 MID'}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#f8fafc', letterSpacing: '0.01em', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span>DealCoach Revisions-Urteil:</span>
+                          <span style={{ color: isTier1 ? '#c084fc' : '#60a5fa' }}>{audit.verdict}</span>
+                        </div>
+                        <div style={{ fontSize: '0.82rem', color: '#94a3b8', marginTop: '2px' }}>
+                          Einstufung: <strong style={{ color: isTier1 ? '#d8b4fe' : '#93c5fd' }}>{isTier1 ? 'Großunternehmen / Börse (C-Level Organ)' : 'Mittelstand ab 20 Mio. € (PMO / Leitung)'}</strong> · Budget: <strong style={{ color: '#38bdf8' }}>{audit.estimated_budget}</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSubmitToHumanReview(activeOpp)}
+                      disabled={isSubmittingReview}
+                      style={{
+                        background: isInInbox 
+                          ? 'rgba(234, 179, 8, 0.16)' 
+                          : 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                        color: isInInbox ? '#facc15' : '#ffffff',
+                        border: isInInbox ? '1px solid rgba(234, 179, 8, 0.45)' : '1px solid #60a5fa',
+                        padding: '9px 18px',
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        fontSize: '0.88rem',
+                        cursor: isSubmittingReview ? 'not-allowed' : 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        boxShadow: isInInbox ? 'none' : '0 0 16px rgba(59, 130, 246, 0.35)',
+                        transition: 'all 0.2s ease'
+                      }}
+                      title={isInInbox ? "Signal liegt bereits in Harros Prüf-Inbox" : "Signal zur menschlichen Überprüfung in Harros Prüf-Inbox verschieben"}
+                    >
+                      {isSubmittingReview ? (
+                        <><Loader2 size={16} className="animate-spin" /> Wird vorgelegt...</>
+                      ) : isInInbox ? (
+                        <><Clock size={16} /> 📥 In Harros Prüf-Inbox</>
+                      ) : (
+                        <><FileText size={16} /> 📋 Zur menschlichen Prüfung vorlegen</>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Grid: Vakuum-Check & Dringlichkeit */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                    gap: '12px',
+                    background: 'rgba(0, 0, 0, 0.25)',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.06)'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <CheckCircle size={14} color="#22c55e" /> Vakuum-Check (Organ-Vakanz)
+                      </div>
+                      <div style={{ fontSize: '0.86rem', color: '#e2e8f0', marginTop: '4px', lineHeight: 1.4 }}>
+                        {audit.vacuum_check}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <Zap size={14} color="#eab308" /> Dringlichkeit & Überbrückungsbedarf
+                      </div>
+                      <div style={{ fontSize: '0.86rem', color: '#e2e8f0', marginTop: '4px', lineHeight: 1.4 }}>
+                        {audit.urgency_check}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Begründung */}
+                  <div style={{
+                    fontSize: '0.86rem',
+                    color: '#cbd5e1',
+                    lineHeight: 1.45,
+                    padding: '10px 14px',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    borderRadius: '8px',
+                    borderLeft: `3px solid ${isTier1 ? '#a855f7' : '#3b82f6'}`
+                  }}>
+                    <strong style={{ color: '#f8fafc' }}>Mandats-Begründung: </strong>
+                    {audit.rationale}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* HITL Posteingang Banner */}
             {activeOpp && (activeOpp.review_status === 'pending' || activeOpp.review_status === 'PENDING_REVIEW' || activeOpp.review_status === 'unreviewed') && (

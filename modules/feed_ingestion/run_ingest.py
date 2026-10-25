@@ -31,6 +31,7 @@ try:
     from modules.feed_ingestion.sources.swiss_shab import fetch_swiss_shab_feed
     from modules.feed_ingestion.sources.eu_markets import fetch_eu_markets_feeds
     from modules.feed_ingestion.keyword_filter import evaluate_signal
+    from modules.feed_ingestion.deal_coach import audit_mandate_lead
     from modules.feed_ingestion.gatekeeper import verify_mandate_signal_llm
     from modules.feed_ingestion.db_client import SupabaseClient
     from modules.feed_ingestion.telegram_notifier import send_telegram_alert
@@ -41,6 +42,7 @@ except ImportError:
     from .sources.swiss_shab import fetch_swiss_shab_feed
     from .sources.eu_markets import fetch_eu_markets_feeds
     from .keyword_filter import evaluate_signal
+    from .deal_coach import audit_mandate_lead
     from .gatekeeper import verify_mandate_signal_llm
     from .db_client import SupabaseClient
     from .telegram_notifier import send_telegram_alert
@@ -136,34 +138,42 @@ def run_ingestion(dry_run=False, skip_cleanup=False):
         print(f"   Unternehmen: {item.get('company', 'N/A')} ({item.get('region', 'EU')})")
         print(f"   Titel:       {item.get('title', '')[:85]}")
 
-        # STUFE 2: LLM Gatekeeper (Mistral / OpenRouter Free-Tier)
-        print("   -> 🤖 Prüfe mit Stufe 2 (LLM-Gatekeeper)...")
-        is_valid, reason, llm_data = verify_mandate_signal_llm(item, eval_result)
-        if not is_valid:
-            print(f"   -> 🛑 STUFE 2 DROP (LLM-Gatekeeper): {reason}")
+        # STUFE 2: DealCoach Automatisierte Revision & Vorsortierungs-Instanz
+        print("   -> ⚖️ DealCoach-Revision (Vakuum-Check & Dringlichkeits-Audit)...")
+        is_valid, reason, deal_audit = audit_mandate_lead(item, eval_result)
+        if not is_valid or not deal_audit or deal_audit.get('tier') == 'REJECTED':
+            print(f"   -> 🛑 DEALCOACH DROP ({deal_audit.get('tier', 'REJECTED') if deal_audit else 'REJECTED'}): {reason}")
             continue
 
-        # Extrahierte saubere Fakten aus Stufe 2 übernehmen
-        if llm_data:
-            if llm_data.get('company_name'):
-                item['company'] = llm_data['company_name']
-            if llm_data.get('role'):
-                item['role'] = llm_data['role']
-            if llm_data.get('person_name'):
-                item['person'] = llm_data['person_name']
-            if llm_data.get('event_type'):
-                eval_result['event_type'] = llm_data['event_type']
-            if llm_data.get('confidence'):
-                eval_result['confidence_score'] = round(float(llm_data['confidence']), 2)
-            if llm_data.get('event_date'):
-                item['event_date'] = llm_data['event_date']
-                eval_result['event_date'] = llm_data['event_date']
+        # Extrahierte Fakten und DealCoach-Audit übernehmen
+        tier = deal_audit.get('tier', 'TIER_2_MID')
+        if deal_audit.get('company_name'):
+            item['company'] = deal_audit['company_name']
+        if deal_audit.get('role'):
+            item['role'] = deal_audit['role']
+        if deal_audit.get('person_name'):
+            item['person'] = deal_audit['person_name']
+        if deal_audit.get('event_type'):
+            eval_result['event_type'] = deal_audit['event_type']
+        if deal_audit.get('confidence'):
+            eval_result['confidence_score'] = round(float(deal_audit['confidence']), 2)
+        if deal_audit.get('event_date'):
+            item['event_date'] = deal_audit['event_date']
+            eval_result['event_date'] = deal_audit['event_date']
 
-        print(f"   -> ✅ STUFE 2 BESTANDEN: {item.get('company')} | {item.get('role', '')} | {item.get('person', '')} ({int(eval_result['confidence_score'] * 100)}%)")
+        eval_result['deal_audit'] = deal_audit
+        eval_result['tier'] = tier
+        eval_result['priority_db'] = tier
+
+        print(f"   -> 🎯 DEALCOACH BESTANDEN: [{tier}] {item.get('company')} | {item.get('role', '')} | {item.get('person', '')} ({int(eval_result['confidence_score'] * 100)}%)")
+        print(f"      • Vakuum-Check: {deal_audit.get('vacuum_check', 'N/A')}")
+        print(f"      • Dringlichkeit: {deal_audit.get('urgency_check', 'N/A')}")
+        print(f"      • Begründung:   {deal_audit.get('audit_rationale', 'N/A')}")
+        print(f"      • Budget-Band:  {deal_audit.get('estimated_budget', 'N/A')}")
         matched_signals.append((item, eval_result))
 
         if not dry_run and db:
-            record, status = db.insert_opportunity(item, eval_result)
+            record, status = db.insert_opportunity(item, eval_result, deal_audit=deal_audit)
             if status == "INSERTED":
                 print(f"   -> 📥 Im Posteingang (PENDING_REVIEW) abgelegt. ID: {record.get('id')}")
                 inserted_signals.append({
@@ -171,7 +181,8 @@ def run_ingestion(dry_run=False, skip_cleanup=False):
                     'company': item.get('company'),
                     'title': item.get('title'),
                     'category': eval_result['category'],
-                    'prio': eval_result['prio'],
+                    'prio': tier,
+                    'tier': tier,
                     'source': item.get('url')
                 })
             elif status == "DUPLICATE":

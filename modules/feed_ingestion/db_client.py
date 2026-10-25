@@ -137,9 +137,10 @@ class SupabaseClient:
 
         return company_id
 
-    def insert_opportunity(self, item, evaluation, user_id=DEFAULT_USER_ID):
+    def insert_opportunity(self, item, evaluation, user_id=DEFAULT_USER_ID, deal_audit=None):
         """
         Insert vetted signal into nexus_opportunities as PENDING_REVIEW (inbox status)
+        with DealCoach audit results (Tier 1 vs Tier 2, Vakuum-Check, Dringlichkeit)
         and synchronously link a relational nexus_trigger_events entry.
         """
         source_url = (item.get('url') or '').strip()
@@ -182,12 +183,45 @@ class SupabaseClient:
         opp_id = str(uuid.uuid4())
         trigger_id = str(uuid.uuid4())
 
+        # DealCoach Audit Metadaten
+        audit_info = deal_audit or evaluation.get('deal_audit') or {}
+        tier = audit_info.get('tier', 'TIER_2_MID')
+        vacuum_check = audit_info.get('vacuum_check', '')
+        urgency_check = audit_info.get('urgency_check', '')
+        audit_rationale = audit_info.get('audit_rationale', '')
+        estimated_budget = audit_info.get('estimated_budget', '')
+        audit_verdict = audit_info.get('audit_verdict', 'QUALIFIZIERT_MANDATSBEDARF')
+
+        tags = [tier, 'DealCoach_Audited', 'Vakuum_Geprueft']
+        if vacuum_check and 'BESTANDEN' in vacuum_check.upper():
+            tags.append('Vakuum_Bestanden')
+
+        relevance_logic_text = f"DealCoach [{tier}]: {audit_verdict} | Vakuum: {vacuum_check} | Dringlichkeit: {urgency_check}"
+        strategic_angle_text = audit_rationale or evaluation.get('strategic_angle', '')
+
         situation_text = (
+            f"[DEALCOACH AUDIT]: {tier}\n"
+            f"[VAKUUM-CHECK]: {vacuum_check}\n"
+            f"[DRINGLICHKEIT]: {urgency_check}\n"
+            f"[MANDATS-BEGRÜNDUNG]: {audit_rationale}\n"
+            f"[BUDGET-SCHÄTZUNG]: {estimated_budget}\n"
             f"[COMPANY]: {company_name}\n"
             f"[KAUFSIGNAL]: {title}\n"
             f"[EREIGNISDATUM]: {event_date_val}\n\n"
             f"{snippet}"
         )
+
+        review_notes_data = json.dumps({
+            'deal_coach': {
+                'tier': tier,
+                'verdict': audit_verdict,
+                'vacuum_check': vacuum_check,
+                'urgency_check': urgency_check,
+                'rationale': audit_rationale,
+                'estimated_budget': estimated_budget,
+                'audited_at': datetime.now(timezone.utc).isoformat()
+            }
+        }, ensure_ascii=False)
 
         payload = {
             'id': opp_id,
@@ -195,11 +229,14 @@ class SupabaseClient:
             'company_id': company_id,
             'title': f"[{item.get('region', 'DACH')}] {company_name}: {title}"[:250],
             'situation': situation_text,
-            'relevance_logic': evaluation.get('relevance_logic', ''),
-            'strategic_angle': evaluation.get('strategic_angle', ''),
+            'relevance_logic': relevance_logic_text,
+            'strategic_angle': strategic_angle_text,
             'source': source_url,
-            'created_from': 'AI',
-            'priority': evaluation.get('priority_db', 'hoch'),
+            'created_from': 'DealCoach',
+            'priority': tier,
+            'tags': tags,
+            'notes': audit_rationale,
+            'review_notes': review_notes_data,
             'confidence_score': evaluation.get('confidence_score', 0.85),
             'lead_score': lead_score,
             'review_status': STATUS_PENDING_REVIEW,
