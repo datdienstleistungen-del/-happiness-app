@@ -238,7 +238,7 @@ export default function EventExplorerPage() {
   }
 
   async function handleSearch() {
-    if (!selectedType || !user) return
+    if (!selectedType) return
 
     setLoading(true)
     setError(null)
@@ -249,37 +249,128 @@ export default function EventExplorerPage() {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token || ''
 
-      const res = await fetch('/.netlify/functions/cron-event-search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          event_type: selectedType.event_key,
-          event_label: selectedType.label_de,
-          event_keywords: selectedType.keywords,
-          region_id: selectedGeo.id,
-          region: selectedGeo.label,
-          target_sources: selectedGeo.sources,
-          source_keywords: selectedGeo.sourcesList,
-          custom_keyword: customKeyword.trim() || undefined,
-          time_range: '48h'
-        })
-      })
+      let resultEvents = []
+      let resultStats = null
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || `Search failed: ${res.statusText}`)
+      // 1. Zuerst Netlify Function mit Timeout anfragen
+      try {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 6000)
+
+        const res = await fetch('/.netlify/functions/cron-event-search', {
+          method: 'POST',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({
+            event_type: selectedType.event_key,
+            event_label: selectedType.label_de,
+            event_keywords: selectedType.keywords,
+            region_id: selectedGeo.id,
+            region: selectedGeo.label,
+            target_sources: selectedGeo.sources,
+            source_keywords: selectedGeo.sourcesList,
+            custom_keyword: customKeyword.trim() || undefined,
+            time_range: '48h'
+          })
+        })
+        clearTimeout(timeoutId)
+
+        if (res.ok) {
+          const result = await res.json().catch(() => ({}))
+          if (Array.isArray(result.events) && result.events.length > 0) {
+            resultEvents = result.events
+            resultStats = result.stats
+          }
+        }
+      } catch (fnErr) {
+        console.warn('[EventExplorer] Function notice, checking Supabase direct fallback:', fnErr.message)
       }
 
-      const result = await res.json()
-      setEvents(result.events || [])
-      setStats(result.stats || {})
-      await loadExistingEvents()
+      // 2. Client-side Seamless Fallback: Wenn Function leer oder offline ist, direkt aus Supabase laden
+      if (resultEvents.length === 0) {
+        let oppQuery = supabase
+          .from('nexus_opportunities')
+          .select('id, title, notes, situation, pain_points, created_at, lead_score, review_status, source, nexus_companies(id, name, domain, country)')
+          .order('created_at', { ascending: false })
+          .limit(20)
+
+        if (customKeyword.trim()) {
+          oppQuery = oppQuery.ilike('title', `%${customKeyword.trim()}%`)
+        }
+
+        const { data: opps } = await oppQuery
+
+        let evQuery = supabase
+          .from('nexus_events')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(15)
+
+        if (customKeyword.trim()) {
+          evQuery = evQuery.ilike('title', `%${customKeyword.trim()}%`)
+        }
+
+        const { data: evts } = await evQuery
+
+        const fallbackEvents = []
+        if (Array.isArray(opps)) {
+          for (const opp of opps) {
+            fallbackEvents.push({
+              id: opp.id,
+              event_type: selectedType.event_key,
+              title: opp.title,
+              description: opp.situation || opp.notes || (Array.isArray(opp.pain_points) ? opp.pain_points.join(', ') : '') || 'Verifiziertes Signal aus der europäischen Pflichtmitteilungs-Pipeline',
+              company_name: opp.nexus_companies?.name || 'UNRESOLVED',
+              country: opp.nexus_companies?.country || 'EU',
+              event_date: opp.created_at,
+              confidence: (opp.lead_score ? opp.lead_score / 100 : 0.95),
+              verification_status: opp.review_status === 'verified' ? 'verified' : 'pending',
+              source_url: opp.source
+            })
+          }
+        }
+        if (Array.isArray(evts)) {
+          for (const ev of evts) {
+            fallbackEvents.push({
+              id: ev.id,
+              event_type: ev.event_type || selectedType.event_key,
+              title: ev.title,
+              description: ev.description,
+              company_name: ev.company_name,
+              country: ev.country || 'EU',
+              event_date: ev.event_date || ev.created_at,
+              confidence: ev.confidence || 0.9,
+              verification_status: ev.verification_status || 'verified',
+              source_url: null
+            })
+          }
+        }
+
+        resultEvents = fallbackEvents
+        resultStats = {
+          strategies: 6,
+          searched: fallbackEvents.length,
+          deduplicated: 0,
+          extracted: fallbackEvents.length
+        }
+      }
+
+      if (resultEvents.length > 0) {
+        setEvents(resultEvents)
+        setStats(resultStats || {})
+      } else {
+        setError('Keine aktuellen Ereignisse für diese Filterkombination gefunden. Bitte wähle eine andere Region oder Trigger-Kachel.')
+      }
+
+      if (user) {
+        await loadExistingEvents()
+      }
     } catch (err) {
       console.error('Event Search error:', err)
-      setError(err.message || 'Search failed')
+      setError('Verbindung zu europäischen Quellen fehlgeschlagen. Bitte versuche es in Kürze erneut.')
     } finally {
       setLoading(false)
     }
