@@ -183,6 +183,35 @@ NEGATIVE_KEYWORDS = [
     "exclut toute", "schliesst aus", "schließt aus", "kein rücktritt", "dementiert"
 ]
 
+# Strikte Blacklist für Rollen unterhalb der Organ- und C-Level-Ebene (SOFORTIGER DROP)
+ROLE_BLACKLIST = [
+    "vertriebsleiter", "sales manager", "teamleiter", "junior", "praktikant",
+    "sachbearbeiter", "key account manager", "entwickler", "techniker",
+    "account executive", "vertriebsmitarbeiter", "sales rep", "head of sales",
+    "regionalleiter", "filialleiter", "filialleiterin", "stellenanzeige", "job posting"
+]
+
+# Whitelist: Nur echte Organ- und C-Level-Positionen passieren den Ingestion-Filter
+ROLE_WHITELIST = [
+    "vorstand", "aufsichtsrat", "beirat", "ceo", "cfo", "cro", "coo",
+    "managing director", "geschäftsführer", "geschaeftsfuehrer", "general counsel",
+    "partner", "verwaltungsrat", "vorstandsvorsitzender", "vorstandssprecher",
+    "vorstandsmitglied", "directeur général", "directeur general", "consejero delegado",
+    "amministratore delegato", "chief executive", "chief financial", "chief restructuring",
+    "chief operating", "directeur financier", "président du directoire", "president du directoire"
+]
+
+# Pflichtfeld Event: Zwingend erforderliche Anlass-Schlüsselwörter (Zero-Tolerance Gatekeeper)
+MANDATORY_EVENT_KEYWORDS = [
+    "rücktritt", "ruecktritt", "amtsniederlegung", "ausscheiden", "abberufung",
+    "vorstandswechsel", "nachfolge", "sanierung", "starug", "schutzschirm",
+    "insolvenz", "restrukturierung", "carve-out", "carve out", "m&a", "übernahme",
+    "uebernahme", "abspaltung", "steps down", "resignation", "resigns",
+    "leadership transition", "board changes", "dimisión", "dimision", "renuncia",
+    "cese", "démission", "demission", "avvicendamento", "cessazione",
+    "verlässt das unternehmen", "verlaesst das unternehmen", "niederlegung des mandats"
+]
+
 
 # Pan-European Feed Sources Configuration
 FEED_SOURCES = {

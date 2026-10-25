@@ -2,9 +2,15 @@ import re
 import unicodedata
 
 try:
-    from modules.feed_ingestion.config import SIGNAL_CATEGORIES, NEGATIVE_KEYWORDS
+    from modules.feed_ingestion.config import (
+        SIGNAL_CATEGORIES, NEGATIVE_KEYWORDS,
+        ROLE_BLACKLIST, ROLE_WHITELIST, MANDATORY_EVENT_KEYWORDS
+    )
 except ImportError:
-    from .config import SIGNAL_CATEGORIES, NEGATIVE_KEYWORDS
+    from .config import (
+        SIGNAL_CATEGORIES, NEGATIVE_KEYWORDS,
+        ROLE_BLACKLIST, ROLE_WHITELIST, MANDATORY_EVENT_KEYWORDS
+    )
 
 def normalize_text(text):
     """Normalize text for consistent multi-language keyword matching."""
@@ -32,21 +38,88 @@ def check_negative_filter(text):
             return True, neg
     return False, None
 
+def check_role_seniority(text):
+    """
+    Validates seniority on board/c-level.
+    Returns (is_valid, reason):
+    - Rejects if role blacklist is matched (e.g. Vertriebsleiter, Sales Manager, etc.)
+    - Rejects if no C-Level/Organ whitelist keyword is present.
+    """
+    norm = normalize_text(text)
+    
+    # 1. Blacklist check (Strict rejection)
+    for blacklisted in ROLE_BLACKLIST:
+        norm_b = normalize_text(blacklisted)
+        pattern = r'(?:\b|^)' + re.escape(norm_b) + r'(?:\b|$)'
+        if re.search(pattern, norm):
+            return False, f"ROLE_BLACKLIST: '{blacklisted}'"
+
+    # 2. Whitelist check (Must touch at least one organ/c-level position)
+    has_whitelist = False
+    for whitelisted in ROLE_WHITELIST:
+        norm_w = normalize_text(whitelisted)
+        pattern = r'(?:\b|^)' + re.escape(norm_w) + r'(?:\b|$)'
+        if re.search(pattern, norm):
+            has_whitelist = True
+            break
+            
+    if not has_whitelist:
+        return False, "NO_ORGAN_OR_CLEVEL_ROLE"
+
+    return True, "QUALIFIED_C_LEVEL"
+
+def check_mandatory_event(text):
+    """
+    Checks if a concrete verified event / Mandatsanlass exists.
+    Returns (has_event, matched_keyword).
+    """
+    norm = normalize_text(text)
+    for kw in MANDATORY_EVENT_KEYWORDS:
+        norm_kw = normalize_text(kw)
+        pattern = r'(?:\b|^)' + re.escape(norm_kw) + r'(?:\b|$)'
+        if re.search(pattern, norm):
+            return True, kw
+    return False, None
+
 def evaluate_signal(item):
     """
-    Evaluates feed item title and snippet against defined category keywords.
-    1. Negative filter check: Discards small businesses and tips/advice articles with Score 0.
-    2. Focus on C-Level & Board Vacancies (ORGANVAKANZ & LEADERSHIP).
-    Returns None if no relevant match or negative filter hit; returns evaluation dict otherwise.
+    Zero-Tolerance Ingestion Evaluator:
+    1. URL check: Rejects truncated URLs (ending in '...') and invalid sources.
+    2. Mandatory Event Gatekeeper: Rejects empty or 'Keine Angabe' events.
+    3. Negative filter check: Discards retail/small business/how-to articles.
+    4. Seniority check: Blacklists middle management, enforces Organ/C-Level whitelist.
+    5. Event matching: Requires concrete verified Mandatsanlass.
     """
-    title = item.get('title', '')
-    snippet = item.get('snippet', '')
-    raw_text = f"{title} {snippet}"
+    url = (item.get('url') or '').strip()
+    if not url or url.endswith('...') or url.endswith('…') or len(url) < 15:
+        # Truncated or invalid URL
+        return None
+
+    title = (item.get('title') or '').strip()
+    snippet = (item.get('snippet') or '').strip()
+    
+    # Hard Event Gatekeeper: Title or Snippet must exist and not be dummy text
+    if not title or title.lower() in ('keine angabe', 'none', 'null', 'unternehmen') or len(title) < 10:
+        return None
+    if snippet.lower() in ('keine angabe', 'none', 'null'):
+        snippet = ""
+
+    raw_text = f"{title} {snippet}".strip()
     norm_text = normalize_text(raw_text)
 
     # 1. Negative Filter Check (Score 0 / Drop)
     is_neg, neg_kw = check_negative_filter(raw_text)
     if is_neg:
+        return None
+
+    # 2. Seniority Check (Organ/C-Level only; middle management blacklist)
+    is_senior, senior_reason = check_role_seniority(raw_text)
+    if not is_senior:
+        return None
+
+    # 3. Mandatory Event Gatekeeper (Concrete verified anlass required)
+    has_event, event_kw = check_mandatory_event(raw_text)
+    if not has_event:
         return None
 
     best_match = None

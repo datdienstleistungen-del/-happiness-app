@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Briefcase, Mail, MessageSquare, Send, Copy, CheckCircle, AlertCircle, List, Trash2, ArrowRight, Search, Share2, ExternalLink, Video, Globe, Sparkles, RefreshCw, Clock, Check, Loader2, X, Eye, ShieldCheck, FileText, Zap, Edit3 } from 'lucide-react'
 import { callNexusAI, runDeepResearch, callContactIntelligence, callMessageGeneration, callSocialIntelligence } from '../lib/nexus-ai'
-import { isPlaceholderCompany, computeTargetMatchScore, classifyB2BLifecycle, getCategoryLifecycleConfig } from '../lib/nexus-validation'
+import { isPlaceholderCompany, computeTargetMatchScore, classifyB2BLifecycle, getCategoryLifecycleConfig, hasConcreteVerifiedAnlass, isBlacklistedRole } from '../lib/nexus-validation'
 import { formatEventDate, extractDomain } from '../lib/nexus-dates'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import { useLead } from '../context/LeadContext'
@@ -890,12 +890,23 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
           setActiveOpp(ctx);
           setTranslatedIntelligence({});
 
-          // Finde neuesten Trigger
-          const latestTrigger = ctx.triggers?.length > 0 ? ctx.triggers[0].nexus_trigger_events : null;
-          setActiveTrigger(latestTrigger);
+          // Finde neuesten Trigger oder synthetisiere aus Opportunity Kontext
+          let effectiveTrigger = ctx.triggers?.length > 0 ? ctx.triggers[0].nexus_trigger_events : null;
+          if (!effectiveTrigger && (ctx.situation || ctx.title)) {
+            effectiveTrigger = {
+              id: ctx.id,
+              title: ctx.title,
+              content: ctx.situation || ctx.title,
+              event_fact: ctx.title,
+              source: ctx.source,
+              source_url: ctx.source,
+              signal_type: ctx.priority === 'hoch' ? 'ORGANVAKANZ & LEADERSHIP' : 'M&A / SONDERSITUATION'
+            };
+          }
+          setActiveTrigger(effectiveTrigger);
 
           // Dynamische Unternehmensauflösung: Priorität hat das aktuell geladene Trigger-Event!
-          const resolvedCompanyName = resolveTriggerCompanyName(latestTrigger, ctx);
+          const resolvedCompanyName = resolveTriggerCompanyName(effectiveTrigger, ctx);
           const companyName = resolvedCompanyName || ctx.company?.name || '';
           const industry = ctx.company?.industry || '';
 
@@ -909,11 +920,12 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
              setFoundContact(existingContact);
           }
 
+          const situationText = effectiveTrigger?.content || ctx.situation || ctx.title || '';
           setFormData(prev => ({
             ...prev,
             company: resolvedCompanyName,
             branche: industry,
-            situation: latestTrigger ? latestTrigger.content : '',
+            situation: situationText,
             ansprechpartner: contactName,
             targetLang: lang || 'de',
             einwand: ''
@@ -923,13 +935,13 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
           setActiveTab(prev => (prev === 'pruefung' || prev === 'intelligence' || prev === 'historie' ? prev : 'aktion'));
 
           // Auto-Übersetzung für fremdsprachige Leads (z.B. Spanisch / Polnisch), wenn der Nutzer auf Deutsch arbeitet
-          const isForeign = /\b(empresa|innovación|desarrollo|soluciones|crecimiento|financiamiento|adquisición|nueva|nuevo|sede|sociedad|productos|fabricación|distribución|ventures|partnership|spółka|zarząd|inwestycje)\b/i.test((latestTrigger?.content || '') + ' ' + (ctx.offering?.positioning || ''));
+          const isForeign = /\b(empresa|innovación|desarrollo|soluciones|crecimiento|financiamiento|adquisición|nueva|nuevo|sede|sociedad|productos|fabricación|distribución|ventures|partnership|spółka|zarząd|inwestycje)\b/i.test((effectiveTrigger?.content || '') + ' ' + (ctx.offering?.positioning || ''));
           if (isForeign && (lang || 'de') === 'de') {
             try {
               callNexusAI({
                 mode: 'translate_intelligence',
                 lang: 'de',
-                message: `Angebot: ${ctx.offering?.offering_name || ''}\nPositionierung: ${ctx.offering?.positioning || ''}\nKaufsignal: ${latestTrigger?.content || ''}`
+                message: `Angebot: ${ctx.offering?.offering_name || ''}\nPositionierung: ${ctx.offering?.positioning || ''}\nKaufsignal: ${effectiveTrigger?.content || ''}`
               }).then(res => {
                 if (res && typeof res === 'object' && res.signal) {
                   setFormData(p => ({ ...p, situation: res.signal }));
@@ -1553,7 +1565,22 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
               o,
               o.nexus_companies?.name || o.company?.name || ''
             );
-            const validOpps = (opportunities || []).filter(o => !isPlaceholderCompany(resolveOppCompany(o)));
+
+            // Zero-Tolerance Filter: SOFORTIGER DROP VOR DER QUEUE bei fehlendem/ungültigem Event oder Blacklist-Rolle
+            const isStrictValidOpportunity = (o) => {
+              const comp = resolveOppCompany(o);
+              if (!comp || isPlaceholderCompany(comp)) return false;
+              
+              const eventText = (o.triggers?.[0]?.nexus_trigger_events?.content || o.situation || o.title || '').trim();
+              if (!eventText || eventText.toLowerCase() === 'keine angabe' || eventText.length < 10) return false;
+              if (!hasConcreteVerifiedAnlass(eventText)) return false;
+              if (isBlacklistedRole(eventText)) return false;
+              if (o.source && (o.source.endsWith('...') || o.source.endsWith('…'))) return false;
+
+              return true;
+            };
+
+            const validOpps = (opportunities || []).filter(isStrictValidOpportunity);
             
             // Stufe 1: Posteingang (Human in the Loop - Chefsache)
             const inboxOpps = validOpps.filter(o => o.review_status === 'pending' || o.review_status === 'PENDING_REVIEW' || o.review_status === 'unreviewed');
@@ -1563,8 +1590,8 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
             const rejectedOpps = validOpps.filter(o => o.review_status === 'rejected' || o.review_status === 'DISMISSED');
 
             const inboxCount = inboxOpps.length;
-            const relevantCount = qualifiedOpps.filter(o => computeTargetMatchScore(resolveOppCompany(o), o.lead_score) >= 50).length;
-            const unclearCount = qualifiedOpps.filter(o => computeTargetMatchScore(resolveOppCompany(o), o.lead_score) < 50).length;
+            const relevantCount = qualifiedOpps.filter(o => computeTargetMatchScore(resolveOppCompany(o), o.lead_score, o) >= 50).length;
+            const unclearCount = qualifiedOpps.filter(o => computeTargetMatchScore(resolveOppCompany(o), o.lead_score, o) < 50).length;
             const rejectedCount = rejectedOpps.length;
             const allQualifiedCount = qualifiedOpps.length;
             
@@ -1628,7 +1655,21 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                 o,
                 o.nexus_companies?.name || o.company?.name || ''
               );
-              const validOpps = (opportunities || []).filter(o => !isPlaceholderCompany(resolveOppCompany(o)));
+
+              const isStrictValidOpportunity = (o) => {
+                const comp = resolveOppCompany(o);
+                if (!comp || isPlaceholderCompany(comp)) return false;
+                
+                const eventText = (o.triggers?.[0]?.nexus_trigger_events?.content || o.situation || o.title || '').trim();
+                if (!eventText || eventText.toLowerCase() === 'keine angabe' || eventText.length < 10) return false;
+                if (!hasConcreteVerifiedAnlass(eventText)) return false;
+                if (isBlacklistedRole(eventText)) return false;
+                if (o.source && (o.source.endsWith('...') || o.source.endsWith('…'))) return false;
+
+                return true;
+              };
+
+              const validOpps = (opportunities || []).filter(isStrictValidOpportunity);
               const inboxOpps = validOpps.filter(o => o.review_status === 'pending' || o.review_status === 'PENDING_REVIEW' || o.review_status === 'unreviewed');
               const qualifiedOpps = validOpps.filter(o => o.review_status === 'verified' || o.review_status === 'reviewed' || o.review_status === 'QUALIFIED');
               const rejectedOpps = validOpps.filter(o => o.review_status === 'rejected' || o.review_status === 'DISMISSED');
@@ -1639,9 +1680,9 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
               } else if (queueFilter === 'rejected') {
                 displayedOpps = rejectedOpps;
               } else if (queueFilter === 'relevant') {
-                displayedOpps = qualifiedOpps.filter(o => computeTargetMatchScore(resolveOppCompany(o), o.lead_score) >= 50);
+                displayedOpps = qualifiedOpps.filter(o => computeTargetMatchScore(resolveOppCompany(o), o.lead_score, o) >= 50);
               } else if (queueFilter === 'unclear') {
-                displayedOpps = qualifiedOpps.filter(o => computeTargetMatchScore(resolveOppCompany(o), o.lead_score) < 50);
+                displayedOpps = qualifiedOpps.filter(o => computeTargetMatchScore(resolveOppCompany(o), o.lead_score, o) < 50);
               } else {
                 displayedOpps = qualifiedOpps;
               }
@@ -1650,7 +1691,7 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                 return (
                   <div className="queue-empty">
                     {queueFilter === 'inbox' 
-                      ? '📥 Posteingang ist leer. Alle Signale wurden geprüft.' 
+                      ? '📥 Posteingang ist leer. Alle verifizierten Mandatsanlässe wurden geprüft.' 
                       : (validOpps.length === 0 ? t('nexus.noLeads') : 'Keine Opportunities im gewählten Filter.')}
                   </div>
                 );
@@ -1658,7 +1699,7 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
 
               return displayedOpps.map(opp => {
                 const compName = resolveOppCompany(opp);
-                const matchScore = computeTargetMatchScore(compName, opp.lead_score);
+                const matchScore = computeTargetMatchScore(compName, opp.lead_score, opp);
                 const dateInfo = formatEventDate(opp.created_at);
                 const hasValidSource = opp.source && opp.source.startsWith('http');
                 const domain = hasValidSource ? extractDomain(opp.source) : null;
@@ -3044,7 +3085,19 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                     </div>
                     <div style={{ fontSize: '0.82rem', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '4px', wordBreak: 'break-word' }}>
                       <div>Angebot: <strong style={{ color: '#f8fafc' }}>{activeOffering?.offering_name || activeOffering?.title || fullContext?.offering?.offering_name || fullContext?.offering?.title || 'Standard B2B Angebot'}</strong></div>
-                      <div>Ereignis: <span style={{ color: '#cbd5e1' }}>{activeTrigger?.content ? extractTriggerMeta(activeTrigger.content).cleanText : (activeTrigger?.event_fact || formData.situation || 'Keine Angabe')}</span></div>
+                      {(() => {
+                        const evtCandidate = (activeTrigger?.content ? extractTriggerMeta(activeTrigger.content).cleanText : '') || 
+                                              activeTrigger?.event_fact || 
+                                              activeTrigger?.title || 
+                                              formData.situation || 
+                                              activeOpp?.situation || 
+                                              activeOpp?.title || 
+                                              '';
+                        const isEvtValid = evtCandidate && evtCandidate.toLowerCase() !== 'keine angabe' && hasConcreteVerifiedAnlass(evtCandidate);
+                        return (
+                          <div>Ereignis: <span style={{ color: isEvtValid ? '#cbd5e1' : '#f87171', fontWeight: isEvtValid ? 400 : 700 }}>{isEvtValid ? evtCandidate : (evtCandidate || '⚠️ Kein verifizierter Anlass (SOFORT-DROP)')}</span></div>
+                        );
+                      })()}
                       {(() => {
                         const meta = extractTriggerMeta(activeTrigger?.content || '');
                         const pp = activeTrigger?.pain_point || activeOpp?.pain_point || meta.painPoint;

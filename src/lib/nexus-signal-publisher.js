@@ -190,9 +190,24 @@ export function buildSignalPayload({
   // Firmenname dynamisch auflösen (Priorität: overrideCompany > Trigger Content / Fields > Opportunity)
   const companyName = overrideCompany || 
                       resolveTriggerCompanyName(trigger, opportunity) || 
-                      'Unternehmen'
+                      opportunity?.company?.name ||
+                      opportunity?.nexus_companies?.name ||
+                      ''
+
+  if (!companyName || companyName.toLowerCase() === 'unternehmen' || companyName.toLowerCase() === 'null') {
+    throw new Error('Signal Payload Error: Kein konkretes Unternehmen für Lead vorhanden (Auto-Reject).');
+  }
   
-  const contentStr = trigger?.nexus_trigger_events?.content || trigger?.content || opportunity?.triggers?.[0]?.nexus_trigger_events?.content || ''
+  const contentStr = trigger?.nexus_trigger_events?.content || 
+                     trigger?.content || 
+                     opportunity?.triggers?.[0]?.nexus_trigger_events?.content || 
+                     opportunity?.situation || 
+                     opportunity?.title || 
+                     ''
+
+  if (!contentStr || contentStr.trim() === '' || contentStr.toLowerCase() === 'keine angabe' || contentStr.length < 10) {
+    throw new Error('Signal Payload Error: Kein verifiziertes Ereignis für Lead vorhanden (Auto-Reject).');
+  }
 
   // Treffenden Wirtschaftszweig dynamisch erkennen
   const industry = detectIndustry(companyName, trigger, opportunity, contentStr)
@@ -210,20 +225,20 @@ export function buildSignalPayload({
   const tagPainPoint = extractTag(contentStr, 'PAIN_POINT')
   const tagTargetBuyers = extractTag(contentStr, 'TARGET_BUYERS')
 
-  // Anonymisierte Felder aus 5-Schritte-Prozess (NIEMALS Klarnamen im Teaser!)
-  const blindCompany = tagBlindCompany || trigger?.blind_company || `Führendes Unternehmen (${industry})`
-  const blindLocation = tagBlindLocation || trigger?.blind_location || trigger?.standort || trigger?.region || 'D-A-CH Region'
+  // Anonymisierte Felder: Strikte B2B-Klassifizierung ohne Phantasie- oder Dummytexte
+  const blindCompany = tagBlindCompany || trigger?.blind_company || (industry && industry !== 'B2B & Industrie' ? `Mittelständischer Technologieführer (${industry})` : 'Etablierter europäischer Marktteilnehmer')
+  const blindLocation = tagBlindLocation || trigger?.blind_location || trigger?.standort || trigger?.region || opportunity?.region || 'DACH / Europa'
   const blindQuantity = tagBlindQuantity || trigger?.blind_quantity || 'Gehobener Mittelstand'
   const painPoint = tagPainPoint || 
                     trigger?.pain_point || 
                     opportunity?.pain_point || 
-                    'Hoher operativer Handlungsdruck durch akute Expansion und Besetzungsbedarf.'
+                    'Akute Führungstransition auf C-Level- und Board-Ebene mit unmittelbarem Nachfolge- und Mandatsbedarf.'
   
   const targetBuyers = tagTargetBuyers 
     ? tagTargetBuyers.split(',').map(s => s.trim())
     : (Array.isArray(trigger?.target_buyers) && trigger.target_buyers.length > 0)
       ? trigger.target_buyers
-      : ['Executive Search & Personalberater', 'Interim Management', 'B2B-Dienstleister & Berater']
+      : ['Executive Search & Board Advisors', 'Interim Management Provider (C-Level)', 'Restrukturierungs- & Mandatspartner']
 
   // Anonymisiere Event-Summary vollständig:
   // Entferne alle [TAG]: Zeilen und ersetze Klarnamen und konkrete Ortsangaben
@@ -261,7 +276,11 @@ export function buildSignalPayload({
   cleanEvent = cleanEvent.slice(0, 250)
   
   // Öffentlicher URL-Slug: MUSS 100% blind sein (NIEMALS den echten Firmennamen leaken!)
-  const topicKeyword = cleanEvent.toLowerCase().includes('vertrieb') ? 'vertriebsentwicklung' : 'expansion-hiring'
+  const topicKeyword = cleanEvent.toLowerCase().includes('cro') || cleanEvent.toLowerCase().includes('sanier')
+    ? 'restrukturierung-cro'
+    : cleanEvent.toLowerCase().includes('m&a') || cleanEvent.toLowerCase().includes('carve') || cleanEvent.toLowerCase().includes('abspalt')
+      ? 'transaktion-m-and-a'
+      : 'organvakanz-board'
   const slug = generateSignalSlug(blindCompany, `${topicKeyword}-${blindLocation}`)
   const signalId = `sig-${slug}-${Date.now().toString().slice(-4)}`
 
@@ -305,6 +324,14 @@ export function buildSignalPayload({
   const lifecycle = classifyB2BLifecycle(eventCategory, eventDate, today)
 
   // Gesamtes Signal-Objekt
+  const headline = `${blindCompany}: ${
+    cleanEvent.toLowerCase().includes('cro') || cleanEvent.toLowerCase().includes('sanier')
+      ? 'Akute Restrukturierung & Organbegleitung (CRO / Sanierung)'
+      : cleanEvent.toLowerCase().includes('m&a') || cleanEvent.toLowerCase().includes('carve') || cleanEvent.toLowerCase().includes('abspalt')
+        ? 'Strategische Neuausrichtung & M&A / Transaktionsbegleitung'
+        : 'Organvakanz & Führungstransition auf C-Level / Board-Ebene'
+  }`
+
   const signalObj = {
     id: signalId,
     slug: slug,
@@ -313,11 +340,11 @@ export function buildSignalPayload({
     isExclusivelySold: false,
     // 1. ÖFFENTLICHE VORSCHAU (Frei sichtbar)
     teaser: {
-      headline: `${blindCompany} sucht Vertriebsleiter & Expansionspartner`,
+      headline: headline,
       industry: `${industry} · ${blindLocation}`,
       region: blindLocation,
       eventSummary: cleanEvent,
-      signalCategory: trigger?.signal_kategorie || 'EXPANSION & STRATEGISCHES HIRING',
+      signalCategory: trigger?.signal_kategorie || opportunity?.category || 'ORGANVAKANZ & LEADERSHIP',
       lifecycleBadge: lifecycle.badge,
       lifecycleStatus: lifecycle.status,
       detectedAt: `${lifecycle.badge} · ${lifecycle.description}`,

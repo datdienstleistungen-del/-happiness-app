@@ -524,31 +524,108 @@ export function isVendorCompany(name) {
   return VENDOR_PATTERNS.some(v => clean.includes(v));
 }
 
+export const ROLE_BLACKLIST = [
+  'vertriebsleiter', 'sales manager', 'teamleiter', 'junior', 'praktikant',
+  'sachbearbeiter', 'key account manager', 'entwickler', 'techniker',
+  'account executive', 'vertriebsmitarbeiter', 'sales rep', 'head of sales',
+  'regionalleiter', 'filialleiter', 'filialleiterin', 'stellenanzeige', 'job posting'
+];
+
+export const ROLE_WHITELIST = [
+  'vorstand', 'aufsichtsrat', 'beirat', 'ceo', 'cfo', 'cro', 'coo',
+  'managing director', 'geschäftsführer', 'geschaeftsfuehrer', 'general counsel',
+  'partner', 'verwaltungsrat', 'vorstandsvorsitzender', 'vorstandssprecher',
+  'vorstandsmitglied', 'directeur général', 'directeur general', 'consejero delegado',
+  'amministratore delegato', 'chief executive', 'chief financial', 'chief restructuring',
+  'chief operating', 'directeur financier', 'président du directoire', 'president du directoire'
+];
+
+export const MANDATORY_EVENT_KEYWORDS = [
+  'rücktritt', 'ruecktritt', 'amtsniederlegung', 'ausscheiden', 'abberufung',
+  'vorstandswechsel', 'nachfolge', 'sanierung', 'starug', 'schutzschirm',
+  'insolvenz', 'restrukturierung', 'carve-out', 'carve out', 'm&a', 'übernahme',
+  'uebernahme', 'abspaltung', 'steps down', 'resignation', 'resigns',
+  'leadership transition', 'board changes', 'dimisión', 'dimision', 'renuncia',
+  'cese', 'démission', 'demission', 'avvicendamento', 'cessazione',
+  'verlässt das unternehmen', 'verlaesst das unternehmen', 'niederlegung des mandats'
+];
+
+export function hasConcreteVerifiedAnlass(text = '') {
+  if (!text || typeof text !== 'string') return false;
+  const clean = text.toLowerCase().trim();
+  if (!clean || clean === 'keine angabe' || clean === 'none' || clean === 'null' || clean.length < 5) return false;
+  return MANDATORY_EVENT_KEYWORDS.some(kw => clean.includes(kw.toLowerCase()));
+}
+
+export function isBlacklistedRole(roleOrText = '') {
+  if (!roleOrText || typeof roleOrText !== 'string') return false;
+  const clean = roleOrText.toLowerCase().trim();
+  const isBlack = ROLE_BLACKLIST.some(b => clean.includes(b.toLowerCase()));
+  if (!isBlack) return false;
+  // If an Organ / Board level keyword is ALSO explicitly mentioned, it is not purely a blacklisted role
+  const isWhite = ROLE_WHITELIST.some(w => clean.includes(w.toLowerCase()));
+  return !isWhite;
+}
+
+export function hasOrganOrCLevelSeniority(text = '', role = '') {
+  const combined = `${role} ${text}`.toLowerCase().trim();
+  if (isBlacklistedRole(combined)) return false;
+  return ROLE_WHITELIST.some(w => combined.includes(w.toLowerCase()));
+}
+
 /**
  * Berechnet den finalen Zielgruppen-Match (0-100).
- * Bekannte Anbieter erhalten maximal 25% (werden damit automatisch als "Zielgruppe unklar" gefiltert).
+ * ZERO-TOLERANCE GATEKEEPER:
+ * Ein Lead ohne konkreten, verifizierten Anlass (z. B. Rücktritt, Amtsniederlegung, Sanierung, StaRUG, M&A)
+ * darf mathematisch NIEMALS ein Match-Score > 0% erhalten!
  */
-export function computeTargetMatchScore(companyName, rawScore = null) {
+export function computeTargetMatchScore(companyName, rawScore = null, eventOrContext = null, role = null) {
+  if (isPlaceholderCompany(companyName)) return 0;
   if (isVendorCompany(companyName)) return 25;
-  if (typeof rawScore === 'number' && !isNaN(rawScore)) return rawScore;
+
+  let eventText = '';
+  let roleText = role || '';
+
+  if (typeof eventOrContext === 'string') {
+    eventText = eventOrContext;
+  } else if (eventOrContext && typeof eventOrContext === 'object') {
+    eventText = eventOrContext.situation || 
+                eventOrContext.event_fact || 
+                eventOrContext.content || 
+                eventOrContext.title || 
+                '';
+    if (!roleText && eventOrContext.role) roleText = eventOrContext.role;
+  }
+
+  // 1. HARTER EVENT-GATEKEEPER (Zero-Tolerance Pflichtfeld):
+  if (eventText) {
+    const clean = eventText.toLowerCase().trim();
+    if (!clean || clean === 'keine angabe' || clean === 'none' || clean === 'null') {
+      return 0;
+    }
+    if (!hasConcreteVerifiedAnlass(clean)) {
+      return 0;
+    }
+  }
+
+  // 2. NEGATIV-FILTER AUF ROLLENEBENE (SENIORITY CHECK):
+  if (roleText && isBlacklistedRole(roleText)) {
+    return 0;
+  }
+  if (eventText && isBlacklistedRole(eventText)) {
+    return 0;
+  }
+
+  if (typeof rawScore === 'number' && !isNaN(rawScore)) return Math.max(0, rawScore);
   return 75;
 }
 
 /**
  * Zentrale Schranke für Opportunities (Fail-Closed).
- * Stellt sicher, dass ein Lead zwingend:
- * 1. Kein Platzhalter ist (isPlaceholderCompany)
- * 2. Kein reiner Anbieter/Vendor ist (isVendorCompany)
- * 3. Nicht disqualifiziert ist (is_disqualified !== true && is_potential_buyer !== false)
- * 4. Einen Zielgruppen-/Lead-Score >= 50 aufweist
- * 
- * Wirft einen Error, falls die Kriterien verletzt werden.
- * 
- * @param {Object} data 
- * @returns {boolean} true falls qualifiziert
  */
 export function assertQualifiedOpportunity(data = {}) {
   const compName = (data.company_name || data.company || data.name || data.firmenname || '').trim();
+  const eventText = (data.situation || data.event || data.event_fact || data.content || data.title || '').trim();
   
   if (compName && isPlaceholderCompany(compName)) {
     throw new Error(`Opportunity rejected: "${compName}" ist ein Platzhalter oder Test-Eintrag.`);
@@ -558,6 +635,16 @@ export function assertQualifiedOpportunity(data = {}) {
     throw new Error('Opportunity rejected: PURE_MENTION ist kein Kaufsignal.');
   }
 
+  // 1. Harter Event-Gatekeeper
+  if (!eventText || eventText.toLowerCase() === 'keine angabe' || !hasConcreteVerifiedAnlass(eventText)) {
+    throw new Error('Opportunity rejected: Kein konkreter, verifizierter Anlass (Rücktritt, Amtsniederlegung, Sanierung, StaRUG, M&A) vorhanden.');
+  }
+
+  // 2. Seniority Check: Blacklist roles
+  if (isBlacklistedRole(eventText) || (data.role && isBlacklistedRole(data.role))) {
+    throw new Error('Opportunity rejected: Rolle unterhalb der Organ- und C-Level-Ebene.');
+  }
+
   const isVendor = compName ? isVendorCompany(compName) : false;
   const rawScore = typeof data.lead_score === 'number' 
     ? data.lead_score 
@@ -565,7 +652,7 @@ export function assertQualifiedOpportunity(data = {}) {
         ? data.target_group_match 
         : (typeof data.trigger_score === 'number' ? data.trigger_score : 75));
   
-  const matchScore = isVendor ? 25 : rawScore;
+  const matchScore = computeTargetMatchScore(compName, rawScore, eventText, data.role);
   const isExplicitNonBuyer = data.is_potential_buyer === false;
   const isDisqualified = Boolean(data.is_disqualified || isExplicitNonBuyer || isVendor || matchScore < 50);
 

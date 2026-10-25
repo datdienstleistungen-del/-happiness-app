@@ -3,11 +3,30 @@ import urllib.request
 import urllib.parse
 import json
 import uuid
+from datetime import datetime, timezone
 
 try:
-    from modules.feed_ingestion.config import DEFAULT_USER_ID, STATUS_PENDING_REVIEW
+    from modules.feed_ingestion.config import (
+        DEFAULT_USER_ID, STATUS_PENDING_REVIEW,
+        ROLE_BLACKLIST, ROLE_WHITELIST, MANDATORY_EVENT_KEYWORDS
+    )
 except ImportError:
-    from .config import DEFAULT_USER_ID, STATUS_PENDING_REVIEW
+    from .config import (
+        DEFAULT_USER_ID, STATUS_PENDING_REVIEW,
+        ROLE_BLACKLIST, ROLE_WHITELIST, MANDATORY_EVENT_KEYWORDS
+    )
+
+def is_text_blacklisted_role(text):
+    if not text:
+        return False
+    t = text.lower()
+    for b in ROLE_BLACKLIST:
+        if b.lower() in t:
+            # Check if an organ/c-level whitelist role is present
+            has_white = any(w.lower() in t for w in ROLE_WHITELIST)
+            if not has_white:
+                return True
+    return False
 
 def load_env():
     """Load environment variables from .env file if not present in os.environ."""
@@ -75,7 +94,7 @@ class SupabaseClient:
 
     def get_or_create_company(self, user_id, company_name, region="DACH"):
         """Find or create company in nexus_companies table."""
-        if not company_name or company_name in ("DACH Unternehmen", "UK Enterprise", "Schweizer Unternehmen"):
+        if not company_name or company_name.lower() in ("dach unternehmen", "uk enterprise", "schweizer unternehmen", "unternehmen"):
             return None
 
         clean_name = company_name.strip()
@@ -115,10 +134,24 @@ class SupabaseClient:
         return company_id
 
     def insert_opportunity(self, item, evaluation, user_id=DEFAULT_USER_ID):
-        """Insert vetted signal into nexus_opportunities as PENDING_REVIEW (inbox status)."""
-        source_url = item.get('url', '')
-        title = item.get('title', '')
-        company_name = item.get('company', 'Unternehmen')
+        """
+        Insert vetted signal into nexus_opportunities as PENDING_REVIEW (inbox status)
+        and synchronously link a relational nexus_trigger_events entry.
+        """
+        source_url = (item.get('url') or '').strip()
+        title = (item.get('title') or '').strip()
+        company_name = (item.get('company') or '').strip()
+        snippet = (item.get('snippet') or '').strip()
+
+        # Zero-Tolerance Gatekeeper: No missing event, no truncated URLs, no placeholders
+        if not title or title.lower() in ('keine angabe', 'none', 'null', 'unternehmen') or len(title) < 10:
+            return None, "DROPPED_NO_EVENT"
+        if not source_url or source_url.endswith('...') or source_url.endswith('…') or len(source_url) < 15:
+            return None, "DROPPED_INVALID_URL"
+        if not company_name or company_name.lower() in ('unternehmen', 'dach unternehmen', 'uk enterprise', 'schweizer unternehmen', 'null'):
+            return None, "DROPPED_NO_COMPANY"
+        if is_text_blacklisted_role(f"{title} {snippet}"):
+            return None, "DROPPED_BLACKLISTED_ROLE"
 
         if self.opportunity_exists(source_url, title):
             return None, "DUPLICATE"
@@ -127,18 +160,19 @@ class SupabaseClient:
 
         lead_score = int(evaluation.get('confidence_score', 0.85) * 100)
         opp_id = str(uuid.uuid4())
+        trigger_id = str(uuid.uuid4())
 
         situation_text = (
             f"[COMPANY]: {company_name}\n"
-            f"[KAUFSIGNAL]: {item.get('title', '')}\n\n"
-            f"{item.get('snippet', '')}"
+            f"[KAUFSIGNAL]: {title}\n\n"
+            f"{snippet}"
         )
 
         payload = {
             'id': opp_id,
             'user_id': user_id,
             'company_id': company_id,
-            'title': f"[{item.get('region', 'DACH')}] {company_name}: {item.get('title', '')}"[:250],
+            'title': f"[{item.get('region', 'DACH')}] {company_name}: {title}"[:250],
             'situation': situation_text,
             'relevance_logic': evaluation.get('relevance_logic', ''),
             'strategic_angle': evaluation.get('strategic_angle', ''),
@@ -162,7 +196,46 @@ class SupabaseClient:
             with urllib.request.urlopen(req, timeout=10) as resp:
                 created = json.loads(resp.read().decode('utf-8'))
                 if created and len(created) > 0:
-                    return created[0], "INSERTED"
+                    created_opp = created[0]
+                    # Also create trigger event and relational link
+                    try:
+                        trig_payload = {
+                            'id': trigger_id,
+                            'user_id': user_id,
+                            'title': title[:250],
+                            'content': situation_text,
+                            'company_name': company_name,
+                            'source': source_url,
+                            'source_url': source_url,
+                            'confidence_score': evaluation.get('confidence_score', 0.85),
+                            'trigger_score': lead_score,
+                            'signal_type': evaluation.get('category', 'ORGANVAKANZ & LEADERSHIP')
+                        }
+                        trig_req = urllib.request.Request(
+                            f"{self.base_rest}/nexus_trigger_events",
+                            data=json.dumps(trig_payload).encode('utf-8'),
+                            headers=self._headers(return_rep=True),
+                            method='POST'
+                        )
+                        with urllib.request.urlopen(trig_req, timeout=8) as trig_resp:
+                            pass
+
+                        link_payload = {
+                            'opportunity_id': opp_id,
+                            'trigger_id': trigger_id
+                        }
+                        link_req = urllib.request.Request(
+                            f"{self.base_rest}/nexus_opportunity_triggers",
+                            data=json.dumps(link_payload).encode('utf-8'),
+                            headers=self._headers(return_rep=True),
+                            method='POST'
+                        )
+                        with urllib.request.urlopen(link_req, timeout=8) as link_resp:
+                            pass
+                    except Exception as trig_err:
+                        print(f"[DB Trigger Link Error (non-fatal)] {trig_err}")
+
+                    return created_opp, "INSERTED"
         except urllib.error.HTTPError as e:
             err_msg = e.read().decode('utf-8', errors='ignore')
             print(f"[DB Insert Opportunity Error {e.code}] {err_msg}")
@@ -175,16 +248,16 @@ class SupabaseClient:
 
     def cleanup_stale_pending_opportunities(self, max_hours=48):
         """
-        Deletes all opportunities with review_status = 'pending' that are:
-        1. Older than max_hours, or
-        2. Match noise keywords (Misenso, Aluwag, Zirkus, Pizza, etc.)
+        Deep Zero-Tolerance Database Cleaner:
+        Deletes all pending/unreviewed opportunities that:
+        1. Have no valid event, empty situation, or 'Keine Angabe'.
+        2. Match role blacklist (Vertriebsleiter, Sales Manager, etc.).
+        3. Have truncated source URLs ending in '...'.
+        4. Match noise keywords (misenso, pizza, zirkus, etc.).
+        5. Are older than max_hours.
         Returns: (deleted_count, deleted_titles)
         """
-        from datetime import datetime, timezone
-        query = urllib.parse.urlencode({
-            'review_status': 'eq.pending',
-            'select': 'id,title,situation,created_at'
-        })
+        query = 'review_status=in.(pending,unreviewed,PENDING_REVIEW)&select=id,title,situation,source,created_at'
         req = urllib.request.Request(f"{self.base_rest}/nexus_opportunities?{query}", headers=self._headers())
         try:
             with urllib.request.urlopen(req, timeout=12) as resp:
@@ -204,13 +277,41 @@ class SupabaseClient:
 
         for item in pending:
             opp_id = item.get('id')
-            title = (item.get('title') or '').lower()
-            situation = (item.get('situation') or '').lower()
+            raw_title = item.get('title') or ''
+            title_lower = raw_title.lower()
+            raw_situation = item.get('situation') or ''
+            situation_lower = raw_situation.lower()
+            source = (item.get('source') or '').strip()
             created_at_str = item.get('created_at')
 
-            is_stale = False
-            # Check age
-            if created_at_str:
+            is_invalid = False
+            drop_reason = ""
+
+            # Check 1: Missing event or situation
+            if not raw_situation.strip() or not raw_title.strip() or raw_title.strip() == 'None':
+                is_invalid = True
+                drop_reason = "EMPTY_EVENT_OR_TITLE"
+            elif 'keine angabe' in title_lower or 'keine angabe' in situation_lower:
+                is_invalid = True
+                drop_reason = "KEINE_ANGABE"
+
+            # Check 2: Blacklisted roles (Seniority filter)
+            elif is_text_blacklisted_role(f"{raw_title} {raw_situation}"):
+                is_invalid = True
+                drop_reason = "BLACKLISTED_ROLE"
+
+            # Check 3: Truncated source URL
+            elif source.endswith('...') or source.endswith('…'):
+                is_invalid = True
+                drop_reason = "TRUNCATED_URL"
+
+            # Check 4: Noise keywords
+            elif any(k in title_lower or k in situation_lower for k in noise_keywords):
+                is_invalid = True
+                drop_reason = "NOISE_KEYWORD"
+
+            # Check 5: Age > max_hours
+            elif created_at_str:
                 try:
                     iso_clean = created_at_str.replace('Z', '+00:00')
                     dt = datetime.fromisoformat(iso_clean)
@@ -218,17 +319,14 @@ class SupabaseClient:
                         dt = dt.replace(tzinfo=timezone.utc)
                     age_hours = (now_utc - dt.astimezone(timezone.utc)).total_seconds() / 3600.0
                     if age_hours > max_hours:
-                        is_stale = True
+                        is_invalid = True
+                        drop_reason = f"AGE_OVER_{max_hours}H"
                 except Exception:
                     pass
 
-            # Check noise keywords
-            if any(k in title or k in situation for k in noise_keywords):
-                is_stale = True
-
-            if is_stale and opp_id:
+            if is_invalid and opp_id:
                 to_delete_ids.append(opp_id)
-                deleted_titles.append(item.get('title', ''))
+                deleted_titles.append(f"[{drop_reason}] {raw_title[:60]}")
 
         deleted_count = 0
         for opp_id in to_delete_ids:
@@ -243,5 +341,25 @@ class SupabaseClient:
                         deleted_count += 1
             except Exception as e:
                 print(f"[DB Delete Error {opp_id}] {e}")
+
+        # Also clean up dummy lead packages (sucht Vertriebsleiter / Baustoffindustrie)
+        try:
+            pkg_query = urllib.parse.urlencode({
+                'or': '(headline.ilike.*Vertriebsleiter*,headline.ilike.*Baustoff*,summary.ilike.*Vertriebsleiter*)',
+                'select': 'id,headline'
+            })
+            pkg_req = urllib.request.Request(f"{self.base_rest}/nexus_lead_packages?{pkg_query}", headers=self._headers())
+            with urllib.request.urlopen(pkg_req, timeout=8) as pkg_resp:
+                dummy_pkgs = json.loads(pkg_resp.read().decode('utf-8'))
+                for p in dummy_pkgs:
+                    del_p_req = urllib.request.Request(
+                        f"{self.base_rest}/nexus_lead_packages?id=eq.{p['id']}",
+                        headers=self._headers(),
+                        method='DELETE'
+                    )
+                    with urllib.request.urlopen(del_p_req, timeout=8) as del_p_resp:
+                        pass
+        except Exception as e:
+            print(f"[DB Package Cleanup Error] {e}")
 
         return deleted_count, deleted_titles
