@@ -204,31 +204,51 @@ export default function SalesWorkspacePage() {
 
   const handleMarkReviewed = async () => {
     if (!activeOpp?.id) return
+    const targetId = activeOpp.id
     setIsReviewSaving(true)
     try {
       const now = new Date().toISOString()
       const noteToSave = reviewNotes || 'Primärquelle verifiziert. Zielgruppe: Executive Search, Personalberater & Interim Manager. - Harro Goerndt'
       let updates = {
-        review_status: 'verified', // Zuverlässig auf 'verified' setzen gem. Anforderung
+        review_status: 'verified',
         review_notes: noteToSave,
         reviewed_at: now
       }
-      let saved = await db.updateOpportunity(activeOpp.id, updates)
+      let saved = await db.updateOpportunity(targetId, updates)
       if (!saved) {
-        // Fallback falls DB-Check-Constraint ('unreviewed', 'reviewed', 'rejected') aktiv ist:
         updates = {
           review_status: 'reviewed',
           review_notes: noteToSave,
           reviewed_at: now
         }
-        saved = await db.updateOpportunity(activeOpp.id, updates)
+        saved = await db.updateOpportunity(targetId, updates)
       }
-      // Zustand lokal aktualisieren OHNE Formular-Reset oder Neuladen
-      setActiveOpp(prev => ({ ...prev, ...updates, review_status: 'verified', review_notes: noteToSave }))
-      if (fullContext) {
-        setFullContext(prev => ({ ...prev, ...updates, review_status: 'verified', review_notes: noteToSave }))
+
+      // Nächsten Fall im Prüfungsstapel ermitteln
+      const resolveComp = (o) => resolveTriggerCompanyName(
+        o.triggers?.[0]?.nexus_trigger_events,
+        o,
+        o.nexus_companies?.name || o.company?.name || ''
+      );
+      const pendingOpps = (opportunities || []).filter(o => 
+        o.id !== targetId &&
+        !isPlaceholderCompany(resolveComp(o)) &&
+        (o.review_status === 'pending' || o.review_status === 'PENDING_REVIEW' || o.review_status === 'unreviewed')
+      );
+      const nextOpp = pendingOpps.length > 0 ? pendingOpps[0] : null;
+
+      if (refreshData) await refreshData()
+
+      if (nextOpp) {
+        setActiveOppId(nextOpp.id)
+        setActiveOpp(nextOpp)
+        setActiveTab('pruefung')
+      } else {
+        setActiveOpp(prev => ({ ...prev, ...updates, review_status: 'verified', review_notes: noteToSave }))
+        if (fullContext) {
+          setFullContext(prev => ({ ...prev, ...updates, review_status: 'verified', review_notes: noteToSave }))
+        }
       }
-      // Checkliste dauerhaft auf 'pass' arretieren
       setReviewChecklist({
         duplicate: 'pass',
         plausibility: 'pass',
@@ -236,7 +256,6 @@ export default function SalesWorkspacePage() {
         date: 'pass',
         relevance: 'pass'
       })
-      // WICHTIG: KEIN refreshData() aufrufen, um Formular-Reset und Re-Mount zu verhindern
     } catch (err) {
       console.error('Error marking opportunity as verified:', err)
     } finally {
@@ -244,7 +263,7 @@ export default function SalesWorkspacePage() {
     }
   }
 
-  // HITL Workflow: Signal aus Posteingang in aktive Pipeline übernehmen
+  // HITL Workflow: Signal aus Posteingang in aktive Pipeline übernehmen (Bestanden)
   const handleApproveToPipeline = async (oppId = null, e = null) => {
     if (e) e.stopPropagation()
     const targetId = oppId || activeOpp?.id
@@ -268,20 +287,40 @@ export default function SalesWorkspacePage() {
         saved = await db.updateOpportunity(targetId, updates)
       }
 
-      if (activeOpp?.id === targetId) {
-        setActiveOpp(prev => ({ ...prev, ...updates, review_status: 'verified', review_notes: noteToSave }))
-        if (fullContext) {
-          setFullContext(prev => ({ ...prev, ...updates, review_status: 'verified', review_notes: noteToSave }))
-        }
-        setReviewChecklist({
-          duplicate: 'pass',
-          plausibility: 'pass',
-          source: 'pass',
-          date: 'pass',
-          relevance: 'pass'
-        })
-      }
+      // Nächsten Fall im Prüfungsstapel ermitteln
+      const resolveComp = (o) => resolveTriggerCompanyName(
+        o.triggers?.[0]?.nexus_trigger_events,
+        o,
+        o.nexus_companies?.name || o.company?.name || ''
+      );
+      const pendingOpps = (opportunities || []).filter(o => 
+        o.id !== targetId &&
+        !isPlaceholderCompany(resolveComp(o)) &&
+        (o.review_status === 'pending' || o.review_status === 'PENDING_REVIEW' || o.review_status === 'unreviewed')
+      );
+      const nextOpp = pendingOpps.length > 0 ? pendingOpps[0] : null;
+
       if (refreshData) await refreshData()
+
+      if (nextOpp) {
+        setActiveOppId(nextOpp.id)
+        setActiveOpp(nextOpp)
+        setActiveTab('pruefung')
+      } else {
+        if (activeOpp?.id === targetId) {
+          setActiveOpp(prev => ({ ...prev, ...updates, review_status: 'verified', review_notes: noteToSave }))
+          if (fullContext) {
+            setFullContext(prev => ({ ...prev, ...updates, review_status: 'verified', review_notes: noteToSave }))
+          }
+        }
+      }
+      setReviewChecklist({
+        duplicate: 'pass',
+        plausibility: 'pass',
+        source: 'pass',
+        date: 'pass',
+        relevance: 'pass'
+      })
     } catch (err) {
       console.error('Error approving opportunity to pipeline:', err)
     } finally {
@@ -289,7 +328,7 @@ export default function SalesWorkspacePage() {
     }
   }
 
-  // HITL Workflow: Signal verwerfen
+  // HITL Workflow: Signal verwerfen (Archivieren)
   const handleDismissOpportunity = async (oppId = null, e = null) => {
     if (e) e.stopPropagation()
     const targetId = oppId || activeOpp?.id
@@ -305,13 +344,33 @@ export default function SalesWorkspacePage() {
       }
       await db.updateOpportunity(targetId, updates)
 
-      if (activeOpp?.id === targetId) {
-        setActiveOpp(prev => ({ ...prev, ...updates }))
-        if (fullContext) {
-          setFullContext(prev => ({ ...prev, ...updates }))
+      // Nächsten Fall im Prüfungsstapel ermitteln
+      const resolveComp = (o) => resolveTriggerCompanyName(
+        o.triggers?.[0]?.nexus_trigger_events,
+        o,
+        o.nexus_companies?.name || o.company?.name || ''
+      );
+      const pendingOpps = (opportunities || []).filter(o => 
+        o.id !== targetId &&
+        !isPlaceholderCompany(resolveComp(o)) &&
+        (o.review_status === 'pending' || o.review_status === 'PENDING_REVIEW' || o.review_status === 'unreviewed')
+      );
+      const nextOpp = pendingOpps.length > 0 ? pendingOpps[0] : null;
+
+      if (refreshData) await refreshData()
+
+      if (nextOpp) {
+        setActiveOppId(nextOpp.id)
+        setActiveOpp(nextOpp)
+        setActiveTab('pruefung')
+      } else {
+        if (activeOpp?.id === targetId) {
+          setActiveOpp(prev => ({ ...prev, ...updates }))
+          if (fullContext) {
+            setFullContext(prev => ({ ...prev, ...updates }))
+          }
         }
       }
-      if (refreshData) await refreshData()
     } catch (err) {
       console.error('Error dismissing opportunity:', err)
     } finally {
@@ -396,6 +455,7 @@ export default function SalesWorkspacePage() {
 
   const handleReject = async () => {
     if (!activeOpp?.id) return
+    const targetId = activeOpp.id
     setIsReviewSaving(true)
     try {
       const now = new Date().toISOString()
@@ -404,9 +464,30 @@ export default function SalesWorkspacePage() {
         review_notes: reviewNotes,
         reviewed_at: now
       }
-      await db.updateOpportunity(activeOpp.id, updates)
-      setActiveOpp(prev => ({ ...prev, ...updates }))
+      await db.updateOpportunity(targetId, updates)
+
+      // Nächsten Fall im Prüfungsstapel ermitteln
+      const resolveComp = (o) => resolveTriggerCompanyName(
+        o.triggers?.[0]?.nexus_trigger_events,
+        o,
+        o.nexus_companies?.name || o.company?.name || ''
+      );
+      const pendingOpps = (opportunities || []).filter(o => 
+        o.id !== targetId &&
+        !isPlaceholderCompany(resolveComp(o)) &&
+        (o.review_status === 'pending' || o.review_status === 'PENDING_REVIEW' || o.review_status === 'unreviewed')
+      );
+      const nextOpp = pendingOpps.length > 0 ? pendingOpps[0] : null;
+
       if (refreshData) await refreshData()
+
+      if (nextOpp) {
+        setActiveOppId(nextOpp.id)
+        setActiveOpp(nextOpp)
+        setActiveTab('pruefung')
+      } else {
+        setActiveOpp(prev => ({ ...prev, ...updates }))
+      }
     } catch (err) {
       console.error('Error rejecting opportunity:', err)
     } finally {
@@ -1489,6 +1570,9 @@ export default function SalesWorkspacePage() {
                     onClick={() => {
                       setActiveOppId(opp.id);
                       setActiveOpp(opp);
+                      if (opp.review_status === 'pending' || opp.review_status === 'PENDING_REVIEW' || opp.review_status === 'unreviewed' || queueFilter === 'inbox') {
+                        setActiveTab('pruefung');
+                      }
                     }}
                     style={{ cursor: 'pointer' }}
                   >
@@ -1559,7 +1643,7 @@ export default function SalesWorkspacePage() {
                             title="In Pipeline übernehmen"
                             onClick={(e) => handleApproveToPipeline(opp.id, e)}
                           >
-                            <Check size={12} /> Übernehmen
+                            <Check size={12} /> Bestanden
                           </button>
                           <button
                             type="button"
@@ -1746,7 +1830,7 @@ export default function SalesWorkspacePage() {
                           }}
                           title="Signal freigeben und in aktive Pipeline übernehmen (Chefsache)"
                         >
-                          <Check size={13} /> In Pipeline übernehmen
+                          <Check size={13} /> Bestanden
                         </button>
                         <button
                           type="button"
@@ -1846,7 +1930,7 @@ export default function SalesWorkspacePage() {
                       gap: '5px'
                     }}
                   >
-                    <Check size={14} /> In Pipeline übernehmen
+                    <Check size={14} /> Bestanden
                   </button>
                   <button
                     type="button"
