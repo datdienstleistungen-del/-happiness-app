@@ -3,46 +3,46 @@
    ========================================================================== */
 
 :root {
-  --bg-darkest: #050608;
-  --bg-dark: #0a0c0f;
-  --bg-card: #11141a;
-  --bg-card-hover: #171b24;
-  --bg-secondary: #0a0c0f;
-  --bg-surface: #11141a;
-  --bg-input: #0e1015;
-  --bg-elevated: #11141a;
-  --bg: #050608;
-  --bg-body: #050608;
+  --bg-darkest: #f8fafc;
+  --bg-dark: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-surface: #ffffff;
+  --bg-input: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg: #f8fafc;
+  --bg-body: #f8fafc;
 
-  --border-subtle: #1e232d;
-  --border-medium: #2d3544;
-  --border-accent: #4a5568;
-  --border: #1e232d;
-  --border-color: #1e232d;
-  --border-light: #2d3544;
+  --border-subtle: #e2e8f0;
+  --border-medium: #cbd5e1;
+  --border-accent: #94a3b8;
+  --border: #e2e8f0;
+  --border-color: #e2e8f0;
+  --border-light: #e2e8f0;
 
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
   --text-muted: #64748b;
   --text-tertiary: #64748b;
-  --text: #f8fafc;
+  --text: #0f172a;
 
-  --accent-blue: #38bdf8;
-  --accent-silver: #cbd5e1;
-  --accent-emerald: #38bdf8;
-  --color-brand: #38bdf8;
-  --color-koralle: #38bdf8;
-  --color-petrol: #38bdf8;
-  --color-mint: #38bdf8;
-  --primary: #38bdf8;
-  --primary-color: #38bdf8;
-  --primary-light: #7dd3fc;
-  --primary-dark: #0284c7;
+  --accent-blue: #0284c7;
+  --accent-silver: #64748b;
+  --accent-emerald: #059669;
+  --color-brand: #0284c7;
+  --color-koralle: #0284c7;
+  --color-petrol: #0284c7;
+  --color-mint: #059669;
+  --primary: #0284c7;
+  --primary-color: #0284c7;
+  --primary-light: #0369a1;
+  --primary-dark: #075985;
 
-  --success: #38bdf8;
-  --danger: #ef4444;
-  --warning: #f59e0b;
-  --gradient: linear-gradient(135deg, #0a0c0f, #11141a);
+  --success: #059669;
+  --danger: #dc2626;
+  --warning: #d97706;
+  --gradient: linear-gradient(135deg, #ffffff, #f8fafc);
 }
 
 * {
@@ -52,7 +52,7 @@
 }
 
 html {
-  background-color: var(--bg-darkest);
+  background-color: var(--bg);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -60,12 +60,8 @@ html {
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background-color: var(--bg-darkest);
-  background-image: url('/assets/DAT_website_hintergrund.jpg');
-  background-attachment: fixed;
-  background-size: cover;
-  background-position: center center;
-  background-repeat: no-repeat;
+  background-color: #f8fafc;
+  background-image: none;
   color: var(--text-primary);
   min-height: 100vh;
   overflow-x: hidden;
@@ -76,7 +72,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: transparent;
+  background: #f8fafc;
 }
 
 a {
@@ -86,7 +82,7 @@ a {
 }
 
 a:hover {
-  color: #7dd3fc;
+  color: #0369a1;
 }
 
 button {

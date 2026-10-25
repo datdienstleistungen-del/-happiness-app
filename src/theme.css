@@ -1,13 +1,13 @@
 :root {
-  --color-petrol: #38bdf8;
-  --color-koralle: #38bdf8;
-  --color-mint: #38bdf8;
-  --color-amber: #f59e0b;
-  --color-border: #1e232d;
-  --color-text-secondary: #94a3b8;
-  --bg-card: #11141a;
-  --bg-secondary: #0a0c0f;
-  --bg: #050608;
-  --accent-emerald: #38bdf8;
-  --success: #38bdf8;
+  --color-petrol: #0284c7;
+  --color-koralle: #0284c7;
+  --color-mint: #059669;
+  --color-amber: #d97706;
+  --color-border: #e2e8f0;
+  --color-text-secondary: #334155;
+  --bg-card: #ffffff;
+  --bg-secondary: #f1f5f9;
+  --bg: #f8fafc;
+  --accent-emerald: #059669;
+  --success: #059669;
 }

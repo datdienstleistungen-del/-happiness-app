@@ -1,12 +1,14 @@
 .main-content {
   flex: 1;
   width: 100%;
-  background: transparent !important;
+  background: #f8fafc !important;
+  color: #0f172a;
 }
 
 .main-content.full {
   width: 100%;
-  background: transparent !important;
+  background: #f8fafc !important;
+  color: #0f172a;
 }
 
 .loading-screen {
@@ -501,14 +503,12 @@
   transition: all 0.2s;
 }
 
-/* Sidebar */
+/* Sidebar - High-End Corporate Dark Marine/Graphit */
 .sidebar {
   width: 240px;
   height: 100vh;
-  background: rgba(10, 12, 15, 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-right: 1px solid var(--border-subtle, #1e232d);
+  background: #0b1329;
+  border-right: 1px solid #1e293b;
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -516,7 +516,7 @@
   top: 0;
   z-index: 200;
   transition: width 0.3s ease;
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 4px 0 24px rgba(15, 23, 42, 0.15);
 }
 
 .sidebar.collapsed {
@@ -528,8 +528,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 18px 20px;
-  border-bottom: 1px solid var(--border-subtle, #1e232d);
-  background: var(--bg-darkest, #050608);
+  border-bottom: 1px solid #1e293b;
+  background: #080d1a;
 }
 
 .sidebar-brand {
@@ -537,7 +537,7 @@
   align-items: center;
   gap: 10px;
   text-decoration: none !important;
-  color: var(--text-primary, #f8fafc);
+  color: #f8fafc;
   font-weight: 700;
   font-size: 1.1rem;
   letter-spacing: -0.01em;
@@ -546,7 +546,7 @@
 .sidebar-toggle {
   background: none;
   border: none;
-  color: var(--text-muted, #64748b);
+  color: #94a3b8;
   font-size: 1.2rem;
   cursor: pointer;
   padding: 4px 8px;
@@ -555,8 +555,8 @@
 }
 
 .sidebar-toggle:hover {
-  background: var(--bg-card, #11141a);
-  color: var(--accent-blue, #38bdf8);
+  background: #1e293b;
+  color: #38bdf8;
 }
 
 .sidebar-nav {
@@ -571,23 +571,23 @@
   gap: 12px;
   padding: 10px 14px;
   border-radius: 8px;
-  color: var(--text-secondary, #94a3b8);
+  color: #94a3b8;
   text-decoration: none !important;
   transition: all 0.2s ease;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
   font-weight: 500;
   font-size: 0.9rem;
 }
 
 .sidebar-link:hover {
-  background: var(--bg-card-hover, #171b24);
-  color: var(--text-primary, #f8fafc);
+  background: #1e293b;
+  color: #f8fafc;
 }
 
 .sidebar-link.active {
-  background: rgba(56, 189, 248, 0.12);
-  color: var(--accent-blue, #38bdf8);
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  background: rgba(2, 132, 199, 0.22);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
   font-weight: 600;
 }
 
@@ -607,14 +607,14 @@
 
 .sidebar-divider {
   height: 1px;
-  background: var(--border-subtle, #1e232d);
+  background: #1e293b;
   margin: 12px 14px;
 }
 
 .sidebar-section-title {
   padding: 10px 14px 4px;
   font-size: 0.72rem;
-  color: var(--text-muted, #64748b);
+  color: #64748b;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -622,8 +622,8 @@
 
 .sidebar-footer {
   padding: 14px;
-  border-top: 1px solid var(--border-subtle, #1e232d);
-  background: var(--bg-darkest, #050608);
+  border-top: 1px solid #1e293b;
+  background: #080d1a;
 }
 
 .sidebar-legal {
@@ -632,30 +632,18 @@
   gap: 8px;
   margin-bottom: 10px;
   padding-bottom: 10px;
-  border-bottom: 1px solid var(--border-subtle, #1e232d);
+  border-bottom: 1px solid #1e293b;
 }
 
 .sidebar-legal-link {
   font-size: 0.72rem;
-  color: var(--text-muted, #64748b);
+  color: #64748b;
   text-decoration: none;
   transition: color 0.2s;
 }
 
 .sidebar-legal-link:hover {
-  color: var(--accent-blue, #38bdf8);
-}
-
-.sidebar-lang {
-  width: 100%;
-  padding: 8px 10px;
-  background: var(--bg-input, #0e1015);
-  border: 1px solid var(--border-subtle, #1e232d);
-  border-radius: 8px;
-  color: var(--text-primary, #f8fafc);
-  font-size: 0.85rem;
-  margin-bottom: 12px;
-  cursor: pointer;
+  color: #38bdf8;
 }
 
 .sidebar-user {
@@ -668,12 +656,12 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--bg-card, #11141a);
-  border: 1px solid var(--border-medium, #2d3544);
+  background: #1e293b;
+  border: 1px solid #334155;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--accent-blue, #38bdf8);
+  color: #38bdf8;
   font-weight: 700;
   font-size: 0.9rem;
   flex-shrink: 0;
@@ -685,7 +673,7 @@
 }
 
 .sidebar-user-name {
-  color: var(--text-primary, #f8fafc);
+  color: #f8fafc;
   font-size: 0.85rem;
   white-space: nowrap;
   overflow: hidden;

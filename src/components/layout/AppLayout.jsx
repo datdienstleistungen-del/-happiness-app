@@ -1,16 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import {
-  Heart, Briefcase, Settings,
-  User, ChevronLeft, ChevronRight, Menu, Radar, Target, LayoutDashboard
+  Briefcase,
+  Radar,
+  ShieldCheck,
+  Archive,
+  User,
+  ChevronLeft,
+  ChevronRight,
+  Menu
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { useLanguage, LANGUAGES } from '../../i18n/translations.jsx'
+import { useLanguage } from '../../i18n/translations.jsx'
 import Logo from '../Logo'
 
 function Sidebar({ mobileOpen, setMobileOpen }) {
   const { user, profile, signOut } = useAuth()
-  const { lang, setLang, t } = useLanguage()
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
@@ -49,15 +55,12 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
     navigate('/login')
   }
 
-  const nexusLinks = [
-    { to: '/nexus/sales-workspace', icon: Briefcase, label: t('nexus.nav.salesWorkspace', 'Sales Workspace') },
-    { to: '/nexus/lead-radar', icon: Radar, label: t('nexus.nav.leadRadar', 'Lead Radar') },
-    { to: '/nexus/events', icon: Target, label: t('nexus.nav.events', 'Mandatsereignisse') },
-    { to: '/nexus/dashboard', icon: LayoutDashboard, label: t('nexus.nav.dashboard', 'NeXus Dashboard') },
-  ]
-
-  const coachLinks = [
-    { to: '/coach', icon: Heart, label: t('nexus.nav.coach', 'DealCoach') },
+  // 4 exklusive Mandats-Workstations
+  const mandateLinks = [
+    { to: '/nexus/sales-workspace', icon: Briefcase, label: 'Mandats-Desk' },
+    { to: '/nexus/events', icon: Radar, label: 'Primär-Radar' },
+    { to: '/coach', icon: ShieldCheck, label: 'DealCoach' },
+    { to: '/nexus/lead-radar', icon: Archive, label: 'Mandats-Archiv' },
   ]
 
   const renderLinks = (links) => links.map((link) => (
@@ -79,8 +82,8 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
               style={{
                 fontSize: '9px',
                 fontWeight: '700',
-                background: 'var(--accent-blue, #38bdf8)',
-                color: '#050608',
+                background: '#0284c7',
+                color: '#ffffff',
                 padding: '1px 5px',
                 borderRadius: '4px',
                 marginLeft: '6px',
@@ -113,115 +116,78 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
           }}>
             {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
-      </div>
-
-      <nav className="sidebar-nav">
-        {!collapsed && (
-          <div className="sidebar-section-title" style={{ color: 'var(--accent-blue, #38bdf8)', fontWeight: '700' }}>
-            {t('nexus.nav.nexus', 'NeXus')}
-          </div>
-        )}
-        {renderLinks(nexusLinks)}
-
-        <div className="sidebar-divider"></div>
-        {!collapsed && (
-          <div className="sidebar-section-title">
-            {t('nexus.nav.assistant', 'Assistent')}
-          </div>
-        )}
-        {renderLinks(coachLinks)}
-
-      </nav>
-
-      <div className="sidebar-footer">
-        {!collapsed && (
-          <div className="sidebar-legal">
-            <Link to="/legal?tab=impressum" className="sidebar-legal-link">{t('legal.impressum')}</Link>
-            <Link to="/legal?tab=datenschutz" className="sidebar-legal-link">{t('legal.privacy')}</Link>
-            <Link to="/legal?tab=agb" className="sidebar-legal-link">{t('legal.terms')}</Link>
-          </div>
-        )}
-        <select
-          className="sidebar-lang"
-          value={lang}
-          onChange={(e) => setLang(e.target.value)}
-        >
-          {LANGUAGES.map((l) => (
-            <option key={l.code} value={l.code}>{l.flag} {l.label}</option>
-          ))}
-        </select>
-
-        <div className="sidebar-user">
-          {user ? (
-            <>
-              <div className="sidebar-avatar">
-                {(profile?.name || user?.email || '?')[0].toUpperCase()}
-              </div>
-              {!collapsed && (
-                <div className="sidebar-user-info">
-                  <div className="sidebar-user-name">{profile?.name || user?.email}</div>
-                  <button className="sidebar-logout" onClick={handleSignOut}>{t('nav.logout', 'Abmelden')}</button>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <div className="sidebar-avatar" onClick={() => navigate('/login')} style={{ cursor: 'pointer', background: 'var(--bg-card, #11141a)', border: '1px solid var(--border-medium, #2d3544)', color: 'var(--accent-blue, #38bdf8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <User size={16} />
-              </div>
-              {!collapsed && (
-                <div className="sidebar-user-info">
-                  <div className="sidebar-user-name">
-                    {t('nexus.nav.guestMode', 'Gast-Modus')}
-                  </div>
-                  <button className="sidebar-logout" onClick={() => navigate('/login')} style={{ color: 'var(--accent-blue, #38bdf8)', fontWeight: 'bold' }}>{t('auth.login')}</button>
-                </div>
-              )}
-            </>
-          )}
         </div>
-      </div>
-    </aside>
+
+        <nav className="sidebar-nav">
+          {renderLinks(mandateLinks)}
+        </nav>
+
+        <div className="sidebar-footer">
+          {!collapsed && (
+            <div className="sidebar-legal" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #1e293b' }}>
+              <Link to="/legal?tab=impressum" className="sidebar-legal-link" style={{ fontSize: '0.72rem', color: '#64748b' }}>Impressum</Link>
+              <span style={{ color: '#334155', fontSize: '0.72rem' }}>·</span>
+              <Link to="/legal?tab=datenschutz" className="sidebar-legal-link" style={{ fontSize: '0.72rem', color: '#64748b' }}>Datenschutz</Link>
+            </div>
+          )}
+
+          <div className="sidebar-user">
+            {user ? (
+              <>
+                <div className="sidebar-avatar">
+                  {(profile?.name || user?.email || '?')[0].toUpperCase()}
+                </div>
+                {!collapsed && (
+                  <div className="sidebar-user-info">
+                    <div className="sidebar-user-name">{profile?.name || user?.email}</div>
+                    <button className="sidebar-logout" onClick={handleSignOut}>{t('nav.logout', 'Abmelden')}</button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="sidebar-avatar" onClick={() => navigate('/login')} style={{ cursor: 'pointer', background: '#1e293b', border: '1px solid #334155', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <User size={16} />
+                </div>
+                {!collapsed && (
+                  <div className="sidebar-user-info">
+                    <div className="sidebar-user-name">
+                      Gast-Modus
+                    </div>
+                    <button className="sidebar-logout" onClick={() => navigate('/login')} style={{ color: '#38bdf8', fontWeight: 'bold' }}>Anmelden</button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </aside>
     </>
   )
 }
 
 function MobileBar() {
-  const { lang, setLang } = useLanguage()
   const location = useLocation()
 
   return (
-    <>
-      <nav className="mobile-bottom-nav">
-        <Link to="/nexus/sales-workspace" className={`mobile-nav-link ${location.pathname === '/nexus/sales-workspace' ? 'active' : ''}`}>
-          <Briefcase size={20} />
-          <span>Workspace</span>
-        </Link>
-        <Link to="/nexus/lead-radar" className={`mobile-nav-link ${location.pathname === '/nexus/lead-radar' ? 'active' : ''}`}>
-          <Radar size={20} />
-          <span>Radar</span>
-        </Link>
-        <Link to="/nexus/events" className={`mobile-nav-link ${location.pathname === '/nexus/events' ? 'active' : ''}`}>
-          <Target size={20} />
-          <span>Events</span>
-        </Link>
-        <Link to="/coach" className={`mobile-nav-link ${location.pathname === '/coach' ? 'active' : ''}`}>
-          <Heart size={20} />
-          <span>DealCoach</span>
-        </Link>
-      </nav>
-      <div className="mobile-lang-bar">
-        <select
-          className="mobile-lang-select"
-          value={lang}
-          onChange={(e) => setLang(e.target.value)}
-        >
-          {LANGUAGES.map((l) => (
-            <option key={l.code} value={l.code}>{l.flag} {l.label}</option>
-          ))}
-        </select>
-      </div>
-    </>
+    <nav className="mobile-bottom-nav">
+      <Link to="/nexus/sales-workspace" className={`mobile-nav-link ${location.pathname === '/nexus/sales-workspace' ? 'active' : ''}`}>
+        <Briefcase size={20} />
+        <span>Mandats-Desk</span>
+      </Link>
+      <Link to="/nexus/events" className={`mobile-nav-link ${location.pathname === '/nexus/events' ? 'active' : ''}`}>
+        <Radar size={20} />
+        <span>Primär-Radar</span>
+      </Link>
+      <Link to="/coach" className={`mobile-nav-link ${location.pathname === '/coach' ? 'active' : ''}`}>
+        <ShieldCheck size={20} />
+        <span>DealCoach</span>
+      </Link>
+      <Link to="/nexus/lead-radar" className={`mobile-nav-link ${location.pathname === '/nexus/lead-radar' ? 'active' : ''}`}>
+        <Archive size={20} />
+        <span>Archiv</span>
+      </Link>
+    </nav>
   )
 }
 

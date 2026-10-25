@@ -4,7 +4,7 @@ import {
   Target, Send, ShieldAlert, Sparkles, Trash2, ArrowRight, ArrowUp, 
   Check, RefreshCw, Paperclip, X, FileText, TrendingUp, Users, 
   AlertCircle, MessageSquare, ArrowLeft, FileCheck, Image as ImageIcon, ExternalLink,
-  Mic, MicOff, Volume2, VolumeX, Radio, Copy
+  Mic, MicOff, Volume2, VolumeX, Radio, Copy, ShieldCheck
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -592,35 +592,19 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
     >
       <header className="nexus-coach-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button
-            className="nexus-coach-clear-btn"
-            onClick={onClose || (() => navigate(-1))}
-            title="Schließen"
-          >
-            <X size={18} />
-          </button>
           <div className="nexus-coach-brand">
             <div className="nexus-coach-icon">
-              <Target size={22} />
+              <ShieldCheck size={22} />
             </div>
             <div className="nexus-coach-info">
-              <h1>{currentLead ? `DealCoach: ${currentLead.nexus_companies?.name || 'Mandatsfall'}` : 'NeXus DealCoach'}</h1>
+              <h1>{currentLead ? `DealCoach: ${currentLead.nexus_companies?.name || 'Mandatsfall'}` : 'DealCoach'}</h1>
               <span className="nexus-coach-subtitle">
-                {currentLead ? `Mandats- & Governance-Intelligence für ${currentLead.nexus_companies?.name || 'Mandatsfall'}` : 'Sparringspartner für Executive Mandate & Governance (Stufe 2)'}
+                {currentLead ? `Mandats- & Governance-Intelligence für ${currentLead.nexus_companies?.name || 'Mandatsfall'}` : 'Revisions- & Sparringspartner für Executive Mandate (Stufe 2)'}
               </span>
             </div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button 
-            className={`nexus-coach-voice-toggle ${autoVoice ? 'active' : ''}`}
-            onClick={toggleAutoVoice}
-            title={autoVoice ? "Automatische Sprachausgabe: Aktiv (Klicken zum Ausschalten)" : "Automatische Sprachausgabe: Aus (Klicken zum Einschalten)"}
-          >
-            {autoVoice ? <Volume2 size={16} /> : <VolumeX size={16} />}
-            <span>{autoVoice ? 'Voice An' : 'Voice Aus'}</span>
-          </button>
-
           {chatHistory.length > 0 && (
             <button 
               className="nexus-coach-clear-btn" 
@@ -636,6 +620,16 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
               <Trash2 size={16} />
             </button>
           )}
+
+          {onClose && (
+            <button
+              className="nexus-coach-clear-btn"
+              onClick={onClose}
+              title="Panel schließen"
+            >
+              <X size={18} />
+            </button>
+          )}
         </div>
       </header>
 
@@ -643,9 +637,9 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
         {chatHistory.length === 0 ? (
           <div className="nexus-coach-welcome">
             <div className="nexus-coach-welcome-icon">
-              <Target size={48} />
+              <ShieldCheck size={48} />
             </div>
-            <h2>{currentLead ? `DealCoach: ${currentLead.nexus_companies?.name || 'Mandat'}` : 'Willkommen beim NeXus DealCoach'}</h2>
+            <h2>{currentLead ? `DealCoach: ${currentLead.nexus_companies?.name || 'Mandat'}` : 'Willkommen beim DealCoach'}</h2>
             <p>{currentLead 
               ? `Ich analysiere das Mandat für ${currentLead.nexus_companies?.name || 'diesen Fall'}. Wähle ein Governance-Audit, erstelle einen diskreten C-Level Pitch oder prüfe den Handlungsdruck.`
               : 'Ich bin dein Sparringspartner für C-Level Organvakanzen, Interim-Mandate (CEO/CFO/CRO), Ad-hoc-Analysen und Governance-Strategien. Analysiere Mandatsanlässe, berechne Honorarbänder oder strukturiere diskrete Vorstands- & Aufsichtsratsansprachen.'
@@ -799,19 +793,6 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
       
       {(chatHistory.length > 0 || true) && (
         <footer className="nexus-coach-footer">
-          <div className="nexus-coach-quick-actions-row">
-            {MANDATE_QUICK_ACTIONS.map(action => (
-              <button
-                key={action.id}
-                className={`nexus-quick-action-sm ${activeQuickAction === action.id ? 'active' : ''}`}
-                onClick={() => handleQuickAction(action.id)}
-                title={action.label}
-              >
-                <action.icon size={16} />
-              </button>
-            ))}
-          </div>
-
           {/* Multiple Attachments Preview Bar */}
           {attachments.length > 0 && (
             <div className="nexus-coach-attachments-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
@@ -866,9 +847,20 @@ export default function CoachChatPage({ embeddedLeadId, onClose }) {
               type="button" 
               className={`nexus-coach-mic-btn ${isListening ? 'listening' : ''}`} 
               onClick={toggleListening} 
-              title={isListening ? "Spracherkennung beenden (Höre zu...)" : "Spracheingabe starten (Mikrofon - läuft unterbrechungsfrei)"}
+              title={isListening ? "Spracherkennung beenden (Höre zu...)" : "Spracheingabe starten (Mikrofon)"}
             >
               {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+            </button>
+
+            {/* Audio Voice Output (TTS) Toggle */}
+            <button 
+              type="button" 
+              className="nexus-coach-mic-btn"
+              onClick={toggleAutoVoice} 
+              title={autoVoice ? "Sprachausgabe: Aktiv (Klicken zum Ausschalten)" : "Sprachausgabe: Aus (Klicken zum Einschalten)"}
+              style={{ color: autoVoice ? 'var(--accent-blue, #0284c7)' : 'var(--text-muted, #64748b)' }}
+            >
+              {autoVoice ? <Volume2 size={18} /> : <VolumeX size={18} />}
             </button>
 
             {/* AI Text Polish & Spellcheck Button */}
