@@ -3,16 +3,42 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations.jsx'
 
+// Auto-Reload-Wrapper für dynamische Imports:
+// Fängt ChunkLoadErrors nach neuen Deployments ab und lädt die App frisch
+export function lazyWithRetry(componentImport) {
+  return lazy(async () => {
+    try {
+      return await componentImport()
+    } catch (error) {
+      const isChunkError = error && (
+        error.message?.includes('dynamically imported module') ||
+        error.message?.includes('Loading chunk') ||
+        error.message?.includes('chunkloaderror') ||
+        error.name === 'ChunkLoadError'
+      )
+      if (isChunkError) {
+        const lastReload = parseInt(sessionStorage.getItem('nexus_chunk_reload_time') || '0', 10)
+        const now = Date.now()
+        if (now - lastReload > 8000) {
+          sessionStorage.setItem('nexus_chunk_reload_time', now.toString())
+          window.location.reload()
+          return new Promise(() => {}) // Verhindert Render-Crash während Reload
+        }
+      }
+      throw error
+    }
+  })
+}
+
 // Lazy loaded core Mandate Origination Desk pages
-const LoginPage = lazy(() => import('../pages/LoginPage'))
-const SalesWorkspacePage = lazy(() => import('../pages/SalesWorkspacePage'))
-const LeadRadarPage = lazy(() => import('../pages/NexusLeadRadarPage'))
-const NexusDashboard = lazy(() => import('../pages/NexusDashboard'))
-const AngebotsanalysePage = lazy(() => import('../pages/AngebotsanalysePage'))
-const EventExplorerPage = lazy(() => import('../pages/EventExplorerPage'))
-const LeadIntelligencePage = lazy(() => import('../pages/NexusLeadIntelligencePage'))
-const CoachChatPage = lazy(() => import('../pages/CoachChatPage'))
-const LegalPage = lazy(() => import('../pages/LegalPage'))
+const LoginPage = lazyWithRetry(() => import('../pages/LoginPage'))
+const SalesWorkspacePage = lazyWithRetry(() => import('../pages/SalesWorkspacePage'))
+const LeadRadarPage = lazyWithRetry(() => import('../pages/NexusLeadRadarPage'))
+const NexusDashboard = lazyWithRetry(() => import('../pages/NexusDashboard'))
+const EventExplorerPage = lazyWithRetry(() => import('../pages/EventExplorerPage'))
+const LeadIntelligencePage = lazyWithRetry(() => import('../pages/NexusLeadIntelligencePage'))
+const CoachChatPage = lazyWithRetry(() => import('../pages/CoachChatPage'))
+const LegalPage = lazyWithRetry(() => import('../pages/LegalPage'))
 
 function ProtectedRoute({ children }) {
   const { user, profile, loading } = useAuth()
@@ -44,11 +70,18 @@ export default function AppRoutes() {
         <Route path="/nexus/sales-workspace" element={<ProtectedRoute><SalesWorkspacePage /></ProtectedRoute>} />
         <Route path="/nexus/lead-radar" element={<ProtectedRoute><LeadRadarPage /></ProtectedRoute>} />
         <Route path="/nexus/dashboard" element={<ProtectedRoute><NexusDashboard /></ProtectedRoute>} />
-        <Route path="/nexus/angebotsanalyse" element={<ProtectedRoute><AngebotsanalysePage /></ProtectedRoute>} />
         <Route path="/nexus/events" element={<ProtectedRoute><EventExplorerPage /></ProtectedRoute>} />
         <Route path="/nexus/lead-intelligence" element={<ProtectedRoute><LeadIntelligencePage /></ProtectedRoute>} />
         <Route path="/nexus/sales-workspace/coach/:leadId?" element={<ProtectedRoute><CoachChatPage /></ProtectedRoute>} />
         <Route path="/coach" element={<ProtectedRoute><CoachChatPage /></ProtectedRoute>} />
+
+        {/* Bereinigung alter / fremder Routen -> Saubere Weiterleitung in den Sales Workspace */}
+        <Route path="/nexus/angebotsanalyse" element={<Navigate to="/nexus/sales-workspace" replace />} />
+        <Route path="/angebotsanalyse" element={<Navigate to="/nexus/sales-workspace" replace />} />
+        <Route path="/kalkulation*" element={<Navigate to="/nexus/sales-workspace" replace />} />
+        <Route path="/handwerk*" element={<Navigate to="/nexus/sales-workspace" replace />} />
+        <Route path="/video*" element={<Navigate to="/nexus/sales-workspace" replace />} />
+        <Route path="/capcut*" element={<Navigate to="/nexus/sales-workspace" replace />} />
 
         {/* Compliance & Rechtliches */}
         <Route path="/legal" element={<LegalPage />} />

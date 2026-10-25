@@ -26,6 +26,28 @@
 [build.environment]
   NODE_VERSION = "22"
 
+# Cache-Control: index.html nie cachen, damit neue Asset-Hashes sofort greifen
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma = "no-cache"
+    Expires = "0"
+
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma = "no-cache"
+    Expires = "0"
+
+# Hashed Assets dürfen im Cache bleiben (immutable)
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+
 
 
 [[redirects]]

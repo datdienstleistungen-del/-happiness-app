@@ -939,8 +939,8 @@ export default function NexusLeadRadarPage() {
                 <RefreshCw size={15} className={loading || scanStatus === 'starting' || scanStatus === 'running' ? 'spinning' : ''} /> {t('nexus.rescan', 'Radar neu scannen')}
               </button>
             )}
-            <button className="btn-primary" onClick={() => navigate('/nexus/angebotsanalyse')} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Sparkles size={16} /> {t('nexus.setupAssistant', 'Angebotsanalyse')}
+            <button className="btn-primary" onClick={() => navigate('/nexus/events')} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Sparkles size={16} /> Mandatsereignisse
             </button>
           </div>
         </div>
@@ -1014,9 +1014,9 @@ export default function NexusLeadRadarPage() {
             <button 
               className="btn-primary" 
               style={{ marginTop: '20px' }}
-              onClick={() => navigate('/nexus/angebotsanalyse')}
+              onClick={() => navigate('/nexus/events')}
             >
-              {t('nexus.toOfferingAnalysis')}
+              Mandatsereignisse durchsuchen
             </button>
           </div>
         </div>

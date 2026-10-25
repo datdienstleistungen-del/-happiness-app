@@ -282,26 +282,20 @@ OFFIZIELLE PLATTFORM-URL: https://nexus-hit.netlify.app
 
 KERNMODULE & ARCHITEKTUR VON NeXus:
 1. NeXus Dashboard (/nexus/dashboard):
-   - Zentrale Steuerungszentrale für Pipeline-Übersicht, Konversionsraten, aktive Opportunities und Trigger-Statistiken.
-2. Angebotsanalyse (/nexus/angebotsanalyse):
-   - KI-gestützte Analyse von Unternehmens-Websites und Dienstleistungen.
-   - Extrahiert messerscharfe USPs, Zielgruppen-Definitionen, Pain Points und Value Propositions als Verkaufsbasis.
+   - Zentrale Steuerungszentrale für Pipeline-Übersicht, Konversionsraten, aktive Opportunities und Mandatsstatistiken.
+2. Mandatsereignisse (/nexus/events):
+   - Strukturierte Überwachung europäischer Primärquellen (EQS DACH, LSE RNS, SHAB Schweiz, CNMV Spanien, AMF Frankreich).
+   - Filterung von Ad-hoc-Meldungen und C-Level Organvakanzen im strikten 48h-Zeitfenster.
 3. Lead Radar (/nexus/lead-radar):
-   - Automatischer Echtzeit-Scanner für Kaufsignale (Trigger Events: Expansionen, Managementwechsel, Neueinstellungen, Finanzierungsrunden, Digitalisierungsprojekte).
+   - Automatischer Echtzeit-Scanner für Kaufsignale und Organvakanzen.
    - Filtert irrelevante Meldungen und berechnet KI-Konfidenzwerte für maximale Abschlusswahrscheinlichkeit.
 4. Sales Workspace (/nexus/sales-workspace):
-   - Zentrales Opportunity-Cockpit mit integriertem 3-Stufen-Workflow:
-     * Social Reachout: Automatische LinkedIn-Recherche, 1-Klick-Links zu Entscheidern, maßgeschneiderte LinkedIn-Kommentare & Direktnachrichten mit Speicherung im Browser und in der Lead-Historie.
-     * Aktion (E-Mail-Pitch): Trigger-basierte Outreach-Mails, die vorherige Social-Aktionen nahtlos aufgreifen.
-     * Historie & Notizen: Lückenlose Erfassung aller Kontaktpunkte und Lead-Daten.
-5. Video Intelligence Suite & Creator Studio:
-   - Video Finder (/video-finder): Wettbewerbsanalyse, virale Content-Trends, Hooks & Format-Inspiration.
-   - Video Script Generator (/video-script): Erstellung sendefähiger Video-Skripte (TikTok, YouTube Shorts, LinkedIn, Reels) mit Hook, Story, Call-to-Action und visuellen Regieanweisungen.
-   - CapCut Studio / Video Maker (/capcut-studio): Vorbereitung von Skripten für Schnittprogramme und KI-Video-Generatoren (z.B. CapCut, HeyGen, Synthesia).
-6. NeXus DealCoach (/coach):
-   - Intelligenter Sparringspartner für Vertriebsstrategie, Einwandbehandlung, Recherche, Content- und Video-Skripterstellung.
-7. Vertriebspsychologie (/wissenschaft):
-   - Fundiertes Wissen zu Verkaufspsychologie, Vertrauensaufbau und Trigger-Mechanismen.
+   - Zentrales Opportunity-Cockpit mit integriertem DealCoach-Audit (Stufe 2), Vakuum-Check und Frische-Ampel:
+     * DealCoach Prüf-Panel: Automatische Einstufung in Tier 1 Top (Großunternehmen/Börse) vs. Tier 2 Mid (Mittelstand).
+     * Human-in-the-Loop Prüfung: Vorlage in Harros Prüf-Inbox zur Chefsache-Freigabe.
+     * Aktion (Outreach): Maßgeschneiderte Direktansprache für Mandatsanlässe.
+5. DealCoach (/coach):
+   - Intelligenter Sparringspartner für Mandatsakquise, Einwandbehandlung, Organ-Vakanzanalyse und Verhandlungsstrategie.
 
 WICHTIGE BEGRIFFE:
 - Signal vs. Trigger: Ein Signal ist ein objektiver Fakt (z.B. "Firma expandiert nach Spanien"). Ein Trigger ist die vertriebliche Interpretation ("Bedarf an Logistik- / HR- / Software-Lösungen").

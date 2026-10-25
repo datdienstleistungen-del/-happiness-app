@@ -54,7 +54,6 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
     { to: '/nexus/lead-radar', icon: Radar, label: t('nexus.nav.leadRadar', 'Lead Radar') },
     { to: '/nexus/events', icon: Target, label: t('nexus.nav.events', 'Mandatsereignisse') },
     { to: '/nexus/dashboard', icon: LayoutDashboard, label: t('nexus.nav.dashboard', 'NeXus Dashboard') },
-    { to: '/nexus/angebotsanalyse', icon: Target, label: t('nexus.nav.offeringAnalysis', 'Angebotsanalyse') },
   ]
 
   const coachLinks = [

@@ -11,18 +11,108 @@ import AppLayout from './components/layout/AppLayout'
 import CookieConsent from './components/CookieConsent'
 import './App.css'
 
+// Hilfsfunktion: Erkennt dynamische Importfehler durch neue Builds/ungültige Hashes
+function isChunkLoadError(error) {
+  if (!error) return false;
+  const msg = (error.message || error.toString() || '').toLowerCase();
+  return (
+    msg.includes('failed to fetch dynamically imported module') ||
+    msg.includes('chunkloaderror') ||
+    msg.includes('loading chunk') ||
+    msg.includes('dynamically imported module') ||
+    msg.includes('importing a module script failed') ||
+    msg.includes('error loading dynamically imported module')
+  );
+}
+
+// Globaler Vite Preload Error Handler (fängt veraltete Chunks vor dem Router-Absturz ab)
+if (typeof window !== 'undefined') {
+  window.addEventListener('vite:preloadError', (event) => {
+    event.preventDefault();
+    const lastReload = parseInt(sessionStorage.getItem('nexus_chunk_reload_time') || '0', 10);
+    const now = Date.now();
+    if (now - lastReload > 8000) {
+      sessionStorage.setItem('nexus_chunk_reload_time', now.toString());
+      window.location.reload();
+    }
+  });
+}
+
 class ErrorBoundary extends Component {
-  constructor(props) { super(props); this.state = { error: null } }
-  static getDerivedStateFromError(error) { return { error } }
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidCatch(error) {
+    if (isChunkLoadError(error)) {
+      const lastReload = parseInt(sessionStorage.getItem('nexus_chunk_reload_time') || '0', 10);
+      const now = Date.now();
+      if (now - lastReload > 8000) {
+        sessionStorage.setItem('nexus_chunk_reload_time', now.toString());
+        window.location.reload();
+      }
+    }
+  }
+
   render() {
     if (this.state.error) {
-      return <div style={{ padding: 24, background: '#1a1a2e', color: '#e74c3c', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
-        <h2>Runtime Error</h2>
-        <p>{this.state.error.message}</p>
-        <pre>{this.state.error.stack}</pre>
-      </div>
+      if (isChunkLoadError(this.state.error)) {
+        return (
+          <div style={{
+            padding: 32,
+            minHeight: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: '#0a0d14',
+            color: '#f8fafc',
+            textAlign: 'center',
+            fontFamily: 'system-ui, -apple-system, sans-serif'
+          }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '16px' }}>🔄</div>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '8px', color: '#38bdf8' }}>
+              App-Aktualisierung wird geladen
+            </h2>
+            <p style={{ color: '#94a3b8', maxWidth: '440px', lineHeight: 1.5, marginBottom: '24px', fontSize: '0.95rem' }}>
+              Ein neues Update des Mandate Origination Desk wurde bereitgestellt. Die Anwendung lädt die aktuellen Daten.
+            </p>
+            <button
+              onClick={() => {
+                sessionStorage.removeItem('nexus_chunk_reload_time');
+                window.location.reload();
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #38bdf8 0%, #0284c7 100%)',
+                color: '#050608',
+                border: 'none',
+                padding: '10px 22px',
+                borderRadius: '8px',
+                fontWeight: 700,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                boxShadow: '0 0 20px rgba(56, 189, 248, 0.4)'
+              }}
+            >
+              Jetzt aktualisieren
+            </button>
+          </div>
+        );
+      }
+      return (
+        <div style={{ padding: 24, background: '#1a1a2e', color: '#e74c3c', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+          <h2>Runtime Error</h2>
+          <p>{this.state.error.message}</p>
+          <pre>{this.state.error.stack}</pre>
+        </div>
+      );
     }
-    return this.props.children
+    return this.props.children;
   }
 }
 

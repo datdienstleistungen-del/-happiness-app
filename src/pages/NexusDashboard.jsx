@@ -50,9 +50,9 @@ export default function NexusDashboard() {
   const quickActions = [
     {
       icon: Target,
-      title: t('nexus.dashboard.qaOfferingTitle', 'Angebotsanalyse'),
-      description: t('nexus.dashboard.qaOfferingDesc', 'Beschreibe dein Angebot und erhalte dein Vertriebsmodell'),
-      action: () => navigate('/nexus/angebotsanalyse'),
+      title: 'Mandatsereignisse',
+      description: 'Überwache Ad-hoc-Meldungen & C-Level Organvakanzen',
+      action: () => navigate('/nexus/events'),
       color: "var(--accent-blue, #38bdf8)"
     },
     {
@@ -92,10 +92,10 @@ export default function NexusDashboard() {
         </div>
         <button 
           className="nexus-btn-primary"
-          onClick={() => navigate('/nexus/angebotsanalyse')}
+          onClick={() => navigate('/nexus/events')}
         >
           <Target size={18} />
-          {t('nexus.dashboard.btnAnalyzeNew', 'Neues Angebot analysieren')}
+          Mandatsereignisse scannen
         </button>
       </header>
 
@@ -159,9 +159,9 @@ export default function NexusDashboard() {
               <button 
                 className={offerings.length > 0 ? "nexus-btn-secondary" : "nexus-btn-primary"}
                 style={{ width: '100%', fontSize: '0.85rem', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                onClick={() => navigate('/nexus/angebotsanalyse')}
+                onClick={() => navigate('/nexus/events')}
               >
-                <Target size={15} /> {offerings.length > 0 ? 'Angebot anpassen' : 'Angebot analysieren'}
+                <Target size={15} /> Mandatsereignisse prüfen
               </button>
             </div>
 
@@ -285,13 +285,13 @@ export default function NexusDashboard() {
           </div>
         </Link>
         
-        <Link to="/nexus/angebotsanalyse" className="nexus-stat-card" style={{ textDecoration: 'none', cursor: 'pointer' }}>
+        <Link to="/nexus/events" className="nexus-stat-card" style={{ textDecoration: 'none', cursor: 'pointer' }}>
           <div className="nexus-stat-icon" style={{ color: 'var(--accent-emerald, #10b981)' }}>
             <Users size={24} />
           </div>
           <div className="nexus-stat-content">
             <span className="nexus-stat-value">{offerings.length}</span>
-            <span className="nexus-stat-label">{t('nexus.dashboard.statOfferings', 'Aktive Angebote')}</span>
+            <span className="nexus-stat-label">Mandatsereignisse</span>
           </div>
         </Link>
       </div>
