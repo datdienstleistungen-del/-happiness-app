@@ -162,9 +162,11 @@ class SupabaseClient:
         opp_id = str(uuid.uuid4())
         trigger_id = str(uuid.uuid4())
 
+        event_date_val = item.get('event_date') or item.get('published_at') or datetime.now(timezone.utc).strftime('%Y-%m-%d')
         situation_text = (
             f"[COMPANY]: {company_name}\n"
-            f"[KAUFSIGNAL]: {title}\n\n"
+            f"[KAUFSIGNAL]: {title}\n"
+            f"[EREIGNISDATUM]: {event_date_val}\n\n"
             f"{snippet}"
         )
 
@@ -209,7 +211,8 @@ class SupabaseClient:
                             'source_url': source_url,
                             'confidence_score': evaluation.get('confidence_score', 0.85),
                             'trigger_score': lead_score,
-                            'signal_type': evaluation.get('category', 'ORGANVAKANZ & LEADERSHIP')
+                            'signal_type': evaluation.get('category', 'ORGANVAKANZ & LEADERSHIP'),
+                            'event_date': event_date_val
                         }
                         trig_req = urllib.request.Request(
                             f"{self.base_rest}/nexus_trigger_events",

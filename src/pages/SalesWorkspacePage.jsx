@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Briefcase, Mail, MessageSquare, Send, Copy, CheckCircle, AlertCircle, List, Trash2, ArrowRight, Search, Share2, ExternalLink, Video, Globe, Sparkles, RefreshCw, Clock, Check, Loader2, X, Eye, ShieldCheck, FileText, Zap, Edit3 } from 'lucide-react'
+import { Briefcase, Mail, MessageSquare, Send, Copy, CheckCircle, AlertCircle, List, Trash2, ArrowRight, Search, Share2, ExternalLink, Video, Globe, Sparkles, RefreshCw, Clock, Check, Loader2, X, Eye, ShieldCheck, FileText, Zap, Edit3, ShieldAlert, AlertTriangle } from 'lucide-react'
 import { callNexusAI, runDeepResearch, callContactIntelligence, callMessageGeneration, callSocialIntelligence } from '../lib/nexus-ai'
 import { isPlaceholderCompany, computeTargetMatchScore, classifyB2BLifecycle, getCategoryLifecycleConfig, hasConcreteVerifiedAnlass, isBlacklistedRole } from '../lib/nexus-validation'
-import { formatEventDate, extractDomain } from '../lib/nexus-dates'
+import { formatEventDate, extractDomain, getFreshnessTrafficLight } from '../lib/nexus-dates'
 import NexusAnalysisResult from '../components/NexusAnalysisResult'
 import { useLead } from '../context/LeadContext'
 import { useAuth } from '../context/AuthContext'
@@ -97,6 +97,9 @@ export default function SalesWorkspacePage() {
   const [customBlindLocation, setCustomBlindLocation] = useState('')
   const [customBlindPainPoint, setCustomBlindPainPoint] = useState('')
   const [isSavingBlindProfile, setIsSavingBlindProfile] = useState(false)
+
+  // Harter Reputationsschutz ('Kalter Kaffee' Warn-Modal vor Export / Weitergabe bei >48h)
+  const [staleWarningModal, setStaleWarningModal] = useState(null)
 
   useEffect(() => {
     if (oppIdFromUrl && oppIdFromUrl !== activeOppId) {
@@ -431,11 +434,25 @@ export default function SalesWorkspacePage() {
     });
   };
 
-  const handleCopyBlindProfileText = (targetOpp = activeOpp, targetTrigger = activeTrigger) => {
+  const handleCopyBlindProfileText = (targetOpp = activeOpp, targetTrigger = activeTrigger, force = false) => {
+    if (!force) {
+      const dateVal = targetTrigger?.event_date || targetOpp?.event_date || targetTrigger?.published_at || targetTrigger?.created_at || targetOpp?.created_at;
+      const traffic = getFreshnessTrafficLight(dateVal);
+      if (traffic.isStale) {
+        setStaleWarningModal({
+          title: `🚨 Veraltetes Signal (${traffic.label})`,
+          traffic,
+          actionName: 'Blind-Profil kopieren',
+          onConfirm: () => handleCopyBlindProfileText(targetOpp, targetTrigger, true)
+        });
+        return;
+      }
+    }
     const data = getBlindProfileData(targetOpp, targetTrigger);
     if (!data) return;
     const t = data.teaser;
-    const text = `🔒 EXKLUSIVES MANDATS-SIGNAL (ANONYMISIERTES BLIND-PROFIL)
+    const warningPrefix = force ? `⚠️ [WARNUNG: SIGNAL ÄLTER ALS 48H - REPUTATIONSRISIKO]\n\n` : '';
+    const text = `${warningPrefix}🔒 EXKLUSIVES MANDATS-SIGNAL (ANONYMISIERTES BLIND-PROFIL)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🏢 Mandant / Zielprofil: ${t.headline}
 📍 Region & Branche: ${t.industry}
@@ -479,8 +496,21 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
     }
   };
 
-  const handleDirectPublish = async () => {
+  const handleDirectPublish = async (force = false) => {
     if (!activeOpp) return
+    if (!force) {
+      const dateVal = activeTrigger?.event_date || activeOpp?.event_date || activeTrigger?.published_at || activeTrigger?.created_at || activeOpp?.created_at;
+      const traffic = getFreshnessTrafficLight(dateVal);
+      if (traffic.isStale) {
+        setStaleWarningModal({
+          title: `🚨 Veraltetes Signal (${traffic.label})`,
+          traffic,
+          actionName: 'Als Dossier auf dat-dat.de veröffentlichen',
+          onConfirm: () => handleDirectPublish(true)
+        });
+        return;
+      }
+    }
     setIsDirectPublishing(true)
     try {
       const resolvedCompName = resolveTriggerCompanyName(activeTrigger, activeOpp)
@@ -1112,16 +1142,44 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
     }
   };
 
-  const handleCopyMessage = () => {
+  const handleCopyMessage = (force = false) => {
+    if (!force) {
+      const dateVal = activeTrigger?.event_date || activeOpp?.event_date || activeTrigger?.published_at || activeTrigger?.created_at || activeOpp?.created_at;
+      const traffic = getFreshnessTrafficLight(dateVal);
+      if (traffic.isStale) {
+        setStaleWarningModal({
+          title: `🚨 Veraltetes Signal (${traffic.label})`,
+          traffic,
+          actionName: 'Nachricht kopieren',
+          onConfirm: () => handleCopyMessage(true)
+        });
+        return;
+      }
+    }
+    const warningPrefix = force ? `⚠️ [WARNUNG: SIGNAL ÄLTER ALS 48H - REPUTATIONSRISIKO]\n\n` : '';
     const text = editedMessage || generatedMessage?.message || '';
-    navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(warningPrefix + text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleCopyPackage = (text) => {
+  const handleCopyPackage = (text, force = false) => {
     if (!text) return;
-    navigator.clipboard.writeText(text);
+    if (!force) {
+      const dateVal = activeTrigger?.event_date || activeOpp?.event_date || activeTrigger?.published_at || activeTrigger?.created_at || activeOpp?.created_at;
+      const traffic = getFreshnessTrafficLight(dateVal);
+      if (traffic.isStale) {
+        setStaleWarningModal({
+          title: `🚨 Veraltetes Signal (${traffic.label})`,
+          traffic,
+          actionName: 'Lead-Paket kopieren',
+          onConfirm: () => handleCopyPackage(text, true)
+        });
+        return;
+      }
+    }
+    const warningPrefix = force ? `⚠️ [WARNUNG: SIGNAL ÄLTER ALS 48H - REPUTATIONSRISIKO]\n\n` : '';
+    navigator.clipboard.writeText(warningPrefix + text);
     setPackageCopied(true);
     setTimeout(() => setPackageCopied(false), 2000);
   };
@@ -1266,13 +1324,27 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
     }
   }
 
-  const handleCopy = async () => {
+  const handleCopy = async (force = false) => {
     try {
+      if (!force) {
+        const dateVal = activeTrigger?.event_date || activeOpp?.event_date || activeTrigger?.published_at || activeTrigger?.created_at || activeOpp?.created_at;
+        const traffic = getFreshnessTrafficLight(dateVal);
+        if (traffic.isStale) {
+          setStaleWarningModal({
+            title: `🚨 Veraltetes Signal (${traffic.label})`,
+            traffic,
+            actionName: 'Pitch kopieren',
+            onConfirm: () => handleCopy(true)
+          });
+          return;
+        }
+      }
       let textToCopy = result;
       if (typeof result === 'object') {
         textToCopy = result.response || result.nachricht || result.message || result.text || result.antwort || result.pitch || JSON.stringify(result, null, 2);
       }
-      await navigator.clipboard.writeText(textToCopy);
+      const warningPrefix = force ? `⚠️ [WARNUNG: SIGNAL ÄLTER ALS 48H - REPUTATIONSRISIKO]\n\n` : '';
+      await navigator.clipboard.writeText(warningPrefix + textToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -1378,11 +1450,34 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                   const dateInfo = dateVal ? formatEventDate(dateVal) : null;
                   
                   return (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.8rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', flexWrap: 'wrap' }}>
+                      {(() => {
+                        const traffic = getFreshnessTrafficLight(dateVal);
+                        return (
+                          <span 
+                            className={`badge-freshness ${traffic.badgeClass}`}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '2px 7px',
+                              borderRadius: '4px',
+                              fontSize: '0.74rem',
+                              fontWeight: 700,
+                              background: traffic.color === 'green' ? 'rgba(34, 197, 94, 0.15)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.18)' : 'rgba(239, 68, 68, 0.2)',
+                              color: traffic.color === 'green' ? '#4ade80' : traffic.color === 'yellow' ? '#facc15' : '#f87171',
+                              border: `1px solid ${traffic.color === 'green' ? 'rgba(34, 197, 94, 0.35)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.4)' : 'rgba(239, 68, 68, 0.45)'}`
+                            }}
+                            title={traffic.tooltip}
+                          >
+                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: traffic.color === 'green' ? '#22c55e' : traffic.color === 'yellow' ? '#eab308' : '#ef4444' }} />
+                            {traffic.label}
+                          </span>
+                        );
+                      })()}
                       {dateInfo && (
                         <span style={{ color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                           <Clock size={12} /> {dateInfo.relativeTime}
-                          {dateInfo.isExpired && <span className="badge-expired" style={{ fontSize: '0.65rem', padding: '1px 5px' }}>Veraltet</span>}
                         </span>
                       )}
                       {sUrl ? (
@@ -1726,6 +1821,39 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
 
                       {/* Zielgruppen-Match Badge & Veraltet-Kennzeichnung */}
                       <div className="queue-item-meta" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        {/* Frische-Ampel Badge (Reputationsschutz: Grün <=24h, Gelb 24-48h, Rot >48h) */}
+                        {(() => {
+                          const dateVal = opp.event_date || opp.triggers?.[0]?.nexus_trigger_events?.event_date || opp.published_at || opp.created_at;
+                          const traffic = getFreshnessTrafficLight(dateVal);
+                          return (
+                            <span 
+                              className={`queue-badge-freshness ${traffic.badgeClass}`}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '2px 7px',
+                                borderRadius: '4px',
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                background: traffic.color === 'green' ? 'rgba(34, 197, 94, 0.15)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.18)' : 'rgba(239, 68, 68, 0.2)',
+                                color: traffic.color === 'green' ? '#4ade80' : traffic.color === 'yellow' ? '#facc15' : '#f87171',
+                                border: `1px solid ${traffic.color === 'green' ? 'rgba(34, 197, 94, 0.35)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.4)' : 'rgba(239, 68, 68, 0.45)'}`
+                              }}
+                              title={traffic.tooltip}
+                            >
+                              <span style={{
+                                width: '6px',
+                                height: '6px',
+                                borderRadius: '50%',
+                                background: traffic.color === 'green' ? '#22c55e' : traffic.color === 'yellow' ? '#eab308' : '#ef4444',
+                                display: 'inline-block'
+                              }} />
+                              {traffic.label}
+                            </span>
+                          );
+                        })()}
+
                         {matchScore >= 70 ? (
                           <span className="queue-badge-high" title="Hoher Zielgruppen-Match">
                             {matchScore}% Match
@@ -2757,7 +2885,34 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#4ade80', fontWeight: 700, fontSize: '0.98rem' }}>
                         <CheckCircle size={24} />
                         <div>
-                          <div>Lead erfolgreich GEPRÜFT &amp; HUMAN-VERIFIED für {compName}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span>Lead erfolgreich GEPRÜFT &amp; HUMAN-VERIFIED für {compName}</span>
+                            {(() => {
+                              const dateVal = activeTrigger?.event_date || activeOpp?.event_date || activeTrigger?.published_at || activeTrigger?.created_at || activeOpp?.created_at;
+                              const traffic = getFreshnessTrafficLight(dateVal);
+                              return (
+                                <span 
+                                  className={`badge-freshness ${traffic.badgeClass}`}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '2px 8px',
+                                    borderRadius: '4px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    background: traffic.color === 'green' ? 'rgba(34, 197, 94, 0.2)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.25)' : 'rgba(239, 68, 68, 0.25)',
+                                    color: traffic.color === 'green' ? '#86efac' : traffic.color === 'yellow' ? '#fde047' : '#fca5a5',
+                                    border: `1px solid ${traffic.color === 'green' ? '#4ade80' : traffic.color === 'yellow' ? '#facc15' : '#f87171'}`
+                                  }}
+                                  title={traffic.tooltip}
+                                >
+                                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: traffic.color === 'green' ? '#22c55e' : traffic.color === 'yellow' ? '#eab308' : '#ef4444' }} />
+                                  {traffic.label}
+                                </span>
+                              );
+                            })()}
+                          </div>
                           <div style={{ fontSize: '0.82rem', fontWeight: 500, color: '#86efac', marginTop: '2px' }}>
                             Primärquelle und Aktualität validiert durch Harro Goerndt{activeOpp.reviewed_at ? ` · ${new Date(activeOpp.reviewed_at).toLocaleDateString('de-DE')}` : ''}
                           </div>
@@ -2834,7 +2989,32 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                           Anonymisiertes Mandats-Profil für Kunden &amp; Dealflow
                         </span>
                       </div>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                        {(() => {
+                          const dateVal = activeTrigger?.event_date || activeOpp?.event_date || activeTrigger?.published_at || activeTrigger?.created_at || activeOpp?.created_at;
+                          const traffic = getFreshnessTrafficLight(dateVal);
+                          return (
+                            <span 
+                              className={`badge-freshness ${traffic.badgeClass}`}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                                background: traffic.color === 'green' ? 'rgba(34, 197, 94, 0.15)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.18)' : 'rgba(239, 68, 68, 0.2)',
+                                color: traffic.color === 'green' ? '#4ade80' : traffic.color === 'yellow' ? '#facc15' : '#f87171',
+                                border: `1px solid ${traffic.color === 'green' ? 'rgba(34, 197, 94, 0.35)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.4)' : 'rgba(239, 68, 68, 0.45)'}`
+                              }}
+                              title={traffic.tooltip}
+                            >
+                              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: traffic.color === 'green' ? '#22c55e' : traffic.color === 'yellow' ? '#eab308' : '#ef4444' }} />
+                              {traffic.label}
+                            </span>
+                          );
+                        })()}
                         <button
                           type="button"
                           onClick={() => handleCopyBlindProfileText()}
@@ -4074,11 +4254,30 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                                   <Clock size={13} style={{ color: 'var(--text-secondary)' }} />
                                   <span style={{ color: 'var(--text-primary)' }}>{dateInfo.formattedDate}</span>
                                   <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>({dateInfo.relativeTime})</span>
-                                  {dateInfo.isExpired && (
-                                    <span className="badge-expired" title="Signal ist älter als 3 Tage (72h)">
-                                      🚨 Veraltet (&gt;3 Tage)
-                                    </span>
-                                  )}
+                                  {(() => {
+                                    const traffic = getFreshnessTrafficLight(dateVal);
+                                    return (
+                                      <span 
+                                        className={`badge-freshness ${traffic.badgeClass}`}
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px',
+                                          padding: '2px 8px',
+                                          borderRadius: '4px',
+                                          fontSize: '0.74rem',
+                                          fontWeight: 700,
+                                          background: traffic.color === 'green' ? 'rgba(34, 197, 94, 0.15)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.18)' : 'rgba(239, 68, 68, 0.2)',
+                                          color: traffic.color === 'green' ? '#4ade80' : traffic.color === 'yellow' ? '#facc15' : '#f87171',
+                                          border: `1px solid ${traffic.color === 'green' ? 'rgba(34, 197, 94, 0.35)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.4)' : 'rgba(239, 68, 68, 0.45)'}`
+                                        }}
+                                        title={traffic.tooltip}
+                                      >
+                                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: traffic.color === 'green' ? '#22c55e' : traffic.color === 'yellow' ? '#eab308' : '#ef4444' }} />
+                                        {traffic.label}
+                                      </span>
+                                    );
+                                  })()}
                                 </div>
                               );
                             })()}
@@ -4140,7 +4339,7 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
                             }}>
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                                   <span style={{
                                     background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
                                     color: '#ffffff',
@@ -4155,6 +4354,31 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                                   <span style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 600 }}>
                                     Blind Profile &amp; Matchmaking
                                   </span>
+                                  {(() => {
+                                    const dateVal = activeTrigger.event_date || activeTrigger.published_at || activeTrigger.created_at || activeOpp?.created_at;
+                                    const traffic = getFreshnessTrafficLight(dateVal);
+                                    return (
+                                      <span 
+                                        className={`badge-freshness ${traffic.badgeClass}`}
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px',
+                                          padding: '2px 7px',
+                                          borderRadius: '4px',
+                                          fontSize: '0.72rem',
+                                          fontWeight: 700,
+                                          background: traffic.color === 'green' ? 'rgba(34, 197, 94, 0.15)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.18)' : 'rgba(239, 68, 68, 0.2)',
+                                          color: traffic.color === 'green' ? '#4ade80' : traffic.color === 'yellow' ? '#facc15' : '#f87171',
+                                          border: `1px solid ${traffic.color === 'green' ? 'rgba(34, 197, 94, 0.35)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.4)' : 'rgba(239, 68, 68, 0.45)'}`
+                                        }}
+                                        title={traffic.tooltip}
+                                      >
+                                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: traffic.color === 'green' ? '#22c55e' : traffic.color === 'yellow' ? '#eab308' : '#ef4444' }} />
+                                        {traffic.label}
+                                      </span>
+                                    );
+                                  })()}
                                 </div>
                                 <button
                                   type="button"
@@ -5069,7 +5293,33 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                 flexWrap: 'wrap',
                 gap: '12px'
               }}>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  {(() => {
+                    const dateVal = activeTrigger?.event_date || activeOpp?.event_date || activeTrigger?.published_at || activeTrigger?.created_at || activeOpp?.created_at;
+                    const traffic = getFreshnessTrafficLight(dateVal);
+                    return (
+                      <span 
+                        className={`badge-freshness ${traffic.badgeClass}`}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          fontSize: '0.8rem',
+                          fontWeight: 700,
+                          background: traffic.color === 'green' ? 'rgba(34, 197, 94, 0.15)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.18)' : 'rgba(239, 68, 68, 0.2)',
+                          color: traffic.color === 'green' ? '#4ade80' : traffic.color === 'yellow' ? '#facc15' : '#f87171',
+                          border: `1px solid ${traffic.color === 'green' ? 'rgba(34, 197, 94, 0.35)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.4)' : 'rgba(239, 68, 68, 0.45)'}`
+                        }}
+                        title={traffic.tooltip}
+                      >
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: traffic.color === 'green' ? '#22c55e' : traffic.color === 'yellow' ? '#eab308' : '#ef4444' }} />
+                        {traffic.label}: {traffic.sublabel}
+                      </span>
+                    );
+                  })()}
+
                   <button
                     type="button"
                     onClick={() => handleCopyBlindProfileText()}
@@ -5139,6 +5389,111 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
           </div>
         );
       })()}
+
+      {/* 🚨 Reputationsschutz Modal ('Kalter Kaffee' Warnung bei Veraltung > 48h) */}
+      {staleWarningModal && (
+        <div 
+          className="stale-warning-overlay"
+          onClick={() => setStaleWarningModal(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.82)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+        >
+          <div 
+            className="stale-warning-modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#0d1117',
+              border: '1px solid #ef4444',
+              borderRadius: '12px',
+              maxWidth: '540px',
+              width: '100%',
+              padding: '24px 28px',
+              boxShadow: '0 0 35px rgba(239, 68, 68, 0.35)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid rgba(239, 68, 68, 0.3)', paddingBottom: '14px' }}>
+              <div style={{ background: 'rgba(239, 68, 68, 0.15)', padding: '10px', borderRadius: '10px', color: '#f87171' }}>
+                <ShieldAlert size={28} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, color: '#f87171', fontSize: '1.15rem', fontWeight: 800 }}>
+                  {staleWarningModal.title || '🚨 Hohes Reputationsrisiko: Kalter Kaffee (>48h)'}
+                </h3>
+                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                  NeXus European Mandate Origination Desk · Reputationsschutz
+                </span>
+              </div>
+            </div>
+
+            <div style={{ color: '#cbd5e1', fontSize: '0.9rem', lineHeight: 1.5, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <p style={{ margin: 0 }}>
+                Dieses Signal ist <strong>älter als 48 Stunden</strong> ({staleWarningModal.traffic?.tooltip || 'Veralteter Vorfall'}).
+              </p>
+              <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '8px', padding: '12px 14px', color: '#fca5a5', fontSize: '0.85rem' }}>
+                <strong>⚠️ Warnung vor Weitergabe:</strong> Im europäischen C-Level-, Board- und Interim-Segment erwarten Partner absolute Exklusivität und Echtzeit-Signale. Die Weitergabe überholter Vakanzen ("Kalter Kaffee") schädigt die NeXus-Glaubwürdigkeit bei Headhuntern und PE-Fonds nachhaltig.
+              </div>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>
+                Aktion: <strong>{staleWarningModal.actionName}</strong>
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setStaleWarningModal(null)}
+                style={{
+                  background: '#1e293b',
+                  color: '#f8fafc',
+                  border: '1px solid #334155',
+                  borderRadius: '6px',
+                  padding: '9px 18px',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Abbrechen (Empfohlen)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const cb = staleWarningModal.onConfirm;
+                  setStaleWarningModal(null);
+                  if (cb) cb();
+                }}
+                style={{
+                  background: '#dc2626',
+                  color: '#ffffff',
+                  border: '1px solid #f87171',
+                  borderRadius: '6px',
+                  padding: '9px 18px',
+                  fontSize: '0.88rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <AlertTriangle size={15} />
+                Auf eigenes Risiko fortfahren
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

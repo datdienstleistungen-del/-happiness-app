@@ -74,3 +74,76 @@ export function extractDomain(url) {
     return url;
   }
 }
+
+/**
+ * Frische-Ampel für den European Mandate Origination Desk:
+ * - Grün (<= 24h): Brandneu / Sofort kontaktieren (Höchste Exklusivität)
+ * - Gelb (24–48h): Akut / Voll verwertbar
+ * - Rot (> 48h): Veraltet / Hohes Reputationsrisiko (Warnhinweis vor Weitergabe)
+ */
+export function getFreshnessTrafficLight(dateInput) {
+  if (!dateInput) {
+    return {
+      color: 'red',
+      level: 'stale',
+      badgeClass: 'freshness-red',
+      label: 'Veraltet (>48h)',
+      sublabel: 'Hohes Reputationsrisiko / Kalter Kaffee',
+      tooltip: 'Kein verifiziertes Datum vorhanden (>48h)',
+      hoursAgo: 999,
+      isStale: true
+    };
+  }
+
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) {
+    return {
+      color: 'red',
+      level: 'stale',
+      badgeClass: 'freshness-red',
+      label: 'Veraltet (>48h)',
+      sublabel: 'Hohes Reputationsrisiko / Kalter Kaffee',
+      tooltip: 'Datum nicht valide (>48h)',
+      hoursAgo: 999,
+      isStale: true
+    };
+  }
+
+  const now = new Date();
+  const diffHours = (now.getTime() - d.getTime()) / (1000 * 60 * 60);
+
+  if (diffHours <= 24) {
+    return {
+      color: 'green',
+      level: 'fresh',
+      badgeClass: 'freshness-green',
+      label: 'Brandneu (<=24h)',
+      sublabel: 'Höchste Exklusivität / Sofort kontaktieren',
+      tooltip: `Vor ${Math.max(0, Math.round(diffHours))}h – Brandneu`,
+      hoursAgo: Math.max(0, Math.round(diffHours)),
+      isStale: false
+    };
+  } else if (diffHours <= 48) {
+    return {
+      color: 'yellow',
+      level: 'acute',
+      badgeClass: 'freshness-yellow',
+      label: 'Akut (24–48h)',
+      sublabel: 'Voll verwertbar',
+      tooltip: `Vor ${Math.round(diffHours)}h – Akut verwertbar`,
+      hoursAgo: Math.round(diffHours),
+      isStale: false
+    };
+  } else {
+    return {
+      color: 'red',
+      level: 'stale',
+      badgeClass: 'freshness-red',
+      label: 'Veraltet (>48h)',
+      sublabel: 'Hohes Reputationsrisiko / Kalter Kaffee',
+      tooltip: `Vor ${Math.round(diffHours)}h – Kalter Kaffee`,
+      hoursAgo: Math.round(diffHours),
+      isStale: true
+    };
+  }
+}

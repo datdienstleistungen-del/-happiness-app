@@ -155,6 +155,9 @@ def run_ingestion(dry_run=False, skip_cleanup=False):
                 eval_result['event_type'] = llm_data['event_type']
             if llm_data.get('confidence'):
                 eval_result['confidence_score'] = round(float(llm_data['confidence']), 2)
+            if llm_data.get('event_date'):
+                item['event_date'] = llm_data['event_date']
+                eval_result['event_date'] = llm_data['event_date']
 
         print(f"   -> ✅ STUFE 2 BESTANDEN: {item.get('company')} | {item.get('role', '')} | {item.get('person', '')} ({int(eval_result['confidence_score'] * 100)}%)")
         matched_signals.append((item, eval_result))
