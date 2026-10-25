@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Briefcase, Mail, MessageSquare, Send, Copy, CheckCircle, AlertCircle, List, Trash2, ArrowRight, Search, Share2, ExternalLink, Video, Globe, Sparkles, RefreshCw, Clock, Check, Loader2, X } from 'lucide-react'
+import { Briefcase, Mail, MessageSquare, Send, Copy, CheckCircle, AlertCircle, List, Trash2, ArrowRight, Search, Share2, ExternalLink, Video, Globe, Sparkles, RefreshCw, Clock, Check, Loader2, X, Eye, ShieldCheck, FileText, Zap, Edit3 } from 'lucide-react'
 import { callNexusAI, runDeepResearch, callContactIntelligence, callMessageGeneration, callSocialIntelligence } from '../lib/nexus-ai'
 import { isPlaceholderCompany, computeTargetMatchScore, classifyB2BLifecycle, getCategoryLifecycleConfig } from '../lib/nexus-validation'
 import { formatEventDate, extractDomain } from '../lib/nexus-dates'
@@ -87,6 +87,15 @@ export default function SalesWorkspacePage() {
   const [showDirectPublishModal, setShowDirectPublishModal] = useState(false)
   const [copiedDirectLink, setCopiedDirectLink] = useState(false)
   const [copiedDirectMessage, setCopiedDirectMessage] = useState(false)
+
+  // Blind-Profil State & Modal
+  const [showBlindProfileModal, setShowBlindProfileModal] = useState(false)
+  const [copiedBlindText, setCopiedBlindText] = useState(false)
+  const [blindProfileTab, setBlindProfileTab] = useState('teaser') // 'teaser' | 'vault' | 'edit'
+  const [customBlindCompany, setCustomBlindCompany] = useState('')
+  const [customBlindLocation, setCustomBlindLocation] = useState('')
+  const [customBlindPainPoint, setCustomBlindPainPoint] = useState('')
+  const [isSavingBlindProfile, setIsSavingBlindProfile] = useState(false)
 
   useEffect(() => {
     if (oppIdFromUrl && oppIdFromUrl !== activeOppId) {
@@ -377,6 +386,97 @@ export default function SalesWorkspacePage() {
       setIsReviewSaving(false)
     }
   }
+
+  // 1-Klick Schnellprüfung: Alle 5 Prüfpunkte bestehen & Lead sofort in die Pipeline freigeben
+  const handleQuickApproveAll = async (oppId = null, e = null) => {
+    if (e) e.stopPropagation();
+    const targetId = oppId || activeOpp?.id;
+    if (!targetId) return;
+
+    setReviewChecklist({
+      duplicate: 'pass',
+      plausibility: 'pass',
+      source: 'pass',
+      date: 'pass',
+      relevance: 'pass'
+    });
+
+    await handleApproveToPipeline(targetId, e);
+  };
+
+  // Hilfsfunktion: Berechnet das 100% anonymisierte Blind-Profil für ein Opportunity/Trigger
+  const getBlindProfileData = (targetOpp = activeOpp, targetTrigger = activeTrigger) => {
+    if (!targetOpp) return null;
+    const effectiveTrigger = targetTrigger
+      ? { ...targetTrigger, ...(customEventDate ? { event_date: customEventDate } : {}) }
+      : (customEventDate ? { event_date: customEventDate } : null);
+
+    const compName = resolveTriggerCompanyName(effectiveTrigger, targetOpp);
+
+    const triggerWithOverrides = {
+      ...effectiveTrigger,
+      ...(customBlindCompany ? { blind_company: customBlindCompany } : {}),
+      ...(customBlindLocation ? { blind_location: customBlindLocation } : {}),
+      ...(customBlindPainPoint ? { pain_point: customBlindPainPoint } : {})
+    };
+
+    return buildSignalPayload({
+      opportunity: targetOpp,
+      trigger: triggerWithOverrides,
+      foundContact,
+      analystName: 'Harro Goerndt',
+      verificationNote: reviewNotes || 'Primärquelle verifiziert – 100% faktengeprüft',
+      overrideCompany: compName
+    });
+  };
+
+  const handleCopyBlindProfileText = (targetOpp = activeOpp, targetTrigger = activeTrigger) => {
+    const data = getBlindProfileData(targetOpp, targetTrigger);
+    if (!data) return;
+    const t = data.teaser;
+    const text = `🔒 EXKLUSIVES MANDATS-SIGNAL (ANONYMISIERTES BLIND-PROFIL)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🏢 Mandant / Zielprofil: ${t.headline}
+📍 Region & Branche: ${t.industry}
+📊 Transaktionsphase: ${t.lifecycleBadge} · ${t.signalCategory}
+⚠️ Handlungsdruck & Anlass:
+${t.eventSummary}
+
+🎯 Relevante Beratungs- & Transaktionspartner:
+${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
+
+📦 Lieferumfang des freigeschalteten Mandats-Dossiers:
+1. Klardaten des Ziel-Accounts & geprüfter Primärquellen-Nachweis
+2. Konkreter Vakanzanlass & operatives Timing-Fenster
+3. Funktionale Entscheider-Ebene & Vorzimmer-Zentrale
+4. Maßgeschneiderte Pitch- & Ansprache-Vorlage
+
+⚖️ 100% DSGVO-konform · Primärquelle verifiziert durch Harro Goerndt
+🔗 Live-Allokation: https://dat-dat.de/signal/${data.slug}`;
+
+    navigator.clipboard.writeText(text);
+    setCopiedBlindText(true);
+    setTimeout(() => setCopiedBlindText(false), 2500);
+  };
+
+  const handleSaveBlindProfileCustomization = async () => {
+    if (!activeOpp?.id) return;
+    setIsSavingBlindProfile(true);
+    try {
+      const updates = {};
+      if (customBlindPainPoint) updates.pain_point = customBlindPainPoint;
+      if (customBlindCompany || customBlindLocation) {
+        updates.notes = `${activeOpp.notes || ''}\n[BLIND_COMPANY]: ${customBlindCompany}\n[BLIND_LOCATION]: ${customBlindLocation}`.trim();
+      }
+      await db.updateOpportunity(activeOpp.id, updates);
+      setActiveOpp(prev => ({ ...prev, ...updates }));
+      alert('Blind-Profil erfolgreich für diesen Lead angepasst und gespeichert!');
+    } catch (e) {
+      console.error('Error saving blind profile:', e);
+    } finally {
+      setIsSavingBlindProfile(false);
+    }
+  };
 
   const handleDirectPublish = async () => {
     if (!activeOpp) return
@@ -1813,7 +1913,7 @@ export default function SalesWorkspacePage() {
                         </span>
                         <button
                           type="button"
-                          onClick={() => handleApproveToPipeline(activeOpp.id)}
+                          onClick={(e) => handleQuickApproveAll(activeOpp.id, e)}
                           disabled={isReviewSaving}
                           style={{
                             background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
@@ -1826,11 +1926,12 @@ export default function SalesWorkspacePage() {
                             cursor: isReviewSaving ? 'not-allowed' : 'pointer',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '4px'
+                            gap: '4px',
+                            boxShadow: '0 0 10px rgba(34, 197, 94, 0.35)'
                           }}
-                          title="Signal freigeben und in aktive Pipeline übernehmen (Chefsache)"
+                          title="1-Klick: Alle 5 Prüfpunkte bestehen und in aktive Pipeline übernehmen"
                         >
-                          <Check size={13} /> Bestanden
+                          <Zap size={13} /> ⚡ Bestanden
                         </button>
                         <button
                           type="button"
@@ -1855,6 +1956,28 @@ export default function SalesWorkspacePage() {
                         </button>
                       </div>
                     )}
+
+                    {/* 🎭 Blind-Profil Button im CRM-Header */}
+                    <button
+                      type="button"
+                      onClick={() => setShowBlindProfileModal(true)}
+                      style={{
+                        background: 'rgba(56, 189, 248, 0.12)',
+                        color: '#38bdf8',
+                        border: '1px solid rgba(56, 189, 248, 0.4)',
+                        padding: '4px 10px',
+                        borderRadius: '12px',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px'
+                      }}
+                      title="Anonymisiertes Blind-Profil für diesen Lead erstellen / ansehen"
+                    >
+                      <Eye size={13} /> 🎭 Blind-Profil
+                    </button>
 
                     {/* Baustelle 3: Zielgruppen-Match Badge im CRM Header */}
                     {(() => {
@@ -1891,67 +2014,97 @@ export default function SalesWorkspacePage() {
                 background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.12) 0%, rgba(202, 138, 4, 0.05) 100%)',
                 border: '1px solid rgba(234, 179, 8, 0.35)',
                 borderRadius: '10px',
-                padding: '12px 18px',
+                padding: '14px 20px',
                 display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: '14px',
-                flexWrap: 'wrap'
+                flexDirection: 'column',
+                gap: '12px',
+                minWidth: 0,
+                maxWidth: '100%',
+                boxSizing: 'border-box'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ background: 'rgba(234, 179, 8, 0.2)', padding: '8px', borderRadius: '8px', color: '#facc15' }}>
-                    <Clock size={20} />
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 700, color: '#fef08a', fontSize: '0.92rem' }}>
-                      📥 Posteingang: Kaufsignal wartet auf Inhaber-Prüfung ("Chefsache")
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                    <div style={{ background: 'rgba(234, 179, 8, 0.2)', padding: '8px', borderRadius: '8px', color: '#facc15', flexShrink: 0 }}>
+                      <Clock size={20} />
                     </div>
-                    <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: '2px' }}>
-                      Dieses Signal wurde per Feed-Ingestion erfasst. Es wird erst nach Ihrer manuellen Freigabe in die aktive Pipeline übernommen.
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, color: '#fef08a', fontSize: '0.94rem' }}>
+                        📥 Posteingang: Kaufsignal wartet auf Inhaber-Prüfung ("Chefsache")
+                      </div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.82rem', marginTop: '2px' }}>
+                        Dieses Signal wurde per Feed-Ingestion erfasst. Sie können es mit 1 Klick freigeben oder die 5 Punkte prüfen.
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <button
-                    type="button"
-                    onClick={() => handleApproveToPipeline(activeOpp.id)}
-                    disabled={isReviewSaving}
-                    style={{
-                      background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-                      color: '#ffffff',
-                      border: '1px solid #4ade80',
-                      padding: '7px 14px',
-                      borderRadius: '6px',
-                      fontWeight: 700,
-                      fontSize: '0.84rem',
-                      cursor: isReviewSaving ? 'not-allowed' : 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '5px'
-                    }}
-                  >
-                    <Check size={14} /> Bestanden
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDismissOpportunity(activeOpp.id)}
-                    disabled={isReviewSaving}
-                    style={{
-                      background: 'rgba(239, 68, 68, 0.15)',
-                      color: '#f87171',
-                      border: '1px solid rgba(239, 68, 68, 0.3)',
-                      padding: '7px 12px',
-                      borderRadius: '6px',
-                      fontWeight: 600,
-                      fontSize: '0.84rem',
-                      cursor: isReviewSaving ? 'not-allowed' : 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '5px'
-                    }}
-                  >
-                    <X size={14} /> Verwerfen
-                  </button>
+
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={(e) => handleQuickApproveAll(activeOpp.id, e)}
+                      disabled={isReviewSaving}
+                      style={{
+                        background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+                        color: '#050608',
+                        border: '1px solid #4ade80',
+                        padding: '9px 18px',
+                        borderRadius: '8px',
+                        fontWeight: 800,
+                        fontSize: '0.88rem',
+                        cursor: isReviewSaving ? 'not-allowed' : 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 0 16px rgba(34, 197, 94, 0.45)',
+                        transition: 'all 0.2s ease'
+                      }}
+                      title="Alle 5 Prüfpunkte automatisch bestehen & Fall in Pipeline übernehmen"
+                    >
+                      <Zap size={15} /> ⚡ 1-Klick: Freigeben (Bestanden)
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowBlindProfileModal(true)}
+                      style={{
+                        background: 'rgba(56, 189, 248, 0.12)',
+                        color: '#38bdf8',
+                        border: '1px solid rgba(56, 189, 248, 0.4)',
+                        padding: '9px 16px',
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        fontSize: '0.86rem',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                      title="Anonymisiertes Blind-Profil für diesen Lead ansehen / exportieren"
+                    >
+                      <Eye size={15} /> 🎭 Blind-Profil
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => handleDismissOpportunity(activeOpp.id, e)}
+                      disabled={isReviewSaving}
+                      style={{
+                        background: 'rgba(239, 68, 68, 0.15)',
+                        color: '#f87171',
+                        border: '1px solid rgba(239, 68, 68, 0.35)',
+                        padding: '9px 15px',
+                        borderRadius: '8px',
+                        fontWeight: 600,
+                        fontSize: '0.86rem',
+                        cursor: isReviewSaving ? 'not-allowed' : 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px'
+                      }}
+                      title="Signal verwerfen"
+                    >
+                      <X size={15} /> Verwerfen
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -2617,83 +2770,176 @@ export default function SalesWorkspacePage() {
                     </div>
                   )}
 
+                  {/* 🎭 Anonymisiertes Blind-Profil Card */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(15, 23, 42, 0.6) 100%)',
+                    border: '1px solid rgba(56, 189, 248, 0.35)',
+                    borderRadius: '12px',
+                    padding: '18px 22px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                    minWidth: 0,
+                    maxWidth: '100%',
+                    boxSizing: 'border-box'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ background: '#0284c7', color: '#ffffff', fontSize: '0.74rem', fontWeight: 800, padding: '3px 8px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <Eye size={13} /> BLIND PROFILE
+                        </span>
+                        <span style={{ color: '#f8fafc', fontWeight: 700, fontSize: '1rem' }}>
+                          Anonymisiertes Mandats-Profil für Kunden &amp; Dealflow
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyBlindProfileText()}
+                          style={{
+                            background: copiedBlindText ? 'rgba(34, 197, 94, 0.2)' : 'rgba(56, 189, 248, 0.15)',
+                            color: copiedBlindText ? '#4ade80' : '#38bdf8',
+                            border: `1px solid ${copiedBlindText ? '#22c55e' : 'rgba(56, 189, 248, 0.4)'}`,
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            fontWeight: 700,
+                            fontSize: '0.82rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px'
+                          }}
+                          title="Anonymisiertes Profil als formatierter Text kopieren (für Mail & LinkedIn)"
+                        >
+                          {copiedBlindText ? <><CheckCircle size={13} /> Kopiert!</> : <><Copy size={13} /> 📋 Blind-Profil kopieren</>}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowBlindProfileModal(true)}
+                          style={{
+                            background: '#0a0d14',
+                            color: '#f8fafc',
+                            border: '1px solid #334155',
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            fontWeight: 600,
+                            fontSize: '0.82rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px'
+                          }}
+                        >
+                          👁️ Vollansicht &amp; Bearbeiten
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Blind Profil Kurz-Vorschau */}
+                    {(() => {
+                      const blindData = getBlindProfileData();
+                      if (!blindData) return null;
+                      const t = blindData.teaser;
+                      return (
+                        <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '8px', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.86rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                            <strong style={{ color: '#38bdf8', fontSize: '0.94rem' }}>{t.headline}</strong>
+                            <span style={{ background: 'rgba(34, 197, 94, 0.12)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '2px 8px', borderRadius: '4px', fontSize: '0.74rem', fontWeight: 700 }}>
+                              {t.lifecycleBadge}
+                            </span>
+                          </div>
+                          <div style={{ color: '#94a3b8', fontSize: '0.82rem' }}>
+                            Branche &amp; Region: <span style={{ color: '#e2e8f0' }}>{t.industry}</span>
+                          </div>
+                          <div style={{ color: '#cbd5e1', fontSize: '0.84rem', marginTop: '2px', lineHeight: 1.4 }}>
+                            {t.eventSummary}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+                            <span style={{ color: '#64748b', fontSize: '0.78rem' }}>Zielgruppen-Käufer:</span>
+                            {(t.targetBuyers || []).slice(0, 3).map((b, i) => (
+                              <span key={i} style={{ background: 'rgba(255,255,255,0.04)', color: '#cbd5e1', padding: '2px 6px', borderRadius: '4px', fontSize: '0.74rem' }}>
+                                ✓ {b}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
                   {/* Der reguläre 5-Punkte-Prüfbogen ist IMMER das aktive Hauptformular */}
-                  <div style={{ background: '#0a0c0f', borderRadius: '12px', border: '1px solid #1e232d', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                    <div style={{ borderBottom: '1px solid #1e232d', paddingBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                  <div style={{ background: '#0a0c0f', borderRadius: '12px', border: '1px solid #1e232d', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ borderBottom: '1px solid #1e232d', paddingBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                       <div>
                         <h3 style={{ margin: '0 0 6px 0', fontSize: '1.15rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           📋 5-Punkte Qualitätsprüfung für {compName}
                         </h3>
                         <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary, #94a3b8)' }}>
-                          Führe die Qualitätskontrolle durch. Der Lead kann erst als "geprüft" markiert werden, wenn alle fünf Prüfpunkte bestanden wurden.
+                          Führe die Qualitätskontrolle durch. Mit 1 Klick können alle 5 Punkte sofort freigegeben werden.
                         </p>
                       </div>
-                      {isVerifiedLead && (
-                        <span style={{
-                          background: 'rgba(34, 197, 94, 0.15)',
-                          color: '#4ade80',
-                          border: '1px solid rgba(34, 197, 94, 0.3)',
-                          padding: '4px 12px',
-                          borderRadius: '12px',
-                          fontSize: '0.82rem',
-                          fontWeight: 700,
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '5px'
-                        }}>
-                          <CheckCircle size={14} /> Status: Geprüft
-                        </span>
-                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={(e) => handleQuickApproveAll(activeOpp.id, e)}
+                          disabled={isReviewSaving}
+                          style={{
+                            background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                            color: '#ffffff',
+                            border: '1px solid #4ade80',
+                            padding: '8px 16px',
+                            borderRadius: '8px',
+                            fontWeight: 700,
+                            fontSize: '0.85rem',
+                            cursor: isReviewSaving ? 'not-allowed' : 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 0 14px rgba(34, 197, 94, 0.4)'
+                          }}
+                          title="Alle 5 Punkte als Bestanden markieren und sofort freigeben"
+                        >
+                          <Zap size={14} /> ⚡ 1-Klick: Alle 5 Punkte bestehen
+                        </button>
+                        {isVerifiedLead && (
+                          <span style={{
+                            background: 'rgba(34, 197, 94, 0.15)',
+                            color: '#4ade80',
+                            border: '1px solid rgba(34, 197, 94, 0.3)',
+                            padding: '4px 12px',
+                            borderRadius: '12px',
+                            fontSize: '0.82rem',
+                            fontWeight: 700,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px'
+                          }}>
+                            <CheckCircle size={14} /> Status: Geprüft
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                   {/* a) Dubletten-Check */}
-                  <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.duplicate === 'pass' ? '#22c55e' : reviewChecklist.duplicate === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-                      <div style={{ flex: 1, minWidth: '240px' }}>
-                        <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.95rem' }}>a) Dubletten-Check</div>
-                        <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem', marginTop: '4px' }}>
-                          "Ist dieses Ereignis schon einmal in der Liste? Wenn ja: Zusammenführen."
-                        </div>
-                        <div style={{ fontSize: '0.82rem', marginTop: '6px', color: '#94a3b8' }}>
-                          {(() => {
-                            const compLower = (compName || '').toLowerCase().trim();
-                            const dups = (opportunities || []).filter(o => {
-                              if (o.id === activeOpp.id) return false;
-                              const otherComp = resolveTriggerCompanyName(
-                                o.triggers?.[0]?.nexus_trigger_events,
-                                o
-                              ).toLowerCase().trim();
-                              return otherComp && otherComp === compLower;
-                            });
-                            return (
-                              <>
-                                Unternehmen: <strong style={{ color: '#38bdf8' }}>{compName}</strong>
-                                {dups.length > 0 ? (
-                                  <span style={{ color: '#f87171', marginLeft: '10px', fontWeight: 600 }}>
-                                    ⚠️ {dups.length} weitere Lead(s) mit gleichem Namen in Pipeline
-                                  </span>
-                                ) : (
-                                  <span style={{ color: '#4ade80', marginLeft: '10px' }}>
-                                    ✓ Keine Namensdopplung gefunden
-                                  </span>
-                                )}
-                              </>
-                            );
-                          })()}
-                        </div>
+                  <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.duplicate === 'pass' ? '#22c55e' : reviewChecklist.duplicate === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px' }}>
+                      <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.96rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>a) Dubletten-Check</span>
+                        {reviewChecklist.duplicate === 'pass' && <span style={{ color: '#4ade80', fontSize: '0.8rem', fontWeight: 700 }}>✓ Bestanden</span>}
+                        {reviewChecklist.duplicate === 'fail' && <span style={{ color: '#f87171', fontSize: '0.8rem', fontWeight: 700 }}>✗ Nicht bestanden</span>}
                       </div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                         <button
                           type="button"
                           onClick={() => setReviewChecklist(prev => ({ ...prev, duplicate: 'pass' }))}
                           style={{
-                            background: reviewChecklist.duplicate === 'pass' ? 'rgba(34, 197, 94, 0.25)' : '#181d26',
-                            color: reviewChecklist.duplicate === 'pass' ? '#4ade80' : '#94a3b8',
-                            border: `1px solid ${reviewChecklist.duplicate === 'pass' ? '#22c55e' : '#2d3748'}`,
+                            background: reviewChecklist.duplicate === 'pass' ? '#16a34a' : '#181d26',
+                            color: reviewChecklist.duplicate === 'pass' ? '#ffffff' : '#94a3b8',
+                            border: `1px solid ${reviewChecklist.duplicate === 'pass' ? '#4ade80' : '#2d3748'}`,
                             padding: '6px 14px',
                             borderRadius: '6px',
                             cursor: 'pointer',
-                            fontWeight: 600,
+                            fontWeight: 700,
                             fontSize: '0.85rem'
                           }}
                         >
@@ -2703,13 +2949,13 @@ export default function SalesWorkspacePage() {
                           type="button"
                           onClick={() => setReviewChecklist(prev => ({ ...prev, duplicate: 'fail' }))}
                           style={{
-                            background: reviewChecklist.duplicate === 'fail' ? 'rgba(239, 68, 68, 0.25)' : '#181d26',
-                            color: reviewChecklist.duplicate === 'fail' ? '#f87171' : '#94a3b8',
-                            border: `1px solid ${reviewChecklist.duplicate === 'fail' ? '#ef4444' : '#2d3748'}`,
+                            background: reviewChecklist.duplicate === 'fail' ? '#dc2626' : '#181d26',
+                            color: reviewChecklist.duplicate === 'fail' ? '#ffffff' : '#94a3b8',
+                            border: `1px solid ${reviewChecklist.duplicate === 'fail' ? '#f87171' : '#2d3748'}`,
                             padding: '6px 14px',
                             borderRadius: '6px',
                             cursor: 'pointer',
-                            fontWeight: 600,
+                            fontWeight: 700,
                             fontSize: '0.85rem'
                           }}
                         >
@@ -2717,60 +2963,58 @@ export default function SalesWorkspacePage() {
                         </button>
                       </div>
                     </div>
+                    <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem' }}>
+                      "Ist dieses Ereignis schon einmal in der Liste? Wenn ja: Zusammenführen."
+                    </div>
+                    <div style={{ fontSize: '0.82rem', color: '#94a3b8', wordBreak: 'break-word' }}>
+                      {(() => {
+                        const compLower = (compName || '').toLowerCase().trim();
+                        const dups = (opportunities || []).filter(o => {
+                          if (o.id === activeOpp.id) return false;
+                          const otherComp = resolveTriggerCompanyName(
+                            o.triggers?.[0]?.nexus_trigger_events,
+                            o
+                          ).toLowerCase().trim();
+                          return otherComp && otherComp === compLower;
+                        });
+                        return (
+                          <>
+                            Unternehmen: <strong style={{ color: '#38bdf8' }}>{compName}</strong>
+                            {dups.length > 0 ? (
+                              <span style={{ color: '#f87171', marginLeft: '10px', fontWeight: 600 }}>
+                                ⚠️ {dups.length} weitere Lead(s) mit gleichem Namen in Pipeline
+                              </span>
+                            ) : (
+                              <span style={{ color: '#4ade80', marginLeft: '10px' }}>
+                                ✓ Keine Namensdopplung gefunden
+                              </span>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
                   </div>
 
                   {/* b) Plausibilitäts-Check */}
-                  <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.plausibility === 'pass' ? '#22c55e' : reviewChecklist.plausibility === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-                      <div style={{ flex: 1, minWidth: '240px' }}>
-                        <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.95rem' }}>b) Plausibilitäts-Check</div>
-                        <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem', marginTop: '4px' }}>
-                          "Passt das Ereignis zum Angebot?"
-                        </div>
-                        <div style={{ fontSize: '0.82rem', marginTop: '6px', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                          <div>Angebot: <strong style={{ color: '#f8fafc' }}>{activeOffering?.offering_name || activeOffering?.title || fullContext?.offering?.offering_name || fullContext?.offering?.title || 'Standard B2B Angebot'}</strong></div>
-                          <div>Ereignis: <span style={{ color: '#cbd5e1' }}>{activeTrigger?.content ? extractTriggerMeta(activeTrigger.content).cleanText : (activeTrigger?.event_fact || formData.situation || 'Keine Angabe')}</span></div>
-                          {(() => {
-                            const meta = extractTriggerMeta(activeTrigger?.content || '');
-                            const pp = activeTrigger?.pain_point || activeOpp?.pain_point || meta.painPoint;
-                            const bc = activeTrigger?.blind_company || meta.blindCompany;
-                            const bl = activeTrigger?.blind_location || meta.blindLocation;
-                            const bq = activeTrigger?.blind_quantity || meta.blindQuantity;
-                            const tb = (Array.isArray(activeTrigger?.target_buyers) && activeTrigger.target_buyers.length > 0) ? activeTrigger.target_buyers : meta.targetBuyers;
-                            return (
-                              <>
-                                {pp && (
-                                  <div style={{ marginTop: '2px' }}>
-                                    Pain Point (Endkäufer): <strong style={{ color: '#fbbf24' }}>{pp}</strong>
-                                  </div>
-                                )}
-                                {(bc || bl || bq) && (
-                                  <div style={{ marginTop: '2px' }}>
-                                    Blind Profile: <span style={{ color: '#38bdf8' }}>{bc || 'Anonymisiert'} {bl ? `(${bl})` : ''} {bq ? `· ${bq}` : ''}</span>
-                                  </div>
-                                )}
-                                {tb && tb.length > 0 && (
-                                  <div style={{ marginTop: '2px' }}>
-                                    Target Buyers: <span style={{ color: '#4ade80' }}>{tb.join(', ')}</span>
-                                  </div>
-                                )}
-                              </>
-                            );
-                          })()}
-                        </div>
+                  <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.plausibility === 'pass' ? '#22c55e' : reviewChecklist.plausibility === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px' }}>
+                      <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.96rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>b) Plausibilitäts-Check</span>
+                        {reviewChecklist.plausibility === 'pass' && <span style={{ color: '#4ade80', fontSize: '0.8rem', fontWeight: 700 }}>✓ Bestanden</span>}
+                        {reviewChecklist.plausibility === 'fail' && <span style={{ color: '#f87171', fontSize: '0.8rem', fontWeight: 700 }}>✗ Nicht bestanden</span>}
                       </div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                         <button
                           type="button"
                           onClick={() => setReviewChecklist(prev => ({ ...prev, plausibility: 'pass' }))}
                           style={{
-                            background: reviewChecklist.plausibility === 'pass' ? 'rgba(34, 197, 94, 0.25)' : '#181d26',
-                            color: reviewChecklist.plausibility === 'pass' ? '#4ade80' : '#94a3b8',
-                            border: `1px solid ${reviewChecklist.plausibility === 'pass' ? '#22c55e' : '#2d3748'}`,
+                            background: reviewChecklist.plausibility === 'pass' ? '#16a34a' : '#181d26',
+                            color: reviewChecklist.plausibility === 'pass' ? '#ffffff' : '#94a3b8',
+                            border: `1px solid ${reviewChecklist.plausibility === 'pass' ? '#4ade80' : '#2d3748'}`,
                             padding: '6px 14px',
                             borderRadius: '6px',
                             cursor: 'pointer',
-                            fontWeight: 600,
+                            fontWeight: 700,
                             fontSize: '0.85rem'
                           }}
                         >
@@ -2780,13 +3024,13 @@ export default function SalesWorkspacePage() {
                           type="button"
                           onClick={() => setReviewChecklist(prev => ({ ...prev, plausibility: 'fail' }))}
                           style={{
-                            background: reviewChecklist.plausibility === 'fail' ? 'rgba(239, 68, 68, 0.25)' : '#181d26',
-                            color: reviewChecklist.plausibility === 'fail' ? '#f87171' : '#94a3b8',
-                            border: `1px solid ${reviewChecklist.plausibility === 'fail' ? '#ef4444' : '#2d3748'}`,
+                            background: reviewChecklist.plausibility === 'fail' ? '#dc2626' : '#181d26',
+                            color: reviewChecklist.plausibility === 'fail' ? '#ffffff' : '#94a3b8',
+                            border: `1px solid ${reviewChecklist.plausibility === 'fail' ? '#f87171' : '#2d3748'}`,
                             padding: '6px 14px',
                             borderRadius: '6px',
                             cursor: 'pointer',
-                            fontWeight: 600,
+                            fontWeight: 700,
                             fontSize: '0.85rem'
                           }}
                         >
@@ -2794,51 +3038,62 @@ export default function SalesWorkspacePage() {
                         </button>
                       </div>
                     </div>
+                    <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem' }}>
+                      "Passt das Ereignis zum Angebot?"
+                    </div>
+                    <div style={{ fontSize: '0.82rem', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '4px', wordBreak: 'break-word' }}>
+                      <div>Angebot: <strong style={{ color: '#f8fafc' }}>{activeOffering?.offering_name || activeOffering?.title || fullContext?.offering?.offering_name || fullContext?.offering?.title || 'Standard B2B Angebot'}</strong></div>
+                      <div>Ereignis: <span style={{ color: '#cbd5e1' }}>{activeTrigger?.content ? extractTriggerMeta(activeTrigger.content).cleanText : (activeTrigger?.event_fact || formData.situation || 'Keine Angabe')}</span></div>
+                      {(() => {
+                        const meta = extractTriggerMeta(activeTrigger?.content || '');
+                        const pp = activeTrigger?.pain_point || activeOpp?.pain_point || meta.painPoint;
+                        const bc = activeTrigger?.blind_company || meta.blindCompany;
+                        const bl = activeTrigger?.blind_location || meta.blindLocation;
+                        const bq = activeTrigger?.blind_quantity || meta.blindQuantity;
+                        const tb = (Array.isArray(activeTrigger?.target_buyers) && activeTrigger.target_buyers.length > 0) ? activeTrigger.target_buyers : meta.targetBuyers;
+                        return (
+                          <>
+                            {pp && (
+                              <div style={{ marginTop: '2px' }}>
+                                Pain Point (Endkäufer): <strong style={{ color: '#fbbf24' }}>{pp}</strong>
+                              </div>
+                            )}
+                            {(bc || bl || bq) && (
+                              <div style={{ marginTop: '2px' }}>
+                                Blind Profile: <span style={{ color: '#38bdf8' }}>{bc || 'Anonymisiert'} {bl ? `(${bl})` : ''} {bq ? `· ${bq}` : ''}</span>
+                              </div>
+                            )}
+                            {tb && tb.length > 0 && (
+                              <div style={{ marginTop: '2px' }}>
+                                Target Buyers: <span style={{ color: '#4ade80' }}>{tb.join(', ')}</span>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
                   </div>
 
                   {/* c) Quellen-Check */}
-                  <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.source === 'pass' ? '#22c55e' : reviewChecklist.source === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-                      <div style={{ flex: 1, minWidth: '240px' }}>
-                        <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.95rem' }}>c) Quellen-Check</div>
-                        <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem', marginTop: '4px' }}>
-                          "Ist die Quelle erreichbar? Zeigt sie das behauptete Ereignis?"
-                        </div>
-                        <div style={{ fontSize: '0.82rem', marginTop: '6px', color: '#94a3b8' }}>
-                          {(() => {
-                            const sUrl = (activeTrigger?.source?.startsWith('http') ? activeTrigger.source : null) || (activeTrigger?.source_url?.startsWith('http') ? activeTrigger.source_url : null) || (activeOpp?.source?.startsWith('http') ? activeOpp.source : null);
-                            return (
-                              <div>
-                                Quelle:{' '}
-                                {sUrl ? (
-                                  <a href={sUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#38bdf8', textDecoration: 'underline' }}>
-                                    {sUrl} ↗
-                                  </a>
-                                ) : (
-                                  <span style={{ color: '#f87171' }}>⚠️ Keine Quell-URL verknüpft</span>
-                                )}
-                                {activeTrigger?.evidence && (
-                                  <div style={{ marginTop: '4px', fontStyle: 'italic', color: '#cbd5e1' }}>
-                                    Beleg: "{activeTrigger.evidence}"
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })()}
-                        </div>
+                  <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.source === 'pass' ? '#22c55e' : reviewChecklist.source === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px' }}>
+                      <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.96rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>c) Quellen-Check</span>
+                        {reviewChecklist.source === 'pass' && <span style={{ color: '#4ade80', fontSize: '0.8rem', fontWeight: 700 }}>✓ Bestanden</span>}
+                        {reviewChecklist.source === 'fail' && <span style={{ color: '#f87171', fontSize: '0.8rem', fontWeight: 700 }}>✗ Nicht bestanden</span>}
                       </div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                         <button
                           type="button"
                           onClick={() => setReviewChecklist(prev => ({ ...prev, source: 'pass' }))}
                           style={{
-                            background: reviewChecklist.source === 'pass' ? 'rgba(34, 197, 94, 0.25)' : '#181d26',
-                            color: reviewChecklist.source === 'pass' ? '#4ade80' : '#94a3b8',
-                            border: `1px solid ${reviewChecklist.source === 'pass' ? '#22c55e' : '#2d3748'}`,
+                            background: reviewChecklist.source === 'pass' ? '#16a34a' : '#181d26',
+                            color: reviewChecklist.source === 'pass' ? '#ffffff' : '#94a3b8',
+                            border: `1px solid ${reviewChecklist.source === 'pass' ? '#4ade80' : '#2d3748'}`,
                             padding: '6px 14px',
                             borderRadius: '6px',
                             cursor: 'pointer',
-                            fontWeight: 600,
+                            fontWeight: 700,
                             fontSize: '0.85rem'
                           }}
                         >
@@ -2848,13 +3103,13 @@ export default function SalesWorkspacePage() {
                           type="button"
                           onClick={() => setReviewChecklist(prev => ({ ...prev, source: 'fail' }))}
                           style={{
-                            background: reviewChecklist.source === 'fail' ? 'rgba(239, 68, 68, 0.25)' : '#181d26',
-                            color: reviewChecklist.source === 'fail' ? '#f87171' : '#94a3b8',
-                            border: `1px solid ${reviewChecklist.source === 'fail' ? '#ef4444' : '#2d3748'}`,
+                            background: reviewChecklist.source === 'fail' ? '#dc2626' : '#181d26',
+                            color: reviewChecklist.source === 'fail' ? '#ffffff' : '#94a3b8',
+                            border: `1px solid ${reviewChecklist.source === 'fail' ? '#f87171' : '#2d3748'}`,
                             padding: '6px 14px',
                             borderRadius: '6px',
                             cursor: 'pointer',
-                            fontWeight: 600,
+                            fontWeight: 700,
                             fontSize: '0.85rem'
                           }}
                         >
@@ -2862,162 +3117,66 @@ export default function SalesWorkspacePage() {
                         </button>
                       </div>
                     </div>
+                    <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem' }}>
+                      "Ist die Quelle erreichbar? Zeigt sie das behauptete Ereignis?"
+                    </div>
+                    <div style={{ fontSize: '0.82rem', color: '#94a3b8', wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
+                      {(() => {
+                        const sUrl = (activeTrigger?.source?.startsWith('http') ? activeTrigger.source : null) || (activeTrigger?.source_url?.startsWith('http') ? activeTrigger.source_url : null) || (activeOpp?.source?.startsWith('http') ? activeOpp.source : null);
+                        return (
+                          <div>
+                            Quelle:{' '}
+                            {sUrl ? (
+                              <a
+                                href={sUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  color: '#38bdf8',
+                                  textDecoration: 'underline',
+                                  wordBreak: 'break-all',
+                                  overflowWrap: 'anywhere',
+                                  display: 'inline-block',
+                                  maxWidth: '100%'
+                                }}
+                                title={sUrl}
+                              >
+                                {sUrl.length > 70 ? `${sUrl.slice(0, 67)}...` : sUrl} ↗
+                              </a>
+                            ) : (
+                              <span style={{ color: '#f87171' }}>⚠️ Keine Quell-URL verknüpft</span>
+                            )}
+                            {activeTrigger?.evidence && (
+                              <div style={{ marginTop: '6px', fontStyle: 'italic', color: '#cbd5e1', wordBreak: 'break-word' }}>
+                                Beleg: "{activeTrigger.evidence}"
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
 
                   {/* d) Datums-Check (B2B Opportunity Lifecycle) */}
-                  <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.date === 'pass' ? '#22c55e' : reviewChecklist.date === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-                      <div style={{ flex: 1, minWidth: '240px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                          <span style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.95rem' }}>d) Datums-Check (B2B Opportunity Lifecycle)</span>
-                        </div>
-                        <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem', marginTop: '4px' }}>
-                          "Liegt das Ereignis im aktiven B2B-Handlungsfenster?"
-                        </div>
-                        <div style={{ fontSize: '0.82rem', marginTop: '8px', color: '#94a3b8' }}>
-                          {(() => {
-                            const rawDate = customEventDate || activeTrigger?.event_date || activeTrigger?.published_at || activeTrigger?.created_at || activeOpp?.created_at;
-                            const category = activeTrigger?.signal_kategorie || activeTrigger?.kategorie || activeOpp?.category || activeOpp?.branche || 'clevel_vakanzen';
-                            const lifecycleConfig = getCategoryLifecycleConfig(category);
-                            const lifecycle = classifyB2BLifecycle(category, rawDate);
-                            const dateObj = rawDate ? new Date(rawDate) : null;
-                            const isValidDate = dateObj && !isNaN(dateObj.getTime());
-                            const formattedDateStr = isValidDate ? dateObj.toLocaleDateString('de-DE') : 'Kein Datum verfügbar';
-
-                            return (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                  <span>Kategorie:</span>
-                                  <strong style={{ color: '#f8fafc' }}>{lifecycleConfig.name}</strong>
-                                  <span style={{ color: '#64748b', fontSize: '0.78rem' }}>
-                                    (Breaking: 1–{lifecycleConfig.breakingDays}d | Hot Window: {lifecycleConfig.breakingDays + 1}–{lifecycleConfig.hotWindowDays}d | Expired: ab {lifecycleConfig.maxExpiredDays + 1}d)
-                                  </span>
-                                </div>
-
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                  <span>Datum:</span>
-                                  <strong style={{ color: isValidDate ? '#f8fafc' : '#f87171' }}>
-                                    {formattedDateStr}
-                                  </strong>
-                                  {customEventDate && (
-                                    <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 600 }}>
-                                      (Manuell angepasst)
-                                    </span>
-                                  )}
-                                  
-                                  {/* B2B Lifecycle Badge */}
-                                  <span style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '4px',
-                                    padding: '3px 8px',
-                                    borderRadius: '6px',
-                                    fontSize: '0.78rem',
-                                    fontWeight: 700,
-                                    background: lifecycle.status === 'BREAKING' ? 'rgba(34, 197, 94, 0.15)' : lifecycle.status === 'HOT_WINDOW' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                                    color: lifecycle.status === 'BREAKING' ? '#4ade80' : lifecycle.status === 'HOT_WINDOW' ? '#38bdf8' : '#f87171',
-                                    border: `1px solid ${lifecycle.status === 'BREAKING' ? 'rgba(34, 197, 94, 0.3)' : lifecycle.status === 'HOT_WINDOW' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
-                                  }}>
-                                    {lifecycle.badge}
-                                  </span>
-
-                                  {lifecycle.daysAgo !== null && (
-                                    <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>
-                                      ({lifecycle.daysAgo} Tage her)
-                                    </span>
-                                  )}
-                                </div>
-
-                                {/* Datum manuell anpassen Toggle & Input */}
-                                <div style={{ marginTop: '2px' }}>
-                                  {!isEditingEventDate ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => setIsEditingEventDate(true)}
-                                      style={{
-                                        background: 'transparent',
-                                        border: '1px solid #334155',
-                                        color: '#38bdf8',
-                                        padding: '3px 10px',
-                                        borderRadius: '5px',
-                                        fontSize: '0.76rem',
-                                        cursor: 'pointer',
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: '5px'
-                                      }}
-                                    >
-                                      ✏️ Datum manuell korrigieren (z. B. echtes Ereignisdatum aus September)
-                                    </button>
-                                  ) : (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px', background: '#131720', padding: '8px 12px', borderRadius: '6px', border: '1px solid #1e293b' }}>
-                                      <label style={{ fontSize: '0.78rem', color: '#e2e8f0', fontWeight: 600 }}>Echtes Ereignisdatum:</label>
-                                      <input
-                                        type="date"
-                                        value={customEventDate || (isValidDate ? dateObj.toISOString().slice(0, 10) : '')}
-                                        onChange={(e) => setCustomEventDate(e.target.value)}
-                                        style={{
-                                          background: '#0a0d14',
-                                          border: '1px solid #3b82f6',
-                                          color: '#f8fafc',
-                                          padding: '4px 8px',
-                                          borderRadius: '4px',
-                                          fontSize: '0.8rem'
-                                        }}
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() => setIsEditingEventDate(false)}
-                                        style={{
-                                          background: '#3b82f6',
-                                          color: '#ffffff',
-                                          border: 'none',
-                                          padding: '4px 10px',
-                                          borderRadius: '4px',
-                                          fontSize: '0.76rem',
-                                          fontWeight: 600,
-                                          cursor: 'pointer'
-                                        }}
-                                      >
-                                        ✓ Übernehmen
-                                      </button>
-                                      {customEventDate && (
-                                        <button
-                                          type="button"
-                                          onClick={() => { setCustomEventDate(''); setIsEditingEventDate(false); }}
-                                          style={{
-                                            background: 'transparent',
-                                            color: '#94a3b8',
-                                            border: '1px solid #475569',
-                                            padding: '4px 10px',
-                                            borderRadius: '4px',
-                                            fontSize: '0.76rem',
-                                            cursor: 'pointer'
-                                          }}
-                                        >
-                                          Zurücksetzen
-                                        </button>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })()}
-                        </div>
+                  <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.date === 'pass' ? '#22c55e' : reviewChecklist.date === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px' }}>
+                      <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.96rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>d) Datums-Check (B2B Opportunity Lifecycle)</span>
+                        {reviewChecklist.date === 'pass' && <span style={{ color: '#4ade80', fontSize: '0.8rem', fontWeight: 700 }}>✓ Bestanden</span>}
+                        {reviewChecklist.date === 'fail' && <span style={{ color: '#f87171', fontSize: '0.8rem', fontWeight: 700 }}>✗ Nicht bestanden</span>}
                       </div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                         <button
                           type="button"
                           onClick={() => setReviewChecklist(prev => ({ ...prev, date: 'pass' }))}
                           style={{
-                            background: reviewChecklist.date === 'pass' ? 'rgba(34, 197, 94, 0.25)' : '#181d26',
-                            color: reviewChecklist.date === 'pass' ? '#4ade80' : '#94a3b8',
-                            border: `1px solid ${reviewChecklist.date === 'pass' ? '#22c55e' : '#2d3748'}`,
+                            background: reviewChecklist.date === 'pass' ? '#16a34a' : '#181d26',
+                            color: reviewChecklist.date === 'pass' ? '#ffffff' : '#94a3b8',
+                            border: `1px solid ${reviewChecklist.date === 'pass' ? '#4ade80' : '#2d3748'}`,
                             padding: '6px 14px',
                             borderRadius: '6px',
                             cursor: 'pointer',
-                            fontWeight: 600,
+                            fontWeight: 700,
                             fontSize: '0.85rem'
                           }}
                         >
@@ -3027,13 +3186,13 @@ export default function SalesWorkspacePage() {
                           type="button"
                           onClick={() => setReviewChecklist(prev => ({ ...prev, date: 'fail' }))}
                           style={{
-                            background: reviewChecklist.date === 'fail' ? 'rgba(239, 68, 68, 0.25)' : '#181d26',
-                            color: reviewChecklist.date === 'fail' ? '#f87171' : '#94a3b8',
-                            border: `1px solid ${reviewChecklist.date === 'fail' ? '#ef4444' : '#2d3748'}`,
+                            background: reviewChecklist.date === 'fail' ? '#dc2626' : '#181d26',
+                            color: reviewChecklist.date === 'fail' ? '#ffffff' : '#94a3b8',
+                            border: `1px solid ${reviewChecklist.date === 'fail' ? '#f87171' : '#2d3748'}`,
                             padding: '6px 14px',
                             borderRadius: '6px',
                             cursor: 'pointer',
-                            fontWeight: 600,
+                            fontWeight: 700,
                             fontSize: '0.85rem'
                           }}
                         >
@@ -3041,42 +3200,162 @@ export default function SalesWorkspacePage() {
                         </button>
                       </div>
                     </div>
+                    <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem' }}>
+                      "Liegt das Ereignis im aktiven B2B-Handlungsfenster?"
+                    </div>
+                    <div style={{ fontSize: '0.82rem', color: '#94a3b8', wordBreak: 'break-word' }}>
+                      {(() => {
+                        const rawDate = customEventDate || activeTrigger?.event_date || activeTrigger?.published_at || activeTrigger?.created_at || activeOpp?.created_at;
+                        const category = activeTrigger?.signal_kategorie || activeTrigger?.kategorie || activeOpp?.category || activeOpp?.branche || 'clevel_vakanzen';
+                        const lifecycleConfig = getCategoryLifecycleConfig(category);
+                        const lifecycle = classifyB2BLifecycle(category, rawDate);
+                        const dateObj = rawDate ? new Date(rawDate) : null;
+                        const isValidDate = dateObj && !isNaN(dateObj.getTime());
+                        const formattedDateStr = isValidDate ? dateObj.toLocaleDateString('de-DE') : 'Kein Datum verfügbar';
+
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                              <span>Kategorie:</span>
+                              <strong style={{ color: '#f8fafc' }}>{lifecycleConfig.name}</strong>
+                              <span style={{ color: '#64748b', fontSize: '0.78rem' }}>
+                                (Breaking: 1–{lifecycleConfig.breakingDays}d | Hot Window: {lifecycleConfig.breakingDays + 1}–{lifecycleConfig.hotWindowDays}d | Expired: ab {lifecycleConfig.maxExpiredDays + 1}d)
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                              <span>Datum:</span>
+                              <strong style={{ color: isValidDate ? '#f8fafc' : '#f87171' }}>
+                                {formattedDateStr}
+                              </strong>
+                              {customEventDate && (
+                                <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 600 }}>
+                                  (Manuell angepasst)
+                                </span>
+                              )}
+                              
+                              {/* B2B Lifecycle Badge */}
+                              <span style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                                background: lifecycle.status === 'BREAKING' ? 'rgba(34, 197, 94, 0.15)' : lifecycle.status === 'HOT_WINDOW' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                                color: lifecycle.status === 'BREAKING' ? '#4ade80' : lifecycle.status === 'HOT_WINDOW' ? '#38bdf8' : '#f87171',
+                                border: `1px solid ${lifecycle.status === 'BREAKING' ? 'rgba(34, 197, 94, 0.3)' : lifecycle.status === 'HOT_WINDOW' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
+                              }}>
+                                {lifecycle.badge}
+                              </span>
+
+                              {lifecycle.daysAgo !== null && (
+                                <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>
+                                  ({lifecycle.daysAgo} Tage her)
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Datum manuell anpassen Toggle & Input */}
+                            <div style={{ marginTop: '2px' }}>
+                              {!isEditingEventDate ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setIsEditingEventDate(true)}
+                                  style={{
+                                    background: 'transparent',
+                                    border: '1px solid #334155',
+                                    color: '#38bdf8',
+                                    padding: '3px 10px',
+                                    borderRadius: '5px',
+                                    fontSize: '0.76rem',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '5px'
+                                  }}
+                                >
+                                  ✏️ Datum manuell korrigieren (z. B. echtes Ereignisdatum aus September)
+                                </button>
+                              ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px', background: '#131720', padding: '8px 12px', borderRadius: '6px', border: '1px solid #1e293b' }}>
+                                  <label style={{ fontSize: '0.78rem', color: '#e2e8f0', fontWeight: 600 }}>Echtes Ereignisdatum:</label>
+                                  <input
+                                    type="date"
+                                    value={customEventDate || (isValidDate ? dateObj.toISOString().slice(0, 10) : '')}
+                                    onChange={(e) => setCustomEventDate(e.target.value)}
+                                    style={{
+                                      background: '#0a0d14',
+                                      border: '1px solid #3b82f6',
+                                      color: '#f8fafc',
+                                      padding: '4px 8px',
+                                      borderRadius: '4px',
+                                      fontSize: '0.8rem'
+                                    }}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsEditingEventDate(false)}
+                                    style={{
+                                      background: '#3b82f6',
+                                      color: '#ffffff',
+                                      border: 'none',
+                                      padding: '4px 10px',
+                                      borderRadius: '4px',
+                                      fontSize: '0.76rem',
+                                      fontWeight: 600,
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    ✓ Übernehmen
+                                  </button>
+                                  {customEventDate && (
+                                    <button
+                                      type="button"
+                                      onClick={() => { setCustomEventDate(''); setIsEditingEventDate(false); }}
+                                      style={{
+                                        background: 'transparent',
+                                        color: '#94a3b8',
+                                        border: '1px solid #475569',
+                                        padding: '4px 10px',
+                                        borderRadius: '4px',
+                                        fontSize: '0.76rem',
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      Zurücksetzen
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
 
                   {/* e) Relevanz-Check */}
-                  <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.relevance === 'pass' ? '#22c55e' : reviewChecklist.relevance === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-                      <div style={{ flex: 1, minWidth: '240px' }}>
-                        <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.95rem' }}>e) Relevanz-Check</div>
-                        <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem', marginTop: '4px' }}>
-                          "Würdest du anrufen? Warum ja, warum nein?"
-                        </div>
-                        <div style={{ fontSize: '0.82rem', marginTop: '6px', color: '#94a3b8' }}>
-                          {(() => {
-                            const matchScore = computeTargetMatchScore(activeOpp.company?.name || activeOpp.nexus_companies?.name, activeOpp.lead_score ?? activeTrigger?.trigger_score);
-                            return (
-                              <div>
-                                Zielgruppen-Match: <strong style={{ color: matchScore >= 50 ? '#4ade80' : '#f87171' }}>{matchScore}%</strong>
-                                <span style={{ marginLeft: '8px', color: '#94a3b8' }}>
-                                  – Bietet dieser Trigger einen echten, überzeugenden Gesprächsaufhänger?
-                                </span>
-                              </div>
-                            );
-                          })()}
-                        </div>
+                  <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.relevance === 'pass' ? '#22c55e' : reviewChecklist.relevance === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px' }}>
+                      <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.96rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>e) Relevanz-Check</span>
+                        {reviewChecklist.relevance === 'pass' && <span style={{ color: '#4ade80', fontSize: '0.8rem', fontWeight: 700 }}>✓ Bestanden</span>}
+                        {reviewChecklist.relevance === 'fail' && <span style={{ color: '#f87171', fontSize: '0.8rem', fontWeight: 700 }}>✗ Nicht bestanden</span>}
                       </div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                         <button
                           type="button"
                           onClick={() => setReviewChecklist(prev => ({ ...prev, relevance: 'pass' }))}
                           style={{
-                            background: reviewChecklist.relevance === 'pass' ? 'rgba(34, 197, 94, 0.25)' : '#181d26',
-                            color: reviewChecklist.relevance === 'pass' ? '#4ade80' : '#94a3b8',
-                            border: `1px solid ${reviewChecklist.relevance === 'pass' ? '#22c55e' : '#2d3748'}`,
+                            background: reviewChecklist.relevance === 'pass' ? '#16a34a' : '#181d26',
+                            color: reviewChecklist.relevance === 'pass' ? '#ffffff' : '#94a3b8',
+                            border: `1px solid ${reviewChecklist.relevance === 'pass' ? '#4ade80' : '#2d3748'}`,
                             padding: '6px 14px',
                             borderRadius: '6px',
                             cursor: 'pointer',
-                            fontWeight: 600,
+                            fontWeight: 700,
                             fontSize: '0.85rem'
                           }}
                         >
@@ -3086,19 +3365,35 @@ export default function SalesWorkspacePage() {
                           type="button"
                           onClick={() => setReviewChecklist(prev => ({ ...prev, relevance: 'fail' }))}
                           style={{
-                            background: reviewChecklist.relevance === 'fail' ? 'rgba(239, 68, 68, 0.25)' : '#181d26',
-                            color: reviewChecklist.relevance === 'fail' ? '#f87171' : '#94a3b8',
-                            border: `1px solid ${reviewChecklist.relevance === 'fail' ? '#ef4444' : '#2d3748'}`,
+                            background: reviewChecklist.relevance === 'fail' ? '#dc2626' : '#181d26',
+                            color: reviewChecklist.relevance === 'fail' ? '#ffffff' : '#94a3b8',
+                            border: `1px solid ${reviewChecklist.relevance === 'fail' ? '#f87171' : '#2d3748'}`,
                             padding: '6px 14px',
                             borderRadius: '6px',
                             cursor: 'pointer',
-                            fontWeight: 600,
+                            fontWeight: 700,
                             fontSize: '0.85rem'
                           }}
                         >
                           ❌ Nicht bestanden
                         </button>
                       </div>
+                    </div>
+                    <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem' }}>
+                      "Würdest du anrufen? Warum ja, warum nein?"
+                    </div>
+                    <div style={{ fontSize: '0.82rem', color: '#94a3b8', wordBreak: 'break-word' }}>
+                      {(() => {
+                        const matchScore = computeTargetMatchScore(activeOpp.company?.name || activeOpp.nexus_companies?.name, activeOpp.lead_score ?? activeTrigger?.trigger_score);
+                        return (
+                          <div>
+                            Zielgruppen-Match: <strong style={{ color: matchScore >= 50 ? '#4ade80' : '#f87171' }}>{matchScore}%</strong>
+                            <span style={{ marginLeft: '8px', color: '#94a3b8' }}>
+                              – Bietet dieser Trigger einen echten, überzeugenden Gesprächsaufhänger?
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -3174,7 +3469,33 @@ export default function SalesWorkspacePage() {
                           </button>
                         ) : (
                           <>
-                            {/* Button zur Freigabe */}
+                            {/* ⚡ 1-Klick Schnellprüfung Button */}
+                            <button
+                              type="button"
+                              disabled={isReviewSaving}
+                              onClick={(e) => handleQuickApproveAll(activeOpp.id, e)}
+                              style={{
+                                background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                                color: '#ffffff',
+                                border: '1px solid #4ade80',
+                                padding: '12px 22px',
+                                borderRadius: '8px',
+                                fontWeight: 800,
+                                fontSize: '0.92rem',
+                                cursor: isReviewSaving ? 'not-allowed' : 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                boxShadow: '0 0 16px rgba(34, 197, 94, 0.45)',
+                                transition: 'all 0.2s ease'
+                              }}
+                              title="Alle 5 Punkte sofort als bestanden markieren und Lead freigeben"
+                            >
+                              <Zap size={16} />
+                              {isReviewSaving ? 'Speichern...' : '⚡ 1-Klick: Alle 5 Punkte bestehen & freigeben'}
+                            </button>
+
+                            {/* Button zur manuellen Freigabe (aktiv wenn alle 5 Punkte angeklickt wurden) */}
                             <button
                               type="button"
                               disabled={!allPassed || isReviewSaving}
@@ -3183,7 +3504,7 @@ export default function SalesWorkspacePage() {
                                 background: allPassed ? '#22c55e' : '#1e293b',
                                 color: allPassed ? '#050608' : '#64748b',
                                 border: 'none',
-                                padding: '12px 22px',
+                                padding: '12px 20px',
                                 borderRadius: '8px',
                                 fontWeight: 700,
                                 fontSize: '0.92rem',
@@ -3197,7 +3518,29 @@ export default function SalesWorkspacePage() {
                               title={allPassed ? 'Als geprüft markieren und freigeben' : 'Erst aktiv, wenn alle fünf Punkte bestanden sind'}
                             >
                               <CheckCircle size={16} />
-                              {isReviewSaving ? 'Speichern...' : 'Als geprüft markieren'}
+                              Als manuell geprüft markieren
+                            </button>
+
+                            {/* 🎭 Blind-Profil Button */}
+                            <button
+                              type="button"
+                              onClick={() => setShowBlindProfileModal(true)}
+                              style={{
+                                background: 'rgba(56, 189, 248, 0.12)',
+                                color: '#38bdf8',
+                                border: '1px solid rgba(56, 189, 248, 0.4)',
+                                padding: '12px 20px',
+                                borderRadius: '8px',
+                                fontWeight: 700,
+                                fontSize: '0.9rem',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                              }}
+                              title="Anonymisiertes Blind-Profil für diesen Lead erstellen / exportieren"
+                            >
+                              <Eye size={16} /> 🎭 Blind-Profil
                             </button>
 
                             {/* Bei 5x Bestanden Veröffentlichungs-Button direkt anbieten */}
@@ -4356,6 +4699,392 @@ export default function SalesWorkspacePage() {
           </div>
         </div>
       )}
+
+      {/* 🎭 Blind-Profil & Mandats-Dossier Generator Modal */}
+      {showBlindProfileModal && activeOpp && (() => {
+        const blindData = getBlindProfileData();
+        if (!blindData) return null;
+        const t = blindData.teaser;
+        const d = blindData.unlockedDossier;
+
+        return (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
+              backgroundColor: 'rgba(0, 0, 0, 0.82)',
+              backdropFilter: 'blur(8px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px'
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setShowBlindProfileModal(false);
+            }}
+          >
+            <div
+              style={{
+                background: '#0a0d14',
+                border: '1px solid #0284c7',
+                borderRadius: '16px',
+                maxWidth: '850px',
+                width: '100%',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 35px rgba(2, 132, 199, 0.35)',
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            >
+              {/* Header */}
+              <div style={{
+                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                padding: '18px 24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.15)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '50%',
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Eye size={22} color="#ffffff" />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: '#ffffff' }}>
+                      🎭 Anonymisiertes Blind-Profil &amp; Mandats-Dossier
+                    </h3>
+                    <p style={{ margin: '2px 0 0 0', fontSize: '0.84rem', color: '#e0f2fe' }}>
+                      Klarer Account: <strong>{d.company?.legalName || 'Zielunternehmen'}</strong> · DSGVO-konforme Mandats-Intelligence
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowBlindProfileModal(false)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#ffffff',
+                    cursor: 'pointer',
+                    padding: '6px',
+                    borderRadius: '6px',
+                    opacity: 0.85
+                  }}
+                  title="Schließen"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Tabs: Vorschau / Vault / Bearbeiten */}
+              <div style={{ display: 'flex', background: '#070a0f', borderBottom: '1px solid #1e293b', padding: '8px 24px', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setBlindProfileTab('teaser')}
+                  style={{
+                    background: blindProfileTab === 'teaser' ? '#0284c7' : 'transparent',
+                    color: blindProfileTab === 'teaser' ? '#ffffff' : '#94a3b8',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    fontWeight: 700,
+                    fontSize: '0.86rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Eye size={15} /> 1. Käufer-Vorschau (100% Blind)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBlindProfileTab('vault')}
+                  style={{
+                    background: blindProfileTab === 'vault' ? '#0284c7' : 'transparent',
+                    color: blindProfileTab === 'vault' ? '#ffffff' : '#94a3b8',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    fontWeight: 700,
+                    fontSize: '0.86rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <ShieldCheck size={15} /> 2. Klardaten-Tresor (Vault)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBlindProfileTab('edit')}
+                  style={{
+                    background: blindProfileTab === 'edit' ? '#0284c7' : 'transparent',
+                    color: blindProfileTab === 'edit' ? '#ffffff' : '#94a3b8',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    fontWeight: 700,
+                    fontSize: '0.86rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Edit3 size={15} /> 3. Felder anpassen
+                </button>
+              </div>
+
+              {/* Tab 1: Teaser Vorschau */}
+              {blindProfileTab === 'teaser' && (
+                <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                  <div style={{ background: '#0e131f', border: '1px solid #1e293b', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                      <span style={{ background: '#0284c7', color: '#ffffff', fontSize: '0.74rem', fontWeight: 800, padding: '3px 8px', borderRadius: '4px' }}>
+                        {t.signalCategory}
+                      </span>
+                      <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '3px 10px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 700 }}>
+                        {t.lifecycleBadge}
+                      </span>
+                    </div>
+
+                    <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#f8fafc', fontWeight: 700 }}>
+                      {t.headline}
+                    </h2>
+
+                    <div style={{ display: 'flex', gap: '16px', color: '#94a3b8', fontSize: '0.84rem', flexWrap: 'wrap' }}>
+                      <span>📍 Region: <strong style={{ color: '#f1f5f9' }}>{t.region}</strong></span>
+                      <span>🏭 Branche: <strong style={{ color: '#f1f5f9' }}>{t.industry}</strong></span>
+                      <span>👥 Größe: <strong style={{ color: '#f1f5f9' }}>{d.company?.employeesCount || 'Gehobener Mittelstand'}</strong></span>
+                    </div>
+
+                    <div style={{ background: '#070a12', border: '1px solid #1a2233', borderRadius: '8px', padding: '14px', color: '#cbd5e1', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                      <strong>Mandats- &amp; Situationsanalyse (100% anonymisiert):</strong>
+                      <p style={{ margin: '6px 0 0 0' }}>{t.eventSummary}</p>
+                    </div>
+
+                    <div>
+                      <div style={{ fontSize: '0.84rem', color: '#94a3b8', fontWeight: 600, marginBottom: '6px' }}>
+                        Relevante Beratungs- &amp; Transaktionspartner:
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        {(t.targetBuyers || []).map((b, idx) => (
+                          <span key={idx} style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.25)', padding: '3px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600 }}>
+                            ✓ {b}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab 2: Vault (Klardaten) */}
+              {blindProfileTab === 'vault' && (
+                <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ background: '#0e131f', border: '1px solid #1e293b', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#4ade80', fontWeight: 700, fontSize: '0.95rem' }}>
+                      <ShieldCheck size={20} />
+                      <span>Verifizierter Klardaten-Tresor (Wird Käufern nach Freischaltung geliefert)</span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+                      <div style={{ background: '#070a12', padding: '12px', borderRadius: '8px', border: '1px solid #1a2233' }}>
+                        <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Ziel-Unternehmen (Klarname):</div>
+                        <div style={{ fontSize: '1rem', fontWeight: 700, color: '#f8fafc', marginTop: '3px' }}>
+                          {d.company?.legalName}
+                        </div>
+                      </div>
+
+                      <div style={{ background: '#070a12', padding: '12px', borderRadius: '8px', border: '1px solid #1a2233' }}>
+                        <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Entscheider-Ebene:</div>
+                        <div style={{ fontSize: '0.92rem', fontWeight: 600, color: '#f8fafc', marginTop: '3px' }}>
+                          {d.roleTargeting?.primaryRole || 'Vorstand / Geschäftsführung'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {d.primarySource?.url && (
+                      <div style={{ background: '#070a12', padding: '12px', borderRadius: '8px', border: '1px solid #1a2233' }}>
+                        <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Geprüfte Primärquelle:</div>
+                        <a
+                          href={d.primarySource.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: '#38bdf8', fontSize: '0.84rem', textDecoration: 'underline', wordBreak: 'break-all', display: 'inline-block', marginTop: '4px' }}
+                        >
+                          {d.primarySource.url} ↗
+                        </a>
+                        {d.primarySource?.verbatimEvidence && (
+                          <div style={{ marginTop: '8px', fontSize: '0.82rem', color: '#cbd5e1', fontStyle: 'italic' }}>
+                            "{d.primarySource.verbatimEvidence}"
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Tab 3: Felder anpassen */}
+              {blindProfileTab === 'edit' && (
+                <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{ background: '#0e131f', border: '1px solid #1e293b', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.84rem', color: '#94a3b8', marginBottom: '4px', fontWeight: 600 }}>
+                        Anonymisierter Firmenname (Blind Descriptor):
+                      </label>
+                      <input
+                        type="text"
+                        value={customBlindCompany || (t.headline ? t.headline.split(' sucht')[0] : '')}
+                        onChange={(e) => setCustomBlindCompany(e.target.value)}
+                        placeholder="z. B. Führendes Investmentunternehmen (Finanzsektor)"
+                        style={{ width: '100%', padding: '10px 12px', background: '#070a12', border: '1px solid #334155', borderRadius: '6px', color: '#f8fafc', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.84rem', color: '#94a3b8', marginBottom: '4px', fontWeight: 600 }}>
+                        Region / Standort (anonymisiert):
+                      </label>
+                      <input
+                        type="text"
+                        value={customBlindLocation || t.region}
+                        onChange={(e) => setCustomBlindLocation(e.target.value)}
+                        placeholder="z. B. D-A-CH Region / Süddeutschland"
+                        style={{ width: '100%', padding: '10px 12px', background: '#070a12', border: '1px solid #334155', borderRadius: '6px', color: '#f8fafc', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.84rem', color: '#94a3b8', marginBottom: '4px', fontWeight: 600 }}>
+                        Handlungsdruck / Pain Point:
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={customBlindPainPoint || t.eventSummary}
+                        onChange={(e) => setCustomBlindPainPoint(e.target.value)}
+                        placeholder="Beschreibe den operativen Handlungsdruck..."
+                        style={{ width: '100%', padding: '10px 12px', background: '#070a12', border: '1px solid #334155', borderRadius: '6px', color: '#f8fafc', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+                      <button
+                        type="button"
+                        onClick={handleSaveBlindProfileCustomization}
+                        disabled={isSavingBlindProfile}
+                        style={{
+                          background: '#0284c7',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '10px 18px',
+                          borderRadius: '6px',
+                          fontWeight: 700,
+                          fontSize: '0.88rem',
+                          cursor: isSavingBlindProfile ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        {isSavingBlindProfile ? 'Speichern...' : '✓ Anpassungen für diesen Lead speichern'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Modal Footer mit Aktionen */}
+              <div style={{
+                background: '#030712',
+                padding: '16px 24px',
+                borderTop: '1px solid #1f2937',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '12px'
+              }}>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyBlindProfileText()}
+                    style={{
+                      background: copiedBlindText ? '#22c55e' : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '10px 18px',
+                      fontWeight: 700,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 0 14px rgba(2, 132, 199, 0.4)'
+                    }}
+                  >
+                    {copiedBlindText ? <Check size={16} /> : <Copy size={16} />}
+                    {copiedBlindText ? 'Blind-Profil kopiert!' : '📋 Blind-Profil kopieren (Text/Pitch)'}
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isDirectPublishing}
+                    onClick={async () => {
+                      setShowBlindProfileModal(false);
+                      await handleDirectPublish();
+                    }}
+                    style={{
+                      background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                      color: '#ffffff',
+                      border: '1px solid #4ade80',
+                      borderRadius: '8px',
+                      padding: '10px 18px',
+                      fontWeight: 700,
+                      fontSize: '0.88rem',
+                      cursor: isDirectPublishing ? 'not-allowed' : 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 0 14px rgba(34, 197, 94, 0.4)'
+                    }}
+                  >
+                    {isDirectPublishing ? <Loader2 size={16} className="animate-spin" /> : <span>🚀 Als Dossier auf dat-dat.de live schalten</span>}
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowBlindProfileModal(false)}
+                  style={{
+                    background: '#374151',
+                    color: '#f9fafb',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '8px 20px',
+                    fontWeight: 600,
+                    fontSize: '0.86rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Schließen
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   )
 }

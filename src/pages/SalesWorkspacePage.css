@@ -32,8 +32,24 @@
 
 .sales-workspace-content {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 280px minmax(0, 1fr);
   gap: 24px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.sales-workspace-crm {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.tab-content-pruefung {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* ==========================================================================
@@ -647,7 +663,7 @@
 
 @media (max-width: 1024px) {
   .sales-workspace-content {
-    grid-template-columns: 260px 1fr;
+    grid-template-columns: 260px minmax(0, 1fr);
   }
   
   .sales-workspace-actions {
