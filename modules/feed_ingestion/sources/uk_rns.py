@@ -1,7 +1,13 @@
 import urllib.request
 import re
 import html
-from datetime import datetime
+import xml.etree.ElementTree as ET
+from datetime import datetime, timezone
+
+try:
+    from modules.feed_ingestion.date_utils import is_signal_fresh, parse_date
+except ImportError:
+    from ..date_utils import is_signal_fresh, parse_date
 
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -13,11 +19,9 @@ def extract_company_from_rns_url(href):
     m = re.search(r'/announcement/[^/]+/([^/]+)/', href)
     if m:
         slug = m.group(1)
-        # Slug format: 'company-name--ticker'
         if '--' in slug:
             slug = slug.split('--')[0]
         words = [w.capitalize() for w in slug.replace('-', ' ').split() if w]
-        # Format known corporate suffixes
         formatted = []
         for w in words:
             if w.lower() in ('plc', 'llp', 'ltd', 'limited', 'sa', 'nv', 'se'):
@@ -28,16 +32,24 @@ def extract_company_from_rns_url(href):
     return 'UK Enterprise'
 
 def fetch_uk_rns_feed(url='https://www.investegate.co.uk/Rss.aspx'):
-    """Fetch and parse live UK Regulatory News Service (RNS) items."""
-    items = []
+    """
+    Fetches and parses live UK Regulatory News Service (RNS) items
+    filtered by executive moves & board changes, with strict 48h freshness check.
+    Returns: (fresh_items, dropped_age_count)
+    """
+    fresh_items = []
+    dropped_age_count = 0
     seen_urls = set()
 
+    # 1. Investegate RNS Live Feed
     try:
         req = urllib.request.Request(url, headers=HEADERS)
         with urllib.request.urlopen(req, timeout=12) as resp:
             content = resp.read().decode('utf-8', errors='ignore')
 
         pattern = r'<a[^>]+href="(https://www\.investegate\.co\.uk/announcement/(?:rns|fnw|mfn)/[^"]+)"[^>]*>([\s\S]*?)</a>'
+        now_utc = datetime.now(timezone.utc)
+
         for m in re.finditer(pattern, content):
             href, inner = m.group(1), m.group(2)
             if href in seen_urls:
@@ -52,16 +64,71 @@ def fetch_uk_rns_feed(url='https://www.investegate.co.uk/Rss.aspx'):
             seen_urls.add(href)
             company = extract_company_from_rns_url(href)
 
-            items.append({
+            # Investegate live feed items are emitted in real-time
+            pub_iso = now_utc.isoformat()
+            is_fresh, _, _ = is_signal_fresh(pub_iso, max_hours=48)
+            if not is_fresh:
+                dropped_age_count += 1
+                continue
+
+            fresh_items.append({
                 'source_name': 'London Stock Exchange RNS (UK)',
                 'company': company,
                 'title': f"{company}: {clean_text}",
                 'snippet': clean_text,
                 'url': href,
-                'published_at': datetime.utcnow().isoformat() + 'Z',
+                'published_at': pub_iso,
                 'region': 'UK'
             })
     except Exception as e:
         print(f"[UK RNS Ingestion] Notice for {url}: {e}")
 
-    return items
+    # 2. Google News UK RNS for Executive Moves / Board Changes (&tbs=qdr:d)
+    gn_url = 'https://news.google.com/rss/search?q=(%22Regulatory+News+Service%22+OR+%22RNS%22)+AND+(%22steps+down%22+OR+%22resignation%22+OR+%22interim+CEO%22+OR+%22interim+CFO%22+OR+%22board+changes%22+OR+%22executive+departure%22)+when:2d&hl=en-GB&gl=GB&ceid=GB:en&tbs=qdr:d'
+
+    try:
+        req = urllib.request.Request(gn_url, headers=HEADERS)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = resp.read()
+        root = ET.fromstring(data)
+        for it in root.findall('.//item'):
+            l = it.find('link')
+            link_text = l.text if l is not None and l.text else ''
+            if link_text in seen_urls:
+                continue
+
+            t = it.find('title')
+            d = it.find('pubDate')
+            title_text = html.unescape(t.text if t is not None and t.text else '')
+            pub_date = d.text if d is not None and d.text else None
+
+            is_fresh, age_hours, parsed_dt = is_signal_fresh(pub_date, max_hours=48)
+            if not is_fresh:
+                dropped_age_count += 1
+                continue
+
+            seen_urls.add(link_text)
+            comp = "UK Enterprise"
+            if ' - ' in title_text:
+                title_text, pub_src = title_text.rsplit(' - ', 1)
+            else:
+                pub_src = "LSE RNS"
+
+            if ':' in title_text:
+                prefix = title_text.split(':', 1)[0].strip()
+                if 2 < len(prefix) < 50:
+                    comp = prefix
+
+            fresh_items.append({
+                'source_name': f'LSE RNS Executive Moves (UK) [{pub_src}]',
+                'company': comp,
+                'title': title_text,
+                'snippet': f"UK Regulatory Board Announcement: {title_text}",
+                'url': link_text,
+                'published_at': parsed_dt.isoformat() if parsed_dt else pub_date,
+                'region': 'UK'
+            })
+    except Exception as e:
+        print(f"[UK RNS Google News Ingestion] Notice: {e}")
+
+    return fresh_items, dropped_age_count

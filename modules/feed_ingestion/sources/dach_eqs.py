@@ -1,7 +1,13 @@
 import urllib.request
 import re
 import html
-from datetime import datetime
+import xml.etree.ElementTree as ET
+from datetime import datetime, timezone, timedelta
+
+try:
+    from modules.feed_ingestion.date_utils import is_signal_fresh, parse_date
+except ImportError:
+    from ..date_utils import is_signal_fresh, parse_date
 
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -13,21 +19,17 @@ def extract_company_from_eqs_text(text, href=""):
     """Extract clean company name from EQS announcement line or url."""
     cleaned = re.sub(r'^\d{1,2}:\d{2}\s+', '', text)
     cleaned = re.sub(r'^(?:Ad-hoc|Corporate|Non-regulatory)\s+(?:DE|EN)\s+', '', cleaned, flags=re.IGNORECASE)
-    
-    # Check if there is "Company: Title" structure
+
     if ':' in cleaned:
         candidate = cleaned.split(':', 1)[0].strip()
-        # Remove repeated prefix words
         candidate = re.sub(r'^(?:Ad-hoc|Corporate)\s+(?:DE|EN)\s+', '', candidate, flags=re.IGNORECASE).strip()
-        if len(candidate) > 2 and len(candidate) < 60:
+        if 2 < len(candidate) < 60:
             return candidate
 
-    # Fallback to URL slug
     if href:
         m = re.search(r'/news/[^/]+/([^/]+)/', href)
         if m:
             slug = m.group(1)
-            # Take the first 2-3 words of slug
             parts = slug.split('-')
             comp_parts = []
             for p in parts:
@@ -43,10 +45,18 @@ def extract_company_from_eqs_text(text, href=""):
     return "DACH Unternehmen"
 
 def fetch_eqs_feed(url='https://www.eqs-news.com/de/rss/'):
-    """Fetch and parse live corporate & ad-hoc announcements from EQS News."""
-    items = []
+    """
+    Fetches and parses live corporate & ad-hoc announcements from EQS News
+    and targeted DACH Regulatory feeds with strict 48h freshness check.
+    Returns: (fresh_items, dropped_age_count)
+    """
+    fresh_items = []
+    dropped_age_count = 0
     seen_urls = set()
 
+    now_utc = datetime.now(timezone.utc)
+
+    # 1. Scrape live EQS News overview
     urls_to_try = [url]
     if url != 'https://www.eqs-news.com/de/':
         urls_to_try.append('https://www.eqs-news.com/de/')
@@ -62,33 +72,99 @@ def fetch_eqs_feed(url='https://www.eqs-news.com/de/rss/'):
                 href, inner = m.group(1), m.group(2)
                 if href in seen_urls:
                     continue
-                
+
                 clean_text = ' '.join(re.sub(r'<[^>]+>', ' ', inner).split())
                 clean_text = html.unescape(clean_text)
-                
+                clean_text = re.sub(r'[\ue000-\uf8ff]', '', clean_text).strip()
+
                 if len(clean_text) < 12 or href.rstrip('/').endswith('/news'):
                     continue
 
                 seen_urls.add(href)
-                company = extract_company_from_eqs_text(clean_text, href)
 
-                # Clean title
+                # Parse time from text e.g. "16:20 Ad-hoc DE ..."
+                time_match = re.match(r'^(\d{1,2}):(\d{2})\b', clean_text)
+                if time_match:
+                    hh, mm = int(time_match.group(1)), int(time_match.group(2))
+                    item_dt = now_utc.replace(hour=hh, minute=mm, second=0, microsecond=0)
+                    if item_dt > now_utc:
+                        # Happened yesterday at this time
+                        item_dt = item_dt - timedelta(days=1)
+                else:
+                    item_dt = now_utc
+
+                pub_iso = item_dt.isoformat()
+                is_fresh, age_hours, _ = is_signal_fresh(pub_iso, max_hours=48)
+                if not is_fresh:
+                    dropped_age_count += 1
+                    continue
+
+                company = extract_company_from_eqs_text(clean_text, href)
                 title = clean_text
                 if ':' in title:
                     title_part = title.split(':', 1)[1].strip()
                     if len(title_part) > 10:
                         title = f"{company}: {title_part}"
 
-                items.append({
+                fresh_items.append({
                     'source_name': 'EQS News (DACH)',
                     'company': company,
                     'title': title,
                     'snippet': clean_text,
                     'url': href,
-                    'published_at': datetime.utcnow().isoformat() + 'Z',
+                    'published_at': pub_iso,
                     'region': 'DACH'
                 })
         except Exception as e:
             print(f"[EQS Ingestion] Notice for {target_url}: {e}")
 
-    return items
+    # 2. Targeted Google News DACH for C-Level & Board transitions with &tbs=qdr:d
+    gn_url = 'https://news.google.com/rss/search?q=(Vorstandswechsel+OR+Amtsniederlegung+OR+%22vorzeitiges+Ausscheiden%22+OR+Interimsl%C3%B6sung+OR+Abberufung+OR+%22tritt+zur%C3%BCck%22)+when:2d&hl=de&gl=DE&ceid=DE:de&tbs=qdr:d'
+
+    try:
+        req = urllib.request.Request(gn_url, headers=HEADERS)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = resp.read()
+        root = ET.fromstring(data)
+        for it in root.findall('.//item'):
+            l = it.find('link')
+            link_text = l.text if l is not None and l.text else ''
+            if link_text in seen_urls:
+                continue
+
+            t = it.find('title')
+            d = it.find('pubDate')
+            title_text = html.unescape(t.text if t is not None and t.text else '')
+            pub_date = d.text if d is not None and d.text else None
+
+            is_fresh, age_hours, parsed_dt = is_signal_fresh(pub_date, max_hours=48)
+            if not is_fresh:
+                dropped_age_count += 1
+                continue
+
+            seen_urls.add(link_text)
+            comp = "DACH Unternehmen"
+            if ' - ' in title_text:
+                title_text, pub_src = title_text.rsplit(' - ', 1)
+            else:
+                pub_src = "DACH Ad-hoc"
+
+            if ':' in title_text:
+                prefix = title_text.split(':', 1)[0].strip()
+                prefix = re.sub(r'[- ]Aktie$', '', prefix, flags=re.IGNORECASE).strip()
+                if 2 < len(prefix) < 50 and not prefix.lower().startswith(('studio', 'video', 'live')):
+                    comp = prefix
+
+            fresh_items.append({
+                'source_name': f'EQS / Corporate Ad-hoc (DACH) [{pub_src}]',
+                'company': comp,
+                'title': title_text,
+                'snippet': f"Tagesaktuelle Mitteilung: {title_text}",
+                'url': link_text,
+                'published_at': parsed_dt.isoformat() if parsed_dt else pub_date,
+                'region': 'DACH'
+            })
+    except Exception as e:
+        print(f"[EQS Google News Ingestion] Notice: {e}")
+
+    return fresh_items, dropped_age_count

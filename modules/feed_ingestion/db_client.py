@@ -172,3 +172,76 @@ class SupabaseClient:
             return None, f"EXCEPTION_{e}"
 
         return None, "FAILED"
+
+    def cleanup_stale_pending_opportunities(self, max_hours=48):
+        """
+        Deletes all opportunities with review_status = 'pending' that are:
+        1. Older than max_hours, or
+        2. Match noise keywords (Misenso, Aluwag, Zirkus, Pizza, etc.)
+        Returns: (deleted_count, deleted_titles)
+        """
+        from datetime import datetime, timezone
+        query = urllib.parse.urlencode({
+            'review_status': 'eq.pending',
+            'select': 'id,title,situation,created_at'
+        })
+        req = urllib.request.Request(f"{self.base_rest}/nexus_opportunities?{query}", headers=self._headers())
+        try:
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                pending = json.loads(resp.read().decode('utf-8'))
+        except Exception as e:
+            print(f"[DB Cleanup Error - Fetching pending] {e}")
+            return 0, []
+
+        now_utc = datetime.now(timezone.utc)
+        to_delete_ids = []
+        deleted_titles = []
+
+        noise_keywords = [
+            'misenso', 'aluwag', 'zirkus', 'pizza', 'krawatten', 'sportzentrum',
+            'kita', 'hofladen', 'marriott', 'pleite', 'konkurs'
+        ]
+
+        for item in pending:
+            opp_id = item.get('id')
+            title = (item.get('title') or '').lower()
+            situation = (item.get('situation') or '').lower()
+            created_at_str = item.get('created_at')
+
+            is_stale = False
+            # Check age
+            if created_at_str:
+                try:
+                    iso_clean = created_at_str.replace('Z', '+00:00')
+                    dt = datetime.fromisoformat(iso_clean)
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=timezone.utc)
+                    age_hours = (now_utc - dt.astimezone(timezone.utc)).total_seconds() / 3600.0
+                    if age_hours > max_hours:
+                        is_stale = True
+                except Exception:
+                    pass
+
+            # Check noise keywords
+            if any(k in title or k in situation for k in noise_keywords):
+                is_stale = True
+
+            if is_stale and opp_id:
+                to_delete_ids.append(opp_id)
+                deleted_titles.append(item.get('title', ''))
+
+        deleted_count = 0
+        for opp_id in to_delete_ids:
+            del_req = urllib.request.Request(
+                f"{self.base_rest}/nexus_opportunities?id=eq.{opp_id}",
+                headers=self._headers(),
+                method='DELETE'
+            )
+            try:
+                with urllib.request.urlopen(del_req, timeout=8) as del_resp:
+                    if del_resp.status in (200, 204):
+                        deleted_count += 1
+            except Exception as e:
+                print(f"[DB Delete Error {opp_id}] {e}")
+
+        return deleted_count, deleted_titles
