@@ -12,7 +12,7 @@ import { useLanguage } from '../i18n/translations.jsx'
 import CoachChatPage from './CoachChatPage'
 import NexusLiveProgressBar from '../components/NexusLiveProgressBar'
 import { ContextHelpButton } from '../components/ContextHelpButton'
-import { resolveTriggerCompanyName, extractCompanyNameFromText } from '../lib/nexus-signal-publisher'
+import { resolveTriggerCompanyName, extractCompanyNameFromText, buildSignalPayload } from '../lib/nexus-signal-publisher'
 import { trackSocialOutreachGenerated, trackSocialCommentCopied, trackSocialDmCopied, trackSocialOriginalOpened } from '../lib/nexus-analytics'
 import './SalesWorkspacePage.css'
 
@@ -517,14 +517,19 @@ export default function SalesWorkspacePage() {
       ...(customBlindPainPoint ? { pain_point: customBlindPainPoint } : {})
     };
 
-    return buildSignalPayload({
-      opportunity: targetOpp,
-      trigger: triggerWithOverrides,
-      foundContact,
-      analystName: 'Harro Goerndt',
-      verificationNote: reviewNotes || 'Primärquelle verifiziert – 100% faktengeprüft',
-      overrideCompany: compName
-    });
+    try {
+      return buildSignalPayload({
+        opportunity: targetOpp,
+        trigger: triggerWithOverrides,
+        foundContact,
+        analystName: 'Harro Goerndt',
+        verificationNote: reviewNotes || 'Primärquelle verifiziert – 100% faktengeprüft',
+        overrideCompany: compName
+      });
+    } catch (e) {
+      console.warn('[BlindProfile] Error generating payload:', e);
+      return null;
+    }
   };
 
   const handleCopyBlindProfileText = (targetOpp = activeOpp, targetTrigger = activeTrigger, force = false) => {
