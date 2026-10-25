@@ -66,7 +66,7 @@ export default function SalesWorkspacePage() {
   const [selectedMode, setSelectedMode] = useState('sales_pitch')
   const [activeOppId, setActiveOppId] = useState(oppIdFromUrl || null)
   const [activeTab, setActiveTab] = useState('aktion') // 'historie', 'aktion', 'pruefung', 'intelligence'
-  const [queueFilter, setQueueFilter] = useState('relevant') // Baustelle 3: 'relevant' (>= 50) | 'all' | 'unclear' (< 50) | 'rejected'
+  const [queueFilter, setQueueFilter] = useState('inbox') // HITL Workflow: 'inbox' (Posteingang) | 'relevant' (>= 50) | 'all' | 'unclear' (< 50) | 'rejected'
 
   // Manuelle Lead-Prüfung (5-Punkte Checkliste)
   const [reviewChecklist, setReviewChecklist] = useState({
@@ -239,6 +239,81 @@ export default function SalesWorkspacePage() {
       // WICHTIG: KEIN refreshData() aufrufen, um Formular-Reset und Re-Mount zu verhindern
     } catch (err) {
       console.error('Error marking opportunity as verified:', err)
+    } finally {
+      setIsReviewSaving(false)
+    }
+  }
+
+  // HITL Workflow: Signal aus Posteingang in aktive Pipeline übernehmen
+  const handleApproveToPipeline = async (oppId = null, e = null) => {
+    if (e) e.stopPropagation()
+    const targetId = oppId || activeOpp?.id
+    if (!targetId) return
+
+    setIsReviewSaving(true)
+    try {
+      const now = new Date().toISOString()
+      const noteToSave = (targetId === activeOpp?.id && reviewNotes) 
+        ? reviewNotes 
+        : 'Freigegeben für aktive Pipeline ("Chefsache") - Harro Goerndt'
+      
+      let updates = {
+        review_status: 'verified',
+        review_notes: noteToSave,
+        reviewed_at: now
+      }
+      let saved = await db.updateOpportunity(targetId, updates)
+      if (!saved) {
+        updates.review_status = 'reviewed'
+        saved = await db.updateOpportunity(targetId, updates)
+      }
+
+      if (activeOpp?.id === targetId) {
+        setActiveOpp(prev => ({ ...prev, ...updates, review_status: 'verified', review_notes: noteToSave }))
+        if (fullContext) {
+          setFullContext(prev => ({ ...prev, ...updates, review_status: 'verified', review_notes: noteToSave }))
+        }
+        setReviewChecklist({
+          duplicate: 'pass',
+          plausibility: 'pass',
+          source: 'pass',
+          date: 'pass',
+          relevance: 'pass'
+        })
+      }
+      if (refreshData) await refreshData()
+    } catch (err) {
+      console.error('Error approving opportunity to pipeline:', err)
+    } finally {
+      setIsReviewSaving(false)
+    }
+  }
+
+  // HITL Workflow: Signal verwerfen
+  const handleDismissOpportunity = async (oppId = null, e = null) => {
+    if (e) e.stopPropagation()
+    const targetId = oppId || activeOpp?.id
+    if (!targetId) return
+
+    setIsReviewSaving(true)
+    try {
+      const now = new Date().toISOString()
+      const updates = {
+        review_status: 'rejected',
+        review_notes: 'Signal im Posteingang verworfen ("Chefsache") - Harro Goerndt',
+        reviewed_at: now
+      }
+      await db.updateOpportunity(targetId, updates)
+
+      if (activeOpp?.id === targetId) {
+        setActiveOpp(prev => ({ ...prev, ...updates }))
+        if (fullContext) {
+          setFullContext(prev => ({ ...prev, ...updates }))
+        }
+      }
+      if (refreshData) await refreshData()
+    } catch (err) {
+      console.error('Error dismissing opportunity:', err)
     } finally {
       setIsReviewSaving(false)
     }
@@ -1289,7 +1364,7 @@ export default function SalesWorkspacePage() {
             <h3>{t('nexus.yourPipeline')}</h3>
           </div>
 
-          {/* Baustelle 3: Filter für Zielgruppen-Match & Review-Status in der Pipeline */}
+          {/* HITL Zweistufiges Modell: Trennung von Posteingang (Zur Prüfung) und aktiver Pipeline */}
           {(() => {
             const resolveOppCompany = (o) => resolveTriggerCompanyName(
               o.triggers?.[0]?.nexus_trigger_events,
@@ -1297,20 +1372,36 @@ export default function SalesWorkspacePage() {
               o.nexus_companies?.name || o.company?.name || ''
             );
             const validOpps = (opportunities || []).filter(o => !isPlaceholderCompany(resolveOppCompany(o)));
-            const activeOpps = validOpps.filter(o => o.review_status !== 'rejected');
-            const rejectedOpps = validOpps.filter(o => o.review_status === 'rejected');
+            
+            // Stufe 1: Posteingang (Human in the Loop - Chefsache)
+            const inboxOpps = validOpps.filter(o => o.review_status === 'pending' || o.review_status === 'PENDING_REVIEW' || o.review_status === 'unreviewed');
+            // Stufe 2: Freigegebene aktive Pipeline (ausschließlich persönlich qualifiziert)
+            const qualifiedOpps = validOpps.filter(o => o.review_status === 'verified' || o.review_status === 'reviewed' || o.review_status === 'QUALIFIED');
+            // Verworfene Signale / Abgelehnte Leads
+            const rejectedOpps = validOpps.filter(o => o.review_status === 'rejected' || o.review_status === 'DISMISSED');
 
-            const relevantCount = activeOpps.filter(o => computeTargetMatchScore(resolveOppCompany(o), o.lead_score) >= 50).length;
-            const unclearCount = activeOpps.filter(o => computeTargetMatchScore(resolveOppCompany(o), o.lead_score) < 50).length;
+            const inboxCount = inboxOpps.length;
+            const relevantCount = qualifiedOpps.filter(o => computeTargetMatchScore(resolveOppCompany(o), o.lead_score) >= 50).length;
+            const unclearCount = qualifiedOpps.filter(o => computeTargetMatchScore(resolveOppCompany(o), o.lead_score) < 50).length;
             const rejectedCount = rejectedOpps.length;
+            const allQualifiedCount = qualifiedOpps.length;
             
             return (
               <div className="ws-queue-filter-tabs">
                 <button 
                   type="button"
+                  className={`ws-queue-tab ${queueFilter === 'inbox' ? 'active' : ''}`}
+                  onClick={() => setQueueFilter('inbox')}
+                  title="Posteingang: Ungeprüfte Kaufsignale (Chefsache)"
+                  style={inboxCount > 0 && queueFilter !== 'inbox' ? { background: 'rgba(234, 179, 8, 0.15)', borderColor: '#eab308', color: '#facc15' } : {}}
+                >
+                  📥 Posteingang ({inboxCount})
+                </button>
+                <button 
+                  type="button"
                   className={`ws-queue-tab ${queueFilter === 'relevant' ? 'active' : ''}`}
                   onClick={() => setQueueFilter('relevant')}
-                  title="Leads mit Zielgruppen-Match >= 50%"
+                  title="Freigegebene Leads mit Zielgruppen-Match >= 50%"
                 >
                   🎯 Relevante ({relevantCount})
                 </button>
@@ -1318,9 +1409,9 @@ export default function SalesWorkspacePage() {
                   type="button"
                   className={`ws-queue-tab ${queueFilter === 'all' ? 'active' : ''}`}
                   onClick={() => setQueueFilter('all')}
-                  title="Alle aktiven Opportunities"
+                  title="Alle freigegebenen Opportunities in der Pipeline"
                 >
-                  Alle ({activeOpps.length})
+                  Pipeline ({allQualifiedCount})
                 </button>
                 {unclearCount > 0 && (
                   <button 
@@ -1338,10 +1429,10 @@ export default function SalesWorkspacePage() {
                     type="button"
                     className={`ws-queue-tab ${queueFilter === 'rejected' ? 'active' : ''}`}
                     onClick={() => setQueueFilter('rejected')}
-                    title="Abgelehnte Leads"
-                    style={{ color: queueFilter === 'rejected' ? '#050608' : '#f87171' }}
+                    title="Verworfene Signale / Abgelehnte Leads"
+                    style={{ color: queueFilter === 'rejected' ? '#050608' : '#94a3b8' }}
                   >
-                    ❌ Abgelehnt ({rejectedCount})
+                    ❌ Verworfen ({rejectedCount})
                   </button>
                 )}
               </div>
@@ -1356,24 +1447,29 @@ export default function SalesWorkspacePage() {
                 o.nexus_companies?.name || o.company?.name || ''
               );
               const validOpps = (opportunities || []).filter(o => !isPlaceholderCompany(resolveOppCompany(o)));
-              const activeOpps = validOpps.filter(o => o.review_status !== 'rejected');
-              const rejectedOpps = validOpps.filter(o => o.review_status === 'rejected');
+              const inboxOpps = validOpps.filter(o => o.review_status === 'pending' || o.review_status === 'PENDING_REVIEW' || o.review_status === 'unreviewed');
+              const qualifiedOpps = validOpps.filter(o => o.review_status === 'verified' || o.review_status === 'reviewed' || o.review_status === 'QUALIFIED');
+              const rejectedOpps = validOpps.filter(o => o.review_status === 'rejected' || o.review_status === 'DISMISSED');
 
               let displayedOpps = [];
-              if (queueFilter === 'rejected') {
+              if (queueFilter === 'inbox') {
+                displayedOpps = inboxOpps;
+              } else if (queueFilter === 'rejected') {
                 displayedOpps = rejectedOpps;
               } else if (queueFilter === 'relevant') {
-                displayedOpps = activeOpps.filter(o => computeTargetMatchScore(resolveOppCompany(o), o.lead_score) >= 50);
+                displayedOpps = qualifiedOpps.filter(o => computeTargetMatchScore(resolveOppCompany(o), o.lead_score) >= 50);
               } else if (queueFilter === 'unclear') {
-                displayedOpps = activeOpps.filter(o => computeTargetMatchScore(resolveOppCompany(o), o.lead_score) < 50);
+                displayedOpps = qualifiedOpps.filter(o => computeTargetMatchScore(resolveOppCompany(o), o.lead_score) < 50);
               } else {
-                displayedOpps = activeOpps;
+                displayedOpps = qualifiedOpps;
               }
 
               if (displayedOpps.length === 0) {
                 return (
                   <div className="queue-empty">
-                    {validOpps.length === 0 ? t('nexus.noLeads') : 'Keine Opportunities im gewählten Filter.'}
+                    {queueFilter === 'inbox' 
+                      ? '📥 Posteingang ist leer. Alle Signale wurden geprüft.' 
+                      : (validOpps.length === 0 ? t('nexus.noLeads') : 'Keine Opportunities im gewählten Filter.')}
                   </div>
                 );
               }
@@ -1384,6 +1480,7 @@ export default function SalesWorkspacePage() {
                 const dateInfo = formatEventDate(opp.created_at);
                 const hasValidSource = opp.source && opp.source.startsWith('http');
                 const domain = hasValidSource ? extractDomain(opp.source) : null;
+                const isPendingReview = opp.review_status === 'pending' || opp.review_status === 'PENDING_REVIEW' || opp.review_status === 'unreviewed';
 
                 return (
                   <div 
@@ -1401,7 +1498,7 @@ export default function SalesWorkspacePage() {
                         <span className="queue-stage">{opp.pipeline_stage}</span>
                       </div>
 
-                      {/* Baustelle 3: Zielgruppen-Match Badge & Veraltet-Kennzeichnung */}
+                      {/* Zielgruppen-Match Badge & Veraltet-Kennzeichnung */}
                       <div className="queue-item-meta" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                         {matchScore >= 70 ? (
                           <span className="queue-badge-high" title="Hoher Zielgruppen-Match">
@@ -1417,18 +1514,18 @@ export default function SalesWorkspacePage() {
                           </span>
                         )}
 
-                        {/* Status-Badge: unreviewed, reviewed, verified, rejected */}
-                        {(opp.review_status === 'reviewed' || opp.review_status === 'verified') ? (
+                        {/* Status-Badge: pending (Posteingang), reviewed, verified, rejected */}
+                        {(opp.review_status === 'reviewed' || opp.review_status === 'verified' || opp.review_status === 'QUALIFIED') ? (
                           <span className="queue-badge-reviewed" style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 600 }}>
-                            ✅ {opp.review_status === 'verified' ? 'Verifiziert' : 'Geprüft'}
+                            ✅ {opp.review_status === 'verified' || opp.review_status === 'QUALIFIED' ? 'Verifiziert' : 'Geprüft'}
                           </span>
-                        ) : opp.review_status === 'rejected' ? (
+                        ) : (opp.review_status === 'rejected' || opp.review_status === 'DISMISSED') ? (
                           <span className="queue-badge-rejected" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 600 }}>
-                            ❌ Abgelehnt
+                            ❌ Verworfen
                           </span>
                         ) : (
-                          <span className="queue-badge-unreviewed" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#facc15', border: '1px solid rgba(234, 179, 8, 0.3)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 600 }}>
-                            🟡 Ungeprüft
+                          <span className="queue-badge-unreviewed" style={{ background: 'rgba(234, 179, 8, 0.18)', color: '#facc15', border: '1px solid rgba(234, 179, 8, 0.4)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 600 }}>
+                            📥 Zur Prüfung
                           </span>
                         )}
 
@@ -1438,6 +1535,56 @@ export default function SalesWorkspacePage() {
                           </span>
                         )}
                       </div>
+
+                      {/* HITL Quick-Actions direkt in der Queue für Posteingang-Einträge */}
+                      {isPendingReview && (
+                        <div className="queue-inbox-quick-actions" style={{ display: 'flex', gap: '6px', marginTop: '6px', marginBottom: '2px' }}>
+                          <button
+                            type="button"
+                            style={{
+                              flex: 1,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px',
+                              padding: '4px 8px',
+                              background: '#15803d',
+                              color: '#ffffff',
+                              border: 'none',
+                              borderRadius: '4px',
+                              fontSize: '0.74rem',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                            title="In Pipeline übernehmen"
+                            onClick={(e) => handleApproveToPipeline(opp.id, e)}
+                          >
+                            <Check size={12} /> Übernehmen
+                          </button>
+                          <button
+                            type="button"
+                            style={{
+                              flex: 1,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px',
+                              padding: '4px 8px',
+                              background: 'rgba(239, 68, 68, 0.15)',
+                              color: '#f87171',
+                              border: '1px solid rgba(239, 68, 68, 0.3)',
+                              borderRadius: '4px',
+                              fontSize: '0.74rem',
+                              fontWeight: 600,
+                              cursor: 'pointer'
+                            }}
+                            title="Verwerfen"
+                            onClick={(e) => handleDismissOpportunity(opp.id, e)}
+                          >
+                            <X size={12} /> Verwerfen
+                          </button>
+                        </div>
+                      )}
 
                       {/* Baustelle 2: Quelle & Datum in Queue */}
                       <div className="queue-item-footer">
@@ -1566,19 +1713,63 @@ export default function SalesWorkspacePage() {
                       </button>
                     )}
 
-                    {/* Status-Badge: unreviewed, reviewed, verified, rejected */}
+                    {/* Status-Badge: pending (Zur Prüfung), reviewed, verified, rejected */}
                     {isVerifiedHeader ? (
                       <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <CheckCircle size={13} /> {activeOpp.review_status === 'verified' ? 'Verifiziert' : 'Geprüft'}
+                        <CheckCircle size={13} /> {activeOpp.review_status === 'verified' || activeOpp.review_status === 'QUALIFIED' ? 'Verifiziert' : 'Geprüft'}
                       </span>
-                    ) : activeOpp.review_status === 'rejected' ? (
+                    ) : (activeOpp.review_status === 'rejected' || activeOpp.review_status === 'DISMISSED') ? (
                       <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                         <AlertCircle size={13} /> Abgelehnt
                       </span>
                     ) : (
-                      <span style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#facc15', border: '1px solid rgba(234, 179, 8, 0.3)', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <Clock size={13} /> Ungeprüft
-                      </span>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#facc15', border: '1px solid rgba(234, 179, 8, 0.3)', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <Clock size={13} /> Posteingang (Zur Prüfung)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleApproveToPipeline(activeOpp.id)}
+                          disabled={isReviewSaving}
+                          style={{
+                            background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                            color: '#ffffff',
+                            border: '1px solid #4ade80',
+                            padding: '5px 12px',
+                            borderRadius: '6px',
+                            fontWeight: 700,
+                            fontSize: '0.8rem',
+                            cursor: isReviewSaving ? 'not-allowed' : 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                          title="Signal freigeben und in aktive Pipeline übernehmen (Chefsache)"
+                        >
+                          <Check size={13} /> In Pipeline übernehmen
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDismissOpportunity(activeOpp.id)}
+                          disabled={isReviewSaving}
+                          style={{
+                            background: 'rgba(239, 68, 68, 0.15)',
+                            color: '#f87171',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            padding: '5px 10px',
+                            borderRadius: '6px',
+                            fontWeight: 600,
+                            fontSize: '0.8rem',
+                            cursor: isReviewSaving ? 'not-allowed' : 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                          title="Signal verwerfen"
+                        >
+                          <X size={13} /> Verwerfen
+                        </button>
+                      </div>
                     )}
 
                     {/* Baustelle 3: Zielgruppen-Match Badge im CRM Header */}
@@ -1609,6 +1800,77 @@ export default function SalesWorkspacePage() {
                 );
               })()}
             </div>
+
+            {/* HITL Posteingang Banner */}
+            {activeOpp && (activeOpp.review_status === 'pending' || activeOpp.review_status === 'PENDING_REVIEW' || activeOpp.review_status === 'unreviewed') && (
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.12) 0%, rgba(202, 138, 4, 0.05) 100%)',
+                border: '1px solid rgba(234, 179, 8, 0.35)',
+                borderRadius: '10px',
+                padding: '12px 18px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '14px',
+                flexWrap: 'wrap'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ background: 'rgba(234, 179, 8, 0.2)', padding: '8px', borderRadius: '8px', color: '#facc15' }}>
+                    <Clock size={20} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#fef08a', fontSize: '0.92rem' }}>
+                      📥 Posteingang: Kaufsignal wartet auf Inhaber-Prüfung ("Chefsache")
+                    </div>
+                    <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: '2px' }}>
+                      Dieses Signal wurde per Feed-Ingestion erfasst. Es wird erst nach Ihrer manuellen Freigabe in die aktive Pipeline übernommen.
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleApproveToPipeline(activeOpp.id)}
+                    disabled={isReviewSaving}
+                    style={{
+                      background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                      color: '#ffffff',
+                      border: '1px solid #4ade80',
+                      padding: '7px 14px',
+                      borderRadius: '6px',
+                      fontWeight: 700,
+                      fontSize: '0.84rem',
+                      cursor: isReviewSaving ? 'not-allowed' : 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px'
+                    }}
+                  >
+                    <Check size={14} /> In Pipeline übernehmen
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDismissOpportunity(activeOpp.id)}
+                    disabled={isReviewSaving}
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      color: '#f87171',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      padding: '7px 12px',
+                      borderRadius: '6px',
+                      fontWeight: 600,
+                      fontSize: '0.84rem',
+                      cursor: isReviewSaving ? 'not-allowed' : 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px'
+                    }}
+                  >
+                    <X size={14} /> Verwerfen
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Tab: Historie */}
             {activeTab === 'historie' && (
