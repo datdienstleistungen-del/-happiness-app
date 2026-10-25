@@ -393,31 +393,21 @@ export async function handler(event) {
 
     console.log(`[Event Search] Start: type=${event_type}, region=${region || region_id || 'EU_UK'}`);
 
-    // 1. Direkte Europäische Primärquellen per Live-RSS abfragen (parallel, max 3.5s)
+    // 1. Offizielle europäische Primärquellen (Investegate RNS, AMF France, CNMV) - KEINE Google News Scraper!
     const directFeedPromises = [];
-    if (region_id === 'DACH' || region_id === 'EU_UK' || !region_id) {
-      directFeedPromises.push(
-        fetchDirectRegulatoryRss('https://news.google.com/rss/search?q=(%22EQS+News%22+OR+%22Ad-hoc%22+OR+%22DGAP%22)+AND+(Vorstand+OR+Aufsichtsrat+OR+CEO+OR+CFO+OR+Amtsniederlegung+OR+StaRUG)&hl=de&gl=DE&ceid=DE:de&tbs=qdr:d', 'EQS News & Ad-hoc (DACH)', 'DE')
-      );
-    }
     if (region_id === 'UK_IRL' || region_id === 'EU_UK' || !region_id) {
       directFeedPromises.push(
         fetchDirectRegulatoryRss('https://www.investegate.co.uk/Rss.aspx', 'London Stock Exchange RNS (UK)', 'GB')
       );
     }
-    if (region_id === 'CH' || region_id === 'DACH' || region_id === 'EU_UK') {
+    if (region_id === 'WEST_EU' || region_id === 'EU_UK') {
       directFeedPromises.push(
-        fetchDirectRegulatoryRss('https://news.google.com/rss/search?q=(%22Handelsregister%22+OR+%22SHAB%22+OR+%22Mutationen%22)+AND+(%22Amtsniederlegung%22+OR+%22R%C3%BCcktritt%22+OR+%22Vorstand%22+OR+%22Gesch%C3%A4ftsf%C3%BChrer%22+OR+%22Verwaltungsrat%22+OR+%22Ausscheiden%22+OR+%22Interim%22)&hl=de-CH&gl=CH&ceid=CH:de&tbs=qdr:d', 'Schweizer SHAB Mutationen (CH)', 'CH')
+        fetchDirectRegulatoryRss('https://www.amf-france.org/fr/rss', 'AMF France Regulatory (FR)', 'FR')
       );
     }
     if (region_id === 'SOUTH_EU' || region_id === 'EU_UK') {
       directFeedPromises.push(
-        fetchDirectRegulatoryRss('https://news.google.com/rss/search?q=(CNMV+OR+%22Mercado+Continuo%22+OR+%22Bolsas+y+Mercados%22)+AND+(dimision+OR+renuncia+OR+%22cese+de+funciones%22+OR+%22relevo+de+la+direccion%22+OR+%22nombramiento+interino%22+OR+%22consejero+delegado%22)&hl=es&gl=ES&ceid=ES:es&tbs=qdr:d', 'Mercado Continuo & CNMV (ES)', 'ES')
-      );
-    }
-    if (region_id === 'WEST_EU' || region_id === 'EU_UK') {
-      directFeedPromises.push(
-        fetchDirectRegulatoryRss('https://news.google.com/rss/search?q=(Euronext+OR+AMF+OR+%22communiqu%C3%A9%22)+AND+(%22d%C3%A9mission%22+OR+%22d%C3%A9part%22+OR+%22int%C3%A9rim%22+OR+%22directeur+g%C3%A9n%C3%A9ral%22+OR+%22vacance+de+poste%22)&hl=fr&gl=FR&ceid=FR:fr&tbs=qdr:d', 'Euronext Paris & AMF (FR)', 'FR')
+        fetchDirectRegulatoryRss('https://www.cnmv.es/portal/informacion-privilegiada/RSS.asmx/GetNoticiasCNMV', 'CNMV Informacion Privilegiada (ES)', 'ES')
       );
     }
 

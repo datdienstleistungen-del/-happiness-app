@@ -1,13 +1,13 @@
 """
-Pan-European Market Feeds Collector:
-- Spain: CNMV & Mercado Continuo
-- France: AMF & Euronext Paris
-- Pan-European: Euronext / BusinessWire Regulatory Disclosures
+Pan-European Official Regulatory Feeds Collector:
+- Spain: CNMV (Información Privilegiada, Otra Información Relevante, Notas de Prensa)
+- France / BeNeLux: AMF France & Euronext Regulatory
+Direct structured XML/RSS without general search engines or aggregators.
 Enforces strict 48h freshness check.
 """
 
 import urllib.request
-import xml.etree.ElementTree as ET
+import ssl
 import html
 import re
 from datetime import datetime, timezone
@@ -22,38 +22,91 @@ HEADERS = {
     'Accept': 'application/rss+xml,application/xml,text/xml;q=0.9,*/*;q=0.8'
 }
 
-# Targeted pan-European regulatory endpoints with strict &tbs=qdr:d (past 24h)
-EU_FEEDS = [
+OFFICIAL_EU_FEEDS = [
     {
         "region": "ES",
-        "source_label": "CNMV & Mercado Continuo (ES)",
+        "source_label": "CNMV Otra Información Relevante (ES)",
         "default_comp": "Empresa Española",
-        "url": "https://news.google.com/rss/search?q=(CNMV+OR+%22Mercado+Continuo%22+OR+%22Bolsas+y+Mercados%22)+AND+(dimision+OR+renuncia+OR+%22cese+de+funciones%22+OR+%22relevo+de+la+direccion%22+OR+%22nombramiento+interino%22+OR+%22consejero+delegado%22+OR+%22director+general%22)+when:2d&hl=es&gl=ES&ceid=ES:es&tbs=qdr:d"
+        "url": "https://www.cnmv.es/portal/Otra-Informacion-Relevante/RSS.asmx/GetNoticiasCNMV"
     },
     {
-        "region": "FR",
-        "source_label": "Euronext Paris & AMF (FR)",
-        "default_comp": "Société Française",
-        "url": "https://news.google.com/rss/search?q=(Euronext+OR+AMF+OR+%22communiqu%C3%A9%22)+AND+(%22d%C3%A9mission%22+OR+%22d%C3%A9part%22+OR+%22int%C3%A9rim%22+OR+%22directeur+g%C3%A9n%C3%A9ral%22+OR+%22vacance+de+poste%22+OR+%22gouvernance%22)+when:2d&hl=fr&gl=FR&ceid=FR:fr&tbs=qdr:d"
+        "region": "ES",
+        "source_label": "CNMV Información Privilegiada (ES)",
+        "default_comp": "Empresa Española",
+        "url": "https://www.cnmv.es/portal/informacion-privilegiada/RSS.asmx/GetNoticiasCNMV"
+    },
+    {
+        "region": "ES",
+        "source_label": "CNMV Notas de Prensa (ES)",
+        "default_comp": "Empresa Española",
+        "url": "https://www.cnmv.es/portal/RSS/RSS.asmx/GetDatos?iID=1"
     },
     {
         "region": "EU",
-        "source_label": "Pan-European Regulatory (Euronext / BusinessWire)",
+        "source_label": "Euronext / AFM Regulatory Disclosures",
         "default_comp": "European Enterprise",
-        "url": "https://news.google.com/rss/search?q=(%22Business+Wire%22+OR+%22Euronext%22+OR+%22regulatory+disclosure%22+OR+%22regulatory+news%22)+AND+(%22resignation%22+OR+%22steps+down%22+OR+%22interim+CEO%22+OR+%22interim+CFO%22+OR+%22board+changes%22+OR+%22leadership+transition%22)+when:2d&hl=en-150&gl=DE&ceid=DE:en&tbs=qdr:d"
+        "url": "https://www.afm.nl/en/rss"
     }
 ]
 
+def parse_rss_items_robust(xml_text):
+    """Parses XML/RSS items using regex to prevent parser failure on unescaped entities."""
+    items = []
+    # Match <item> or <Item>
+    item_matches = re.findall(r'<item(?:\s+[^>]*)?>([\s\S]*?)</item>', xml_text, re.IGNORECASE)
+    for block in item_matches:
+        t_m = re.search(r'<title(?:\s+[^>]*)?>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?</title>', block, re.I)
+        l_m = re.search(r'<link(?:\s+[^>]*)?>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?</link>', block, re.I)
+        d_m = re.search(r'<pubDate(?:\s+[^>]*)?>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?</pubDate>', block, re.I)
+        desc_m = re.search(r'<description(?:\s+[^>]*)?>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?</description>', block, re.I)
+
+        title = html.unescape(t_m.group(1).strip()) if t_m else ''
+        link = html.unescape(l_m.group(1).strip()) if l_m else ''
+        date = html.unescape(d_m.group(1).strip()) if d_m else ''
+        desc = html.unescape(desc_m.group(1).strip()) if desc_m else ''
+
+        # Strip remaining HTML tags in description
+        desc_clean = re.sub(r'<[^>]+>', ' ', desc).strip()
+
+        if title and (link or desc_clean):
+            items.append({
+                'title': title,
+                'link': link,
+                'pubDate': date,
+                'description': desc_clean
+            })
+    return items
+
+def extract_company_from_eu_title(title, default_comp):
+    if not title:
+        return default_comp
+    cleaned = title.strip()
+    if ':' in cleaned:
+        candidate = cleaned.split(':', 1)[0].strip()
+        if 2 < len(candidate) < 60:
+            return candidate
+    if ' - ' in cleaned:
+        candidate = cleaned.split(' - ', 1)[0].strip()
+        if 2 < len(candidate) < 60:
+            return candidate
+    # For CNMV, title is often the exact company name e.g. "PESCANOVA, S.A."
+    if any(form in cleaned.upper() for form in ['S.A.', 'SA', 'S.L.', 'SL', 'N.V.', 'NV', 'B.V.', 'BV', 'SPA', 'S.P.A.']):
+        return cleaned
+    return default_comp
+
 def fetch_eu_markets_feeds(feed_configs=None):
     """
-    Fetches pan-European regulatory announcements across Spain, France, and Euronext/BusinessWire.
+    Fetches pan-European regulatory announcements directly from official feeds
+    (CNMV España, AFM / Euronext Regulatory) without third-party search engines.
     Filters out any items older than 48 hours.
     Returns: (fresh_items, dropped_age_count)
     """
-    configs = feed_configs if feed_configs is not None else EU_FEEDS
+    configs = feed_configs if feed_configs is not None else OFFICIAL_EU_FEEDS
     fresh_items = []
     dropped_age_count = 0
     seen_urls = set()
+
+    ssl_ctx = ssl._create_unverified_context()
 
     for cfg in configs:
         url = cfg["url"]
@@ -63,18 +116,16 @@ def fetch_eu_markets_feeds(feed_configs=None):
 
         try:
             req = urllib.request.Request(url, headers=HEADERS)
-            with urllib.request.urlopen(req, timeout=12) as resp:
-                content = resp.read()
+            with urllib.request.urlopen(req, context=ssl_ctx, timeout=12) as resp:
+                content = resp.read().decode('utf-8', errors='ignore')
 
-            root = ET.fromstring(content)
-            for it in root.findall('.//item'):
-                t = it.find('title')
-                l = it.find('link')
-                d = it.find('pubDate')
+            items = parse_rss_items_robust(content)
 
-                title_text = html.unescape(t.text if t is not None and t.text else '')
-                link_text = l.text if l is not None and l.text else ''
-                pub_date = d.text if d is not None and d.text else None
+            for it in items:
+                title_text = it['title']
+                link_text = it['link']
+                pub_date = it['pubDate']
+                snippet_text = it['description']
 
                 if not title_text or link_text in seen_urls:
                     continue
@@ -87,30 +138,22 @@ def fetch_eu_markets_feeds(feed_configs=None):
 
                 seen_urls.add(link_text)
 
-                company = default_comp
-                clean_title = title_text
-                source_pub = source_label
-
-                if ' - ' in title_text:
-                    parts = title_text.rsplit(' - ', 1)
-                    clean_title = parts[0].strip()
-                    source_pub = parts[1].strip()
-
-                if ':' in clean_title:
-                    prefix = clean_title.split(':', 1)[0].strip()
-                    if 2 < len(prefix) < 45 and not prefix.lower().startswith(('communique', 'comunicado', 'aviso')):
-                        company = prefix
+                company = extract_company_from_eu_title(title_text, default_comp)
+                full_title = title_text
+                if company != default_comp and not title_text.startswith(company):
+                    full_title = f"{company}: {title_text}"
 
                 fresh_items.append({
-                    'source_name': f'{source_label} [{source_pub}]',
+                    'source_name': source_label,
                     'company': company,
-                    'title': clean_title,
-                    'snippet': f"Meldung ({region}): {clean_title}",
+                    'title': full_title,
+                    'snippet': snippet_text or f"Mitteilung der Aufsichtsbehörde ({source_label}): {full_title}",
                     'url': link_text,
                     'published_at': parsed_dt.isoformat() if parsed_dt else pub_date,
                     'region': region
                 })
+
         except Exception as e:
-            print(f"[EU Markets Ingestion] Notice for {source_label}: {e}")
+            print(f"[EU Markets Ingestion] Notice for {source_label} ({url}): {e}")
 
     return fresh_items, dropped_age_count

@@ -212,18 +212,10 @@ MANDATORY_EVENT_KEYWORDS = [
     "verlässt das unternehmen", "verlaesst das unternehmen", "niederlegung des mandats"
 ]
 
-# Rechtsformen Whitelist (Nur institutionelle & kapitalmarktrelevante Rechtsformen)
+# Rechtsformen Whitelist (Strikt Enterprise / Kapitalgesellschaften)
+# Erlaubt nur: AG, SE, KGaA, Plc, SA, NV, SpA, Corp, Groß-GmbH
 LEGAL_FORM_WHITELIST = [
-    # DACH
-    "AG", "SE", "GMBH", "KGAA", "GMBH & CO. KG", "GMBH & CO KG", "AG & CO. KG", "KGaA",
-    # UK / International
-    "PLC", "LTD", "LIMITED", "INC", "CORP", "CORPORATION", "HOLDING", "GROUP",
-    # France / BeNeLux
-    "SA", "SAS", "SARL", "NV", "BV",
-    # Spain / Italy
-    "SL", "SPA", "SRL",
-    # Nordics
-    "AB", "OYJ", "ASA", "AS"
+    "AG", "SE", "KGAA", "PLC", "SA", "NV", "SPA", "CORP", "GMBH"
 ]
 
 # Rechtsformen Blacklist (Kleinstunternehmen, GbR, Einzelunternehmen, UG -> SOFORTIGER DROP)
@@ -231,14 +223,15 @@ LEGAL_FORM_BLACKLIST = [
     "e.k.", "e. k.", "eingetragener kaufmann", "eingetragene kauffrau",
     "einzelunternehmen", "gbr", "gesellschaft bürgerlichen rechts", "gesbr",
     "ug (haftungsbeschränkt)", "ug haftungsbeschraenkt", "unternehmergesellschaft",
-    "verein", "e.v.", "eingetragener verein", "ggmbh", "stiftung", "partg", "partgmbb"
+    "verein", "e.v.", "eingetragener verein", "ggmbh", "stiftung", "partg", "partgmbb",
+    "genossenschaft", "eg"
 ]
 
 
-# Pan-European Feed Sources Configuration
+# Pan-European Official Primary Feed Sources Configuration (Keine Aggregatoren/Google News)
 FEED_SOURCES = {
     "eqs_news_dach": {
-        "name": "EQS News (DACH)",
+        "name": "EQS News & Ad-hoc (DACH)",
         "region": "DACH",
         "url": "https://www.eqs-news.com/de/rss/",
         "enabled": True
@@ -250,27 +243,27 @@ FEED_SOURCES = {
         "enabled": True
     },
     "swiss_shab": {
-        "name": "Schweizerische Handels- und Finanz-Feeds (SHAB Mutationen)",
+        "name": "Schweizerisches Handelsamtsblatt (SHAB Mutationen REST API)",
         "region": "CH",
-        "url": "https://news.google.com/rss/search?q=(%22Handelsregister%22+OR+%22SHAB%22+OR+%22Mutationen%22)+AND+(%22Amtsniederlegung%22+OR+%22R%C3%BCcktritt%22+OR+%22Vorstand%22+OR+%22Gesch%C3%A4ftsf%C3%BChrer%22+OR+%22Verwaltungsrat%22+OR+%22Ausscheiden%22+OR+%22Interim%22)&hl=de-CH&gl=CH&ceid=CH:de&tbs=qdr:d",
+        "url": "https://amtsblattportal.ch/api/v1/publications?publicationStates=PUBLISHED&subRubrics=HR02&page=0&size=50",
         "enabled": True
     },
     "eu_markets_es": {
-        "name": "Mercado Continuo & CNMV (Spanien)",
+        "name": "CNMV Información Privilegiada & OIR (Spanien)",
         "region": "ES",
-        "url": "https://news.google.com/rss/search?q=(CNMV+OR+%22Mercado+Continuo%22+OR+%22Bolsas+y+Mercados%22)+AND+(dimision+OR+renuncia+OR+%22cese+de+funciones%22+OR+%22relevo+de+la+direccion%22+OR+%22nombramiento+interino%22+OR+%22consejero+delegado%22)&hl=es&gl=ES&ceid=ES:es&tbs=qdr:d",
+        "url": "https://www.cnmv.es/portal/informacion-privilegiada/RSS.asmx/GetNoticiasCNMV",
         "enabled": True
     },
     "eu_markets_fr": {
-        "name": "Euronext Paris & AMF (Frankreich)",
+        "name": "AMF France Regulatory RSS (Frankreich)",
         "region": "FR",
-        "url": "https://news.google.com/rss/search?q=(Euronext+OR+AMF+OR+%22communiqu%C3%A9%22)+AND+(%22d%C3%A9mission%22+OR+%22d%C3%A9part%22+OR+%22int%C3%A9rim%22+OR+%22directeur+g%C3%A9n%C3%A9ral%22+OR+%22vacance+de+poste%22)&hl=fr&gl=FR&ceid=FR:fr&tbs=qdr:d",
+        "url": "https://www.amf-france.org/fr/rss",
         "enabled": True
     },
-    "eu_markets_pan": {
-        "name": "Pan-European Regulatory Announcements (Euronext / BusinessWire)",
+    "eu_markets_euronext": {
+        "name": "Euronext Pan-European Regulatory Press Releases",
         "region": "EU",
-        "url": "https://news.google.com/rss/search?q=(%22Business+Wire%22+OR+%22Euronext%22+OR+%22regulatory+news%22)+AND+(%22resignation%22+OR+%22steps+down%22+OR+%22interim+CEO%22+OR+%22interim+CFO%22+OR+%22board+changes%22+OR+%22leadership+transition%22)&hl=en-150&gl=DE&ceid=DE:en&tbs=qdr:d",
+        "url": "https://live.euronext.com/en/pd/press-releases/rss",
         "enabled": True
     }
 }

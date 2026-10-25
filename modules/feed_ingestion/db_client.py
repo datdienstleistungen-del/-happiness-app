@@ -8,13 +8,17 @@ from datetime import datetime, timezone
 try:
     from modules.feed_ingestion.config import (
         DEFAULT_USER_ID, STATUS_PENDING_REVIEW,
-        ROLE_BLACKLIST, ROLE_WHITELIST, MANDATORY_EVENT_KEYWORDS
+        ROLE_BLACKLIST, ROLE_WHITELIST, MANDATORY_EVENT_KEYWORDS,
+        LEGAL_FORM_WHITELIST, LEGAL_FORM_BLACKLIST
     )
+    from modules.feed_ingestion.date_utils import is_signal_fresh, parse_date
 except ImportError:
     from .config import (
         DEFAULT_USER_ID, STATUS_PENDING_REVIEW,
-        ROLE_BLACKLIST, ROLE_WHITELIST, MANDATORY_EVENT_KEYWORDS
+        ROLE_BLACKLIST, ROLE_WHITELIST, MANDATORY_EVENT_KEYWORDS,
+        LEGAL_FORM_WHITELIST, LEGAL_FORM_BLACKLIST
     )
+    from .date_utils import is_signal_fresh, parse_date
 
 def is_text_blacklisted_role(text):
     if not text:
@@ -150,6 +154,22 @@ class SupabaseClient:
             return None, "DROPPED_INVALID_URL"
         if not company_name or company_name.lower() in ('unternehmen', 'dach unternehmen', 'uk enterprise', 'schweizer unternehmen', 'null'):
             return None, "DROPPED_NO_COMPANY"
+        # ── 3-KLINGEN-FILTER VOR DB-INSERT ──
+        # Klinge 1 (Zeit): Strikt <= 48h bezogen auf das reale Ereignisdatum
+        event_date_val = item.get('event_date') or item.get('published_at') or datetime.now(timezone.utc).strftime('%Y-%m-%d')
+        is_fresh, age_hours, parsed_dt = is_signal_fresh(event_date_val, max_hours=48)
+        if not is_fresh:
+            return None, f"DROPPED_STALE_EVENT_DATE (>48h: {age_hours:.1f}h)"
+
+        # Klinge 2 (Rechtsform): Whitelist-Check auf Enterprise / Kapitalgesellschaften
+        norm_comp = company_name.upper()
+        has_form = any(bool(re.search(rf'\b{re.escape(f)}\b', norm_comp)) for f in LEGAL_FORM_WHITELIST)
+        if not has_form:
+            is_major = bool(re.search(r'\b(DAIMLER|SIEMENS|VOLKSWAGEN|BMW|BASF|BAYER|ALLIANZ|SAP|TELEKOM|E\.ON|RWE|AIRBUS|NESTLE|NOVARTIS|ROCHE|UBS|GLENCORE|ABB|SHELL|BP|VODAFONE|BARCLAYS|HSBC|SANTANDER|BBVA|TELEFONICA|TOTALENERGIES|SANOFI|AXA|BNP|STELLANTIS|ATLASSIAN|SITIME|PESCANOVA)\b', norm_comp))
+            if not is_major:
+                return None, "DROPPED_NON_WHITELIST_LEGAL_FORM"
+
+        # Klinge 3 (Seniority/Organ-Ebene): Organvakanzen, Not-Governance, CRO, Board
         if is_text_blacklisted_role(f"{title} {snippet}"):
             return None, "DROPPED_BLACKLISTED_ROLE"
 
@@ -162,7 +182,6 @@ class SupabaseClient:
         opp_id = str(uuid.uuid4())
         trigger_id = str(uuid.uuid4())
 
-        event_date_val = item.get('event_date') or item.get('published_at') or datetime.now(timezone.utc).strftime('%Y-%m-%d')
         situation_text = (
             f"[COMPANY]: {company_name}\n"
             f"[KAUFSIGNAL]: {title}\n"

@@ -85,16 +85,36 @@ def check_mandatory_event(text):
 
 def check_legal_form(company_name, text):
     """
-    Validates company legal form:
+    Validates company legal form (Klinge 2: Whitelist-Check):
     - Drops if legal form blacklist matches (e.g. e.K., GbR, UG, Verein).
+    - Enforces whitelist on Enterprise / Kapitalgesellschaften (erlaubt nur: AG, SE, KGaA, Plc, SA, NV, SpA, Corp, Groß-GmbH).
     """
     combined = f"{company_name} {text}".lower()
     norm = normalize_text(combined)
+
+    # 1. Blacklist check
     for bl in LEGAL_FORM_BLACKLIST:
         norm_b = normalize_text(bl)
         pattern = r'(?:\b|^)' + re.escape(norm_b) + r'(?:\b|$)'
         if re.search(pattern, norm):
             return False, f"LEGAL_FORM_BLACKLIST: '{bl}'"
+
+    # 2. Whitelist check (AG, SE, KGaA, Plc, SA, NV, SpA, Corp, Groß-GmbH)
+    norm_comp = normalize_text(company_name)
+    has_whitelist_form = False
+    for wf in LEGAL_FORM_WHITELIST:
+        norm_w = normalize_text(wf)
+        pattern = r'(?:\b|^)' + re.escape(norm_w) + r'(?:\b|$)'
+        if re.search(pattern, norm_comp) or re.search(pattern, norm):
+            has_whitelist_form = True
+            break
+
+    if not has_whitelist_form:
+        # Check if recognized major listed corporation
+        is_major = bool(re.search(r'\b(daimler|siemens|volkswagen|bmw|basf|bayer|allianz|sap|telekom|e\.on|rwe|airbus|nestle|novartis|roche|ubs|glencore|abb|shell|bp|vodafone|barclays|hsbc|santander|bbva|telefonica|totalenergies|sanofi|axa|bnp|stellantis|atlassian|sitime|pescanova)\b', norm_comp))
+        if not is_major:
+            return False, "NON_WHITELIST_LEGAL_FORM: Erlaubt nur AG, SE, KGaA, Plc, SA, NV, SpA, Corp, Groß-GmbH"
+
     return True, "LEGAL_FORM_OK"
 
 def evaluate_signal(item):

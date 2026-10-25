@@ -118,53 +118,5 @@ def fetch_eqs_feed(url='https://www.eqs-news.com/de/rss/'):
         except Exception as e:
             print(f"[EQS Ingestion] Notice for {target_url}: {e}")
 
-    # 2. Targeted Google News DACH for C-Level & Board transitions with &tbs=qdr:d
-    gn_url = 'https://news.google.com/rss/search?q=(Vorstandswechsel+OR+Amtsniederlegung+OR+%22vorzeitiges+Ausscheiden%22+OR+Interimsl%C3%B6sung+OR+Abberufung+OR+%22tritt+zur%C3%BCck%22)+when:2d&hl=de&gl=DE&ceid=DE:de&tbs=qdr:d'
-
-    try:
-        req = urllib.request.Request(gn_url, headers=HEADERS)
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = resp.read()
-        root = ET.fromstring(data)
-        for it in root.findall('.//item'):
-            l = it.find('link')
-            link_text = l.text if l is not None and l.text else ''
-            if link_text in seen_urls:
-                continue
-
-            t = it.find('title')
-            d = it.find('pubDate')
-            title_text = html.unescape(t.text if t is not None and t.text else '')
-            pub_date = d.text if d is not None and d.text else None
-
-            is_fresh, age_hours, parsed_dt = is_signal_fresh(pub_date, max_hours=48)
-            if not is_fresh:
-                dropped_age_count += 1
-                continue
-
-            seen_urls.add(link_text)
-            comp = "DACH Unternehmen"
-            if ' - ' in title_text:
-                title_text, pub_src = title_text.rsplit(' - ', 1)
-            else:
-                pub_src = "DACH Ad-hoc"
-
-            if ':' in title_text:
-                prefix = title_text.split(':', 1)[0].strip()
-                prefix = re.sub(r'[- ]Aktie$', '', prefix, flags=re.IGNORECASE).strip()
-                if 2 < len(prefix) < 50 and not prefix.lower().startswith(('studio', 'video', 'live')):
-                    comp = prefix
-
-            fresh_items.append({
-                'source_name': f'EQS / Corporate Ad-hoc (DACH) [{pub_src}]',
-                'company': comp,
-                'title': title_text,
-                'snippet': f"Tagesaktuelle Mitteilung: {title_text}",
-                'url': link_text,
-                'published_at': parsed_dt.isoformat() if parsed_dt else pub_date,
-                'region': 'DACH'
-            })
-    except Exception as e:
-        print(f"[EQS Google News Ingestion] Notice: {e}")
-
     return fresh_items, dropped_age_count
+

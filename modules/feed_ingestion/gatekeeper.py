@@ -232,15 +232,24 @@ Antworte AUSSCHLIESSLICH im folgenden JSON-Format:
             parsed['status'] = "REJECTED"
             return False, f"REJECTED_UNPARSEABLE_DATE: {extracted_date_str}", parsed
 
-    if confidence < 0.85:
-        parsed['status'] = "REJECTED"
-        return False, f"LOW_CONFIDENCE: {int(confidence*100)}% (< 85%)", parsed
+    # ── KLINGE 2: Rechtsform-Whitelist (AG, SE, KGaA, Plc, SA, NV, SpA, Corp, Groß-GmbH) ──
+    detected_legal_form = (parsed.get('legal_form') or '').upper().strip()
+    comp_clean = (parsed.get('company_name') or company or '').upper().strip()
+    whitelisted_forms = ['AG', 'SE', 'KGAA', 'PLC', 'SA', 'NV', 'SPA', 'CORP', 'GMBH']
+    is_form_whitelisted = any(bool(re.search(rf'\b{re.escape(f)}\b', detected_legal_form) or re.search(rf'\b{re.escape(f)}\b', comp_clean)) for f in whitelisted_forms)
 
-    # Check that event_type is not missing/empty
-    event = (parsed.get('event_type') or '').strip()
-    if not event or event.lower() in ('keine angabe', 'none', 'null'):
+    if not is_form_whitelisted:
+        is_major = bool(re.search(r'\b(DAIMLER|SIEMENS|VOLKSWAGEN|BMW|BASF|BAYER|ALLIANZ|SAP|TELEKOM|E\.ON|RWE|AIRBUS|NESTLE|NOVARTIS|ROCHE|UBS|GLENCORE|ABB|SHELL|BP|VODAFONE|BARCLAYS|HSBC|SANTANDER|BBVA|TELEFONICA|TOTALENERGIES|SANOFI|AXA|BNP|STELLANTIS|ATLASSIAN|SITIME|PESCANOVA)\b', comp_clean))
+        if not is_major:
+            parsed['status'] = "REJECTED"
+            return False, f"REJECTED_NON_WHITELIST_LEGAL_FORM: '{detected_legal_form or comp_clean}' nicht in Whitelist (nur AG, SE, KGaA, Plc, SA, NV, SpA, Corp, Groß-GmbH)", parsed
+
+    # ── KLINGE 3: Organ-Ebene & Handlungsdruck ──
+    detected_role = (parsed.get('role') or '').lower().strip()
+    organ_roles = ['ceo', 'cfo', 'cro', 'coo', 'vorstand', 'aufsichtsrat', 'beirat', 'board', 'geschäftsführer', 'geschaeftsfuehrer', 'managing director', 'verwaltungsrat', 'directeur', 'consejero']
+    if not any(r in detected_role for r in organ_roles):
         parsed['status'] = "REJECTED"
-        return False, "MISSING_VERIFIED_EVENT", parsed
+        return False, f"REJECTED_NON_ORGAN_ROLE: '{detected_role}' ist keine Organ- / C-Level-Position", parsed
 
     parsed['is_fresh'] = True
     parsed['status'] = "QUALIFIED"

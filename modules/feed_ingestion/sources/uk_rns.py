@@ -83,52 +83,5 @@ def fetch_uk_rns_feed(url='https://www.investegate.co.uk/Rss.aspx'):
     except Exception as e:
         print(f"[UK RNS Ingestion] Notice for {url}: {e}")
 
-    # 2. Google News UK RNS for Executive Moves / Board Changes (&tbs=qdr:d)
-    gn_url = 'https://news.google.com/rss/search?q=(%22Regulatory+News+Service%22+OR+%22RNS%22)+AND+(%22steps+down%22+OR+%22resignation%22+OR+%22interim+CEO%22+OR+%22interim+CFO%22+OR+%22board+changes%22+OR+%22executive+departure%22)+when:2d&hl=en-GB&gl=GB&ceid=GB:en&tbs=qdr:d'
-
-    try:
-        req = urllib.request.Request(gn_url, headers=HEADERS)
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = resp.read()
-        root = ET.fromstring(data)
-        for it in root.findall('.//item'):
-            l = it.find('link')
-            link_text = l.text if l is not None and l.text else ''
-            if link_text in seen_urls:
-                continue
-
-            t = it.find('title')
-            d = it.find('pubDate')
-            title_text = html.unescape(t.text if t is not None and t.text else '')
-            pub_date = d.text if d is not None and d.text else None
-
-            is_fresh, age_hours, parsed_dt = is_signal_fresh(pub_date, max_hours=48)
-            if not is_fresh:
-                dropped_age_count += 1
-                continue
-
-            seen_urls.add(link_text)
-            comp = "UK Enterprise"
-            if ' - ' in title_text:
-                title_text, pub_src = title_text.rsplit(' - ', 1)
-            else:
-                pub_src = "LSE RNS"
-
-            if ':' in title_text:
-                prefix = title_text.split(':', 1)[0].strip()
-                if 2 < len(prefix) < 50:
-                    comp = prefix
-
-            fresh_items.append({
-                'source_name': f'LSE RNS Executive Moves (UK) [{pub_src}]',
-                'company': comp,
-                'title': title_text,
-                'snippet': f"UK Regulatory Board Announcement: {title_text}",
-                'url': link_text,
-                'published_at': parsed_dt.isoformat() if parsed_dt else pub_date,
-                'region': 'UK'
-            })
-    except Exception as e:
-        print(f"[UK RNS Google News Ingestion] Notice: {e}")
-
     return fresh_items, dropped_age_count
+
