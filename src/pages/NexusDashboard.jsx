@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { 
   Radar, Target, TrendingUp, Users, ArrowRight, Zap, Activity,
   BarChart3, Clock, CheckCircle, AlertCircle, ChevronRight,
-  Lightbulb, TrendingDown, DollarSign, Building2, Sparkles
+  Lightbulb, TrendingDown, DollarSign, Building2, Sparkles, Archive
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { getDashboardStats, wipeAllUserData } from '../lib/nexus-db'
@@ -56,10 +56,10 @@ export default function NexusDashboard() {
       color: "var(--accent-blue, #38bdf8)"
     },
     {
-      icon: Radar,
-      title: t('nexus.dashboard.qaRadarTitle', 'Lead Radar'),
-      description: t('nexus.dashboard.qaRadarDesc', 'Finde Trigger Events und Kaufsignale'),
-      action: () => navigate('/nexus/lead-radar'),
+      icon: Archive,
+      title: 'Mandats-Archiv',
+      description: 'Kundenschutz & übermittelte Mandate',
+      action: () => navigate('/nexus/mandats-archiv'),
       color: "var(--accent-emerald, #10b981)"
     },
     {
@@ -201,10 +201,10 @@ export default function NexusDashboard() {
               <button 
                 className={offerings.length > 0 ? "nexus-btn-primary" : "nexus-btn-secondary"}
                 style={{ width: '100%', fontSize: '0.85rem', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                onClick={() => navigate('/nexus/lead-radar')}
+                onClick={() => navigate('/nexus/events')}
                 disabled={offerings.length === 0}
               >
-                <Radar size={15} /> Lead Radar öffnen
+                <Radar size={15} /> Primär-Radar öffnen
               </button>
             </div>
 
@@ -265,23 +265,23 @@ export default function NexusDashboard() {
           </div>
         </Link>
         
-        <Link to="/nexus/lead-radar" className="nexus-stat-card" style={{ textDecoration: 'none', cursor: 'pointer' }}>
+        <Link to="/nexus/events" className="nexus-stat-card" style={{ textDecoration: 'none', cursor: 'pointer' }}>
           <div className="nexus-stat-icon" style={{ color: 'var(--accent-emerald, #10b981)' }}>
             <Radar size={24} />
           </div>
           <div className="nexus-stat-content">
             <span className="nexus-stat-value">{stats.newTriggers}</span>
-            <span className="nexus-stat-label">{t('nexus.dashboard.statSignals', 'Frische Signale')}</span>
+            <span className="nexus-stat-label">Primär-Signale</span>
           </div>
         </Link>
         
-        <Link to="/nexus/lead-radar" className="nexus-stat-card" style={{ textDecoration: 'none', cursor: 'pointer' }}>
+        <Link to="/nexus/mandats-archiv" className="nexus-stat-card" style={{ textDecoration: 'none', cursor: 'pointer' }}>
           <div className="nexus-stat-icon">
-            <Target size={24} />
+            <Archive size={24} />
           </div>
           <div className="nexus-stat-content">
             <span className="nexus-stat-value">{stats.analyses}</span>
-            <span className="nexus-stat-label">{t('nexus.dashboard.statAnalyses', 'Analysen')}</span>
+            <span className="nexus-stat-label">Mandats-Archiv</span>
           </div>
         </Link>
         
@@ -357,8 +357,8 @@ export default function NexusDashboard() {
               {t('nexus.dashboard.nightShiftTitle', 'Signale der Nachtschicht (Auto-Radar)')}
               <ContextHelpButton helpKey="dashboard.auto_radar" />
             </h2>
-            <button onClick={() => navigate('/nexus/lead-radar')}>
-              {t('nexus.dashboard.openRadar', 'Radar öffnen')} <ChevronRight size={16} />
+            <button onClick={() => navigate('/nexus/events')}>
+              {t('nexus.dashboard.openRadar', 'Primär-Radar öffnen')} <ChevronRight size={16} />
             </button>
           </div>
           <div className="nexus-analyses-list">
@@ -367,7 +367,7 @@ export default function NexusDashboard() {
                 <div 
                   key={hit.id} 
                   className="nexus-analysis-item nexus-clickable"
-                  onClick={() => navigate('/nexus/lead-radar')}
+                  onClick={() => navigate('/nexus/events')}
                 >
                   <div className="nexus-analysis-icon">
                     <Activity size={20} color="var(--accent-blue, #38bdf8)" />

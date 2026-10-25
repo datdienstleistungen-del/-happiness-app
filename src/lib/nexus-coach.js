@@ -276,8 +276,8 @@ KERNMODULE:
    - Zentrale Steuerungszentrale für Pipeline-Übersicht, Konversionsraten, aktive Opportunities und Mandatsstatistiken.
 2. Mandatsereignisse (/nexus/events):
    - Strukturierte Überwachung europäischer Primärquellen im strikten 48h-Zeitfenster.
-3. Lead Radar (/nexus/lead-radar):
-   - Automatischer Echtzeit-Scanner für Kaufsignale und Organvakanzen.
+3. Mandats-Archiv (/nexus/mandats-archiv):
+   - Tracking- und Nachweis-Tabelle für übermittelte Mandate mit 12 Monaten Kundenschutz.
 4. Sales Workspace (/nexus/sales-workspace):
    - Zentrales Opportunity-Cockpit mit integriertem DealCoach-Audit (Stufe 2), Vakuum-Check und Frische-Ampel:
      * DealCoach Prüf-Panel: Automatische Einstufung in Tier 1 Top (Großunternehmen/Börse) vs. Tier 2 Mid (Mittelstand).

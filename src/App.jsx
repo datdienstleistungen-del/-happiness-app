@@ -36,6 +36,21 @@ if (typeof window !== 'undefined') {
       window.location.reload();
     }
   });
+
+  // Altlasten der vorherigen Schicht (Lead Radar v2.1 Cache) bereinigen
+  try {
+    const legacyKeys = [
+      'nexus:radar_state',
+      'nexus:radar_triggers',
+      'nexus:radar_saved_leads',
+      'nexus:lead_cache',
+      'nexus_leads',
+      'nexus:offering_cache'
+    ];
+    legacyKeys.forEach((key) => localStorage.removeItem(key));
+  } catch (err) {
+    // Ignore storage access errors
+  }
 }
 
 class ErrorBoundary extends Component {

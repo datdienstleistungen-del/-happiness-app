@@ -60,7 +60,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
     { to: '/nexus/sales-workspace', icon: Briefcase, label: 'Mandats-Desk' },
     { to: '/nexus/events', icon: Radar, label: 'Primär-Radar' },
     { to: '/coach', icon: ShieldCheck, label: 'DealCoach' },
-    { to: '/nexus/lead-radar', icon: Archive, label: 'Mandats-Archiv' },
+    { to: '/nexus/mandats-archiv', icon: Archive, label: 'Mandats-Archiv' },
   ]
 
   const renderLinks = (links) => links.map((link) => (
@@ -183,9 +183,9 @@ function MobileBar() {
         <ShieldCheck size={20} />
         <span>DealCoach</span>
       </Link>
-      <Link to="/nexus/lead-radar" className={`mobile-nav-link ${location.pathname === '/nexus/lead-radar' ? 'active' : ''}`}>
+      <Link to="/nexus/mandats-archiv" className={`mobile-nav-link ${location.pathname === '/nexus/mandats-archiv' ? 'active' : ''}`}>
         <Archive size={20} />
-        <span>Archiv</span>
+        <span>Mandats-Archiv</span>
       </Link>
     </nav>
   )

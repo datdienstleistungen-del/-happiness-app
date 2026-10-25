@@ -68,9 +68,10 @@ export default function AppRoutes() {
 
         {/* NeXus Mandate Origination Desk Core Routes (vollständig geschützt) */}
         <Route path="/nexus/sales-workspace" element={<ProtectedRoute><SalesWorkspacePage /></ProtectedRoute>} />
-        <Route path="/nexus/lead-radar" element={<ProtectedRoute><MandateArchivePage /></ProtectedRoute>} />
         <Route path="/nexus/mandats-archiv" element={<ProtectedRoute><MandateArchivePage /></ProtectedRoute>} />
         <Route path="/mandats-archiv" element={<ProtectedRoute><MandateArchivePage /></ProtectedRoute>} />
+        <Route path="/nexus/lead-radar" element={<Navigate to="/nexus/mandats-archiv" replace />} />
+        <Route path="/lead-radar" element={<Navigate to="/nexus/mandats-archiv" replace />} />
         <Route path="/nexus/dashboard" element={<ProtectedRoute><NexusDashboard /></ProtectedRoute>} />
         <Route path="/nexus/events" element={<ProtectedRoute><EventExplorerPage /></ProtectedRoute>} />
         <Route path="/nexus/lead-intelligence" element={<ProtectedRoute><LeadIntelligencePage /></ProtectedRoute>} />
