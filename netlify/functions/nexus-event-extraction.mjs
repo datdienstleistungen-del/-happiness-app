@@ -43,12 +43,18 @@ function buildExtractionPrompt(rawContent, sourceUrl, sourceTitle) {
 - Veraltete historische Events (z.B. Eröffnung/Fertigstellung liegt über 90 Tage zurück) haben KEINEN Vertriebswert. Wenn das Event rein historisch/abgelaufen ist, setze "confidence": 0.1.
 
 WICHTIG: Nutze NUR echte Daten aus dem Text. Erfinde absolut nichts.
-# EVENT-TYPEN & HIRING-SIGNALE:
-- Bei "hiring": Fokussiere auf strategische Positionen, Expansion, IT-/Software-Einführungen und Führungskräfte (z.B. Head of Sales, CTO, Expansions-Manager). Gewöhnliche Aushilfs- oder Praktikantenstellen haben keine Relevanz.
+# MANDATS-RELEVANTE EVENT-TYPEN (EUROPEAN MANDATE DESK):
+- "organ_vakanz": Abrupte Organ-Vakanz & Rücktritt (CEO/CFO/CRO Abberufung, Board-Vakuum)
+- "restrukturierung_cro": Restrukturierung, StaRUG, Eigenverwaltung, CRO-Bedarf
+- "not_governance_ar": Not-Governance & AR-Interim (Aufsichtsrat übernimmt operativ)
+- "m_and_a_board": M&A Vollzug & Board-Umbau (Post-Merger Organumbau, Delisting)
+- "carveout_pe": Carve-Out & PE-Transaktion (Spin-off, Portfolio-Lead)
+- "finanz_sondersituation": Finanzielle Sondersituation (Refinanzierung, Debt-Restrukturierung)
+- Fallback: "leadership_change" oder "regulatory"
 
 Gib die Antwort als JSON mit exakt diesen Feldern:
 {
-  "event_type": "expansion|hiring|investment|founding|merger_acquisition|product_launch|partnership|leadership_change|sustainability|regulatory",
+  "event_type": "organ_vakanz|restrukturierung_cro|not_governance_ar|m_and_a_board|carveout_pe|finanz_sondersituation|leadership_change|regulatory",
   "title": "Kurzbeschreibung des Events (1 Satz)",
   "description": "Ausführliche Beschreibung (2-3 Sätze)",
   "company_name": "Exakter Name des B2B-Unternehmens (NICHT Produktname, NICHT Markenname)",

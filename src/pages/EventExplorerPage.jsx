@@ -1,28 +1,184 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Building2, Calendar, MapPin, Sparkles, Loader2, AlertCircle, CheckCircle, ArrowRight, Globe, Crown } from 'lucide-react'
+import {
+  Search,
+  Building2,
+  Calendar,
+  MapPin,
+  Sparkles,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+  ArrowRight,
+  Globe,
+  Crown,
+  UserX,
+  Activity,
+  GitMerge,
+  Layers,
+  AlertTriangle,
+  ShieldCheck,
+  Briefcase
+} from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import * as db from '../lib/nexus-db'
 import { callEliteEnrichment } from '../lib/nexus-ai'
 import './EventExplorerPage.css'
 
-const DEFAULT_EVENT_TYPES = [
-  { id: 'leadership_change', event_key: 'leadership_change', label_de: 'Führungswechsel / C-Level', description_de: 'Neuer CEO, CTO, CIO oder VP eingestellt', icon: 'Crown' },
-  { id: 'funding_round', event_key: 'funding_round', label_de: 'Finanzierungsrunde / Kapitalerhöhung', description_de: 'Frisches Kapital für Expansion & Tool-Investitionen', icon: 'TrendingUp' },
-  { id: 'expansion_hiring', event_key: 'expansion_hiring', label_de: 'Expansion & Massen-Recruiting', description_de: 'Neuer Standort oder starkes Team-Wachstum', icon: 'Rocket' },
-  { id: 'merger_acquisition', event_key: 'merger_acquisition', label_de: 'Übernahme & M&A', description_de: 'Fusion, Akquisition oder System-Harmonisierung', icon: 'GitMerge' },
-  { id: 'compliance_audit', event_key: 'compliance_audit', label_de: 'Compliance / ESG / Regulatorik', description_de: 'Neue EU-Vorgaben, NIS-2, ISO-Zertifizierungen', icon: 'Shield' },
-  { id: 'software_switch', event_key: 'software_switch', label_de: 'Tool-Wechsel & IT-Modernisierung', description_de: 'Ablösung von Legacy-Systemen oder Cloud-Migration', icon: 'Package' }
+export const MANDATE_EVENT_TYPES = [
+  {
+    id: 'organ_vakanz',
+    event_key: 'organ_vakanz',
+    label_de: 'Abrupte Organ-Vakanz & Rücktritt',
+    description_de: 'CEO/CFO/CRO Abberufung, Board-Vakuum, Ad-hoc Rücktritt per sofort',
+    icon: 'UserX',
+    badge: 'Organ-Vakuum',
+    keywords: [
+      'Rücktritt per sofort',
+      'Amtsniederlegung Vorstand',
+      'CEO resignation immediate effect',
+      'directorate change',
+      'abberufen',
+      'Ausscheiden aus dem Vorstand',
+      'démission directeur général',
+      'dimisión consejero delegado',
+      'board vacancy'
+    ]
+  },
+  {
+    id: 'restrukturierung_cro',
+    event_key: 'restrukturierung_cro',
+    label_de: 'Restrukturierung & Sanierung',
+    description_de: 'StaRUG, Eigenverwaltung, CRO-Bedarf, Schutzschirmverfahren',
+    icon: 'Activity',
+    badge: 'StaRUG & Sanierung',
+    keywords: [
+      'StaRUG',
+      'Restrukturierungsplan',
+      'Eigenverwaltung',
+      'Schutzschirmverfahren',
+      'Chief Restructuring Officer',
+      'CRO interim',
+      'financial restructuring',
+      'redressement judiciaire',
+      'concurso de acreedores'
+    ]
+  },
+  {
+    id: 'not_governance_ar',
+    event_key: 'not_governance_ar',
+    label_de: 'Not-Governance & AR-Interim',
+    description_de: 'Aufsichtsrat übernimmt operativ, Führungskrise, Ad-hoc Mandat',
+    icon: 'Crown',
+    badge: 'AR übernimmt operativ',
+    keywords: [
+      'Aufsichtsrat übernimmt interimistisch',
+      'interim CEO',
+      'interim board mandate',
+      'Führungskrise Organ',
+      'ad interim executive',
+      'présidence par intérim',
+      'Verwaltungsrat operative Leitung'
+    ]
+  },
+  {
+    id: 'm_and_a_board',
+    event_key: 'm_and_a_board',
+    label_de: 'M&A Vollzug & Board-Umbau',
+    description_de: 'Post-Merger Organumbau, Delisting, Squeeze-out Neubesetzung',
+    icon: 'GitMerge',
+    badge: 'Post-Merger Organumbau',
+    keywords: [
+      'Post-Merger Board',
+      'Vorstandsumbau nach Übernahme',
+      'Squeeze-Out Organumbau',
+      'Delisting Board change',
+      'change of control executive',
+      'remaniement direction fusion'
+    ]
+  },
+  {
+    id: 'carveout_pe',
+    event_key: 'carveout_pe',
+    label_de: 'Carve-Out & PE-Transaktion',
+    description_de: 'Spin-off, Portfolio-Lead, Neubesetzung nach Transaktion',
+    icon: 'Layers',
+    badge: 'Carve-Out & PE',
+    keywords: [
+      'Carve-Out Management',
+      'Spin-off Vorstand',
+      'Private Equity Portfolio CEO',
+      'Management Buyout C-Level',
+      'PE sponsor executive replacement'
+    ]
+  },
+  {
+    id: 'finanz_sondersituation',
+    event_key: 'finanz_sondersituation',
+    label_de: 'Finanzielle Sondersituation',
+    description_de: 'Refinanzierung, Debt-Restrukturierung, Covenant-Breach, Liquiditätsengpass',
+    icon: 'AlertTriangle',
+    badge: 'Debt & Refinanzierung',
+    keywords: [
+      'Refinanzierungsverhandlung',
+      'Debt Restructuring',
+      'Anleiherestrukturierung',
+      'Kapitalherabsetzung',
+      'CFO Interim Sanierung',
+      'covenant breach waiver',
+      'Standstill Agreement',
+      'renegociation dette'
+    ]
+  }
+]
+
+export const GEOGRAPHY_OPTIONS = [
+  {
+    id: 'EU_UK',
+    label: 'Europa + UK (Gesamtmarkt)',
+    sublabel: 'Pan-Europäischer Gesamtmarkt inkl. UK & Schweiz',
+    sources: ['EQS News / DGAP', 'LSE RNS', 'SHAB (Schweiz)', 'AMF (Frankreich)', 'CNMV (Spanien)'],
+    sourcesList: 'EQS, LSE RNS, SHAB, CNMV, AMF'
+  },
+  {
+    id: 'DACH',
+    label: 'DACH (Deutschland, Österreich, Schweiz)',
+    sublabel: 'Bundesanzeiger, EQS / DGAP Ad-hoc, SHAB, Wiener Börse',
+    sources: ['EQS News / DGAP Ad-hoc', 'SHAB (Schweizerisches Handelsamtsblatt)', 'Wiener Börse'],
+    sourcesList: 'EQS, DGAP, SHAB, Wiener Börse'
+  },
+  {
+    id: 'UK_IRL',
+    label: 'UK & Irland',
+    sublabel: 'London Stock Exchange RNS & Regulatory Feeds',
+    sources: ['London Stock Exchange RNS', 'Investegate', 'Euronext Dublin'],
+    sourcesList: 'LSE RNS, Investegate, Euronext Dublin'
+  },
+  {
+    id: 'WEST_EU',
+    label: 'Westeuropa / Frankreich',
+    sublabel: 'AMF France, Euronext Paris & BeNeLux',
+    sources: ['AMF France', 'Euronext Paris / Brussels / Amsterdam', 'Moniteur Belge'],
+    sourcesList: 'AMF, Euronext Paris, Euronext Brussels'
+  },
+  {
+    id: 'SOUTH_EU',
+    label: 'Südeuropa / Spanien',
+    sublabel: 'CNMV España & BME Mercado Continuo',
+    sources: ['CNMV (Comisión Nacional del Mercado de Valores)', 'BME Bolsas y Mercados Españoles'],
+    sourcesList: 'CNMV, BME'
+  }
 ]
 
 export default function EventExplorerPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
 
-  const [eventTypes, setEventTypes] = useState(DEFAULT_EVENT_TYPES)
-  const [selectedType, setSelectedType] = useState(DEFAULT_EVENT_TYPES[0])
-  const [region, setRegion] = useState('Deutschland')
+  const [eventTypes] = useState(MANDATE_EVENT_TYPES)
+  const [selectedType, setSelectedType] = useState(MANDATE_EVENT_TYPES[0])
+  const [selectedRegionId, setSelectedRegionId] = useState('EU_UK')
+  const [customKeyword, setCustomKeyword] = useState('')
   const [loading, setLoading] = useState(false)
   const [events, setEvents] = useState([])
   const [stats, setStats] = useState(null)
@@ -31,18 +187,11 @@ export default function EventExplorerPage() {
   const [enrichingId, setEnrichingId] = useState(null)
   const [enrichedPackages, setEnrichedPackages] = useState({})
 
+  const selectedGeo = GEOGRAPHY_OPTIONS.find(g => g.id === selectedRegionId) || GEOGRAPHY_OPTIONS[0]
+
   useEffect(() => {
-    loadEventTypes()
     loadExistingEvents()
   }, [user])
-
-  async function loadEventTypes() {
-    const types = await db.getEventTypes()
-    if (types && types.length > 0) {
-      setEventTypes(types)
-      if (!selectedType) setSelectedType(types[0])
-    }
-  }
 
   async function loadExistingEvents() {
     if (!user) return
@@ -59,7 +208,7 @@ export default function EventExplorerPage() {
         company_id: null,
         headline: evt.title || `${evt.event_type} — ${evt.company_name}`,
         summary: evt.description || null,
-        why_relevant: `Business Event: ${evt.event_type}`,
+        why_relevant: `Executive Mandat Signal: ${evt.event_type}`,
         quality_score: evt.confidence ? Math.round(evt.confidence * 100) : 50,
         source_count: evt.source_count || 1,
         evidence: evt.raw_event_ids || [],
@@ -108,8 +257,14 @@ export default function EventExplorerPage() {
         },
         body: JSON.stringify({
           event_type: selectedType.event_key,
-          region: region,
-          time_range: '30d'
+          event_label: selectedType.label_de,
+          event_keywords: selectedType.keywords,
+          region_id: selectedGeo.id,
+          region: selectedGeo.label,
+          target_sources: selectedGeo.sources,
+          source_keywords: selectedGeo.sourcesList,
+          custom_keyword: customKeyword.trim() || undefined,
+          time_range: '48h'
         })
       })
 
@@ -131,7 +286,18 @@ export default function EventExplorerPage() {
   }
 
   function getEventIcon(iconName) {
-    const icons = { Building2, Users: Building2, TrendingUp: Sparkles, Rocket: ArrowRight, GitMerge: Building2, Package: Building2, Handshake: Building2, Crown: Building2, Leaf: Building2, Shield: Building2 }
+    const icons = {
+      UserX,
+      Activity,
+      Crown,
+      GitMerge,
+      Layers,
+      AlertTriangle,
+      Building2,
+      TrendingUp: Sparkles,
+      Shield: ShieldCheck,
+      ShieldAlert: AlertTriangle
+    }
     return icons[iconName] || Building2
   }
 
@@ -139,22 +305,32 @@ export default function EventExplorerPage() {
     <div className="event-explorer-page">
       <div className="event-explorer-header">
         <div>
-          <h1>Business Event Explorer</h1>
-          <p>Finde relevante Geschäftereignisse — unabhängig von Angeboten</p>
+          <div className="event-header-badge">
+            <Briefcase size={14} /> Europäischer Mandate Origination Desk
+          </div>
+          <h1>Executive Event & Mandate Explorer</h1>
+          <p>Echtzeit-Signale für Organ-Vakanzen, CRO-Restrukturierungen und Not-Governance aus europäischen Primärquellen</p>
         </div>
       </div>
 
-      {/* Event Type Selection */}
+      {/* Mandate Event Type Selection (6 Cards) */}
       <div className="event-type-grid">
         {eventTypes.map((type) => {
           const Icon = getEventIcon(type.icon)
+          const isSelected = selectedType?.id === type.id
           return (
             <button
               key={type.id}
-              className={`event-type-card ${selectedType?.id === type.id ? 'selected' : ''}`}
+              type="button"
+              className={`event-type-card ${isSelected ? 'selected' : ''}`}
               onClick={() => setSelectedType(type)}
             >
-              <Icon size={24} />
+              <div className="event-type-card-top">
+                <div className="event-type-icon-wrapper">
+                  <Icon size={20} />
+                </div>
+                {type.badge && <span className="event-badge-tag">{type.badge}</span>}
+              </div>
               <span className="event-type-label">{type.label_de}</span>
               <span className="event-type-desc">{type.description_de}</span>
             </button>
@@ -162,28 +338,70 @@ export default function EventExplorerPage() {
         })}
       </div>
 
-      {/* Search Controls */}
+      {/* European Geography & Search Controls */}
       <div className="event-search-controls">
-        <div className="event-search-input-group">
-          <Globe size={18} className="search-icon" />
+        <div className="event-search-select-wrapper">
+          <label htmlFor="geo-select" className="search-control-label">
+            <Globe size={15} />
+            <span>Geografie-Filter (Primärquellen-Fokus)</span>
+          </label>
+          <div className="event-search-select-group">
+            <select
+              id="geo-select"
+              value={selectedRegionId}
+              onChange={(e) => setSelectedRegionId(e.target.value)}
+              className="event-region-select"
+            >
+              {GEOGRAPHY_OPTIONS.map((geo) => (
+                <option key={geo.id} value={geo.id}>
+                  {geo.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="event-search-custom-wrapper">
+          <label htmlFor="custom-kw-input" className="search-control-label">
+            <Search size={15} />
+            <span>Zusatzbegriff / Unternehmen (optional)</span>
+          </label>
           <input
+            id="custom-kw-input"
             type="text"
-            value={region}
-            onChange={(e) => setRegion(e.target.value)}
-            placeholder="Region (z.B. Bayern, Deutschland, Europa)"
+            value={customKeyword}
+            onChange={(e) => setCustomKeyword(e.target.value)}
+            placeholder="z.B. DAX, MDAX, FTSE, Vorstand, StaRUG..."
+            className="event-custom-input"
           />
         </div>
-        <button
-          className="event-search-button"
-          onClick={handleSearch}
-          disabled={!selectedType || loading}
-        >
-          {loading ? (
-            <><Loader2 size={18} className="spin" /> Suche läuft...</>
-          ) : (
-            <><Search size={18} /> Events suchen</>
-          )}
-        </button>
+
+        <div className="event-search-action-wrapper">
+          <button
+            type="button"
+            className="event-search-button"
+            onClick={handleSearch}
+            disabled={!selectedType || loading}
+          >
+            {loading ? (
+              <><Loader2 size={18} className="spin" /> Durchsuche Primärquellen...</>
+            ) : (
+              <><Search size={18} /> Mandats-Events suchen</>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* European Primary Sources Indicator Bar */}
+      <div className="event-sources-bar">
+        <span className="sources-label">Gekoppelte europäische Primärquellen:</span>
+        <div className="sources-tags">
+          {selectedGeo.sources.map((src, idx) => (
+            <span key={idx} className="source-tag">
+              <ShieldCheck size={13} /> {src}
+            </span>
+          ))}
+        </div>
       </div>
 
       {/* Error */}
@@ -196,25 +414,26 @@ export default function EventExplorerPage() {
       {/* Stats */}
       {stats && (
         <div className="event-stats">
-          <span><strong>{stats.strategies}</strong> Strategien</span>
-          <span><strong>{stats.searched}</strong> Quellen durchsucht</span>
-          <span><strong>{stats.deduplicated}</strong> Duplikate entfernt</span>
-          <span><strong>{stats.extracted}</strong> Events extrahiert</span>
+          <span><strong>{stats.strategies || 0}</strong> Suchstrategien</span>
+          <span><strong>{stats.searched || 0}</strong> Quellen durchsucht</span>
+          <span><strong>{stats.deduplicated || 0}</strong> Duplikate gefiltert</span>
+          <span><strong>{stats.extracted || 0}</strong> Mandats-Signale extrahiert</span>
         </div>
       )}
 
       {/* Results */}
       {events.length > 0 && (
         <div className="event-results">
-          <h2>Gefundene Events ({events.length})</h2>
+          <h2>Gefundene Mandats-Events ({events.length})</h2>
           {events.map((evt, i) => (
             <div key={evt.id || i} className="event-result-card">
               <div className="event-result-header">
-                <span className={`event-type-badge ${evt.verification_status}`}>
+                <span className={`event-type-badge ${evt.verification_status || 'verified'}`}>
                   {evt.event_type}
                 </span>
                 <span className="event-date">
-                  {evt.event_date ? new Date(evt.event_date).toLocaleDateString('de-DE') : 'Kein Datum'}
+                  <Calendar size={13} style={{ display: 'inline', marginRight: 4, verticalAlign: 'text-top' }} />
+                  {evt.event_date ? new Date(evt.event_date).toLocaleDateString('de-DE') : 'Echtzeit-Signal'}
                 </span>
               </div>
               <h3>{evt.title}</h3>
@@ -222,7 +441,7 @@ export default function EventExplorerPage() {
               <div className="event-meta">
                 <span><Building2 size={14} /> {evt.company_name || 'UNRESOLVED'}</span>
                 {evt.city && <span><MapPin size={14} /> {evt.city}{evt.country ? `, ${evt.country}` : ''}</span>}
-                {evt.confidence && <span><Sparkles size={14} /> {Math.round(evt.confidence * 100)}%</span>}
+                {evt.confidence && <span><Sparkles size={14} /> Match-Konfidenz: {Math.round(evt.confidence * 100)}%</span>}
               </div>
               {evt.id && (
                 <div className="event-actions">
@@ -234,6 +453,7 @@ export default function EventExplorerPage() {
                     </span>
                   ) : (
                     <button
+                      type="button"
                       className="elite-button"
                       onClick={() => handleCreateAndEnrich(evt)}
                       disabled={enrichingId === evt.id}
@@ -241,7 +461,7 @@ export default function EventExplorerPage() {
                       {enrichingId === evt.id ? (
                         <><Loader2 size={14} className="spin" /> Anreichern...</>
                       ) : (
-                        <><Crown size={14} /> Elite Package</>
+                        <><Crown size={14} /> Mandats-Package generieren</>
                       )}
                     </button>
                   )}
@@ -255,11 +475,11 @@ export default function EventExplorerPage() {
       {/* Existing Events */}
       {existingEvents.length > 0 && !loading && (
         <div className="existing-events">
-          <h2>Bisherige Events ({existingEvents.length})</h2>
+          <h2>Historische Mandats-Signale ({existingEvents.length})</h2>
           {existingEvents.slice(0, 10).map((evt) => (
             <div key={evt.id} className="event-result-card existing">
               <div className="event-result-header">
-                <span className={`event-type-badge ${evt.verification_status}`}>
+                <span className={`event-type-badge ${evt.verification_status || 'verified'}`}>
                   {evt.event_type}
                 </span>
                 <span className="event-date">

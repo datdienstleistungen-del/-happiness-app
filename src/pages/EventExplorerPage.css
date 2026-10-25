@@ -1,5 +1,5 @@
 /* ==========================================================================
-   NEXUS EVENT EXPLORER - OBSIDIAN B2B HIGH-END THEME
+   NEXUS EVENT EXPLORER - OBSIDIAN B2B HIGH-END THEME (EUROPEAN MANDATE DESK)
    ========================================================================== */
 
 .event-explorer-page {
@@ -16,6 +16,22 @@
   margin-bottom: 28px;
 }
 
+.event-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(56, 189, 248, 0.1);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  margin-bottom: 8px;
+}
+
 .event-explorer-header h1 {
   font-size: 1.6rem;
   font-weight: 700;
@@ -30,11 +46,11 @@
   font-size: 0.95rem;
 }
 
-/* Event Type Grid */
+/* Mandate Event Type Grid (6 Executive Trigger Cards) */
 .event-type-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
   margin-bottom: 28px;
 }
 
@@ -42,8 +58,8 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
-  padding: 18px;
+  gap: 10px;
+  padding: 20px;
   border: 1px solid var(--border-subtle, #1e232d);
   border-radius: 12px;
   background: var(--bg-card, #11141a);
@@ -66,65 +82,139 @@
   box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
 }
 
-.event-type-card svg {
+.event-type-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.event-type-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(56, 189, 248, 0.1);
   color: var(--accent-blue, #38bdf8);
+}
+
+.event-badge-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  letter-spacing: 0.02em;
 }
 
 .event-type-label {
   font-weight: 700;
   color: var(--text-primary, #f8fafc);
-  font-size: 0.92rem;
+  font-size: 0.96rem;
+  line-height: 1.3;
 }
 
 .event-type-desc {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: var(--text-secondary, #94a3b8);
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
-/* Search Controls */
+/* European Geography & Search Controls */
 .event-search-controls {
   display: flex;
-  gap: 12px;
-  margin-bottom: 28px;
+  gap: 16px;
+  margin-bottom: 16px;
   flex-wrap: wrap;
+  align-items: flex-end;
 }
 
-.event-search-input-group {
+.event-search-select-wrapper {
+  flex: 1.4;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.event-search-custom-wrapper {
   flex: 1;
-  min-width: 300px;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.event-search-action-wrapper {
+  display: flex;
+  align-items: flex-end;
+}
+
+.search-control-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.event-search-select-group {
   position: relative;
-}
-
-.event-search-input-group .search-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-muted, #64748b);
-}
-
-.event-search-input-group input {
   width: 100%;
-  padding: 14px 16px 14px 44px;
+}
+
+.event-region-select {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1px solid var(--border-medium, #1e232d);
+  border-radius: 8px;
+  background: var(--bg-input, #0e1015);
+  color: var(--text-primary, #f8fafc);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.event-region-select:focus {
+  border-color: var(--accent-blue, #38bdf8);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+}
+
+.event-region-select option {
+  background: #11141a;
+  color: #f8fafc;
+  padding: 8px;
+}
+
+.event-custom-input {
+  width: 100%;
+  padding: 13px 16px;
   border: 1px solid var(--border-medium, #1e232d);
   border-radius: 8px;
   background: var(--bg-input, #0e1015);
   color: var(--text-primary, #f8fafc);
   font-size: 0.95rem;
   transition: border-color 0.2s;
+  outline: none;
 }
 
-.event-search-input-group input:focus {
-  outline: none;
+.event-custom-input:focus {
   border-color: var(--accent-blue, #38bdf8);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
 }
 
 .event-search-button {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 26px;
+  padding: 13px 26px;
   border: none;
   border-radius: 8px;
   background: var(--accent-blue, #38bdf8);
@@ -133,6 +223,7 @@
   font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .event-search-button:hover:not(:disabled) {
@@ -143,6 +234,45 @@
 .event-search-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Primary Sources Indicator Bar */
+.event-sources-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 18px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle, #1e232d);
+  margin-bottom: 28px;
+}
+
+.sources-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.sources-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.source-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
 }
 
 .spin {
