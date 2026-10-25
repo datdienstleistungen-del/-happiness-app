@@ -33,7 +33,7 @@ export function lazyWithRetry(componentImport) {
 // Lazy loaded core Mandate Origination Desk pages
 const LoginPage = lazyWithRetry(() => import('../pages/LoginPage'))
 const SalesWorkspacePage = lazyWithRetry(() => import('../pages/SalesWorkspacePage'))
-const LeadRadarPage = lazyWithRetry(() => import('../pages/NexusLeadRadarPage'))
+const MandateArchivePage = lazyWithRetry(() => import('../pages/MandateArchivePage'))
 const NexusDashboard = lazyWithRetry(() => import('../pages/NexusDashboard'))
 const EventExplorerPage = lazyWithRetry(() => import('../pages/EventExplorerPage'))
 const LeadIntelligencePage = lazyWithRetry(() => import('../pages/NexusLeadIntelligencePage'))
@@ -68,7 +68,9 @@ export default function AppRoutes() {
 
         {/* NeXus Mandate Origination Desk Core Routes (vollständig geschützt) */}
         <Route path="/nexus/sales-workspace" element={<ProtectedRoute><SalesWorkspacePage /></ProtectedRoute>} />
-        <Route path="/nexus/lead-radar" element={<ProtectedRoute><LeadRadarPage /></ProtectedRoute>} />
+        <Route path="/nexus/lead-radar" element={<ProtectedRoute><MandateArchivePage /></ProtectedRoute>} />
+        <Route path="/nexus/mandats-archiv" element={<ProtectedRoute><MandateArchivePage /></ProtectedRoute>} />
+        <Route path="/mandats-archiv" element={<ProtectedRoute><MandateArchivePage /></ProtectedRoute>} />
         <Route path="/nexus/dashboard" element={<ProtectedRoute><NexusDashboard /></ProtectedRoute>} />
         <Route path="/nexus/events" element={<ProtectedRoute><EventExplorerPage /></ProtectedRoute>} />
         <Route path="/nexus/lead-intelligence" element={<ProtectedRoute><LeadIntelligencePage /></ProtectedRoute>} />

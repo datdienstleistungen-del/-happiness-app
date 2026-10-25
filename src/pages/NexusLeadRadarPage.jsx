@@ -11,7 +11,6 @@ import UpgradeModal from '../components/UpgradeModal'
 import { useLead } from '../context/LeadContext'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../i18n/translations.jsx'
-import SignalPublishSection from '../components/SignalPublishSection'
 import './NexusLeadRadarPage.css'
 
 export { normalizeCompanyName, deduplicateAndMergeTriggers, buildCompositeEventKey }
@@ -1690,15 +1689,6 @@ export default function NexusLeadRadarPage() {
                           </span>
                         )}
                       </div>
-                    </div>
-
-                    {/* Human-Verified Freigabe & Veröffentlichung auf dat-dat.de (Arbeitsfeld 100% Breite) */}
-                    <div className="trigger-publish-container" style={{ width: '100%', boxSizing: 'border-box', marginTop: '14px' }}>
-                      <SignalPublishSection
-                        trigger={trigger}
-                        userId={user?.id}
-                      />
-                    </div>
                   </div>
             );
           })}

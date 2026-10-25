@@ -361,29 +361,12 @@ export function buildSignalPayload({
       ],
       targetBuyers: targetBuyers
     },
-    pricing: {
-      standard: {
-        netto: 78.0,
-        mwst: 14.82,
-        brutto: 92.82,
-        currency: 'EUR',
-        label: '78,00 € zzgl. USt.',
-        maxBuyers: 5
-      },
-      exclusive: {
-        netto: 249.0,
-        mwst: 47.31,
-        brutto: 296.31,
-        currency: 'EUR',
-        label: '249,00 € zzgl. USt.'
-      },
-      netto: 78.0,
-      mwst: 14.82,
-      brutto: 92.82,
-      currency: 'EUR',
-      label: '78,00 € zzgl. USt.'
+    mandateProtection: {
+      protectionMonths: 12,
+      standard: 'D.A.T.-Kundenschutz-Standard',
+      label: '12 Monate Kundenschutz nach Übermittlung'
     },
-    // 2. VERDECKTER BEREICH / PAYWALL (Nach Freischaltung unzensiert)
+    // 2. KLARDATEN-VAULT (Für autorisierte Partner nach Übermittlung)
     unlockedDossier: {
       dossierId: `DAT-DOS-${new Date().getFullYear()}-${slug.slice(0, 8).toUpperCase()}`,
       company: {
@@ -439,109 +422,5 @@ export function buildSignalPayload({
   return signalObj
 }
 
-/**
- * Veröffentlicht das Signal als Human-Verified Dossier in Supabase (nexus_lead_packages)
- * und optional auf dem Webserver von dat-dat.de.
- */
-export async function publishSignalToDatWebsite({
-  signalObj,
-  userId = '976e6211-8931-425a-a171-0c062290181b'
-}) {
-  const liveUrl = `https://dat-dat.de/signal/${signalObj.slug}`
-  
-  // 1. In Supabase: nexus_lead_packages mit status = 'published' speichern
-  try {
-    const packageRecord = {
-      user_id: userId,
-      headline: signalObj.teaser.headline,
-      summary: signalObj.teaser.eventSummary,
-      why_relevant: signalObj.teaser.includedDataSummary,
-      quality_score: 100,
-      has_contact: true,
-      evidence: [signalObj.unlockedDossier.primarySource],
-      contacts: signalObj.unlockedDossier.decisionMakers,
-      company_data: signalObj, // Speichert das gesamte Dossier inkl. Slug und Teaser
-      status: 'published',
-      package_tier: 'human-verified',
-      updated_at: new Date().toISOString()
-    }
-
-    // 1. Prüfen, ob bereits ein Lead für dieses Signal existiert (verhindert Duplikate)
-    const { data: existingPackages } = await supabase
-      .from('nexus_lead_packages')
-      .select('id, company_data, headline')
-      .limit(50)
-
-    const existingMatch = existingPackages?.find(p => {
-      const cd = p.company_data || {}
-      return cd.slug === signalObj.slug || 
-             p.headline === signalObj.teaser.headline ||
-             (cd.unlockedDossier?.company?.legalName && signalObj.unlockedDossier?.company?.legalName &&
-              cd.unlockedDossier.company.legalName.toLowerCase() === signalObj.unlockedDossier.company.legalName.toLowerCase())
-    })
-
-    if (existingMatch) {
-      const { data: dbData, error: dbError } = await supabase
-        .from('nexus_lead_packages')
-        .update(packageRecord)
-        .eq('id', existingMatch.id)
-        .select()
-        .single()
-
-      if (dbError) {
-        console.warn('[Publisher] Supabase Update Warnung:', dbError.message)
-      } else {
-        console.log('[Publisher] Signal erfolgreich in nexus_lead_packages aktualisiert:', dbData?.id)
-      }
-    } else {
-      const { data: dbData, error: dbError } = await supabase
-        .from('nexus_lead_packages')
-        .insert(packageRecord)
-        .select()
-        .single()
-
-      if (dbError) {
-        console.warn('[Publisher] Supabase Ingestion Warnung:', dbError.message)
-      } else {
-        console.log('[Publisher] Signal erfolgreich in nexus_lead_packages neu hinterlegt:', dbData?.id)
-      }
-    }
-  } catch (err) {
-    console.error('[Publisher] Fehler beim Speichern in Supabase:', err)
-  }
-
-  // 2. Netlify Function Call (Sync zu dat-dat.de / signalsData.js)
-  try {
-    const syncRes = await fetch('/.netlify/functions/publish-signal', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ signal: signalObj })
-    })
-    if (syncRes.ok) {
-      console.log('[Publisher] Signal erfolgreich via Netlify Function synchronisiert.')
-    }
-  } catch (syncErr) {
-    // Nicht-blockierend (Supabase ist bereits die Single Source of Truth)
-    console.log('[Publisher] Lokaler Netlify-Sync übersprungen (Client-Modus).')
-  }
-
-  // 3. Generiere diebstahlsichere Nachricht an potentielle Lead-Käufer (Headhunter/Vertriebler auf LinkedIn)
-  const industryClean = signalObj.teaser?.industry?.split('·')[0]?.trim() || 'B2B & Technologie'
-  const regionClean = signalObj.teaser?.region?.split('/')[0]?.trim() || 'DACH-Raum'
-  const categoryClean = signalObj.teaser?.signalCategory || 'EXPANSION & STRATEGISCHES HIRING'
-
-  const linkedInMessage = `Guten Tag [Name], wir beobachten über DAT Dienstleistungen laufend den B2B-Markt und haben aktuell ein verifiziertes Kaufsignal (< 30 Tage) in Ihrer Zielbranche identifiziert (${industryClean} · Region ${regionClean}: ${categoryClean}).
-
-Um die Identität des Ziel-Accounts und Ihren Erstkontaktsvorteil zu schützen, ist das Unternehmen in unserer Vorschau geblurt und auf max. 5 Zuteilungen limitiert.
-
-Hier können Sie die geblurte Vorschau prüfen und das verifizierte Dossier (inkl. Primärquelle, Hintergrund & Rollen-Targeting) freischalten:
-${liveUrl}`
-
-  return {
-    success: true,
-    liveUrl,
-    slug: signalObj.slug,
-    headline: signalObj.teaser.headline,
-    linkedInMessage
-  }
-}
+// Deprecated legacy publisher logic removed.
+// Mandate dispatches are now tracked in MandateArchivePage with 12 months client protection.

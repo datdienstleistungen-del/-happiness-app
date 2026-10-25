@@ -12,8 +12,7 @@ import { useLanguage } from '../i18n/translations.jsx'
 import CoachChatPage from './CoachChatPage'
 import NexusLiveProgressBar from '../components/NexusLiveProgressBar'
 import { ContextHelpButton } from '../components/ContextHelpButton'
-import SignalPublishSection from '../components/SignalPublishSection'
-import { resolveTriggerCompanyName, extractCompanyNameFromText, buildSignalPayload, publishSignalToDatWebsite } from '../lib/nexus-signal-publisher'
+import { resolveTriggerCompanyName, extractCompanyNameFromText } from '../lib/nexus-signal-publisher'
 import { trackSocialOutreachGenerated, trackSocialCommentCopied, trackSocialDmCopied, trackSocialOriginalOpened } from '../lib/nexus-analytics'
 import './SalesWorkspacePage.css'
 
@@ -133,12 +132,14 @@ export default function SalesWorkspacePage() {
   const [customEventDate, setCustomEventDate] = useState('')
   const [isEditingEventDate, setIsEditingEventDate] = useState(false)
 
-  // Direkt-Veröffentlichung State & Modal
+  // Mandats-Übermittlung & 12 Monate Kundenschutz State & Modal
   const [isDirectPublishing, setIsDirectPublishing] = useState(false)
-  const [directPublishResult, setDirectPublishResult] = useState(null)
-  const [showDirectPublishModal, setShowDirectPublishModal] = useState(false)
-  const [copiedDirectLink, setCopiedDirectLink] = useState(false)
-  const [copiedDirectMessage, setCopiedDirectMessage] = useState(false)
+  const [showDispatchModal, setShowDispatchModal] = useState(false)
+  const [dispatchPartner, setDispatchPartner] = useState('taskforce - Management on Demand AG')
+  const [dispatchRole, setDispatchRole] = useState('')
+  const [dispatchSuccess, setDispatchSuccess] = useState(false)
+  const [dispatchSuccessData, setDispatchSuccessData] = useState(null)
+  const [copiedDispatchBlind, setCopiedDispatchBlind] = useState(false)
 
   // Blind-Profil State & Modal
   const [showBlindProfileModal, setShowBlindProfileModal] = useState(false)
@@ -558,8 +559,7 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
 3. Funktionale Entscheider-Ebene & Vorzimmer-Zentrale
 4. Maßgeschneiderte Pitch- & Ansprache-Vorlage
 
-⚖️ 100% DSGVO-konform · Primärquelle verifiziert durch Harro Goerndt
-🔗 Live-Allokation: https://dat-dat.de/signal/${data.slug}`;
+⚖️ 100% DSGVO-konform · Primärquelle verifiziert durch Harro Goerndt · D.A.T. Mandats-Desk`;
 
     navigator.clipboard.writeText(text);
     setCopiedBlindText(true);
@@ -585,8 +585,8 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
     }
   };
 
-  const handleDirectPublish = async (force = false) => {
-    if (!activeOpp) return
+  const handleOpenDispatchModal = (force = false) => {
+    if (!activeOpp) return;
     if (!force) {
       const dateVal = activeTrigger?.event_date || activeOpp?.event_date || activeTrigger?.published_at || activeTrigger?.created_at || activeOpp?.created_at;
       const traffic = getFreshnessTrafficLight(dateVal);
@@ -594,84 +594,95 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
         setStaleWarningModal({
           title: `🚨 Veraltetes Signal (${traffic.label})`,
           traffic,
-          actionName: 'Als Dossier auf dat-dat.de veröffentlichen',
-          onConfirm: () => handleDirectPublish(true)
+          actionName: 'Mandat an Partner übermitteln',
+          onConfirm: () => handleOpenDispatchModal(true)
         });
         return;
       }
     }
-    setIsDirectPublishing(true)
-    try {
-      const resolvedCompName = resolveTriggerCompanyName(activeTrigger, activeOpp)
-      const noteToUse = reviewNotes || 'Primärquelle verifiziert. Zielgruppe: Executive Search, Personalberater & Interim Manager. - Harro Goerndt'
+    const resolvedRole = activeOpp.title?.includes(':') ? activeOpp.title.split(':')[1].trim() : (activeOpp.situation || 'C-Level Organvakanz');
+    setDispatchRole(resolvedRole);
+    setDispatchSuccess(false);
+    setShowDispatchModal(true);
+  };
 
-      // Automatisch als verifiziert markieren, falls noch nicht geschehen
-      if (activeOpp.review_status !== 'verified' && activeOpp.review_status !== 'reviewed') {
-        const now = new Date().toISOString()
-        try {
-          let saved = await db.updateOpportunity(activeOpp.id, {
-            review_status: 'verified',
-            review_notes: noteToUse,
-            reviewed_at: now
-          })
-          if (!saved) {
-            await db.updateOpportunity(activeOpp.id, {
-              review_status: 'reviewed',
-              review_notes: noteToUse,
-              reviewed_at: now
-            })
-          }
-        } catch (e) {
-          console.warn('[DirectPublish] DB status update fallback:', e)
-        }
-        setActiveOpp(prev => ({ ...prev, review_status: 'verified', review_notes: noteToUse }))
-        if (fullContext) {
-          setFullContext(prev => ({ ...prev, review_status: 'verified', review_notes: noteToUse }))
-        }
+  const handleDirectPublish = (force = false) => handleOpenDispatchModal(force);
+
+  const handleConfirmDispatch = async () => {
+    if (!activeOpp) return;
+    setIsDirectPublishing(true);
+    try {
+      const compName = resolveTriggerCompanyName(activeTrigger, activeOpp) || activeOpp.nexus_companies?.name || activeOpp.title || 'Mandat';
+      const now = new Date();
+      const protectionUntil = new Date(now);
+      protectionUntil.setFullYear(protectionUntil.getFullYear() + 1);
+
+      const entry = {
+        id: `arch-${Date.now()}`,
+        company: compName,
+        countryMarket: activeOpp.country || 'DE · Prime Standard',
+        role: dispatchRole || 'Interim Organ / C-Level',
+        transmittedTo: dispatchPartner,
+        transmittedAt: now.toISOString(),
+        protectionUntil: protectionUntil.toISOString(),
+        status: 'AKTIV_GESCHUETZT',
+        notes: `Aus Mandats-Desk an ${dispatchPartner} übermittelt.`,
+        source: activeTrigger?.source || activeOpp.source || 'EQS / Primärquelle'
+      };
+
+      // Speichere in Mandats-Archiv (localStorage)
+      try {
+        const existing = JSON.parse(localStorage.getItem('nexus:mandate_archive_v1') || '[]');
+        const updated = [entry, ...existing.filter(e => e.id !== entry.id)];
+        localStorage.setItem('nexus:mandate_archive_v1', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Archive save error:', e);
       }
 
-      const effectiveTrigger = activeTrigger
-        ? { ...activeTrigger, ...(customEventDate ? { event_date: customEventDate } : {}) }
-        : (customEventDate ? { event_date: customEventDate } : null);
+      // Aktualisiere Status in Supabase
+      try {
+        await db.updateOpportunity(activeOpp.id, {
+          pipeline_stage: 'dispatched',
+          review_status: 'verified',
+          review_notes: `An Partner übermittelt: ${dispatchPartner}. 12 Monate Kundenschutz bis ${protectionUntil.toLocaleDateString('de-DE')}.`
+        });
+        setActiveOpp(prev => ({ ...prev, pipeline_stage: 'dispatched', review_status: 'verified' }));
+      } catch (e) {
+        console.warn('DB update error on dispatch:', e);
+      }
 
-      const signalPayload = buildSignalPayload({
-        opportunity: activeOpp,
-        trigger: effectiveTrigger,
-        foundContact,
-        analystName: 'Harro Goerndt',
-        verificationNote: noteToUse,
-        overrideCompany: resolvedCompName
-      })
+      // Blind-Profil zur sofortigen Weitergabe kopieren
+      const blind = getBlindProfileData(activeOpp, activeTrigger);
+      if (blind?.teaser) {
+        const text = `🔒 EXKLUSIVES MANDATS-SIGNAL (D.A.T. MANDATS-DESK)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🏢 Mandant / Zielprofil: ${blind.teaser.headline}
+📍 Region & Branche: ${blind.teaser.industry}
+📊 Transaktionsphase: ${blind.teaser.lifecycleBadge} · ${blind.teaser.signalCategory}
+⚠️ Handlungsdruck & Organvakanz:
+${blind.teaser.eventSummary}
 
-      const result = await publishSignalToDatWebsite({
-        signalPayload,
-        signalObj: signalPayload,
-        userId: user?.id || '976e6211-8931-425a-a171-0c062290181b'
-      })
+🎯 Übermittelt an Partner: ${dispatchPartner}
+⚖️ 12 Monate Kundenschutz aktiv bis: ${protectionUntil.toLocaleDateString('de-DE')}
+Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
 
-      setDirectPublishResult(result)
-      setShowDirectPublishModal(true)
+        navigator.clipboard.writeText(text);
+        setCopiedDispatchBlind(true);
+      }
+
+      setDispatchSuccessData({
+        company: compName,
+        partner: dispatchPartner,
+        protectionDate: protectionUntil.toLocaleDateString('de-DE')
+      });
+      setDispatchSuccess(true);
     } catch (err) {
-      console.error('[SalesWorkspace] Veröffentlichungsfehler:', err)
-      alert('Fehler bei der Veröffentlichung auf dat-dat.de. Bitte prüfen Sie die Verbindung.')
+      console.error('Dispatch error:', err);
+      alert('Fehler beim Protokollieren der Übermittlung.');
     } finally {
-      setIsDirectPublishing(false)
+      setIsDirectPublishing(false);
     }
-  }
-
-  const handleCopyDirectLink = () => {
-    if (!directPublishResult?.liveUrl) return
-    navigator.clipboard.writeText(directPublishResult.liveUrl)
-    setCopiedDirectLink(true)
-    setTimeout(() => setCopiedDirectLink(false), 2500)
-  }
-
-  const handleCopyDirectMessage = () => {
-    if (!directPublishResult?.linkedInMessage) return
-    navigator.clipboard.writeText(directPublishResult.linkedInMessage)
-    setCopiedDirectMessage(true)
-    setTimeout(() => setCopiedDirectMessage(false), 2500)
-  }
+  };
 
   const handleReject = async () => {
     if (!activeOpp?.id) return
@@ -2146,40 +2157,32 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
 
                 return (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                    {/* Veröffentlichungs-Button prominent & permanent für alle verifizierten Leads */}
+                    {/* Übermittlungs-Button prominent & permanent für alle verifizierten Leads */}
                     {isVerifiedHeader && (
                       <button
                         type="button"
                         disabled={isDirectPublishing}
-                        onClick={handleDirectPublish}
+                        onClick={() => handleOpenDispatchModal(false)}
                         style={{
-                          background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                          background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
                           color: '#ffffff',
-                          border: '1px solid #4ade80',
+                          border: '1px solid #38bdf8',
                           padding: '7px 16px',
                           borderRadius: '8px',
-                          fontWeight: 800,
+                          fontWeight: 700,
                           fontSize: '0.84rem',
                           cursor: isDirectPublishing ? 'not-allowed' : 'pointer',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '6px',
-                          boxShadow: '0 0 16px rgba(34, 197, 94, 0.4)',
+                          boxShadow: '0 0 16px rgba(2, 132, 199, 0.4)',
                           transition: 'all 0.2s ease',
                           whiteSpace: 'nowrap'
                         }}
-                        title="Signal jetzt ohne Umwege als Human-Verified Dossier auf dat-dat.de live schalten"
+                        title="Mandat an Partner übermitteln & 12 Monate Kundenschutz sichern"
                       >
-                        {isDirectPublishing ? (
-                          <>
-                            <Loader2 size={13} className="animate-spin" />
-                            <span>Veröffentliche...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>🚀 Als Human-Verified Dossier auf dat-dat.de veröffentlichen</span>
-                          </>
-                        )}
+                        <ShieldCheck size={14} />
+                        <span>Mandat übermitteln & Kundenschutz sichern</span>
                       </button>
                     )}
 
@@ -3164,35 +3167,27 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                       <button
                         type="button"
                         disabled={isDirectPublishing}
-                        onClick={handleDirectPublish}
+                        onClick={() => handleOpenDispatchModal(false)}
                         style={{
-                          background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                          background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
                           color: '#ffffff',
-                          border: '1px solid #4ade80',
+                          border: '1px solid #38bdf8',
                           padding: '12px 24px',
                           borderRadius: '8px',
-                          fontWeight: 800,
+                          fontWeight: 700,
                           fontSize: '0.92rem',
                           cursor: isDirectPublishing ? 'not-allowed' : 'pointer',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '8px',
-                          boxShadow: '0 0 20px rgba(34, 197, 94, 0.45)',
+                          boxShadow: '0 0 20px rgba(2, 132, 199, 0.45)',
                           transition: 'all 0.2s ease',
                           whiteSpace: 'nowrap'
                         }}
-                        title="Signal jetzt ohne Umwege als Human-Verified Dossier auf dat-dat.de live schalten"
+                        title="Mandat an Partner übermitteln & 12 Monate Kundenschutz sichern"
                       >
-                        {isDirectPublishing ? (
-                          <>
-                            <Loader2 size={16} className="animate-spin" />
-                            <span>Veröffentliche auf dat-dat.de...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>🚀 Als Human-Verified Dossier auf dat-dat.de veröffentlichen</span>
-                          </>
-                        )}
+                        <ShieldCheck size={16} />
+                        <span>Mandat übermitteln & Kundenschutz sichern</span>
                       </button>
                     </div>
                   ) : activeOpp.review_status === 'rejected' ? (
@@ -3913,35 +3908,27 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                           <button
                             type="button"
                             disabled={isDirectPublishing}
-                            onClick={handleDirectPublish}
+                            onClick={() => handleOpenDispatchModal(false)}
                             style={{
-                              background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
                               color: '#ffffff',
-                              border: '1px solid #4ade80',
+                              border: '1px solid #38bdf8',
                               padding: '13px 28px',
                               borderRadius: '8px',
-                              fontWeight: 800,
+                              fontWeight: 700,
                               fontSize: '0.95rem',
                               cursor: isDirectPublishing ? 'not-allowed' : 'pointer',
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: '10px',
-                              boxShadow: '0 0 22px rgba(34, 197, 94, 0.45)',
+                              boxShadow: '0 0 22px rgba(2, 132, 199, 0.45)',
                               transition: 'all 0.2s ease',
                               whiteSpace: 'nowrap'
                             }}
-                            title="Signal jetzt ohne Umwege als Human-Verified Dossier auf dat-dat.de live schalten"
+                            title="Mandat an Partner übermitteln & 12 Monate Kundenschutz sichern"
                           >
-                            {isDirectPublishing ? (
-                              <>
-                                <Loader2 size={18} className="animate-spin" />
-                                <span>Veröffentliche auf dat-dat.de...</span>
-                              </>
-                            ) : (
-                              <>
-                                <span>🚀 Als Human-Verified Dossier auf dat-dat.de veröffentlichen</span>
-                              </>
-                            )}
+                            <ShieldCheck size={18} />
+                            <span>Mandat übermitteln & Kundenschutz sichern</span>
                           </button>
                         ) : (
                           <>
@@ -4026,33 +4013,25 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                                 disabled={isDirectPublishing}
                                 onClick={handleDirectPublish}
                                 style={{
-                                  background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
                                   color: '#ffffff',
-                                  border: '1px solid #4ade80',
+                                  border: '1px solid #38bdf8',
                                   padding: '12px 24px',
                                   borderRadius: '8px',
-                                  fontWeight: 800,
+                                  fontWeight: 700,
                                   fontSize: '0.92rem',
                                   cursor: isDirectPublishing ? 'not-allowed' : 'pointer',
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: '8px',
-                                  boxShadow: '0 0 20px rgba(34, 197, 94, 0.45)',
+                                  boxShadow: '0 0 20px rgba(2, 132, 199, 0.45)',
                                   transition: 'all 0.2s ease',
                                   whiteSpace: 'nowrap'
                                 }}
-                                title="Signal jetzt ohne Umwege als Human-Verified Dossier auf dat-dat.de live schalten"
+                                title="Mandat an Partner übermitteln & 12 Monate Kundenschutz sichern"
                               >
-                                {isDirectPublishing ? (
-                                  <>
-                                    <Loader2 size={16} className="animate-spin" />
-                                    <span>Veröffentliche auf dat-dat.de...</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <span>🚀 Als Human-Verified Dossier auf dat-dat.de veröffentlichen</span>
-                                  </>
-                                )}
+                                <ShieldCheck size={16} />
+                                <span>Mandat übermitteln & Kundenschutz sichern</span>
                               </button>
                             )}
                           </>
@@ -4733,15 +4712,6 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                           );
                         })()}
 
-                        {/* Human-Verified Freigabe & Veröffentlichung auf dat-dat.de */}
-                        <SignalPublishSection
-                          opportunity={activeOpp}
-                          trigger={activeTrigger}
-                          foundContact={foundContact}
-                          userId={user?.id}
-                          isPreVerified={activeOpp?.review_status === 'verified' || activeOpp?.review_status === 'reviewed'}
-                          overrideCompany={resolveTriggerCompanyName(activeTrigger, activeOpp)}
-                        />
                       </div>
                     )}
 
@@ -4970,14 +4940,14 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
         )}
       </div>
 
-      {/* 🚀 Bestätigungs-Modal für Veröffentlichung auf dat-dat.de */}
-      {showDirectPublishModal && directPublishResult && (
+      {/* ⚖️ Mandats-Übermittlung & 12 Monate Kundenschutz Modal */}
+      {showDispatchModal && activeOpp && (
         <div 
           style={{
             position: 'fixed',
             inset: 0,
             zIndex: 9999,
-            backgroundColor: 'rgba(0, 0, 0, 0.78)',
+            backgroundColor: 'rgba(15, 23, 42, 0.75)',
             backdropFilter: 'blur(8px)',
             display: 'flex',
             alignItems: 'center',
@@ -4985,17 +4955,17 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
             padding: '20px'
           }}
           onClick={(e) => {
-            if (e.target === e.currentTarget) setShowDirectPublishModal(false)
+            if (e.target === e.currentTarget) setShowDispatchModal(false)
           }}
         >
           <div 
             style={{
-              background: '#0a0d14',
-              border: '1px solid #0284c7',
+              background: '#ffffff',
+              border: '1px solid #cbd5e1',
               borderRadius: '16px',
-              maxWidth: '680px',
+              maxWidth: '640px',
               width: '100%',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 35px rgba(2, 132, 199, 0.35)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
@@ -5021,20 +4991,20 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}>
-                  <CheckCircle size={22} color="#ffffff" />
+                  <ShieldCheck size={22} color="#ffffff" />
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.18rem', fontWeight: 700, color: '#ffffff' }}>
-                    Signal erfolgreich auf dat-dat.de live geschaltet!
+                  <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: '#ffffff' }}>
+                    Mandat an Partner übermitteln & Kundenschutz aktivieren
                   </h3>
                   <p style={{ margin: '2px 0 0 0', fontSize: '0.84rem', color: '#e0f2fe' }}>
-                    Human-Verified Dossier ist sofort abrufbar und paywall-geschützt.
+                    Rechtssicherer 12-Monate-Kundenschutz nach D.A.T.-Standard im Mandats-Archiv
                   </p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setShowDirectPublishModal(false)}
+                onClick={() => setShowDispatchModal(false)}
                 style={{
                   background: 'transparent',
                   border: 'none',
@@ -5044,8 +5014,7 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                   borderRadius: '6px',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: 0.85
+                  justifyContent: 'center'
                 }}
                 title="Schließen"
               >
@@ -5054,167 +5023,199 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
             </div>
 
             {/* Modal Body */}
-            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              
-              {/* Element 1: 🔗 Live Ziel-Link */}
-              <div style={{
-                background: '#111827',
-                border: '1px solid #1f2937',
-                borderRadius: '12px',
-                padding: '16px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    🔗 1. Finaler Live-Link (dat-dat.de Teaser &amp; Paywall)
-                  </label>
-                  <a
-                    href={directPublishResult.liveUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      fontSize: '0.8rem',
-                      color: '#38bdf8',
-                      textDecoration: 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    Vorschau öffnen <ExternalLink size={12} />
-                  </a>
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              {dispatchSuccess ? (
+                <div style={{
+                  padding: '20px',
+                  background: 'rgba(16, 185, 129, 0.08)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#059669', fontWeight: 700, fontSize: '1.05rem' }}>
+                    <CheckCircle size={22} />
+                    <span>Mandat erfolgreich übermittelt & protokolliert!</span>
+                  </div>
+                  <div style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.6 }}>
+                    Das Mandat für <strong>{dispatchSuccessData?.company}</strong> wurde an <strong>{dispatchSuccessData?.partner}</strong> übermittelt. Der 12-monatige Kundenschutz ist bis zum <strong>{dispatchSuccessData?.protectionDate}</strong> im Mandats-Archiv rechtswirksam hinterlegt.
+                  </div>
+                  {copiedDispatchBlind && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#0284c7', fontWeight: 600 }}>
+                      <Check size={14} /> Vertrauliches Blind-Profil automatisch in Zwischenablage kopiert!
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDispatchModal(false);
+                        navigate('/nexus/mandats-archiv');
+                      }}
+                      style={{
+                        padding: '10px 18px',
+                        borderRadius: '8px',
+                        background: '#0284c7',
+                        color: '#ffffff',
+                        border: 'none',
+                        fontWeight: 700,
+                        fontSize: '0.86rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <Archive size={16} /> Zum Mandats-Archiv wechseln
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowDispatchModal(false)}
+                      style={{
+                        padding: '10px 18px',
+                        borderRadius: '8px',
+                        background: '#f1f5f9',
+                        color: '#334155',
+                        border: '1px solid #cbd5e1',
+                        fontWeight: 600,
+                        fontSize: '0.86rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Schließen
+                    </button>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <input
-                    type="text"
-                    readOnly
-                    value={directPublishResult.liveUrl || ''}
-                    style={{
-                      flex: 1,
-                      background: '#030712',
-                      border: '1px solid #374151',
-                      borderRadius: '8px',
-                      padding: '10px 14px',
-                      color: '#f9fafb',
-                      fontSize: '0.88rem',
-                      fontFamily: 'monospace'
-                    }}
-                    onFocus={(e) => e.target.select()}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleCopyDirectLink}
-                    style={{
-                      background: copiedDirectLink ? '#22c55e' : '#0284c7',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '10px 16px',
-                      fontWeight: 700,
-                      fontSize: '0.86rem',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      transition: 'all 0.15s ease',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    {copiedDirectLink ? <Check size={16} /> : <Copy size={16} />}
-                    {copiedDirectLink ? 'Kopiert!' : 'Link kopieren'}
-                  </button>
-                </div>
-              </div>
+              ) : (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>
+                        Zielgesellschaft
+                      </label>
+                      <div style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
+                        {resolveTriggerCompanyName(activeTrigger, activeOpp) || activeOpp.nexus_companies?.name || activeOpp.title || 'Zielgesellschaft'}
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>
+                        Kundenschutz-Frist
+                      </label>
+                      <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#059669', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <ShieldCheck size={16} /> 12 Monate ab heute ({(() => {
+                          const d = new Date();
+                          d.setFullYear(d.getFullYear() + 1);
+                          return d.toLocaleDateString('de-DE');
+                        })()})
+                      </div>
+                    </div>
+                  </div>
 
-              {/* Element 2: ✉️ Gegenstandsbezogenes LinkedIn-Anschreiben */}
-              <div style={{
-                background: '#111827',
-                border: '1px solid #1f2937',
-                borderRadius: '12px',
-                padding: '16px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    ✉️ 2. Gegenstandsbezogenes LinkedIn-Anschreiben (Personalberater / Headhunter / Interim-Manager)
-                  </label>
-                  <span style={{ fontSize: '0.78rem', color: '#9ca3af' }}>
-                    Sofort versandfertig
-                  </span>
-                </div>
-                <textarea
-                  readOnly
-                  rows={5}
-                  value={directPublishResult.linkedInMessage || ''}
-                  style={{
-                    width: '100%',
-                    background: '#030712',
-                    border: '1px solid #374151',
-                    borderRadius: '8px',
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                      Partner-Organisation (Empfänger) *
+                    </label>
+                    <select
+                      value={dispatchPartner}
+                      onChange={(e) => setDispatchPartner(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '0.9rem',
+                        color: '#0f172a',
+                        background: '#f8fafc',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="taskforce - Management on Demand AG">taskforce - Management on Demand AG</option>
+                      <option value="Atreus GmbH (A Heimatt Group Company)">Atreus GmbH (A Heimatt Group Company)</option>
+                      <option value="Egon Zehnder International">Egon Zehnder International</option>
+                      <option value="Russell Reynolds Associates">Russell Reynolds Associates</option>
+                      <option value="Spencer Stuart">Spencer Stuart</option>
+                      <option value="Korn Ferry">Korn Ferry</option>
+                      <option value="Freier PE-Partner / Family Office">Freier PE-Partner / Family Office</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                      Vakanz / Organfunktion
+                    </label>
+                    <input
+                      type="text"
+                      value={dispatchRole}
+                      onChange={(e) => setDispatchRole(e.target.value)}
+                      placeholder="z. B. Interim CFO, CEO-Vakanz, CRO Restrukturierung"
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '0.9rem',
+                        color: '#0f172a',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+
+                  <div style={{
                     padding: '12px 14px',
-                    color: '#f9fafb',
-                    fontSize: '0.88rem',
-                    lineHeight: '1.6',
-                    fontFamily: 'inherit',
-                    resize: 'none',
-                    boxSizing: 'border-box',
-                    marginBottom: '12px'
-                  }}
-                  onFocus={(e) => e.target.select()}
-                />
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    type="button"
-                    onClick={handleCopyDirectMessage}
-                    style={{
-                      background: copiedDirectMessage ? '#22c55e' : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '10px 18px',
-                      fontWeight: 700,
-                      fontSize: '0.88rem',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    {copiedDirectMessage ? <Check size={16} /> : <Copy size={16} />}
-                    {copiedDirectMessage ? 'Anschreiben kopiert!' : 'Anschreiben kopieren'}
-                  </button>
-                </div>
-              </div>
+                    background: '#f1f5f9',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0',
+                    fontSize: '0.82rem',
+                    color: '#64748b',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <FileText size={16} color="#0284c7" />
+                    <span>Das anonymisierte Blind-Profil für den Partner wird beim Übermitteln automatisch in die Zwischenablage kopiert.</span>
+                  </div>
 
-            </div>
-
-            {/* Modal Footer */}
-            <div style={{
-              background: '#030712',
-              padding: '14px 24px',
-              borderTop: '1px solid #1f2937',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>
-                Status: Live geschaltet · Max. 3 Zuteilungen · Paywall aktiv (78,00 € zzgl. USt.)
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowDirectPublishModal(false)}
-                style={{
-                  background: '#374151',
-                  color: '#f9fafb',
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '8px 20px',
-                  fontWeight: 600,
-                  fontSize: '0.86rem',
-                  cursor: 'pointer'
-                }}
-              >
-                Schließen
-              </button>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowDispatchModal(false)}
+                      style={{
+                        padding: '10px 18px',
+                        borderRadius: '8px',
+                        background: '#f1f5f9',
+                        color: '#334155',
+                        border: '1px solid #cbd5e1',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Abbrechen
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isDirectPublishing}
+                      onClick={handleConfirmDispatch}
+                      style={{
+                        padding: '10px 22px',
+                        borderRadius: '8px',
+                        background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        fontWeight: 700,
+                        fontSize: '0.88rem',
+                        cursor: isDirectPublishing ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      {isDirectPublishing ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
+                      <span>Übermittlung protokollieren & Kundenschutz aktivieren</span>
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -5417,7 +5418,7 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                   <div style={{ background: '#0e131f', border: '1px solid #1e293b', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#4ade80', fontWeight: 700, fontSize: '0.95rem' }}>
                       <ShieldCheck size={20} />
-                      <span>Verifizierter Klardaten-Tresor (Wird Käufern nach Freischaltung geliefert)</span>
+                      <span>Verifizierter Klardaten-Tresor (Wird Partnern nach Übermittlung übergeben)</span>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
@@ -5587,9 +5588,9 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                   <button
                     type="button"
                     disabled={isDirectPublishing}
-                    onClick={async () => {
+                    onClick={() => {
                       setShowBlindProfileModal(false);
-                      await handleDirectPublish();
+                      handleOpenDispatchModal();
                     }}
                     style={{
                       background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
@@ -5606,7 +5607,7 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
                       boxShadow: '0 0 14px rgba(34, 197, 94, 0.4)'
                     }}
                   >
-                    {isDirectPublishing ? <Loader2 size={16} className="animate-spin" /> : <span>🚀 Als Dossier auf dat-dat.de live schalten</span>}
+                    <ShieldCheck size={16} /> <span>Mandat übermitteln & Kundenschutz sichern</span>
                   </button>
                 </div>
 
