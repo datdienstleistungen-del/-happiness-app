@@ -128,25 +128,40 @@ def run_ingestion(dry_run=False, skip_cleanup=False):
     matched_signals = []
     inserted_signals = []
     skipped_duplicates = 0
+    tier1_count = 0
+    tier2_count = 0
+    rejected_count = 0
 
-    for item in all_fresh_items:
+    for idx, item in enumerate(all_fresh_items, 1):
+        print(f"\n[{idx:02d}/{len(all_fresh_items)}] ⚖️ DealCoach-Revision: {item.get('company', 'N/A')} ({item.get('region', 'EU')})")
+        print(f"   Titel: {item.get('title', '')[:85]}")
+
+        # Stufe 1: Vorprüfung
         eval_result = evaluate_signal(item)
         if not eval_result:
-            continue
-
-        print(f"\n🎯 STUFE 1 TREFFER: [{eval_result['prio']}] {eval_result['category']}")
-        print(f"   Unternehmen: {item.get('company', 'N/A')} ({item.get('region', 'EU')})")
-        print(f"   Titel:       {item.get('title', '')[:85]}")
+            eval_result = {
+                'category': 'ORGANVAKANZ & LEADERSHIP',
+                'prio': 'MITTEL',
+                'priority_db': 'mittel',
+                'confidence_score': 0.75,
+                'strategic_angle': 'DealCoach Primär-Scan',
+                'matched_keywords': []
+            }
 
         # STUFE 2: DealCoach Automatisierte Revision & Vorsortierungs-Instanz
-        print("   -> ⚖️ DealCoach-Revision (Vakuum-Check & Dringlichkeits-Audit)...")
         is_valid, reason, deal_audit = audit_mandate_lead(item, eval_result)
         if not is_valid or not deal_audit or deal_audit.get('tier') == 'REJECTED':
-            print(f"   -> 🛑 DEALCOACH DROP ({deal_audit.get('tier', 'REJECTED') if deal_audit else 'REJECTED'}): {reason}")
+            rejected_count += 1
+            print(f"   -> 🛑 DEALCOACH DROP ({deal_audit.get('tier', 'REJECTED') if deal_audit else 'REJECTED'}): {reason[:100]}")
             continue
 
         # Extrahierte Fakten und DealCoach-Audit übernehmen
         tier = deal_audit.get('tier', 'TIER_2_MID')
+        if tier == 'TIER_1_TOP':
+            tier1_count += 1
+        elif tier == 'TIER_2_MID':
+            tier2_count += 1
+
         if deal_audit.get('company_name'):
             item['company'] = deal_audit['company_name']
         if deal_audit.get('role'):
@@ -165,17 +180,19 @@ def run_ingestion(dry_run=False, skip_cleanup=False):
         eval_result['tier'] = tier
         eval_result['priority_db'] = tier
 
-        print(f"   -> 🎯 DEALCOACH BESTANDEN: [{tier}] {item.get('company')} | {item.get('role', '')} | {item.get('person', '')} ({int(eval_result['confidence_score'] * 100)}%)")
-        print(f"      • Vakuum-Check: {deal_audit.get('vacuum_check', 'N/A')}")
-        print(f"      • Dringlichkeit: {deal_audit.get('urgency_check', 'N/A')}")
-        print(f"      • Begründung:   {deal_audit.get('audit_rationale', 'N/A')}")
-        print(f"      • Budget-Band:  {deal_audit.get('estimated_budget', 'N/A')}")
+        dest_desc = "Mandats-Desk (Haupt-Posteingang)" if tier == "TIER_1_TOP" else "Boutique-Pool (Mandats-Archiv)"
+        print(f"   -> 🎯 DEALCOACH BESTANDEN: [{tier}] -> {dest_desc}")
+        print(f"      • Zielgesellschaft: {item.get('company')} | {item.get('role', '')} ({int(eval_result['confidence_score'] * 100)}%)")
+        print(f"      • Vakuum-Check:     {deal_audit.get('vacuum_check', 'N/A')}")
+        print(f"      • Dringlichkeit:    {deal_audit.get('urgency_check', 'N/A')}")
+        print(f"      • Begründung:       {deal_audit.get('audit_rationale', 'N/A')}")
+        print(f"      • Budget-Band:      {deal_audit.get('estimated_budget', 'N/A')}")
         matched_signals.append((item, eval_result))
 
         if not dry_run and db:
             record, status = db.insert_opportunity(item, eval_result, deal_audit=deal_audit)
             if status == "INSERTED":
-                print(f"   -> 📥 Im Posteingang (PENDING_REVIEW) abgelegt. ID: {record.get('id')}")
+                print(f"   -> 📥 Erfolgreich in Datenbank gespeichert. ID: {record.get('id')}")
                 inserted_signals.append({
                     'id': record.get('id'),
                     'company': item.get('company'),
@@ -195,13 +212,16 @@ def run_ingestion(dry_run=False, skip_cleanup=False):
     print("📈 FINALE ZUSAMMENFASSUNG DES RADAR-LAUFS")
     print(f"• Rohmeldungen insgesamt geladen:            {total_raw_loaded}")
     print(f"• Wegen Alter (>48h) verworfen:              {total_dropped_age}")
-    print(f"• Echte C-Level & Board Vakanzen (<=48h):    {len(matched_signals)}")
+    print(f"• Aspiranten im Zeitfenster geprüft:         {len(all_fresh_items)}")
+    print(f"• 🏆 TIER_1_TOP (Mandats-Desk Posteingang):  {tier1_count}")
+    print(f"• 💎 TIER_2_MID (Boutique-Pool Archiv):       {tier2_count}")
+    print(f"• 🛑 REJECTED (Routine / kein Organbedarf):  {rejected_count}")
     if not dry_run and not skip_cleanup:
         print(f"• Bereinigte Alt-Einträge im Posteingang:    {deleted_stale_count}")
     if dry_run:
         print(f"• Simulierte Inbox-Speicherungen:            {len(matched_signals)} (Dry Run)")
     else:
-        print(f"• Neu in Inbox (PENDING_REVIEW) gespeichert: {len(inserted_signals)}")
+        print(f"• Neu in Datenbank gespeichert:              {len(inserted_signals)}")
         print(f"• Bereits vorhandene Duplikate:              {skipped_duplicates}")
     print("=" * 75)
 

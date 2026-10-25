@@ -55,6 +55,8 @@ MISTRAL_MODELS = [
     'mistral-small-latest'
 ]
 
+DEEPSEEK_KEY = os.environ.get('DEEPSEEK_API_KEY') or ENV.get('DEEPSEEK_API_KEY') or ENV.get('VITE_DEEPSEEK_API_KEY')
+
 def extract_json_from_text(text):
     """Robust JSON extraction from LLM response."""
     if not text:
@@ -74,6 +76,35 @@ def extract_json_from_text(text):
         except Exception:
             pass
     return None
+
+def call_deepseek(prompt):
+    if not DEEPSEEK_KEY:
+        return None
+    url = "https://api.deepseek.com/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {DEEPSEEK_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "deepseek-chat",
+        "messages": [
+            {
+                "role": "system",
+                "content": "Du bist der NeXus DealCoach – die automatisierte Revisions- und Vorsortierungs-Instanz (Stufe 2) für den europäischen Mandate Origination Desk. Prüfe knallhart, objektiv und antworte ausschließlich in validem JSON."
+            },
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.1,
+        "max_tokens": 550,
+        "response_format": {"type": "json_object"}
+    }
+    req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers, method='POST')
+    try:
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            return data.get('choices', [{}])[0].get('message', {}).get('content', '')
+    except Exception:
+        return None
 
 def call_openrouter(prompt, model):
     if not OPENROUTER_KEY:
@@ -99,7 +130,7 @@ def call_openrouter(prompt, model):
     }
     req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers, method='POST')
     try:
-        with urllib.request.urlopen(req, timeout=7) as resp:
+        with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read().decode('utf-8'))
             return data.get('choices', [{}])[0].get('message', {}).get('content', '')
     except Exception:
@@ -128,7 +159,7 @@ def call_mistral(prompt, model):
     }
     req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers, method='POST')
     try:
-        with urllib.request.urlopen(req, timeout=7) as resp:
+        with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read().decode('utf-8'))
             return data.get('choices', [{}])[0].get('message', {}).get('content', '')
     except Exception:
@@ -148,6 +179,36 @@ def audit_mandate_lead(item, eval_result):
 
     now_utc = datetime.now(timezone.utc)
     today_str = now_utc.strftime('%Y-%m-%d')
+
+    # ── FAST-PATH REJECTION FÜR BEKANNTE BÖRSEN-ROUTINEMELDUNGEN OHNE ORGANBEDARF ──
+    combined_lower = f"{title} {snippet}".lower()
+    routine_patterns = [
+        (r'transaction in own shares', 'Routine-Aktienrückkauf (Treasury) ohne Organ-Vakanz'),
+        (r'holding\(?s\)? in company', 'Passive Stimmrechtsanpassung / Beteiligungsmeldung ohne Organwechsel'),
+        (r'\bstimmrechtsanteile\b', 'Gesetzliche Stimmrechtsmitteilung (§§ 33 ff. WpHG) ohne Organvakanz'),
+        (r'\bpdmr shareholding\b', 'Routine Eigengeschäft von Führungskräften (Art. 19 MAR) ohne Vakanz'),
+        (r'director/pdmr shareholding', 'Routine Eigengeschäft von Führungskräften ohne Vakanz'),
+        (r'\bexercise of warrants\b', 'Routine Optionsausübung / Kapitalmaßnahme'),
+        (r'\bissue of equity\b', 'Routine Ausgabe neuer Aktien ohne Führungswechsel'),
+        (r'\bblock listing\b', 'Börsen-Notierungsmitteilung ohne Organbedarf'),
+        (r'vorabbekanntmachung finanzberichte', 'Reguläre Veröffentlichungspflicht für Finanzberichte')
+    ]
+    for pattern, rationale in routine_patterns:
+        if re.search(pattern, combined_lower):
+            parsed = {
+                'status': 'REJECTED',
+                'tier': 'REJECTED',
+                'is_valid_mandate_event': False,
+                'is_fresh': True,
+                'company_name': company,
+                'vacuum_check': f'FEHLGESCHLAGEN: {rationale}',
+                'urgency_check': 'GERING: Reine Routine-Mitteilung',
+                'audit_verdict': 'REJECTED',
+                'audit_rationale': rationale,
+                'rejection_reason': rationale,
+                'confidence': 0.99
+            }
+            return False, f"DEALCOACH_REJECTED (Routine): {rationale}", parsed
 
     prompt = f"""Du bist der NeXus DealCoach. Analysiere diese europäische Wirtschaftsmeldung streng als automatisierte Revisions- und Vorsortierungs-Instanz:
 HEUTIGES DATUM: {today_str}
@@ -211,16 +272,20 @@ Antworte AUSSCHLIESSLICH in diesem JSON-Format:
 
     raw_response = None
 
-    # 1. OpenRouter Free Models
-    for model in OPENROUTER_MODELS:
-        raw_response = call_openrouter(prompt, model)
-        if raw_response:
-            break
+    # 1. DeepSeek (Primär-Engine für DealCoach Audit)
+    raw_response = call_deepseek(prompt)
 
     # 2. Mistral Fallback
     if not raw_response:
         for model in MISTRAL_MODELS:
             raw_response = call_mistral(prompt, model)
+            if raw_response:
+                break
+
+    # 3. OpenRouter Fallback
+    if not raw_response:
+        for model in OPENROUTER_MODELS:
+            raw_response = call_openrouter(prompt, model)
             if raw_response:
                 break
 

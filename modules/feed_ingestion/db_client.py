@@ -144,8 +144,8 @@ class SupabaseClient:
         and synchronously link a relational nexus_trigger_events entry.
         """
         source_url = (item.get('url') or '').strip()
-        title = (item.get('title') or '').strip()
-        company_name = (item.get('company') or '').strip()
+        title = (deal_audit.get('event_type') or item.get('title') or '').strip() if deal_audit else (item.get('title') or '').strip()
+        company_name = (deal_audit.get('company_name') or item.get('company') or '').strip() if deal_audit else (item.get('company') or '').strip()
         snippet = (item.get('snippet') or '').strip()
 
         # Zero-Tolerance Gatekeeper: No missing event, no truncated URLs, no placeholders
@@ -157,13 +157,14 @@ class SupabaseClient:
             return None, "DROPPED_NO_COMPANY"
         # ── 3-KLINGEN-FILTER VOR DB-INSERT ──
         # Klinge 1 (Zeit): Strikt <= 48h bezogen auf das reale Ereignisdatum
-        event_date_val = item.get('event_date') or item.get('published_at') or datetime.now(timezone.utc).strftime('%Y-%m-%d')
+        event_date_val = (deal_audit.get('event_date') if deal_audit else None) or item.get('event_date') or item.get('published_at') or datetime.now(timezone.utc).strftime('%Y-%m-%d')
         is_fresh, age_hours, parsed_dt = is_signal_fresh(event_date_val, max_hours=48)
         if not is_fresh:
             return None, f"DROPPED_STALE_EVENT_DATE (>48h: {age_hours:.1f}h)"
 
         # Klinge 2 (Rechtsform): Whitelist-Check auf Enterprise / Kapitalgesellschaften
-        norm_comp = company_name.upper()
+        detected_form = (deal_audit.get('legal_form') or '').upper().strip() if deal_audit else ''
+        norm_comp = f"{company_name} {detected_form}".upper()
         has_form = any(bool(re.search(rf'\b{re.escape(f)}\b', norm_comp)) for f in LEGAL_FORM_WHITELIST)
         if not has_form:
             is_major = bool(re.search(r'\b(DAIMLER|SIEMENS|VOLKSWAGEN|BMW|BASF|BAYER|ALLIANZ|SAP|TELEKOM|E\.ON|RWE|AIRBUS|NESTLE|NOVARTIS|ROCHE|UBS|GLENCORE|ABB|SHELL|BP|VODAFONE|BARCLAYS|HSBC|SANTANDER|BBVA|TELEFONICA|TOTALENERGIES|SANOFI|AXA|BNP|STELLANTIS|ATLASSIAN|SITIME|PESCANOVA)\b', norm_comp))
