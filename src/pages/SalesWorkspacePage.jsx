@@ -109,6 +109,67 @@ export function extractDealCoachAudit(opp) {
   };
 }
 
+export function getCountryFlag(opp) {
+  if (!opp) return { flag: '🌐', label: 'International', code: 'INT' };
+  const source = (opp.source || '').toLowerCase();
+  const title = (opp.title || '').toUpperCase();
+  const compCountry = (opp.nexus_companies?.country || opp.company?.country || '').toUpperCase();
+
+  if (source.includes('londonstockexchange') || source.includes('investegate') || title.startsWith('[UK]') || compCountry === 'UK' || compCountry === 'GB') {
+    return { flag: '🇬🇧', label: 'Vereinigtes Königreich', code: 'UK' };
+  }
+  if (source.includes('shab.ch') || title.startsWith('[CH]') || compCountry === 'CH' || compCountry === 'SCHWEIZ') {
+    return { flag: '🇨🇭', label: 'Schweiz', code: 'CH' };
+  }
+  if (source.includes('cnmv.es') || title.startsWith('[ES]') || compCountry === 'ES' || compCountry === 'SPANIEN') {
+    return { flag: '🇪🇸', label: 'Spanien', code: 'ES' };
+  }
+  if (source.includes('eqs-news') || source.includes('dgap') || title.startsWith('[DACH]') || title.startsWith('[DE]') || compCountry === 'DACH' || compCountry === 'DE' || compCountry === 'DEUTSCHLAND') {
+    return { flag: '🇩🇪', label: 'Deutschland (DACH)', code: 'DE' };
+  }
+  if (source.includes('boursorama') || title.startsWith('[FR]') || compCountry === 'FR') {
+    return { flag: '🇫🇷', label: 'Frankreich', code: 'FR' };
+  }
+  return { flag: '🇪🇺', label: 'Europa', code: 'EU' };
+}
+
+export function getLegalForm(compName, opp) {
+  const text = `${compName || ''} ${opp?.title || ''}`.toUpperCase();
+  if (/\b(AG & CO\.?\s*KGAA|AG & CO\.?\s*KG)\b/i.test(text)) return 'AG & Co. KGaA';
+  if (/\b(KGAA)\b/i.test(text)) return 'KGaA';
+  if (/\b(SE & CO\.?\s*KGAA)\b/i.test(text)) return 'SE & Co. KGaA';
+  if (/\b(SE)\b/i.test(text)) return 'SE';
+  if (/\b(AG)\b/i.test(text)) return 'AG';
+  if (/\b(GMBH & CO\.?\s*KG)\b/i.test(text)) return 'GmbH & Co. KG';
+  if (/\b(GMBH)\b/i.test(text)) return 'GmbH';
+  if (/\b(HOLDINGS PLC|HOLDING PLC|PLC)\b/i.test(text)) return 'PLC';
+  if (/\b(S\.?A\.?)\b/i.test(text)) return 'S.A.';
+  if (/\b(S\.?L\.?)\b/i.test(text)) return 'S.L.';
+  if (/\b(NV|B\.?V\.?)\b/i.test(text)) return 'N.V. / B.V.';
+  if (/\b(LTD\.?|LIMITED)\b/i.test(text)) return 'Ltd.';
+  return 'Kapitalgesellschaft';
+}
+
+export function extractCleanAnnouncementText(situation, title) {
+  if (!situation && !title) return '';
+  let text = situation || title || '';
+  // Strip out DealCoach metadata tags
+  text = text.replace(/\[DEALCOACH AUDIT\]:[^\n\r]*[\r\n]*/gi, '');
+  text = text.replace(/\[VAKUUM-CHECK\]:[^\n\r]*[\r\n]*/gi, '');
+  text = text.replace(/\[DRINGLICHKEIT\]:[^\n\r]*[\r\n]*/gi, '');
+  text = text.replace(/\[MANDATS-BEGRÜNDUNG\]:[^\n\r]*[\r\n]*/gi, '');
+  text = text.replace(/\[BUDGET-SCHÄTZUNG\]:[^\n\r]*[\r\n]*/gi, '');
+  text = text.replace(/\[COMPANY\]:[^\n\r]*[\r\n]*/gi, '');
+  text = text.replace(/\[KAUFSIGNAL\]:[^\n\r]*[\r\n]*/gi, '');
+  text = text.replace(/\[EREIGNISDATUM\]:[^\n\r]*[\r\n]*/gi, '');
+  text = text.trim();
+  if (!text) {
+    text = (title || '').replace(/^\[[A-Z0-9_\-]+\]\s*/i, '');
+  }
+  return text;
+}
+
+
 export default function SalesWorkspacePage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -158,6 +219,131 @@ export default function SalesWorkspacePage() {
 
   // DealCoach Stufe 2: Übertrag in Harros Prüf-Inbox
   const [isSubmittingReview, setIsSubmittingReview] = useState(false)
+
+  const resolveOppCompanyHelper = (o) => {
+    if (!o) return 'Unternehmen';
+    let name = resolveTriggerCompanyName(
+      o.triggers?.[0]?.nexus_trigger_events,
+      o,
+      o.nexus_companies?.name || o.company?.name || ''
+    );
+    if (!name || name === 'Unternehmen' || name === 'Unbekanntes Unternehmen') {
+      const m = (o.title || '').match(/^\[[A-Z0-9_\-]+\]\s*([^:]+):/i);
+      if (m && m[1].trim()) {
+        name = m[1].trim();
+      }
+    }
+    return name || 'Unternehmen';
+  };
+
+  const isStrictValidOpportunityHelper = (o) => {
+    if (!o) return false;
+    const comp = resolveOppCompanyHelper(o);
+    if (!comp || isPlaceholderCompany(comp)) return false;
+    const eventText = (o.triggers?.[0]?.nexus_trigger_events?.content || o.situation || o.title || '').trim();
+    if (!eventText || eventText.toLowerCase() === 'keine angabe' || eventText.length < 5) return false;
+    if (o.source && (o.source.endsWith('...') || o.source.endsWith('…'))) return false;
+    return true;
+  };
+
+  // 1-Klick-Triage: Ausführung von Verwerfen, Boutique-Pool oder Tier-1 mit automatischem Sprung zum nächsten Fall
+  const handleTriageAction = async (actionType, oppToProcess = null) => {
+    const currentOpp = oppToProcess || activeOpp;
+    if (!currentOpp?.id) return;
+    const targetId = currentOpp.id;
+
+    // 1. Berechne sofort den NÄCHSTEN Fall in der aktuellen Ansicht für flüssiges Weiterblättern
+    const validOpps = (opportunities || []).filter(isStrictValidOpportunityHelper);
+    let currentList = [];
+    if (queueFilter === 'inbox') {
+      currentList = validOpps.filter(o => o.review_status === 'pending' || o.review_status === 'PENDING_REVIEW' || o.review_status === 'unreviewed');
+    } else if (queueFilter === 'rejected') {
+      currentList = validOpps.filter(o => o.review_status === 'rejected' || o.review_status === 'DISMISSED');
+    } else if (queueFilter === 'relevant') {
+      currentList = validOpps.filter(o => (o.review_status === 'verified' || o.review_status === 'reviewed' || o.review_status === 'QUALIFIED') && computeTargetMatchScore(resolveOppCompanyHelper(o), o.lead_score, o) >= 50);
+    } else if (queueFilter === 'unclear') {
+      currentList = validOpps.filter(o => (o.review_status === 'verified' || o.review_status === 'reviewed' || o.review_status === 'QUALIFIED') && computeTargetMatchScore(resolveOppCompanyHelper(o), o.lead_score, o) < 50);
+    } else {
+      currentList = validOpps.filter(o => o.review_status === 'verified' || o.review_status === 'reviewed' || o.review_status === 'QUALIFIED');
+    }
+
+    const currentIndex = currentList.findIndex(o => o.id === targetId);
+    const remainingList = currentList.filter(o => o.id !== targetId);
+    let nextOpp = null;
+    if (remainingList.length > 0) {
+      if (currentIndex >= 0 && currentIndex < remainingList.length) {
+        nextOpp = remainingList[currentIndex];
+      } else {
+        nextOpp = remainingList[0];
+      }
+    }
+
+    // Sofortige UI-Reaktion: Zum nächsten Fall springen
+    if (nextOpp) {
+      setActiveOppId(nextOpp.id);
+      setActiveOpp(nextOpp);
+    } else {
+      setActiveOppId(null);
+      setActiveOpp(null);
+    }
+
+    // 2. DB-Updates zusammenstellen
+    const now = new Date().toISOString();
+    let updates = {};
+    if (actionType === 'dismiss') {
+      updates = {
+        review_status: 'rejected',
+        review_notes: 'Signal im Mandats-Desk verworfen - Harro Goerndt',
+        reviewed_at: now
+      };
+    } else if (actionType === 'boutique_tier2') {
+      const existingTags = Array.isArray(currentOpp.tags) ? currentOpp.tags : [];
+      const newTags = Array.from(new Set([...existingTags, 'Boutique_Pool', 'TIER_2_MID']));
+      updates = {
+        pipeline_stage: 'boutique_pool',
+        review_status: 'verified',
+        priority: 'TIER_2_MID',
+        tags: newTags,
+        review_notes: 'In Boutique-Pool (Tier 2) überführt zur Zweitverwertung - Harro Goerndt',
+        reviewed_at: now
+      };
+    } else if (actionType === 'priority_tier1') {
+      const existingTags = Array.isArray(currentOpp.tags) ? currentOpp.tags : [];
+      const newTags = Array.from(new Set([...existingTags, 'taskforce', 'TIER_1_TOP']));
+      updates = {
+        pipeline_stage: 'opportunity',
+        review_status: 'verified',
+        priority: 'TIER_1_TOP',
+        tags: newTags,
+        review_notes: 'Als Tier-1 qualifiziert für Groß-Provider (taskforce) - Harro Goerndt',
+        reviewed_at: now
+      };
+    }
+
+    // 3. In DB speichern
+    try {
+      await db.updateOpportunity(targetId, updates);
+      if (refreshData) {
+        await refreshData();
+      }
+    } catch (err) {
+      console.error('Fehler bei handleTriageAction:', err);
+    }
+  };
+
+  // Automatische Vorauswahl des ersten Falls bei leerer Auswahl
+  useEffect(() => {
+    if (!activeOppId && opportunities && opportunities.length > 0) {
+      const valid = opportunities.filter(isStrictValidOpportunityHelper);
+      const firstInbox = valid.find(o => o.review_status === 'pending' || o.review_status === 'PENDING_REVIEW' || o.review_status === 'unreviewed');
+      const candidate = firstInbox || valid[0];
+      if (candidate) {
+        setActiveOppId(candidate.id);
+        setActiveOpp(candidate);
+      }
+    }
+  }, [activeOppId, opportunities]);
+
 
   useEffect(() => {
     if (oppIdFromUrl && oppIdFromUrl !== activeOppId) {
@@ -1763,23 +1949,8 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
 
           {/* HITL Zweistufiges Modell: Trennung von Posteingang (Zur Prüfung) und aktiver Pipeline */}
           {(() => {
-            const resolveOppCompany = (o) => resolveTriggerCompanyName(
-              o.triggers?.[0]?.nexus_trigger_events,
-              o,
-              o.nexus_companies?.name || o.company?.name || ''
-            );
-
-            // Zero-Tolerance Filter: Validierung von Unternehmen und Inhalten
-            const isStrictValidOpportunity = (o) => {
-              const comp = resolveOppCompany(o);
-              if (!comp || isPlaceholderCompany(comp)) return false;
-              
-              const eventText = (o.triggers?.[0]?.nexus_trigger_events?.content || o.situation || o.title || '').trim();
-              if (!eventText || eventText.toLowerCase() === 'keine angabe' || eventText.length < 5) return false;
-              if (o.source && (o.source.endsWith('...') || o.source.endsWith('…'))) return false;
-
-              return true;
-            };
+            const resolveOppCompany = resolveOppCompanyHelper;
+            const isStrictValidOpportunity = isStrictValidOpportunityHelper;
 
             const validOpps = (opportunities || []).filter(isStrictValidOpportunity);
             
@@ -1851,22 +2022,8 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
 
           <div className="queue-list">
             {(() => {
-              const resolveOppCompany = (o) => resolveTriggerCompanyName(
-                o.triggers?.[0]?.nexus_trigger_events,
-                o,
-                o.nexus_companies?.name || o.company?.name || ''
-              );
-
-              const isStrictValidOpportunity = (o) => {
-                const comp = resolveOppCompany(o);
-                if (!comp || isPlaceholderCompany(comp)) return false;
-                
-                const eventText = (o.triggers?.[0]?.nexus_trigger_events?.content || o.situation || o.title || '').trim();
-                if (!eventText || eventText.toLowerCase() === 'keine angabe' || eventText.length < 5) return false;
-                if (o.source && (o.source.endsWith('...') || o.source.endsWith('…'))) return false;
-
-                return true;
-              };
+              const resolveOppCompany = resolveOppCompanyHelper;
+              const isStrictValidOpportunity = isStrictValidOpportunityHelper;
 
               const validOpps = (opportunities || []).filter(isStrictValidOpportunity);
               const inboxOpps = validOpps.filter(o => o.review_status === 'pending' || o.review_status === 'PENDING_REVIEW' || o.review_status === 'unreviewed');
@@ -1897,12 +2054,13 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
               }
 
               return displayedOpps.map(opp => {
-                const compName = resolveOppCompany(opp);
-                const matchScore = computeTargetMatchScore(compName, opp.lead_score, opp);
-                const dateInfo = formatEventDate(opp.created_at);
-                const hasValidSource = opp.source && opp.source.startsWith('http');
-                const domain = hasValidSource ? extractDomain(opp.source) : null;
-                const isPendingReview = opp.review_status === 'pending' || opp.review_status === 'PENDING_REVIEW' || opp.review_status === 'unreviewed';
+                const compName = resolveOppCompanyHelper(opp);
+                const country = getCountryFlag(opp);
+                const dateVal = opp.event_date || opp.triggers?.[0]?.nexus_trigger_events?.event_date || opp.published_at || opp.created_at;
+                const traffic = getFreshnessTrafficLight(dateVal);
+                const audit = extractDealCoachAudit(opp);
+                const isT1 = audit?.tier === 'TIER_1_TOP';
+                const isT2 = audit?.tier === 'TIER_2_MID';
 
                 return (
                   <div 
@@ -1911,181 +2069,75 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                     onClick={() => {
                       setActiveOppId(opp.id);
                       setActiveOpp(opp);
-                      if (opp.review_status === 'pending' || opp.review_status === 'PENDING_REVIEW' || opp.review_status === 'unreviewed' || queueFilter === 'inbox') {
-                        setActiveTab('pruefung');
-                      }
                     }}
-                    style={{ cursor: 'pointer' }}
+                    style={{ cursor: 'pointer', padding: '12px 14px' }}
                   >
                     <div className="queue-item-content">
-                      <div className="queue-item-header">
-                        <h4>{compName || 'Unbekanntes Unternehmen'}</h4>
-                        <span className="queue-stage">{opp.pipeline_stage}</span>
+                      <div className="queue-item-header" style={{ marginBottom: '8px' }}>
+                        <h4 style={{
+                          fontSize: '0.96rem',
+                          fontWeight: 700,
+                          color: '#f8fafc',
+                          margin: 0,
+                          lineHeight: 1.35,
+                          wordBreak: 'break-word',
+                          whiteSpace: 'normal',
+                          overflow: 'visible',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}>
+                          <span style={{ fontSize: '1.2rem', lineHeight: 1, flexShrink: 0 }} title={country.label}>{country.flag}</span>
+                          <span>{compName || 'Unbekanntes Unternehmen'}</span>
+                        </h4>
                       </div>
 
-                      {/* Zielgruppen-Match Badge & Veraltet-Kennzeichnung */}
                       <div className="queue-item-meta" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                        {/* Frische-Ampel Badge (Reputationsschutz: Grün <=24h, Gelb 24-48h, Rot >48h) */}
-                        {(() => {
-                          const dateVal = opp.event_date || opp.triggers?.[0]?.nexus_trigger_events?.event_date || opp.published_at || opp.created_at;
-                          const traffic = getFreshnessTrafficLight(dateVal);
-                          return (
-                            <span 
-                              className={`queue-badge-freshness ${traffic.badgeClass}`}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                padding: '2px 7px',
-                                borderRadius: '4px',
-                                fontSize: '0.72rem',
-                                fontWeight: 700,
-                                background: traffic.color === 'green' ? 'rgba(34, 197, 94, 0.15)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.18)' : 'rgba(239, 68, 68, 0.2)',
-                                color: traffic.color === 'green' ? '#4ade80' : traffic.color === 'yellow' ? '#facc15' : '#f87171',
-                                border: `1px solid ${traffic.color === 'green' ? 'rgba(34, 197, 94, 0.35)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.4)' : 'rgba(239, 68, 68, 0.45)'}`
-                              }}
-                              title={traffic.tooltip}
-                            >
-                              <span style={{
-                                width: '6px',
-                                height: '6px',
-                                borderRadius: '50%',
-                                background: traffic.color === 'green' ? '#22c55e' : traffic.color === 'yellow' ? '#eab308' : '#ef4444',
-                                display: 'inline-block'
-                              }} />
-                              {traffic.label}
-                            </span>
-                          );
-                        })()}
-
-                        {/* DealCoach Stufe 2: Tier-Klassifizierung Badge */}
-                        {(() => {
-                          const audit = extractDealCoachAudit(opp);
-                          if (!audit || !audit.tier) return null;
-                          const isT1 = audit.tier === 'TIER_1_TOP';
-                          const isT2 = audit.tier === 'TIER_2_MID';
-                          return (
-                            <span 
-                              className={`queue-badge-tier ${isT1 ? 'tier-1' : isT2 ? 'tier-2' : 'tier-review'}`}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '3px',
-                                padding: '2px 6px',
-                                borderRadius: '4px',
-                                fontSize: '0.72rem',
-                                fontWeight: 700,
-                                background: isT1 ? 'rgba(168, 85, 247, 0.2)' : isT2 ? 'rgba(59, 130, 246, 0.2)' : 'rgba(148, 163, 184, 0.15)',
-                                color: isT1 ? '#c084fc' : isT2 ? '#60a5fa' : '#cbd5e1',
-                                border: `1px solid ${isT1 ? 'rgba(168, 85, 247, 0.45)' : isT2 ? 'rgba(59, 130, 246, 0.4)' : 'rgba(148, 163, 184, 0.3)'}`
-                              }}
-                              title={`DealCoach Revisions-Stufe 2: ${isT1 ? 'Tier 1 Top (Großunternehmen/Börse, Budget 150k–320k €)' : isT2 ? 'Tier 2 Mid (Mittelstand ab 20 Mio. €, PMO / operative Leitung)' : 'Zur manuellen Prüfung durch Harro (Primärmeldung / Voreinschätzung)'}`}
-                            >
-                              {isT1 ? '👑 TIER 1' : isT2 ? '🏢 TIER 2' : '⚖️ Zur Prüfung'}
-                            </span>
-                          );
-                        })()}
-
-                        {matchScore >= 70 ? (
-                          <span className="queue-badge-high" title="Hoher Zielgruppen-Match">
-                            {matchScore}% Match
-                          </span>
-                        ) : matchScore >= 50 ? (
-                          <span className="queue-badge-mid" title="Guter Zielgruppen-Match">
-                            {matchScore}% Match
-                          </span>
-                        ) : (
-                          <span className="queue-badge-low" title="Zielgruppe unklar">
-                            ⚠️ Unklar ({matchScore}%)
-                          </span>
-                        )}
-
-                        {/* Status-Badge: pending (Posteingang), reviewed, verified, rejected */}
-                        {(opp.review_status === 'reviewed' || opp.review_status === 'verified' || opp.review_status === 'QUALIFIED') ? (
-                          <span className="queue-badge-reviewed" style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 600 }}>
-                            ✅ {opp.review_status === 'verified' || opp.review_status === 'QUALIFIED' ? 'Verifiziert' : 'Geprüft'}
-                          </span>
-                        ) : (opp.review_status === 'rejected' || opp.review_status === 'DISMISSED') ? (
-                          <span className="queue-badge-rejected" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 600 }}>
-                            ❌ Verworfen
-                          </span>
-                        ) : (
-                          <span className="queue-badge-unreviewed" style={{ background: 'rgba(234, 179, 8, 0.18)', color: '#facc15', border: '1px solid rgba(234, 179, 8, 0.4)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 600 }}>
-                            📥 Zur Prüfung
-                          </span>
-                        )}
-
-                        {dateInfo.isExpired && (
-                          <span className="queue-badge-expired" title="Signal älter als 90 Tage">
-                            Veraltet
-                          </span>
-                        )}
-                      </div>
-
-                      {/* HITL Quick-Actions direkt in der Queue für Posteingang-Einträge */}
-                      {isPendingReview && (
-                        <div className="queue-inbox-quick-actions" style={{ display: 'flex', gap: '6px', marginTop: '6px', marginBottom: '2px' }}>
-                          <button
-                            type="button"
-                            style={{
-                              flex: 1,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '4px',
-                              padding: '4px 8px',
-                              background: '#15803d',
-                              color: '#ffffff',
-                              border: 'none',
-                              borderRadius: '4px',
-                              fontSize: '0.74rem',
-                              fontWeight: 700,
-                              cursor: 'pointer'
-                            }}
-                            title="In Pipeline übernehmen"
-                            onClick={(e) => handleApproveToPipeline(opp.id, e)}
-                          >
-                            <Check size={12} /> Bestanden
-                          </button>
-                          <button
-                            type="button"
-                            style={{
-                              flex: 1,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '4px',
-                              padding: '4px 8px',
-                              background: 'rgba(239, 68, 68, 0.15)',
-                              color: '#f87171',
-                              border: '1px solid rgba(239, 68, 68, 0.3)',
-                              borderRadius: '4px',
-                              fontSize: '0.74rem',
-                              fontWeight: 600,
-                              cursor: 'pointer'
-                            }}
-                            title="Verwerfen"
-                            onClick={(e) => handleDismissOpportunity(opp.id, e)}
-                          >
-                            <X size={12} /> Verwerfen
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Baustelle 2: Quelle & Datum in Queue */}
-                      <div className="queue-item-footer">
-                        <span className="queue-date" title={dateInfo.formattedDate}>
-                          <Clock size={11} /> {dateInfo.relativeTime}
+                        {/* Frische-Zeitstempel mit Ampel-Punkt */}
+                        <span 
+                          className={`queue-badge-freshness ${traffic.badgeClass}`}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            fontSize: '0.74rem',
+                            fontWeight: 700,
+                            background: traffic.color === 'green' ? 'rgba(34, 197, 94, 0.15)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.18)' : 'rgba(239, 68, 68, 0.2)',
+                            color: traffic.color === 'green' ? '#4ade80' : traffic.color === 'yellow' ? '#facc15' : '#f87171',
+                            border: `1px solid ${traffic.color === 'green' ? 'rgba(34, 197, 94, 0.35)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.4)' : 'rgba(239, 68, 68, 0.45)'}`
+                          }}
+                          title={traffic.tooltip}
+                        >
+                          <span style={{
+                            width: '6px',
+                            height: '6px',
+                            borderRadius: '50%',
+                            background: traffic.color === 'green' ? '#22c55e' : traffic.color === 'yellow' ? '#eab308' : '#ef4444',
+                            display: 'inline-block'
+                          }} />
+                          {traffic.label}
                         </span>
-                        {hasValidSource ? (
-                          <span className="queue-source" title={opp.source}>
-                            <Globe size={11} /> {domain}
-                          </span>
-                        ) : (
-                          <span className="queue-source-missing" title="Keine Belegquelle verknüpft">
-                            ⚠️ Keine Quelle
-                          </span>
-                        )}
+
+                        {/* DealCoach Einstufung */}
+                        <span 
+                          className={`queue-badge-tier ${isT1 ? 'tier-1' : isT2 ? 'tier-2' : 'tier-review'}`}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            fontSize: '0.74rem',
+                            fontWeight: 700,
+                            background: isT1 ? 'rgba(168, 85, 247, 0.2)' : isT2 ? 'rgba(59, 130, 246, 0.2)' : 'rgba(148, 163, 184, 0.15)',
+                            color: isT1 ? '#c084fc' : isT2 ? '#60a5fa' : '#cbd5e1',
+                            border: `1px solid ${isT1 ? 'rgba(168, 85, 247, 0.45)' : isT2 ? 'rgba(59, 130, 246, 0.4)' : 'rgba(148, 163, 184, 0.3)'}`
+                          }}
+                        >
+                          {isT1 ? '👑 TIER 1' : isT2 ? '🏢 TIER 2' : '⚖️ Zur Prüfung'}
+                        </span>
                       </div>
                     </div>
                     <button 
@@ -2093,7 +2145,7 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                       title="Lead löschen"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if(window.confirm('Lead wirklich aus der Pipeline löschen?')) {
+                        if(window.confirm('Lead wirklich löschen?')) {
                           deleteOpportunity(opp.id);
                           if(activeOppId === opp.id) setActiveOppId(null);
                         }
@@ -2108,2829 +2160,316 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
           </div>
         </aside>
 
-        {/* CRM Dashboard: Wird nur angezeigt, wenn ein Lead (oder Manuell) aktiv ist */}
-        {activeOppId || formData.company ? (
-          <div className="sales-workspace-crm" style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '20px', background: 'var(--bg-card, #11141a)', border: '1px solid var(--border-medium, #1e232d)', borderRadius: '16px', padding: '24px', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)' }}>
-            {/* Tabs & Status */}
-            <div className="crm-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light, #1e232d)', paddingBottom: '12px' }}>
-              <div className="crm-tabs" style={{ display: 'flex', gap: '8px' }}>
-                <button 
-                  className={`tab-btn ${activeTab === 'historie' ? 'active' : ''}`} 
-                  onClick={() => setActiveTab('historie')}
-                  style={{ background: activeTab === 'historie' ? 'var(--accent-blue, #38bdf8)' : '#0e1015', color: activeTab === 'historie' ? '#050608' : 'var(--text-secondary, #94a3b8)', border: '1px solid var(--border-subtle, #1e232d)', padding: '8px 18px', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s ease' }}
-                >
-                  {t('nexus.wsTabHistory')}
-                </button>
-                <button 
-                  className={`tab-btn ${activeTab === 'aktion' ? 'active' : ''}`} 
-                  onClick={() => setActiveTab('aktion')}
-                  style={{ background: activeTab === 'aktion' ? 'var(--accent-blue, #38bdf8)' : '#0e1015', color: activeTab === 'aktion' ? '#050608' : 'var(--text-secondary, #94a3b8)', border: '1px solid var(--border-subtle, #1e232d)', padding: '8px 18px', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s ease' }}
-                >
-                  {t('nexus.wsTabPitch')}
-                </button>
-                <button 
-                  className={`tab-btn ${activeTab === 'pruefung' ? 'active' : ''}`} 
-                  onClick={() => setActiveTab('pruefung')}
-                  style={{ background: activeTab === 'pruefung' ? 'var(--accent-blue, #38bdf8)' : '#0e1015', color: activeTab === 'pruefung' ? '#050608' : 'var(--text-secondary, #94a3b8)', border: '1px solid var(--border-subtle, #1e232d)', padding: '8px 18px', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s ease', display: 'flex', alignItems: 'center', gap: '6px' }}
-                >
-                  📋 Prüfung
-                  {(activeOpp?.review_status === 'reviewed' || activeOpp?.review_status === 'verified') && <span style={{ color: '#22c55e', fontSize: '0.75rem' }}>●</span>}
-                  {activeOpp?.review_status === 'rejected' && <span style={{ color: '#ef4444', fontSize: '0.75rem' }}>●</span>}
-                  {(!activeOpp?.review_status || activeOpp?.review_status === 'unreviewed') && <span style={{ color: '#eab308', fontSize: '0.75rem' }}>●</span>}
-                </button>
-                <button 
-                  className={`tab-btn ${activeTab === 'intelligence' ? 'active' : ''}`} 
-                  onClick={() => setActiveTab('intelligence')}
-                  style={{ background: activeTab === 'intelligence' ? 'var(--accent-blue, #38bdf8)' : '#0e1015', color: activeTab === 'intelligence' ? '#050608' : 'var(--text-secondary, #94a3b8)', border: '1px solid var(--border-subtle, #1e232d)', padding: '8px 18px', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, transition: 'all 0.2s ease' }}
-                >
-                  {t('nexus.wsTabAudit')}
-                </button>
-              </div>
-              
-              {activeOpp && (() => {
-                const compNameHeader = resolveTriggerCompanyName(activeTrigger, activeOpp);
-                const isRaiffeisenHeader = (compNameHeader && compNameHeader.toLowerCase().includes('raiffeisen')) ||
-                                           (activeOpp?.company?.name && activeOpp.company.name.toLowerCase().includes('raiffeisen')) ||
-                                           (activeOpp?.nexus_companies?.name && activeOpp.nexus_companies.name.toLowerCase().includes('raiffeisen')) ||
-                                           (activeTrigger?.content && activeTrigger.content.toLowerCase().includes('raiffeisen'));
+        {/* ── MANDATS-DESK: KLIENTEN-PULT (1-KLICK-TRIAGE) ── */}
+        {activeOpp ? (() => {
+          const compName = resolveOppCompanyHelper(activeOpp);
+          const country = getCountryFlag(activeOpp);
+          const legalForm = getLegalForm(compName, activeOpp);
+          const audit = extractDealCoachAudit(activeOpp);
+          const tier = audit?.tier || 'PRÜFUNG_EMPFOHLEN';
+          const isTier1 = tier === 'TIER_1_TOP';
+          const isTier2 = tier === 'TIER_2_MID';
 
-                const isVerifiedHeader = isRaiffeisenHeader ||
-                                         activeOpp.review_status === 'reviewed' || 
-                                         activeOpp.review_status === 'verified' ||
-                                         (activeOpp.review_notes && activeOpp.review_notes.includes('Harro Goerndt')) ||
-                                         (reviewNotes && reviewNotes.trim().length > 0 && reviewNotes.includes('Harro Goerndt'));
+          const dateVal = activeOpp.event_date || activeOpp.triggers?.[0]?.nexus_trigger_events?.event_date || activeOpp.published_at || activeOpp.created_at;
+          const traffic = getFreshnessTrafficLight(dateVal);
+          const dateFormatted = formatEventDate(dateVal).formattedDate;
 
-                return (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                    {/* Übermittlungs-Button prominent & permanent für alle verifizierten Leads */}
-                    {isVerifiedHeader && (
-                      <button
-                        type="button"
-                        disabled={isDirectPublishing}
-                        onClick={() => handleOpenDispatchModal(false)}
-                        style={{
-                          background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                          color: '#ffffff',
-                          border: '1px solid #38bdf8',
-                          padding: '7px 16px',
-                          borderRadius: '8px',
-                          fontWeight: 700,
-                          fontSize: '0.84rem',
-                          cursor: isDirectPublishing ? 'not-allowed' : 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          boxShadow: '0 0 16px rgba(2, 132, 199, 0.4)',
-                          transition: 'all 0.2s ease',
-                          whiteSpace: 'nowrap'
-                        }}
-                        title="Mandat an Partner übermitteln & 12 Monate Kundenschutz sichern"
-                      >
-                        <ShieldCheck size={14} />
-                        <span>Mandat übermitteln & Kundenschutz sichern</span>
-                      </button>
-                    )}
+          const rawSituation = activeOpp.situation || activeTrigger?.content || activeOpp.title || '';
+          const cleanAnnouncement = extractCleanAnnouncementText(rawSituation, activeOpp.title);
 
-                    {/* Status-Badge: pending (Zur Prüfung), reviewed, verified, rejected */}
-                    {isVerifiedHeader ? (
-                      <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <CheckCircle size={13} /> {activeOpp.review_status === 'verified' || activeOpp.review_status === 'QUALIFIED' ? 'Verifiziert' : 'Geprüft'}
+          const sourceUrl = activeOpp.source || activeTrigger?.source_url || activeTrigger?.source;
+          const hasValidSource = sourceUrl && sourceUrl.startsWith('http');
+          const domain = hasValidSource ? extractDomain(sourceUrl) : 'Originalquelle';
+
+          return (
+            <div className="mandats-desk-pult" style={{
+              display: 'flex',
+              flexDirection: 'column',
+              flex: 1,
+              gap: '20px',
+              background: 'var(--bg-card, #11141a)',
+              border: '1px solid var(--border-medium, #1e232d)',
+              borderRadius: '16px',
+              padding: '24px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+              minWidth: 0,
+              position: 'relative'
+            }}>
+              {/* ── 1. STAMMDATEN CARD ── */}
+              <div className="pult-stammdaten-card" style={{
+                background: '#0e1015',
+                border: '1px solid #1e232d',
+                borderRadius: '12px',
+                padding: '20px 24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '14px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '1.75rem', lineHeight: 1 }} title={country.label}>{country.flag}</span>
+                      <h2 style={{
+                        margin: 0,
+                        fontSize: '1.45rem',
+                        fontWeight: 800,
+                        color: '#f8fafc',
+                        letterSpacing: '-0.02em',
+                        wordBreak: 'break-word',
+                        lineHeight: 1.25
+                      }}>
+                        {compName || 'Unbekanntes Unternehmen'}
+                      </h2>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', fontSize: '0.88rem', color: '#94a3b8' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                        <Globe size={15} color="#60a5fa" />
+                        <strong style={{ color: '#cbd5e1' }}>Land:</strong> {country.label} ({country.code})
                       </span>
-                    ) : (activeOpp.review_status === 'rejected' || activeOpp.review_status === 'DISMISSED') ? (
-                      <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <AlertCircle size={13} /> Abgelehnt
+                      <span>•</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                        <Briefcase size={15} color="#a855f7" />
+                        <strong style={{ color: '#cbd5e1' }}>Rechtsform:</strong> {legalForm}
                       </span>
-                    ) : (
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#facc15', border: '1px solid rgba(234, 179, 8, 0.3)', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <Clock size={13} /> Posteingang (Zur Prüfung)
-                        </span>
-                        <button
-                          type="button"
-                          onClick={(e) => handleQuickApproveAll(activeOpp.id, e)}
-                          disabled={isReviewSaving}
-                          style={{
-                            background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-                            color: '#ffffff',
-                            border: '1px solid #4ade80',
-                            padding: '5px 12px',
-                            borderRadius: '6px',
-                            fontWeight: 700,
-                            fontSize: '0.8rem',
-                            cursor: isReviewSaving ? 'not-allowed' : 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            boxShadow: '0 0 10px rgba(34, 197, 94, 0.35)'
-                          }}
-                          title="1-Klick: Alle 5 Prüfpunkte bestehen und in aktive Pipeline übernehmen"
-                        >
-                          <Zap size={13} /> ⚡ Bestanden
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDismissOpportunity(activeOpp.id)}
-                          disabled={isReviewSaving}
-                          style={{
-                            background: 'rgba(239, 68, 68, 0.15)',
-                            color: '#f87171',
-                            border: '1px solid rgba(239, 68, 68, 0.3)',
-                            padding: '5px 10px',
-                            borderRadius: '6px',
-                            fontWeight: 600,
-                            fontSize: '0.8rem',
-                            cursor: isReviewSaving ? 'not-allowed' : 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}
-                          title="Signal verwerfen"
-                        >
-                          <X size={13} /> Verwerfen
-                        </button>
-                      </div>
-                    )}
-
-                    {/* 🎭 Blind-Profil Button im CRM-Header */}
-                    <button
-                      type="button"
-                      onClick={() => setShowBlindProfileModal(true)}
-                      style={{
-                        background: 'rgba(56, 189, 248, 0.12)',
-                        color: '#38bdf8',
-                        border: '1px solid rgba(56, 189, 248, 0.4)',
-                        padding: '4px 10px',
-                        borderRadius: '12px',
-                        fontSize: '0.8rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '5px'
-                      }}
-                      title="Anonymisiertes Blind-Profil für diesen Lead erstellen / ansehen"
-                    >
-                      <Eye size={13} /> 🎭 Blind-Profil
-                    </button>
-
-                    {/* Baustelle 3: Zielgruppen-Match Badge im CRM Header */}
-                    {(() => {
-                      const matchScore = computeTargetMatchScore(compNameHeader || activeOpp.company?.name || activeOpp.nexus_companies?.name, activeOpp.lead_score ?? activeTrigger?.trigger_score);
-                      return matchScore >= 70 ? (
-                        <span className="badge-match-high" style={{ padding: '4px 10px', fontSize: '0.8rem' }} title="Hohe Passgenauigkeit zum Zielkundenprofil">
-                          <CheckCircle size={13} /> Zielgruppen-Match: {matchScore}%
-                        </span>
-                      ) : matchScore >= 50 ? (
-                        <span className="badge-match-mid" style={{ padding: '4px 10px', fontSize: '0.8rem' }} title="Guter Zielgruppen-Match">
-                          <Sparkles size={13} /> Zielgruppen-Match: {matchScore}%
-                        </span>
-                      ) : (
-                        <span className="badge-match-low" style={{ padding: '4px 10px', fontSize: '0.8rem' }} title="Unternehmen ist möglicherweise Anbieter/Wettbewerber oder passt nicht zur Zielgruppe">
-                          <AlertCircle size={13} /> Zielgruppe unklar ({matchScore}%)
-                        </span>
-                      );
-                    })()}
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                      {`${t('nexus.wsStage')}: `}
-                      <span style={{ background: '#0a0c0f', border: '1px solid #1e232d', padding: '4px 12px', borderRadius: '12px', fontWeight: 600, color: 'var(--accent-blue, #38bdf8)' }}>
-                        {(activeOpp.pipeline_stage || 'OPPORTUNITY').toUpperCase()}
+                      <span>•</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                        <Clock size={15} color="#facc15" />
+                        <strong style={{ color: '#cbd5e1' }}>Publikation:</strong> {dateFormatted} ({traffic.label})
                       </span>
                     </div>
                   </div>
-                );
-              })()}
-            </div>
 
-            {/* 🛡️ DEALCOACH STUFE 2 REVISIONS- & VORSORTIERUNGS-PANEL */}
-            {activeOpp && (() => {
-              const audit = extractDealCoachAudit(activeOpp);
-              if (!audit) return null;
-              const isTier1 = audit.tier === 'TIER_1_TOP';
-              const isTier2 = audit.tier === 'TIER_2_MID';
-              const isInInbox = activeOpp.review_status === 'pending' || activeOpp.review_status === 'PENDING_REVIEW' || activeOpp.review_status === 'unreviewed';
-
-              return (
-                <div className="dealcoach-audit-card" style={{
-                  background: isTier1 ? 'linear-gradient(135deg, rgba(88, 28, 135, 0.22) 0%, rgba(15, 23, 42, 0.8) 100%)' : isTier2 ? 'linear-gradient(135deg, rgba(30, 58, 138, 0.2) 0%, rgba(15, 23, 42, 0.8) 100%)' : 'linear-gradient(135deg, rgba(51, 65, 85, 0.3) 0%, rgba(15, 23, 42, 0.8) 100%)',
-                  border: `1px solid ${isTier1 ? 'rgba(168, 85, 247, 0.45)' : isTier2 ? 'rgba(59, 130, 246, 0.4)' : 'rgba(148, 163, 184, 0.35)'}`,
-                  borderRadius: '12px',
-                  padding: '16px 20px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px',
-                  boxShadow: isTier1 ? '0 4px 20px rgba(147, 51, 234, 0.12)' : '0 4px 20px rgba(59, 130, 246, 0.1)',
-                  position: 'relative'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{
-                        background: isTier1 ? 'rgba(168, 85, 247, 0.25)' : isTier2 ? 'rgba(59, 130, 246, 0.25)' : 'rgba(148, 163, 184, 0.2)',
-                        border: `1px solid ${isTier1 ? '#a855f7' : isTier2 ? '#3b82f6' : '#94a3b8'}`,
-                        borderRadius: '8px',
-                        padding: '6px 12px',
-                        fontSize: '0.92rem',
-                        fontWeight: 800,
-                        color: isTier1 ? '#f3e8ff' : isTier2 ? '#dbeafe' : '#f1f5f9',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        letterSpacing: '0.02em'
-                      }}>
-                        {isTier1 ? '👑 TIER 1 TOP' : isTier2 ? '🏢 TIER 2 MID' : '⚖️ PRÜFUNG EMPFOHLEN'}
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#f8fafc', letterSpacing: '0.01em', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                          <span>DealCoach Revisions-Urteil:</span>
-                          <span style={{ color: isTier1 ? '#c084fc' : isTier2 ? '#60a5fa' : '#cbd5e1' }}>{audit.verdict || 'VOREINSCHÄTZUNG'}</span>
-                        </div>
-                        <div style={{ fontSize: '0.82rem', color: '#94a3b8', marginTop: '2px' }}>
-                          Einstufung: <strong style={{ color: isTier1 ? '#d8b4fe' : isTier2 ? '#93c5fd' : '#cbd5e1' }}>{isTier1 ? 'Großunternehmen / Börse (C-Level Organ)' : isTier2 ? 'Mittelstand ab 20 Mio. € (PMO / Leitung)' : 'Primärmitteilung (Sichtung durch Harro)'}</strong> · Budget: <strong style={{ color: '#38bdf8' }}>{audit.estimated_budget || 'Auf Anfrage'}</strong>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleSubmitToHumanReview(activeOpp)}
-                      disabled={isSubmittingReview}
+                  {/* Link zur Originalmeldung */}
+                  {hasValidSource ? (
+                    <a
+                      href={sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       style={{
-                        background: isInInbox 
-                          ? 'rgba(234, 179, 8, 0.16)' 
-                          : 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                        color: isInInbox ? '#facc15' : '#ffffff',
-                        border: isInInbox ? '1px solid rgba(234, 179, 8, 0.45)' : '1px solid #60a5fa',
-                        padding: '9px 18px',
-                        borderRadius: '8px',
-                        fontWeight: 700,
-                        fontSize: '0.88rem',
-                        cursor: isSubmittingReview ? 'not-allowed' : 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '8px',
-                        boxShadow: isInInbox ? 'none' : '0 0 16px rgba(59, 130, 246, 0.35)',
-                        transition: 'all 0.2s ease'
-                      }}
-                      title={isInInbox ? "Signal liegt bereits in Harros Prüf-Inbox" : "Signal zur menschlichen Überprüfung in Harros Prüf-Inbox verschieben"}
-                    >
-                      {isSubmittingReview ? (
-                        <><Loader2 size={16} className="animate-spin" /> Wird vorgelegt...</>
-                      ) : isInInbox ? (
-                        <><Clock size={16} /> 📥 In Harros Prüf-Inbox</>
-                      ) : (
-                        <><FileText size={16} /> 📋 Zur menschlichen Prüfung vorlegen</>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Grid: Vakuum-Check & Dringlichkeit */}
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                    gap: '12px',
-                    background: 'rgba(0, 0, 0, 0.25)',
-                    padding: '12px 16px',
-                    borderRadius: '8px',
-                    border: '1px solid rgba(255, 255, 255, 0.06)'
-                  }}>
-                    <div>
-                      <div style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <CheckCircle size={14} color="#22c55e" /> Vakuum-Check (Organ-Vakanz)
-                      </div>
-                      <div style={{ fontSize: '0.86rem', color: '#e2e8f0', marginTop: '4px', lineHeight: 1.4 }}>
-                        {audit.vacuum_check}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <Zap size={14} color="#eab308" /> Dringlichkeit & Überbrückungsbedarf
-                      </div>
-                      <div style={{ fontSize: '0.86rem', color: '#e2e8f0', marginTop: '4px', lineHeight: 1.4 }}>
-                        {audit.urgency_check}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Begründung */}
-                  <div style={{
-                    fontSize: '0.86rem',
-                    color: '#cbd5e1',
-                    lineHeight: 1.45,
-                    padding: '10px 14px',
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    borderRadius: '8px',
-                    borderLeft: `3px solid ${isTier1 ? '#a855f7' : '#3b82f6'}`
-                  }}>
-                    <strong style={{ color: '#f8fafc' }}>Mandats-Begründung: </strong>
-                    {audit.rationale}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* HITL Posteingang Banner */}
-            {activeOpp && (activeOpp.review_status === 'pending' || activeOpp.review_status === 'PENDING_REVIEW' || activeOpp.review_status === 'unreviewed') && (
-              <div style={{
-                background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.12) 0%, rgba(202, 138, 4, 0.05) 100%)',
-                border: '1px solid rgba(234, 179, 8, 0.35)',
-                borderRadius: '10px',
-                padding: '14px 20px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-                minWidth: 0,
-                maxWidth: '100%',
-                boxSizing: 'border-box'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                    <div style={{ background: 'rgba(234, 179, 8, 0.2)', padding: '8px', borderRadius: '8px', color: '#facc15', flexShrink: 0 }}>
-                      <Clock size={20} />
-                    </div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, color: '#fef08a', fontSize: '0.94rem' }}>
-                        📥 Posteingang: Kaufsignal wartet auf Inhaber-Prüfung ("Chefsache")
-                      </div>
-                      <div style={{ color: '#94a3b8', fontSize: '0.82rem', marginTop: '2px' }}>
-                        Dieses Signal wurde per Feed-Ingestion erfasst. Sie können es mit 1 Klick freigeben oder die 5 Punkte prüfen.
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <button
-                      type="button"
-                      onClick={(e) => handleQuickApproveAll(activeOpp.id, e)}
-                      disabled={isReviewSaving}
-                      style={{
-                        background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-                        color: '#050608',
-                        border: '1px solid #4ade80',
-                        padding: '9px 18px',
-                        borderRadius: '8px',
-                        fontWeight: 800,
-                        fontSize: '0.88rem',
-                        cursor: isReviewSaving ? 'not-allowed' : 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        boxShadow: '0 0 16px rgba(34, 197, 94, 0.45)',
-                        transition: 'all 0.2s ease'
-                      }}
-                      title="Alle 5 Prüfpunkte automatisch bestehen & Fall in Pipeline übernehmen"
-                    >
-                      <Zap size={15} /> ⚡ 1-Klick: Freigeben (Bestanden)
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowBlindProfileModal(true)}
-                      style={{
-                        background: 'rgba(56, 189, 248, 0.12)',
-                        color: '#38bdf8',
-                        border: '1px solid rgba(56, 189, 248, 0.4)',
                         padding: '9px 16px',
+                        background: 'rgba(56, 189, 248, 0.1)',
+                        border: '1px solid rgba(56, 189, 248, 0.4)',
                         borderRadius: '8px',
+                        color: '#38bdf8',
                         fontWeight: 700,
                         fontSize: '0.86rem',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px'
+                        textDecoration: 'none',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 2px 10px rgba(56, 189, 248, 0.1)'
                       }}
-                      title="Anonymisiertes Blind-Profil für diesen Lead ansehen / exportieren"
+                      title={`Originalquelle öffnen (${domain})`}
                     >
-                      <Eye size={15} /> 🎭 Blind-Profil
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={(e) => handleDismissOpportunity(activeOpp.id, e)}
-                      disabled={isReviewSaving}
-                      style={{
-                        background: 'rgba(239, 68, 68, 0.15)',
-                        color: '#f87171',
-                        border: '1px solid rgba(239, 68, 68, 0.35)',
-                        padding: '9px 15px',
-                        borderRadius: '8px',
-                        fontWeight: 600,
-                        fontSize: '0.86rem',
-                        cursor: isReviewSaving ? 'not-allowed' : 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '5px'
-                      }}
-                      title="Signal verwerfen"
-                    >
-                      <X size={15} /> Verwerfen
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Tab: Historie */}
-            {activeTab === 'historie' && (
-              <div className="tab-content-historie" style={{ display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', paddingRight: '8px' }}>
-                {historyItems.length === 0 ? (
-                  <div style={{ padding: '32px', textAlign: 'center', background: '#0a0c0f', borderRadius: '12px', border: '1px solid #1e232d' }}>
-                    <p style={{ color: 'var(--text-secondary, #94a3b8)', margin: 0 }}>{t('nexus.wsNoHistory')}</p>
-                  </div>
-                ) : (
-                  historyItems.map((item, idx) => (
-                    <div key={idx} style={{ padding: '20px', background: '#0a0c0f', borderRadius: '12px', border: '1px solid #1e232d', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '0.85rem', color: '#94a3b8', borderBottom: '1px solid #1e232d', paddingBottom: '8px' }}>
-                        <span style={{ fontWeight: 'bold', color: 'var(--accent-blue, #38bdf8)', fontSize: '0.9rem' }}>
-                          {item._type === 'content' ? t('nexus.wsGeneratedPitch') + ': ' + item.type : item.description}
-                        </span>
-                        <span style={{ color: '#64748b' }}>{new Date(item.created_at).toLocaleString()}</span>
-                      </div>
-                      {item._type === 'content' ? (
-                        <div 
-                          className="nexus-document-paper"
-                          style={{ 
-                            fontSize: '0.96rem', 
-                            lineHeight: 1.75, 
-                            whiteSpace: 'pre-wrap', 
-                            color: '#0f172a', 
-                            background: '#f8f6f0', 
-                            padding: '24px 28px', 
-                            borderRadius: '10px', 
-                            border: '1px solid #e2ded4',
-                            boxShadow: '0 6px 20px rgba(0, 0, 0, 0.4)',
-                            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                            letterSpacing: '-0.01em'
-                          }}
-                        >
-                          {(() => {
-                             let contentToRender = item.content;
-                             if (typeof contentToRender === 'string') {
-                                try {
-                                   const parsed = JSON.parse(contentToRender);
-                                   if (typeof parsed === 'object' && parsed !== null) {
-                                      contentToRender = parsed;
-                                   }
-                                } catch (e) { /* ignore, just use string */ }
-                             }
-                             if (typeof contentToRender === 'object' && contentToRender !== null) {
-                                return contentToRender.response || contentToRender.nachricht || contentToRender.message || contentToRender.text || contentToRender.pitch || Object.values(contentToRender).join('\n\n');
-                             }
-                             return contentToRender;
-                          })()}
-                        </div>
-                      ) : item.activity_type === 'social_reachout' && item.metadata ? (
-                        <div style={{ fontSize: '0.95rem', marginTop: '10px', padding: '16px', background: '#11141a', borderRadius: '10px', border: '1px solid #1e232d' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                            <span style={{ fontWeight: 600, color: 'var(--accent-blue, #38bdf8)', fontSize: '0.85rem' }}>
-                              Plattform: {item.metadata.platform?.toUpperCase() || 'SOCIAL'}
-                            </span>
-                            {item.metadata.url && (
-                              <a href={item.metadata.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.85rem', color: 'var(--accent-blue, #38bdf8)', textDecoration: 'none' }}>
-                                Original-Post ↗
-                              </a>
-                            )}
-                          </div>
-                          {item.metadata.comment && (
-                            <div style={{ marginBottom: '12px' }}>
-                              <strong style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Öffentlicher Kommentar:</strong>
-                              <div style={{ margin: '6px 0', padding: '14px 18px', background: '#f8f6f0', color: '#0f172a', borderRadius: '8px', border: '1px solid #e2ded4', whiteSpace: 'pre-wrap', lineHeight: 1.65 }}>
-                                {item.metadata.comment}
-                              </div>
-                            </div>
-                          )}
-                          {item.metadata.direct_message && (
-                            <div>
-                              <strong style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Direktnachricht (DM):</strong>
-                              <div style={{ margin: '6px 0', padding: '14px 18px', background: '#f8f6f0', color: '#0f172a', borderRadius: '8px', border: '1px solid #e2ded4', whiteSpace: 'pre-wrap', lineHeight: 1.65 }}>
-                                {item.metadata.direct_message}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : null}
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-
-            {/* Tab: Aktion (Layout angepasst, damit Formular breiter ist) */}
-            {activeTab === 'aktion' && (
-              <div className="tab-content-aktion" style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}>
-                
-                {/* Social Outreach Erinnerungs-Banner */}
-                {socialState.outreachData && selectedMode !== 'forum_response' && (
-                  <div style={{ padding: '10px 14px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                    <div style={{ fontSize: '0.85rem' }}>
-                      <strong style={{ color: 'var(--accent-blue, #38bdf8)' }}>Gespeicherter Social Outreach vorhanden:</strong>{' '}
-                      {socialState.outreachData.comment ? `Kommentar: "${socialState.outreachData.comment.slice(0, 90)}..."` : (socialState.outreachData.direct_message ? `DM: "${socialState.outreachData.direct_message.slice(0, 90)}..."` : 'Nachricht verfasst')}
-                    </div>
-                    <button 
-                      type="button" 
-                      onClick={() => setSelectedMode('forum_response')}
-                      style={{ fontSize: '0.8rem', background: 'transparent', color: 'var(--accent-blue, #38bdf8)', border: '1px solid var(--accent-blue, #38bdf8)', borderRadius: '4px', padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                    >
-                      Im Social Reachout ansehen ↗
-                    </button>
-                  </div>
-                )}
-                <div className="sales-workspace-actions" style={{ width: '100%' }}>
-                  <h3 style={{ marginTop: 0 }}>{t('nexus.selectMode')}</h3>
-                  <div className="mode-list" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                    {MODI.map(mode => (
-                      <button
-                        key={mode.id}
-                        className={`mode-btn ${selectedMode === mode.id ? 'active' : ''}`}
-                        onClick={() => setSelectedMode(mode.id)}
-                        style={{ flex: '1 1 calc(25% - 12px)', minWidth: '200px', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', textAlign: 'left' }}
-                      >
-                        <mode.icon size={20} />
-                        <div>
-                          <span className="mode-label">{MODI_LABELS[mode.id]?.label}</span>
-                          <span className="mode-description">{MODI_LABELS[mode.id]?.desc}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                
-                {selectedMode === 'forum_response' ? (
-                  <div className="social-outreach-suite" style={{ width: '100%' }}>
-                    {/* 1. Social Presence Bar */}
-                    <div className="social-presence-bar">
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>
-                          {t('nexus.wsSocialPresence') || 'Social-Präsenz'}: {fullContext?.company?.name || formData.company || '-'}
-                        </strong>
-                        <div className="social-presence-links">
-                          {fullContext?.company?.website && (
-                            <a href={fullContext.company.website.startsWith('http') ? fullContext.company.website : 'https://' + fullContext.company.website} target="_blank" rel="noopener noreferrer" className="social-presence-badge website">
-                              <Globe size={14} /> Website ↗
-                            </a>
-                          )}
-                          {socialState.profiles?.linkedin?.url ? (
-                            <a href={socialState.profiles.linkedin.url} target="_blank" rel="noopener noreferrer" className="social-presence-badge linkedin">
-                              <ExternalLink size={14} /> LinkedIn Unternehmensseite ↗
-                            </a>
-                          ) : (
-                            <a href={`https://www.linkedin.com/search/results/company/?keywords=${encodeURIComponent(fullContext?.company?.name || formData.company || '')}`} target="_blank" rel="noopener noreferrer" className="social-presence-badge unverified">
-                              <Search size={14} /> LinkedIn-Suche ↗
-                            </a>
-                          )}
-                          {socialState.profiles?.youtube?.url ? (
-                            <a href={socialState.profiles.youtube.url} target="_blank" rel="noopener noreferrer" className="social-presence-badge youtube">
-                              <Video size={14} /> YouTube Kanal ↗
-                            </a>
-                          ) : (
-                            <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(fullContext?.company?.name || formData.company || '')}`} target="_blank" rel="noopener noreferrer" className="social-presence-badge unverified">
-                              <Search size={14} /> YouTube-Suche ↗
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <select
-                          value={formData.targetLang || lang || 'de'}
-                          onChange={(e) => {
-                            const newL = e.target.value;
-                            setFormData(prev => ({ ...prev, targetLang: newL }));
-                            if (socialState.selectedActivity) {
-                              handleUseForOutreach(socialState.selectedActivity);
-                            }
-                          }}
-                          style={{
-                            padding: '6px 10px',
-                            borderRadius: '6px',
-                            border: '1px solid var(--border-light)',
-                            background: 'var(--bg-secondary)',
-                            color: 'var(--text-primary)',
-                            fontSize: '0.85rem',
-                            fontWeight: 600
-                          }}
-                        >
-                          <option value="de">🇩🇪 Deutsch (DE)</option>
-                          <option value="en">🇺🇸 English (US/UK)</option>
-                          <option value="es">🇪🇸 Español (ES)</option>
-                          <option value="fr">🇫🇷 Français (FR)</option>
-                          <option value="it">🇮🇹 Italiano (IT)</option>
-                          <option value="nl">🇳🇱 Nederlands (NL)</option>
-                          <option value="el">🇬🇷 Ελληνικά (GR)</option>
-                        </select>
-                        <button 
-                          onClick={() => loadSocialActivities(true)} 
-                          className="btn-secondary"
-                          disabled={socialState.loading}
-                          style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '6px 12px' }}
-                        >
-                          <RefreshCw size={13} className={socialState.loading ? 'btn-spinner' : ''} />
-                          {socialState.loading ? t('nexus.wsSearching') : 'Aktivitäten aktualisieren'}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* 2. Error State */}
-                    {socialState.error && (
-                      <div className="error-message">
-                        <AlertCircle size={16} />
-                        {socialState.error}
-                      </div>
-                    )}
-
-                    {/* 3. Loading State with Multi-Step Live Progress Bar */}
-                    {socialState.loading && (
-                      <NexusLiveProgressBar
-                        title={`Recherchiere Social-Aktivitäten für ${fullContext?.company?.name || formData.company || 'Unternehmen'}...`}
-                        subtitle="Scanne offizielle Profile (LinkedIn, YouTube) & Web-Quellen nach aktuellen Kaufsignalen..."
-                        steps={[
-                          "Offizielle Unternehmenskanäle (Website, LinkedIn, YouTube) lokalisieren",
-                          "Neueste Beiträge, Pressemitteilungen & Videos analysieren",
-                          "Kaufsignale & Relevanz für dein Angebot prüfen",
-                          "Verifizierte Social-Aktivitäten aufbereiten"
-                        ]}
-                        estimatedDurationSec={4}
-                      />
-                    )}
-
-                    {/* 4. Detail View: Selected Activity & Generated Outreach */}
-                    {!socialState.loading && socialState.selectedActivity && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <button 
-                            className="btn-secondary" 
-                            onClick={() => setSocialState(prev => ({ ...prev, selectedActivity: null, outreachData: null }))}
-                            style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', padding: '6px 12px' }}
-                          >
-                            <ArrowRight size={14} style={{ transform: 'rotate(180deg)' }} /> {t('nexus.wsSocialBackToList') || 'Zurück zur Beitragsliste'}
-                          </button>
-                          <a 
-                            href={socialState.selectedActivity.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="btn-secondary"
-                            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--color-koralle)' }}
-                          >
-                            <ExternalLink size={14} /> {t('nexus.wsSocialOpenOriginal') || 'Original öffnen'} ↗
-                          </a>
-                        </div>
-
-                        {/* Mini Activity Header Card */}
-                        <div style={{ padding: '16px 20px', background: '#0a0c0f', borderRadius: '10px', border: '1px solid #1e232d' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                            <span className={`social-platform-tag ${socialState.selectedActivity.platform}`}>
-                              {socialState.selectedActivity.platform === 'youtube' ? <Video size={14} /> : <Share2 size={14} />}
-                              {socialState.selectedActivity.platform.toUpperCase()}
-                            </span>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>• {socialState.selectedActivity.date}</span>
-                          </div>
-                          <h4 style={{ margin: '0 0 6px 0', fontSize: '1rem' }}>{socialState.selectedActivity.title}</h4>
-                          {socialState.selectedActivity.snippet && (
-                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{socialState.selectedActivity.snippet}</p>
-                          )}
-                        </div>
-
-                        {/* Generating State with Multi-Step Live Progress Bar */}
-                        {socialState.generatingOutreach && (
-                          <NexusLiveProgressBar
-                            title="Analysiere Beitrag & erstelle Social Outreach..."
-                            subtitle="Formuliere fundierten Mehrwert-Kommentar & passgenaue Direktnachricht..."
-                            steps={[
-                              "Beitrags-Inhalt & Kernaussage erfassen",
-                              "Spezifische Relevanz für dein Angebot ableiten",
-                              "Mehrwert-Kommentar nach B2B-Best-Practices formulieren",
-                              "Passgenaue Direktnachricht (InMail/DM) & Übersetzung vorbereiten"
-                            ]}
-                            estimatedDurationSec={3.5}
-                          />
-                        )}
-
-                        {/* Outreach Result */}
-                        {!socialState.generatingOutreach && socialState.outreachData && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                            {/* 3-Step Analysis Box */}
-                            <div className="social-analysis-box">
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border-light)', paddingBottom: '10px' }}>
-                                <Sparkles size={18} color="var(--color-koralle)" />
-                                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>
-                                  {t('nexus.wsSocialPostAnalysis') || 'Beitrags-Analyse'}
-                                </h4>
-                              </div>
-                              <div className="social-analysis-step">
-                                <span className="social-analysis-label">{t('nexus.wsSocialWhatItSays') || 'Was sagt dieser Beitrag aus?'}</span>
-                                <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.5, color: 'var(--text-primary)' }}>
-                                  {socialState.outreachData.analysis?.post_summary || 'Reale öffentliche Veröffentlichung des Unternehmens.'}
-                                </p>
-                              </div>
-                              <div className="social-analysis-step">
-                                <span className="social-analysis-label">{t('nexus.wsSocialWhyRelevant') || 'Warum ist er relevant für dein Angebot?'}</span>
-                                <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.5, color: 'var(--text-primary)' }}>
-                                  {socialState.outreachData.analysis?.relevance_explanation || 'Bietet einen konkreten, thematischen Anknüpfungspunkt für die Erstansprache.'}
-                                </p>
-                              </div>
-                            </div>
-
-                            {/* Outreach Tabs (Comment vs Direct Message) */}
-                            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '10px', padding: '20px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid var(--border-light)', paddingBottom: '14px' }}>
-                                <div className="social-outreach-preview-tabs" style={{ margin: 0 }}>
-                                  <button 
-                                    className={`social-outreach-tab-btn ${socialState.activeTab === 'comment' ? 'active' : ''}`}
-                                    onClick={() => setSocialState(prev => ({ ...prev, activeTab: 'comment' }))}
-                                  >
-                                    {t('nexus.wsSocialCommentTab') || 'Mehrwert-Kommentar'}
-                                  </button>
-                                  <button 
-                                    className={`social-outreach-tab-btn ${socialState.activeTab === 'direct_message' ? 'active' : ''}`}
-                                    onClick={() => setSocialState(prev => ({ ...prev, activeTab: 'direct_message' }))}
-                                  >
-                                    {t('nexus.wsSocialDmTab') || 'Direktnachricht (InMail / DM)'}
-                                  </button>
-                                </div>
-
-                                {/* Post Language Selector */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                    {t('nexus.wsSocialPostLang') || 'Sprache des Posts:'}
-                                  </span>
-                                  <select
-                                    value={socialState.outreachData.post_lang || 'en'}
-                                    onChange={(e) => handleUseForOutreach(socialState.selectedActivity, e.target.value)}
-                                    style={{
-                                      padding: '5px 10px',
-                                      borderRadius: '6px',
-                                      border: '1px solid var(--border-light)',
-                                      background: 'var(--bg)',
-                                      color: 'var(--text-primary)',
-                                      fontSize: '0.85rem',
-                                      cursor: 'pointer',
-                                      fontWeight: 600
-                                    }}
-                                  >
-                                    <option value="en">Englisch (English)</option>
-                                    <option value="de">Deutsch</option>
-                                    <option value="fr">Français</option>
-                                    <option value="es">Español</option>
-                                    <option value="it">Italiano</option>
-                                    <option value="nl">Nederlands</option>
-                                    <option value="el">Ελληνικά</option>
-                                  </select>
-                                </div>
-                              </div>
-
-                              <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                                <div>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                                    <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                                      {socialState.activeTab === 'comment' ? 'Zu postender Kommentar' : 'Zu versendende Direktnachricht'} ({socialState.outreachData.post_lang_label || 'Englisch'}):
-                                    </label>
-                                    <span style={{ fontSize: '0.8rem', color: 'var(--accent-blue, #38bdf8)', fontWeight: 600 }}>
-                                      Formatiert für {socialState.selectedActivity.platform?.toUpperCase()}
-                                    </span>
-                                  </div>
-                                  <textarea
-                                    value={socialState.activeTab === 'comment' ? (socialState.outreachData.comment || '') : (socialState.outreachData.direct_message || '')}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      setSocialState(prev => ({
-                                        ...prev,
-                                        outreachData: {
-                                          ...prev.outreachData,
-                                          [prev.activeTab === 'comment' ? 'comment' : 'direct_message']: val
-                                        }
-                                      }));
-                                    }}
-                                    rows={6}
-                                    style={{
-                                      width: '100%',
-                                      padding: '12px 14px',
-                                      borderRadius: '8px',
-                                      border: '1px solid #e2ded4',
-                                      background: '#f8f6f0',
-                                      color: '#0f172a',
-                                      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                                      fontSize: '0.96rem',
-                                      lineHeight: 1.7,
-                                      resize: 'vertical',
-                                      boxShadow: '0 4px 16px rgba(0,0,0,0.25)'
-                                    }}
-                                  />
-                                </div>
-
-                                {/* Review / Translation Box in User UI Language */}
-                                {(socialState.outreachData.comment_translation || socialState.outreachData.direct_message_translation) && (
-                                  <div style={{
-                                    background: 'rgba(255, 127, 80, 0.05)',
-                                    border: '1px dashed var(--border-light)',
-                                    borderRadius: '8px',
-                                    padding: '12px 16px'
-                                  }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                                        {t('nexus.wsSocialTranslationReview') || '🇩🇪 Übersetzung zur Kontrolle:'}
-                                      </span>
-                                    </div>
-                                    <p style={{ margin: 0, fontSize: '0.88rem', lineHeight: 1.5, color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                                      {socialState.activeTab === 'comment' ? socialState.outreachData.comment_translation : socialState.outreachData.direct_message_translation}
-                                    </p>
-                                  </div>
-                                )}
-
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginTop: '8px', paddingBottom: '24px' }}>
-                                  <button
-                                    className="btn-primary"
-                                    onClick={() => {
-                                      const textToCopy = socialState.activeTab === 'comment' ? socialState.outreachData.comment : socialState.outreachData.direct_message;
-                                      navigator.clipboard.writeText(textToCopy || '');
-                                      if (socialState.activeTab === 'comment') {
-                                        trackSocialCommentCopied(socialState.selectedActivity.platform, fullContext?.company?.name || formData.company);
-                                        setSocialState(prev => ({ ...prev, copiedComment: true }));
-                                        setTimeout(() => setSocialState(prev => ({ ...prev, copiedComment: false })), 2500);
-                                      } else {
-                                        trackSocialDmCopied(socialState.selectedActivity.platform, fullContext?.company?.name || formData.company);
-                                        setSocialState(prev => ({ ...prev, copiedDm: true }));
-                                        setTimeout(() => setSocialState(prev => ({ ...prev, copiedDm: false })), 2500);
-                                      }
-                                    }}
-                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '0.95rem' }}
-                                  >
-                                    {(socialState.activeTab === 'comment' ? socialState.copiedComment : socialState.copiedDm) ? (
-                                      <><CheckCircle size={16} /> {t('nexus.wsSocialCopiedPost') || 'Kopiert!'}</>
-                                    ) : (
-                                      <><Copy size={16} /> {t('nexus.wsSocialCopyPost') || 'In die Zwischenablage kopieren'} ({socialState.outreachData.post_lang_label || 'Englisch'})</>
-                                    )}
-                                  </button>
-
-                                  <a
-                                    href={socialState.selectedActivity.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    onClick={() => trackSocialOriginalOpened(socialState.selectedActivity.platform, socialState.selectedActivity.url)}
-                                    className="btn-secondary"
-                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', color: 'var(--color-koralle)', fontWeight: 600, fontSize: '0.95rem' }}
-                                  >
-                                    <ExternalLink size={16} /> {t('nexus.wsSocialOriginalPost') || 'Originalbeitrag öffnen & posten'} ↗
-                                  </a>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* 5. Activities List */}
-                    {!socialState.loading && !socialState.selectedActivity && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>
-                            {t('nexus.wsSocialActivities') || 'Letzte Aktivitäten & Content'} ({socialState.activities.length})
-                          </h4>
-                        </div>
-
-                        {socialState.activities.length === 0 ? (
-                          <div style={{ padding: '32px', textAlign: 'center', background: 'var(--bg-card)', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
-                            <p style={{ color: 'var(--text-secondary)', margin: '0 0 16px 0' }}>
-                              {t('nexus.wsSocialNoActivities') || 'Für dieses Unternehmen konnten aktuell keine verifizierten öffentlichen Social-Aktivitäten gefunden werden.'}
-                            </p>
-                            {socialState.profiles?.linkedin?.url && (
-                              <a href={socialState.profiles.linkedin.url} target="_blank" rel="noopener noreferrer" className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                                <ExternalLink size={14} /> LinkedIn Unternehmensseite manuell öffnen ↗
-                              </a>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="social-activities-grid">
-                            {socialState.activities.map((act) => (
-                              <div key={act.id} className="social-activity-card">
-                                <div className="social-activity-header">
-                                  <span className={`social-platform-tag ${act.platform}`}>
-                                    {act.platform === 'youtube' ? <Video size={14} /> : <Share2 size={14} />}
-                                    {act.platform.toUpperCase()}
-                                  </span>
-                                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{act.date}</span>
-                                </div>
-
-                                <h4 className="social-activity-title">{act.title}</h4>
-
-                                {act.snippet && (
-                                  <p className="social-activity-snippet">{act.snippet}</p>
-                                )}
-
-                                {act.relevance_reason && (
-                                  <div className="social-relevance-box">
-                                    <strong>{act.relevance_score ? `${act.relevance_score}% Relevanz: ` : ''}</strong>
-                                    {act.relevance_reason}
-                                  </div>
-                                )}
-
-                                <div className="social-activity-actions">
-                                  <a 
-                                    href={act.url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    className="btn-secondary"
-                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '6px 12px' }}
-                                  >
-                                    <ExternalLink size={14} /> {t('nexus.wsSocialOpenOriginal') || 'Original öffnen'} ↗
-                                  </a>
-                                  <button
-                                    className="btn-primary"
-                                    onClick={() => handleUseForOutreach(act)}
-                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '6px 14px' }}
-                                  >
-                                    <Sparkles size={14} /> {t('nexus.wsSocialUseForOutreach') || 'Für Outreach verwenden'}
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <main className="sales-workspace-main" style={{ width: '100%' }}>
-
-                  
-                  <form onSubmit={handleGenerate} className="sales-form">
-                    {renderFormFields()}
-                    
-                    <div className="form-group" style={{ marginTop: '16px' }}>
-                      <label htmlFor="targetLang">{t('nexus.wsFormLang') || 'Ausgabesprache der Nachricht'}</label>
-                      <select
-                        id="targetLang"
-                        name="targetLang"
-                        value={formData.targetLang || (lang === 'de' ? 'de' : 'auto')}
-                        onChange={handleInputChange}
-                        style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-light)', background: 'var(--bg)', color: 'var(--text-primary)' }}
-                      >
-                        <option value="de">{t('nexus.wsFormLangDe') || 'Deutsch (DE)'}</option>
-                        <option value="auto">{t('nexus.wsFormLangAuto') || 'Automatisch (wie Website / Lead)'}</option>
-                        <option value="en">{t('nexus.wsFormLangEn') || 'Englisch (EN)'}</option>
-                        <option value="es">{t('nexus.wsFormLangEs') || 'Spanisch (ES)'}</option>
-                        <option value="fr">{t('nexus.wsFormLangFr') || 'Französisch (FR)'}</option>
-                      </select>
-                    </div>
-
-                    {error && (
-                      <div className="error-message">
-                        <AlertCircle size={16} />
-                        {error}
-                      </div>
-                    )}
-                    <button type="submit" className="generate-btn" disabled={loading || !fullContext}>
-                      {loading ? (
-                        <>
-                          <div className="btn-spinner"></div>
-                          {t('nexus.generating')}
-                        </>
-                      ) : (
-                        <>
-                          <Send size={18} />
-                          {t('nexus.generateMessage')}
-                        </>
-                      )}
-                    </button>
-                  </form>
-                  {result && (
-                    <div className="sales-result">
-                      <div className="result-header">
-                        <h3>{t('nexus.wsGeneratedMessage')}</h3>
-                        <button className="copy-btn" onClick={handleCopy}>
-                          {copied ? <><CheckCircle size={16} /> {t('nexus.wsBtnCopied')}</> : <><Copy size={16} /> {t('nexus.wsBtnCopy')}</>}
-                        </button>
-                      </div>
-                      <NexusAnalysisResult data={result} mode={selectedMode} />
-                    </div>
-                  )}
-                </main>
-                )}
-              </div>
-            )}
-
-            {/* Tab: Prüfung */}
-            {activeTab === 'pruefung' && activeOpp && (() => {
-              const compName = resolveTriggerCompanyName(activeTrigger, activeOpp);
-              const isRaiffeisen = (compName && compName.toLowerCase().includes('raiffeisen')) ||
-                                   (activeOpp?.company?.name && activeOpp.company.name.toLowerCase().includes('raiffeisen')) ||
-                                   (activeOpp?.nexus_companies?.name && activeOpp.nexus_companies.name.toLowerCase().includes('raiffeisen')) ||
-                                   (activeTrigger?.content && activeTrigger.content.toLowerCase().includes('raiffeisen'));
-
-              const isVerifiedLead = isRaiffeisen ||
-                                     activeOpp.review_status === 'verified' || 
-                                     activeOpp.review_status === 'reviewed' || 
-                                     (activeOpp.review_notes && activeOpp.review_notes.includes('Harro Goerndt')) ||
-                                     (reviewNotes && reviewNotes.trim().length > 0 && reviewNotes.includes('Harro Goerndt'));
-
-              const allPassed = reviewChecklist.duplicate === 'pass' &&
-                                reviewChecklist.plausibility === 'pass' &&
-                                reviewChecklist.source === 'pass' &&
-                                reviewChecklist.date === 'pass' &&
-                                reviewChecklist.relevance === 'pass';
-
-              return (
-                <div className="tab-content-pruefung" style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
-                  {/* Status-Banner */}
-                  {isVerifiedLead ? (
-                    <div style={{ padding: '16px 20px', background: 'rgba(34, 197, 94, 0.12)', border: '1px solid rgba(34, 197, 94, 0.35)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#4ade80', fontWeight: 700, fontSize: '0.98rem' }}>
-                        <CheckCircle size={24} />
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                            <span>Lead erfolgreich GEPRÜFT &amp; HUMAN-VERIFIED für {compName}</span>
-                            {(() => {
-                              const dateVal = activeTrigger?.event_date || activeOpp?.event_date || activeTrigger?.published_at || activeTrigger?.created_at || activeOpp?.created_at;
-                              const traffic = getFreshnessTrafficLight(dateVal);
-                              return (
-                                <span 
-                                  className={`badge-freshness ${traffic.badgeClass}`}
-                                  style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '4px',
-                                    padding: '2px 8px',
-                                    borderRadius: '4px',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 700,
-                                    background: traffic.color === 'green' ? 'rgba(34, 197, 94, 0.2)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.25)' : 'rgba(239, 68, 68, 0.25)',
-                                    color: traffic.color === 'green' ? '#86efac' : traffic.color === 'yellow' ? '#fde047' : '#fca5a5',
-                                    border: `1px solid ${traffic.color === 'green' ? '#4ade80' : traffic.color === 'yellow' ? '#facc15' : '#f87171'}`
-                                  }}
-                                  title={traffic.tooltip}
-                                >
-                                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: traffic.color === 'green' ? '#22c55e' : traffic.color === 'yellow' ? '#eab308' : '#ef4444' }} />
-                                  {traffic.label}
-                                </span>
-                              );
-                            })()}
-                          </div>
-                          <div style={{ fontSize: '0.82rem', fontWeight: 500, color: '#86efac', marginTop: '2px' }}>
-                            Primärquelle und Aktualität validiert durch Harro Goerndt{activeOpp.reviewed_at ? ` · ${new Date(activeOpp.reviewed_at).toLocaleDateString('de-DE')}` : ''}
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        disabled={isDirectPublishing}
-                        onClick={() => handleOpenDispatchModal(false)}
-                        style={{
-                          background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                          color: '#ffffff',
-                          border: '1px solid #38bdf8',
-                          padding: '12px 24px',
-                          borderRadius: '8px',
-                          fontWeight: 700,
-                          fontSize: '0.92rem',
-                          cursor: isDirectPublishing ? 'not-allowed' : 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          boxShadow: '0 0 20px rgba(2, 132, 199, 0.45)',
-                          transition: 'all 0.2s ease',
-                          whiteSpace: 'nowrap'
-                        }}
-                        title="Mandat an Partner übermitteln & 12 Monate Kundenschutz sichern"
-                      >
-                        <ShieldCheck size={16} />
-                        <span>Mandat übermitteln & Kundenschutz sichern</span>
-                      </button>
-                    </div>
-                  ) : activeOpp.review_status === 'rejected' ? (
-                    <div style={{ padding: '14px 18px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f87171', fontWeight: 600 }}>
-                        <AlertCircle size={20} />
-                        <span>Dieser Lead wurde ABGELEHNT und wird in der Hauptliste ausgeblendet.{activeOpp.reviewed_at ? ` (${new Date(activeOpp.reviewed_at).toLocaleString()})` : ''}</span>
-                      </div>
-                    </div>
+                      <span>Originalmeldung öffnen ({domain})</span>
+                      <ExternalLink size={15} />
+                    </a>
                   ) : (
-                    <div style={{ padding: '12px 16px', background: 'rgba(234, 179, 8, 0.08)', border: '1px solid rgba(234, 179, 8, 0.25)', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '10px', color: '#facc15', fontSize: '0.9rem' }}>
-                      <Clock size={18} />
-                      <span>Dieser Lead ist <strong>UNGEPRÜFT</strong>. Bitte durchlaufe die 5 Prüfschritte, bevor der Lead freigegeben wird.</span>
-                    </div>
+                    <span style={{ color: '#64748b', fontSize: '0.84rem', fontStyle: 'italic' }}>
+                      Keine externe Primärquelle
+                    </span>
                   )}
+                </div>
+              </div>
 
-                  {/* 🎭 Anonymisiertes Blind-Profil Card */}
+              {/* ── 2. DEALCOACH-AUDIT CARD ── */}
+              <div className="pult-dealcoach-audit" style={{
+                background: isTier1
+                  ? 'linear-gradient(135deg, rgba(88, 28, 135, 0.18) 0%, #0e1015 100%)'
+                  : isTier2
+                  ? 'linear-gradient(135deg, rgba(30, 58, 138, 0.18) 0%, #0e1015 100%)'
+                  : 'linear-gradient(135deg, rgba(51, 65, 85, 0.2) 0%, #0e1015 100%)',
+                border: `1px solid ${isTier1 ? 'rgba(168, 85, 247, 0.4)' : isTier2 ? 'rgba(59, 130, 246, 0.4)' : 'rgba(148, 163, 184, 0.3)'}`,
+                borderRadius: '12px',
+                padding: '20px 24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '18px'
+              }}>
+                {/* Audit Header Banner */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                      background: isTier1 ? 'rgba(168, 85, 247, 0.25)' : isTier2 ? 'rgba(59, 130, 246, 0.25)' : 'rgba(148, 163, 184, 0.2)',
+                      border: `1px solid ${isTier1 ? '#a855f7' : isTier2 ? '#3b82f6' : '#94a3b8'}`,
+                      borderRadius: '8px',
+                      padding: '6px 14px',
+                      fontSize: '0.92rem',
+                      fontWeight: 800,
+                      color: isTier1 ? '#f3e8ff' : isTier2 ? '#dbeafe' : '#f1f5f9',
+                      letterSpacing: '0.03em'
+                    }}>
+                      {isTier1 ? '👑 TIER 1 TOP' : isTier2 ? '🏢 TIER 2 MID' : '⚖️ PRÜFUNG EMPFOHLEN'}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '1rem', fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.01em' }}>
+                        DealCoach Revisions-Urteil: <span style={{ color: isTier1 ? '#c084fc' : isTier2 ? '#60a5fa' : '#cbd5e1' }}>{audit?.verdict || 'VORLÄUFIGE VOREINSCHÄTZUNG'}</span>
+                      </div>
+                      <div style={{ fontSize: '0.82rem', color: '#94a3b8', marginTop: '2px' }}>
+                        Geschätztes Budgetvolumen: <strong style={{ color: '#38bdf8' }}>{audit?.estimated_budget || 'Auf Anfrage'}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: '0.78rem', color: '#64748b', fontStyle: 'italic' }}>
+                    Automatisierter Primär-Audit · Harro Revisions-Gate
+                  </div>
+                </div>
+
+                {/* Was ist passiert? (Original Meldungstext ohne Meta-Tags) */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    📰 Was ist passiert?
+                  </div>
                   <div style={{
-                    background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(15, 23, 42, 0.6) 100%)',
-                    border: '1px solid rgba(56, 189, 248, 0.35)',
-                    borderRadius: '12px',
-                    padding: '18px 22px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px',
-                    minWidth: 0,
-                    maxWidth: '100%',
-                    boxSizing: 'border-box'
+                    background: '#0a0c0f',
+                    border: '1px solid #1e232d',
+                    borderRadius: '8px',
+                    padding: '14px 18px',
+                    color: '#e2e8f0',
+                    fontSize: '0.94rem',
+                    lineHeight: 1.6,
+                    maxHeight: '180px',
+                    overflowY: 'auto',
+                    whiteSpace: 'pre-wrap'
                   }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ background: '#0284c7', color: '#ffffff', fontSize: '0.74rem', fontWeight: 800, padding: '3px 8px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <Eye size={13} /> BLIND PROFILE
-                        </span>
-                        <span style={{ color: '#f8fafc', fontWeight: 700, fontSize: '1rem' }}>
-                          Anonymisiertes Mandats-Profil für Kunden &amp; Dealflow
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                        {(() => {
-                          const dateVal = activeTrigger?.event_date || activeOpp?.event_date || activeTrigger?.published_at || activeTrigger?.created_at || activeOpp?.created_at;
-                          const traffic = getFreshnessTrafficLight(dateVal);
-                          return (
-                            <span 
-                              className={`badge-freshness ${traffic.badgeClass}`}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '5px',
-                                padding: '4px 10px',
-                                borderRadius: '6px',
-                                fontSize: '0.78rem',
-                                fontWeight: 700,
-                                background: traffic.color === 'green' ? 'rgba(34, 197, 94, 0.15)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.18)' : 'rgba(239, 68, 68, 0.2)',
-                                color: traffic.color === 'green' ? '#4ade80' : traffic.color === 'yellow' ? '#facc15' : '#f87171',
-                                border: `1px solid ${traffic.color === 'green' ? 'rgba(34, 197, 94, 0.35)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.4)' : 'rgba(239, 68, 68, 0.45)'}`
-                              }}
-                              title={traffic.tooltip}
-                            >
-                              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: traffic.color === 'green' ? '#22c55e' : traffic.color === 'yellow' ? '#eab308' : '#ef4444' }} />
-                              {traffic.label}
-                            </span>
-                          );
-                        })()}
-                        <button
-                          type="button"
-                          onClick={() => handleCopyBlindProfileText()}
-                          style={{
-                            background: copiedBlindText ? 'rgba(34, 197, 94, 0.2)' : 'rgba(56, 189, 248, 0.15)',
-                            color: copiedBlindText ? '#4ade80' : '#38bdf8',
-                            border: `1px solid ${copiedBlindText ? '#22c55e' : 'rgba(56, 189, 248, 0.4)'}`,
-                            padding: '6px 14px',
-                            borderRadius: '6px',
-                            fontWeight: 700,
-                            fontSize: '0.82rem',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '5px'
-                          }}
-                          title="Anonymisiertes Profil als formatierter Text kopieren (für Mail & LinkedIn)"
-                        >
-                          {copiedBlindText ? <><CheckCircle size={13} /> Kopiert!</> : <><Copy size={13} /> 📋 Blind-Profil kopieren</>}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowBlindProfileModal(true)}
-                          style={{
-                            background: '#0a0d14',
-                            color: '#f8fafc',
-                            border: '1px solid #334155',
-                            padding: '6px 14px',
-                            borderRadius: '6px',
-                            fontWeight: 600,
-                            fontSize: '0.82rem',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '5px'
-                          }}
-                        >
-                          👁️ Vollansicht &amp; Bearbeiten
-                        </button>
-                      </div>
-                    </div>
+                    {cleanAnnouncement || activeOpp.title || 'Keine detaillierte Meldung verfügbar.'}
+                  </div>
+                </div>
 
-                    {/* Blind Profil Kurz-Vorschau */}
-                    {(() => {
-                      const blindData = getBlindProfileData();
-                      if (!blindData) return null;
-                      const t = blindData.teaser;
-                      return (
-                        <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '8px', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.86rem' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-                            <strong style={{ color: '#38bdf8', fontSize: '0.94rem' }}>{t.headline}</strong>
-                            <span style={{ background: 'rgba(34, 197, 94, 0.12)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '2px 8px', borderRadius: '4px', fontSize: '0.74rem', fontWeight: 700 }}>
-                              {t.lifecycleBadge}
-                            </span>
-                          </div>
-                          <div style={{ color: '#94a3b8', fontSize: '0.82rem' }}>
-                            Branche &amp; Region: <span style={{ color: '#e2e8f0' }}>{t.industry}</span>
-                          </div>
-                          <div style={{ color: '#cbd5e1', fontSize: '0.84rem', marginTop: '2px', lineHeight: 1.4 }}>
-                            {t.eventSummary}
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
-                            <span style={{ color: '#64748b', fontSize: '0.78rem' }}>Zielgruppen-Käufer:</span>
-                            {(t.targetBuyers || []).slice(0, 3).map((b, i) => (
-                              <span key={i} style={{ background: 'rgba(255,255,255,0.04)', color: '#cbd5e1', padding: '2px 6px', borderRadius: '4px', fontSize: '0.74rem' }}>
-                                ✓ {b}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })()}
+                {/* Warum brennt es? (Vakuum- & Dringlichkeits-Audit) */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#facc15', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    🔥 Warum brennt es? (DealCoach Vakuum- & Dringlichkeits-Audit)
                   </div>
 
-                  {/* Der reguläre 5-Punkte-Prüfbogen ist IMMER das aktive Hauptformular */}
-                  <div style={{ background: '#0a0c0f', borderRadius: '12px', border: '1px solid #1e232d', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
-                    <div style={{ borderBottom: '1px solid #1e232d', paddingBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                      <div>
-                        <h3 style={{ margin: '0 0 6px 0', fontSize: '1.15rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          📋 5-Punkte Qualitätsprüfung für {compName}
-                        </h3>
-                        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary, #94a3b8)' }}>
-                          Führe die Qualitätskontrolle durch. Mit 1 Klick können alle 5 Punkte sofort freigegeben werden.
-                        </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+                    {/* Vakuum-Check Kachel */}
+                    <div style={{ background: '#0a0c0f', border: '1px solid #1e232d', borderRadius: '8px', padding: '12px 16px' }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' }}>
+                        ⚡ Vakuum-Check (Organ-Vakanz)
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                        <button
-                          type="button"
-                          onClick={(e) => handleQuickApproveAll(activeOpp.id, e)}
-                          disabled={isReviewSaving}
-                          style={{
-                            background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-                            color: '#ffffff',
-                            border: '1px solid #4ade80',
-                            padding: '8px 16px',
-                            borderRadius: '8px',
-                            fontWeight: 700,
-                            fontSize: '0.85rem',
-                            cursor: isReviewSaving ? 'not-allowed' : 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            boxShadow: '0 0 14px rgba(34, 197, 94, 0.4)'
-                          }}
-                          title="Alle 5 Punkte als Bestanden markieren und sofort freigeben"
-                        >
-                          <Zap size={14} /> ⚡ 1-Klick: Alle 5 Punkte bestehen
-                        </button>
-                        {isVerifiedLead && (
-                          <span style={{
-                            background: 'rgba(34, 197, 94, 0.15)',
-                            color: '#4ade80',
-                            border: '1px solid rgba(34, 197, 94, 0.3)',
-                            padding: '4px 12px',
-                            borderRadius: '12px',
-                            fontSize: '0.82rem',
-                            fontWeight: 700,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '5px'
-                          }}>
-                            <CheckCircle size={14} /> Status: Geprüft
-                          </span>
-                        )}
+                      <div style={{ fontSize: '0.9rem', color: '#f1f5f9', fontWeight: 600 }}>
+                        {audit?.vacuum_check || 'Organ-Position vakant / Stillstand droht'}
                       </div>
                     </div>
 
-                  {/* a) Dubletten-Check */}
-                  <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.duplicate === 'pass' ? '#22c55e' : reviewChecklist.duplicate === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px' }}>
-                      <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.96rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>a) Dubletten-Check</span>
-                        {reviewChecklist.duplicate === 'pass' && <span style={{ color: '#4ade80', fontSize: '0.8rem', fontWeight: 700 }}>✓ Bestanden</span>}
-                        {reviewChecklist.duplicate === 'fail' && <span style={{ color: '#f87171', fontSize: '0.8rem', fontWeight: 700 }}>✗ Nicht bestanden</span>}
+                    {/* Dringlichkeit Kachel */}
+                    <div style={{ background: '#0a0c0f', border: '1px solid #1e232d', borderRadius: '8px', padding: '12px 16px' }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' }}>
+                        🚨 Dringlichkeit & Not-Governance
                       </div>
-                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                        <button
-                          type="button"
-                          onClick={() => setReviewChecklist(prev => ({ ...prev, duplicate: 'pass' }))}
-                          style={{
-                            background: reviewChecklist.duplicate === 'pass' ? '#16a34a' : '#181d26',
-                            color: reviewChecklist.duplicate === 'pass' ? '#ffffff' : '#94a3b8',
-                            border: `1px solid ${reviewChecklist.duplicate === 'pass' ? '#4ade80' : '#2d3748'}`,
-                            padding: '6px 14px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: 700,
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          ✅ Bestanden
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setReviewChecklist(prev => ({ ...prev, duplicate: 'fail' }))}
-                          style={{
-                            background: reviewChecklist.duplicate === 'fail' ? '#dc2626' : '#181d26',
-                            color: reviewChecklist.duplicate === 'fail' ? '#ffffff' : '#94a3b8',
-                            border: `1px solid ${reviewChecklist.duplicate === 'fail' ? '#f87171' : '#2d3748'}`,
-                            padding: '6px 14px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: 700,
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          ❌ Nicht bestanden
-                        </button>
+                      <div style={{ fontSize: '0.9rem', color: '#f1f5f9', fontWeight: 600 }}>
+                        {audit?.urgency_check || 'Akute Überbrückung / Ad-hoc Mandatsbedarf per sofort'}
                       </div>
-                    </div>
-                    <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem' }}>
-                      "Ist dieses Ereignis schon einmal in der Liste? Wenn ja: Zusammenführen."
-                    </div>
-                    <div style={{ fontSize: '0.82rem', color: '#94a3b8', wordBreak: 'break-word' }}>
-                      {(() => {
-                        const compLower = (compName || '').toLowerCase().trim();
-                        const dups = (opportunities || []).filter(o => {
-                          if (o.id === activeOpp.id) return false;
-                          const otherComp = resolveTriggerCompanyName(
-                            o.triggers?.[0]?.nexus_trigger_events,
-                            o
-                          ).toLowerCase().trim();
-                          return otherComp && otherComp === compLower;
-                        });
-                        return (
-                          <>
-                            Unternehmen: <strong style={{ color: '#38bdf8' }}>{compName}</strong>
-                            {dups.length > 0 ? (
-                              <span style={{ color: '#f87171', marginLeft: '10px', fontWeight: 600 }}>
-                                ⚠️ {dups.length} weitere Lead(s) mit gleichem Namen in Pipeline
-                              </span>
-                            ) : (
-                              <span style={{ color: '#4ade80', marginLeft: '10px' }}>
-                                ✓ Keine Namensdopplung gefunden
-                              </span>
-                            )}
-                          </>
-                        );
-                      })()}
                     </div>
                   </div>
 
-                  {/* b) Plausibilitäts-Check */}
-                  <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.plausibility === 'pass' ? '#22c55e' : reviewChecklist.plausibility === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px' }}>
-                      <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.96rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>b) Plausibilitäts-Check</span>
-                        {reviewChecklist.plausibility === 'pass' && <span style={{ color: '#4ade80', fontSize: '0.8rem', fontWeight: 700 }}>✓ Bestanden</span>}
-                        {reviewChecklist.plausibility === 'fail' && <span style={{ color: '#f87171', fontSize: '0.8rem', fontWeight: 700 }}>✗ Nicht bestanden</span>}
+                  {/* Mandats-Begründung / Strategischer Hebel */}
+                  {audit?.rationale && (
+                    <div style={{ background: '#0a0c0f', border: '1px solid #1e232d', borderRadius: '8px', padding: '12px 16px' }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' }}>
+                        💡 Mandats-Begründung / Strategischer Hebel
                       </div>
-                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                        <button
-                          type="button"
-                          onClick={() => setReviewChecklist(prev => ({ ...prev, plausibility: 'pass' }))}
-                          style={{
-                            background: reviewChecklist.plausibility === 'pass' ? '#16a34a' : '#181d26',
-                            color: reviewChecklist.plausibility === 'pass' ? '#ffffff' : '#94a3b8',
-                            border: `1px solid ${reviewChecklist.plausibility === 'pass' ? '#4ade80' : '#2d3748'}`,
-                            padding: '6px 14px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: 700,
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          ✅ Bestanden
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setReviewChecklist(prev => ({ ...prev, plausibility: 'fail' }))}
-                          style={{
-                            background: reviewChecklist.plausibility === 'fail' ? '#dc2626' : '#181d26',
-                            color: reviewChecklist.plausibility === 'fail' ? '#ffffff' : '#94a3b8',
-                            border: `1px solid ${reviewChecklist.plausibility === 'fail' ? '#f87171' : '#2d3748'}`,
-                            padding: '6px 14px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: 700,
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          ❌ Nicht bestanden
-                        </button>
+                      <div style={{ fontSize: '0.9rem', color: '#cbd5e1', lineHeight: 1.5 }}>
+                        {audit.rationale}
                       </div>
                     </div>
-                    <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem' }}>
-                      "Passt das Ereignis zum Angebot?"
-                    </div>
-                    <div style={{ fontSize: '0.82rem', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '4px', wordBreak: 'break-word' }}>
-                      <div>Angebot: <strong style={{ color: '#f8fafc' }}>{activeOffering?.offering_name || activeOffering?.title || fullContext?.offering?.offering_name || fullContext?.offering?.title || 'Standard B2B Angebot'}</strong></div>
-                      {(() => {
-                        const evtCandidate = (activeTrigger?.content ? extractTriggerMeta(activeTrigger.content).cleanText : '') || 
-                                              activeTrigger?.event_fact || 
-                                              activeTrigger?.title || 
-                                              formData.situation || 
-                                              activeOpp?.situation || 
-                                              activeOpp?.title || 
-                                              '';
-                        const isEvtValid = evtCandidate && evtCandidate.toLowerCase() !== 'keine angabe';
-                        return (
-                          <div>Ereignis: <span style={{ color: isEvtValid ? '#cbd5e1' : '#f87171', fontWeight: isEvtValid ? 400 : 700 }}>{isEvtValid ? evtCandidate : (evtCandidate || '⚠️ Kein Ereignis hinterlegt')}</span></div>
-                        );
-                      })()}
-                      {(() => {
-                        const meta = extractTriggerMeta(activeTrigger?.content || '');
-                        const pp = activeTrigger?.pain_point || activeOpp?.pain_point || meta.painPoint;
-                        const bc = activeTrigger?.blind_company || meta.blindCompany;
-                        const bl = activeTrigger?.blind_location || meta.blindLocation;
-                        const bq = activeTrigger?.blind_quantity || meta.blindQuantity;
-                        const tb = (Array.isArray(activeTrigger?.target_buyers) && activeTrigger.target_buyers.length > 0) ? activeTrigger.target_buyers : meta.targetBuyers;
-                        return (
-                          <>
-                            {pp && (
-                              <div style={{ marginTop: '2px' }}>
-                                Pain Point (Endkäufer): <strong style={{ color: '#fbbf24' }}>{pp}</strong>
-                              </div>
-                            )}
-                            {(bc || bl || bq) && (
-                              <div style={{ marginTop: '2px' }}>
-                                Blind Profile: <span style={{ color: '#38bdf8' }}>{bc || 'Anonymisiert'} {bl ? `(${bl})` : ''} {bq ? `· ${bq}` : ''}</span>
-                              </div>
-                            )}
-                            {tb && tb.length > 0 && (
-                              <div style={{ marginTop: '2px' }}>
-                                Target Buyers: <span style={{ color: '#4ade80' }}>{tb.join(', ')}</span>
-                              </div>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-
-                  {/* c) Quellen-Check */}
-                  <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.source === 'pass' ? '#22c55e' : reviewChecklist.source === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px' }}>
-                      <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.96rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>c) Quellen-Check</span>
-                        {reviewChecklist.source === 'pass' && <span style={{ color: '#4ade80', fontSize: '0.8rem', fontWeight: 700 }}>✓ Bestanden</span>}
-                        {reviewChecklist.source === 'fail' && <span style={{ color: '#f87171', fontSize: '0.8rem', fontWeight: 700 }}>✗ Nicht bestanden</span>}
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                        <button
-                          type="button"
-                          onClick={() => setReviewChecklist(prev => ({ ...prev, source: 'pass' }))}
-                          style={{
-                            background: reviewChecklist.source === 'pass' ? '#16a34a' : '#181d26',
-                            color: reviewChecklist.source === 'pass' ? '#ffffff' : '#94a3b8',
-                            border: `1px solid ${reviewChecklist.source === 'pass' ? '#4ade80' : '#2d3748'}`,
-                            padding: '6px 14px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: 700,
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          ✅ Bestanden
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setReviewChecklist(prev => ({ ...prev, source: 'fail' }))}
-                          style={{
-                            background: reviewChecklist.source === 'fail' ? '#dc2626' : '#181d26',
-                            color: reviewChecklist.source === 'fail' ? '#ffffff' : '#94a3b8',
-                            border: `1px solid ${reviewChecklist.source === 'fail' ? '#f87171' : '#2d3748'}`,
-                            padding: '6px 14px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: 700,
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          ❌ Nicht bestanden
-                        </button>
-                      </div>
-                    </div>
-                    <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem' }}>
-                      "Ist die Quelle erreichbar? Zeigt sie das behauptete Ereignis?"
-                    </div>
-                    <div style={{ fontSize: '0.82rem', color: '#94a3b8', wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
-                      {(() => {
-                        const sUrl = (activeTrigger?.source?.startsWith('http') ? activeTrigger.source : null) || (activeTrigger?.source_url?.startsWith('http') ? activeTrigger.source_url : null) || (activeOpp?.source?.startsWith('http') ? activeOpp.source : null);
-                        return (
-                          <div>
-                            Quelle:{' '}
-                            {sUrl ? (
-                              <a
-                                href={sUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{
-                                  color: '#38bdf8',
-                                  textDecoration: 'underline',
-                                  wordBreak: 'break-all',
-                                  overflowWrap: 'anywhere',
-                                  display: 'inline-block',
-                                  maxWidth: '100%'
-                                }}
-                                title={sUrl}
-                              >
-                                {sUrl.length > 70 ? `${sUrl.slice(0, 67)}...` : sUrl} ↗
-                              </a>
-                            ) : (
-                              <span style={{ color: '#f87171' }}>⚠️ Keine Quell-URL verknüpft</span>
-                            )}
-                            {activeTrigger?.evidence && (
-                              <div style={{ marginTop: '6px', fontStyle: 'italic', color: '#cbd5e1', wordBreak: 'break-word' }}>
-                                Beleg: "{activeTrigger.evidence}"
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-
-                  {/* d) Datums-Check (B2B Opportunity Lifecycle) */}
-                  <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.date === 'pass' ? '#22c55e' : reviewChecklist.date === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px' }}>
-                      <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.96rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>d) Datums-Check (B2B Opportunity Lifecycle)</span>
-                        {reviewChecklist.date === 'pass' && <span style={{ color: '#4ade80', fontSize: '0.8rem', fontWeight: 700 }}>✓ Bestanden</span>}
-                        {reviewChecklist.date === 'fail' && <span style={{ color: '#f87171', fontSize: '0.8rem', fontWeight: 700 }}>✗ Nicht bestanden</span>}
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                        <button
-                          type="button"
-                          onClick={() => setReviewChecklist(prev => ({ ...prev, date: 'pass' }))}
-                          style={{
-                            background: reviewChecklist.date === 'pass' ? '#16a34a' : '#181d26',
-                            color: reviewChecklist.date === 'pass' ? '#ffffff' : '#94a3b8',
-                            border: `1px solid ${reviewChecklist.date === 'pass' ? '#4ade80' : '#2d3748'}`,
-                            padding: '6px 14px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: 700,
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          ✅ Bestanden
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setReviewChecklist(prev => ({ ...prev, date: 'fail' }))}
-                          style={{
-                            background: reviewChecklist.date === 'fail' ? '#dc2626' : '#181d26',
-                            color: reviewChecklist.date === 'fail' ? '#ffffff' : '#94a3b8',
-                            border: `1px solid ${reviewChecklist.date === 'fail' ? '#f87171' : '#2d3748'}`,
-                            padding: '6px 14px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: 700,
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          ❌ Nicht bestanden
-                        </button>
-                      </div>
-                    </div>
-                    <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem' }}>
-                      "Liegt das Ereignis im aktiven B2B-Handlungsfenster?"
-                    </div>
-                    <div style={{ fontSize: '0.82rem', color: '#94a3b8', wordBreak: 'break-word' }}>
-                      {(() => {
-                        const rawDate = customEventDate || activeTrigger?.event_date || activeTrigger?.published_at || activeTrigger?.created_at || activeOpp?.created_at;
-                        const category = activeTrigger?.signal_kategorie || activeTrigger?.kategorie || activeOpp?.category || activeOpp?.branche || 'clevel_vakanzen';
-                        const lifecycleConfig = getCategoryLifecycleConfig(category);
-                        const lifecycle = classifyB2BLifecycle(category, rawDate);
-                        const dateObj = rawDate ? new Date(rawDate) : null;
-                        const isValidDate = dateObj && !isNaN(dateObj.getTime());
-                        const formattedDateStr = isValidDate ? dateObj.toLocaleDateString('de-DE') : 'Kein Datum verfügbar';
-
-                        return (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                              <span>Kategorie:</span>
-                              <strong style={{ color: '#f8fafc' }}>{lifecycleConfig.name}</strong>
-                              <span style={{ color: '#64748b', fontSize: '0.78rem' }}>
-                                (Breaking: 1–{lifecycleConfig.breakingDays}d | Hot Window: {lifecycleConfig.breakingDays + 1}–{lifecycleConfig.hotWindowDays}d | Expired: ab {lifecycleConfig.maxExpiredDays + 1}d)
-                              </span>
-                            </div>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                              <span>Datum:</span>
-                              <strong style={{ color: isValidDate ? '#f8fafc' : '#f87171' }}>
-                                {formattedDateStr}
-                              </strong>
-                              {customEventDate && (
-                                <span style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 600 }}>
-                                  (Manuell angepasst)
-                                </span>
-                              )}
-                              
-                              {/* B2B Lifecycle Badge */}
-                              <span style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                padding: '3px 8px',
-                                borderRadius: '6px',
-                                fontSize: '0.78rem',
-                                fontWeight: 700,
-                                background: lifecycle.status === 'BREAKING' ? 'rgba(34, 197, 94, 0.15)' : lifecycle.status === 'HOT_WINDOW' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                                color: lifecycle.status === 'BREAKING' ? '#4ade80' : lifecycle.status === 'HOT_WINDOW' ? '#38bdf8' : '#f87171',
-                                border: `1px solid ${lifecycle.status === 'BREAKING' ? 'rgba(34, 197, 94, 0.3)' : lifecycle.status === 'HOT_WINDOW' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
-                              }}>
-                                {lifecycle.badge}
-                              </span>
-
-                              {lifecycle.daysAgo !== null && (
-                                <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>
-                                  ({lifecycle.daysAgo} Tage her)
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Datum manuell anpassen Toggle & Input */}
-                            <div style={{ marginTop: '2px' }}>
-                              {!isEditingEventDate ? (
-                                <button
-                                  type="button"
-                                  onClick={() => setIsEditingEventDate(true)}
-                                  style={{
-                                    background: 'transparent',
-                                    border: '1px solid #334155',
-                                    color: '#38bdf8',
-                                    padding: '3px 10px',
-                                    borderRadius: '5px',
-                                    fontSize: '0.76rem',
-                                    cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '5px'
-                                  }}
-                                >
-                                  ✏️ Datum manuell korrigieren (z. B. echtes Ereignisdatum aus September)
-                                </button>
-                              ) : (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px', background: '#131720', padding: '8px 12px', borderRadius: '6px', border: '1px solid #1e293b' }}>
-                                  <label style={{ fontSize: '0.78rem', color: '#e2e8f0', fontWeight: 600 }}>Echtes Ereignisdatum:</label>
-                                  <input
-                                    type="date"
-                                    value={customEventDate || (isValidDate ? dateObj.toISOString().slice(0, 10) : '')}
-                                    onChange={(e) => setCustomEventDate(e.target.value)}
-                                    style={{
-                                      background: '#0a0d14',
-                                      border: '1px solid #3b82f6',
-                                      color: '#f8fafc',
-                                      padding: '4px 8px',
-                                      borderRadius: '4px',
-                                      fontSize: '0.8rem'
-                                    }}
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => setIsEditingEventDate(false)}
-                                    style={{
-                                      background: '#3b82f6',
-                                      color: '#ffffff',
-                                      border: 'none',
-                                      padding: '4px 10px',
-                                      borderRadius: '4px',
-                                      fontSize: '0.76rem',
-                                      fontWeight: 600,
-                                      cursor: 'pointer'
-                                    }}
-                                  >
-                                    ✓ Übernehmen
-                                  </button>
-                                  {customEventDate && (
-                                    <button
-                                      type="button"
-                                      onClick={() => { setCustomEventDate(''); setIsEditingEventDate(false); }}
-                                      style={{
-                                        background: 'transparent',
-                                        color: '#94a3b8',
-                                        border: '1px solid #475569',
-                                        padding: '4px 10px',
-                                        borderRadius: '4px',
-                                        fontSize: '0.76rem',
-                                        cursor: 'pointer'
-                                      }}
-                                    >
-                                      Zurücksetzen
-                                    </button>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-
-                  {/* e) Relevanz-Check */}
-                  <div style={{ background: '#0e1015', border: `1px solid ${reviewChecklist.relevance === 'pass' ? '#22c55e' : reviewChecklist.relevance === 'fail' ? '#ef4444' : '#1e232d'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', transition: 'border-color 0.2s ease', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px' }}>
-                      <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.96rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>e) Relevanz-Check</span>
-                        {reviewChecklist.relevance === 'pass' && <span style={{ color: '#4ade80', fontSize: '0.8rem', fontWeight: 700 }}>✓ Bestanden</span>}
-                        {reviewChecklist.relevance === 'fail' && <span style={{ color: '#f87171', fontSize: '0.8rem', fontWeight: 700 }}>✗ Nicht bestanden</span>}
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                        <button
-                          type="button"
-                          onClick={() => setReviewChecklist(prev => ({ ...prev, relevance: 'pass' }))}
-                          style={{
-                            background: reviewChecklist.relevance === 'pass' ? '#16a34a' : '#181d26',
-                            color: reviewChecklist.relevance === 'pass' ? '#ffffff' : '#94a3b8',
-                            border: `1px solid ${reviewChecklist.relevance === 'pass' ? '#4ade80' : '#2d3748'}`,
-                            padding: '6px 14px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: 700,
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          ✅ Bestanden
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setReviewChecklist(prev => ({ ...prev, relevance: 'fail' }))}
-                          style={{
-                            background: reviewChecklist.relevance === 'fail' ? '#dc2626' : '#181d26',
-                            color: reviewChecklist.relevance === 'fail' ? '#ffffff' : '#94a3b8',
-                            border: `1px solid ${reviewChecklist.relevance === 'fail' ? '#f87171' : '#2d3748'}`,
-                            padding: '6px 14px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: 700,
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          ❌ Nicht bestanden
-                        </button>
-                      </div>
-                    </div>
-                    <div style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '0.88rem' }}>
-                      "Würdest du anrufen? Warum ja, warum nein?"
-                    </div>
-                    <div style={{ fontSize: '0.82rem', color: '#94a3b8', wordBreak: 'break-word' }}>
-                      {(() => {
-                        const matchScore = computeTargetMatchScore(activeOpp.company?.name || activeOpp.nexus_companies?.name, activeOpp.lead_score ?? activeTrigger?.trigger_score);
-                        return (
-                          <div>
-                            Zielgruppen-Match: <strong style={{ color: matchScore >= 50 ? '#4ade80' : '#f87171' }}>{matchScore}%</strong>
-                            <span style={{ marginLeft: '8px', color: '#94a3b8' }}>
-                              – Bietet dieser Trigger einen echten, überzeugenden Gesprächsaufhänger?
-                            </span>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-
-                  {/* Freitextfeld für Notizen */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
-                    <label style={{ fontWeight: 600, color: 'var(--text-primary, #f8fafc)', fontSize: '0.9rem' }}>
-                      Prüfnotizen:
-                    </label>
-                    <textarea
-                      value={reviewNotes}
-                      onChange={(e) => setReviewNotes(e.target.value)}
-                      placeholder="Notizen zur manuellen Prüfung, Begründung für Annahme oder Ablehnung..."
-                      rows={3}
-                      style={{
-                        width: '100%',
-                        padding: '10px 14px',
-                        background: '#0e1015',
-                        border: '1px solid #1e232d',
-                        borderRadius: '8px',
-                        color: '#f8fafc',
-                        fontSize: '0.9rem',
-                        resize: 'vertical',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
-
-                  {/* Action Buttons & Veröffentlichung */}
-                  {(() => {
-                    const allPassed = reviewChecklist.duplicate === 'pass' &&
-                                      reviewChecklist.plausibility === 'pass' &&
-                                      reviewChecklist.source === 'pass' &&
-                                      reviewChecklist.date === 'pass' &&
-                                      reviewChecklist.relevance === 'pass';
-                    const isVerified = isVerifiedLead || activeOpp.review_status === 'verified' || activeOpp.review_status === 'reviewed';
-
-                    return (
-                      <div style={{ display: 'flex', gap: '12px', marginTop: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-                        {isVerified ? (
-                          // Direkt freigeschalteter Veröffentlichungs-Button für verifizierte Leads in vibrantem Grün
-                          <button
-                            type="button"
-                            disabled={isDirectPublishing}
-                            onClick={() => handleOpenDispatchModal(false)}
-                            style={{
-                              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                              color: '#ffffff',
-                              border: '1px solid #38bdf8',
-                              padding: '13px 28px',
-                              borderRadius: '8px',
-                              fontWeight: 700,
-                              fontSize: '0.95rem',
-                              cursor: isDirectPublishing ? 'not-allowed' : 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '10px',
-                              boxShadow: '0 0 22px rgba(2, 132, 199, 0.45)',
-                              transition: 'all 0.2s ease',
-                              whiteSpace: 'nowrap'
-                            }}
-                            title="Mandat an Partner übermitteln & 12 Monate Kundenschutz sichern"
-                          >
-                            <ShieldCheck size={18} />
-                            <span>Mandat übermitteln & Kundenschutz sichern</span>
-                          </button>
-                        ) : (
-                          <>
-                            {/* ⚡ 1-Klick Schnellprüfung Button */}
-                            <button
-                              type="button"
-                              disabled={isReviewSaving}
-                              onClick={(e) => handleQuickApproveAll(activeOpp.id, e)}
-                              style={{
-                                background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-                                color: '#ffffff',
-                                border: '1px solid #4ade80',
-                                padding: '12px 22px',
-                                borderRadius: '8px',
-                                fontWeight: 800,
-                                fontSize: '0.92rem',
-                                cursor: isReviewSaving ? 'not-allowed' : 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                boxShadow: '0 0 16px rgba(34, 197, 94, 0.45)',
-                                transition: 'all 0.2s ease'
-                              }}
-                              title="Alle 5 Punkte sofort als bestanden markieren und Lead freigeben"
-                            >
-                              <Zap size={16} />
-                              {isReviewSaving ? 'Speichern...' : '⚡ 1-Klick: Alle 5 Punkte bestehen & freigeben'}
-                            </button>
-
-                            {/* Button zur manuellen Freigabe (aktiv wenn alle 5 Punkte angeklickt wurden) */}
-                            <button
-                              type="button"
-                              disabled={!allPassed || isReviewSaving}
-                              onClick={handleMarkReviewed}
-                              style={{
-                                background: allPassed ? '#22c55e' : '#1e293b',
-                                color: allPassed ? '#050608' : '#64748b',
-                                border: 'none',
-                                padding: '12px 20px',
-                                borderRadius: '8px',
-                                fontWeight: 700,
-                                fontSize: '0.92rem',
-                                cursor: allPassed ? 'pointer' : 'not-allowed',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                transition: 'all 0.2s ease',
-                                boxShadow: allPassed ? '0 0 16px rgba(34, 197, 94, 0.4)' : 'none'
-                              }}
-                              title={allPassed ? 'Als geprüft markieren und freigeben' : 'Erst aktiv, wenn alle fünf Punkte bestanden sind'}
-                            >
-                              <CheckCircle size={16} />
-                              Als manuell geprüft markieren
-                            </button>
-
-                            {/* 🎭 Blind-Profil Button */}
-                            <button
-                              type="button"
-                              onClick={() => setShowBlindProfileModal(true)}
-                              style={{
-                                background: 'rgba(56, 189, 248, 0.12)',
-                                color: '#38bdf8',
-                                border: '1px solid rgba(56, 189, 248, 0.4)',
-                                padding: '12px 20px',
-                                borderRadius: '8px',
-                                fontWeight: 700,
-                                fontSize: '0.9rem',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px'
-                              }}
-                              title="Anonymisiertes Blind-Profil für diesen Lead erstellen / exportieren"
-                            >
-                              <Eye size={16} /> 🎭 Blind-Profil
-                            </button>
-
-                            {/* Bei 5x Bestanden Veröffentlichungs-Button direkt anbieten */}
-                            {allPassed && (
-                              <button
-                                type="button"
-                                disabled={isDirectPublishing}
-                                onClick={handleDirectPublish}
-                                style={{
-                                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                                  color: '#ffffff',
-                                  border: '1px solid #38bdf8',
-                                  padding: '12px 24px',
-                                  borderRadius: '8px',
-                                  fontWeight: 700,
-                                  fontSize: '0.92rem',
-                                  cursor: isDirectPublishing ? 'not-allowed' : 'pointer',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '8px',
-                                  boxShadow: '0 0 20px rgba(2, 132, 199, 0.45)',
-                                  transition: 'all 0.2s ease',
-                                  whiteSpace: 'nowrap'
-                                }}
-                                title="Mandat an Partner übermitteln & 12 Monate Kundenschutz sichern"
-                              >
-                                <ShieldCheck size={16} />
-                                <span>Mandat übermitteln & Kundenschutz sichern</span>
-                              </button>
-                            )}
-                          </>
-                        )}
-
-                        {isVerified && (
-                          <span style={{
-                            background: 'rgba(34, 197, 94, 0.15)',
-                            color: '#4ade80',
-                            border: '1px solid rgba(34, 197, 94, 0.3)',
-                            padding: '9px 16px',
-                            borderRadius: '8px',
-                            fontSize: '0.85rem',
-                            fontWeight: 700,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                          }}>
-                            <CheckCircle size={16} /> Lead geprüft &amp; verifiziert
-                          </span>
-                        )}
-
-                        <button
-                          type="button"
-                          disabled={isReviewSaving}
-                          onClick={handleReject}
-                          style={{
-                            background: 'rgba(239, 68, 68, 0.15)',
-                            color: '#f87171',
-                            border: '1px solid rgba(239, 68, 68, 0.3)',
-                            padding: '11px 20px',
-                            borderRadius: '8px',
-                            fontWeight: 700,
-                            fontSize: '0.88rem',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            transition: 'all 0.2s ease'
-                          }}
-                          title="Diesen Lead ablehnen (wird aus der Hauptliste ausgeblendet)"
-                        >
-                          <AlertCircle size={16} />
-                          {isReviewSaving ? 'Speichern...' : 'Lead ablehnen'}
-                        </button>
-
-                        {(activeOpp.review_status && activeOpp.review_status !== 'unreviewed' || isVerified) && (
-                          <button
-                            type="button"
-                            disabled={isReviewSaving}
-                            onClick={handleResetReview}
-                            style={{
-                              background: '#0e1015',
-                              color: '#94a3b8',
-                              border: '1px solid #1e232d',
-                              padding: '11px 16px',
-                              borderRadius: '8px',
-                              fontWeight: 600,
-                              fontSize: '0.85rem',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px'
-                            }}
-                            title="Prüfstatus zurücksetzen auf Ungeprüft"
-                          >
-                            <RefreshCw size={14} />
-                            Zurücksetzen
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })()}
+                  )}
                 </div>
               </div>
-            );
-          })()}
 
-            {/* Tab: Intelligence */}
-            {activeTab === 'intelligence' && (
-              <div className="tab-content-intelligence" style={{ padding: '20px', background: '#0a0c0f', borderRadius: '12px', border: '1px solid #1e232d' }}>
-                <h3 style={{ marginTop: 0, display: 'flex', alignItems: 'center' }}>
-                  {t('nexus.wsAuditTitle')} <ContextHelpButton helpKey="lead_akte.opportunity" />
-                </h3>
-                
-                {fullContext ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    
-                    {/* 1. Company & Contact */}
-                    <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
-                      <h4 style={{ marginTop: 0, color: 'var(--color-koralle)' }}>{t('nexus.wsAuditCompanyContact')}</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '0.9rem' }}>
-                        <div>
-                          <strong>{t('nexus.wsAuditFirm')}</strong> <br/>
-                          {resolveTriggerCompanyName(activeTrigger, activeOpp) || fullContext.company?.name || '-'} {fullContext.company?.industry ? `(${fullContext.company.industry})` : ''}
-                        </div>
-                        <div>
-                          <strong>{t('nexus.wsAuditContact')}</strong> <br/>
-                          {fullContext.contacts?.length > 0 ? (
-                            <span>
-                              {`${fullContext.contacts[0].nexus_contacts.first_name || ''} ${fullContext.contacts[0].nexus_contacts.last_name || ''}`.trim()} 
-                              {fullContext.contacts[0].nexus_contacts.role && ` (${fullContext.contacts[0].nexus_contacts.role})`}
-                            </span>
-                          ) : findingContact ? (
-                            <span style={{ color: 'var(--text-secondary)' }}>{t('nexus.wsSearching')}</span>
-                          ) : (
-                            <span style={{ color: 'var(--text-secondary)' }}>{t('nexus.wsAuditNoContact')}</span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Contact Intelligence Details */}
-                      {foundContact && (
-                        <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', fontSize: '0.85rem' }}>
-                          {/* Evidenz */}
-                          {foundContact.evidence && (
-                            <div style={{ marginBottom: '8px' }}>
-                              <strong style={{ color: 'var(--text-primary)' }}>{t('nexus.wsAuditEvidence')}</strong><br/>
-                              <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                                "{foundContact.evidence}"
-                              </span>
-                            </div>
-                          )}
-                          
-                          {/* Quelle */}
-                          {foundContact.source_url && (
-                            <div style={{ marginBottom: '8px' }}>
-                              <strong style={{ color: 'var(--text-primary)' }}>{t('nexus.wsAuditSource')}</strong>{' '}
-                              <a 
-                                href={foundContact.source_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                style={{ color: 'var(--color-koralle)', textDecoration: 'none' }}
-                              >
-                                {foundContact.source_url.replace(/^https?:\/\//, '').split('/')[0]} ↗
-                              </a>
-                            </div>
-                          )}
-                          
-                          {/* E-Mail Status */}
-                          <div style={{ marginBottom: '8px' }}>
-                            <strong style={{ color: 'var(--text-primary)' }}>E-Mail:</strong>{' '}
-                            {foundContact.email && foundContact.email_source === 'website' ? (
-                              // Fall 1: Email von Website gefunden (FOUND)
-                              <span>
-                                <span style={{ color: '#22c55e', fontWeight: 600 }}>{foundContact.email}</span>
-                                <span style={{
-                                  padding: '2px 6px',
-                                  borderRadius: '4px',
-                                  fontSize: '0.75rem',
-                                  fontWeight: 600,
-                                  backgroundColor: '#dcfce7',
-                                  color: '#166534',
-                                  marginLeft: '8px'
-                                }}>
-                                  FOUND – öffentlich
-                                </span>
-                              </span>
-                            ) : foundContact.email && foundContact.email_source === 'manual' ? (
-                              // Fall 2: Manuellet Eingabe
-                              <span style={{ color: '#22c55e' }}>{foundContact.email}</span>
-                            ) : (
-                              // Fall 3: Keine Email (UNKNOWN)
-                              <span style={{ color: 'var(--text-secondary)' }}>{t('nexus.wsNoEmail')}</span>
-                            )}
-                          </div>
-                          
-                          {/* Email Actions */}
-                          {foundContact.email && foundContact.email_confidence && (
-                            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  // Bestätigen: Status setzen + Rechtsgrundlage (DSGVO)
-                                  try {
-                                    const triggerContent = activeTrigger?.content || 'Kein Trigger';
-                                    await supabase
-                                      .from('nexus_contacts')
-                                      .update({ 
-                                        status: 'verified',
-                                        contacted_at: new Date().toISOString(),
-                                        trigger_ref: triggerContent
-                                      })
-                                      .eq('id', foundContact.id);
-                                    setContactPersisted(true);
-                                    alert('E-Mail bestätigt!');
-                                  } catch(e) {
-                                    console.error(e);
-                                    alert('Fehler: ' + e.message);
-                                  }
-                                }}
-                                style={{
-                                  background: '#22c55e',
-                                  color: 'white',
-                                  border: 'none',
-                                  borderRadius: '4px',
-                                  padding: '6px 10px',
-                                  cursor: 'pointer',
-                                  fontSize: '0.8rem'
-                                }}
-                              >
-                                {t('nexus.wsBtnConfirm')}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  // Verwerfen: Email löschen, Status setzen
-                                  try {
-                                    await supabase
-                                      .from('nexus_contacts')
-                                      .update({ email: null, email_confidence: null, email_source: null, status: 'new' })
-                                      .eq('id', foundContact.id);
-                                    setFoundContact(prev => ({ ...prev, email: null, email_confidence: null, email_source: null }));
-                                    setContactPersisted(false);
-                                  } catch(e) {
-                                    console.error(e);
-                                  }
-                                }}
-                                style={{
-                                  background: 'transparent',
-                                  color: 'var(--text-secondary)',
-                                  border: '1px solid var(--border-light)',
-                                  borderRadius: '4px',
-                                  padding: '6px 10px',
-                                  cursor: 'pointer',
-                                  fontSize: '0.8rem'
-                                }}
-                              >
-                                {t('nexus.wsBtnReject')}
-                              </button>
-                            </div>
-                          )}
-                          
-                          {/* UNKNOWN: Manuelle Eingabe */}
-                          {!foundContact.email && (
-                            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
-                              <input
-                                type="email"
-                                placeholder={t('nexus.wsEmailPlaceholder')}
-                                id="manualEmailInput"
-                                style={{
-                                  padding: '4px 8px',
-                                  border: '1px solid var(--border-light)',
-                                  borderRadius: '4px',
-                                  fontSize: '0.85rem',
-                                  width: '220px'
-                                }}
-                              />
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  const input = document.getElementById('manualEmailInput');
-                                  const email = input?.value?.trim();
-                                  if (!email || !email.includes('@')) {
-                                    alert('Bitte gültige E-Mail-Adresse eingeben');
-                                    return;
-                                  }
-                                  try {
-                                    await supabase
-                                      .from('nexus_contacts')
-                                      .update({ 
-                                        email, 
-                                        email_confidence: 100, 
-                                        email_source: 'manual', 
-                                        status: 'verified',
-                                        contacted_at: new Date().toISOString(),
-                                        trigger_ref: activeTrigger?.content || 'Manuelle Eingabe'
-                                      })
-                                      .eq('id', foundContact.id);
-                                    setFoundContact(prev => ({ ...prev, email, email_confidence: 100, email_source: 'manual' }));
-                                    setContactPersisted(true);
-                                    alert('E-Mail gespeichert und bestätigt!');
-                                  } catch(e) {
-                                    console.error(e);
-                                    alert('Fehler: ' + e.message);
-                                  }
-                                }}
-                                style={{
-                                  background: 'var(--color-koralle)',
-                                  color: 'white',
-                                  border: 'none',
-                                  borderRadius: '4px',
-                                  padding: '6px 10px',
-                                  cursor: 'pointer',
-                                  fontSize: '0.8rem'
-                                }}
-                              >
-                                {t('nexus.wsBtnSave')}
-                              </button>
-                            </div>
-                          )}
-                          
-                          {/* Confidence Score */}
-                          {foundContact.rank_score && (
-                            <div>
-                              <strong style={{ color: 'var(--text-primary)' }}>Confidence:</strong>{' '}
-                              <span style={{ color: foundContact.rank_score >= 80 ? '#22c55e' : foundContact.rank_score >= 60 ? '#f59e0b' : 'var(--text-secondary)' }}>
-                                {foundContact.rank_score}%
-                              </span>
-                              {foundContact.company_validated && (
-                                <span style={{ marginLeft: '8px', color: '#22c55e', fontSize: '0.8rem' }}> {t('nexus.wsCompanyWebsite')}</span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
+              {/* ── 3. DREI EINDEUTIGE AKTIONS-BUTTONS AM UNTEREN RAND ── */}
+              <div className="pult-action-bar" style={{
+                marginTop: 'auto',
+                paddingTop: '20px',
+                borderTop: '1px solid #1e232d',
+                display: 'grid',
+                gridTemplateColumns: '1fr 1.3fr 1.3fr',
+                gap: '14px'
+              }}>
+                {/* Button 1: Verwerfen */}
+                <button
+                  type="button"
+                  onClick={() => handleTriageAction('dismiss', activeOpp)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '14px 18px',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                    background: 'rgba(239, 68, 68, 0.12)',
+                    color: '#f87171',
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 2px 10px rgba(239, 68, 68, 0.1)'
+                  }}
+                  title="Signal verwerfen und aus dem Posteingang entfernen (springt automatisch zum nächsten Fall)"
+                >
+                  <X size={18} />
+                  <span>❌ Verwerfen</span>
+                </button>
 
-                    {/* 2. Offering */}
-                    <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                        <h4 style={{ margin: 0, color: 'var(--color-koralle)' }}>Offering & Positioning</h4>
-                        <button
-                          type="button"
-                          onClick={handleTranslateIntelligence}
-                          disabled={translatingIntel}
-                          style={{
-                            background: 'rgba(255,255,255,0.06)',
-                            border: '1px solid var(--border-light)',
-                            borderRadius: '4px',
-                            padding: '4px 10px',
-                            color: 'var(--text-primary)',
-                            fontSize: '0.8rem',
-                            cursor: translatingIntel ? 'not-allowed' : 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                          }}
-                        >
-                          {translatingIntel ? t('nexus.wsTranslating') : (translatedIntelligence?.offering_name ? 'Übersetzung aktualisieren' : t('nexus.wsTranslateDe'))}
-                        </button>
-                      </div>
+                {/* Button 2: In Boutique-Pool (Tier 2) */}
+                <button
+                  type="button"
+                  onClick={() => handleTriageAction('boutique_tier2', activeOpp)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '14px 18px',
+                    borderRadius: '10px',
+                    border: '1px solid #3b82f6',
+                    background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                    color: '#ffffff',
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 4px 16px rgba(37, 99, 235, 0.3)'
+                  }}
+                  title="In den Boutique-Pool (Mandats-Archiv) für Zweitverwertung verschieben (springt automatisch zum nächsten Fall)"
+                >
+                  <Briefcase size={18} />
+                  <span>🏢 In Boutique-Pool (Tier 2)</span>
+                </button>
 
-                      <div style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>
-                        <strong>{t('nexus.wsOffering')}</strong>{' '}
-                        {translatedIntelligence?.offering_name ? (
-                          <>
-                            <span style={{ color: '#22c55e', fontWeight: 600 }}>{translatedIntelligence.offering_name}</span>
-                            <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '2px' }}>
-                              {t('nexus.wsOriginal')} {fullContext.offering?.offering_name || '-'}
-                            </span>
-                          </>
-                        ) : (
-                          fullContext.offering?.offering_name || '-'
-                        )}
-                        <br/><br/>
-                        <strong>{t('nexus.wsPositioning')}</strong><br/>
-                        {translatedIntelligence?.positioning ? (
-                          <>
-                            <div style={{ color: '#22c55e', fontWeight: 500, marginBottom: '6px' }}>{translatedIntelligence.positioning}</div>
-                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                              {t('nexus.wsOriginal')} {fullContext.offering?.positioning || '-'}
-                            </div>
-                          </>
-                        ) : (
-                          fullContext.offering?.positioning || '-'
-                        )}
-                      </div>
-                    </div>
-
-                    {/* 3. Trigger */}
-                    {activeTrigger && (
-                      <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                          <h4 style={{ margin: 0, color: 'var(--color-koralle)' }}>{t('nexus.wsTriggerSignal')}</h4>
-                          {!translatedIntelligence?.signal && (
-                            <button
-                              type="button"
-                              onClick={handleTranslateIntelligence}
-                              disabled={translatingIntel}
-                              style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--color-koralle)',
-                                fontSize: '0.8rem',
-                                cursor: translatingIntel ? 'not-allowed' : 'pointer',
-                                padding: '2px 6px',
-                                textDecoration: 'underline'
-                              }}
-                            >
-                              {translatingIntel ? t('nexus.wsTranslating') : '🇩🇪 ' + t('nexus.wsTranslateDe')}
-                            </button>
-                          )}
-                        </div>
-
-                        {translatedIntelligence?.signal ? (
-                          <div style={{ marginBottom: '16px' }}>
-                            <div style={{ background: 'rgba(34, 197, 94, 0.08)', border: '1px solid rgba(34, 197, 94, 0.25)', borderRadius: '6px', padding: '12px', marginBottom: '8px' }}>
-                              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#22c55e', marginBottom: '4px' }}>
-                                🇩🇪 DEUTSCHE ÜBERSETZUNG:
-                              </div>
-                              <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.5', margin: 0, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
-                                {translatedIntelligence.signal}
-                              </p>
-                            </div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                              <strong>{t('nexus.wsOriginal')}</strong> {activeTrigger.content ? extractTriggerMeta(activeTrigger.content).cleanText : ''}
-                            </div>
-                          </div>
-                        ) : (
-                          <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.5', margin: '0 0 16px 0', fontSize: '0.95rem' }}>
-                            {activeTrigger.content ? extractTriggerMeta(activeTrigger.content).cleanText : ''}
-                          </p>
-                        )}
-                        
-                        {/* Baustelle 2 & 3: Quellen-URL, Datum mit Verfall & Zielgruppen-Match */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '0.85rem', color: 'var(--text-secondary)', background: '#0a0c0f', padding: '16px', borderRadius: '8px', border: '1px solid #1e232d' }}>
-                          <div>
-                            <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '4px' }}>{t('nexus.wsAuditSource')}</strong>
-                            {(() => {
-                              const sUrl = (activeTrigger.source?.startsWith('http') ? activeTrigger.source : null) || (activeTrigger.source_url?.startsWith('http') ? activeTrigger.source_url : null) || (activeOpp?.source?.startsWith('http') ? activeOpp.source : null);
-                              if (sUrl) {
-                                return (
-                                  <a 
-                                    href={sUrl} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    className="ws-source-link"
-                                    title={sUrl}
-                                  >
-                                    <Globe size={13} />
-                                    <span>Quelle: {extractDomain(sUrl) || 'Originalbeleg'}</span>
-                                    <ExternalLink size={12} />
-                                  </a>
-                                );
-                              }
-                              return (
-                                <div className="ws-source-warning">
-                                  ⚠️ Keine Quelle verfügbar – Opportunity nicht testreif.
-                                </div>
-                              );
-                            })()}
-                          </div>
-                          <div>
-                            <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '4px' }}>{t('nexus.wsDiscoveredAt')}</strong>
-                            {(() => {
-                              const dateVal = activeTrigger.event_date || activeTrigger.published_at || activeTrigger.created_at || activeOpp?.created_at;
-                              const dateInfo = formatEventDate(dateVal);
-                              return (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                                  <Clock size={13} style={{ color: 'var(--text-secondary)' }} />
-                                  <span style={{ color: 'var(--text-primary)' }}>{dateInfo.formattedDate}</span>
-                                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>({dateInfo.relativeTime})</span>
-                                  {(() => {
-                                    const traffic = getFreshnessTrafficLight(dateVal);
-                                    return (
-                                      <span 
-                                        className={`badge-freshness ${traffic.badgeClass}`}
-                                        style={{
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: '4px',
-                                          padding: '2px 8px',
-                                          borderRadius: '4px',
-                                          fontSize: '0.74rem',
-                                          fontWeight: 700,
-                                          background: traffic.color === 'green' ? 'rgba(34, 197, 94, 0.15)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.18)' : 'rgba(239, 68, 68, 0.2)',
-                                          color: traffic.color === 'green' ? '#4ade80' : traffic.color === 'yellow' ? '#facc15' : '#f87171',
-                                          border: `1px solid ${traffic.color === 'green' ? 'rgba(34, 197, 94, 0.35)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.4)' : 'rgba(239, 68, 68, 0.45)'}`
-                                        }}
-                                        title={traffic.tooltip}
-                                      >
-                                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: traffic.color === 'green' ? '#22c55e' : traffic.color === 'yellow' ? '#eab308' : '#ef4444' }} />
-                                        {traffic.label}
-                                      </span>
-                                    );
-                                  })()}
-                                </div>
-                              );
-                            })()}
-                          </div>
-                          <div>
-                            <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '4px' }}>Zielgruppen-Match:</strong>
-                            {(() => {
-                              const matchScore = computeTargetMatchScore(fullContext?.company?.name || activeOpp?.nexus_companies?.name, activeOpp?.lead_score ?? activeTrigger.trigger_score);
-                              if (matchScore >= 70) {
-                                return (
-                                  <span className="badge-match-high">
-                                    <CheckCircle size={12} /> {matchScore}% (Hoher Fit)
-                                  </span>
-                                );
-                              } else if (matchScore >= 50) {
-                                return (
-                                  <span className="badge-match-mid">
-                                    <Sparkles size={12} /> {matchScore}% (Guter Fit)
-                                  </span>
-                                );
-                              } else {
-                                return (
-                                  <span className="badge-match-low">
-                                    <AlertCircle size={12} /> {matchScore}% (Zielgruppe unklar)
-                                  </span>
-                                );
-                              }
-                            })()}
-                          </div>
-                          <div>
-                            <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '4px' }}>{t('nexus.wsTriggerType')}</strong>
-                            <span style={{ color: 'var(--text-primary)' }}>{activeTrigger.signal_type || 'Unbekannt'}</span>
-                            {activeTrigger.confidence_score != null && (
-                              <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginLeft: '6px' }}>
-                                ({activeTrigger.confidence_score <= 1 ? Math.round(activeTrigger.confidence_score * 100) : Math.round(activeTrigger.confidence_score)}% KI-Konfidenz)
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* 5-Schritte-Prozess: Blind Profile, Impact-Analyse, Matchmaking */}
-                        {(() => {
-                          const meta = extractTriggerMeta(activeTrigger?.content || '');
-                          const pp = activeTrigger?.pain_point || activeOpp?.pain_point || meta.painPoint;
-                          const bc = activeTrigger?.blind_company || meta.blindCompany;
-                          const bl = activeTrigger?.blind_location || meta.blindLocation;
-                          const bq = activeTrigger?.blind_quantity || meta.blindQuantity;
-                          const tb = (Array.isArray(activeTrigger?.target_buyers) && activeTrigger.target_buyers.length > 0) ? activeTrigger.target_buyers : meta.targetBuyers;
-
-                          if (!pp && !bc && !bl && !bq && tb.length === 0) return null;
-
-                          return (
-                            <div className="ws-sales-package-card" style={{
-                              marginTop: '16px',
-                              background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(99, 102, 241, 0.08) 100%)',
-                              border: '1px solid rgba(56, 189, 248, 0.3)',
-                              borderRadius: '10px',
-                              padding: '16px',
-                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-                            }}>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                  <span style={{
-                                    background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
-                                    color: '#ffffff',
-                                    fontSize: '0.72rem',
-                                    fontWeight: 800,
-                                    padding: '3px 10px',
-                                    borderRadius: '4px',
-                                    letterSpacing: '0.05em'
-                                  }}>
-                                    VERKAUFS-ASSET (LEAD-PAKET)
-                                  </span>
-                                  <span style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 600 }}>
-                                    Blind Profile &amp; Matchmaking
-                                  </span>
-                                  {(() => {
-                                    const dateVal = activeTrigger.event_date || activeTrigger.published_at || activeTrigger.created_at || activeOpp?.created_at;
-                                    const traffic = getFreshnessTrafficLight(dateVal);
-                                    return (
-                                      <span 
-                                        className={`badge-freshness ${traffic.badgeClass}`}
-                                        style={{
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: '4px',
-                                          padding: '2px 7px',
-                                          borderRadius: '4px',
-                                          fontSize: '0.72rem',
-                                          fontWeight: 700,
-                                          background: traffic.color === 'green' ? 'rgba(34, 197, 94, 0.15)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.18)' : 'rgba(239, 68, 68, 0.2)',
-                                          color: traffic.color === 'green' ? '#4ade80' : traffic.color === 'yellow' ? '#facc15' : '#f87171',
-                                          border: `1px solid ${traffic.color === 'green' ? 'rgba(34, 197, 94, 0.35)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.4)' : 'rgba(239, 68, 68, 0.45)'}`
-                                        }}
-                                        title={traffic.tooltip}
-                                      >
-                                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: traffic.color === 'green' ? '#22c55e' : traffic.color === 'yellow' ? '#eab308' : '#ef4444' }} />
-                                        {traffic.label}
-                                      </span>
-                                    );
-                                  })()}
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const text = [
-                                      `BLIND PROFILE:`,
-                                      bc ? `• Anonymisierte Firma: ${bc}` : null,
-                                      bl ? `• Region: ${bl}` : null,
-                                      bq ? `• Kennzahl/Größe: ${bq}` : null,
-                                      pp ? `\nIMPACT-ANALYSE (PAIN POINT / HANDLUNGSDRUCK):\n• ${pp}` : null,
-                                      tb.length > 0 ? `\nMATCHMAKING (TARGET BUYERS):\n• ${tb.join(', ')}` : null
-                                    ].filter(Boolean).join('\n');
-                                    handleCopyPackage(text);
-                                  }}
-                                  className="btn-secondary"
-                                  style={{ fontSize: '0.75rem', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '5px' }}
-                                  title="Verkaufs-Paket in die Zwischenablage kopieren"
-                                >
-                                  {packageCopied ? <CheckCircle size={12} color="#22c55e" /> : <Copy size={12} />}
-                                  <span>{packageCopied ? 'Kopiert!' : 'Paket kopieren'}</span>
-                                </button>
-                              </div>
-
-                              {/* Blind Profile Grid */}
-                              {(bc || bl || bq) && (
-                                <div style={{
-                                  display: 'grid',
-                                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                                  gap: '12px',
-                                  background: 'rgba(10, 12, 15, 0.7)',
-                                  padding: '12px',
-                                  borderRadius: '8px',
-                                  border: '1px solid rgba(255, 255, 255, 0.05)',
-                                  marginBottom: '12px'
-                                }}>
-                                  <div>
-                                    <span style={{ fontSize: '0.73rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '2px' }}>
-                                      🏢 Anonymisierte Firma
-                                    </span>
-                                    <strong style={{ color: '#f8fafc', fontSize: '0.9rem' }}>
-                                      {bc || 'DACH-Unternehmen'}
-                                    </strong>
-                                  </div>
-                                  <div>
-                                    <span style={{ fontSize: '0.73rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '2px' }}>
-                                      📍 Region / Standort
-                                    </span>
-                                    <strong style={{ color: '#f8fafc', fontSize: '0.9rem' }}>
-                                      {bl || 'DACH'}
-                                    </strong>
-                                  </div>
-                                  <div>
-                                    <span style={{ fontSize: '0.73rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '2px' }}>
-                                      📊 Fuzzy-Größe / Kennzahl
-                                    </span>
-                                    <strong style={{ color: '#f8fafc', fontSize: '0.9rem' }}>
-                                      {bq || 'Mittelstand'}
-                                    </strong>
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Impact Analysis / Pain Point */}
-                              {pp && (
-                                <div style={{
-                                  padding: '10px 12px',
-                                  background: 'rgba(245, 158, 11, 0.09)',
-                                  borderLeft: '3px solid #f59e0b',
-                                  borderRadius: '6px',
-                                  marginBottom: tb.length > 0 ? '12px' : 0
-                                }}>
-                                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#fbbf24', textTransform: 'uppercase', marginBottom: '3px' }}>
-                                    ⚡ Impact-Analyse (Akuter Handlungsdruck / Pain Point):
-                                  </div>
-                                  <div style={{ fontSize: '0.88rem', color: '#f8fafc', lineHeight: 1.45 }}>
-                                    {pp}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Matchmaking / Target Buyers */}
-                              {tb.length > 0 && (
-                                <div style={{
-                                  padding: '10px 12px',
-                                  background: 'rgba(16, 185, 129, 0.08)',
-                                  borderLeft: '3px solid #10b981',
-                                  borderRadius: '6px'
-                                }}>
-                                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#34d399', textTransform: 'uppercase', marginBottom: '6px' }}>
-                                    🎯 Matchmaking: Wer verdient an diesem Signal? (Target Buyers):
-                                  </div>
-                                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                    {tb.map((bItem, idx) => (
-                                      <span key={idx} style={{
-                                        background: 'rgba(16, 185, 129, 0.15)',
-                                        color: '#6ee7b7',
-                                        border: '1px solid rgba(16, 185, 129, 0.35)',
-                                        borderRadius: '20px',
-                                        padding: '3px 10px',
-                                        fontSize: '0.78rem',
-                                        fontWeight: 600
-                                      }}>
-                                        ✓ {bItem}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })()}
-
-                      </div>
-                    )}
-
-                    {/* 4. Message Generation */}
-                    {foundContact && (
-                      <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
-                        <h4 style={{ marginTop: 0, color: 'var(--color-koralle)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <Send size={18} /> {t('nexus.wsPrepareMessage')}
-                        </h4>
-                        
-                        {/* Contact Summary */}
-                        <div style={{ marginBottom: '12px', fontSize: '0.9rem', padding: '12px 14px', background: '#0a0c0f', borderRadius: '8px', border: '1px solid #1e232d' }}>
-                          <strong>{t('nexus.wsTo')}</strong> {foundContact.name}{' '}
-                          {foundContact.role && <span>({foundContact.role})</span>}
-                          <br/>
-                          <strong>{t('nexus.wsAuditFirm')}</strong> {resolveTriggerCompanyName(activeTrigger, activeOpp) || fullContext.company?.name || '-'}
-                          <br/>
-                          <strong>E-Mail:</strong>{' '}
-                          {foundContact.email && foundContact.email_status !== 'UNKNOWN' ? (
-                            <span style={{ color: '#22c55e' }}>{foundContact.email}</span>
-                          ) : (
-                            <span style={{ color: 'var(--text-secondary)' }}>{t('nexus.wsNotPublic')}</span>
-                          )}
-                        </div>
-
-                        {/* Generate Button */}
-                        {!generatedMessage && !isGeneratingMessage && (
-                          <button
-                            type="button"
-                            onClick={handleGenerateMessage}
-                            style={{
-                              background: 'var(--color-koralle)',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              padding: '10px 16px',
-                              cursor: 'pointer',
-                              fontSize: '0.9rem',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px'
-                            }}
-                          >
-                            <Send size={14} /> {t('nexus.wsBtnGenerate')}
-                          </button>
-                        )}
-
-                        {/* Loading */}
-                        {isGeneratingMessage && (
-                          <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', padding: '12px 0' }}>
-                            {t('nexus.wsBtnGenerating')}
-                          </div>
-                        )}
-
-                        {/* Generated Message */}
-                        {generatedMessage && generatedMessage.status === 'generated' && (
-                          <div>
-                            {/* Subject */}
-                            {generatedMessage.subject && (
-                              <div style={{ marginBottom: '8px', fontSize: '0.85rem' }}>
-                                <strong>{t('nexus.wsOutreachSubject')}</strong> {generatedMessage.subject}
-                              </div>
-                            )}
-                            
-                            {/* Grounding Warnings */}
-                            {generatedMessage.has_grounding_warnings && (
-                              <div style={{
-                                marginBottom: '12px',
-                                padding: '12px 16px',
-                                background: '#fef3c7',
-                                border: '1px solid #f59e0b',
-                                borderRadius: '8px',
-                                fontSize: '0.85rem'
-                              }}>
-                                <div style={{ fontWeight: 600, color: '#92400e', marginBottom: '8px' }}>
-                                  ⚠️ {t('nexus.wsGroundingWarning') || 'Qualitätswarnung: Nicht belegte Aussagen erkannt'}
-                                </div>
-                                <ul style={{ margin: 0, paddingLeft: '20px', color: '#92400e' }}>
-                                  {generatedMessage.grounding_warnings?.map((w, i) => (
-                                    <li key={i} style={{ marginBottom: '4px' }}>
-                                      {w.type === 'ungrounded_claim' && (
-                                        <span>"{w.claim.substring(0, 80)}..." — {w.reason}</span>
-                                      )}
-                                      {w.type === 'concrete_number' && (
-                                        <span>{t('nexus.wsConcreteNumber') || 'Konkrete Zahlen'}: {w.numbers.join(', ')} — {w.hasSource ? (t('nexus.wsWithSource') || 'mit Quellenbeleg') : (t('nexus.wsWithoutSource') || 'ohne Quellenbeleg')}</span>
-                                      )}
-                                    </li>
-                                  ))}
-                                </ul>
-                                <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#a16207' }}>
-                                  {t('nexus.wsGroundingHint') || 'Bitte überprüfen und manuell anpassen vor dem Versand.'}
-                                </div>
-                              </div>
-                            )}
-                            
-                            {/* Message (editable) */}
-                            <div style={{ marginBottom: '12px' }}>
-                              <label style={{ display: 'block', marginBottom: '4px', fontSize: '0.85rem', fontWeight: 600 }}>
-                                {t('nexus.wsMessage')}
-                              </label>
-                              <textarea
-                                value={editedMessage}
-                                onChange={(e) => setEditedMessage(e.target.value)}
-                                rows={8}
-                                style={{
-                                  width: '100%',
-                                  padding: '16px 20px',
-                                  border: '1px solid #e2ded4',
-                                  borderRadius: '8px',
-                                  fontSize: '0.96rem',
-                                  lineHeight: '1.7',
-                                  resize: 'vertical',
-                                  fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                                  background: '#f8f6f0',
-                                  color: '#0f172a',
-                                  boxShadow: '0 4px 16px rgba(0,0,0,0.25)'
-                                }}
-                              />
-                            </div>
-                            
-                            {/* Used Facts */}
-                            {generatedMessage.used_facts?.length > 0 && (
-                              <div style={{ marginBottom: '8px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                <strong>{t('nexus.wsUsedFacts')}</strong>
-                                <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
-                                  {generatedMessage.used_facts.map((fact, i) => (
-                                    <li key={i}>{fact}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                            
-                            {/* Interpretations */}
-                            {generatedMessage.interpretations?.length > 0 && (
-                              <div style={{ marginBottom: '8px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                <strong>{t('nexus.wsInterpretations')}</strong>
-                                <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
-                                  {generatedMessage.interpretations.map((interp, i) => (
-                                    <li key={i}>{interp}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                            
-                            {/* Sources */}
-                            {generatedMessage.sources?.length > 0 && (
-                              <div style={{ marginBottom: '12px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                <strong>{t('nexus.wsSources')}</strong>
-                                <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
-                                  {generatedMessage.sources.map((src, i) => (
-                                    <li key={i}>{src}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                            
-                            {/* Action Buttons */}
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button
-                                type="button"
-                                onClick={handleCopyMessage}
-                                disabled={!contactPersisted}
-                                style={{
-                                  background: !contactPersisted ? 'var(--border-light)' : copied ? '#22c55e' : 'var(--color-koralle)',
-                                  color: !contactPersisted ? 'var(--text-secondary)' : 'white',
-                                  border: 'none',
-                                  borderRadius: '4px',
-                                  padding: '8px 12px',
-                                  cursor: !contactPersisted ? 'not-allowed' : 'pointer',
-                                  fontSize: '0.85rem',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '4px'
-                                }}
-                              >
-                                {copied ? <CheckCircle size={14} /> : <Copy size={14} />}
-                                {copied ? t('nexus.wsBtnCopied') : !contactPersisted ? t('nexus.wsConfirmFirst') : t('nexus.wsBtnCopy')}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => { setGeneratedMessage(null); setEditedMessage(''); }}
-                                style={{
-                                  background: 'transparent',
-                                  color: 'var(--text-secondary)',
-                                  border: '1px solid var(--border-light)',
-                                  borderRadius: '4px',
-                                  padding: '8px 12px',
-                                  cursor: 'pointer',
-                                  fontSize: '0.85rem'
-                                }}
-                              >
-                                {t('nexus.wsBtnRegenerate')}
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Error */}
-                        {generatedMessage?.status === 'error' && (
-                          <div style={{ color: '#ef4444', fontSize: '0.9rem' }}>
-                            {t('nexus.wsError')} {generatedMessage.error}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  ) : (
-                  <p>{t('nexus.wsLoading')}</p>
-                )}
+                {/* Button 3: Als Tier-1 vormerken */}
+                <button
+                  type="button"
+                  onClick={() => handleTriageAction('priority_tier1', activeOpp)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '14px 18px',
+                    borderRadius: '10px',
+                    border: '1px solid #a855f7',
+                    background: 'linear-gradient(135deg, #6b21a8 0%, #9333ea 100%)',
+                    color: '#ffffff',
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 4px 16px rgba(147, 51, 234, 0.3)'
+                  }}
+                  title="Als Tier-1 für Groß-Provider (taskforce) vormerken (springt automatisch zum nächsten Fall)"
+                >
+                  <Sparkles size={18} />
+                  <span>👑 Als Tier-1 vormerken</span>
+                </button>
               </div>
-            )}
-          </div>
-        ) : (
+            </div>
+          );
+        })() : (
           <div className="sales-workspace-empty-state" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <CheckCircle size={48} color="var(--border-light)" />
             <h2 style={{ color: 'var(--text-primary)' }}>{t('nexus.wsNoOpp')}</h2>
