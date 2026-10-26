@@ -123,6 +123,12 @@ def fetch_swiss_shab_feed(url=None):
             if not has_organ_exit and not ('in liquidation' in snippet_text.lower() or 'konkurs' in snippet_text.lower()):
                 continue
 
+            # GESCHÄFTSMODELL-FILTER (HARRO MANDATS-ORIGINATION):
+            # Wenn ein Nachfolger bereits im selben Beschluss eingetragen ist (1:1 Stabwechsel),
+            # liegt KEIN unbesetztes Interim-Vakuum vor -> SOFORT VERWERFEN!
+            if has_successor and not ('in liquidation' in snippet_text.lower()):
+                continue
+
             fresh_items.append({
                 'source_name': 'Schweizerisches Handelsamtsblatt (SHAB Mutationen)',
                 'company': company,
