@@ -126,41 +126,39 @@ const INITIAL_PARTNERS = [
   }
 ]
 
-// Chronologische Historie aller versendeten Mandats-Ansprachen
+// Chronologische Historie aller versendeten Mandats-Ansprachen (1:1 Original-Wortlaut)
 const INITIAL_OUTREACH_ENTRIES = [
   {
     id: 'outreach-20261026-002',
     referenceCode: 'INT-CH-2026-081',
     leadId: '35bead11-ba4d-47b4-be1a-21a765b96b29',
     company: 'cosquare AG',
-    companyLocation: 'Großraum Zürich / Zentralschweiz (Zug) 🇨🇭',
+    companyLocation: 'Greater Zurich Area / Central Switzerland · Swiss Corporation (AG)',
     country: 'CH',
-    role: 'Interim Board Director / Crisis Governance Lead (Sole Signatory Vacuum)',
+    role: 'Board Member / Executive Transition Management',
     partnerCompany: 'BIE Executive',
     partnerContact: 'Byron Tarboton',
     partnerRole: 'Director & Practice Lead Interim Executive',
     partnerLocation: 'London, UK 🇬🇧',
     partnerEmail: 'byron.tarboton@bie-executive.com',
-    sentAt: '2026-10-26T11:30:00.000Z',
-    exclusivityUntil: '2026-10-28T16:00:00.000Z', // Mittwoch, 28.10.2026, 17:00 BST = 16:00 UTC
+    sentAt: '2026-10-26T10:59:33Z',
+    exclusivityUntil: '2026-10-28T16:00:00Z', // 48h First-Look UK bis Mittwoch, 28.10.2026, 17:00 BST
     exclusivityDays: 2,
     status: 'FIRST_LOOK_AKTIV',
     statusLabel: '🟣 48h First-Look UK aktiv',
     budgetBand: '150.000 – 300.000 CHF (Daily rate: 2.200 – 2.800 CHF)',
-    subject: 'Confidential Mandate Signal: Swiss Technology AG (Greater Zurich / Central Switzerland) · Abrupt Board / Governance Vacancy · Ref: INT-CH-2026-081',
-    greeting: 'Dear Byron,',
-    introText: 'Further to our European executive radar (D.A.T. Mandate Origination Desk), we have identified an immediate, time-critical governance vacancy within an established Swiss Technology AG in the Greater Zurich / Central Switzerland tech hub.\n\nFollowing the sudden departure of the sole registered board member with sole signatory power (published today, 26 October 2026, in the Swiss Official Gazette / SHAB), the company is facing an acute governance vacuum requiring an experienced Interim Board Director or Crisis Governance Lead.\n\nWe are granting BIE Executive an exclusive 48-hour First-Look window (valid until Wednesday, 28 October 2026, 17:00 BST) prior to broader syndicate syndication.',
+    subject: 'Mandate Opportunity: Executive / Board Transition (Greater Zurich Area)',
+    originalBody: `Dear Mr Tarboton,\n\nThrough our European Mandate Desk, we monitor primary statutory registers for acute C-level and board-level transitions across key European jurisdictions.\n\nWe have identified an immediate governance and leadership vacancy at a Swiss digital technology corporation (Aktiengesellschaft) located within the greater Zurich / Central Switzerland economic area. A senior board director has stepped down with immediate effect, leaving an unstaffed organ vacancy.\n\nDue to interim governance requirements, we are presenting this event to an established executive interim partner. We grant you exclusive first-look rights for the UK market on this lead until Wednesday, 28 October 2026, 17:00 BST. Should you decline or not confirm by this deadline, exclusivity expires.\n\nAnonymised Mandate Overview:\n- Reference: INT-CH-2026-081\n- Region & Entity: Greater Zurich Area / Central Switzerland · Swiss Corporation (AG)\n- Industry: Software, Digital Platforms & Tech\n- Trigger: Unplanned departure of key board director / immediate organ vacancy\n- Requirement: Board Member / Executive Transition Management\n- Status: Open for primary outreach\n\nFurther information about our executive desk:\nhttps://dat-dat.de\n\nTo receive the verified corporate entity details, primary filing records, and source documentation, please confirm your interest by replying directly to this email.\n\nBest regards,\n\nHarro Goerndt\nD.A.T. Dienstleistungen · Executive Mandate Desk\nWeserstraße 16 · 26382 Wilhelmshaven, Germany`,
     blindProfile: {
-      entityType: 'Established Swiss Corporation (Aktiengesellschaft - AG)',
-      region: 'Greater Zurich / Zug Tech Hub (Switzerland 🇨🇭)',
-      industry: 'Digital Commerce & Interactive Live-Video Technology',
-      incident: 'Immediate departure of the sole-signatory Board Director (SHAB official publication 26.10.2026).',
-      situationAnalysis: 'The corporate board seat is completely vacant with no successor registered in the commercial registry. Sole signature authorization has lapsed, creating an acute operational and corporate governance vacuum.',
-      mandateAngle: 'Immediate Board Director mandate / Crisis Governance Lead / Interim CRO to secure corporate oversight and represent shareholder interests.',
-      budgetRange: 'CHF 150,000 – 300,000 (Daily rate band: CHF 2,200 – 2,800)',
-      exclusivityClause: '48h exclusive First-Look for BIE Executive (London) until Wednesday, 28.10.2026, 17:00 BST.'
+      entityType: 'Swiss Corporation (Aktiengesellschaft - AG)',
+      region: 'Greater Zurich Area / Central Switzerland',
+      industry: 'Software, Digital Platforms & Tech',
+      incident: 'Unplanned departure of key board director / immediate organ vacancy',
+      situationAnalysis: 'Senior board director stepped down with immediate effect, leaving an unstaffed organ vacancy and immediate interim governance requirements.',
+      mandateAngle: 'Board Member / Executive Transition Management',
+      budgetRange: '150.000 – 300.000 CHF (Daily rate: 2.200 – 2.800 CHF)',
+      exclusivityClause: 'Exclusive First-Look UK until Wednesday, 28 October 2026, 17:00 BST'
     },
-    closingText: 'If this aligns with your senior executive bench, please confirm interest and we will immediately provide the full entity dossier and unredacted commercial registry filings.\n\nBest regards,\nHarro Goerndt\nD.A.T. Mandate Origination Desk',
     archiveStatus: 'ANGEBOTEN_RESERVIERT',
     notes: '48h First-Look UK exklusiv an Byron Tarboton übermittelt. Frist bis Mittwoch, 28.10.2026, 17:00 BST.'
   },
@@ -169,34 +167,32 @@ const INITIAL_OUTREACH_ENTRIES = [
     referenceCode: 'CH-ZG-2026-VR-01',
     leadId: '35bead11-ba4d-47b4-be1a-21a765b96b29',
     company: 'cosquare AG',
-    companyLocation: 'Bundesplatz 14, 6302 Zug, Schweiz 🇨🇭',
+    companyLocation: 'Kanton Zug (Schweiz) · Aktiengesellschaft (AG)',
     country: 'CH',
-    role: 'Mitglied des Verwaltungsrates (Akutes Organ-Vakuum)',
+    role: 'Interim Board Member / Ad-interim Executive (Governance & Transition)',
     partnerCompany: 'Top Fifty AG',
     partnerContact: 'Pierina Tannò',
     partnerRole: 'Senior Partnerin & Board Advisory',
     partnerLocation: 'Baar / Zug, Schweiz 🇨🇭',
     partnerEmail: 'p.tanno@top50interim.com',
-    sentAt: '2026-10-26T09:15:00.000Z',
-    exclusivityUntil: '2026-11-09T23:59:59.000Z',
+    sentAt: '2026-10-26T10:33:01Z',
+    exclusivityUntil: '2026-11-09T23:59:59Z',
     exclusivityDays: 14,
     status: 'EXKLUSIV_RESERVIERT',
     statusLabel: '🟡 Exklusivität CH aktiv (14 Tage)',
     budgetBand: '150.000 – 300.000 CHF (Tagessatz: 2.200 – 2.800 CHF)',
-    subject: 'Vertrauliches Mandats-Signal: Schweizer Technologie-AG (Kanton Zug) · Abruptes Organ-Vakuum (VR Einzelunterschrift) · Ref: CH-ZG-2026-VR-01',
-    greeting: 'Sehr geehrte Frau Tannò, liebe Pierina,',
-    introText: 'im Rahmen unseres europäischen Mandate-Radars (D.A.T. Mandats-Desk) ist uns heute früh eine zeitkritische Sondersituation im Kanton Zug aufgegangen, die exakt in das Profil der Top Fifty AG für erfahrene Board- und Interim-Persönlichkeiten passt.\n\nWir räumen der Top Fifty AG für diesen Fall einen exklusiven Erstzugriff von 14 Tagen (bis zum 09.11.2026) ein, bevor das Mandat in die breitere Zweitverwertung gegeben wird.',
+    subject: 'Diskretes Mandatssignal: Organ-Vakuum VR / C-Level (Raum Zug · Tech-AG)',
+    originalBody: `Sehr geehrte Frau Tannò,\n\nüber unseren Mandate Desk identifizieren wir tagesaktuell signifikante Organ-Vakanzen und Führungslücken im europäischen Markt.\n\nAm Standort Zug liegt uns ein akutes Organ-Vakuum bei einer schweizerischen Technologie-AG vor: Ein vollwertiges Mitglied des Verwaltungsrates mit Einzelunterschrift ist per sofort ausgeschieden, ohne dass eine Nachfolge geregelt ist.\n\nDa hier unmittelbarer Handlungsdruck bezüglich Board-Governance, Organvertretung und operativer Handlungsfähigkeit besteht, stellen wir diesen Anlass einem ausgewählten Partner zur Mandatierung zur Verfügung.\n\nIhnen sichern wir für diesen Fall absolute Exklusivität zu – das Signal wird von uns an keinen weiteren Provider oder Wettbewerber im Schweizer Markt herausgegeben.\n\nDas anonymisierte Blind-Profil zur Ersteinschätzung:\n\nReferenz: CH-ZG-2026-VR-01\nRegion & Rechtsform: Kanton Zug (Schweiz) · Aktiengesellschaft (AG)\nSegment: Digital Commerce / Video-Tech (Scale-up)\nAnlass: Akutes Ausscheiden Verwaltungsrat mit Einzelunterschrift per sofort / Vakanz\nBedarf: Interim Board Member / Ad-interim Executive (Governance & Transition)\nStatus: Vakant / Frei zur Erstansprache\n\nWeitere Informationen zu unserem Mandate Desk finden Sie unter:\nhttps://dat-dat.de\n\nBei Interesse an den verifizierten Klardaten und Organ-Details für Ihre Mandatsansprache freue ich mich über Ihre kurze Rückmeldung.\n\nMit freundlichen Grüßen\n\nHarro Goerndt\nD.A.T. Dienstleistungen · Executive Mandate Desk\nWeserstraße 16 · 26382 Wilhelmshaven`,
     blindProfile: {
-      entityType: 'Etablierte Schweizer Aktiengesellschaft (AG)',
-      region: 'Wirtschaftsstandort Zug / Großraum Zürich (CH)',
-      industry: 'Digital Commerce & Interactive Live-Video Plattform',
-      incident: 'Abrupter Austritt des einzelzeichnungsberechtigten Verwaltungsrates per sofort (SHAB-Publikation 26.10.2026).',
-      situationAnalysis: 'Der Verwaltungsratssitz ist derzeit vollkommen unbesetzt. Die handelsregisterliche Einzelunterschrift ist erloschen. Im Handelsregister wurde kein Nachfolger gemeldet.',
-      mandateAngle: 'Sofortige Organ-Übernahme / Interim-Verwaltungsrat (VR) zur Governance-Sicherung und Begleitung der Gesellschafter.',
-      budgetRange: '150.000 – 300.000 CHF (Tagessatzband: 2.200 – 2.800 CHF)',
-      exclusivityClause: '14 Tage exklusiver Erstzugriff für Top Fifty AG bis 09.11.2026 vor weiterer Zweitverwertung.'
+      entityType: 'Kanton Zug (Schweiz) · Aktiengesellschaft (AG)',
+      region: 'Kanton Zug / Wirtschaftsraum Zürich',
+      industry: 'Digital Commerce / Video-Tech (Scale-up)',
+      incident: 'Akutes Ausscheiden Verwaltungsrat mit Einzelunterschrift per sofort / Vakanz',
+      situationAnalysis: 'Ein vollwertiges Mitglied des Verwaltungsrates mit Einzelunterschrift ist per sofort ausgeschieden, ohne dass eine Nachfolge geregelt ist. Unmittelbarer Handlungsdruck bezüglich Board-Governance.',
+      mandateAngle: 'Interim Board Member / Ad-interim Executive (Governance & Transition)',
+      budgetRange: '150.000 – 300.000 CHF (Tagessatz: 2.200 – 2.800 CHF)',
+      exclusivityClause: '14 Tage absolute Exklusivität für Schweizer Markt bis 09.11.2026'
     },
-    closingText: 'Bei Interesse stellen wir nach kurzer Bestätigung gerne den direkten Kontakt und die Detailunterlagen bereit.\n\nMit freundlichen Grüßen\nHarro Goerndt\nD.A.T. Mandate Origination Desk',
     archiveStatus: 'ANGEBOTEN_RESERVIERT',
     notes: 'Exklusivitätsfrist Schweiz läuft bis 09.11.2026. Erstansprache per E-Mail und Blind-Profil übermittelt.'
   }
@@ -685,32 +681,14 @@ export default function OutreachJournalPage() {
                                     type="button"
                                     className="preview-copy-btn"
                                     onClick={() => handleCopyText(
-                                      `Betreff: ${entry.subject}
-
-${entry.greeting}
-
-${entry.introText}
-
-═══════════════════════════════════════════════════════════════
-ANONYMISIERTES BLIND-PROFIL (TEASER) · REF: ${entry.referenceCode}
-═══════════════════════════════════════════════════════════════
-• Rechtsträger:       ${entry.blindProfile.entityType}
-• Wirtschaftsraum:    ${entry.blindProfile.region}
-• Branche:            ${entry.blindProfile.industry}
-• Vorfall / Anlass:   ${entry.blindProfile.incident}
-• Ausgangslage:       ${entry.blindProfile.situationAnalysis}
-• Mandatsfokus:       ${entry.blindProfile.mandateAngle}
-• Budgetrahmen:       ${entry.blindProfile.budgetRange}
-• Exklusiv-Klausel:   ${entry.blindProfile.exclusivityClause}
-
-${entry.closingText}`,
+                                      `Betreff: ${entry.subject}\n\n${entry.originalBody}`,
                                       `email-${entry.id}`
                                     )}
                                   >
                                     {copiedField === `email-${entry.id}` ? (
-                                      <><Check size={14} color="#16a34a" /> <strong>E-Mail kopiert!</strong></>
+                                      <><Check size={14} color="#16a34a" /> <strong>Original-E-Mail kopiert!</strong></>
                                     ) : (
-                                      <><Mail size={14} /> <span>Komplette E-Mail kopieren</span></>
+                                      <><Mail size={14} /> <span>1:1 Original-E-Mail kopieren</span></>
                                     )}
                                   </button>
 
@@ -771,21 +749,33 @@ ${entry.closingText}`,
                                 {/* Rechte Spalte: E-Mail Ansprache an Partner */}
                                 <div className="email-preview-card">
                                   <div className="card-section-label">
-                                    <Mail size={14} /> Versendete E-Mail an {entry.partnerContact}
+                                    <Mail size={14} /> 1:1 Original-E-Mail (Volltext aus dem Postausgang)
                                   </div>
 
                                   <div className="email-meta-header">
+                                    <div><strong>Von:</strong> Harro Goerndt &lt;desk@dat-dat.de&gt; (D.A.T. Executive Mandate Desk)</div>
                                     <div><strong>An:</strong> {entry.partnerContact} &lt;{entry.partnerEmail}&gt; ({entry.partnerCompany})</div>
+                                    <div><strong>Gesendet am:</strong> {new Date(entry.sentAt).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })} Uhr UTC ({entry.sentAt})</div>
                                     <div><strong>Betreff:</strong> {entry.subject}</div>
                                   </div>
 
                                   <div className="email-text-content">
-                                    <p>{entry.greeting}</p>
-                                    <p style={{ whiteSpace: 'pre-line' }}>{entry.introText}</p>
-                                    <div className="email-blind-box">
-                                      <strong>[Anonymisiertes Blind-Profil {entry.referenceCode} angehängt]</strong>
+                                    <div
+                                      className="email-verbatim-body"
+                                      style={{
+                                        whiteSpace: 'pre-wrap',
+                                        fontSize: '0.88rem',
+                                        lineHeight: '1.65',
+                                        color: '#0f172a',
+                                        background: '#ffffff',
+                                        padding: '16px 18px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #e2e8f0',
+                                        fontFamily: 'inherit'
+                                      }}
+                                    >
+                                      {entry.originalBody}
                                     </div>
-                                    <p style={{ whiteSpace: 'pre-line' }}>{entry.closingText}</p>
                                   </div>
 
                                   {/* Status Update Quick Buttons */}

@@ -51,8 +51,8 @@ const INITIAL_COSQUARE_UK_ENTRY = {
   countryMarket: 'CH / UK · Cross-Border',
   role: 'Interim Board Director / Crisis Governance Lead',
   transmittedTo: 'BIE Executive · Byron Tarboton',
-  transmittedAt: '2026-10-26T11:30:00.000Z',
-  protectionUntil: '2026-10-28T16:00:00.000Z',
+  transmittedAt: '2026-10-26T10:59:33Z',
+  protectionUntil: '2026-10-28T16:00:00Z',
   status: 'ANGEBOTEN_RESERVIERT',
   notes: '48h First-Look UK exklusiv für Byron Tarboton / BIE Executive (Frist bis Mittwoch, 28.10.2026, 17:00 BST). Blind-Profil INT-CH-2026-081 übermittelt.',
   source: 'SHAB-Mutation 26.10.2026 · Ref. INT-CH-2026-081'
@@ -66,8 +66,8 @@ const INITIAL_COSQUARE_ARCHIVE_ENTRY = {
   countryMarket: 'CH · Zug (SHAB)',
   role: 'Mitglied des Verwaltungsrates (Ersatzbesetzung)',
   transmittedTo: 'Top Fifty AG · Pierina Tannò',
-  transmittedAt: '2026-10-26T09:15:00.000Z',
-  protectionUntil: '2026-11-09T23:59:59.000Z',
+  transmittedAt: '2026-10-26T10:33:01Z',
+  protectionUntil: '2026-11-09T23:59:59Z',
   status: 'ANGEBOTEN_RESERVIERT',
   notes: 'Exklusive 14-tägige Reservierung (Frist bis 09.11.2026) für Top Fifty AG / Pierina Tannò. Blind-Profil übermittelt.',
   source: 'Schweizerisches Handelsamtsblatt (SHAB) · Ref. CH-ZG-2026-VR-01'
