@@ -8,7 +8,8 @@ import {
   User,
   ChevronLeft,
   ChevronRight,
-  Menu
+  Menu,
+  Send
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useLanguage } from '../../i18n/translations.jsx'
@@ -55,12 +56,13 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
     navigate('/login')
   }
 
-  // 4 exklusive Mandats-Workstations
+  // 5 exklusive Mandats-Workstations
   const mandateLinks = [
     { to: '/nexus/sales-workspace', icon: Briefcase, label: 'Mandats-Desk' },
+    { to: '/nexus/outreach', icon: Send, label: 'Outreach / Gesendete E-Mails' },
+    { to: '/nexus/mandats-archiv', icon: Archive, label: 'Mandats-Archiv' },
     { to: '/nexus/events', icon: Radar, label: 'Primär-Radar' },
     { to: '/coach', icon: ShieldCheck, label: 'DealCoach' },
-    { to: '/nexus/mandats-archiv', icon: Archive, label: 'Mandats-Archiv' },
   ]
 
   const renderLinks = (links) => links.map((link) => (

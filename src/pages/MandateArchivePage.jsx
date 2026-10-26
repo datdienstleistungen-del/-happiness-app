@@ -30,6 +30,7 @@ const STORAGE_KEY = 'nexus:mandate_archive_v1'
 
 // Standard C-Level & Boutique Advisory Whitelist
 const PARTNER_OPTIONS = [
+  'Top Fifty AG (Baar/Zug · Pierina Tannò)',
   'taskforce - Management on Demand AG',
   'Atreus GmbH (A Heimatt Group Company)',
   'Egon Zehnder International',
@@ -41,19 +42,40 @@ const PARTNER_OPTIONS = [
   'Spezialisierte Boutique / Interim Provider'
 ]
 
+// Initiales exklusiv reserviertes Mandat (cosquare AG an Top Fifty AG)
+const INITIAL_COSQUARE_ARCHIVE_ENTRY = {
+  id: 'arch-cosquare-2026-01',
+  leadId: '35bead11-ba4d-47b4-be1a-21a765b96b29',
+  company: 'cosquare AG',
+  countryMarket: 'CH · Zug (SHAB)',
+  role: 'Mitglied des Verwaltungsrates (Ersatzbesetzung)',
+  transmittedTo: 'Top Fifty AG · Pierina Tannò',
+  transmittedAt: '2026-10-26T09:15:00.000Z',
+  protectionUntil: '2026-11-09T23:59:59.000Z',
+  status: 'ANGEBOTEN_RESERVIERT',
+  notes: 'Exklusive 14-tägige Reservierung (Frist bis 09.11.2026) für Top Fifty AG / Pierina Tannò. Blind-Profil übermittelt.',
+  source: 'Schweizerisches Handelsamtsblatt (SHAB) · Ref. CH-ZG-2026-VR-01'
+}
+
 // Bereinigungs-Hilfe: Entfernt alte Test-/Mockup-Daten
 function sanitizeArchiveEntries(list) {
-  if (!Array.isArray(list)) return []
+  if (!Array.isArray(list)) return [INITIAL_COSQUARE_ARCHIVE_ENTRY]
   const DUMMY_IDS = ['arch-001', 'arch-002', 'arch-003', 'arch-004']
   const DUMMY_COMPANIES = ['brenntag', 'krones', 'clariant', 'melrose']
 
-  return list.filter(item => {
+  const cleaned = list.filter(item => {
     if (!item) return false
     if (DUMMY_IDS.includes(item.id)) return false
     const compLower = (item.company || '').toLowerCase()
     if (DUMMY_COMPANIES.some(d => compLower.includes(d))) return false
     return true
   })
+
+  const hasCosquare = cleaned.some(item => (item.company || '').toLowerCase().includes('cosquare'))
+  if (!hasCosquare) {
+    cleaned.unshift(INITIAL_COSQUARE_ARCHIVE_ENTRY)
+  }
+  return cleaned
 }
 
 // Extrahiert Details aus DealCoach review_notes / situation
@@ -117,7 +139,7 @@ export default function MandateArchivePage() {
     } catch (e) {
       console.warn('[MandateArchive] Error loading local archive:', e)
     }
-    return []
+    return [INITIAL_COSQUARE_ARCHIVE_ENTRY]
   })
 
   // 2. Dynamischer Boutique-Pool (TIER_2_MID Leads aus Supabase)
@@ -194,8 +216,8 @@ export default function MandateArchivePage() {
     }
   }, [entries])
 
-  // Frist- und Resttage-Berechnung (Exakt 12 Monate)
-  const computeProtectionDetails = (transmittedAtStr, protectionUntilStr) => {
+  // Frist- und Resttage-Berechnung (Exakt 12 Monate bzw. vereinbarte Frist)
+  const computeProtectionDetails = (transmittedAtStr, protectionUntilStr, status) => {
     const until = protectionUntilStr ? new Date(protectionUntilStr) : (() => {
       const d = new Date(transmittedAtStr)
       d.setFullYear(d.getFullYear() + 1)
@@ -206,11 +228,16 @@ export default function MandateArchivePage() {
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
     const isExpired = diffDays <= 0
 
+    let label = isExpired ? 'Kundenschutz abgelaufen' : `Noch ${diffDays} Tage geschützt`
+    if (status === 'ANGEBOTEN_RESERVIERT') {
+      label = isExpired ? 'Reservierung abgelaufen' : `Exklusivität aktiv (${diffDays} Tage)`
+    }
+
     return {
       untilDate: until.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }),
       diffDays,
       isExpired,
-      label: isExpired ? 'Kundenschutz abgelaufen' : `Noch ${diffDays} Tage geschützt`
+      label
     }
   }
 
@@ -246,7 +273,7 @@ export default function MandateArchivePage() {
   const stats = useMemo(() => {
     const transmittedTotal = entries.length
     const activeProtected = entries.filter(e => {
-      const p = computeProtectionDetails(e.transmittedAt, e.protectionUntil)
+      const p = computeProtectionDetails(e.transmittedAt, e.protectionUntil, e.status)
       return !p.isExpired && e.status !== 'ABGELAUFEN'
     }).length
     const tier2Count = tier2Leads.length
@@ -269,7 +296,7 @@ export default function MandateArchivePage() {
     ]
 
     const rows = entries.map(e => {
-      const p = computeProtectionDetails(e.transmittedAt, e.protectionUntil)
+      const p = computeProtectionDetails(e.transmittedAt, e.protectionUntil, e.status)
       return [
         `"${(e.company || '').replace(/"/g, '""')}"`,
         `"${(e.countryMarket || '').replace(/"/g, '""')}"`,
@@ -371,16 +398,18 @@ export default function MandateArchivePage() {
 
   // 1-Klick formeller Nachweis-String
   const handleCopyProof = (item) => {
-    const p = computeProtectionDetails(item.transmittedAt, item.protectionUntil)
-    const text = `⚖️ NACHWEIS KUNDENSCHUTZ (D.A.T. MANDATE ORIGINATION DESK)
+    const p = computeProtectionDetails(item.transmittedAt, item.protectionUntil, item.status)
+    const isReserved = item.status === 'ANGEBOTEN_RESERVIERT'
+    const text = `⚖️ NACHWEIS ${isReserved ? 'EXKLUSIV-RESERVIERUNG' : 'KUNDENSCHUTZ'} (D.A.T. MANDATE ORIGINATION DESK)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Zielgesellschaft: ${item.company}
 Land / Börsensegment: ${item.countryMarket}
 Vakanz / Organfunktion: ${item.role}
 Übermittelt an Partner: ${item.transmittedTo}
 Datum der Übermittlung: ${new Date(item.transmittedAt).toLocaleString('de-DE')}
-Kundenschutz aktiv bis: ${p.untilDate} (${p.label})
-Rechtsbasis: 12 Monate exklusiver Kundenschutz nach D.A.T.-Standard
+Status: ${isReserved ? '🟡 Exklusiv reserviert (14 Tage)' : item.status}
+Gültig bis: ${p.untilDate} (${p.label})
+Rechtsbasis: ${isReserved ? '14 Tage Exklusivität nach D.A.T.-Standard' : '12 Monate exklusiver Kundenschutz nach D.A.T.-Standard'}
 Primärnachweis: ${item.source || item.notes}`
 
     navigator.clipboard.writeText(text)
@@ -533,10 +562,11 @@ Primärnachweis: ${item.source || item.notes}`
               onChange={(e) => setStatusFilter(e.target.value)}
             >
               <option value="ALL">Alle Status</option>
-              <option value="AKTIV_GESCHUETZT">Aktiv geschützt</option>
-              <option value="IN_VERHANDLUNG">In Verhandlung</option>
-              <option value="MANDATIERT">Erfolgreich mandatiert</option>
-              <option value="ABGELAUFEN">Abgelaufen</option>
+              <option value="ANGEBOTEN_RESERVIERT">🟡 Angeboten / Reserviert</option>
+              <option value="AKTIV_GESCHUETZT">🟢 Aktiv geschützt (12M)</option>
+              <option value="IN_VERHANDLUNG">🔵 In Verhandlung</option>
+              <option value="MANDATIERT">🎯 Erfolgreich mandatiert</option>
+              <option value="ABGELAUFEN">⚪ Abgelaufen</option>
             </select>
 
             <select
@@ -671,7 +701,7 @@ Primärnachweis: ${item.source || item.notes}`
                 </tr>
               ) : (
                 filteredTransmittedEntries.map(entry => {
-                  const protection = computeProtectionDetails(entry.transmittedAt, entry.protectionUntil)
+                  const protection = computeProtectionDetails(entry.transmittedAt, entry.protectionUntil, entry.status)
                   return (
                     <tr key={entry.id}>
                       {/* Zielgesellschaft */}
@@ -714,13 +744,13 @@ Primärnachweis: ${item.source || item.notes}`
                         </div>
                       </td>
 
-                      {/* Kundenschutz bis (12 Monate) */}
+                      {/* Kundenschutz bis (12 Monate bzw. Reservierung) */}
                       <td>
                         <div>
-                          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: protection.isExpired ? '#dc2626' : '#059669' }}>
+                          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: protection.isExpired ? '#dc2626' : entry.status === 'ANGEBOTEN_RESERVIERT' ? '#b45309' : '#059669' }}>
                             {protection.untilDate}
                           </div>
-                          <div className={`badge-protection ${protection.isExpired ? 'expired' : protection.diffDays < 60 ? 'warning' : 'active'}`}>
+                          <div className={`badge-protection ${protection.isExpired ? 'expired' : entry.status === 'ANGEBOTEN_RESERVIERT' ? 'reserved' : protection.diffDays < 60 ? 'warning' : 'active'}`}>
                             <Clock size={11} /> {protection.label}
                           </div>
                         </div>
@@ -733,10 +763,11 @@ Primärnachweis: ${item.source || item.notes}`
                           value={entry.status}
                           onChange={(e) => handleStatusChange(entry.id, e.target.value)}
                         >
-                          <option value="AKTIV_GESCHUETZT">Aktiv geschützt</option>
-                          <option value="IN_VERHANDLUNG">In Verhandlung</option>
-                          <option value="MANDATIERT">Mandatiert</option>
-                          <option value="ABGELAUFEN">Abgelaufen</option>
+                          <option value="ANGEBOTEN_RESERVIERT">🟡 Angeboten / Reserviert</option>
+                          <option value="AKTIV_GESCHUETZT">🟢 Aktiv geschützt</option>
+                          <option value="IN_VERHANDLUNG">🔵 In Verhandlung</option>
+                          <option value="MANDATIERT">🎯 Mandatiert</option>
+                          <option value="ABGELAUFEN">⚪ Abgelaufen</option>
                         </select>
                       </td>
 
