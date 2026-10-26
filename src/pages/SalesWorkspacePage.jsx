@@ -2077,7 +2077,7 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                         <h4 style={{
                           fontSize: '0.96rem',
                           fontWeight: 700,
-                          color: '#f8fafc',
+                          color: 'var(--text-primary, #0f172a)',
                           margin: 0,
                           lineHeight: 1.35,
                           wordBreak: 'break-word',
