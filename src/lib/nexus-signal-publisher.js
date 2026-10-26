@@ -284,8 +284,16 @@ export function buildSignalPayload({
   const slug = generateSignalSlug(blindCompany, `${topicKeyword}-${blindLocation}`)
   const signalId = `sig-${slug}-${Date.now().toString().slice(-4)}`
 
-  // Decision Maker Mapping: Strikt DSGVO-konforme funktionale Rollen (NIEMALS illegale Personenlisten oder Fake-Daten!)
-  const primaryRoleTitle = foundContact?.role || trigger?.ansprechpartner?.rolle || 'Fachbereichsleitung / Geschäftsführung'
+  // Decision Maker Mapping: Strikt DSGVO-konforme funktionale Rollen (aus Signal geparst)
+  const parsedRoleFromSignal = (() => {
+    const sit = opportunity?.situation || trigger?.content || '';
+    const tagMatch = sit.match(/\[ROLE\]:\s*([^\n\r]+)/i);
+    if (tagMatch) return tagMatch[1].trim();
+    const organMatch = sit.match(/\b(Mitglied des Verwaltungsrates|Präsident des Verwaltungsrates|Verwaltungsrat|Vorstandsvorsitzender|Vorstand|Chief Executive Officer|CEO|Chief Financial Officer|CFO|Chief Operating Officer|COO|Chief Restructuring Officer|CRO|Aufsichtsrat|Geschäftsführer|Managing Director|Executive Director|Director)\b/i);
+    return organMatch ? organMatch[0].trim() : '';
+  })();
+
+  const primaryRoleTitle = foundContact?.role || trigger?.ansprechpartner?.rolle || parsedRoleFromSignal || ''
   const secondaryRoleTitle = 'Geschäftsleitung / C-Level'
   const realContactPhone = foundContact?.phone || trigger?.ansprechpartner?.telefon || ''
   const phoneText = realContactPhone || 'Offizielle Unternehmenszentrale'
@@ -380,7 +388,7 @@ export function buildSignalPayload({
           ? (opportunity.company_domain.startsWith('http') ? opportunity.company_domain : `https://${opportunity.company_domain}`)
           : `https://www.google.com/search?q=${encodeURIComponent(companyName)}`,
         employeesCount: blindQuantity,
-        revenueAnnual: 'Gehobener Mittelstand'
+        revenueAnnual: 'k. A. / nicht erfasst'
       },
       primarySource: {
         outlet: 'Wirtschaftspresse / Bundesanzeiger / Offizielle Mitteilung',

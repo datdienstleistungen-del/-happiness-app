@@ -7,12 +7,14 @@ try:
         ROLE_BLACKLIST, ROLE_WHITELIST, MANDATORY_EVENT_KEYWORDS,
         LEGAL_FORM_BLACKLIST, LEGAL_FORM_WHITELIST
     )
+    from modules.feed_ingestion.date_utils import is_signal_fresh
 except ImportError:
     from .config import (
         SIGNAL_CATEGORIES, NEGATIVE_KEYWORDS,
         ROLE_BLACKLIST, ROLE_WHITELIST, MANDATORY_EVENT_KEYWORDS,
         LEGAL_FORM_BLACKLIST, LEGAL_FORM_WHITELIST
     )
+    from .date_utils import is_signal_fresh
 
 def normalize_text(text):
     """Normalize text for consistent multi-language keyword matching."""
@@ -117,26 +119,101 @@ def check_legal_form(company_name, text):
 
     return True, "LEGAL_FORM_OK"
 
+def check_substance_gate(company_name, text, item=None):
+    """
+    Substanz-Gate für Register-Meldungen (z. B. SHAB, Handelsregister):
+    1. Verwirft Meldungen, wenn im Text erkennbar ist, dass es sich um reine
+       Mantelgesellschaften, Domizilgesellschaften (c/o) oder vermögensverwaltende
+       Kleinst-AGs ohne operatives Geschäft handelt.
+    2. Prüft das im Registertext genannte Kapital: Handelt es sich um das bloße
+       gesetzliche Mindestkapital ohne weiteres operatives Personal/Organe,
+       wird der Datensatz als unqualifiziert verworfen.
+    Returns (is_qualified, drop_reason)
+    """
+    pdf_text = (item.get('raw_pdf_text', '') if item else '')
+    combined = f"{company_name} {text} {pdf_text}".lower()
+    norm = normalize_text(combined)
+
+    # 1. Reine Domizilhüllen & Briefkastensitze (c/o, Treuhand-Domizil, Domizilgewährung)
+    domicile_shell_patterns = [
+        r'\bc/o\b',
+        r'\bdomizil bei\b',
+        r'\bpar adresse\b',
+        r'\badresse de domicile\b',
+        r'\bdomicile provider\b',
+        r'\bbriefkastengesellschaft\b',
+        r'\bdomizilgewaehrung\b',
+        r'\bdomizilannahme\b',
+        r'\buebernahme von domizilmandaten\b',
+        r'\boctroi de domicile\b'
+    ]
+    for p in domicile_shell_patterns:
+        if re.search(p, norm):
+            return False, f"SUBSTANZ_GATE: Domizil-/Briefkastenhülle ({p.replace(chr(92), '')})"
+
+    # 2. Reine vermögensverwaltende Hüllen, Liegenschafts- oder Familiengesellschaften
+    purpose_shell_patterns = [
+        r'\bverwaltung (?:des )?eigenen vermoegens\b',
+        r'\bfamiliengesellschaft\b',
+        r'\bprivate vermoegensanlage\b',
+        r'\banlage und verwaltung (?:von )?eigenem vermoegen\b',
+        r'\bgestion de fortune privee\b',
+        r'\bgestion de son propre patrimoine\b',
+        r'\bhalten und verwalten von liegenschaften\b',
+        r'\berwerb,? (?:halten,? )?verwalten von liegenschaften\b',
+        r'\berwerb,? belastung,? veraeusserung und verwaltung von grundeigentum\b',
+        r'\berwerb,? halten und verkauf von immobilien\b',
+        r'\bverwaltung von eigenem grundbesitz\b',
+        r'\breine immobilienholding\b'
+    ]
+    for p in purpose_shell_patterns:
+        if re.search(p, norm):
+            return False, f"SUBSTANZ_GATE: Reine Vermögens- oder Liegenschaftshülle ({p.replace(chr(92), '')})"
+
+    # 3. Kapitalprüfung: Bloßes Mindestkapital ohne weiteres operatives Personal/Organe
+    min_capital_match = re.search(
+        r'(?:aktienkapital|stammkapital|capital[- ]actions|capitale azionario)[\s:]*(?:chf|eur|chf\.)?\s*(?:100[\'’.]?000|50[\'’.]?000|20[\'’.]?000|25[\'’.]?000)(?:\.00)?\b',
+        norm
+    )
+    if min_capital_match:
+        has_multiple_organs = bool(re.search(
+            r'\b(kollektivunterschrift|weitere mitglieder|direktion|geschaeftsleitung|mitarbeiter|team|plattform|kunden|standorte|filialen|betrieb)\b',
+            norm
+        ))
+        is_single_or_empty = bool(re.search(
+            r'\b(einziges mitglied|seul administrateur|administrateur unique|alleiniges organ|einzelunterschrift)\b',
+            norm
+        ))
+        has_dormant = bool(item and (item.get('dormant_months', 0) > 12 or item.get('is_dormant_shell')))
+        
+        if is_single_or_empty and not has_multiple_organs and (has_dormant or 'holding' in company_name.lower() or 'beteiligung' in company_name.lower() or 'invest' in company_name.lower()):
+            return False, "SUBSTANZ_GATE: Bloßes Mindestkapital ohne operatives Personal/Organe (Kleinst-Hülle)"
+
+    return True, "SUBSTANZ_OK"
+
 def evaluate_signal(item):
     """
-    Zero-Tolerance Ingestion Evaluator (Stufe 1):
-    1. URL check: Rejects truncated URLs (ending in '...') and invalid sources.
-    2. Mandatory Event Gatekeeper: Rejects empty or 'Keine Angabe' events.
-    3. Legal Form check: Rejects GbR, e.K., UG, Verein, etc.
-    4. Negative filter check: Discards retail/small business/how-to articles.
-    5. Seniority check: Blacklists middle management, enforces Organ/C-Level whitelist.
-    6. Event matching: Requires concrete verified Mandatsanlass.
+    Substanz- & Validierungs-Gatekeeper (Stufe 1):
+    1. URL check: Verwirft abgeschnittene ('...') oder ungültige URLs.
+    2. Mandatory Event Gatekeeper: Verwirft leere / 'Keine Angabe' Events.
+    3. Legal Form check: Whitelist AG, SE, KGaA, Plc, SA, NV, SpA, Corp, Groß-GmbH.
+    4. Substanz-Gate: Verwirft Domizilhüllen, c/o-Sitze, Mindestkapital-Hüllen.
+    5. Negative filter check: Verwirft Kleinbetriebe, Beratungstexte, passive PR.
+    6. Seniority check: Blacklist Middle Management, Whitelist Organ-/C-Level.
+    7. Deterministische Punkte-Logik:
+       - Primärquelle nachweisbar: 30 Punkte
+       - Organ-Ebene zweifelsfrei verifiziert: 50 Punkte
+       - Alter der Meldung <= 48h: 20 Punkte
+       - Ohne belegtes Ereignis (Score 0): Drop vor DB.
     """
     url = (item.get('url') or '').strip()
     if not url or url.endswith('...') or url.endswith('…') or len(url) < 15:
-        # Truncated or invalid URL
         return None
 
     title = (item.get('title') or '').strip()
     snippet = (item.get('snippet') or '').strip()
     company = (item.get('company') or '').strip()
     
-    # Hard Event Gatekeeper: Title or Snippet must exist and not be dummy text
     if not title or title.lower() in ('keine angabe', 'none', 'null', 'unternehmen') or len(title) < 10:
         return None
     if snippet.lower() in ('keine angabe', 'none', 'null'):
@@ -145,28 +222,72 @@ def evaluate_signal(item):
     raw_text = f"{title} {snippet}".strip()
     norm_text = normalize_text(raw_text)
 
-    # 1. Legal Form Filter Check (Drop e.K., GbR, UG, Verein)
+    # 1. Legal Form Filter Check
     is_legal_ok, legal_reason = check_legal_form(company, raw_text)
     if not is_legal_ok:
         return None
 
-    # 2. Negative Filter Check (Score 0 / Drop)
+    # 2. Substanz-Gate Check (Mantelgesellschaften, c/o-Domizile, Mindestkapital-Hüllen)
+    is_substance_ok, substance_reason = check_substance_gate(company, raw_text, item)
+    if not is_substance_ok:
+        return None
+
+    # 3. Negative Filter Check (Score 0 / Drop)
     is_neg, neg_kw = check_negative_filter(raw_text)
     if is_neg:
         return None
 
-    # 3. Seniority Check (Organ/C-Level only; middle management blacklist)
+    # 4. Seniority Check (Organ/C-Level only; middle management blacklist)
     is_senior, senior_reason = check_role_seniority(raw_text)
     if not is_senior:
         return None
 
-    # 4. Mandatory Event Gatekeeper (Concrete verified anlass required)
+    # 5. Mandatory Event Gatekeeper (Konkreter verifizierter Mandatsanlass erforderlich)
     has_event, event_kw = check_mandatory_event(raw_text)
     if not has_event:
         return None
 
+    # ── DETERMINISTISCHE PUNKTE-LOGIK ──
+    score_points = 0
+    score_breakdown = []
+
+    # Kriterium 1: Primärquelle nachweisbar (30 Punkte)
+    primary_source_patterns = [
+        r'amtsblattportal\.ch', r'shab\.ch', r'eqs-news\.com', r'investegate\.co\.uk',
+        r'cnmv\.es', r'afm\.nl', r'bundesanzeiger\.de', r'unternehmensregister\.de',
+        r'londonstockexchange\.com'
+    ]
+    url_lower = url.lower()
+    is_primary = any(re.search(p, url_lower) for p in primary_source_patterns) or bool(item.get('raw_pdf_text')) or bool(item.get('is_primary_source'))
+    if is_primary:
+        score_points += 30
+        score_breakdown.append("Primärquelle (+30)")
+
+    # Kriterium 2: Organ-Ebene zweifelsfrei verifiziert (50 Punkte)
+    if is_senior:
+        score_points += 50
+        score_breakdown.append("Organ-Ebene verifiziert (+50)")
+
+    # Kriterium 3: Alter der Meldung <= 48h (20 Punkte)
+    event_date_val = item.get('event_date') or item.get('published_at') or ''
+    is_fresh = False
+    if event_date_val:
+        is_fresh, age_hours, _ = is_signal_fresh(event_date_val, max_hours=48)
+    else:
+        is_fresh = True
+    
+    if is_fresh:
+        score_points += 20
+        score_breakdown.append("Alter <= 48h (+20)")
+
+    # Ohne belegtes Ereignis oder Score = 0 -> Datensatz wird vor der DB gedroppt
+    if score_points <= 0:
+        return None
+
+    confidence = round(score_points / 100.0, 2)
+
     best_match = None
-    best_priority_rank = 0  # 3: ORGANVAKANZ (Prio 1), 2: RESTRUKTURIERUNG, 1: M&A
+    best_priority_rank = 0
 
     category_ranks = {
         "ORGANVAKANZ & LEADERSHIP": 3,
@@ -183,14 +304,8 @@ def evaluate_signal(item):
 
         if matched_kw:
             rank = category_ranks.get(cat_name, 1)
-            # If higher priority or same priority with more keyword hits
             if rank > best_priority_rank or (rank == best_priority_rank and len(matched_kw) > len(best_match.get("matched_keywords", []))):
                 best_priority_rank = rank
-
-                # Confidence calculation
-                confidence = cat_data["base_confidence"]
-                if len(matched_kw) > 1:
-                    confidence = min(0.98, confidence + 0.04)
 
                 region = item.get("region", "DACH")
                 prio_str = cat_data["prio"]
@@ -202,16 +317,30 @@ def evaluate_signal(item):
                 else:
                     strategic_angle = f"Region: {region} | Strategische Neuausrichtung & M&A – Organbegleitung bei Post-Merger-Integration oder Carve-out."
 
-                relevance_logic = f"Kategorie: {cat_name} | Treffer: {', '.join(matched_kw[:3])} | Quelle: {item.get('source_name', 'Feed')}"
+                relevance_logic = f"Score: {score_points}/100 ({', '.join(score_breakdown)}) | Kategorie: {cat_name} | Treffer: {event_kw} | Quelle: {item.get('source_name', 'Feed')}"
 
                 best_match = {
                     "category": cat_name,
                     "prio": prio_str,
                     "priority_db": cat_data["priority_db"],
-                    "confidence_score": round(confidence, 2),
+                    "confidence_score": confidence,
+                    "lead_score": score_points,
                     "matched_keywords": matched_kw,
                     "relevance_logic": relevance_logic,
                     "strategic_angle": strategic_angle
                 }
+
+    if not best_match:
+        region = item.get("region", "DACH")
+        best_match = {
+            "category": "ORGANVAKANZ & LEADERSHIP",
+            "prio": "Prio 1",
+            "priority_db": "TIER_1_TOP" if score_points >= 80 else "TIER_2_MID",
+            "confidence_score": confidence,
+            "lead_score": score_points,
+            "matched_keywords": [event_kw],
+            "relevance_logic": f"Score: {score_points}/100 ({', '.join(score_breakdown)}) | Treffer: {event_kw}",
+            "strategic_angle": f"Region: {region} | Verifiziertes Organmandats-Signal aus Primärquelle."
+        }
 
     return best_match

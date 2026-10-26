@@ -138,24 +138,46 @@ class SupabaseClient:
 
         return company_id
 
+    def delete_record(self, table, filter_query):
+        """Delete record(s) matching filter_query (e.g. 'id=eq.123') for rollback."""
+        try:
+            req = urllib.request.Request(
+                f"{self.base_rest}/{table}?{filter_query}",
+                headers=self._headers(),
+                method='DELETE'
+            )
+            with urllib.request.urlopen(req, timeout=8):
+                pass
+        except Exception as e:
+            print(f"[DB Rollback Delete Error on {table}] {e}")
+
     def insert_opportunity(self, item, evaluation, user_id=DEFAULT_USER_ID, deal_audit=None):
         """
         Insert vetted signal into nexus_opportunities as PENDING_REVIEW (inbox status)
         with DealCoach audit results (Tier 1 vs Tier 2, Vakuum-Check, Dringlichkeit)
         and synchronously link a relational nexus_trigger_events entry.
+        Strict transactional guarantee: Opportunity is only kept if Trigger-Event AND
+        Relation-Link succeed. Incomplete records are rejected and logged.
         """
         source_url = (item.get('url') or '').strip()
         title = (deal_audit.get('event_type') or item.get('title') or '').strip() if deal_audit else (item.get('title') or '').strip()
         company_name = (deal_audit.get('company_name') or item.get('company') or '').strip() if deal_audit else (item.get('company') or '').strip()
         snippet = (item.get('snippet') or '').strip()
 
-        # Zero-Tolerance Gatekeeper: No missing event, no truncated URLs, no placeholders
+        # Substanz- und Vollständigkeits-Gatekeeper (Strict Incomplete Check)
+        if not user_id:
+            print("[DB Ingest Abort] Abbruch: user_id fehlt.")
+            return None, "ABORTED_NO_USER_ID"
+        if not company_name or company_name.lower() in ('unternehmen', 'dach unternehmen', 'uk enterprise', 'schweizer unternehmen', 'null', 'none', 'keine angabe') or len(company_name) < 2:
+            print(f"[DB Ingest Abort] Abbruch wegen unvollständigem/ungültigem Firmennamen: '{company_name}'.")
+            return None, "ABORTED_INVALID_COMPANY"
         if not title or title.lower() in ('keine angabe', 'none', 'null', 'unternehmen') or len(title) < 10:
-            return None, "DROPPED_NO_EVENT"
+            print(f"[DB Ingest Abort] Abbruch wegen unvollständigem Titel/Ereignis: '{title}'.")
+            return None, "ABORTED_NO_EVENT"
         if not source_url or source_url.endswith('...') or source_url.endswith('…') or len(source_url) < 15:
-            return None, "DROPPED_INVALID_URL"
-        if not company_name or company_name.lower() in ('unternehmen', 'dach unternehmen', 'uk enterprise', 'schweizer unternehmen', 'null'):
-            return None, "DROPPED_NO_COMPANY"
+            print(f"[DB Ingest Abort] Abbruch wegen unvollständiger/abgeschnittener Quell-URL: '{source_url}'.")
+            return None, "ABORTED_INVALID_URL"
+
         # ── 3-KLINGEN-FILTER VOR DB-INSERT ──
         # Klinge 1 (Zeit): Strikt <= 48h bezogen auf Publikation oder Vorfall
         event_date_val = (deal_audit.get('event_date') if deal_audit else None) or item.get('event_date') or item.get('published_at') or datetime.now(timezone.utc).strftime('%Y-%m-%d')
@@ -169,12 +191,10 @@ class SupabaseClient:
         # Klinge 2 (Rechtsform): Enterprise / Kapitalgesellschaften Check
         detected_form = (deal_audit.get('legal_form') or '').upper().strip() if deal_audit else ''
         norm_comp = f"{company_name} {detected_form}".upper()
-        # Drop only if explicitly blacklisted (GbR, e.K., Verein, Klein-Gewerbe)
         if any(bool(re.search(rf'\b{re.escape(b.upper())}\b', norm_comp)) for b in LEGAL_FORM_BLACKLIST):
             return None, "DROPPED_BLACKLISTED_LEGAL_FORM"
 
-        # Klinge 3 (Seniority/Organ-Ebene): Harro ist der Revisor!
-        # Kein automatischer Drop – DealCoach dokumentiert Voreinschätzung in audit_rationale
+        # Klinge 3 (Seniority/Organ-Ebene):
         if is_text_blacklisted_role(f"{title} {snippet}") and deal_audit:
             if deal_audit.get('tier') in ('TIER_1_TOP', 'TIER_2_MID'):
                 deal_audit['tier'] = 'PRÜFUNG_EMPFOHLEN'
@@ -185,8 +205,12 @@ class SupabaseClient:
             return None, "DUPLICATE"
 
         company_id = self.get_or_create_company(user_id, company_name, item.get('region', 'DACH'))
+        if not company_id:
+            print(f"[DB Ingest Abort] Abbruch: Konnte kein gültiges Company-Profil für '{company_name}' anlegen.")
+            return None, "ABORTED_COMPANY_CREATION_FAILED"
 
-        lead_score = int(evaluation.get('confidence_score', 0.85) * 100)
+        # Deterministischer Score
+        lead_score = int(evaluation.get('lead_score') or (evaluation.get('confidence_score', 0.85) * 100))
         opp_id = str(uuid.uuid4())
         trigger_id = str(uuid.uuid4())
 
@@ -196,7 +220,13 @@ class SupabaseClient:
         vacuum_check = audit_info.get('vacuum_check', '')
         urgency_check = audit_info.get('urgency_check', '')
         audit_rationale = audit_info.get('audit_rationale', '')
-        estimated_budget = audit_info.get('estimated_budget', '')
+        raw_budget = audit_info.get('estimated_budget', '')
+        # Keine Budget-Erfindungen: nur verifizierte Beträge oder '-'
+        if not raw_budget or raw_budget in ('Auf Anfrage', '0 €', '150k - 320k €', '80k - 150k €', '150.000 € – 320.000 €', '80.000 € – 150.000 €'):
+            estimated_budget = '-'
+        else:
+            estimated_budget = raw_budget
+
         audit_verdict = audit_info.get('audit_verdict', 'QUALIFIZIERT_MANDATSBEDARF')
 
         is_discarded = audit_info.get('status') == 'discarded' or tier == 'TIER_3'
@@ -241,6 +271,38 @@ class SupabaseClient:
             }
         }, ensure_ascii=False)
 
+        # ── TRANSAKTIONS-ABLAUF (FAIL-SAFE PERSISTENZ) ──
+        # Schritt 1: Primäres Trigger-Event speichern
+        trig_payload = {
+            'id': trigger_id,
+            'user_id': user_id,
+            'company_id': company_id,
+            'title': title[:250],
+            'content': situation_text,
+            'company_name': company_name,
+            'source': source_url,
+            'source_url': source_url,
+            'confidence_score': evaluation.get('confidence_score', 0.85),
+            'trigger_score': lead_score,
+            'signal_type': evaluation.get('category', 'ORGANVAKANZ & LEADERSHIP')
+        }
+        trig_req = urllib.request.Request(
+            f"{self.base_rest}/nexus_trigger_events",
+            data=json.dumps(trig_payload).encode('utf-8'),
+            headers=self._headers(return_rep=True),
+            method='POST'
+        )
+        try:
+            with urllib.request.urlopen(trig_req, timeout=10) as trig_resp:
+                created_trig = json.loads(trig_resp.read().decode('utf-8'))
+                if not created_trig:
+                    print(f"[DB Ingest Error] Fehler beim Erstellen von nexus_trigger_events für {company_name}")
+                    return None, "FAILED_TRIGGER_INSERT"
+        except Exception as trig_err:
+            print(f"[DB Ingest Abort] Fehler beim Persistieren von nexus_trigger_events: {trig_err}")
+            return None, f"ERROR_TRIGGER_{trig_err}"
+
+        # Schritt 2: Opportunity speichern
         payload = {
             'id': opp_id,
             'user_id': user_id,
@@ -268,60 +330,40 @@ class SupabaseClient:
             method='POST'
         )
 
+        created_opp = None
         try:
             with urllib.request.urlopen(req, timeout=10) as resp:
                 created = json.loads(resp.read().decode('utf-8'))
                 if created and len(created) > 0:
                     created_opp = created[0]
-                    # Also create trigger event and relational link
-                    try:
-                        trig_payload = {
-                            'id': trigger_id,
-                            'user_id': user_id,
-                            'company_id': company_id,
-                            'title': title[:250],
-                            'content': situation_text,
-                            'company_name': company_name,
-                            'source': source_url,
-                            'source_url': source_url,
-                            'confidence_score': evaluation.get('confidence_score', 0.85),
-                            'trigger_score': lead_score,
-                            'signal_type': evaluation.get('category', 'ORGANVAKANZ & LEADERSHIP')
-                        }
-                        trig_req = urllib.request.Request(
-                            f"{self.base_rest}/nexus_trigger_events",
-                            data=json.dumps(trig_payload).encode('utf-8'),
-                            headers=self._headers(return_rep=True),
-                            method='POST'
-                        )
-                        with urllib.request.urlopen(trig_req, timeout=8) as trig_resp:
-                            pass
+                else:
+                    raise ValueError("Empty response on nexus_opportunities insert")
+        except Exception as opp_err:
+            print(f"[DB Ingest Abort] Fehler beim Persistieren von nexus_opportunities: {opp_err}. Rollback Trigger {trigger_id}.")
+            self.delete_record('nexus_trigger_events', f'id=eq.{trigger_id}')
+            return None, f"ERROR_OPP_{opp_err}"
 
-                        link_payload = {
-                            'opportunity_id': opp_id,
-                            'trigger_id': trigger_id
-                        }
-                        link_req = urllib.request.Request(
-                            f"{self.base_rest}/nexus_opportunity_triggers",
-                            data=json.dumps(link_payload).encode('utf-8'),
-                            headers=self._headers(return_rep=True),
-                            method='POST'
-                        )
-                        with urllib.request.urlopen(link_req, timeout=8) as link_resp:
-                            pass
-                    except Exception as trig_err:
-                        print(f"[DB Trigger Link Error (non-fatal)] {trig_err}")
+        # Schritt 3: Relationale M:N Verknüpfung in nexus_opportunity_triggers speichern
+        link_payload = {
+            'opportunity_id': opp_id,
+            'trigger_id': trigger_id
+        }
+        link_req = urllib.request.Request(
+            f"{self.base_rest}/nexus_opportunity_triggers",
+            data=json.dumps(link_payload).encode('utf-8'),
+            headers=self._headers(return_rep=True),
+            method='POST'
+        )
+        try:
+            with urllib.request.urlopen(link_req, timeout=10) as link_resp:
+                pass
+        except Exception as link_err:
+            print(f"[DB Ingest Abort] Fehler beim Verknüpfen von nexus_opportunity_triggers: {link_err}. Vollständiger Rollback!")
+            self.delete_record('nexus_opportunities', f'id=eq.{opp_id}')
+            self.delete_record('nexus_trigger_events', f'id=eq.{trigger_id}')
+            return None, f"ERROR_LINK_{link_err}"
 
-                    return created_opp, "INSERTED"
-        except urllib.error.HTTPError as e:
-            err_msg = e.read().decode('utf-8', errors='ignore')
-            print(f"[DB Insert Opportunity Error {e.code}] {err_msg}")
-            return None, f"ERROR_{e.code}"
-        except Exception as e:
-            print(f"[DB Insert Opportunity Exception] {e}")
-            return None, f"EXCEPTION_{e}"
-
-        return None, "FAILED"
+        return created_opp, "INSERTED"
 
     def cleanup_stale_pending_opportunities(self, max_hours=48):
         """

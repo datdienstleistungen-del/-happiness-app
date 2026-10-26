@@ -112,7 +112,7 @@ export function extractDealCoachAudit(opp) {
     vacuum_check: vacMatch ? vacMatch[1].trim() : (isTier1 ? 'BESTANDEN: Reale Führungslücke bei bestehendem Geschäftsbetrieb' : isTier2 ? 'BESTANDEN: Organ-Position vakant / Stillstand droht' : isTier3 ? 'K.O. DROP: Organmangel / inaktive Hülle' : 'HINWEIS: Manuelle Sichtung durch Harro'),
     urgency_check: urgMatch ? urgMatch[1].trim() : (isTier1 ? 'HOCH: Akute Not-Governance / Überbrückungsbedarf per sofort' : isTier2 ? 'HOCH: Operativer Handlungsdruck' : isTier3 ? '0 € Mandatswert (Karteileiche ohne laufenden Geschäftsbetrieb)' : 'ROUTINE: Regulatorische Pflichtmitteilung zur Vorlage'),
     rationale: ratMatch ? ratMatch[1].trim() : (opp.strategic_angle || opp.notes || 'DealCoach-Voreinschätzung zur manuellen Prüfung durch Harro im Mandats-Desk.'),
-    estimated_budget: budMatch ? budMatch[1].trim() : (isTier1 ? '150.000 € – 320.000 €' : isTier2 ? '80.000 € – 150.000 €' : isTier3 ? '0 €' : 'Auf Anfrage')
+    estimated_budget: budMatch && budMatch[1].trim() && budMatch[1].trim() !== 'Auf Anfrage' && !budMatch[1].trim().includes('150.000') && !budMatch[1].trim().includes('80.000') ? budMatch[1].trim() : '-'
   };
 }
 
@@ -228,7 +228,7 @@ export default function SalesWorkspacePage() {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false)
 
   const resolveOppCompanyHelper = (o) => {
-    if (!o) return 'Unternehmen';
+    if (!o) return '';
     let name = resolveTriggerCompanyName(
       o.triggers?.[0]?.nexus_trigger_events,
       o,
@@ -240,7 +240,7 @@ export default function SalesWorkspacePage() {
         name = m[1].trim();
       }
     }
-    return name || 'Unternehmen';
+    return (name && name !== 'Unternehmen' && name !== 'Unbekanntes Unternehmen') ? name.trim() : '';
   };
 
   const isStrictValidOpportunityHelper = (o) => {
@@ -2095,7 +2095,7 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                           gap: '8px'
                         }}>
                           <span style={{ fontSize: '1.2rem', lineHeight: 1, flexShrink: 0 }} title={country.label}>{country.flag}</span>
-                          <span>{compName || 'Unbekanntes Unternehmen'}</span>
+                          <span>{compName || '-'}</span>
                         </h4>
                       </div>
 
@@ -2226,7 +2226,7 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                         wordBreak: 'break-word',
                         lineHeight: 1.25
                       }}>
-                        {compName || 'Unbekanntes Unternehmen'}
+                        {compName || '-'}
                       </h2>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', fontSize: '0.88rem', color: '#94a3b8' }}>
@@ -2317,7 +2317,7 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                         DealCoach Revisions-Urteil: <span style={{ color: isTier1 ? '#c084fc' : isTier2 ? '#60a5fa' : isTier3 ? '#f87171' : '#cbd5e1' }}>{audit?.verdict || 'VORLÄUFIGE VOREINSCHÄTZUNG'}</span>
                       </div>
                       <div style={{ fontSize: '0.82rem', color: '#94a3b8', marginTop: '2px' }}>
-                        Geschätztes Budgetvolumen: <strong style={{ color: isTier3 ? '#f87171' : '#38bdf8' }}>{audit?.estimated_budget || 'Auf Anfrage'}</strong>
+                        Geschätztes Budgetvolumen: <strong style={{ color: isTier3 ? '#f87171' : '#cbd5e1' }}>{audit?.estimated_budget && audit.estimated_budget !== 'Auf Anfrage' && audit.estimated_budget !== '-' ? audit.estimated_budget : '-'}</strong>
                       </div>
                     </div>
                   </div>
@@ -2840,7 +2840,7 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                       🎭 Anonymisiertes Blind-Profil &amp; Mandats-Dossier
                     </h3>
                     <p style={{ margin: '2px 0 0 0', fontSize: '0.84rem', color: '#e0f2fe' }}>
-                      Klarer Account: <strong>{d.company?.legalName || 'Zielunternehmen'}</strong> · DSGVO-konforme Mandats-Intelligence
+                      Klarer Account: <strong>{d.company?.legalName || compName || '-'}</strong> · DSGVO-konforme Mandats-Intelligence
                     </p>
                   </div>
                 </div>
@@ -2943,7 +2943,7 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                     <div style={{ display: 'flex', gap: '16px', color: '#94a3b8', fontSize: '0.84rem', flexWrap: 'wrap' }}>
                       <span>📍 Region: <strong style={{ color: '#f1f5f9' }}>{t.region}</strong></span>
                       <span>🏭 Branche: <strong style={{ color: '#f1f5f9' }}>{t.industry}</strong></span>
-                      <span>👥 Größe: <strong style={{ color: '#f1f5f9' }}>{d.company?.employeesCount || 'Gehobener Mittelstand'}</strong></span>
+                      <span>👥 Größe: <strong style={{ color: '#f1f5f9' }}>{d.company?.employeesCount || 'k. A. / nicht erfasst'}</strong></span>
                     </div>
 
                     <div style={{ background: '#070a12', border: '1px solid #1a2233', borderRadius: '8px', padding: '14px', color: '#cbd5e1', fontSize: '0.9rem', lineHeight: 1.5 }}>
@@ -2987,7 +2987,7 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                       <div style={{ background: '#070a12', padding: '12px', borderRadius: '8px', border: '1px solid #1a2233' }}>
                         <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Entscheider-Ebene:</div>
                         <div style={{ fontSize: '0.92rem', fontWeight: 600, color: '#f8fafc', marginTop: '3px' }}>
-                          {d.roleTargeting?.primaryRole || 'Vorstand / Geschäftsführung'}
+                          {d.roleTargeting?.primaryRole || 'k. A. / nicht erfasst'}
                         </div>
                       </div>
                     </div>

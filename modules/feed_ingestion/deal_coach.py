@@ -208,7 +208,7 @@ def audit_mandate_lead(item, eval_result):
                 'audit_verdict': 'REJECTED_NO_MANDATE',
                 'audit_rationale': f"Automatischer Ausschluss: {rationale}.",
                 'rejection_reason': rationale,
-                'estimated_budget': '0 €',
+                'estimated_budget': '-',
                 'confidence': 0.99
             }
             return False, f"GATE_0_REJECTED: {rationale}", parsed
@@ -248,7 +248,7 @@ def audit_mandate_lead(item, eval_result):
             'audit_verdict': 'DISCARDED_DORMANT_SHELL',
             'audit_rationale': f"Automatischer Drop auf Tier 3 / Status 'discarded': {rationale}",
             'rejection_reason': 'Dormant_Shell',
-            'estimated_budget': '0 €',
+            'estimated_budget': '-',
             'confidence': 0.99
         }
         return False, f"KO_DROP_DORMANT_SHELL: {dormant_months} Monate inaktiv", parsed
@@ -272,7 +272,7 @@ def audit_mandate_lead(item, eval_result):
             'audit_verdict': 'DISCARDED_NO_CONTRACTOR',
             'audit_rationale': f"Automatischer Drop auf Tier 3 / Status 'discarded': {rationale}",
             'rejection_reason': 'Complete_Organ_Vacuum_No_Contractor',
-            'estimated_budget': '0 €',
+            'estimated_budget': '-',
             'confidence': 0.99
         }
         return False, "KO_DROP_ORGAN_VACUUM: Art. 731b OR / Kein vertragsfähiger Auftraggeber", parsed
@@ -308,10 +308,39 @@ def audit_mandate_lead(item, eval_result):
             'audit_verdict': 'DISCARDED_PRIVATE_ASSET_OR_SHELL',
             'audit_rationale': f"Automatischer Drop auf Tier 3 / Status 'discarded': {rationale}",
             'rejection_reason': 'Private_Asset_Or_Shell',
-            'estimated_budget': '0 €',
+            'estimated_budget': '-',
             'confidence': 0.99
         }
         return False, f"KO_DROP_PURPOSE_SHELL: {cat_str}", parsed
+
+    # K.O. 4: Substance & Minimum Capital Gate (Bloßes Mindestkapital / Domizilgesellschaft ohne operatives Personal)
+    min_capital_match = re.search(
+        r'(?:aktienkapital|stammkapital|capital[- ]actions|capitale azionario)[\s:]*(?:chf|eur|chf\.)?\s*(?:100[\'’.]?000|50[\'’.]?000|20[\'’.]?000|25[\'’.]?000)(?:\.00)?\b',
+        combined_eval_text
+    )
+    has_domicile_indicator = bool(re.search(r'\b(c/o\b|domizil bei|par adresse|adresse de domicile|treuhand|trustee|domizilannahme|domizilgewaehrung)\b', combined_eval_text))
+    single_person_indicator = bool(re.search(r'\b(einziges mitglied|seul administrateur|administrateur unique|alleiniges organ|einzelunterschrift)\b', combined_eval_text))
+    has_multi_organ = bool(re.search(r'\b(kollektivunterschrift|weitere mitglieder|direktion|geschaeftsleitung|mitarbeiter|team|plattform|kunden|betrieb)\b', combined_eval_text))
+
+    if (has_domicile_indicator and min_capital_match) or (min_capital_match and single_person_indicator and not has_multi_organ and (dormant_months > 12 or is_purpose_shell)):
+        rationale = "Das im Registertext genannte Kapital entspricht dem bloßen gesetzlichen Mindestkapital ohne weiteres operatives Personal/Organe oder Domizilsitz. Kein operatives Mandat."
+        parsed = {
+            'status': 'discarded',
+            'tier': 'TIER_3',
+            'is_valid_mandate_event': False,
+            'is_fresh': True,
+            'company_name': company,
+            'role': 'Mindestkapital-Hülle',
+            'event_type': 'Mantel- / Domizilgesellschaft mit Mindestkapital',
+            'vacuum_check': 'K.O. DROP: Bloßes Mindestkapital ohne operatives Personal/Organe.',
+            'urgency_check': '0 € Mandatswert (Reine Mindestkapital-Hülle ohne Substanz)',
+            'audit_verdict': 'DISCARDED_MINIMUM_CAPITAL_SHELL',
+            'audit_rationale': f"Automatischer Drop auf Tier 3 / Status 'discarded': {rationale}",
+            'rejection_reason': 'Minimum_Capital_No_Substance',
+            'estimated_budget': '-',
+            'confidence': 0.99
+        }
+        return False, "KO_DROP_MIN_CAPITAL: Bloßes Mindestkapital ohne operative Substanz", parsed
 
     # ── SEMANTISCHES LLM-AUDIT (FÜR ECHTE OPERATIVE UNTERNEHMEN) ──
     prompt = f"""Du bist der NeXus DealCoach. Analysiere diese europäische Wirtschaftsmeldung als automatisierte Revisions- und Vorsortierungs-Instanz für Harros Mandats-Desk:
@@ -323,15 +352,14 @@ DEINE PRÜF-KRITERIEN:
    - Mindestens 1 weiteres handelndes Organ oder aktiver Gesellschafterkreis vorhanden (vertragsfähiger Partner).
    - Nachweisbare operative Geschäftstätigkeit (aktive Domain, Plattform, Marktauftritt, wie bei cosquare AG).
    - Reale Führungslücke bei bestehendem Geschäftsbetrieb (akutes Ausscheiden C-Level / Board-Mitglied).
-   - Budget: 150k – 320k €.
 
 2. QUALIFIKATION FÜR "TIER_2_MID":
-   - Gehobener Mittelstand ab 20 Mio. €, operative Interimsleitung oder Restrukturierung. Budget 80k – 150k €.
+   - Gehobener Mittelstand ab 20 Mio. €, operative Interimsleitung oder Restrukturierung.
 
 3. K.O.-DROP AUF "TIER_3" (STATUS 'discarded'):
    - Inaktive Hüllen / Karteileichen (>36 Monate inaktiv).
    - Vollständiger Organmangel (Art. 731b OR: einziges Organ scheidet aus, kein vertragsfähiger Partner).
-   - Reine private Vermögensverwaltung, Liegenschaftsbesitzer oder Domizilhüllen.
+   - Reine private Vermögensverwaltung, Liegenschaftsbesitzer, Domizilhüllen oder Mindestkapitalgesellschaften ohne Personal.
 
 MELDUNG:
 Unternehmen: {company}
@@ -358,9 +386,9 @@ Antworte AUSSCHLIESSLICH in diesem JSON-Format:
   "urgency_check": "Dringlichkeits-Einschätzung",
   "audit_verdict": "AKUTER C-LEVEL / ORGAN-MANDATSBEDARF" | "OPERATIVER INTERIM- & LEITUNGSBEDARF" | "DISCARDED",
   "audit_rationale": "Prägnante DealCoach-Begründung für Harro.",
-  "estimated_budget": "150k - 320k €" | "80k - 150k €" | "0 €",
+  "estimated_budget": "Verifiziertes Budget aus Meldung falls vorhanden, sonst '-'",
   "confidence": 0.0 - 1.0,
-  "rejection_reason": "Dormant_Shell | Complete_Organ_Vacuum_No_Contractor | Private_Asset_Or_Shell | null"
+  "rejection_reason": "Dormant_Shell | Complete_Organ_Vacuum_No_Contractor | Private_Asset_Or_Shell | Minimum_Capital_No_Substance | null"
 }}"""
 
     raw_response = None
@@ -396,7 +424,7 @@ Antworte AUSSCHLIESSLICH in diesem JSON-Format:
             'urgency_check': 'Primärmeldung zur Chefsache-Prüfung',
             'audit_verdict': 'OPERATIVER INTERIM- & LEITUNGSBEDARF',
             'audit_rationale': 'Primärmeldung aus Primärquelle. Zur manuellen Sichtung im Mandats-Desk vorgelegt.',
-            'estimated_budget': '80.000 € – 150.000 €',
+            'estimated_budget': '-',
             'confidence': 0.75
         }
         return True, "DEALCOACH_MANUELLE_PRÜFUNG", parsed

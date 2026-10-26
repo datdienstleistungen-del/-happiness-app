@@ -161,10 +161,10 @@ def run_ingestion(dry_run=False, skip_cleanup=False):
             print(f"[{idx:02d}/{len(all_fresh_items)}] ❌ [GATE 0 DROP]: {raw_headline[:65]} -> {matched_noise}")
             continue
 
-        # Stufe 1: Struktur- & Rechtsformprüfung
+        # Stufe 1: Struktur-, Substanz- & Rechtsformprüfung
         eval_result = evaluate_signal(item)
         if not eval_result:
-            print(f"[{idx:02d}/{len(all_fresh_items)}] ❌ [GATE 0 DROP]: Rechtsform oder Organrolle nicht erfüllt: {raw_headline[:65]}")
+            print(f"[{idx:02d}/{len(all_fresh_items)}] ❌ [GATE 0/1 DROP]: Rechtsform, Substanz oder Organrolle nicht erfüllt: {raw_headline[:65]}")
             continue
 
         print(f"\n[{idx:02d}/{len(all_fresh_items)}] ⚖️ DealCoach-Revision: {item.get('company', 'N/A')} ({item.get('region', 'EU')})")
@@ -179,9 +179,9 @@ def run_ingestion(dry_run=False, skip_cleanup=False):
                 'company_name': item.get('company', ''),
                 'audit_rationale': reason or 'Echtes Unternehmen, zur Prüfung im Boutique-Pool vorgelegt.',
                 'vacuum_check': 'Organprüfung erforderlich',
-                'urgency_check': 'Gehobener Mittelstand',
+                'urgency_check': 'Manuelle Prüfung erforderlich',
                 'audit_verdict': 'QUALIFIZIERT_MANDATSBEDARF',
-                'estimated_budget': '80.000 € – 150.000 €',
+                'estimated_budget': '-',
                 'confidence': 0.75
             }
 
@@ -293,6 +293,7 @@ def main():
     parser = argparse.ArgumentParser(description="NeXus Pan-European C-Level Feed Ingestion & HITL Radar")
     parser.add_argument("--dry-run", action="store_true", help="Filter ausführen ohne in Supabase zu speichern")
     parser.add_argument("--skip-cleanup", action="store_true", help="Bereinigung alter Pending-Einträge überspringen")
+    parser.add_argument("--once", action="store_true", help="Einmaliger Ingest-Lauf (Standard)")
     args = parser.parse_args()
 
     sys.exit(run_ingestion(dry_run=args.dry_run, skip_cleanup=args.skip_cleanup))
