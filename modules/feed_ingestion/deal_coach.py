@@ -196,22 +196,22 @@ def audit_mandate_lead(item, eval_result):
     for pattern, rationale in routine_patterns:
         if re.search(pattern, combined_lower):
             parsed = {
-                'status': 'pending',
-                'tier': 'PRÜFUNG_EMPFOHLEN',
-                'is_valid_mandate_event': True,
+                'status': 'rejected',
+                'tier': 'REJECTED',
+                'is_valid_mandate_event': False,
                 'is_fresh': True,
                 'company_name': company,
-                'role': 'Organ- / Börsenmeldung',
-                'event_type': 'Börsen- & Kapitalmarkt-Mitteilung',
-                'vacuum_check': f'HINWEIS: {rationale}',
-                'urgency_check': 'ROUTINE: Regulatorische Pflichtmitteilung (Sichtung durch Harro)',
-                'audit_verdict': 'PRÜFUNG_EMPFOHLEN',
-                'audit_rationale': f"DealCoach-Voreinschätzung: {rationale}. Zur manuellen Sichtung im Mandats-Desk.",
-                'rejection_reason': '',
-                'estimated_budget': 'Auf Anfrage / n.a.',
-                'confidence': 0.80
+                'role': 'Routine-Kapitalmarkt',
+                'event_type': 'Börsen- & Kapitalmarkt-Routine',
+                'vacuum_check': f'AUSGESONDERT: {rationale}',
+                'urgency_check': '0 € Mandatswert (Reine Pflichtroutine ohne Organvakanz)',
+                'audit_verdict': 'REJECTED_NO_MANDATE',
+                'audit_rationale': f"Automatischer Ausschluss: {rationale}.",
+                'rejection_reason': rationale,
+                'estimated_budget': '0 €',
+                'confidence': 0.99
             }
-            return True, f"DEALCOACH_VOREINSCHÄTZUNG: {rationale}", parsed
+            return False, f"GATE_0_REJECTED: {rationale}", parsed
 
     prompt = f"""Du bist der NeXus DealCoach. Analysiere diese europäische Wirtschaftsmeldung als automatisierte Revisions- und Vorsortierungs-Instanz für Harros Mandats-Desk:
 HEUTIGES DATUM: {today_str}
