@@ -14,6 +14,7 @@ import {
   ChevronUp,
   ExternalLink,
   Users,
+  User,
   CheckCircle2,
   Lock,
   ArrowUpRight,
