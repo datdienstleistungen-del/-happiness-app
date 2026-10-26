@@ -75,21 +75,53 @@ def fetch_swiss_shab_feed(url=None):
             title_text = titles.get('de') or titles.get('fr') or titles.get('it') or titles.get('en') or 'Mutation Handelsregister'
             company = extract_swiss_company_from_title(title_text)
 
-            content_url = f"https://amtsblattportal.ch/api/v1/publications/{pub_id}/content"
-            pub_link = f"https://amtsblattportal.ch/api/v1/publications/{pub_id}/content"
+            pub_link = f"https://amtsblattportal.ch/api/v1/publications/{pub_id}/pdf"
+            pdf_url = f"https://amtsblattportal.ch/api/v1/publications/{pub_id}/pdf"
 
             snippet_text = f"Offizielle SHAB Handelsregister-Mutation ({meta.get('publicationNumber', pub_id)}): {title_text}"
+            has_organ_exit = False
+            has_successor = False
+            extracted_facts = ""
 
-            # Optionally fetch full publication content text if available quickly
+            # Fetch full publication PDF content text via official SECO PDF API
             try:
-                detail_req = urllib.request.Request(content_url, headers=HEADERS)
-                with urllib.request.urlopen(detail_req, context=ssl_ctx, timeout=4) as detail_resp:
-                    html_content = detail_resp.read().decode('utf-8', errors='ignore')
-                    plain_content = clean_html(html_content)
-                    if len(plain_content) > 30:
-                        snippet_text = plain_content[:800]
-            except Exception:
+                import io
+                import PyPDF2
+                detail_req = urllib.request.Request(pdf_url, headers=HEADERS)
+                with urllib.request.urlopen(detail_req, context=ssl_ctx, timeout=5) as detail_resp:
+                    pdf_bytes = detail_resp.read()
+                    reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
+                    full_pdf_text = ' '.join(' '.join(page.extract_text().split()) for page in reader.pages)
+                    
+                    # Prüfe auf Organ-Relevanz: Verwaltungsrat, Geschäftsführer, Vorstand, Direktion
+                    lower_pdf = full_pdf_text.lower()
+                    has_organ_role = bool(re.search(r'\b(verwaltungsrat|geschäftsführ|direktion|vorstand|präsident des verwaltungsrates|mitglied des verwaltungsrates)\b', lower_pdf))
+                    
+                    if 'ausgeschiedene personen' in lower_pdf or 'erloschene unterschriften' in lower_pdf:
+                        has_organ_exit = True
+                    if 'eingetragene personen neu' in lower_pdf or 'neu oder mutierend' in lower_pdf:
+                        has_successor = True
+
+                    # FILTER: Wenn reine Adress-, Statuten- oder Zweckänderung OHNE Organ-Austritt -> SOFORT VERWERFEN!
+                    if not has_organ_exit and not has_organ_role:
+                        # Reines Rauschen (z.B. Domizilwechsel, Statutenkorrektur) -> drop
+                        continue
+
+                    # Extrahiere den relevanten Abschnitt
+                    if 'Ausgeschiedene Personen' in full_pdf_text:
+                        idx = full_pdf_text.find('Ausgeschiedene Personen')
+                        extracted_facts = full_pdf_text[idx:idx+500]
+                    else:
+                        extracted_facts = full_pdf_text[120:620]
+
+                    snippet_text = extracted_facts
+            except Exception as e:
+                # Fallback if PDF fails
                 pass
+
+            # Falls kein Organwechsel vorliegt und kein Austritt: verwerfen
+            if not has_organ_exit and not ('in liquidation' in snippet_text.lower() or 'konkurs' in snippet_text.lower()):
+                continue
 
             fresh_items.append({
                 'source_name': 'Schweizerisches Handelsamtsblatt (SHAB Mutationen)',
@@ -98,7 +130,9 @@ def fetch_swiss_shab_feed(url=None):
                 'snippet': snippet_text,
                 'url': pub_link,
                 'published_at': parsed_dt.isoformat() if parsed_dt else pub_date,
-                'region': 'CH'
+                'region': 'CH',
+                'has_organ_exit': has_organ_exit,
+                'has_successor': has_successor
             })
 
     except Exception as e:
