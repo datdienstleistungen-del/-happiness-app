@@ -41,13 +41,28 @@ const INITIAL_PARTNERS = [
     address: 'Haldenstrasse 1, 6340 Baar',
     contactPerson: 'Pierina Tannò',
     role: 'Senior Partnerin & Board Advisory',
-    email: 'p.tanno@topfifty.ch',
+    email: 'p.tanno@top50interim.com',
     phone: '+41 41 766 50 50',
     website: 'https://topfifty.ch',
     focus: 'Board Services, C-Level Interim Management & Verwaltungsrats-Besetzung Schweiz/DACH',
     tier: 'TIER_1_TOP',
     activeDealsCount: 1,
     notes: 'Exklusivitäts-Partner für Schweizer Verwaltungsrats- & Interim-Organe.'
+  },
+  {
+    id: 'partner-006',
+    name: 'BIE Executive',
+    location: 'London, UK 🇬🇧',
+    address: '10 Arthur Street, London EC4R 9AY',
+    contactPerson: 'Byron Tarboton',
+    role: 'Director & Practice Lead Interim Executive',
+    email: 'byron.tarboton@bie-executive.com',
+    phone: '+44 20 3800 1400',
+    website: 'https://bie-executive.com',
+    focus: 'Cross-Border Board & C-Level Interim Executive, PE Portfolio Operations & Crisis Governance',
+    tier: 'TIER_1_TOP',
+    activeDealsCount: 1,
+    notes: 'Akkreditierter UK/International Partner für Cross-Border Mandate und Schweizer Tech-Vakanzen.'
   },
   {
     id: 'partner-002',
@@ -111,8 +126,44 @@ const INITIAL_PARTNERS = [
   }
 ]
 
-// Erster initialer Eintrag im Outreach-Journal (cosquare AG an Pierina Tannò)
+// Chronologische Historie aller versendeten Mandats-Ansprachen
 const INITIAL_OUTREACH_ENTRIES = [
+  {
+    id: 'outreach-20261026-002',
+    referenceCode: 'INT-CH-2026-081',
+    leadId: '35bead11-ba4d-47b4-be1a-21a765b96b29',
+    company: 'cosquare AG',
+    companyLocation: 'Großraum Zürich / Zentralschweiz (Zug) 🇨🇭',
+    country: 'CH',
+    role: 'Interim Board Director / Crisis Governance Lead (Sole Signatory Vacuum)',
+    partnerCompany: 'BIE Executive',
+    partnerContact: 'Byron Tarboton',
+    partnerRole: 'Director & Practice Lead Interim Executive',
+    partnerLocation: 'London, UK 🇬🇧',
+    partnerEmail: 'byron.tarboton@bie-executive.com',
+    sentAt: '2026-10-26T11:30:00.000Z',
+    exclusivityUntil: '2026-10-28T16:00:00.000Z', // Mittwoch, 28.10.2026, 17:00 BST = 16:00 UTC
+    exclusivityDays: 2,
+    status: 'FIRST_LOOK_AKTIV',
+    statusLabel: '🟣 48h First-Look UK aktiv',
+    budgetBand: '150.000 – 300.000 CHF (Daily rate: 2.200 – 2.800 CHF)',
+    subject: 'Confidential Mandate Signal: Swiss Technology AG (Greater Zurich / Central Switzerland) · Abrupt Board / Governance Vacancy · Ref: INT-CH-2026-081',
+    greeting: 'Dear Byron,',
+    introText: 'Further to our European executive radar (D.A.T. Mandate Origination Desk), we have identified an immediate, time-critical governance vacancy within an established Swiss Technology AG in the Greater Zurich / Central Switzerland tech hub.\n\nFollowing the sudden departure of the sole registered board member with sole signatory power (published today, 26 October 2026, in the Swiss Official Gazette / SHAB), the company is facing an acute governance vacuum requiring an experienced Interim Board Director or Crisis Governance Lead.\n\nWe are granting BIE Executive an exclusive 48-hour First-Look window (valid until Wednesday, 28 October 2026, 17:00 BST) prior to broader syndicate syndication.',
+    blindProfile: {
+      entityType: 'Established Swiss Corporation (Aktiengesellschaft - AG)',
+      region: 'Greater Zurich / Zug Tech Hub (Switzerland 🇨🇭)',
+      industry: 'Digital Commerce & Interactive Live-Video Technology',
+      incident: 'Immediate departure of the sole-signatory Board Director (SHAB official publication 26.10.2026).',
+      situationAnalysis: 'The corporate board seat is completely vacant with no successor registered in the commercial registry. Sole signature authorization has lapsed, creating an acute operational and corporate governance vacuum.',
+      mandateAngle: 'Immediate Board Director mandate / Crisis Governance Lead / Interim CRO to secure corporate oversight and represent shareholder interests.',
+      budgetRange: 'CHF 150,000 – 300,000 (Daily rate band: CHF 2,200 – 2,800)',
+      exclusivityClause: '48h exclusive First-Look for BIE Executive (London) until Wednesday, 28.10.2026, 17:00 BST.'
+    },
+    closingText: 'If this aligns with your senior executive bench, please confirm interest and we will immediately provide the full entity dossier and unredacted commercial registry filings.\n\nBest regards,\nHarro Goerndt\nD.A.T. Mandate Origination Desk',
+    archiveStatus: 'ANGEBOTEN_RESERVIERT',
+    notes: '48h First-Look UK exklusiv an Byron Tarboton übermittelt. Frist bis Mittwoch, 28.10.2026, 17:00 BST.'
+  },
   {
     id: 'outreach-20261026-001',
     referenceCode: 'CH-ZG-2026-VR-01',
@@ -120,17 +171,17 @@ const INITIAL_OUTREACH_ENTRIES = [
     company: 'cosquare AG',
     companyLocation: 'Bundesplatz 14, 6302 Zug, Schweiz 🇨🇭',
     country: 'CH',
-    role: 'Verwaltungsrat mit Einzelunterschrift (Akutes Vakuum)',
+    role: 'Mitglied des Verwaltungsrates (Akutes Organ-Vakuum)',
     partnerCompany: 'Top Fifty AG',
     partnerContact: 'Pierina Tannò',
     partnerRole: 'Senior Partnerin & Board Advisory',
-    partnerLocation: 'Baar / Zug, Schweiz',
-    partnerEmail: 'p.tanno@topfifty.ch',
-    sentAt: '2026-10-26T10:45:00.000Z',
+    partnerLocation: 'Baar / Zug, Schweiz 🇨🇭',
+    partnerEmail: 'p.tanno@top50interim.com',
+    sentAt: '2026-10-26T09:15:00.000Z',
     exclusivityUntil: '2026-11-09T23:59:59.000Z',
     exclusivityDays: 14,
     status: 'EXKLUSIV_RESERVIERT',
-    statusLabel: '🟡 Exklusivität aktiv (14 Tage)',
+    statusLabel: '🟡 Exklusivität CH aktiv (14 Tage)',
     budgetBand: '150.000 – 300.000 CHF (Tagessatz: 2.200 – 2.800 CHF)',
     subject: 'Vertrauliches Mandats-Signal: Schweizer Technologie-AG (Kanton Zug) · Abruptes Organ-Vakuum (VR Einzelunterschrift) · Ref: CH-ZG-2026-VR-01',
     greeting: 'Sehr geehrte Frau Tannò, liebe Pierina,',
@@ -147,7 +198,7 @@ const INITIAL_OUTREACH_ENTRIES = [
     },
     closingText: 'Bei Interesse stellen wir nach kurzer Bestätigung gerne den direkten Kontakt und die Detailunterlagen bereit.\n\nMit freundlichen Grüßen\nHarro Goerndt\nD.A.T. Mandate Origination Desk',
     archiveStatus: 'ANGEBOTEN_RESERVIERT',
-    notes: 'Exklusivitätsfrist läuft. Erstansprache per E-Mail und Blind-Profil übermittelt.'
+    notes: 'Exklusivitätsfrist Schweiz läuft bis 09.11.2026. Erstansprache per E-Mail und Blind-Profil übermittelt.'
   }
 ]
 
@@ -155,20 +206,31 @@ export default function OutreachJournalPage() {
   const [activeTab, setActiveTab] = useState('outreach') // 'outreach' | 'partners'
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
-  const [expandedId, setExpandedId] = useState('outreach-20261026-001') // Erster Eintrag direkt aufgeklappt
+  const [expandedId, setExpandedId] = useState('outreach-20261026-002') // Neueste Ansprache (UK) direkt aufgeklappt
   const [copiedField, setCopiedField] = useState(null)
 
   // Modals
   const [showNewOutreachModal, setShowNewOutreachModal] = useState(false)
   const [showNewPartnerModal, setShowNewPartnerModal] = useState(false)
 
-  // State: Outreach-Einträge
+  // State: Outreach-Einträge (merged mit initialen Live-Datensätzen)
   const [outreachEntries, setOutreachEntries] = useState(() => {
     try {
       const cached = localStorage.getItem(OUTREACH_STORAGE_KEY)
       if (cached) {
         const parsed = JSON.parse(cached)
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const merged = [...parsed]
+          for (const init of INITIAL_OUTREACH_ENTRIES) {
+            const idx = merged.findIndex(m => m.id === init.id || m.referenceCode === init.referenceCode)
+            if (idx === -1) {
+              merged.push(init)
+            } else {
+              merged[idx] = { ...merged[idx], ...init }
+            }
+          }
+          return merged.sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt))
+        }
       }
     } catch (e) {
       console.warn('[OutreachJournal] Cache load error:', e)
@@ -176,13 +238,24 @@ export default function OutreachJournalPage() {
     return INITIAL_OUTREACH_ENTRIES
   })
 
-  // State: Partner
+  // State: Partner (merged mit BIE Executive & Top Fifty AG)
   const [partners, setPartners] = useState(() => {
     try {
       const cached = localStorage.getItem(PARTNERS_STORAGE_KEY)
       if (cached) {
         const parsed = JSON.parse(cached)
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const merged = [...parsed]
+          for (const p of INITIAL_PARTNERS) {
+            const idx = merged.findIndex(m => m.id === p.id || m.name === p.name)
+            if (idx === -1) {
+              merged.push(p)
+            } else {
+              merged[idx] = { ...merged[idx], ...p }
+            }
+          }
+          return merged
+        }
       }
     } catch (e) {
       console.warn('[OutreachJournal] Partners load error:', e)
@@ -208,40 +281,56 @@ export default function OutreachJournalPage() {
     try {
       const ARCHIVE_KEY = 'nexus:mandate_archive_v1'
       const existingArchive = JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]')
-      const hasCosquare = existingArchive.some(e => e.leadId === '35bead11-ba4d-47b4-be1a-21a765b96b29' || e.company?.includes('cosquare'))
+      const hasCosquareUK = existingArchive.some(e => e.id === 'arch-cosquare-uk-02' || e.notes?.includes('INT-CH-2026-081'))
       
-      if (!hasCosquare) {
-        const cosquareArchiveEntry = {
-          id: 'arch-cosquare-topfifty-01',
+      if (!hasCosquareUK) {
+        const cosquareUKEntry = {
+          id: 'arch-cosquare-uk-02',
           leadId: '35bead11-ba4d-47b4-be1a-21a765b96b29',
           company: 'cosquare AG',
-          countryMarket: 'CH · Kanton Zug (AG)',
-          role: 'Verwaltungsrat mit Einzelunterschrift (Akutes Vakuum)',
-          transmittedTo: 'Top Fifty AG · Pierina Tannò',
-          transmittedAt: '2026-10-26T10:45:00.000Z',
-          protectionUntil: '2026-11-09T23:59:59.000Z',
+          countryMarket: 'CH / UK · Cross-Border',
+          role: 'Interim Board Director / Crisis Governance Lead',
+          transmittedTo: 'BIE Executive · Byron Tarboton (London)',
+          transmittedAt: '2026-10-26T11:30:00.000Z',
+          protectionUntil: '2026-10-28T16:00:00.000Z',
           status: 'ANGEBOTEN_RESERVIERT',
-          notes: 'Ref: CH-ZG-2026-VR-01 · Exklusiv angeboten an Pierina Tannò (Top Fifty AG, Baar/Zug). Exklusivität aktiv bis 09.11.2026 (14 Tage).',
-          source: 'SHAB-Mutation 26.10.2026 / DealCoach Primär-Audit'
+          notes: 'Ref: INT-CH-2026-081 · 48h First-Look UK exklusiv für Byron Tarboton (BIE Executive, London). Frist bis 28.10.2026, 17:00 BST.',
+          source: 'SHAB-Mutation 26.10.2026 · Ref. INT-CH-2026-081'
         }
-        localStorage.setItem(ARCHIVE_KEY, JSON.stringify([cosquareArchiveEntry, ...existingArchive]))
+        localStorage.setItem(ARCHIVE_KEY, JSON.stringify([cosquareUKEntry, ...existingArchive]))
       }
     } catch (e) {
       console.warn('[OutreachJournal] Sync with archive failed:', e)
     }
   }, [])
 
-  // Berechne verbleibende Exklusivitäts-Tage
-  const computeExclusivityRemaining = (untilIso) => {
-    if (!untilIso) return { days: 0, isExpired: true, label: 'Abgelaufen' }
+  // Berechne verbleibende Schutz- und Fristen-Dauer
+  const computeExclusivityRemaining = (untilIso, status) => {
+    if (!untilIso) return { days: 0, hours: 0, isExpired: true, label: 'Abgelaufen', formattedDate: '-' }
     const until = new Date(untilIso)
     const diffMs = until.getTime() - Date.now()
+    const hours = Math.ceil(diffMs / (1000 * 60 * 60))
     const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
-    const isExpired = days <= 0
+    const isExpired = diffMs <= 0
+
+    const formattedDate = until.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    const formattedTime = until.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+
+    if (status === 'FIRST_LOOK_AKTIV') {
+      return {
+        days,
+        hours,
+        isExpired,
+        formattedDate: `${formattedDate}, ${formattedTime} BST`,
+        label: isExpired ? '48h First-Look abgelaufen' : `Noch ${Math.max(1, hours)} Std. First-Look UK aktiv`
+      }
+    }
+
     return {
       days,
+      hours,
       isExpired,
-      formattedDate: until.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+      formattedDate,
       label: isExpired ? 'Exklusivität abgelaufen' : `Noch ${days} Tag${days === 1 ? '' : 'e'} exklusiv geschützt`
     }
   }
@@ -289,8 +378,8 @@ export default function OutreachJournalPage() {
   const stats = useMemo(() => {
     const totalOutreach = outreachEntries.length
     const activeExclusives = outreachEntries.filter(o => {
-      const exc = computeExclusivityRemaining(o.exclusivityUntil)
-      return !exc.isExpired && o.status === 'EXKLUSIV_RESERVIERT'
+      const exc = computeExclusivityRemaining(o.exclusivityUntil, o.status)
+      return !exc.isExpired && (o.status === 'EXKLUSIV_RESERVIERT' || o.status === 'FIRST_LOOK_AKTIV')
     }).length
     const partnerCount = partners.length
     return { totalOutreach, activeExclusives, partnerCount }
@@ -299,7 +388,8 @@ export default function OutreachJournalPage() {
   // Status ändern
   const handleUpdateStatus = (id, newStatus) => {
     const statusLabels = {
-      EXKLUSIV_RESERVIERT: '🟡 Exklusivität aktiv',
+      EXKLUSIV_RESERVIERT: '🟡 Exklusivität CH aktiv (14 Tage)',
+      FIRST_LOOK_AKTIV: '🟣 48h First-Look UK aktiv',
       FEEDBACK_RECEIVED: '🟢 Rückmeldung erhalten',
       MANDATED: '🎯 Erfolgreich mandatiert',
       EXPIRED: '⚪ Exklusivität abgelaufen'
@@ -359,9 +449,9 @@ export default function OutreachJournalPage() {
             <Clock size={22} />
           </div>
           <div>
-            <div className="kpi-label">Exklusivität aktiv (14 Tage)</div>
+            <div className="kpi-label">Aktive Schutzfristen</div>
             <div className="kpi-number">{stats.activeExclusives}</div>
-            <div className="kpi-subtext">cosquare AG · Top Fifty AG</div>
+            <div className="kpi-subtext">CH Exklusiv (14T) · UK First-Look (48h)</div>
           </div>
         </div>
 
@@ -417,7 +507,7 @@ export default function OutreachJournalPage() {
           <Search size={16} color="#64748b" />
           <input
             type="text"
-            placeholder={activeTab === 'outreach' ? "Referenz (z.B. CH-ZG-2026-VR-01), Partner oder Zielgesellschaft suchen..." : "Partner-Boutique, Ansprechpartner oder Standort suchen..."}
+            placeholder={activeTab === 'outreach' ? "Referenz (z.B. CH-ZG-2026-VR-01 oder INT-CH-2026-081), Partner oder Zielgesellschaft suchen..." : "Partner-Boutique, Ansprechpartner oder Standort suchen..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -432,7 +522,8 @@ export default function OutreachJournalPage() {
               className="outreach-select"
             >
               <option value="ALL">Alle Status</option>
-              <option value="EXKLUSIV_RESERVIERT">🟡 Exklusivität aktiv</option>
+              <option value="EXKLUSIV_RESERVIERT">🟡 Exklusivität CH aktiv (14 Tage)</option>
+              <option value="FIRST_LOOK_AKTIV">🟣 First-Look UK aktiv (48h)</option>
               <option value="FEEDBACK_RECEIVED">🟢 Rückmeldung erhalten</option>
               <option value="MANDATED">🎯 Erfolgreich mandatiert</option>
               <option value="EXPIRED">⚪ Abgelaufen</option>
@@ -474,7 +565,7 @@ export default function OutreachJournalPage() {
               ) : (
                 filteredOutreach.map(entry => {
                   const isExpanded = expandedId === entry.id
-                  const exc = computeExclusivityRemaining(entry.exclusivityUntil)
+                  const exc = computeExclusivityRemaining(entry.exclusivityUntil, entry.status)
                   const sentDate = new Date(entry.sentAt)
 
                   return (
@@ -692,7 +783,7 @@ ${entry.closingText}`,
                                     <p>{entry.greeting}</p>
                                     <p style={{ whiteSpace: 'pre-line' }}>{entry.introText}</p>
                                     <div className="email-blind-box">
-                                      <strong>[Anonymisiertes Blind-Profil CH-ZG-2026-VR-01 angehängt]</strong>
+                                      <strong>[Anonymisiertes Blind-Profil {entry.referenceCode} angehängt]</strong>
                                     </div>
                                     <p style={{ whiteSpace: 'pre-line' }}>{entry.closingText}</p>
                                   </div>

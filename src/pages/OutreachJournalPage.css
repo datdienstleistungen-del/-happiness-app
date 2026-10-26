@@ -408,6 +408,12 @@
   border: 1px solid #fde68a;
 }
 
+.pill-first_look_aktiv {
+  background: #f5f3ff;
+  color: #7c3aed;
+  border: 1px solid #ddd6fe;
+}
+
 .pill-feedback_received {
   background: #dcfce7;
   color: #15803d;

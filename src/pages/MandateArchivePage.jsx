@@ -31,6 +31,7 @@ const STORAGE_KEY = 'nexus:mandate_archive_v1'
 // Standard C-Level & Boutique Advisory Whitelist
 const PARTNER_OPTIONS = [
   'Top Fifty AG (Baar/Zug · Pierina Tannò)',
+  'BIE Executive (London · Byron Tarboton)',
   'taskforce - Management on Demand AG',
   'Atreus GmbH (A Heimatt Group Company)',
   'Egon Zehnder International',
@@ -42,7 +43,22 @@ const PARTNER_OPTIONS = [
   'Spezialisierte Boutique / Interim Provider'
 ]
 
-// Initiales exklusiv reserviertes Mandat (cosquare AG an Top Fifty AG)
+// Initiales exklusiv reserviertes Mandat UK (cosquare AG an BIE Executive)
+const INITIAL_COSQUARE_UK_ENTRY = {
+  id: 'arch-cosquare-uk-02',
+  leadId: '35bead11-ba4d-47b4-be1a-21a765b96b29',
+  company: 'cosquare AG',
+  countryMarket: 'CH / UK · Cross-Border',
+  role: 'Interim Board Director / Crisis Governance Lead',
+  transmittedTo: 'BIE Executive · Byron Tarboton',
+  transmittedAt: '2026-10-26T11:30:00.000Z',
+  protectionUntil: '2026-10-28T16:00:00.000Z',
+  status: 'ANGEBOTEN_RESERVIERT',
+  notes: '48h First-Look UK exklusiv für Byron Tarboton / BIE Executive (Frist bis Mittwoch, 28.10.2026, 17:00 BST). Blind-Profil INT-CH-2026-081 übermittelt.',
+  source: 'SHAB-Mutation 26.10.2026 · Ref. INT-CH-2026-081'
+}
+
+// Initiales exklusiv reserviertes Mandat CH (cosquare AG an Top Fifty AG)
 const INITIAL_COSQUARE_ARCHIVE_ENTRY = {
   id: 'arch-cosquare-2026-01',
   leadId: '35bead11-ba4d-47b4-be1a-21a765b96b29',
@@ -59,7 +75,7 @@ const INITIAL_COSQUARE_ARCHIVE_ENTRY = {
 
 // Bereinigungs-Hilfe: Entfernt alte Test-/Mockup-Daten
 function sanitizeArchiveEntries(list) {
-  if (!Array.isArray(list)) return [INITIAL_COSQUARE_ARCHIVE_ENTRY]
+  if (!Array.isArray(list)) return [INITIAL_COSQUARE_UK_ENTRY, INITIAL_COSQUARE_ARCHIVE_ENTRY]
   const DUMMY_IDS = ['arch-001', 'arch-002', 'arch-003', 'arch-004']
   const DUMMY_COMPANIES = ['brenntag', 'krones', 'clariant', 'melrose']
 
@@ -71,10 +87,16 @@ function sanitizeArchiveEntries(list) {
     return true
   })
 
-  const hasCosquare = cleaned.some(item => (item.company || '').toLowerCase().includes('cosquare'))
-  if (!hasCosquare) {
-    cleaned.unshift(INITIAL_COSQUARE_ARCHIVE_ENTRY)
+  const hasUK = cleaned.some(item => item.id === 'arch-cosquare-uk-02' || item.notes?.includes('INT-CH-2026-081'))
+  if (!hasUK) {
+    cleaned.unshift(INITIAL_COSQUARE_UK_ENTRY)
   }
+
+  const hasCosquareCH = cleaned.some(item => item.id === 'arch-cosquare-2026-01' || item.notes?.includes('CH-ZG-2026-VR-01'))
+  if (!hasCosquareCH) {
+    cleaned.push(INITIAL_COSQUARE_ARCHIVE_ENTRY)
+  }
+
   return cleaned
 }
 
@@ -139,7 +161,7 @@ export default function MandateArchivePage() {
     } catch (e) {
       console.warn('[MandateArchive] Error loading local archive:', e)
     }
-    return [INITIAL_COSQUARE_ARCHIVE_ENTRY]
+    return [INITIAL_COSQUARE_UK_ENTRY, INITIAL_COSQUARE_ARCHIVE_ENTRY]
   })
 
   // 2. Dynamischer Boutique-Pool (TIER_2_MID Leads aus Supabase)
