@@ -10,6 +10,8 @@ Sources:
 
 import os
 import sys
+import re
+import json
 import argparse
 from datetime import datetime, timezone
 
@@ -130,6 +132,7 @@ def run_ingestion(dry_run=False, skip_cleanup=False):
     skipped_duplicates = 0
     tier1_count = 0
     tier2_count = 0
+    tier3_dropped_count = 0
     other_review_count = 0
 
     # FAST-PATH GATE 0: Müllschlucker für 0 € Rauschen (Städte, Behörden, Kleinstgewerbe, PR)
@@ -181,6 +184,14 @@ def run_ingestion(dry_run=False, skip_cleanup=False):
                 'estimated_budget': '80.000 € – 150.000 €',
                 'confidence': 0.75
             }
+
+        # ── K.O.-DROP CHECK (TIER 3 / DISCARDED) ──
+        if not is_valid or deal_audit.get('status') == 'discarded' or deal_audit.get('tier') == 'TIER_3':
+            tier3_dropped_count += 1
+            rej_reason = deal_audit.get('rejection_reason') or reason
+            print(f"   ❌ [K.O. FILTER DROP / TIER 3]: {item.get('company')} -> {rej_reason}")
+            print(f"      • Begründung: {deal_audit.get('audit_rationale', 'Ausgesondert')[:100]}")
+            continue
 
         raw_tier = deal_audit.get('tier', 'TIER_2_MID')
         if raw_tier in ('TIER_1_TOP', 'TIER_1'):
@@ -252,6 +263,7 @@ def run_ingestion(dry_run=False, skip_cleanup=False):
     print(f"• Aspiranten im Zeitfenster geprüft:         {len(all_fresh_items)}")
     print(f"• 🏆 TIER_1_TOP (Mandats-Desk Posteingang):  {tier1_count}")
     print(f"• 💎 TIER_2_MID (Boutique-Pool Archiv):       {tier2_count}")
+    print(f"• 🗑️ TIER_3 (K.O.-Kriterien / Ausgesondert): {tier3_dropped_count}")
     print(f"• ⚖️ PRÜFUNG_EMPFOHLEN (Zur Prüfung Harro):   {other_review_count}")
     if not dry_run and not skip_cleanup:
         print(f"• Bereinigte Alt-Einträge im Posteingang:    {deleted_stale_count}")

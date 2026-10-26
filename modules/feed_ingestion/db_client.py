@@ -199,9 +199,18 @@ class SupabaseClient:
         estimated_budget = audit_info.get('estimated_budget', '')
         audit_verdict = audit_info.get('audit_verdict', 'QUALIFIZIERT_MANDATSBEDARF')
 
-        tags = [tier, 'DealCoach_Audited', 'Vakuum_Geprueft']
-        if vacuum_check and 'BESTANDEN' in vacuum_check.upper():
-            tags.append('Vakuum_Bestanden')
+        is_discarded = audit_info.get('status') == 'discarded' or tier == 'TIER_3'
+        rejection_reason = audit_info.get('rejection_reason', 'K.O._Filter')
+
+        if is_discarded:
+            review_status = 'rejected'
+            tier = 'TIER_3'
+            tags = ['TIER_3', 'Auto_Discarded', rejection_reason]
+        else:
+            review_status = STATUS_PENDING_REVIEW
+            tags = [tier, 'DealCoach_Audited', 'Vakuum_Geprueft']
+            if vacuum_check and 'BESTANDEN' in vacuum_check.upper():
+                tags.append('Vakuum_Bestanden')
 
         relevance_logic_text = f"DealCoach [{tier}]: {audit_verdict} | Vakuum: {vacuum_check} | Dringlichkeit: {urgency_check}"
         strategic_angle_text = audit_rationale or evaluation.get('strategic_angle', '')
@@ -221,10 +230,12 @@ class SupabaseClient:
         review_notes_data = json.dumps({
             'deal_coach': {
                 'tier': tier,
+                'status': 'discarded' if is_discarded else 'pending',
                 'verdict': audit_verdict,
                 'vacuum_check': vacuum_check,
                 'urgency_check': urgency_check,
                 'rationale': audit_rationale,
+                'rejection_reason': rejection_reason if is_discarded else None,
                 'estimated_budget': estimated_budget,
                 'audited_at': datetime.now(timezone.utc).isoformat()
             }
@@ -246,7 +257,7 @@ class SupabaseClient:
             'review_notes': review_notes_data,
             'confidence_score': evaluation.get('confidence_score', 0.85),
             'lead_score': lead_score,
-            'review_status': STATUS_PENDING_REVIEW,
+            'review_status': review_status,
             'pipeline_stage': 'opportunity'
         }
 

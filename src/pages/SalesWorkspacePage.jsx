@@ -81,31 +81,38 @@ export function extractDealCoachAudit(opp) {
   if (!tier && opp.priority) {
     if (opp.priority.toUpperCase().includes('TIER_1')) tier = 'TIER_1_TOP';
     else if (opp.priority.toUpperCase().includes('TIER_2')) tier = 'TIER_2_MID';
+    else if (opp.priority.toUpperCase().includes('TIER_3') || opp.priority.toUpperCase().includes('DISCARDED')) tier = 'TIER_3';
     else if (opp.priority.toUpperCase().includes('PRÜFUNG') || opp.priority.toUpperCase().includes('PRUEFUNG') || opp.priority.toUpperCase().includes('FUNG') || opp.priority.toUpperCase().includes('REVIEW')) tier = 'PRÜFUNG_EMPFOHLEN';
   }
   if (!tier && Array.isArray(opp.tags)) {
     if (opp.tags.includes('TIER_1_TOP')) tier = 'TIER_1_TOP';
     else if (opp.tags.includes('TIER_2_MID')) tier = 'TIER_2_MID';
+    else if (opp.tags.includes('TIER_3') || opp.tags.includes('Auto_Discarded') || opp.tags.includes('Dormant_Shell') || opp.tags.includes('Complete_Organ_Vacuum_No_Contractor') || opp.tags.includes('Private_Asset_Or_Shell')) tier = 'TIER_3';
     else if (opp.tags.some(t => t.includes('PRÜFUNG') || t.includes('PRUEFUNG') || t.includes('FUNG'))) tier = 'PRÜFUNG_EMPFOHLEN';
   }
 
   // Intelligenter Default basierend auf Lead-Score und Rechtsform
   if (!tier) {
-    const comp = (opp.nexus_companies?.name || opp.company?.name || opp.title || '').toUpperCase();
-    const isMajor = /(AG|SE|PLC|SA|CORP|NV|SPA|SIEMENS|VOLKSWAGEN|DAIMLER|BMW|BASF|BAYER|ALLIANZ|SAP)/.test(comp);
-    tier = (opp.lead_score >= 80 || isMajor) ? 'TIER_1_TOP' : 'TIER_2_MID';
+    if (opp.review_status === 'rejected') {
+      tier = 'TIER_3';
+    } else {
+      const comp = (opp.nexus_companies?.name || opp.company?.name || opp.title || '').toUpperCase();
+      const isMajor = /(AG|SE|PLC|SA|CORP|NV|SPA|SIEMENS|VOLKSWAGEN|DAIMLER|BMW|BASF|BAYER|ALLIANZ|SAP)/.test(comp);
+      tier = (opp.lead_score >= 80 || isMajor) ? 'TIER_1_TOP' : 'TIER_2_MID';
+    }
   }
 
   const isTier1 = tier === 'TIER_1_TOP';
   const isTier2 = tier === 'TIER_2_MID';
+  const isTier3 = tier === 'TIER_3';
 
   return {
     tier,
-    verdict: isTier1 ? 'AKUTER C-LEVEL / ORGAN-MANDATSBEDARF' : isTier2 ? 'OPERATIVER INTERIM- & LEITUNGSBEDARF' : 'VOREINSCHÄTZUNG DEALCOACH (ZUR PRÜFUNG)',
-    vacuum_check: vacMatch ? vacMatch[1].trim() : (isTier1 || isTier2 ? 'BESTANDEN: Organ-Position vakant / Stillstand droht' : 'HINWEIS: Manuelle Sichtung durch Harro'),
-    urgency_check: urgMatch ? urgMatch[1].trim() : (isTier1 || isTier2 ? 'HOCH: Akute Not-Governance / Überbrückungsbedarf per sofort' : 'ROUTINE: Regulatorische Pflichtmitteilung zur Vorlage'),
+    verdict: isTier1 ? 'AKUTER C-LEVEL / ORGAN-MANDATSBEDARF' : isTier2 ? 'OPERATIVER INTERIM- & LEITUNGSBEDARF' : isTier3 ? 'AUSGESONDERT: MANTEL / KEIN AUFTRAGGEBER' : 'VOREINSCHÄTZUNG DEALCOACH (ZUR PRÜFUNG)',
+    vacuum_check: vacMatch ? vacMatch[1].trim() : (isTier1 ? 'BESTANDEN: Reale Führungslücke bei bestehendem Geschäftsbetrieb' : isTier2 ? 'BESTANDEN: Organ-Position vakant / Stillstand droht' : isTier3 ? 'K.O. DROP: Organmangel / inaktive Hülle' : 'HINWEIS: Manuelle Sichtung durch Harro'),
+    urgency_check: urgMatch ? urgMatch[1].trim() : (isTier1 ? 'HOCH: Akute Not-Governance / Überbrückungsbedarf per sofort' : isTier2 ? 'HOCH: Operativer Handlungsdruck' : isTier3 ? '0 € Mandatswert (Karteileiche ohne laufenden Geschäftsbetrieb)' : 'ROUTINE: Regulatorische Pflichtmitteilung zur Vorlage'),
     rationale: ratMatch ? ratMatch[1].trim() : (opp.strategic_angle || opp.notes || 'DealCoach-Voreinschätzung zur manuellen Prüfung durch Harro im Mandats-Desk.'),
-    estimated_budget: budMatch ? budMatch[1].trim() : (isTier1 ? '150.000 € – 320.000 €' : isTier2 ? '80.000 € – 150.000 €' : 'Auf Anfrage')
+    estimated_budget: budMatch ? budMatch[1].trim() : (isTier1 ? '150.000 € – 320.000 €' : isTier2 ? '80.000 € – 150.000 €' : isTier3 ? '0 €' : 'Auf Anfrage')
   };
 }
 
@@ -2169,6 +2176,7 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
           const tier = audit?.tier || 'PRÜFUNG_EMPFOHLEN';
           const isTier1 = tier === 'TIER_1_TOP';
           const isTier2 = tier === 'TIER_2_MID';
+          const isTier3 = tier === 'TIER_3';
 
           const dateVal = activeOpp.event_date || activeOpp.triggers?.[0]?.nexus_trigger_events?.event_date || activeOpp.published_at || activeOpp.created_at;
           const traffic = getFreshnessTrafficLight(dateVal);
@@ -2279,8 +2287,10 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                   ? 'linear-gradient(135deg, rgba(88, 28, 135, 0.18) 0%, #0e1015 100%)'
                   : isTier2
                   ? 'linear-gradient(135deg, rgba(30, 58, 138, 0.18) 0%, #0e1015 100%)'
+                  : isTier3
+                  ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, #0e1015 100%)'
                   : 'linear-gradient(135deg, rgba(51, 65, 85, 0.2) 0%, #0e1015 100%)',
-                border: `1px solid ${isTier1 ? 'rgba(168, 85, 247, 0.4)' : isTier2 ? 'rgba(59, 130, 246, 0.4)' : 'rgba(148, 163, 184, 0.3)'}`,
+                border: `1px solid ${isTier1 ? 'rgba(168, 85, 247, 0.4)' : isTier2 ? 'rgba(59, 130, 246, 0.4)' : isTier3 ? 'rgba(239, 68, 68, 0.4)' : 'rgba(148, 163, 184, 0.3)'}`,
                 borderRadius: '12px',
                 padding: '20px 24px',
                 display: 'flex',
@@ -2291,23 +2301,23 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '14px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={{
-                      background: isTier1 ? 'rgba(168, 85, 247, 0.25)' : isTier2 ? 'rgba(59, 130, 246, 0.25)' : 'rgba(148, 163, 184, 0.2)',
-                      border: `1px solid ${isTier1 ? '#a855f7' : isTier2 ? '#3b82f6' : '#94a3b8'}`,
+                      background: isTier1 ? 'rgba(168, 85, 247, 0.25)' : isTier2 ? 'rgba(59, 130, 246, 0.25)' : isTier3 ? 'rgba(239, 68, 68, 0.25)' : 'rgba(148, 163, 184, 0.2)',
+                      border: `1px solid ${isTier1 ? '#a855f7' : isTier2 ? '#3b82f6' : isTier3 ? '#ef4444' : '#94a3b8'}`,
                       borderRadius: '8px',
                       padding: '6px 14px',
                       fontSize: '0.92rem',
                       fontWeight: 800,
-                      color: isTier1 ? '#f3e8ff' : isTier2 ? '#dbeafe' : '#f1f5f9',
+                      color: isTier1 ? '#f3e8ff' : isTier2 ? '#dbeafe' : isTier3 ? '#fecaca' : '#f1f5f9',
                       letterSpacing: '0.03em'
                     }}>
-                      {isTier1 ? '👑 TIER 1 TOP' : isTier2 ? '🏢 TIER 2 MID' : '⚖️ PRÜFUNG EMPFOHLEN'}
+                      {isTier1 ? '👑 TIER 1 TOP' : isTier2 ? '🏢 TIER 2 MID' : isTier3 ? '🗑️ TIER 3 (AUSGESONDERT)' : '⚖️ PRÜFUNG EMPFOHLEN'}
                     </div>
                     <div>
                       <div style={{ fontSize: '1rem', fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.01em' }}>
-                        DealCoach Revisions-Urteil: <span style={{ color: isTier1 ? '#c084fc' : isTier2 ? '#60a5fa' : '#cbd5e1' }}>{audit?.verdict || 'VORLÄUFIGE VOREINSCHÄTZUNG'}</span>
+                        DealCoach Revisions-Urteil: <span style={{ color: isTier1 ? '#c084fc' : isTier2 ? '#60a5fa' : isTier3 ? '#f87171' : '#cbd5e1' }}>{audit?.verdict || 'VORLÄUFIGE VOREINSCHÄTZUNG'}</span>
                       </div>
                       <div style={{ fontSize: '0.82rem', color: '#94a3b8', marginTop: '2px' }}>
-                        Geschätztes Budgetvolumen: <strong style={{ color: '#38bdf8' }}>{audit?.estimated_budget || 'Auf Anfrage'}</strong>
+                        Geschätztes Budgetvolumen: <strong style={{ color: isTier3 ? '#f87171' : '#38bdf8' }}>{audit?.estimated_budget || 'Auf Anfrage'}</strong>
                       </div>
                     </div>
                   </div>

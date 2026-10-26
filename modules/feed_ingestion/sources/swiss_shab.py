@@ -82,6 +82,15 @@ def fetch_swiss_shab_feed(url=None):
             has_organ_exit = False
             has_successor = False
             extracted_facts = ""
+            full_pdf_text = ""
+            dormant_months = 0
+            previous_pub_date = None
+            is_dormant_shell = False
+            has_art_731b = False
+            sole_organ_exit = False
+            has_remaining_organ = True
+            is_purpose_shell = False
+            purpose_category = None
 
             # Fetch full publication PDF content text via official SECO PDF API
             try:
@@ -101,6 +110,43 @@ def fetch_swiss_shab_feed(url=None):
                         has_organ_exit = True
                     if 'eingetragene personen neu' in lower_pdf or 'neu oder mutierend' in lower_pdf:
                         has_successor = True
+
+                    # 1. Dormant Months Check (Vorherige Publikation > 36 Monate -> Dormant_Shell)
+                    prev_pub_match = re.search(
+                        r'(?:Vorangehende Publikation im SHAB|Pr[eé]c[eé]dente publication dans la FOSC|Precedente pubblicazione nel FUSC).*?(?:Datum|date|data|vom|du|del)?[:\s]+(\d{1,2}\.\d{1,2}\.\d{4})|\((?:SHAB|FOSC|FUSC)(?:\s+Nr\.?\s*\d+)?\s+(?:vom|du|del)\s+(\d{1,2}\.\d{1,2}\.\d{4})',
+                        full_pdf_text,
+                        re.IGNORECASE
+                    )
+                    if prev_pub_match:
+                        prev_date_str = prev_pub_match.group(1) or prev_pub_match.group(2)
+                        try:
+                            prev_dt = datetime.strptime(prev_date_str, '%d.%m.%Y')
+                            previous_pub_date = prev_date_str
+                            cur_dt = parsed_dt if parsed_dt else datetime.now(timezone.utc)
+                            dormant_months = (cur_dt.year - prev_dt.year) * 12 + (cur_dt.month - prev_dt.month)
+                            if dormant_months > 36:
+                                is_dormant_shell = True
+                        except Exception:
+                            pass
+
+                    # 2. Total Organ Vacancy Check (Art. 731b OR & sole organ exit)
+                    has_art_731b = bool(re.search(r'\b(731b\s*or|731b\s*co|organmangel|mängel in der organisation)\b', lower_pdf))
+                    sole_organ_exit = bool(re.search(r'\b(einziges mitglied|seul administrateur|administrateur unique|alleiniges organ|alleiniger geschäftsführer|seul gérant|kein zeichnungsberechtigtes organ|die gesellschaft hat kein organ mehr)\b', lower_pdf))
+                    # Check if other board members / management exist
+                    has_remaining_organ = bool(re.search(r'\b(präsident des verwaltungsrates|delegierte[rn]? des verwaltungsrates|mitglied des verwaltungsrates|geschäftsführ|direktion|direktor)\b', lower_pdf))
+                    if sole_organ_exit:
+                        has_remaining_organ = False
+
+                    # 3. Purpose Filter (Private Vermögensverwaltung / Reine Liegenschaften / Domizilhülle)
+                    if re.search(r'\b(verwaltung (?:des )?eigenen vermögens|familiengesellschaft|private vermögensanlage|anlage und verwaltung (?:von )?eigenem vermögen|gestion de fortune privée|gestion de son propre patrimoine|amministrazione del proprio patrimonio)\b', lower_pdf):
+                        is_purpose_shell = True
+                        purpose_category = "Private Vermögensverwaltung"
+                    elif re.search(r'\b(halten und verwalten von liegenschaften|erwerb,? (?:halten,? )?verwalten von liegenschaften|erwerb,? belastung,? veräusserung und verwaltung von grundeigentum|erwerb,? halten und verkauf von immobilien|verwaltung von eigenem grundbesitz|reine immobilienholding|achat,? vente et gestion de biens immobiliers)\b', lower_pdf) or re.search(r'\b(immo ag|immobilien ag|immo sa|immobilière sa|real estate ag)\b', company.lower()):
+                        is_purpose_shell = True
+                        purpose_category = "Reiner Liegenschaftsbesitzer"
+                    elif re.search(r'\b(domizilgewährung|gewährung von domizilen|übernahme von domizilmandaten|domicile provider|briefkastengesellschaft|adresse de complaisance|octroi de domicile)\b', lower_pdf):
+                        is_purpose_shell = True
+                        purpose_category = "Domizilhülle / Briefkastengesellschaft"
 
                     # FILTER: Wenn reine Adress-, Statuten- oder Zweckänderung OHNE Organ-Austritt -> SOFORT VERWERFEN!
                     if not has_organ_exit and not has_organ_role:
@@ -138,7 +184,16 @@ def fetch_swiss_shab_feed(url=None):
                 'published_at': parsed_dt.isoformat() if parsed_dt else pub_date,
                 'region': 'CH',
                 'has_organ_exit': has_organ_exit,
-                'has_successor': has_successor
+                'has_successor': has_successor,
+                'dormant_months': dormant_months,
+                'previous_pub_date': previous_pub_date,
+                'is_dormant_shell': is_dormant_shell,
+                'has_art_731b': has_art_731b,
+                'sole_organ_exit': sole_organ_exit,
+                'has_remaining_organ': has_remaining_organ,
+                'is_purpose_shell': is_purpose_shell,
+                'purpose_category': purpose_category,
+                'raw_pdf_text': full_pdf_text
             })
 
     except Exception as e:

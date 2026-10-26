@@ -213,23 +213,125 @@ def audit_mandate_lead(item, eval_result):
             }
             return False, f"GATE_0_REJECTED: {rationale}", parsed
 
+    # ── HARTE K.O.-KRITERIEN (INGESTION-FILTER & SCORER) ──
+    combined_eval_text = f"{title} {snippet} {item.get('raw_pdf_text', '')}".lower()
+
+    # K.O. 1: Max_Dormant_Months (> 36 Monate -> automatischer Drop auf Tier 3 / 'discarded')
+    dormant_months = item.get('dormant_months', 0)
+    if not dormant_months:
+        dm_match = re.search(
+            r'(?:Vorangehende Publikation im SHAB|Pr[eé]c[eé]dente publication dans la FOSC|Precedente pubblicazione nel FUSC).*?(?:Datum|date|data|vom|du|del)?[:\s]+(\d{1,2}\.\d{1,2}\.\d{4})|\((?:SHAB|FOSC|FUSC)(?:\s+Nr\.?\s*\d+)?\s+(?:vom|du|del)\s+(\d{1,2}\.\d{1,2}\.\d{4})',
+            f"{title} {snippet} {item.get('raw_pdf_text', '')}",
+            re.IGNORECASE
+        )
+        if dm_match:
+            try:
+                prev_date_str = dm_match.group(1) or dm_match.group(2)
+                prev_dt = datetime.strptime(prev_date_str, '%d.%m.%Y')
+                cur_dt = datetime.now(timezone.utc)
+                dormant_months = (cur_dt.year - prev_dt.year) * 12 + (cur_dt.month - prev_dt.month)
+            except Exception:
+                pass
+
+    if item.get('is_dormant_shell') or (dormant_months and dormant_months > 36):
+        rationale = f"Vorherige Registerpublikation liegt {dormant_months} Monate zurück (> 36 Monate). Inaktive Mantelgesellschaft / Karteileiche ohne operativen Geschäftsbetrieb."
+        parsed = {
+            'status': 'discarded',
+            'tier': 'TIER_3',
+            'is_valid_mandate_event': False,
+            'is_fresh': True,
+            'company_name': company,
+            'role': 'Inaktive Hülle',
+            'event_type': 'Inaktive Mantelgesellschaft (>36 Monate inaktiv)',
+            'vacuum_check': f'K.O. DROP: Vorherige SHAB-Publikation liegt {dormant_months} Monate zurück (> 36 Monate). Inaktive Hülle.',
+            'urgency_check': '0 € Mandatswert (Karteileiche ohne laufenden Geschäftsbetrieb)',
+            'audit_verdict': 'DISCARDED_DORMANT_SHELL',
+            'audit_rationale': f"Automatischer Drop auf Tier 3 / Status 'discarded': {rationale}",
+            'rejection_reason': 'Dormant_Shell',
+            'estimated_budget': '0 €',
+            'confidence': 0.99
+        }
+        return False, f"KO_DROP_DORMANT_SHELL: {dormant_months} Monate inaktiv", parsed
+
+    # K.O. 2: Total_Organ_Vacancy (Art. 731b OR - Scheidet einziges Organ aus -> kein vertragsfähiger Partner)
+    has_art_731b = item.get('has_art_731b') or bool(re.search(r'\b(731b\s*or|731b\s*co|organmangel|mängel in der organisation)\b', combined_eval_text))
+    sole_organ_exit = item.get('sole_organ_exit') or bool(re.search(r'\b(einziges mitglied|seul administrateur|administrateur unique|alleiniges organ|alleiniger geschäftsführer|seul gérant|kein zeichnungsberechtigtes organ|die gesellschaft hat kein organ mehr)\b', combined_eval_text))
+
+    if has_art_731b or sole_organ_exit:
+        rationale = "Scheidet das einzige Organ aus und verbleibt kein einziger zeichnungsberechtigter Verwaltungsrat oder Direktor im Register, liegt ein gesetzlicher Organmangel nach Art. 731b OR vor. Es existiert kein handlungs- oder vertragsfähiger Partner."
+        parsed = {
+            'status': 'discarded',
+            'tier': 'TIER_3',
+            'is_valid_mandate_event': False,
+            'is_fresh': True,
+            'company_name': company,
+            'role': 'Organ-Totalvakanz (Art. 731b OR)',
+            'event_type': 'Organmangel / Kein vertragsfähiger Partner',
+            'vacuum_check': 'K.O. DROP: Einziges Organ ausgeschieden / Art. 731b OR. Kein zeichnungsberechtigtes Organ verblieben.',
+            'urgency_check': '0 € Mandatswert (Keine handlungsfähige Gegenseite für Mandatsvertrag)',
+            'audit_verdict': 'DISCARDED_NO_CONTRACTOR',
+            'audit_rationale': f"Automatischer Drop auf Tier 3 / Status 'discarded': {rationale}",
+            'rejection_reason': 'Complete_Organ_Vacuum_No_Contractor',
+            'estimated_budget': '0 €',
+            'confidence': 0.99
+        }
+        return False, "KO_DROP_ORGAN_VACUUM: Art. 731b OR / Kein vertragsfähiger Auftraggeber", parsed
+
+    # K.O. 3: Purpose_Filter (Reine Vermögensverwaltung, Liegenschaftsbesitzer, Domizilhülle als Tier 3)
+    is_purpose_shell = item.get('is_purpose_shell')
+    purpose_category = item.get('purpose_category')
+
+    if not is_purpose_shell:
+        if re.search(r'\b(verwaltung (?:des )?eigenen vermögens|familiengesellschaft|private vermögensanlage|anlage und verwaltung (?:von )?eigenem vermögen|gestion de fortune privée|gestion de son propre patrimoine|amministrazione del proprio patrimonio)\b', combined_eval_text):
+            is_purpose_shell = True
+            purpose_category = "Private Vermögensverwaltung"
+        elif re.search(r'\b(halten und verwalten von liegenschaften|erwerb,? (?:halten,? )?verwalten von liegenschaften|erwerb,? belastung,? veräusserung und verwaltung von grundeigentum|erwerb,? halten und verkauf von immobilien|verwaltung von eigenem grundbesitz|reine immobilienholding|achat,? vente et gestion de biens immobiliers)\b', combined_eval_text) or re.search(r'\b(immo ag|immobilien ag|immo sa|immobilière sa|real estate ag)\b', company.lower()):
+            is_purpose_shell = True
+            purpose_category = "Reiner Liegenschaftsbesitzer"
+        elif re.search(r'\b(domizilgewährung|gewährung von domizilen|übernahme von domizilmandaten|domicile provider|briefkastengesellschaft|adresse de complaisance|octroi de domicile)\b', combined_eval_text):
+            is_purpose_shell = True
+            purpose_category = "Domizilhülle / Briefkastengesellschaft"
+
+    if is_purpose_shell:
+        cat_str = purpose_category or "Mantelgesellschaft"
+        rationale = f"Reine private Vermögensverwaltung, Liegenschaftsbesitzer oder Domizilhülle ({cat_str}) ohne operatives Personal oder Mandatsbedarf."
+        parsed = {
+            'status': 'discarded',
+            'tier': 'TIER_3',
+            'is_valid_mandate_event': False,
+            'is_fresh': True,
+            'company_name': company,
+            'role': 'Vermögensverwaltung / Liegenschaftshülle',
+            'event_type': f'{cat_str} (Keine operative Tätigkeit)',
+            'vacuum_check': f'K.O. DROP: {cat_str}. Keine operative B2B-Geschäftstätigkeit.',
+            'urgency_check': '0 € Mandatswert (Reine Vermögens- oder Liegenschaftshülle)',
+            'audit_verdict': 'DISCARDED_PRIVATE_ASSET_OR_SHELL',
+            'audit_rationale': f"Automatischer Drop auf Tier 3 / Status 'discarded': {rationale}",
+            'rejection_reason': 'Private_Asset_Or_Shell',
+            'estimated_budget': '0 €',
+            'confidence': 0.99
+        }
+        return False, f"KO_DROP_PURPOSE_SHELL: {cat_str}", parsed
+
+    # ── SEMANTISCHES LLM-AUDIT (FÜR ECHTE OPERATIVE UNTERNEHMEN) ──
     prompt = f"""Du bist der NeXus DealCoach. Analysiere diese europäische Wirtschaftsmeldung als automatisierte Revisions- und Vorsortierungs-Instanz für Harros Mandats-Desk:
 HEUTIGES DATUM: {today_str}
 
 DEINE PRÜF-KRITERIEN:
 
-1. VAKUUM-CHECK:
-   - Ist der Organ-Posten (Vorstand, CEO, CFO, CRO, Aufsichtsrat, GF) unbesetzt oder droht Stillstand?
-   - Oder handelt es sich um planmäßige Routine / keinen Organwechsel?
+1. QUALIFIKATION FÜR "TIER_1_TOP" (ACTIVE MANDATE SIGNAL):
+   - Mindestens 1 weiteres handelndes Organ oder aktiver Gesellschafterkreis vorhanden (vertragsfähiger Partner).
+   - Nachweisbare operative Geschäftstätigkeit (aktive Domain, Plattform, Marktauftritt, wie bei cosquare AG).
+   - Reale Führungslücke bei bestehendem Geschäftsbetrieb (akutes Ausscheiden C-Level / Board-Mitglied).
+   - Budget: 150k – 320k €.
 
-2. DRINGLICHKEIT & HANDLUNGSDRUCK:
-   - Gibt es eine Notlösung (z.B. Aufsichtsrat springt interimistisch ein)?
-   - Akuter Sanierungsdruck (StaRUG, CRO-Bedarf, Schutzschirm)?
+2. QUALIFIKATION FÜR "TIER_2_MID":
+   - Gehobener Mittelstand ab 20 Mio. €, operative Interimsleitung oder Restrukturierung. Budget 80k – 150k €.
 
-3. KLASSIFIZIERUNG IN VERWERTUNGS-TÖPFE (tier):
-   - "TIER_1_TOP": Großunternehmen / Börsennotiert (AG, SE, Plc, DAX, FTSE), C-Level Organvakanz. Budget 150k – 320k €.
-   - "TIER_2_MID": Gehobener Mittelstand, operative Leitung / Interimsleitung. Budget 80k – 150k €.
-   - "PRÜFUNG_EMPFOHLEN": Routine-Börsenmeldung, Stimmrechte, Q3-Berichte oder unklarer Handlungsbedarf (zur Chefsache-Sichtung durch Harro).
+3. K.O.-DROP AUF "TIER_3" (STATUS 'discarded'):
+   - Inaktive Hüllen / Karteileichen (>36 Monate inaktiv).
+   - Vollständiger Organmangel (Art. 731b OR: einziges Organ scheidet aus, kein vertragsfähiger Partner).
+   - Reine private Vermögensverwaltung, Liegenschaftsbesitzer oder Domizilhüllen.
 
 MELDUNG:
 Unternehmen: {company}
@@ -240,22 +342,25 @@ Publikationsdatum: {published_at or today_str}
 
 Antworte AUSSCHLIESSLICH in diesem JSON-Format:
 {{
-  "tier": "TIER_1_TOP" | "TIER_2_MID" | "PRÜFUNG_EMPFOHLEN",
-  "is_valid_mandate_event": true,
+  "tier": "TIER_1_TOP" | "TIER_2_MID" | "TIER_3",
+  "status": "pending" | "discarded",
+  "is_valid_mandate_event": true | false,
   "is_fresh": true,
   "event_date": "YYYY-MM-DD des Vorfalls oder null",
   "company_name": "Exakter Firmenname",
   "legal_form": "AG | SE | KGaA | Plc | SA | NV | SpA | Corp | Groß-GmbH | Unbekannt",
   "role": "Organrolle (z.B. CEO, CFO, CRO, Aufsichtsrat, Board)",
   "person_name": "Name der Person oder leer",
-  "event_type": "Abrupte Organ-Vakanz & Rücktritt | Restrukturierung & CRO | Not-Governance & AR-Interim | M&A Board-Umbau | PE Carve-Out | Pflichtmitteilung",
+  "event_type": "Akutes Organ-Vakuum & Transition | Restrukturierung & CRO | Not-Governance | Routine | Mantelgesellschaft",
+  "has_remaining_organ": true | false,
+  "has_operating_business": true | false,
   "vacuum_check": "Vakuum-Einschätzung",
   "urgency_check": "Dringlichkeits-Einschätzung",
-  "audit_verdict": "QUALIFIZIERT_MANDATSBEDARF" | "PRÜFUNG_EMPFOHLEN",
+  "audit_verdict": "AKUTER C-LEVEL / ORGAN-MANDATSBEDARF" | "OPERATIVER INTERIM- & LEITUNGSBEDARF" | "DISCARDED",
   "audit_rationale": "Prägnante DealCoach-Begründung für Harro.",
-  "estimated_budget": "150k - 320k €" | "80k - 150k €" | "Auf Anfrage",
+  "estimated_budget": "150k - 320k €" | "80k - 150k €" | "0 €",
   "confidence": 0.0 - 1.0,
-  "rejection_reason": ""
+  "rejection_reason": "Dormant_Shell | Complete_Organ_Vacuum_No_Contractor | Private_Asset_Or_Shell | null"
 }}"""
 
     raw_response = None
@@ -281,7 +386,7 @@ Antworte AUSSCHLIESSLICH in diesem JSON-Format:
     if not parsed or not isinstance(parsed, dict):
         parsed = {
             'status': 'pending',
-            'tier': 'PRÜFUNG_EMPFOHLEN',
+            'tier': 'TIER_2_MID',
             'is_valid_mandate_event': True,
             'is_fresh': True,
             'company_name': company,
@@ -289,26 +394,46 @@ Antworte AUSSCHLIESSLICH in diesem JSON-Format:
             'event_type': 'Primärmeldung',
             'vacuum_check': 'Manuelle Prüfung erforderlich',
             'urgency_check': 'Primärmeldung zur Chefsache-Prüfung',
-            'audit_verdict': 'PRÜFUNG_EMPFOHLEN',
+            'audit_verdict': 'OPERATIVER INTERIM- & LEITUNGSBEDARF',
             'audit_rationale': 'Primärmeldung aus Primärquelle. Zur manuellen Sichtung im Mandats-Desk vorgelegt.',
-            'estimated_budget': 'Auf Anfrage',
+            'estimated_budget': '80.000 € – 150.000 €',
             'confidence': 0.75
         }
         return True, "DEALCOACH_MANUELLE_PRÜFUNG", parsed
 
-    raw_tier = parsed.get('tier', 'PRÜFUNG_EMPFOHLEN')
+    raw_tier = parsed.get('tier', 'TIER_2_MID')
     if raw_tier in ('TIER_1_TOP', 'TIER_1'):
-        tier = 'TIER_1_TOP'
+        # Validierung der Tier 1 Kriterien:
+        # 1. Mindestens 1 weiteres handelndes Organ oder aktiver Gesellschafterkreis vorhanden
+        # 2. Reale Führungslücke bei bestehendem Geschäftsbetrieb
+        if parsed.get('has_remaining_organ') is False or item.get('sole_organ_exit'):
+            tier = 'TIER_3'
+            parsed['status'] = 'discarded'
+            parsed['rejection_reason'] = 'Complete_Organ_Vacuum_No_Contractor'
+            parsed['audit_verdict'] = 'DISCARDED_NO_CONTRACTOR'
+            parsed['audit_rationale'] = "Drop auf Tier 3: Kein verbleibendes Organ im Register verblieben (Art. 731b OR)."
+        else:
+            tier = 'TIER_1_TOP'
+            parsed['status'] = 'pending'
+    elif raw_tier in ('TIER_3', 'REJECTED') or parsed.get('status') == 'discarded':
+        tier = 'TIER_3'
+        parsed['status'] = 'discarded'
     elif raw_tier in ('TIER_2_MID', 'TIER_2'):
         tier = 'TIER_2_MID'
+        parsed['status'] = 'pending'
     else:
-        tier = 'PRÜFUNG_EMPFOHLEN'
+        tier = 'TIER_2_MID'
+        parsed['status'] = 'pending'
 
-    parsed['status'] = 'pending'
     parsed['tier'] = tier
+    if tier == 'TIER_3':
+        parsed['is_valid_mandate_event'] = False
+        parsed['status'] = 'discarded'
+        return False, f"KO_DROP ({parsed.get('rejection_reason', 'Tier 3 Discarded')}): {parsed.get('audit_rationale', '')[:80]}", parsed
+
     parsed['is_valid_mandate_event'] = True
     parsed['is_fresh'] = True
     if not parsed.get('audit_rationale'):
-        parsed['audit_rationale'] = parsed.get('rejection_reason') or 'Zur manuellen Prüfung durch Harro im Mandats-Desk vorgelegt.'
+        parsed['audit_rationale'] = 'Zur manuellen Prüfung durch Harro im Mandats-Desk vorgelegt.'
 
-    return True, f"DEALCOACH_VOREINSCHÄTZUNG ({tier}): {parsed.get('audit_rationale')[:80]}", parsed
+    return True, f"DEALCOACH_QUALIFIZIERT ({tier}): {parsed.get('audit_rationale')[:80]}", parsed

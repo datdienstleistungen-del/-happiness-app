@@ -14,6 +14,9 @@ SIGNAL_CATEGORIES = {
         "base_confidence": 0.92,
         "keywords": [
             # German (DE)
+            "ausgeschiedene personen",
+            "ausgeschieden",
+            "erloschene unterschriften",
             "vorzeitiges ausscheiden",
             "amtsniederlegung",
             "scheidet per sofort aus",
@@ -43,6 +46,7 @@ SIGNAL_CATEGORIES = {
             "vorstandsruecktritt",
             "nachfolge regeln",
             # English (EN)
+            "directorate change",
             "steps down with immediate effect",
             "resignation",
             "interim ceo",
@@ -193,23 +197,26 @@ ROLE_BLACKLIST = [
 
 # Whitelist: Nur echte Organ- und C-Level-Positionen passieren den Ingestion-Filter
 ROLE_WHITELIST = [
-    "vorstand", "aufsichtsrat", "beirat", "ceo", "cfo", "cro", "coo",
-    "managing director", "geschäftsführer", "geschaeftsfuehrer", "general counsel",
-    "partner", "verwaltungsrat", "vorstandsvorsitzender", "vorstandssprecher",
-    "vorstandsmitglied", "directeur général", "directeur general", "consejero delegado",
+    "vorstand", "vorstands", "vorstandes", "vorstandsmitglied", "vorstandsvorsitzender", "vorstandssprecher",
+    "aufsichtsrat", "aufsichtsrats", "aufsichtsrates", "beirat", "ceo", "cfo", "cro", "coo",
+    "managing director", "geschäftsführer", "geschaeftsfuehrer", "geschäftsführung", "geschaeftsfuehrung",
+    "general counsel", "partner", "verwaltungsrat", "verwaltungsrats", "verwaltungsrates", "verwaltungsrätin",
+    "verwaltungsraetin", "verwaltungsräte", "directeur général", "directeur general", "consejero delegado",
     "amministratore delegato", "chief executive", "chief financial", "chief restructuring",
-    "chief operating", "directeur financier", "président du directoire", "president du directoire"
+    "chief operating", "directeur financier", "président du directoire", "president du directoire",
+    "director", "directors", "directorate"
 ]
 
 # Pflichtfeld Event: Zwingend erforderliche Anlass-Schlüsselwörter (Zero-Tolerance Gatekeeper)
 MANDATORY_EVENT_KEYWORDS = [
-    "rücktritt", "ruecktritt", "amtsniederlegung", "ausscheiden", "abberufung",
-    "vorstandswechsel", "nachfolge", "sanierung", "starug", "schutzschirm",
+    "rücktritt", "ruecktritt", "amtsniederlegung", "ausscheiden", "ausgeschieden", "ausgeschiedene", "ausgeschiedener",
+    "abberufung", "vorstandswechsel", "nachfolge", "sanierung", "starug", "schutzschirm",
     "insolvenz", "restrukturierung", "carve-out", "carve out", "m&a", "übernahme",
-    "uebernahme", "abspaltung", "steps down", "resignation", "resigns",
-    "leadership transition", "board changes", "dimisión", "dimision", "renuncia",
+    "uebernahme", "abspaltung", "steps down", "resignation", "resigns", "resigned",
+    "leadership transition", "board changes", "directorate change", "dimisión", "dimision", "renuncia",
     "cese", "démission", "demission", "avvicendamento", "cessazione",
-    "verlässt das unternehmen", "verlaesst das unternehmen", "niederlegung des mandats"
+    "verlässt das unternehmen", "verlaesst das unternehmen", "niederlegung des mandats",
+    "erloschene unterschriften", "erloschen"
 ]
 
 # Rechtsformen Whitelist (Strikt Enterprise / Kapitalgesellschaften)
