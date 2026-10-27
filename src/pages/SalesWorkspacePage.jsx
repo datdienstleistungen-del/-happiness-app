@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Briefcase, Mail, MessageSquare, Send, Copy, CheckCircle, AlertCircle, List, Trash2, ArrowRight, Search, Share2, ExternalLink, Video, Globe, Sparkles, RefreshCw, Clock, Check, Loader2, X, Eye, ShieldCheck, FileText, Zap, Edit3, ShieldAlert, AlertTriangle } from 'lucide-react'
+import { Briefcase, Mail, MessageSquare, Send, Copy, CheckCircle, AlertCircle, List, Trash2, ArrowRight, Search, Share2, ExternalLink, Video, Globe, Sparkles, RefreshCw, Clock, Check, Loader2, X, Eye, ShieldCheck, FileText, Zap, Edit3, ShieldAlert, AlertTriangle, Printer, Download, UserCheck, Archive } from 'lucide-react'
 import { callNexusAI, runDeepResearch, callContactIntelligence, callMessageGeneration, callSocialIntelligence } from '../lib/nexus-ai'
 import { isPlaceholderCompany, computeTargetMatchScore, classifyB2BLifecycle, getCategoryLifecycleConfig, hasConcreteVerifiedAnlass, isBlacklistedRole } from '../lib/nexus-validation'
 import { formatEventDate, extractDomain, getFreshnessTrafficLight } from '../lib/nexus-dates'
@@ -24,6 +24,168 @@ const MODI = [
 ]
 
 import { useNavigate, useSearchParams } from 'react-router-dom'
+
+// Standardisierte akkreditierte Partner für Swiss & International Desk
+export const OUTREACH_PARTNERS = [
+  {
+    id: 'topfifty',
+    name: 'Top Fifty AG',
+    location: 'Baar / Zug, Schweiz 🇨🇭',
+    contactPerson: 'Pierina Tannò',
+    role: 'Senior Partnerin & Board Advisory',
+    email: 'p.tanno@top50interim.com',
+    status: 'EXKLUSIV_RESERVIERT',
+    statusLabel: '14 Tage Exklusivität Schweiz',
+    exclusivityDays: 14,
+    defaultRefPrefix: 'CH-ZG-2026-VR',
+    lang: 'de'
+  },
+  {
+    id: 'bie_executive',
+    name: 'BIE Executive',
+    location: 'London, UK 🇬🇧',
+    contactPerson: 'Byron Tarboton',
+    role: 'Director & Practice Lead Interim Executive',
+    email: 'byron.tarboton@bie-executive.com',
+    status: 'FIRST_LOOK_AKTIV',
+    statusLabel: '48h First-Look UK',
+    exclusivityHours: 48,
+    defaultRefPrefix: 'INT-CH-2026',
+    lang: 'en'
+  },
+  {
+    id: 'taskforce',
+    name: 'taskforce - Management on Demand AG',
+    location: 'München / Zürich 🇩🇪 🇨🇭',
+    contactPerson: 'Partner-Desk DACH',
+    role: 'Vorstand & Mandats-Allokation',
+    email: 'mandate@taskforce.net',
+    status: 'ANGEBOTEN_RESERVIERT',
+    statusLabel: 'Groß-Provider Erstansprache',
+    exclusivityDays: 14,
+    defaultRefPrefix: 'CH-TF-2026',
+    lang: 'de'
+  },
+  {
+    id: 'atreus',
+    name: 'Atreus GmbH (A Heidrick & Struggles Company)',
+    location: 'München, Deutschland 🇩🇪',
+    contactPerson: 'Practice Group Restructuring',
+    role: 'Managing Director',
+    email: 'advisory@atreus.de',
+    status: 'ANGEBOTEN_RESERVIERT',
+    statusLabel: 'Transformation & Interim Vorstand',
+    exclusivityDays: 14,
+    defaultRefPrefix: 'DE-ATR-2026',
+    lang: 'de'
+  },
+  {
+    id: 'fp_executive',
+    name: 'F&P Executive Solutions AG',
+    location: 'Frankfurt am Main, Deutschland 🇩🇪',
+    contactPerson: 'Executive Board Desk',
+    role: 'Vorstand Restrukturierung',
+    email: 'kontakt@fp-executive.com',
+    status: 'ANGEBOTEN_RESERVIERT',
+    statusLabel: 'Mittelstands-Sanierung & CRO',
+    exclusivityDays: 14,
+    defaultRefPrefix: 'DE-FP-2026',
+    lang: 'de'
+  },
+  {
+    id: 'private_pe',
+    name: 'Freies Family Office & PE-Boutiquen-Netzwerk',
+    location: 'Zürich / London / Frankfurt 🇨🇭 🇬🇧 🇩🇪',
+    contactPerson: 'Investment & Interim Director',
+    role: 'Portfolio Operations',
+    email: 'private-mandates@dat-nexus.com',
+    status: 'DISKRIT_RESERVIERT',
+    statusLabel: 'Diskrete Platzierung PE',
+    exclusivityDays: 14,
+    defaultRefPrefix: 'PE-INV-2026',
+    lang: 'de'
+  }
+];
+
+export function generateGermanOutreachEmail({ partner, refCode, region, segment, role, incident }) {
+  const pName = partner?.contactPerson || 'Damen und Herren';
+  const salutation = pName.includes('Frau') || pName.includes('Pierina') || pName.includes('Tannò')
+    ? `Sehr geehrte Frau ${pName.split(' ').pop()},`
+    : pName.includes('Herr') || pName.includes('Byron')
+      ? `Sehr geehrter Herr ${pName.split(' ').pop()},`
+      : `Sehr geehrte Damen und Herren,`;
+
+  const subject = `Diskretes Mandatssignal: Organ-Vakuum VR / C-Level (${region} · ${segment})`;
+
+  const body = `${salutation}
+
+über unseren Mandate Desk identifizieren wir tagesaktuell signifikante Organ-Vakanzen und Führungslücken im europäischen Markt.
+
+Am Standort ${region} liegt uns ein akutes Organ-Vakuum bei einer schweizerischen Technologie-AG vor: Ein vollwertiges Mitglied des Verwaltungsrates mit Einzelunterschrift ist per sofort ausgeschieden, ohne dass eine Nachfolge geregelt ist.
+
+Da hier unmittelbarer Handlungsdruck bezüglich Board-Governance, Organvertretung und operativer Handlungsfähigkeit besteht, stellen wir diesen Anlass einem ausgewählten Partner zur Mandatierung zur Verfügung.
+
+Ihnen sichern wir für diesen Fall absolute Exklusivität zu – das Signal wird von uns an keinen weiteren Provider oder Wettbewerber im Schweizer Markt herausgegeben.
+
+Das anonymisierte Blind-Profil zur Ersteinschätzung:
+
+Referenz: ${refCode}
+Region & Rechtsform: ${region} · Aktiengesellschaft (AG)
+Segment: ${segment}
+Anlass: ${incident}
+Bedarf: ${role}
+Status: Vakant / Frei zur Erstansprache
+
+Weitere Informationen zu unserem Mandate Desk finden Sie unter:
+https://dat-dat.de
+
+Bei Interesse an den verifizierten Klardaten und Organ-Details für Ihre Mandatsansprache freue ich mich über Ihre kurze Rückmeldung.
+
+Mit freundlichen Grüßen
+
+Harro Goerndt
+D.A.T. Dienstleistungen · Executive Mandate Desk
+Weserstraße 16 · 26382 Wilhelmshaven`;
+
+  return { subject, body };
+}
+
+export function generateEnglishOutreachEmail({ partner, refCode, region, segment, role, incident }) {
+  const pName = partner?.contactPerson || 'Executive';
+  const lastName = pName.split(' ').pop();
+  const salutation = `Dear Mr ${lastName},`;
+  const subject = `Mandate Opportunity: Executive / Board Transition (Greater Zurich Area)`;
+
+  const body = `${salutation}
+
+Through our European Mandate Desk, we monitor primary statutory registers for acute C-level and board-level transitions across key European jurisdictions.
+
+We have identified an immediate governance and leadership vacancy at a Swiss digital technology corporation (Aktiengesellschaft) located within the greater Zurich / Central Switzerland economic area. A senior board director has stepped down with immediate effect, leaving an unstaffed organ vacancy.
+
+Due to interim governance requirements, we are presenting this event to an established executive interim partner. We grant you exclusive first-look rights for the UK market on this lead until Wednesday, 28 October 2026, 17:00 BST. Should you decline or not confirm by this deadline, exclusivity expires.
+
+Anonymised Mandate Overview:
+- Reference: ${refCode}
+- Region & Entity: Greater Zurich Area / Central Switzerland · Swiss Corporation (AG)
+- Industry: ${segment}
+- Trigger: ${incident}
+- Requirement: ${role}
+- Status: Open for primary outreach
+
+Further information about our executive desk:
+https://dat-dat.de
+
+To receive the verified corporate entity details, primary filing records, and source documentation, please confirm your interest by replying directly to this email.
+
+Best regards,
+
+Harro Goerndt
+D.A.T. Dienstleistungen · Executive Mandate Desk
+Weserstraße 16 · 26382 Wilhelmshaven, Germany`;
+
+  return { subject, body };
+}
+
 
 export function extractTriggerMeta(content = '') {
   if (typeof content !== 'string') {
@@ -215,11 +377,21 @@ export default function SalesWorkspacePage() {
   // Blind-Profil State & Modal
   const [showBlindProfileModal, setShowBlindProfileModal] = useState(false)
   const [copiedBlindText, setCopiedBlindText] = useState(false)
-  const [blindProfileTab, setBlindProfileTab] = useState('teaser') // 'teaser' | 'vault' | 'edit'
+  const [blindProfileTab, setBlindProfileTab] = useState('teaser') // 'teaser' | 'vault' | 'edit' | 'outreach'
   const [customBlindCompany, setCustomBlindCompany] = useState('')
   const [customBlindLocation, setCustomBlindLocation] = useState('')
   const [customBlindPainPoint, setCustomBlindPainPoint] = useState('')
   const [isSavingBlindProfile, setIsSavingBlindProfile] = useState(false)
+
+  // Outreach Integration State
+  const [outreachPartnerId, setOutreachPartnerId] = useState('topfifty')
+  const [outreachRole, setOutreachRole] = useState('')
+  const [outreachRefCode, setOutreachRefCode] = useState('')
+  const [outreachSubject, setOutreachSubject] = useState('')
+  const [outreachBody, setOutreachBody] = useState('')
+  const [isOutreachLogging, setIsOutreachLogging] = useState(false)
+  const [copiedOutreachMail, setCopiedOutreachMail] = useState(false)
+  const [outreachSuccessMessage, setOutreachSuccessMessage] = useState('')
 
   // Harter Reputationsschutz ('Kalter Kaffee' Warn-Modal vor Export / Weitergabe bei >48h)
   const [staleWarningModal, setStaleWarningModal] = useState(null)
@@ -419,6 +591,50 @@ export default function SalesWorkspacePage() {
       }
     }
   }, [activeOpp?.id])
+
+  // Synchronisiere Outreach-Formular bei aktivem Lead oder Partnerwechsel
+  useEffect(() => {
+    if (!activeOpp) return;
+    const partner = OUTREACH_PARTNERS.find(p => p.id === outreachPartnerId) || OUTREACH_PARTNERS[0];
+    const isSwiss = (activeOpp.country === 'CH' || (activeOpp.title || '').includes('[CH]') || (activeOpp.situation || '').includes('Zug') || (activeOpp.situation || '').includes('Schweiz'));
+    
+    // Bestehenden RefCode aus Tags suchen oder generieren
+    const existingRefTag = Array.isArray(activeOpp.tags) ? activeOpp.tags.find(t => t.startsWith('CH-') || t.startsWith('INT-')) : null;
+    let refCode = existingRefTag;
+    if (!refCode) {
+      if (partner.lang === 'en') {
+        refCode = `INT-CH-2026-${activeOpp.id ? activeOpp.id.slice(0, 3).toUpperCase() : '081'}`;
+      } else {
+        refCode = `CH-ZG-2026-VR-${activeOpp.id ? activeOpp.id.slice(0, 2).toUpperCase() : '01'}`;
+      }
+    }
+
+    // Role aus Trigger/Situation parsen
+    const parsedRole = (() => {
+      const sit = activeOpp.situation || '';
+      const mRole = sit.match(/\[ROLE\]:\s*([^\n\r]+)/i);
+      if (mRole) return mRole[1].trim();
+      const mOrgan = sit.match(/\b(Mitglied des Verwaltungsrates|Präsident des Verwaltungsrates|Verwaltungsrat|Vorstand|CEO|CFO|CRO)\b/i);
+      return mOrgan ? mOrgan[0].trim() : 'Interim Board Member / Governance & Transition Lead';
+    })();
+    setOutreachRole(parsedRole);
+    setOutreachRefCode(refCode);
+
+    // Segment & Incident
+    const segment = (activeOpp.industry && activeOpp.industry !== 'B2B & Industrie') ? activeOpp.industry : 'Digital Commerce / Video-Tech (Scale-up)';
+    const region = isSwiss ? 'Kanton Zug (Schweiz)' : 'DACH / Zentraleuropa';
+    const incident = 'Akutes Ausscheiden Verwaltungsrat mit Einzelunterschrift per sofort / Vakanz';
+
+    if (partner.lang === 'en') {
+      const { subject, body } = generateEnglishOutreachEmail({ partner, refCode, region, segment, role: parsedRole, incident });
+      setOutreachSubject(subject);
+      setOutreachBody(body);
+    } else {
+      const { subject, body } = generateGermanOutreachEmail({ partner, refCode, region, segment, role: parsedRole, incident });
+      setOutreachSubject(subject);
+      setOutreachBody(body);
+    }
+  }, [activeOpp?.id, outreachPartnerId])
 
   // 1. AUTOMATISCHE PRÜFNOTIZ: Sobald alle 5 Punkte a-e auf "Bestanden" stehen
   useEffect(() => {
@@ -882,6 +1098,152 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
       alert('Fehler beim Protokollieren der Übermittlung.');
     } finally {
       setIsDirectPublishing(false);
+    }
+  };
+
+  const handleExecuteOutreach = async () => {
+    if (!activeOpp) return;
+    setIsOutreachLogging(true);
+    setOutreachSuccessMessage('');
+    try {
+      const partner = OUTREACH_PARTNERS.find(p => p.id === outreachPartnerId) || OUTREACH_PARTNERS[0];
+      const oppId = activeOpp.id;
+      const now = new Date();
+      const protectionDate = new Date(now);
+      if (partner.exclusivityHours) {
+        protectionDate.setHours(protectionDate.getHours() + partner.exclusivityHours);
+      } else {
+        protectionDate.setDate(protectionDate.getDate() + (partner.exclusivityDays || 14));
+      }
+      const longProtection = new Date(now);
+      longProtection.setFullYear(longProtection.getFullYear() + 1);
+
+      const compName = resolveOppCompanyHelper(activeOpp) || activeOpp.nexus_companies?.name || activeOpp.title || 'Mandat';
+
+      // 1. In Supabase nexus_activities speichern
+      const activityPayload = {
+        entity_type: 'opportunity',
+        entity_id: oppId,
+        opportunity_id: oppId,
+        user_id: user?.id || '976e6211-8931-425a-a171-0c062290181b',
+        actor_type: 'USER',
+        actor_name: 'Harro Goerndt',
+        activity_type: 'email_sent',
+        description: `Original-Ansprache versendet: ${partner.name} · ${partner.contactPerson} (${partner.email}) | Ref: ${outreachRefCode} · ${partner.statusLabel}`,
+        metadata: {
+          recipient: partner.contactPerson,
+          organization: partner.name,
+          email: partner.email,
+          location: partner.location,
+          role: outreachRole,
+          subject: outreachSubject,
+          body: outreachBody,
+          reference_code: outreachRefCode,
+          target_company: compName,
+          status: partner.status,
+          sent_at: now.toISOString(),
+          protection_until: protectionDate.toISOString()
+        }
+      };
+
+      try {
+        await supabase.from('nexus_activities').insert(activityPayload);
+      } catch (e) {
+        console.warn('nexus_activities insert warning:', e);
+      }
+
+      // 2. nexus_opportunities updaten
+      const existingTags = Array.isArray(activeOpp.tags) ? activeOpp.tags : [];
+      const updatedTags = Array.from(new Set([
+        ...existingTags,
+        partner.status,
+        partner.name.replace(/\s+/g, '_'),
+        outreachRefCode,
+        'contacted'
+      ]));
+
+      try {
+        await db.updateOpportunity(oppId, {
+          pipeline_stage: 'contacted',
+          review_status: 'verified',
+          tags: updatedTags,
+          review_notes: `[Outreach Journal]: Angeboten an ${partner.contactPerson} (${partner.name}) · Ref: ${outreachRefCode} · Status: ${partner.status} bis ${protectionDate.toLocaleDateString('de-DE')}`
+        });
+        setActiveOpp(prev => ({
+          ...prev,
+          pipeline_stage: 'contacted',
+          review_status: 'verified',
+          tags: updatedTags
+        }));
+      } catch (e) {
+        console.warn('db.updateOpportunity warning:', e);
+      }
+
+      // 3. localStorage nexus:outreach_journal_v1 updaten
+      try {
+        const existingJournal = JSON.parse(localStorage.getItem('nexus:outreach_journal_v1') || '[]');
+        const journalEntry = {
+          id: `act-${Date.now()}`,
+          leadId: oppId,
+          company: compName,
+          partnerId: partner.id,
+          recipient: partner.contactPerson,
+          organization: partner.name,
+          email: partner.email,
+          referenceCode: outreachRefCode,
+          role: outreachRole,
+          subject: outreachSubject,
+          body: outreachBody,
+          status: partner.status,
+          sentAt: now.toISOString(),
+          protectionUntil: protectionDate.toISOString(),
+          blindProfile: {
+            entityType: 'Aktiengesellschaft (AG)',
+            region: partner.location.includes('Schweiz') ? 'Kanton Zug (Schweiz)' : 'Schweiz / Greater Zurich Area',
+            industry: 'Digital Commerce / Video-Tech (Scale-up)',
+            incident: 'Akutes Ausscheiden Verwaltungsrat mit Einzelunterschrift per sofort / Vakanz',
+            situationAnalysis: 'Organ-Vakuum bei schweizerischer Technologie-AG ohne geregelte Nachfolge.',
+            mandateAngle: outreachRole,
+            budgetRange: 'Auf Anfrage / Marktüblich',
+            exclusivityClause: `${partner.statusLabel} bis ${protectionDate.toLocaleDateString('de-DE')}`
+          }
+        };
+        localStorage.setItem('nexus:outreach_journal_v1', JSON.stringify([journalEntry, ...existingJournal.filter(j => j.id !== journalEntry.id)]));
+      } catch (e) {
+        console.warn('localStorage journal update warning:', e);
+      }
+
+      // 4. localStorage nexus:mandate_archive_v1 updaten
+      try {
+        const existingArchive = JSON.parse(localStorage.getItem('nexus:mandate_archive_v1') || '[]');
+        const archiveEntry = {
+          id: `arch-${Date.now()}`,
+          leadId: oppId,
+          company: compName,
+          countryMarket: partner.location.includes('Schweiz') ? 'CH · Zug (SHAB)' : 'CH / UK · Cross-Border',
+          role: outreachRole,
+          transmittedTo: `${partner.name} · ${partner.contactPerson}`,
+          transmittedAt: now.toISOString(),
+          protectionUntil: longProtection.toISOString(),
+          status: 'ANGEBOTEN_RESERVIERT',
+          notes: `${partner.statusLabel} bis ${protectionDate.toLocaleDateString('de-DE')}. Ref. ${outreachRefCode}`,
+          source: activeTrigger?.source || activeOpp.source || 'SHAB-Mutation'
+        };
+        localStorage.setItem('nexus:mandate_archive_v1', JSON.stringify([archiveEntry, ...existingArchive.filter(a => a.id !== archiveEntry.id)]));
+      } catch (e) {
+        console.warn('localStorage archive update warning:', e);
+      }
+
+      // 5. In Zwischenablage kopieren
+      navigator.clipboard.writeText(outreachBody);
+      setCopiedOutreachMail(true);
+      setOutreachSuccessMessage(`✅ Outreach an ${partner.name} erfolgreich protokolliert! E-Mail-Text in Zwischenablage kopiert & 12 Monate Kundenschutz gesichert.`);
+      if (refreshData) await refreshData();
+    } catch (err) {
+      console.error('Outreach execution error:', err);
+      alert('Fehler beim Protokollieren des Outreach: ' + err.message);
+    } finally {
+      setIsOutreachLogging(false);
     }
   };
 
@@ -2247,37 +2609,67 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                     </div>
                   </div>
 
-                  {/* Link zur Originalmeldung */}
-                  {hasValidSource ? (
-                    <a
-                      href={sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    {/* Prominenter Action-Button: Dossier & Teaser öffnen */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowBlindProfileModal(true);
+                        setBlindProfileTab('teaser');
+                      }}
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '8px',
-                        padding: '9px 16px',
-                        background: 'rgba(56, 189, 248, 0.1)',
-                        border: '1px solid rgba(56, 189, 248, 0.4)',
+                        padding: '9px 18px',
+                        background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                        border: '1px solid #38bdf8',
                         borderRadius: '8px',
-                        color: '#38bdf8',
+                        color: '#ffffff',
                         fontWeight: 700,
-                        fontSize: '0.86rem',
-                        textDecoration: 'none',
-                        transition: 'all 0.2s ease',
-                        boxShadow: '0 2px 10px rgba(56, 189, 248, 0.1)'
+                        fontSize: '0.88rem',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 14px rgba(2, 132, 199, 0.4)',
+                        transition: 'all 0.2s ease'
                       }}
-                      title={`Originalquelle öffnen (${domain})`}
+                      title="Dossier & Anonymisiertes 1-Page Blind-Profil öffnen"
                     >
-                      <span>Originalmeldung öffnen ({domain})</span>
-                      <ExternalLink size={15} />
-                    </a>
-                  ) : (
-                    <span style={{ color: '#64748b', fontSize: '0.84rem', fontStyle: 'italic' }}>
-                      Keine externe Primärquelle
-                    </span>
-                  )}
+                      <FileText size={16} />
+                      <span>📄 Dossier &amp; Teaser öffnen</span>
+                    </button>
+
+                    {/* Link zur Originalmeldung */}
+                    {hasValidSource ? (
+                      <a
+                        href={sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '9px 16px',
+                          background: 'rgba(56, 189, 248, 0.1)',
+                          border: '1px solid rgba(56, 189, 248, 0.4)',
+                          borderRadius: '8px',
+                          color: '#38bdf8',
+                          fontWeight: 700,
+                          fontSize: '0.86rem',
+                          textDecoration: 'none',
+                          transition: 'all 0.2s ease',
+                          boxShadow: '0 2px 10px rgba(56, 189, 248, 0.1)'
+                        }}
+                        title={`Originalquelle öffnen (${domain})`}
+                      >
+                        <span>Originalmeldung öffnen ({domain})</span>
+                        <ExternalLink size={15} />
+                      </a>
+                    ) : (
+                      <span style={{ color: '#64748b', fontSize: '0.84rem', fontStyle: 'italic' }}>
+                        Keine externe Primärquelle
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -2390,15 +2782,44 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                 </div>
               </div>
 
-              {/* ── 3. DREI EINDEUTIGE AKTIONS-BUTTONS AM UNTEREN RAND ── */}
+              {/* ── 3. VIER EINDEUTIGE AKTIONS-BUTTONS AM UNTEREN RAND ── */}
               <div className="pult-action-bar" style={{
                 marginTop: 'auto',
                 paddingTop: '20px',
                 borderTop: '1px solid #1e232d',
                 display: 'grid',
-                gridTemplateColumns: '1fr 1.3fr 1.3fr',
-                gap: '14px'
+                gridTemplateColumns: '1.25fr 1fr 1.2fr 1.2fr',
+                gap: '12px'
               }}>
+                {/* Button 0: Prominenter Teaser & Dossier Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBlindProfileModal(true);
+                    setBlindProfileTab('teaser');
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '14px 18px',
+                    borderRadius: '10px',
+                    border: '1px solid #38bdf8',
+                    background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                    color: '#ffffff',
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 4px 16px rgba(2, 132, 199, 0.4)'
+                  }}
+                  title="Dossier & Teaser öffnen: 1-Page PDF, Blind-Profil & Outreach-Vorbereitung"
+                >
+                  <FileText size={18} />
+                  <span>📄 Dossier &amp; Teaser</span>
+                </button>
+
                 {/* Button 1: Verwerfen */}
                 <button
                   type="button"
@@ -2862,8 +3283,8 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                 </button>
               </div>
 
-              {/* Tabs: Vorschau / Vault / Bearbeiten */}
-              <div style={{ display: 'flex', background: '#070a0f', borderBottom: '1px solid #1e293b', padding: '8px 24px', gap: '10px' }}>
+              {/* Tabs: Vorschau / Vault / Bearbeiten / Outreach */}
+              <div className="no-print" style={{ display: 'flex', background: '#070a0f', borderBottom: '1px solid #1e293b', padding: '8px 24px', gap: '8px', flexWrap: 'wrap' }}>
                 <button
                   type="button"
                   onClick={() => setBlindProfileTab('teaser')}
@@ -2881,7 +3302,7 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                     gap: '6px'
                   }}
                 >
-                  <Eye size={15} /> 1. Käufer-Vorschau (100% Blind)
+                  <Eye size={15} /> 1. 📄 1-Page Teaser &amp; Vorschau (100% Blind)
                 </button>
                 <button
                   type="button"
@@ -2900,7 +3321,7 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                     gap: '6px'
                   }}
                 >
-                  <ShieldCheck size={15} /> 2. Klardaten-Tresor (Vault)
+                  <ShieldCheck size={15} /> 2. 🔐 Klardaten-Tresor (Vault)
                 </button>
                 <button
                   type="button"
@@ -2919,48 +3340,187 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                     gap: '6px'
                   }}
                 >
-                  <Edit3 size={15} /> 3. Felder anpassen
+                  <Edit3 size={15} /> 3. ✏️ Felder anpassen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBlindProfileTab('outreach')}
+                  style={{
+                    background: blindProfileTab === 'outreach' ? '#0284c7' : 'transparent',
+                    color: blindProfileTab === 'outreach' ? '#ffffff' : '#94a3b8',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    fontWeight: 700,
+                    fontSize: '0.86rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <FileText size={15} /> 4. ✉️ Outreach vorbereiten
                 </button>
               </div>
 
-              {/* Tab 1: Teaser Vorschau */}
+              {/* Tab 1: 1-Page Teaser Vorschau & Print Layout */}
               {blindProfileTab === 'teaser' && (
-                <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                  <div style={{ background: '#0e131f', border: '1px solid #1e293b', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                      <span style={{ background: '#0284c7', color: '#ffffff', fontSize: '0.74rem', fontWeight: 800, padding: '3px 8px', borderRadius: '4px' }}>
-                        {t.signalCategory}
-                      </span>
-                      <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '3px 10px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 700 }}>
-                        {t.lifecycleBadge}
-                      </span>
+                <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {/* Quick Action Bar for Teaser */}
+                  <div className="no-print" style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: '#070a12',
+                    border: '1px solid #1e293b',
+                    borderRadius: '10px',
+                    padding: '12px 18px',
+                    gap: '12px',
+                    flexWrap: 'wrap'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', fontSize: '0.84rem' }}>
+                      <span style={{ color: '#38bdf8', fontWeight: 700 }}>A4 Portrait:</span>
+                      <span>Optimiertes 1-Page Format ohne Seitenumbruch für Mandats-Boutiquen</span>
                     </div>
 
-                    <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#f8fafc', fontWeight: 700 }}>
-                      {t.headline}
-                    </h2>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => window.print()}
+                        style={{
+                          background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '8px 16px',
+                          borderRadius: '6px',
+                          fontWeight: 700,
+                          fontSize: '0.84rem',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          boxShadow: '0 0 12px rgba(2, 132, 199, 0.4)'
+                        }}
+                      >
+                        <Printer size={15} />
+                        <span>🖨️ Als PDF drucken / sichern</span>
+                      </button>
 
-                    <div style={{ display: 'flex', gap: '16px', color: '#94a3b8', fontSize: '0.84rem', flexWrap: 'wrap' }}>
-                      <span>📍 Region: <strong style={{ color: '#f1f5f9' }}>{t.region}</strong></span>
-                      <span>🏭 Branche: <strong style={{ color: '#f1f5f9' }}>{t.industry}</strong></span>
-                      <span>👥 Größe: <strong style={{ color: '#f1f5f9' }}>{d.company?.employeesCount || 'k. A. / nicht erfasst'}</strong></span>
+                      <button
+                        type="button"
+                        onClick={() => setBlindProfileTab('outreach')}
+                        style={{
+                          background: '#16a34a',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '8px 16px',
+                          borderRadius: '6px',
+                          fontWeight: 700,
+                          fontSize: '0.84rem',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        <FileText size={15} />
+                        <span>✉️ Outreach an Partner vorbereiten</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Clean 1-Page Blind Profile Document Container */}
+                  <div id="nexus-teaser-print-container" className="nexus-teaser-paper-preview">
+                    {/* Header */}
+                    <div className="teaser-doc-header">
+                      <div>
+                        <div className="teaser-brand-title">D.A.T. Dienstleistungen · Executive Mandate Desk</div>
+                        <div className="teaser-brand-sub">Tagesaktuelle Organwechsel &amp; Mandatssignale · Schweiz &amp; DACH</div>
+                      </div>
+                      <div className="teaser-conf-badge">
+                        <div className="teaser-conf-text">STRIKT VERTRAULICH</div>
+                        <div className="teaser-conf-sub">100% Anonymisiertes Blind-Profil</div>
+                      </div>
                     </div>
 
-                    <div style={{ background: '#070a12', border: '1px solid #1a2233', borderRadius: '8px', padding: '14px', color: '#cbd5e1', fontSize: '0.9rem', lineHeight: 1.5 }}>
-                      <strong>Mandats- &amp; Situationsanalyse (100% anonymisiert):</strong>
-                      <p style={{ margin: '6px 0 0 0' }}>{t.eventSummary}</p>
+                    {/* Title Bar */}
+                    <div className="teaser-title-bar">
+                      <div>
+                        <div className="teaser-doc-type">MANDATS-BRIEFING · C-LEVEL / BOARD VACANCY</div>
+                        <div className="teaser-doc-headline">{t.headline}</div>
+                      </div>
+                      <div className="teaser-meta-pills">
+                        <div><strong>Referenz:</strong> {outreachRefCode || `CH-ZG-2026-VR-${activeOpp?.id ? activeOpp.id.slice(0, 4).toUpperCase() : '01'}`}</div>
+                        <div><strong>Datum:</strong> {activeTrigger?.event_date || activeOpp?.event_date || new Date().toISOString().split('T')[0]}</div>
+                        <div><strong>Status:</strong> Freigegeben zur Erstansprache</div>
+                      </div>
                     </div>
 
-                    <div>
-                      <div style={{ fontSize: '0.84rem', color: '#94a3b8', fontWeight: 600, marginBottom: '6px' }}>
-                        Relevante Beratungs- &amp; Transaktionspartner:
+                    {/* Facts Table */}
+                    <table className="teaser-facts-table">
+                      <tbody>
+                        <tr>
+                          <td className="tf-label">Zielbranche / Segment</td>
+                          <td className="tf-val"><strong>{t.industry}</strong></td>
+                          <td className="tf-label">Standort / Region</td>
+                          <td className="tf-val"><strong>{t.region}</strong></td>
+                        </tr>
+                        <tr>
+                          <td className="tf-label">Rechtsform &amp; Größe</td>
+                          <td className="tf-val">{d.company?.legalForm || 'Aktiengesellschaft (AG)'} · {d.company?.employeesCount || 'k. A. / nicht erfasst'} MA</td>
+                          <td className="tf-label">Ziel-Organ / Vakanz</td>
+                          <td className="tf-val"><strong>{d.roleTargeting?.primaryRole || outreachRole || 'Verwaltungsrat / C-Level'}</strong></td>
+                        </tr>
+                        <tr>
+                          <td className="tf-label">Primärquelle / Nachweis</td>
+                          <td className="tf-val" colSpan="3">
+                            Amtliche Registerpublikation ({d.primarySource?.url ? 'SHAB Schweizerisches Handelsamtsblatt' : 'Handelsregister'}) · Verifiziert durch Harro Goerndt am {new Date().toLocaleDateString('de-DE')}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    {/* Section: Situation & Vakanz-Anlass */}
+                    <div className="teaser-section-title">
+                      <span>📌</span> AUSGANGSLAGE &amp; AKUTER HANDLUNGSDRUCK
+                    </div>
+                    <div className="teaser-text-box">
+                      {t.eventSummary}
+                    </div>
+
+                    {/* Section: Leistungsumfang & Einsatzoptionen */}
+                    <div className="teaser-section-title">
+                      <span>🎯</span> MANDATS-FOKUS &amp; PROVIDER-EINSATZOPTIONEN
+                    </div>
+                    <div className="teaser-scope-list">
+                      <div>• <strong>Sofortige Organ-Vertretung:</strong> Besetzung der vakanten Organposition zur Sicherung der Handlungsfähigkeit und Einzelzeichnungsberechtigung.</div>
+                      <div>• <strong>Corporate Governance &amp; Transformation:</strong> Begleitung von Nachfolge, Neuausrichtung oder Gesellschafterwechsel auf VR-/C-Level-Ebene.</div>
+                      <div>• <strong>Exklusiver Erstansprache-Vorteil:</strong> Unmittelbarer zeitlicher Vorteil vor öffentlicher Marktausschreibung.</div>
+                    </div>
+
+                    {/* Target Partners / Buyers */}
+                    <div style={{ marginBottom: '14px' }}>
+                      <div style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: '5px' }}>
+                        Akkreditierte Partner-Profile:
                       </div>
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                        {(t.targetBuyers || []).map((b, idx) => (
-                          <span key={idx} style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.25)', padding: '3px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600 }}>
+                        {(t.targetBuyers || ['Top Fifty AG', 'BIE Executive AG', 'taskforce AG', 'Freies PE-Netzwerk']).map((b, idx) => (
+                          <span key={idx} style={{ background: '#f1f5f9', color: '#0369a1', border: '1px solid #cbd5e1', padding: '3px 8px', borderRadius: '4px', fontSize: '0.74rem', fontWeight: 600 }}>
                             ✓ {b}
                           </span>
                         ))}
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="teaser-doc-footer">
+                      <div>
+                        <strong>D.A.T. Dienstleistungen</strong> · Executive Mandate Desk<br />
+                        Weserstraße 16 · 26382 Wilhelmshaven · https://dat-dat.de
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <strong>Exklusivitäts-Garantie:</strong> Dieses Signal wird nur einem ausgewählten Partner zur Mandatierung bereitgestellt.<br />
+                        Klardaten-Freigabe erfolgt diskret auf Anforderung.
                       </div>
                     </div>
                   </div>
@@ -3080,8 +3640,192 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                 </div>
               )}
 
+              {/* Tab 4: Outreach Vorbereiten & Versenden */}
+              {blindProfileTab === 'outreach' && (
+                <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {outreachSuccessMessage ? (
+                    <div style={{
+                      background: 'rgba(34, 197, 94, 0.15)',
+                      border: '1px solid #22c55e',
+                      borderRadius: '10px',
+                      padding: '16px',
+                      color: '#4ade80',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      fontSize: '0.9rem'
+                    }}>
+                      <Check size={22} color="#22c55e" />
+                      <div>
+                        <strong>Outreach erfolgreich erfasst!</strong>
+                        <div>{outreachSuccessMessage}</div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Partner Selection & Meta */}
+                  <div style={{ background: '#0e131f', border: '1px solid #1e293b', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ flex: 1, minWidth: '280px' }}>
+                        <label style={{ display: 'block', fontSize: '0.84rem', color: '#94a3b8', marginBottom: '6px', fontWeight: 700 }}>
+                          Akkreditierten Partner auswählen:
+                        </label>
+                        <select
+                          value={outreachPartnerId}
+                          onChange={(e) => setOutreachPartnerId(e.target.value)}
+                          style={{
+                            padding: '10px 14px',
+                            borderRadius: '8px',
+                            background: '#070a12',
+                            border: '1px solid #0284c7',
+                            color: '#f8fafc',
+                            fontSize: '0.92rem',
+                            fontWeight: 600,
+                            width: '100%',
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          {OUTREACH_PARTNERS.map(p => (
+                            <option key={p.id} value={p.id}>
+                              {p.name} ({p.location})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {(() => {
+                        const currentP = OUTREACH_PARTNERS.find(p => p.id === outreachPartnerId) || OUTREACH_PARTNERS[0];
+                        return (
+                          <div style={{ display: 'flex', gap: '14px', background: '#070a12', border: '1px solid #1e293b', padding: '10px 16px', borderRadius: '8px', fontSize: '0.82rem' }}>
+                            <div>
+                              <div style={{ color: '#64748b' }}>Ansprechpartner:</div>
+                              <div style={{ color: '#f8fafc', fontWeight: 600 }}>{currentP.contactPerson}</div>
+                            </div>
+                            <div style={{ borderLeft: '1px solid #1e293b', paddingLeft: '14px' }}>
+                              <div style={{ color: '#64748b' }}>E-Mail:</div>
+                              <div style={{ color: '#38bdf8', fontWeight: 600 }}>{currentP.email}</div>
+                            </div>
+                            <div style={{ borderLeft: '1px solid #1e293b', paddingLeft: '14px' }}>
+                              <div style={{ color: '#64748b' }}>Exklusivität:</div>
+                              <div style={{ color: '#4ade80', fontWeight: 700 }}>
+                                {currentP.exclusivityHours ? `${currentP.exclusivityHours}h Exklusivrechte` : `${currentP.exclusivityDays} Tage`}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.84rem', color: '#94a3b8', marginBottom: '4px', fontWeight: 600 }}>
+                        E-Mail-Betreff:
+                      </label>
+                      <input
+                        type="text"
+                        value={outreachSubject}
+                        onChange={(e) => setOutreachSubject(e.target.value)}
+                        style={{ width: '100%', padding: '10px 12px', background: '#070a12', border: '1px solid #334155', borderRadius: '6px', color: '#f8fafc', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.84rem', color: '#94a3b8', marginBottom: '4px', fontWeight: 600 }}>
+                        E-Mail-Text (Harro Goerndt Executive Phrasing):
+                      </label>
+                      <textarea
+                        rows={11}
+                        value={outreachBody}
+                        onChange={(e) => setOutreachBody(e.target.value)}
+                        style={{ width: '100%', padding: '12px', background: '#070a12', border: '1px solid #334155', borderRadius: '6px', color: '#f8fafc', fontSize: '0.88rem', fontFamily: 'monospace', lineHeight: 1.5, boxSizing: 'border-box' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginTop: '6px' }}>
+                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const fullCopy = `Betreff: ${outreachSubject}\n\n${outreachBody}`;
+                            navigator.clipboard.writeText(fullCopy);
+                            setCopiedOutreachMail(true);
+                            setTimeout(() => setCopiedOutreachMail(false), 3000);
+                          }}
+                          style={{
+                            background: copiedOutreachMail ? '#22c55e' : '#1e293b',
+                            color: '#ffffff',
+                            border: '1px solid #334155',
+                            padding: '10px 16px',
+                            borderRadius: '6px',
+                            fontWeight: 700,
+                            fontSize: '0.84rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          {copiedOutreachMail ? <Check size={16} /> : <Copy size={16} />}
+                          <span>{copiedOutreachMail ? 'E-Mail kopiert!' : '📋 E-Mail Text &amp; Betreff kopieren'}</span>
+                        </button>
+
+                        {(() => {
+                          const currentP = OUTREACH_PARTNERS.find(p => p.id === outreachPartnerId) || OUTREACH_PARTNERS[0];
+                          const mailtoHref = `mailto:${encodeURIComponent(currentP.email)}?subject=${encodeURIComponent(outreachSubject)}&body=${encodeURIComponent(outreachBody)}`;
+                          return (
+                            <a
+                              href={mailtoHref}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                background: '#0284c7',
+                                color: '#ffffff',
+                                border: 'none',
+                                padding: '10px 16px',
+                                borderRadius: '6px',
+                                fontWeight: 700,
+                                fontSize: '0.84rem',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                textDecoration: 'none'
+                              }}
+                            >
+                              <span>✉️ In Standard-Mailclient öffnen</span>
+                            </a>
+                          );
+                        })()}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleExecuteOutreach}
+                        disabled={isOutreachLogging}
+                        style={{
+                          background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '10px 20px',
+                          borderRadius: '6px',
+                          fontWeight: 700,
+                          fontSize: '0.88rem',
+                          cursor: isOutreachLogging ? 'not-allowed' : 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          boxShadow: '0 0 14px rgba(34, 197, 94, 0.4)'
+                        }}
+                      >
+                        {isOutreachLogging ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
+                        <span>{isOutreachLogging ? 'Wird gespeichert...' : '💾 Outreach protokollieren &amp; Kundenschutz aktivieren'}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Modal Footer mit Aktionen */}
-              <div style={{
+              <div className="no-print" style={{
                 background: '#030712',
                 padding: '16px 24px',
                 borderTop: '1px solid #1f2937',
@@ -3120,9 +3864,9 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
 
                   <button
                     type="button"
-                    onClick={() => handleCopyBlindProfileText()}
+                    onClick={() => window.print()}
                     style={{
-                      background: copiedBlindText ? '#22c55e' : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                      background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
                       color: '#ffffff',
                       border: 'none',
                       borderRadius: '8px',
@@ -3136,17 +3880,34 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                       boxShadow: '0 0 14px rgba(2, 132, 199, 0.4)'
                     }}
                   >
-                    {copiedBlindText ? <Check size={16} /> : <Copy size={16} />}
-                    {copiedBlindText ? 'Blind-Profil kopiert!' : '📋 Blind-Profil kopieren (Text/Pitch)'}
+                    <Printer size={16} />
+                    <span>🖨️ 1-Page PDF</span>
                   </button>
 
                   <button
                     type="button"
-                    disabled={isDirectPublishing}
-                    onClick={() => {
-                      setShowBlindProfileModal(false);
-                      handleOpenDispatchModal();
+                    onClick={() => handleCopyBlindProfileText()}
+                    style={{
+                      background: copiedBlindText ? '#22c55e' : '#1e293b',
+                      color: '#ffffff',
+                      border: '1px solid #334155',
+                      borderRadius: '8px',
+                      padding: '10px 18px',
+                      fontWeight: 700,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px'
                     }}
+                  >
+                    {copiedBlindText ? <Check size={16} /> : <Copy size={16} />}
+                    {copiedBlindText ? 'Blind-Profil kopiert!' : '📋 Blind-Profil kopieren'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setBlindProfileTab('outreach')}
                     style={{
                       background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
                       color: '#ffffff',
@@ -3155,14 +3916,15 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                       padding: '10px 18px',
                       fontWeight: 700,
                       fontSize: '0.88rem',
-                      cursor: isDirectPublishing ? 'not-allowed' : 'pointer',
+                      cursor: 'pointer',
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
                       boxShadow: '0 0 14px rgba(34, 197, 94, 0.4)'
                     }}
                   >
-                    <ShieldCheck size={16} /> <span>Mandat übermitteln & Kundenschutz sichern</span>
+                    <FileText size={16} />
+                    <span>✉️ Outreach vorbereiten</span>
                   </button>
                 </div>
 

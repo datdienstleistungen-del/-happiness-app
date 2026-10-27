@@ -1,0 +1,152 @@
+{
+  "version": "1.0.0",
+  "description": "Konfigurierbarer Quellenkatalog für Phase 3: Mandate Forensics & Cross-Source Validation",
+  "source_categories": {
+    "interim_providers": {
+      "name": "Interim Management Provider (Fallstudien & Mandatsbeschreibungen)",
+      "sources": [
+        {
+          "id": "PROV_ATREUS",
+          "name": "Atreus GmbH",
+          "url": "https://www.atreus.de/case-studies/",
+          "type": "provider_case_studies",
+          "jurisdiction": "DE",
+          "enabled": true
+        },
+        {
+          "id": "PROV_TASKFORCE",
+          "name": "taskforce Management on Demand AG",
+          "url": "https://www.taskforce.net/de/leistungen/mandate",
+          "type": "provider_case_studies",
+          "jurisdiction": "DE",
+          "enabled": true
+        },
+        {
+          "id": "PROV_FUP",
+          "name": "F&P Executive Solutions AG",
+          "url": "https://www.fup-ag.com/case-studies/",
+          "type": "provider_case_studies",
+          "jurisdiction": "DE",
+          "enabled": true
+        }
+      ]
+    },
+    "restructuring_law_firms": {
+      "name": "Restrukturierungs- & Insolvenzkanzleien (Offizielle Pressemitteilungen)",
+      "sources": [
+        {
+          "id": "FIRM_BRINKMANN",
+          "name": "Brinkmann & Partner",
+          "url": "https://www.brinkmann-partner.de/aktuelles/",
+          "type": "law_firm_press",
+          "jurisdiction": "DE",
+          "enabled": true
+        },
+        {
+          "id": "FIRM_GOERG",
+          "name": "GÖRG Partnerschaft von Rechtsanwälten mbB",
+          "url": "https://www.goerg.de/de/aktuelles/pressemitteilungen",
+          "type": "law_firm_press",
+          "jurisdiction": "DE",
+          "enabled": true
+        },
+        {
+          "id": "FIRM_SCHULTZE_BRAUN",
+          "name": "Schultze & Braun",
+          "url": "https://www.schultze-braun.de/newsroom/pressemitteilungen/",
+          "type": "law_firm_press",
+          "jurisdiction": "DE",
+          "enabled": true
+        },
+        {
+          "id": "FIRM_ANCHOR",
+          "name": "Anchor Rechtsanwaltsgesellschaft mbH",
+          "url": "https://www.anchor.eu/anchor/aktuelles/kategorien/pressemeldungen/",
+          "type": "law_firm_press",
+          "jurisdiction": "DE",
+          "enabled": true
+        },
+        {
+          "id": "FIRM_WELLENSIEK",
+          "name": "Wellensiek Rechtsanwälte - PartG mbB",
+          "url": "https://wellensiek.de/wellensiek_home/leistungen/restrukturierung/",
+          "type": "law_firm_press",
+          "jurisdiction": "DE",
+          "enabled": true
+        }
+      ]
+    },
+    "statutory_registers": {
+      "name": "Amtliche Register & Publikationsplattformen",
+      "sources": [
+        {
+          "id": "REG_HANDELSREGISTER",
+          "name": "Gemeinsames Registerportal der Länder (Handelsregister)",
+          "url": "https://www.handelsregister.de",
+          "type": "statutory_register",
+          "jurisdiction": "DE",
+          "enabled": true
+        },
+        {
+          "id": "REG_INSO_BEKANNT",
+          "name": "Insolvenzbekanntmachungen der Justiz",
+          "url": "https://neu.insolvenzbekanntmachungen.de",
+          "type": "statutory_register",
+          "jurisdiction": "DE",
+          "enabled": true
+        },
+        {
+          "id": "REG_BUNDESANZEIGER",
+          "name": "Bundesanzeiger & Unternehmensregister",
+          "url": "https://www.bundesanzeiger.de",
+          "type": "statutory_register",
+          "jurisdiction": "DE",
+          "enabled": true
+        }
+      ]
+    },
+    "specialist_publications": {
+      "name": "Fachpublikationen & Branchenmedien (Restrukturierung)",
+      "sources": [
+        {
+          "id": "PUB_INDAT",
+          "name": "INDat Report / Fachportal Restrukturierung & Insolvenz",
+          "url": "https://www.indat.info",
+          "type": "industry_journal",
+          "jurisdiction": "DE",
+          "enabled": true
+        }
+      ]
+    }
+  },
+  "temporal_analysis_windows": [
+    {
+      "window_id": "WIN_0_30",
+      "label": "0–30 Tage vor Mandatsbeginn",
+      "min_days": 0,
+      "max_days": 30,
+      "hypothesis": "Akuter Notfalleinsatz oder unmittelbare Reaktion auf plötzlichen Organausfall"
+    },
+    {
+      "window_id": "WIN_31_90",
+      "label": "31–90 Tage vor Mandatsbeginn",
+      "min_days": 31,
+      "max_days": 90,
+      "hypothesis": "Vorbereitung einer Sanierung, Restrukturierungskonzept oder geordnetes Vakanzmandat"
+    },
+    {
+      "window_id": "WIN_91_180",
+      "label": "91–180 Tage vor Mandatsbeginn",
+      "min_days": 91,
+      "max_days": 180,
+      "hypothesis": "Eskalierende operative Krise, Bankengespräche, Folgewirkung früherer Signale"
+    },
+    {
+      "window_id": "WIN_181_365",
+      "label": "181–365 Tage vor Mandatsbeginn",
+      "min_days": 181,
+      "max_days": 365,
+      "hypothesis": "Bilanzielle Frühindikatoren (Jahresabschluss, bestandsgefährdende Risiken im Vorjahr)"
+    }
+  ]
+}

@@ -180,6 +180,162 @@ def audit_mandate_lead(item, eval_result):
     now_utc = datetime.now(timezone.utc)
     today_str = now_utc.strftime('%Y-%m-%d')
 
+    # ── HARTER FAIL-CLOSED K.O.-FILTER (ZERO-JUNK POLICY) ──
+    raw_eval_text = f"{title} {snippet} {item.get('raw_text', '')} {item.get('raw_pdf_text', '')}".strip()
+    raw_eval_lower = raw_eval_text.lower()
+    comp_lower = company.lower()
+
+    # K.O. A: Textlänge < 80 Zeichen (Keine Substanz)
+    if len(raw_eval_text) < 80:
+        parsed = {
+            'status': 'discarded',
+            'tier': 'TIER_3',
+            'is_valid_mandate_event': False,
+            'is_fresh': True,
+            'company_name': company,
+            'role': 'Keine Substanz',
+            'event_type': 'Meldung zu kurz (<80 Zeichen)',
+            'vacuum_check': 'K.O. DROP: Text kürzer als 80 Zeichen.',
+            'urgency_check': '0 € Mandatswert (Fehlende Substanz)',
+            'audit_verdict': 'DISCARDED_TEXT_TOO_SHORT',
+            'audit_rationale': 'Automatischer Drop auf Tier 3: Meldungstext ist kürzer als 80 Zeichen.',
+            'rejection_reason': 'Text_Too_Short',
+            'estimated_budget': '-',
+            'confidence': 0.99
+        }
+        return False, "KO_FAIL_CLOSED_TEXT_TOO_SHORT: Text < 80 Zeichen", parsed
+
+    # K.O. B: Ausgeschlossene Rechtsformen (e.K., GbR, UG, Verein, Genossenschaft, Einzelunternehmen)
+    disallowed_forms = [
+        (r'\be\.k\.\b|\be\. k\.\b|\beingetragener kaufmann\b|\beingetragene kauffrau\b', 'e.K. (Einzelkaufmann)'),
+        (r'\bgbr\b|\bgesellschaft bürgerlichen rechts\b|\bgesbr\b', 'GbR (BGB-Gesellschaft)'),
+        (r'\bug\s*\(haftungsbeschränkt\)|\bug\s*haftungsbeschraenkt|\bunternehmergesellschaft\b', 'UG (haftungsbeschränkt)'),
+        (r'\bverein\b|\be\.v\.\b|\beingetragener verein\b', 'Verein (e.V.)'),
+        (r'\bgenossenschaft\b|\beg\b|\beingetragene genossenschaft\b', 'Genossenschaft (eG)'),
+        (r'\beinzelunternehmen\b|\beinzelkaufmann\b', 'Einzelunternehmen'),
+        (r'\bpartg\b|\bpartgmbb\b|\bpartnerschaftsgesellschaft\b', 'PartG (Partnerschaft)'),
+        (r'\bggmbh\b', 'gGmbH (Gemeinnützig)'),
+        (r'\bstiftung\b', 'Stiftung')
+    ]
+    for pattern, form_label in disallowed_forms:
+        if re.search(pattern, comp_lower) or re.search(pattern, raw_eval_lower):
+            if re.search(pattern, comp_lower) or not any(wf in comp_lower for wf in ['ag', 'gmbh', 'se', 'kgaa', 'plc', 'sa']):
+                parsed = {
+                    'status': 'discarded',
+                    'tier': 'TIER_3',
+                    'is_valid_mandate_event': False,
+                    'is_fresh': True,
+                    'company_name': company,
+                    'role': 'Ausgeschlossene Rechtsform',
+                    'event_type': f'Ausgeschlossene Rechtsform ({form_label})',
+                    'vacuum_check': f'K.O. DROP: Rechtsform {form_label} entspricht nicht der Enterprise-Policy.',
+                    'urgency_check': '0 € Mandatswert (Kleinstunternehmen / Nicht-zielgruppengerechte Rechtsform)',
+                    'audit_verdict': 'DISCARDED_DISALLOWED_LEGAL_FORM',
+                    'audit_rationale': f"Automatischer Drop auf Tier 3: Rechtsform '{form_label}' wird von NeXus nicht bedient.",
+                    'rejection_reason': 'Disallowed_Legal_Form',
+                    'estimated_budget': '-',
+                    'confidence': 0.99
+                }
+                return False, f"KO_FAIL_CLOSED_LEGAL_FORM: {form_label}", parsed
+
+    # K.O. C: Reine Registerroutine ohne Vakanz oder Restrukturierung
+    has_real_organ_exit = bool(re.search(r'\b(nicht mehr geschäftsführer|nicht mehr vorstand|vorstand ausgeschieden|ausgeschieden als geschäftsführer|ausgeschieden als vorstand|abberufen als|erloschene unterschriften|ausgeschiedene personen|vorstandsmandat.*?erloschen|amtsniederlegung)\b', raw_eval_lower))
+    has_real_restructuring = bool(re.search(r'\b(vorläufige insolvenzverwaltung|vorläufigen insolvenzverwalter|eigenverwaltung|schutzschirmverfahren|270 inso|270a inso|270b inso|sachwalter|starug)\b', raw_eval_lower))
+
+    routine_register_events = [
+        (r'\b(berichtigung|korrektur des registereintrags|uebersetzungen der firma neu|übersetzungen der firma neu|schreibfehlerberichtigung)\b', 'Reine Register-Berichtigung / Formalie'),
+        (r'\b(kapitalerhöhung|erhöhung des grundkapitals|erhöhung des stammkapitals|genehmigtes kapital|stammkapital neu)\b', 'Reine Kapitalerhöhung ohne Organwechsel'),
+        (r'\b(sitzverlegung|verlegung des sitzes|neue geschäftsanschrift|änderung der inländischen geschäftsanschrift|verlegt von|sitz verlegt nach)\b', 'Reine Sitzverlegung / Anschriftenänderung'),
+        (r'\b(satzungsänderung|änderung der satzung|änderung des gesellschaftsvertrages|neufassung des gesellschaftsvertrages)\b', 'Reine Satzungsänderung'),
+        (r'\b(gesamtprokura erteilt|prokura erteilt|erteilung von gesamtprokuren|prokura erloschen)\b', 'Reine Gesamtprokura ohne Organwechsel')
+    ]
+
+    if not has_real_organ_exit and not has_real_restructuring:
+        for pattern, routine_label in routine_register_events:
+            if re.search(pattern, raw_eval_lower):
+                rej_reason = 'Formal_Correction_No_Mandate' if 'Berichtigung' in routine_label else 'Routine_Register_Event_No_Vacancy'
+                verdict = 'DISCARDED_FORMAL_CORRECTION' if 'Berichtigung' in routine_label else 'DISCARDED_ROUTINE_REGISTER_EVENT'
+                parsed = {
+                    'status': 'discarded',
+                    'tier': 'TIER_3',
+                    'is_valid_mandate_event': False,
+                    'is_fresh': True,
+                    'company_name': company,
+                    'role': 'Register-Routine',
+                    'event_type': routine_label,
+                    'vacuum_check': f'K.O. DROP: {routine_label}.',
+                    'urgency_check': '0 € Mandatswert (Reine Formalie ohne Organvakanz oder Restrukturierung)',
+                    'audit_verdict': verdict,
+                    'audit_rationale': f"Automatischer Drop auf Tier 3: {routine_label}.",
+                    'rejection_reason': rej_reason,
+                    'estimated_budget': '-',
+                    'confidence': 0.99
+                }
+                return False, f"KO_FAIL_CLOSED_ROUTINE: {routine_label}", parsed
+
+    # K.O. D: Standard-PR-Phrasen ohne amtlichen Organwechsel/Restrukturierung
+    pr_phrases = [
+        r'\bwir freuen uns bekanntzugeben\b',
+        r'\bunterzeichnet absichtserklärung\b',
+        r'\bpräsentiert auf messe\b',
+        r'\bauszeichnung erhalten\b',
+        r'\bbestätigt jahresprognose\b',
+        r'\berfolgreiches quartal\b',
+        r'\binterview mit\b',
+        r'\bmarktführend\b',
+        r'\bwe are pleased to announce\b',
+        r'\bquarterly results\b',
+        r'\btrading update\b',
+        r'\bpressemitteilung\b'
+    ]
+    if not has_real_organ_exit and not has_real_restructuring:
+        for pr_pat in pr_phrases:
+            if re.search(pr_pat, raw_eval_lower):
+                parsed = {
+                    'status': 'discarded',
+                    'tier': 'TIER_3',
+                    'is_valid_mandate_event': False,
+                    'is_fresh': True,
+                    'company_name': company,
+                    'role': 'PR / Marketing',
+                    'event_type': 'Standard-PR-Meldung',
+                    'vacuum_check': 'K.O. DROP: Reine PR-Meldung ohne amtlichen Organwechsel/Restrukturierung.',
+                    'urgency_check': '0 € Mandatswert (PR / Werbemeldung)',
+                    'audit_verdict': 'DISCARDED_PR_MARKETING_NOISE',
+                    'audit_rationale': 'Automatischer Drop auf Tier 3: PR-Meldung ohne belegtes Mandatsereignis.',
+                    'rejection_reason': 'PR_Marketing_Noise',
+                    'estimated_budget': '-',
+                    'confidence': 0.99
+                }
+                return False, "KO_FAIL_CLOSED_PR_NOISE: Standard PR-Meldung", parsed
+
+    # K.O. E: Keine namentlich genannte Person oder kein klar benanntes Organ-Vakuum
+    has_named_person = bool(
+        item.get('person') or
+        re.search(r'\b(?:Herr|Frau|Dr\.|Prof\.)\s+[A-ZÄÖÜ][a-zäöüß]+\s+[A-ZÄÖÜ][a-zäöüß]+\b', raw_eval_text) or
+        re.search(r'\b[A-ZÄÖÜ][a-zäöüß]+,\s*(?:Dr\.\s*)?[A-ZÄÖÜ][a-zäöüß]+\b', raw_eval_text) or
+        re.search(r'(?:Lanfranconi|Bergmann|Lindemann|Westphalen|Müller|Schmidt|Schneider|Fischer|Weber|Meyer|Wagner|Becker|Schulz)', raw_eval_text, re.I)
+    )
+
+    if not has_named_person and not has_real_restructuring:
+        parsed = {
+            'status': 'discarded',
+            'tier': 'TIER_3',
+            'is_valid_mandate_event': False,
+            'is_fresh': True,
+            'company_name': company,
+            'role': 'Unbekannte Person',
+            'event_type': 'Keine namentlich genannte Person / Unklares Vakuum',
+            'vacuum_check': 'K.O. DROP: Weder namentlich benannte Person noch amtlicher Restrukturierungsbeschluss.',
+            'urgency_check': '0 € Mandatswert (Keine konkrete Person oder Sanierungsanordnung identifiziert)',
+            'audit_verdict': 'DISCARDED_NO_NAMED_PERSON_OR_VACUUM',
+            'audit_rationale': 'Automatischer Drop auf Tier 3: Keine namentlich genannte Person und kein Restrukturierungsbeschluss nachweisbar.',
+            'rejection_reason': 'No_Named_Person_Or_Organ_Vacuum',
+            'estimated_budget': '-',
+            'confidence': 0.99
+        }
+        return False, "KO_FAIL_CLOSED_NO_PERSON: Weder namentlich genannte Person noch Restrukturierung", parsed
+
     # ── FAST-PATH FÜR BEKANNTE BÖRSEN-ROUTINEMELDUNGEN (VOREINSCHÄTZUNG) ──
     combined_lower = f"{title} {snippet}".lower()
     routine_patterns = [
@@ -341,6 +497,29 @@ def audit_mandate_lead(item, eval_result):
             'confidence': 0.99
         }
         return False, "KO_DROP_MIN_CAPITAL: Bloßes Mindestkapital ohne operative Substanz", parsed
+
+    # K.O. 5: Berichtigung / Formalie ohne Liquidation (z.B. reine Korrektur von Firmenübersetzungen wie bei CATNOIR)
+    is_formal_correction = bool(re.search(r'\b(berichtigung eines tagesregistereintrags|berichtigung von amtes wegen|statutenberichtigung|uebersetzungen der firma neu|übersetzungen der firma neu)\b', combined_eval_text, re.I))
+    has_hard_insolvency = bool(re.search(r'\b(in liquidation\b|konkurs|konkurseröffnung|inso|insolvenz|nachlassstundung)\b', combined_eval_text, re.I))
+    if is_formal_correction and not has_hard_insolvency:
+        rationale = "Reine bürokratische Register-Berichtigung (z.B. Firmenübersetzungen, Schreibfehler) ohne Sanierungsanlass oder Organ-Vakuum."
+        parsed = {
+            'status': 'discarded',
+            'tier': 'TIER_3',
+            'is_valid_mandate_event': False,
+            'is_fresh': True,
+            'company_name': company,
+            'role': 'Keine Organvakanz (Formalie)',
+            'event_type': 'Register-Berichtigung / Formalie',
+            'vacuum_check': 'K.O. DROP: Reine Register-Berichtigung (Schreibfehler/Übersetzungen). Kein Führungsvakuum.',
+            'urgency_check': '0 € Mandatswert (Reine Formalie ohne operativen Handlungsdruck)',
+            'audit_verdict': 'DISCARDED_FORMAL_CORRECTION',
+            'audit_rationale': f"Automatischer Drop auf Tier 3 / Status 'discarded': {rationale}",
+            'rejection_reason': 'Formal_Correction_No_Mandate',
+            'estimated_budget': '-',
+            'confidence': 0.99
+        }
+        return False, "KO_DROP_FORMAL_CORRECTION: Reine Register-Berichtigung ohne Sanierungsanlass", parsed
 
     # ── SEMANTISCHES LLM-AUDIT (FÜR ECHTE OPERATIVE UNTERNEHMEN) ──
     prompt = f"""Du bist der NeXus DealCoach. Analysiere diese europäische Wirtschaftsmeldung als automatisierte Revisions- und Vorsortierungs-Instanz für Harros Mandats-Desk:

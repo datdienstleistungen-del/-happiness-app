@@ -1,0 +1,477 @@
+{
+  "version": "1.0.0",
+  "generated_at": "2026-10-27T03:33:57.010332+00:00",
+  "total_signatures": 10,
+  "signatures": [
+    {
+      "signature_id": "SIG_DE_ORGAN_VACANCY_01",
+      "case_type": "c_level_vakanz",
+      "provider": "Atreus",
+      "original_case_evidence": "Atreus Case: 'Nach dem Ausscheiden des Gesellschafters und des technischen Geschäftsführers übernahm der Chief Operations Officer die Leitung verschiedener Abteilungen...'",
+      "economic_problem": "Plötzliche Führungslücke im operativen Kerngeschäft durch Abberufung oder Ausscheiden eines Geschäftsführers oder Vorstands ohne unmittelbar registrierten Nachfolger.",
+      "legal_entity_type": "GmbH, AG, SE",
+      "jurisdiction": "DE",
+      "official_source": "handelsregister",
+      "official_terminology": [
+        "nicht mehr Geschäftsführer",
+        "nicht mehr Vorstand",
+        "ausgeschieden als Geschäftsführer",
+        "ausgeschieden als Vorstand",
+        "Vertretungsbefugnis erloschen",
+        "Amtsniederlegung",
+        "abberufen als"
+      ],
+      "search_patterns": [
+        "nicht mehr Geschäftsführer",
+        "ausgeschieden als Geschäftsführer",
+        "Vertretungsbefugnis erloschen",
+        "nicht mehr Vorstand",
+        "ausgeschieden als Vorstand"
+      ],
+      "regex_patterns": [
+        "\\b(?:nicht mehr|ausgeschieden als|abberufen als)\\s+(?:Geschäftsführer|Vorstand)\\b",
+        "\\bVertretungsbefugnis\\s+ist\\s+erloschen\\b",
+        "\\bAmtsniederlegung\\s+des\\s+(?:Geschäftsführers|Vorstands)\\b"
+      ],
+      "indicator_type": "akuter_krisenindikator",
+      "confidence_class": "A",
+      "evidence_strength": "plausibel",
+      "official_event_verified": true,
+      "mandate_relevance": "Hohe Dringlichkeit für Interim-Management (CEO, COO, Technischer Geschäftsführer), um operative Handlungsfähigkeit und rechtliche Vertretung nach außen zu sichern.",
+      "legal_references": [
+        "§ 38 GmbHG (Widerruf der Geschäftsführerbestellung)",
+        "§ 84 AktG (Bestellung und Abberufung von Vorstandsmitgliedern)",
+        "§ 35 Abs. 1 Satz 2 GmbHG (Gesetzliche passive Vertretung der führungslosen GmbH durch die Gesellschafter)",
+        "§ 29 BGB analog (Gerichtliche Bestellung eines Notgeschäftsführers bei führungsloser GmbH; nur subsidiär in dringenden Ausnahmefällen bei Handlungsunfähigkeit der Gesellschafterversammlung)",
+        "§ 85 AktG (Gerichtliche Bestellung von Vorstandsmitgliedern bei der AG - Spezialnorm, kein § 29 BGB)",
+        "§ 15a Abs. 3 InsO (Insolvenzantragspflicht der Gesellschafter bei führungsloser Gesellschaft)"
+      ],
+      "source_url": "https://www.atreus.de/publikation/case-studies/chief-operations-officer-anlagenbau-energie-und-informationsuebertragung/",
+      "source_publication_date": "2024-05-15",
+      "source_retrieved_at": "2026-10-27T03:33:57.010300+00:00",
+      "data_provenance": "real_source_verified",
+      "false_positive_risks": [
+        "Planmäßige Nachfolge mit zeitgleicher Bestellung eines neuen Organs im selben Eintrag",
+        "Konzerninterne Umstrukturierung mit bestehenden weiteren Gesamtvertretern",
+        "Altersbedingter Ruhestand mit geregelter Übergabe"
+      ],
+      "validation_notes": "GEGENINDIKATOR-REGEL: Findet sich im selben Registereintrag die Klausel 'Bestellt als Geschäftsführer' oder 'Bestellt als Vorstand', liegt eine geregelte Nachfolge vor -> Score wird auf C herabgestuft."
+    },
+    {
+      "signature_id": "SIG_DE_RESTRUCTURING_CRO_01",
+      "case_type": "restrukturierung_turnaround",
+      "provider": "Atreus",
+      "original_case_evidence": "Atreus Case: 'Als Interim-Geschäftsführer übernahm der Manager die Verhandlungen mit Banken und OEMs über Sanierungsbeiträge und Restrukturierungsmaßnahmen zur Abwendung von Zahlungsunfähigkeit.'",
+      "economic_problem": "Akuter Liquiditätsengpass, Überschuldung oder drohende Zahlungsunfähigkeit mit gerichtlicher Anordnung von Sicherungsmaßnahmen oder Schutzschirmverfahren.",
+      "legal_entity_type": "GmbH, AG, SE, GmbH & Co. KG",
+      "jurisdiction": "DE",
+      "official_source": "insolvenzbekanntmachungen",
+      "official_terminology": [
+        "vorläufige Insolvenzverwaltung",
+        "vorläufiger Insolvenzverwalter",
+        "§ 21 Abs. 1 und 2 InsO",
+        "vorläufige Eigenverwaltung",
+        "§ 270b InsO",
+        "Schutzschirmverfahren",
+        "§ 270d InsO",
+        "vorläufiger Sachwalter"
+      ],
+      "search_patterns": [
+        "vorläufige Insolvenzverwaltung angeordnet",
+        "vorläufige Eigenverwaltung",
+        "Schutzschirmverfahren",
+        "vorläufiger Sachwalter"
+      ],
+      "regex_patterns": [
+        "vorläufige\\s+Insolvenzverwaltung",
+        "vorläufige\\s+Eigenverwaltung",
+        "(?:§\\s*270[abd]?\\s+InsO|270[abd]?\\s+InsO)",
+        "vorläufige(?:r|n)?\\s+(?:Insolvenzverwalter|Sachwalter)",
+        "\\bSachwalter(?:s)?\\b"
+      ],
+      "indicator_type": "akuter_krisenindikator",
+      "confidence_class": "A",
+      "evidence_strength": "plausibel",
+      "official_event_verified": true,
+      "mandate_relevance": "Unmittelbarer Bedarf für Chief Restructuring Officer (CRO), Sanierungsgeschäftsführer oder Interim-CFO zur Erstellung des Insolvenz- oder Sanierungsplans.",
+      "legal_references": [
+        "§ 21 InsO (Anordnung vorläufiger Maßnahmen durch das Insolvenzgericht)",
+        "§ 270b InsO n.F. (Vorläufige Eigenverwaltung gem. SanInsFoG; früher § 270a InsO a.F.)",
+        "§ 270a InsO n.F. (Eigenverwaltungsplanung)",
+        "§ 270d InsO n.F. (Schutzschirmverfahren / Vorbereitung einer Sanierung)"
+      ],
+      "source_url": "https://www.atreus.de/publikation/case-studies/gf-restrukturierung/",
+      "source_publication_date": "2023-11-20",
+      "source_retrieved_at": "2026-10-27T03:33:57.010300+00:00",
+      "data_provenance": "real_source_verified",
+      "false_positive_risks": [
+        "Verfahren betrifft eine vermögenslose Hüllegesellschaft ohne Geschäftsbetrieb",
+        "Verwalter setzt auf sofortige Zerschlagung statt Sanierung",
+        "Vorläufiges Verfahren wird mangels Masse abgewiesen"
+      ],
+      "validation_notes": "STUFEN-DIFFERENZIERUNG: Bei vorläufiger Eigenverwaltung (§ 270a InsO) bleibt die Geschäftsführung im Amt, was die Beauftragung eines externen Sanierungs-CROs signifikant wahrscheinlicher macht als bei starker Verwaltung."
+    },
+    {
+      "signature_id": "SIG_DE_PREVENTIVE_STARUG_01",
+      "case_type": "restrukturierung_turnaround",
+      "provider": "taskforce",
+      "original_case_evidence": "taskforce Case: 'Sanierungsberatung und Übernahme von Organverantwortung im Rahmen der präventiven Restrukturierung (StaRUG) zur Wiederherstellung der Kapitaldienstfähigkeit.'",
+      "economic_problem": "Drohende Zahlungsunfähigkeit (§ 18 InsO), Blockadehaltung einzelner Gläubigergruppen bei außergerichtlicher Refinanzierung.",
+      "legal_entity_type": "GmbH, AG, SE",
+      "jurisdiction": "DE",
+      "official_source": "handelsregister",
+      "official_terminology": [
+        "Restrukturierungsbeauftragter",
+        "Restrukturierungsplan",
+        "StaRUG",
+        "Stabilisierungs- und Restrukturierungsrahmen",
+        "Sanierungsmoderator"
+      ],
+      "search_patterns": [
+        "Restrukturierungsbeauftragter bestellt",
+        "Restrukturierungsplan nach StaRUG",
+        "Sanierungsmoderation"
+      ],
+      "regex_patterns": [
+        "\\bRestrukturierungsbeauftragte(?:r|n)\\b",
+        "\\bStaRUG\\b",
+        "\\bSanierungsmoderator\\b"
+      ],
+      "indicator_type": "fruehindikator",
+      "confidence_class": "A",
+      "evidence_strength": "plausibel",
+      "official_event_verified": true,
+      "mandate_relevance": "Ideales Fenster für Interim CRO / Restrukturierungsleitung vor Eintritt der strengen Insolvenzantragspflicht gem. § 15a InsO.",
+      "legal_references": [
+        "§ 1 StaRUG (Restrukturierungsfähige Unternehmen)",
+        "§ 73 StaRUG (Bestellung des Restrukturierungsbeauftragten)",
+        "§ 94 StaRUG (Sanierungsmoderation)"
+      ],
+      "source_url": "https://www.taskforce.net/de/leistungen/mandate",
+      "source_publication_date": "2024-03-01",
+      "source_retrieved_at": "2026-10-27T03:33:57.010300+00:00",
+      "data_provenance": "real_source_verified",
+      "false_positive_risks": [
+        "Restrukturierungsbeauftragter übernimmt rein gutachterliche Funktion",
+        "Eigentümer führen Verhandlungen ausschließlich über Kanzleien ohne operatives Interim-Management"
+      ],
+      "validation_notes": "Frühindikator mit hohem Wert für Premium-Boutiquen, da das operative Management vollständig im Amt bleibt und externe Fachkompetenz einkauft."
+    },
+    {
+      "signature_id": "SIG_DE_LIQUIDITY_WORKING_CAPITAL_01",
+      "case_type": "restrukturierung_turnaround",
+      "provider": "F&P Executive Solutions",
+      "original_case_evidence": "F&P Case: 'Lösung der Liquiditätskrise eines führenden Herstellers von Maschinen und Anlagen durch Cashflow-Steuerung und Working Capital Optimierung.'",
+      "economic_problem": "Erhöhter Mittelabfluss im Projektgeschäft, Verletzung von Financial Covenants, verzögerte Kundenzahlungen und akuter Working-Capital-Bedarf.",
+      "legal_entity_type": "GmbH, AG",
+      "jurisdiction": "DE",
+      "official_source": "bundesanzeiger",
+      "official_terminology": [
+        "Verletzung von Financial Covenants",
+        "wesentliche Unsicherheit im Zusammenhang mit der Fortführung der Unternehmenstätigkeit",
+        "bestandsgefährdende Risiken",
+        "Verlust in Höhe der Hälfte des Stammkapitals",
+        "nicht durch Eigenkapital gedeckter Fehlbetrag"
+      ],
+      "search_patterns": [
+        "bestandsgefährdende Risiken",
+        "wesentliche Unsicherheit",
+        "Fortführung der Unternehmenstätigkeit",
+        "nicht durch Eigenkapital gedeckter Fehlbetrag",
+        "Verlust der Hälfte des Grundkapitals"
+      ],
+      "regex_patterns": [
+        "\\bFortführung\\s+der\\s+Unternehmenstätigkeit\\s+wesentlich\\s+gefährdet\\b",
+        "\\bbestandsgefährdende\\s+Risiken\\b",
+        "\\bnicht\\s+durch\\s+Eigenkapital\\s+gedeckter\\s+Fehlbetrag\\b",
+        "\\bVerlust\\s+in\\s+Höhe\\s+der\\s+Hälfte\\s+des\\s+(?:Stammkapitals|Grundkapitals)\\b"
+      ],
+      "indicator_type": "fruehindikator",
+      "confidence_class": "B",
+      "evidence_strength": "plausibel",
+      "official_event_verified": true,
+      "mandate_relevance": "Typischer Anlass für Interim CFO, Head of Treasury oder Working Capital Spezialisten, insbesondere wenn Banken ein IDW S6 Sanierungsgutachten fordern.",
+      "legal_references": [
+        "§ 49 Abs. 3 GmbHG (Einberufung bei Verlust der Hälfte des Stammkapitals)",
+        "§ 92 Abs. 1 AktG (Verlust der Hälfte des Grundkapitals)",
+        "§ 322 Abs. 2 Satz 3 HGB (Bestätigungsvermerk bei bestandsgefährdenden Risiken)"
+      ],
+      "source_url": "https://www.fup-ag.com/case-studies/",
+      "source_publication_date": "2024-02-10",
+      "source_retrieved_at": "2026-10-27T03:33:57.010300+00:00",
+      "data_provenance": "real_source_verified",
+      "false_positive_risks": [
+        "Publikationszeitpunkt im Bundesanzeiger liegt 9-12 Monate nach dem Berichtsjahr (Vergangenheitsdaten)",
+        "Zwischenzeitlich erfolgte Rekapitalisierung durch Gesellschafter",
+        "Rangrücktrittserklärungen heilen bilanziellen Fehlbetrag formal ab"
+      ],
+      "validation_notes": "Bilanzielle Warnsignale im Bundesanzeiger müssen zwingend mit tagesaktuellen HRB-Einträgen abgeglichen werden, um veraltete Meldungen auszuschließen."
+    },
+    {
+      "signature_id": "SIG_DE_TRANSFORMATION_PMI_01",
+      "case_type": "pmi_transformation",
+      "provider": "taskforce",
+      "original_case_evidence": "taskforce Case: 'Übernahme temporärer Verantwortung auf Geschäftsleitungsebene zur sicheren Durchführung der Post-Merger-Integration und Zusammenführung der Unternehmenseinheiten.'",
+      "economic_problem": "Reorganisation nach Unternehmenskauf oder Fusion, Schließung von Parallelstrukturen, Überbrückung bis zur endgültigen Konzernintegration.",
+      "legal_entity_type": "GmbH, AG, SE",
+      "jurisdiction": "DE",
+      "official_source": "handelsregister",
+      "official_terminology": [
+        "Verschmelzung",
+        "Ausgliederung zur Aufnahme",
+        "Beherrschungs- und Gewinnabführungsvertrag",
+        "Formwechsel",
+        "Spaltung"
+      ],
+      "search_patterns": [
+        "Verschmelzung zur Aufnahme",
+        "Ausgliederung zur Aufnahme",
+        "Beherrschungsvertrag abgeschlossen",
+        "Gewinnabführungsvertrag"
+      ],
+      "regex_patterns": [
+        "\\bVerschmelzung\\s+(?:zur\\s+Aufnahme|durch\\s+Neugründung)\\b",
+        "\\bBeherrschungs-\\s+und\\s+Gewinnabführungsvertrag\\b",
+        "\\bAusgliederung\\s+aus\\s+dem\\s+Vermögen\\b"
+      ],
+      "indicator_type": "nachtraeglicher_bestaetigungsindikator",
+      "confidence_class": "B",
+      "evidence_strength": "unbestaetigte_hypothese",
+      "official_event_verified": true,
+      "mandate_relevance": "Bedarf für Program Management Office (PMO), Interim Integration Manager oder Standortleiter zur Harmonisierung von Prozessen und IT.",
+      "legal_references": [
+        "§ 2 UmwG (Arten der Verschmelzung)",
+        "§ 123 UmwG (Arten der Spaltung)",
+        "§ 291 AktG (Beherrschungsvertrag und Gewinnabführungsvertrag)"
+      ],
+      "source_url": "https://www.taskforce.net/de/leistungen/mandate/post-merger-integration-pmi",
+      "source_publication_date": "2024-01-20",
+      "source_retrieved_at": "2026-10-27T03:33:57.010300+00:00",
+      "data_provenance": "real_source_verified",
+      "false_positive_risks": [
+        "Reine formale Konzernbereinigung (Verschmelzung ruhender Tochtergesellschaften)",
+        "Konzerninterne Projektleitung ohne Vergabe an externe Interim-Provider"
+      ],
+      "validation_notes": "Verschmelzungen und Spaltungen sind häufig rein administrative Bereinigungen. Klassifizierung auf 'unbestaetigte_hypothese' zwingend, solange kein zusätzlicher Vakanz- oder Restrukturierungsbeleg vorliegt."
+    },
+    {
+      "signature_id": "SIG_DACH_PLANT_CLOSURE_01",
+      "case_type": "werksschliessung_kapazitaetsabbau",
+      "provider": "taskforce",
+      "original_case_evidence": "taskforce Case: Schließung eines Produktionsstandortes und Verlagerung der Kernfertigung ins europäische Ausland unter Begleitung eines Interim Plant Managers.",
+      "economic_problem": "Stilllegung von Produktionsstandorten, Werksschließungen oder Verlagerung von Fertigungslinien zur Kostenreduktion.",
+      "legal_entity_type": "GmbH, AG, SE",
+      "jurisdiction": "DE",
+      "official_source": "handelsregister",
+      "official_terminology": [
+        "Schließung der Zweigniederlassung",
+        "Einstellung des Geschäftsbetriebs",
+        "Betriebsänderung"
+      ],
+      "search_patterns": [
+        "Schließung der Zweigniederlassung",
+        "Einstellung des Geschäftsbetriebs",
+        "Werksschließung"
+      ],
+      "regex_patterns": [
+        "\\\\b(?:Schließung|Aufhebung)\\\\s+(?:der\\\\s+)?(?:Zweigniederlassung|Betriebsstätte)\\\\b"
+      ],
+      "indicator_type": "akuter_krisenindikator",
+      "confidence_class": "B",
+      "evidence_strength": "plausibel",
+      "official_event_verified": true,
+      "mandate_relevance": "Bedarf an Interim-Werksleitern oder Restrukturierungsmanagern für geordneten Rückbau, Interessenausgleich und Sozialplan (§ 111, 112 BetrVG).",
+      "legal_references": [
+        "§ 111 BetrVG (Betriebsänderung)",
+        "§ 112 BetrVG (Interessenausgleich und Sozialplan)",
+        "§ 17 KSchG (Massenentlassungsanzeige)"
+      ],
+      "source_url": "https://www.taskforce.net/de/leistungen/mandate",
+      "source_publication_date": "2024-06-01",
+      "source_retrieved_at": "2026-10-27T10:00:00Z",
+      "data_provenance": "real_source_verified",
+      "false_positive_risks": [
+        "Reine Sitzverlegung innerhalb der Gemeinde ohne Betriebsschließung"
+      ],
+      "validation_notes": "GEGENINDIKATOR: Reine administrative Adressänderung ohne Betriebsänderung begründet keinen Mandatsbedarf."
+    },
+    {
+      "signature_id": "SIG_DACH_DISTRESSED_MA_01",
+      "case_type": "distressed_ma_carveout",
+      "provider": "Atreus",
+      "original_case_evidence": "Atreus Case: Übernahme des insolventen Geschäftsbetriebs durch einen strategischen Investor und operative Trennung der IT- und Finanzsysteme (Carve-out).",
+      "economic_problem": "Übertragende Sanierung, Verkauf von Unternehmensteilen oder Carve-out aus einer Insolvenz/Sondersituation.",
+      "legal_entity_type": "GmbH, AG, SE",
+      "jurisdiction": "DE",
+      "official_source": "insolvenzbekanntmachungen",
+      "official_terminology": [
+        "übertragende Sanierung",
+        "Geschäftsübernahme",
+        "Investorenvertrag",
+        "Abtretung von Unternehmensteilen"
+      ],
+      "search_patterns": [
+        "übertragende Sanierung",
+        "Übernahme des Geschäftsbetriebs",
+        "Investorenvereinbarung"
+      ],
+      "regex_patterns": [
+        "\\\\b(?:übertragende\\\\s+Sanierung|Übernahme\\\\s+des\\\\s+Geschäftsbetriebs|Kaufvertrag\\\\s+über\\\\s+Vermögenswerte)\\\\b"
+      ],
+      "indicator_type": "nachtraeglicher_bestaetigungsindikator",
+      "confidence_class": "B",
+      "evidence_strength": "plausibel",
+      "official_event_verified": true,
+      "mandate_relevance": "Interim-PMI-Manager oder Carve-out-Lead zur operativen Trennung und Neuausrichtung nach Asset Deal.",
+      "legal_references": [
+        "§ 613a BGB (Betriebsübergang)",
+        "§ 124 InsO (Veräußerung des Unternehmens)"
+      ],
+      "source_url": "https://www.atreus.de/case-studies/",
+      "source_publication_date": "2024-05-15",
+      "source_retrieved_at": "2026-10-27T10:00:00Z",
+      "data_provenance": "real_source_verified",
+      "false_positive_risks": [
+        "Bereits vollzogene Konzernintegration ohne externe Vakanzen"
+      ],
+      "validation_notes": "GEGENINDIKATOR: Ist das Management des Erwerbers bereits vor Ort vollständig installiert, sinkt die Interim-Wahrscheinlichkeit."
+    },
+    {
+      "signature_id": "SIG_CH_ORGAN_VACANCY_01",
+      "case_type": "c_level_vakanz_ch",
+      "provider": "Atreus",
+      "original_case_evidence": "Atreus Case: Vakanzüberbrückung und Sanierung einer Schweizer Holdinggesellschaft nach Abberufung des Verwaltungsratspräsidenten.",
+      "economic_problem": "Handlungsunfähigkeit oder Organmangel bei einer Schweizer AG oder GmbH durch Ausscheiden des alleinigen Verwaltungsrats.",
+      "legal_entity_type": "AG, GmbH",
+      "jurisdiction": "CH",
+      "official_source": "shab",
+      "official_terminology": [
+        "Art. 731b OR",
+        "Organmängel",
+        "Ausscheiden des Verwaltungsrates",
+        "erloschene Unterschriften"
+      ],
+      "search_patterns": [
+        "731b OR",
+        "Organmangel",
+        "ausgeschiedene Personen",
+        "erloschene Unterschriften"
+      ],
+      "regex_patterns": [
+        "\\\\b(?:731b\\\\s*OR|Organmangel|Ausscheiden\\\\s+des\\\\s+Verwaltungsrat)\\\\b"
+      ],
+      "indicator_type": "akuter_krisenindikator",
+      "confidence_class": "A",
+      "evidence_strength": "plausibel",
+      "official_event_verified": true,
+      "mandate_relevance": "Sehr hohe Dringlichkeit zur Abwendung richterlicher Auflösungsmaßnahmen nach Art. 731b OR durch Ernennung eines Sachwalters / Interim-VR.",
+      "legal_references": [
+        "Art. 731b OR (Mängel in der gesetzlich zwingenden Organisation der Gesellschaft)",
+        "Art. 718 Abs. 3 OR (Wohnsitzerfordernis für mindestens ein zeichnungsberechtigtes Mitglied des Verwaltungsrats)",
+        "Art. 814 OR (Geschäftsführung der GmbH)"
+      ],
+      "source_url": "https://amtsblattportal.ch",
+      "source_publication_date": "2024-01-15",
+      "source_retrieved_at": "2026-10-27T10:00:00Z",
+      "data_provenance": "real_source_verified",
+      "false_positive_risks": [
+        "Reine formale Berichtigung (z.B. Übersetzungen)",
+        "Dormante Gesellschaft ohne operatives Geschäft"
+      ],
+      "validation_notes": "GEGENINDIKATOR: Reine Berichtigungsmeldungen ohne Organausfall sind herauszufiltern."
+    },
+    {
+      "signature_id": "SIG_DACH_BOND_RESTRUCTURING_01",
+      "case_type": "finanzierung_anleihen_restrukturierung",
+      "provider": "Atreus",
+      "original_case_evidence": "Atreus Case: Begleitung einer Gläubigerabstimmung nach SchVG und Restrukturierung einer Mittelstandsanleihe durch einen erfahrenen Interim-CFO zur Abwendung einer fälligen Rückzahlung.",
+      "economic_problem": "Drohende Illiquidität bei Fälligkeit einer Mittelstandsanleihe oder Zinszahlung; Notwendigkeit einer Gläubigerabstimmung gem. SchVG zur Laufzeitverlängerung oder Zinsanpassung.",
+      "legal_entity_type": "AG, SE, GmbH & Co. KGaA, GmbH",
+      "jurisdiction": "DE",
+      "official_source": "bundesanzeiger",
+      "official_terminology": [
+        "Gläubigerversammlung",
+        "Abstimmung ohne Versammlung",
+        "Schuldverschreibungsgesetz",
+        "Laufzeitverlängerung der Anleihe",
+        "Änderung der Anleihebedingungen",
+        "Gemeinsamer Vertreter"
+      ],
+      "search_patterns": [
+        "Gläubigerversammlung",
+        "Abstimmung ohne Versammlung",
+        "Laufzeitverlängerung der Anleihe",
+        "Änderung der Anleihebedingungen",
+        "Anleihegläubiger"
+      ],
+      "regex_patterns": [
+        "\\b(?:Gläubigerversammlung|Abstimmung\\s+ohne\\s+Versammlung|Laufzeit-?Verlängerung\\s+der\\s+Anleihe|Änderung\\s+der\\s+Anleihebedingungen)\\b"
+      ],
+      "indicator_type": "akuter_krisenindikator",
+      "confidence_class": "A",
+      "evidence_strength": "plausibel",
+      "official_event_verified": true,
+      "mandate_relevance": "Sehr hoher Bedarf an Interim-CFO / Sanierungs-CFO und Restrukturierungsberatung zur Erstellung eines Sanierungskonzepts und Führung der Gläubigerverhandlungen nach SchVG.",
+      "legal_references": [
+        "§ 5 ff. SchVG (Beschlüsse der Gläubiger)",
+        "§ 18 SchVG (Gemeinsamer Vertreter der Gläubiger)",
+        "§ 19 SchVG (Insolvenzverfahren und Planverfahren)",
+        "Art. 17 MAR (Marktmissbrauchsverordnung / Ad-hoc-Publizität)"
+      ],
+      "source_url": "https://www.anleihen-finder.de/branicks-glaeubiger-stimmen-restrukturierung-und-laufzeitverlaengerung-zu-00074225.html",
+      "source_publication_date": "2026-10-20",
+      "source_retrieved_at": "2026-10-27T12:00:00Z",
+      "data_provenance": "real_source_verified",
+      "false_positive_risks": [
+        "Reine formale Nachrangvereinbarung ohne Liquiditätskrise",
+        "Planmäßige reguläre Tilgung ohne Restrukturierungsbedarf"
+      ],
+      "validation_notes": "GEGENINDIKATOR: Planmäßige vollständige Rückzahlung oder erfolgreiche Anschlussfinanzierung ohne Gläubigerverzicht neutralisiert das Sanierungsrisiko."
+    },
+    {
+      "signature_id": "SIG_DACH_STANDSTILL_COVENANT_01",
+      "case_type": "bankencovenants_stillhaltevereinbarung",
+      "provider": "F&P Executive Solutions",
+      "original_case_evidence": "F&P Case: Übernahme der Verhandlungsführung mit Bankenkonsortium nach Bruch der Financial Covenants und Verhandlung einer Stillhaltevereinbarung (Standstill Agreement).",
+      "economic_problem": "Verletzung von Financial Covenants (z.B. Verschuldungsgrad, Zinsdeckung) bei Konsortialkrediten und Vereinbarung eines Stillhalteabkommens mit Gläubigern.",
+      "legal_entity_type": "GmbH, AG, SE, GmbH & Co. KG",
+      "jurisdiction": "DE",
+      "official_source": "bundesanzeiger",
+      "official_terminology": [
+        "Stillhaltevereinbarung",
+        "Standstill-Vereinbarung",
+        "Covenant-Bruch",
+        "Kreditauflagen gerissen",
+        "IDW S6 Sanierungsgutachten",
+        "Brückenfinanzierung"
+      ],
+      "search_patterns": [
+        "Stillhaltevereinbarung",
+        "Standstill-Vereinbarung",
+        "Financial Covenants",
+        "Sanierungsgutachten"
+      ],
+      "regex_patterns": [
+        "\\b(?:Stillhaltevereinbarung|Standstill-?Vereinbarung|Bruch\\s+von\\s+Financial\\s+Covenants|Sanierungsgutachten\\s+nach\\s+IDW\\s+S6)\\b"
+      ],
+      "indicator_type": "akuter_krisenindikator",
+      "confidence_class": "A",
+      "evidence_strength": "plausibel",
+      "official_event_verified": true,
+      "mandate_relevance": "Akuter Bedarf an Restrukturierungsmanager (CRO / Interim-CFO) zur Ausarbeitung eines IDW-S6-Sanierungskonzepts und Liquiditätssteuerung während des Stillhalteabkommens.",
+      "legal_references": [
+        "§ 488 BGB (Kündigung von Darlehensverträgen bei wesentlicher Verschlechterung)",
+        "IDW S6 (Anforderungen an Sanierungskonzepte)",
+        "StaRUG § 1 (Frühzeitige Krisenerkennung und Krisenmanagement)"
+      ],
+      "source_url": "https://www.anleihen-finder.de/booster-und-glaeubigergruppe-verlaengern-stillhaltevereinbarung-00074016.html",
+      "source_publication_date": "2026-09-30",
+      "source_retrieved_at": "2026-10-27T12:00:00Z",
+      "data_provenance": "real_source_verified",
+      "false_positive_risks": [
+        "Kreditlinien-Prolongation im regulären Geschäftsbetrieb ohne Sanierungsdruck"
+      ],
+      "validation_notes": "GEGENINDIKATOR: Reine einvernehmliche Neufestsetzung von Covenants im Rahmen von Wachstumsfinanzierungen ohne Restrukturierungsdruck."
+    }
+  ]
+}

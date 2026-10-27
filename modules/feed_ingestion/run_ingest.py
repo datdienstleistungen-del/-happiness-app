@@ -28,9 +28,10 @@ if PROJECT_ROOT not in sys.path:
 
 try:
     from modules.feed_ingestion.config import FEED_SOURCES, MAX_AGE_HOURS
+    from modules.feed_ingestion.sources.de_announcements import fetch_de_announcements
+    from modules.feed_ingestion.sources.swiss_shab import fetch_swiss_shab_feed
     from modules.feed_ingestion.sources.dach_eqs import fetch_eqs_feed
     from modules.feed_ingestion.sources.uk_rns import fetch_uk_rns_feed
-    from modules.feed_ingestion.sources.swiss_shab import fetch_swiss_shab_feed
     from modules.feed_ingestion.sources.eu_markets import fetch_eu_markets_feeds
     from modules.feed_ingestion.keyword_filter import evaluate_signal
     from modules.feed_ingestion.deal_coach import audit_mandate_lead
@@ -39,9 +40,10 @@ try:
     from modules.feed_ingestion.telegram_notifier import send_telegram_alert
 except ImportError:
     from .config import FEED_SOURCES, MAX_AGE_HOURS
+    from .sources.de_announcements import fetch_de_announcements
+    from .sources.swiss_shab import fetch_swiss_shab_feed
     from .sources.dach_eqs import fetch_eqs_feed
     from .sources.uk_rns import fetch_uk_rns_feed
-    from .sources.swiss_shab import fetch_swiss_shab_feed
     from .sources.eu_markets import fetch_eu_markets_feeds
     from .keyword_filter import evaluate_signal
     from .deal_coach import audit_mandate_lead
@@ -81,9 +83,29 @@ def run_ingestion(dry_run=False, skip_cleanup=False):
     total_dropped_age = 0
     total_raw_loaded = 0
 
-    # 2. DACH - EQS News & Ad-hoc
-    if FEED_SOURCES.get("eqs_news_dach", {}).get("enabled", True):
-        print("\n📡 [1/4] DACH (EQS): Frage EQS News & Corporate Ad-hoc Feeds ab...")
+    # 2. DE - Amtliche Bekanntmachungen Deutschland (Handelsregister & Insolvenzen)
+    if FEED_SOURCES.get("de_announcements", {}).get("enabled", True):
+        print("\n📡 [1/2] Deutschland (Amtsportal): Frage amtliche Bekanntmachungen (Handelsregister & Insolvenzen) ab...")
+        url = FEED_SOURCES.get("de_announcements", {}).get("url")
+        de_items, de_dropped = fetch_de_announcements(url, max_age_hours=MAX_AGE_HOURS)
+        total_raw_loaded += len(de_items) + de_dropped
+        total_dropped_age += de_dropped
+        print(f"   -> {len(de_items)} frische Meldungen empfangen ({de_dropped} wegen Alter >{MAX_AGE_HOURS}h verworfen).")
+        all_fresh_items.extend(de_items)
+
+    # 3. CH - Schweizer SHAB Mutationen & Leadership
+    if FEED_SOURCES.get("swiss_shab", {}).get("enabled", True):
+        print("\n📡 [2/2] Schweiz (SHAB): Frage Schweizer SHAB & Handelsregister Mutationen (Führung & Organe) ab...")
+        url = FEED_SOURCES.get("swiss_shab", {}).get("url")
+        shab_items, shab_dropped = fetch_swiss_shab_feed(url)
+        total_raw_loaded += len(shab_items) + shab_dropped
+        total_dropped_age += shab_dropped
+        print(f"   -> {len(shab_items)} frische Meldungen empfangen ({shab_dropped} wegen Alter >{MAX_AGE_HOURS}h verworfen).")
+        all_fresh_items.extend(shab_items)
+
+    # 4. Optionale Legacy-Feeds (nur falls in FEED_SOURCES explizit aktiviert)
+    if FEED_SOURCES.get("eqs_news_dach", {}).get("enabled", False):
+        print("\n📡 [Optional] DACH (EQS): Frage EQS News & Corporate Ad-hoc Feeds ab...")
         url = FEED_SOURCES.get("eqs_news_dach", {}).get("url", "https://www.eqs-news.com/de/rss/")
         dach_items, dach_dropped = fetch_eqs_feed(url)
         total_raw_loaded += len(dach_items) + dach_dropped
@@ -91,9 +113,8 @@ def run_ingestion(dry_run=False, skip_cleanup=False):
         print(f"   -> {len(dach_items)} frische Meldungen empfangen ({dach_dropped} wegen Alter >48h verworfen).")
         all_fresh_items.extend(dach_items)
 
-    # 3. UK - London Stock Exchange RNS & Investegate
-    if FEED_SOURCES.get("uk_rns", {}).get("enabled", True):
-        print("\n📡 [2/4] UK (RNS): Frage London Stock Exchange RNS (Executive Moves & Board Changes) ab...")
+    if FEED_SOURCES.get("uk_rns", {}).get("enabled", False):
+        print("\n📡 [Optional] UK (RNS): Frage London Stock Exchange RNS ab...")
         url = FEED_SOURCES.get("uk_rns", {}).get("url", "https://www.investegate.co.uk/Rss.aspx")
         rns_items, rns_dropped = fetch_uk_rns_feed(url)
         total_raw_loaded += len(rns_items) + rns_dropped
@@ -101,23 +122,13 @@ def run_ingestion(dry_run=False, skip_cleanup=False):
         print(f"   -> {len(rns_items)} frische Meldungen empfangen ({rns_dropped} wegen Alter >48h verworfen).")
         all_fresh_items.extend(rns_items)
 
-    # 4. CH - Schweizer SHAB Mutationen & Leadership
-    if FEED_SOURCES.get("swiss_shab", {}).get("enabled", True):
-        print("\n📡 [3/4] Schweiz (SHAB): Frage Schweizer SHAB & Handelsregister Mutationen (Führung & Organe) ab...")
-        url = FEED_SOURCES.get("swiss_shab", {}).get("url")
-        shab_items, shab_dropped = fetch_swiss_shab_feed(url)
-        total_raw_loaded += len(shab_items) + shab_dropped
-        total_dropped_age += shab_dropped
-        print(f"   -> {len(shab_items)} frische Meldungen empfangen ({shab_dropped} wegen Alter >48h verworfen).")
-        all_fresh_items.extend(shab_items)
-
-    # 5. Südeuropa & EU: Spanien CNMV, Frankreich AMF, Euronext
-    print("\n📡 [4/4] Südeuropa / EU (CNMV & AMF): Frage CNMV (Spanien), AMF (Frankreich) und Euronext ab...")
-    eu_items, eu_dropped = fetch_eu_markets_feeds()
-    total_raw_loaded += len(eu_items) + eu_dropped
-    total_dropped_age += eu_dropped
-    print(f"   -> {len(eu_items)} frische Meldungen empfangen ({eu_dropped} wegen Alter >48h verworfen).")
-    all_fresh_items.extend(eu_items)
+    if FEED_SOURCES.get("eu_markets_es", {}).get("enabled", False) or FEED_SOURCES.get("eu_markets_fr", {}).get("enabled", False):
+        print("\n📡 [Optional] Südeuropa / EU: Frage CNMV & AMF ab...")
+        eu_items, eu_dropped = fetch_eu_markets_feeds()
+        total_raw_loaded += len(eu_items) + eu_dropped
+        total_dropped_age += eu_dropped
+        print(f"   -> {len(eu_items)} frische Meldungen empfangen ({eu_dropped} wegen Alter >48h verworfen).")
+        all_fresh_items.extend(eu_items)
 
     print("\n" + "-" * 75)
     print(f"📊 INGESTION STATISTIK (ZEITFILTER <= {MAX_AGE_HOURS}H):")

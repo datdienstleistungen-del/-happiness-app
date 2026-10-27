@@ -1,0 +1,76 @@
+{
+  "mode": "planned_test_scan",
+  "production_ingestion_enabled": false,
+  "active_corridor": "DE_BAYERN_INDUSTRIAL",
+  "jurisdiction": "DE",
+  "register_type": "HRB",
+  "courts": [
+    {
+      "name": "Amtsgericht München",
+      "court_id": "M7101",
+      "state": "BY",
+      "zip": "80333",
+      "register_authority": "Amtsgericht München - Registergericht"
+    },
+    {
+      "name": "Amtsgericht Nürnberg",
+      "court_id": "M7102",
+      "state": "BY",
+      "zip": "90403",
+      "register_authority": "Amtsgericht Nürnberg - Registergericht"
+    },
+    {
+      "name": "Amtsgericht Augsburg",
+      "court_id": "M7103",
+      "state": "BY",
+      "zip": "86150",
+      "register_authority": "Amtsgericht Augsburg - Registergericht"
+    }
+  ],
+  "target_industries": [
+    "Automotive",
+    "Maschinenbau",
+    "Medizintechnik",
+    "B2B-Technologie",
+    "Elektrotechnik",
+    "Automatisierung",
+    "industrielle Zulieferer",
+    "Produktion",
+    "Luft- und Raumfahrtzulieferer"
+  ],
+  "negative_industry_hints": [
+    "Gastronomie",
+    "Friseur",
+    "Einzelhandel",
+    "Immobilienverwaltung",
+    "Handelsvertretung",
+    "Holdingverwaltung ohne erkennbares operatives Geschäft"
+  ],
+  "available_corridors": {
+    "DE_BAYERN_INDUSTRIAL": {
+      "name": "Bayern Industrie & Technologie",
+      "description": "Fokus auf Automotive, Maschinenbau, MedTech und industrielle Zulieferer im Großraum München, Nürnberg und Augsburg.",
+      "courts": ["Amtsgericht München", "Amtsgericht Nürnberg", "Amtsgericht Augsburg"],
+      "enabled": true
+    },
+    "DE_BW_INDUSTRIAL": {
+      "name": "Baden-Württemberg Automotive & Maschinenbau",
+      "description": "Erweiterungskorridor: Stuttgart, Mannheim, Karlsruhe, Ulm.",
+      "courts": ["Amtsgericht Stuttgart", "Amtsgericht Mannheim", "Amtsgericht Ulm"],
+      "enabled": false
+    },
+    "DE_NRW_INDUSTRIAL": {
+      "name": "Nordrhein-Westfalen Industrie & Mittelstand",
+      "description": "Erweiterungskorridor: Düsseldorf, Köln, Dortmund, Essen.",
+      "courts": ["Amtsgericht Düsseldorf", "Amtsgericht Köln", "Amtsgericht Dortmund"],
+      "enabled": false
+    }
+  },
+  "safety_policy": {
+    "allow_supabase_writes": false,
+    "allow_lead_creation": false,
+    "allow_unthrottled_scraping": false,
+    "max_bulletins_per_run": 50,
+    "output_file": "data/research/regional_scan_results.json"
+  }
+}

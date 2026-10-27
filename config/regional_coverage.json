@@ -1,0 +1,140 @@
+{
+  "version": "1.0.0",
+  "generated_at": "2026-10-27T10:00:00Z",
+  "description": "Konfigurierbare regionale Abdeckung für den kontinuierlichen NeXus Trigger-Event-Radar (DACH-Korridor)",
+  "regions": {
+    "DE": {
+      "country_code": "DE",
+      "country_name": "Deutschland",
+      "enabled": true,
+      "federal_states": [
+        "Baden-Württemberg", "Bayern", "Berlin", "Brandenburg", "Bremen",
+        "Hamburg", "Hessen", "Mecklenburg-Vorpommern", "Niedersachsen",
+        "Nordrhein-Westfalen", "Rheinland-Pfalz", "Saarland", "Sachsen",
+        "Sachsen-Anhalt", "Schleswig-Holstein", "Thüringen"
+      ],
+      "active_sources": [
+        {
+          "source_id": "DE_LAW_FIRM_PRESS",
+          "name": "Restrukturierungs- & Insolvenzbekanntmachungen (Anchor, Brinkmann, Schultze & Braun)",
+          "type": "law_firm_press",
+          "access_method": "direct_http_public",
+          "cadence_hours": 6,
+          "verified_working": true,
+          "coverage_scope": "Bundesweit (DE)",
+          "monitored_events": [
+            "Insolvenzanträge", "Eigenverwaltungsverfahren (§ 270 InsO)",
+            "Schutzschirmverfahren (§ 270b InsO)", "Sanierungsübernahmen",
+            "Investorenprozesse", "Werksschließungen"
+          ]
+        },
+        {
+          "source_id": "DACH_EQS_CORPORATE_DE",
+          "name": "EQS News Corporate Disclosures (Deutschland)",
+          "type": "ad_hoc_disclosure",
+          "access_method": "direct_http_public",
+          "cadence_hours": 2,
+          "verified_working": true,
+          "coverage_scope": "Börsennotierte & kapitalmarktorientierte Unternehmen DE",
+          "monitored_events": [
+            "Organwechsel & Vakanzen (Vorstand/Aufsichtsrat)",
+            "Gewinnwarnungen & Refinanzierung",
+            "Restrukturierungsprogramme",
+            "M&A & Carve-Outs"
+          ]
+        },
+        {
+          "source_id": "DACH_BOND_AND_DEBT_RESTRUCTURING",
+          "name": "Mittelstandsanleihen, Gläubigerversammlungen (SchVG) & Schulden-Restrukturierung",
+          "type": "capital_markets_press",
+          "access_method": "direct_http_public",
+          "cadence_hours": 3,
+          "verified_working": true,
+          "coverage_scope": "Kapitalmarktorientierter Mittelstand & Anleiheemittenten DACH",
+          "monitored_events": [
+            "Gläubigerabstimmungen nach SchVG",
+            "Laufzeitverlängerungen & Zinsstundungen",
+            "Stillhaltevereinbarungen (Standstill Agreements)",
+            "Bruch von Financial Covenants",
+            "Kapitalherabsetzungen & Sanierungs-Kapitalerhöhungen",
+            "CFO-Vakanzen bei Anleiheemittenten"
+          ]
+        }
+      ],
+      "sources_in_preparation": [
+        {
+          "source_id": "DE_STATUTORY_REGISTERS",
+          "name": "handelsregister.de & neu.insolvenzbekanntmachungen.de",
+          "status": "in_preparation",
+          "technical_limitation": "Erfordert JSF ViewState / Session-Token-Verwaltung oder Registrierungs-API; automatisierter Direktabruf ohne Session wird geblockt."
+        }
+      ]
+    },
+    "AT": {
+      "country_code": "AT",
+      "country_name": "Österreich",
+      "enabled": true,
+      "federal_states": [
+        "Burgenland", "Kärnten", "Niederösterreich", "Oberösterreich",
+        "Salzburg", "Steiermark", "Tirol", "Vorarlberg", "Wien"
+      ],
+      "active_sources": [
+        {
+          "source_id": "DACH_EQS_CORPORATE_AT",
+          "name": "EQS News Corporate Disclosures (Österreich)",
+          "type": "ad_hoc_disclosure",
+          "access_method": "direct_http_public",
+          "cadence_hours": 2,
+          "verified_working": true,
+          "coverage_scope": "Börsennotierte Unternehmen & Großkonzerne AT (z.B. Lenzing AG, SBO AG)",
+          "monitored_events": [
+            "Vorstandswechsel", "Restrukturierungen", "Kapitalmaßnahmen"
+          ]
+        }
+      ],
+      "sources_in_preparation": [
+        {
+          "source_id": "AT_EDIKTSDATEI_JUSTIZ",
+          "name": "Ediktsdatei Bundesministerium für Justiz (edikte.justiz.gv.at)",
+          "status": "in_preparation",
+          "technical_limitation": "Lotus Domino Session-Formulare erfordern spezifische Cookie- und Agenten-Emulation; öffentliche Trefferliste bedarf separatem Session-Parser."
+        }
+      ]
+    },
+    "CH": {
+      "country_code": "CH",
+      "country_name": "Schweiz",
+      "enabled": true,
+      "cantons": [
+        "ZH", "BE", "LU", "UR", "SZ", "OW", "NW", "GL", "ZG", "FR",
+        "SO", "BS", "BL", "SH", "AR", "AI", "SG", "GR", "AG", "TG",
+        "TI", "VD", "VS", "NE", "GE", "JU"
+      ],
+      "active_sources": [
+        {
+          "source_id": "CH_SHAB_API",
+          "name": "Schweizerisches Handelsamtsblatt (amtsblattportal.ch)",
+          "type": "official_api",
+          "access_method": "federal_rest_api",
+          "cadence_hours": 3,
+          "verified_working": true,
+          "coverage_scope": "Alle 26 Kantone (gesamte Schweiz)",
+          "monitored_events": [
+            "HR02 Mutationen", "Organabberufungen & Vakanzen",
+            "Mängel in der Organisation (Art. 731b OR)",
+            "Liquidation & Konkurseröffnungen"
+          ]
+        }
+      ],
+      "sources_in_preparation": []
+    }
+  },
+  "safety_and_compliance": {
+    "zero_cost_budget": "0 Euro",
+    "no_paywalls": true,
+    "concurrency_lock": "data/research/.radar_runner.lock",
+    "default_persistence_file": "data/research/continuous_radar_events.json",
+    "history_file": "data/research/continuous_radar_history.json",
+    "production_supabase_writes_allowed": false
+  }
+}

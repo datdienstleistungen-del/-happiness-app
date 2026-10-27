@@ -33,6 +33,35 @@ def extract_swiss_company_from_title(title):
             return comp
     return "Schweizer Unternehmen"
 
+def check_shab_mutation_relevance(title_text, full_pdf_text=""):
+    """
+    Evaluates whether a Swiss SHAB HR02 mutation is relevant for Interim Management.
+    Returns: (is_relevant: bool, reason: str)
+    """
+    lower_title = (title_text or "").lower()
+    lower_pdf = (full_pdf_text or "").lower()
+    combined = f"{lower_title} {lower_pdf}"
+
+    has_hard_insolvency = bool(re.search(r'\b(in liquidation\b|konkurs|konkurseröffnung|nachlassstundung)\b', combined))
+
+    # 1. Check formal correction (Berichtigung)
+    if 'berichtigung' in combined and not has_hard_insolvency:
+        return False, "ROUTINE_ADMIN_CORRECTION"
+
+    # 2. Check organ role and exit
+    has_organ_role = bool(re.search(r'\b(verwaltungsrat|geschäftsführ|direktion|vorstand|präsident des verwaltungsrates|mitglied des verwaltungsrates)\b', combined))
+    has_organ_exit = bool(re.search(r'\b(ausgeschiedene personen|erloschene unterschriften|niedergelegt|ausgeschieden|abberufen)\b', combined))
+
+    if not has_organ_exit and not has_hard_insolvency:
+        return False, "NO_ORGAN_EXIT"
+
+    # 3. Check 1:1 successor without vacancy
+    has_successor = bool(re.search(r'\b(eingetragene personen neu|neu oder mutierend)\b', lower_pdf))
+    if has_successor and not has_hard_insolvency:
+        return False, "IMMEDIATE_SUCCESSOR_APPOINTED"
+
+    return True, "ORGAN_DEPARTURE_DETECTED"
+
 def fetch_swiss_shab_feed(url=None):
     """
     Fetches and parses live official Swiss SHAB / Handelsregister mutation signals
@@ -124,7 +153,7 @@ def fetch_swiss_shab_feed(url=None):
                             previous_pub_date = prev_date_str
                             cur_dt = parsed_dt if parsed_dt else datetime.now(timezone.utc)
                             dormant_months = (cur_dt.year - prev_dt.year) * 12 + (cur_dt.month - prev_dt.month)
-                            if dormant_months > 36:
+                            if dormant_months > 18:
                                 is_dormant_shell = True
                         except Exception:
                             pass
@@ -148,9 +177,19 @@ def fetch_swiss_shab_feed(url=None):
                         is_purpose_shell = True
                         purpose_category = "Domizilhülle / Briefkastengesellschaft"
 
+                    # FILTER: Dormante Hüllen (>18 Monate Stillstand) oder Zweck-Vehikel sofort verwerfen!
+                    if is_dormant_shell or is_purpose_shell or dormant_months > 18:
+                        continue
+
                     # FILTER: Wenn reine Adress-, Statuten- oder Zweckänderung OHNE Organ-Austritt -> SOFORT VERWERFEN!
                     if not has_organ_exit and not has_organ_role:
                         # Reines Rauschen (z.B. Domizilwechsel, Statutenkorrektur) -> drop
+                        continue
+
+                    # FILTER BERICHTIGUNG: Reine formale Berichtigungen (z.B. CATNOIR Übersetzungs-Korrekturen) sofort verwerfen!
+                    is_berichtigung = 'berichtigung' in title_text.lower() or 'berichtigung' in lower_pdf
+                    has_hard_insolvency = ('in liquidation' in lower_pdf or 'konkurs' in lower_pdf or 'nachlassstundung' in lower_pdf)
+                    if is_berichtigung and not has_hard_insolvency:
                         continue
 
                     # Extrahiere den relevanten Abschnitt
@@ -167,6 +206,10 @@ def fetch_swiss_shab_feed(url=None):
 
             # Falls kein Organwechsel vorliegt und kein Austritt: verwerfen
             if not has_organ_exit and not ('in liquidation' in snippet_text.lower() or 'konkurs' in snippet_text.lower()):
+                continue
+
+            # FILTER BERICHTIGUNG FALLBACK:
+            if 'berichtigung' in title_text.lower() and not ('in liquidation' in snippet_text.lower() or 'konkurs' in snippet_text.lower()):
                 continue
 
             # GESCHÄFTSMODELL-FILTER (HARRO MANDATS-ORIGINATION):

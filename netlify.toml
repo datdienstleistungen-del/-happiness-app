@@ -23,6 +23,9 @@
 [functions."nexus-radar-scan-queue-background"]
   background = true
 
+[functions."nexus-radar-events"]
+  included_files = ["public/data/**", "data/research/**"]
+
 [build.environment]
   NODE_VERSION = "22"
 

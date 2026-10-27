@@ -255,6 +255,7 @@ def evaluate_signal(item):
     primary_source_patterns = [
         r'amtsblattportal\.ch', r'shab\.ch', r'eqs-news\.com', r'investegate\.co\.uk',
         r'cnmv\.es', r'afm\.nl', r'bundesanzeiger\.de', r'unternehmensregister\.de',
+        r'handelsregister\.de', r'insolvenzbekanntmachungen\.de', r'justiz\.de',
         r'londonstockexchange\.com'
     ]
     url_lower = url.lower()

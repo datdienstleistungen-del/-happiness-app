@@ -235,44 +235,53 @@ LEGAL_FORM_BLACKLIST = [
 ]
 
 
-# Pan-European Official Primary Feed Sources Configuration (Keine Aggregatoren/Google News)
+# Amtliche Primärquellen-Konfiguration (ZERO-JUNK POLICY: Nur amtliche Pflichtpublikationen)
 FEED_SOURCES = {
-    "eqs_news_dach": {
-        "name": "EQS News & Ad-hoc (DACH)",
-        "region": "DACH",
-        "url": "https://www.eqs-news.com/de/rss/",
+    # ── DEUTSCHE AMTLICHE PFLICHTVERÖFFENTLICHUNGEN (NEUER PRIMÄR-COLLECTOR) ──
+    "de_announcements": {
+        "name": "Amtliche Bekanntmachungen Deutschland (Handelsregister & Insolvenzbekanntmachungen)",
+        "region": "DE",
+        "url": "https://www.handelsregister.de",
         "enabled": True
     },
-    "uk_rns": {
-        "name": "London Stock Exchange Regulatory News Service (UK)",
-        "region": "UK",
-        "url": "https://www.investegate.co.uk/Rss.aspx",
-        "enabled": True
-    },
+    # ── SCHWEIZERISCHES HANDELSAMTSBLATT (SHAB MUTATIONEN HR02) ──
     "swiss_shab": {
         "name": "Schweizerisches Handelsamtsblatt (SHAB Mutationen REST API)",
         "region": "CH",
         "url": "https://amtsblattportal.ch/api/v1/publications?publicationStates=PUBLISHED&subRubrics=HR02&page=0&size=50",
         "enabled": True
     },
-    "eu_markets_es": {
-        "name": "CNMV Información Privilegiada & OIR (Spanien)",
-        "region": "ES",
-        "url": "https://www.cnmv.es/portal/informacion-privilegiada/RSS.asmx/GetNoticiasCNMV",
-        "enabled": True
-    },
-    "eu_markets_fr": {
-        "name": "AMF France Regulatory RSS (Frankreich)",
-        "region": "FR",
-        "url": "https://www.amf-france.org/fr/rss",
-        "enabled": True
-    },
-    "eu_markets_euronext": {
-        "name": "Euronext Pan-European Regulatory Press Releases",
-        "region": "EU",
-        "url": "https://live.euronext.com/en/pd/press-releases/rss",
-        "enabled": True
-    }
+    # ── DEAKTIVIERTE CORPORATE-PR- UND BÖRSEN-FEEDS (ZERO-JUNK POLICY) ──
+    # "eqs_news_dach": {
+    #     "name": "EQS News & Ad-hoc (DACH)",
+    #     "region": "DACH",
+    #     "url": "https://www.eqs-news.com/de/rss/",
+    #     "enabled": False
+    # },
+    # "uk_rns": {
+    #     "name": "London Stock Exchange Regulatory News Service (UK)",
+    #     "region": "UK",
+    #     "url": "https://www.investegate.co.uk/Rss.aspx",
+    #     "enabled": False
+    # },
+    # "eu_markets_es": {
+    #     "name": "CNMV Información Privilegiada & OIR (Spanien)",
+    #     "region": "ES",
+    #     "url": "https://www.cnmv.es/portal/informacion-privilegiada/RSS.asmx/GetNoticiasCNMV",
+    #     "enabled": False
+    # },
+    # "eu_markets_fr": {
+    #     "name": "AMF France Regulatory RSS (Frankreich)",
+    #     "region": "FR",
+    #     "url": "https://www.amf-france.org/fr/rss",
+    #     "enabled": False
+    # },
+    # "eu_markets_euronext": {
+    #     "name": "Euronext Pan-European Regulatory Press Releases",
+    #     "region": "EU",
+    #     "url": "https://live.euronext.com/en/pd/press-releases/rss",
+    #     "enabled": False
+    # }
 }
 
 # Status Constants
