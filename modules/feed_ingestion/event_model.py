@@ -9,6 +9,7 @@ enforcing strict separation between:
 
 import uuid
 import hashlib
+import re
 from datetime import datetime, timezone
 
 VALID_PROVENANCE_CLASSES = {
@@ -167,6 +168,26 @@ class TriggerEvent:
         ]):
             return "watchlist_general_distress", "passiv_m_and_a_abschluss"
 
+        # Already staffed / appointed successor (no open interim mandate)
+        staffed_patterns = [
+            r'(?:wird|ist|berufen|bestellt|ernannt)\s+(?:zum|ab|per)?\s*.*?\bneue[rn]?\s+(?:ceo|cfo|cro|coo|vorstandsvorsitzende[rn]?|geschäftsführer(?:in)?|vorstand)\b',
+            r'\b(?:übernimmt|antritt|nachfolge)\b.*?\b(?:vorstandsvorsitz|geschäftsführung|leitung|nachfolge|cfo|ceo)\b',
+            r'\bstaffelübergabe\b',
+            r'\b(?:nachfolge|nachfolger(?:in)?)\b.*?\b(?:geregelt|benannt|bestellt|geklärt|gesichert)\b',
+            r'\bappointment\s+of\b.*?\bas\s+(?:new\s+)?(?:ceo|cfo|cro)\b',
+            r'\bnamed\s+(?:as\s+)?(?:new\s+)?(?:ceo|cfo|cro)\b',
+            r'wird\s+neue[rn]?\s+cfo',
+            r'ist\s+neue[rn]?\s+cfo',
+            r'tritt\s+cfo-amt\s+an',
+            r'wird\s+neue[rn]?\s+ceo',
+            r'ist\s+neue[rn]?\s+ceo',
+            r'zum\s+neuen\s+ceo\s+bestellt',
+            r'neuer\s+vorstandsvorsitzender\s+bestellt'
+        ]
+        is_already_staffed = any(re.search(pat, text, re.IGNORECASE) for pat in staffed_patterns)
+        if is_already_staffed:
+            return "watchlist_general_distress", "passiv_nachfolge_besetzt"
+
         # Regular insolvency with external court administrator (entmachtete Organe, Fremdverwaltung)
         if any(k in text for k in [
             "vorläufigen insolvenzverwalter bestellt", "insolvenzverwalter bestellt", "regelinsolvenz",
@@ -176,7 +197,10 @@ class TriggerEvent:
             
         # 2. Acute Handlungsdruck / Organ-Vakuum (High Priority / C-Level Action required)
         # C-Level vacancy / CFO departure
-        if self.category in ("c_level_vakanz", "organ_vakanz") or any(k in text for k in ["neuer cfo", "cfo", "vorstandswechsel", "amtsniederlegung", "rücktritt per sofort", "vorstandsvorsitzender"]):
+        if not is_already_staffed and (
+            self.category in ("c_level_vakanz", "organ_vakanz") or
+            any(k in text for k in ["vorstandswechsel", "amtsniederlegung", "rücktritt per sofort", "vorstand scheidet aus", "organ-vakuum"])
+        ):
             return "high_priority_action_required", "c_level_organ_vakuum"
             
         # Eigenverwaltung / Schutzschirm (CRO required)
@@ -194,7 +218,13 @@ class TriggerEvent:
 
     def get_dedup_hash(self):
         """Generates a stable normalized deduplication key."""
-        norm_company = ''.join(e for e in self.company_name.lower() if e.isalnum())
+        clean_name = self.company_name.lower()
+        # Strip common prefixes and descriptors for stable cross-run hashing
+        clean_name = re.sub(r'^(?:(?:\d{1,2}\.\s+)?(?:januar|februar|märz|april|mai|juni|juli|august|september|oktober|november|dezember)\s+\d{4}[\.:,]?\s*)', '', clean_name)
+        clean_name = re.sub(r'^(?:der|die|das|des|dem|den|ein|eine|einer|eines|einem|einen)\s+', '', clean_name)
+        clean_name = re.sub(r'^(?:solarunternehmen|diagnostik-startup|startup|automobilzulieferer|zulieferer|hersteller|betreiber|krankenhausbetreiber|klinikbetreiber|unternehmen|traditionsunternehmen|familienunternehmen)\s+', '', clean_name)
+        clean_name = re.sub(r'^(?:der|die|das|des|dem|den)\s+', '', clean_name)
+        norm_company = ''.join(e for e in clean_name if e.isalnum())
         norm_cat = self.category.lower().strip()
         # Use event_date or published year-month
         date_token = self.event_date or (self.published_at[:7] if self.published_at else "nodate")

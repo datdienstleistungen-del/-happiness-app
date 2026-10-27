@@ -192,5 +192,63 @@ class TestMandateRealityCheck(unittest.TestCase):
         self.assertEqual(new_rc["human_review"]["reviewer_decision"], "MANDAT_PLAUSIBEL")
         self.assertIn("CRO-Bedarf", new_rc["human_review"]["reviewer_notes"])
 
+    def test_deag_leadership_change_future_start_date_verwerfen(self):
+        """DEAG-Fall: Fest benannter Nachfolger mit künftigem Amtsantritt führt zu VERWERFEN, nicht Interim-Bedarf."""
+        ev = TriggerEvent(
+            company_name="DEAG Deutsche Entertainment AG",
+            country="DE",
+            category="c_level_vakanz",
+            description="DEAG: Markus Breitenecker wird zum 01. November 2026 neuer CEO",
+            source_url="https://www.anleihen-finder.de/deag-markus-breitenecker-wird-zum-01-november-2026-neuer-ceo-00073962.html",
+            source_type="ad_hoc",
+            evidence_text="Staffelübergabe bei DEAG: Markus Breitenecker übernimmt Vorstandsvorsitz von Detlef Kornett zum 01. November 2026."
+        )
+        rc = ev.reality_check
+        self.assertEqual(rc["status"], CLASS_VERWERFEN)
+        self.assertEqual(rc["target_role"], "KEINE")
+        self.assertEqual(rc["target_role_label"], "Keine externe Organfunktion ableitbar")
+        self.assertTrue(any("fest neu besetzt" in ci for ci in rc["counter_indicators"]))
+        
+        prio, action = ev.determine_mandate_priority()
+        self.assertEqual(prio, "watchlist_general_distress")
+        self.assertEqual(action, "passiv_nachfolge_besetzt")
+
+    def test_pferdewetten_and_photon_energy_rejection(self):
+        """pferdewetten.de und Photon Energy: Neue CFOs bereits ernannt -> VERWERFEN, KEINE, passiv_nachfolge_besetzt."""
+        for cname, title, snippet in [
+            ("pferdewetten.de AG", "pferdewetten.de AG: Frank Hartmann wird neuer CFO", "Frank Hartmann wird neuer CFO der pferdewetten.de AG."),
+            ("Photon Energy Group", "Photon Energy Group: Andrej Horansky ist neuer CFO", "Photon Energy Group beruft Andrej Horansky zum neuen CFO.")
+        ]:
+            ev = TriggerEvent(
+                company_name=cname,
+                country="DE",
+                category="c_level_vakanz",
+                description=title,
+                source_url="https://www.anleihen-finder.de/sample-news",
+                source_type="press_release",
+                evidence_text=snippet
+            )
+            rc = ev.reality_check
+            self.assertEqual(rc["status"], CLASS_VERWERFEN, f"Failed on {cname}")
+            self.assertEqual(rc["target_role"], "KEINE", f"Target role must be KEINE for {cname}")
+            prio, action = ev.determine_mandate_priority()
+            self.assertEqual(prio, "watchlist_general_distress", f"Priority must be watchlist for {cname}")
+            self.assertEqual(action, "passiv_nachfolge_besetzt", f"Action must be passiv_nachfolge_besetzt for {cname}")
+
+    def test_verwerfen_target_role_is_strictly_keine(self):
+        """Alle verworfenen Ereignisse müssen zwingend target_role='KEINE' ausweisen."""
+        ev = TriggerEvent(
+            company_name="Solved Precision GmbH",
+            country="DE",
+            category="unternehmenskrise_restrukturierung",
+            description="Investorenprozess erfolgreich abgeschlossen",
+            source_url="https://sample.de/inso-solved",
+            source_type="press_release",
+            evidence_text="Übernahme vollzogen, Betrieb gerettet."
+        )
+        rc = ev.reality_check
+        self.assertEqual(rc["status"], CLASS_VERWERFEN)
+        self.assertEqual(rc["target_role"], "KEINE")
+
 if __name__ == "__main__":
     unittest.main()

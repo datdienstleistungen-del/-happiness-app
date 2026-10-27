@@ -19,6 +19,7 @@ import uuid
 import signal
 import argparse
 import subprocess
+import re
 from datetime import datetime, timezone, timedelta
 
 # Windows console encoding safety
@@ -173,6 +174,7 @@ class ContinuousRadarEngine:
     def _load_existing_events(self):
         self.events_by_id = {}
         self.dedup_map = {}
+        self.url_map = {}
         if os.path.exists(self.storage_file):
             try:
                 with open(self.storage_file, "r", encoding="utf-8") as f:
@@ -183,6 +185,10 @@ class ContinuousRadarEngine:
                     self.events_by_id[ev.event_id] = ev
                     d_hash = ev.get_dedup_hash()
                     self.dedup_map[d_hash] = ev.event_id
+                    if ev.source_url:
+                        clean_u = re.sub(r'^https?://(?:www\.)?', '', ev.source_url).split('?')[0].rstrip('/')
+                        if clean_u:
+                            self.url_map[clean_u] = ev.event_id
             except Exception as e:
                 sys.stderr.write(f"Warning: Could not parse existing radar events ({e}). Starting fresh.\n")
 
@@ -219,8 +225,18 @@ class ContinuousRadarEngine:
         - Follow-up update without overwriting
         - Returns: (status, event_id) where status is 'NEW', 'UPDATED_FOLLOW_UP', 'DUPLICATE_IDENTICAL'
         """
-        d_hash = incoming_event.get_dedup_hash()
+        clean_u = re.sub(r'^https?://(?:www\.)?', '', incoming_event.source_url).split('?')[0].rstrip('/') if incoming_event.source_url else None
         
+        # 1. Exact URL duplicate check (protection against re-scraping the exact same source disclosure)
+        if clean_u and clean_u in self.url_map:
+            existing_id = self.url_map[clean_u]
+            existing_ev = self.events_by_id.get(existing_id)
+            if existing_ev:
+                existing_ev.last_checked_at = datetime.now(timezone.utc).isoformat()
+                return "DUPLICATE_IDENTICAL", existing_id
+
+        # 2. Case and entity deduplication & follow-up chaining
+        d_hash = incoming_event.get_dedup_hash()
         if d_hash in self.dedup_map:
             existing_id = self.dedup_map[d_hash]
             existing_ev = self.events_by_id.get(existing_id)
@@ -243,6 +259,8 @@ class ContinuousRadarEngine:
         # Brand new event
         self.events_by_id[incoming_event.event_id] = incoming_event
         self.dedup_map[d_hash] = incoming_event.event_id
+        if clean_u:
+            self.url_map[clean_u] = incoming_event.event_id
         return "NEW", incoming_event.event_id
 
     def execute_scan(self, sources_filter=None, trigger="manual"):

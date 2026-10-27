@@ -42,8 +42,15 @@ def extract_legal_company(text):
     m = re.search(pattern, text)
     if m:
         c = m.group(1).strip()
-        c = re.sub(r'^(?:der|die|das|des)\s+', '', c, flags=re.I)
-        return c.strip(' ,.')
+        # 1. Strip leading date expressions (e.g. "August 2026. ", "12. Oktober 2026: ")
+        c = re.sub(r'^(?:\d{1,2}\.\s+)?(?:Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\s+\d{4}[\.:,]?\s*', '', c, flags=re.I)
+        # 2. Strip leading German articles
+        c = re.sub(r'^(?:der|die|das|des|dem|den|ein|eine|einer|eines|einem|einen)\s+', '', c, flags=re.I)
+        # 3. Strip leading sector/type descriptors
+        c = re.sub(r'^(?:Solarunternehmen|Diagnostik-Startup|Startup|Automobilzulieferer|Zulieferer|Hersteller|Betreiber|Krankenhausbetreiber|Klinikbetreiber|Unternehmen|Traditionsunternehmen|Familienunternehmen)\s+', '', c, flags=re.I)
+        # 4. Strip again in case of "Dem Diagnostik-Startup Noscendo" -> "Diagnostik-Startup Noscendo" -> "Noscendo"
+        c = re.sub(r'^(?:der|die|das|des|dem|den)\s+', '', c, flags=re.I)
+        return c.strip(' ,.:')
     return ""
 
 def classify_restructuring_category(text):

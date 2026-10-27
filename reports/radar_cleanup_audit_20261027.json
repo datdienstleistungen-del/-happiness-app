@@ -1,0 +1,177 @@
+{
+  "audit_version": "1.3.0",
+  "generated_at": "2026-10-27T23:05:00+00:00",
+  "scope": "NeXus Continuous Trigger Radar - Reality Check & Provenance Alignment",
+  "summary": {
+    "initial_event_count": 29,
+    "merged_duplicate_pairs": 5,
+    "final_canonical_event_count": 26,
+    "unique_primary_urls": 26,
+    "http_200_verified_urls": 26,
+    "http_failed_urls": 0,
+    "synthetic_or_test_records_in_dataset": 0,
+    "unverified_statistical_confidence_removed": true,
+    "human_review_preservation_verified": true
+  },
+  "duplicate_merges": [
+    {
+      "canonical_event_id": "3de62078-71c0-4a09-acda-e42b36882659",
+      "canonical_company": "Süddeutsche Gelenkscheibenfabrik GmbH & Co. KG",
+      "duplicate_event_id": "22ed30e3-4de3-4767-9c4a-9b2ebddc4f2e",
+      "duplicate_company": "Süddeutsche Gelenkscheibenfabrik GmbH",
+      "source_url": "https://www.brinkmann-partner.de/sueddeutsche-gelenkscheibenfabrik-gmbh-co-kg-investorenprozess-erfolgreich-abgeschlossen/",
+      "action": "Merged history into canonical event; preserved full legal entity form."
+    },
+    {
+      "canonical_event_id": "e8b02ffc-1b72-4dbd-a5ce-8d4ded62f1cd",
+      "canonical_company": "BOOSTER Precision Components GmbH",
+      "duplicate_event_id": "5ec06df1-078c-4cbb-b80c-62d023645235",
+      "duplicate_company": "Booster Precision Components Holding",
+      "source_url": "https://www.anleihen-finder.de/booster-anleiheglaeubiger-stimmen-bond-anpassungen-zu-00073785.html",
+      "action": "Merged duplicate entry into canonical event with full 3-stage history chain."
+    },
+    {
+      "canonical_event_id": "32eab0e7-622f-4fd2-9cb0-a96fc0a1481f",
+      "canonical_company": "BSH GmbH & Co. KG",
+      "duplicate_event_id": "39297647-89e6-4b02-ac64-5271368e5c1c",
+      "duplicate_company": "Solarunternehmen BSH GmbH",
+      "source_url": "https://www.anchor.eu/anchor/aktuelles/solarunternehmen-bsh-gmbh-co-kg-stellt-insolvenzantrag/",
+      "action": "Removed 'Solarunternehmen' descriptor prefix; merged duplicate into canonical record."
+    },
+    {
+      "canonical_event_id": "09d6936a-2b6b-47c6-9492-879fe5b4db2b",
+      "canonical_company": "Wohnstift Innblick GmbH",
+      "duplicate_event_id": "791e59bd-0850-416c-9786-e6a56aec401e",
+      "duplicate_company": "August 2026. Die Wohnstift Innblick GmbH",
+      "source_url": "https://www.anchor.eu/anchor/aktuelles/wohnstift-innblick-aus-neuhaus-am-inn-saniert-sich-in-eigenverwaltung/",
+      "action": "Removed date/article prefix 'August 2026. Die'; preserved canonical record."
+    },
+    {
+      "canonical_event_id": "419480cf-f6f4-443a-8c26-f8879c7cf804",
+      "canonical_company": "Noscendo GmbH",
+      "duplicate_event_id": "289a779c-a352-4eef-b828-e004be1e627b",
+      "duplicate_company": "Dem Diagnostik-Startup Noscendo GmbH",
+      "source_url": "https://www.anchor.eu/anchor/aktuelles/anchor-sichert-zukunftsloesung-fuer-die-disqver-plattform-von-noscendo/",
+      "action": "Removed 'Dem Diagnostik-Startup' prefix; merged duplicate into canonical record."
+    }
+  ],
+  "leadership_change_reclassifications": [
+    {
+      "company": "DEAG Deutsche Entertainment AG",
+      "event_id": "5a3f4200-01bd-4dea-b372-b553fe211210",
+      "description": "DEAG: Markus Breitenecker wird zum 01. November 2026 neuer CEO",
+      "before": {
+        "reality_check_status": "MANDAT_PLAUSIBEL",
+        "target_role": "INTERIM_CEO",
+        "mandate_priority": "high_priority_action_required"
+      },
+      "after": {
+        "reality_check_status": "VERWERFEN",
+        "target_role": "KEINE",
+        "mandate_priority": "watchlist_general_distress",
+        "action_type": "passiv_nachfolge_besetzt"
+      },
+      "rationale": "Nachfolger Markus Breitenecker wurde bereits fest ernannt (Amtsantritt 01. November 2026). Kein offenes Interim-Mandat ableitbar."
+    },
+    {
+      "company": "pferdewetten.de AG",
+      "event_id": "ded3d1b1-d299-4ec7-92d1-1cc8c28bccc1",
+      "description": "pferdewetten.de AG: Frank Hartmann wird neuer CFO",
+      "before": {
+        "reality_check_status": "VERWERFEN",
+        "target_role": "KEINE",
+        "mandate_priority": "high_priority_action_required"
+      },
+      "after": {
+        "reality_check_status": "VERWERFEN",
+        "target_role": "KEINE",
+        "mandate_priority": "watchlist_general_distress",
+        "action_type": "passiv_nachfolge_besetzt"
+      },
+      "rationale": "CFO-Position bereits besetzt. Priorität korrigiert von High Priority auf Watchlist / Nachfolge besetzt."
+    },
+    {
+      "company": "Photon Energy Group",
+      "event_id": "6215b25a-8654-4f7c-a34a-e56bb1ca5aad",
+      "description": "Photon Energy Group: Andrej Horansky ist neuer CFO",
+      "before": {
+        "reality_check_status": "VERWERFEN",
+        "target_role": "KEINE",
+        "mandate_priority": "high_priority_action_required"
+      },
+      "after": {
+        "reality_check_status": "VERWERFEN",
+        "target_role": "KEINE",
+        "mandate_priority": "watchlist_general_distress",
+        "action_type": "passiv_nachfolge_besetzt"
+      },
+      "rationale": "CFO-Position bereits besetzt. Priorität korrigiert von High Priority auf Watchlist / Nachfolge besetzt."
+    }
+  ],
+  "target_role_corrections_on_verwerfen_cases": [
+    {
+      "company": "GWSPA Produktion GmbH",
+      "status": "VERWERFEN",
+      "target_role_before": "CRO",
+      "target_role_after": "KEINE",
+      "reason": "Investorenprozess abgeschlossen; Demmel Gruppe übernimmt Geschäftsbetrieb."
+    },
+    {
+      "company": "BOOSTER Precision Components GmbH",
+      "status": "VERWERFEN",
+      "target_role_before": "INTERIM_CFO",
+      "target_role_after": "KEINE",
+      "reason": "Anleihegläubiger haben Bond-Anpassungen zugestimmt; Refinanzierung geregelt."
+    },
+    {
+      "company": "Cutting Company GmbH",
+      "status": "VERWERFEN",
+      "target_role_before": "TRANSFORMATION",
+      "target_role_after": "KEINE",
+      "reason": "Zukunft gesichert; Übernahme der Betriebe vollzogen."
+    },
+    {
+      "company": "Fiwoim GmbH",
+      "status": "VERWERFEN",
+      "target_role_before": "TRANSFORMATION",
+      "target_role_after": "KEINE",
+      "reason": "Wohnbauprojekt erfolgreich fertiggestellt; reguläre Bauabwicklung."
+    },
+    {
+      "company": "Noscendo GmbH",
+      "status": "VERWERFEN",
+      "target_role_before": "TRANSFORMATION",
+      "target_role_after": "KEINE",
+      "reason": "Anchor sichert Zukunftslösung für Plattform; Transaktion abgeschlossen."
+    }
+  ],
+  "frontend_confidence_remediation": {
+    "removed_display": "Konfidenz: 98 % (statisch berechnet aus axis_a == 'nachgewiesen' ? 0.98 : 0.85)",
+    "replacement_indicators": [
+      {
+        "indicator": "Quellenbeleg",
+        "labels": ["Amtlich / Öffentlich belegt", "Ausstehend"],
+        "field": "verification_status / provenance_status"
+      },
+      {
+        "indicator": "Sachverhalt",
+        "labels": ["Belegt", "In Prüfung"],
+        "field": "axis_a_event_certainty"
+      },
+      {
+        "indicator": "Mandatsstatus",
+        "labels": [
+          "Plausibler Bedarf (Hypothese)",
+          "Kein Mandatsansatz (Besetzt/Gelöst)",
+          "Watchlist (Kein Direktbedarf)"
+        ],
+        "field": "reality_check.status"
+      }
+    ]
+  },
+  "durability_and_governance": {
+    "persistence_mechanism": "Client localStorage overlay ('nexus_radar_human_reviews') + Python Radar PID-protected reevaluation with human_review preservation.",
+    "serverless_safety": "Netlify read-only filesystem does not cause data loss because client immediately stores human decisions locally and overlays them upon every render.",
+    "test_cleanliness": "Verified via test_human_review_durability.py and automated test suite: 0 synthetic test reviews in production JSON files."
+  }
+}

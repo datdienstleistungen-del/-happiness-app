@@ -101,16 +101,23 @@ class MandateRealityCheckEngine:
             "fertiggestellt"
         ])
 
-        # Prüfen, ob Führungsposition bereits fest neu besetzt wurde
-        is_already_staffed = any(k in combined_text for k in [
-            "wird neuer cfo",
-            "ist neuer cfo",
-            "tritt cfo-amt an",
-            "wird neuer ceo",
-            "zum neuen ceo bestellt",
-            "wird zum neuen ceo",
-            "neuer vorstandsvorsitzender bestellt"
-        ])
+        # Prüfen, ob Führungsposition bereits fest neu besetzt wurde (auch bei künftigem Amtsantritt)
+        staffed_patterns = [
+            r'(?:wird|ist|berufen|bestellt|ernannt)\s+(?:zum|ab|per)?\s*.*?\bneue[rn]?\s+(?:ceo|cfo|cro|coo|vorstandsvorsitzende[rn]?|geschäftsführer(?:in)?|vorstand)\b',
+            r'\b(?:übernimmt|antritt|nachfolge)\b.*?\b(?:vorstandsvorsitz|geschäftsführung|leitung|nachfolge|cfo|ceo)\b',
+            r'\bstaffelübergabe\b',
+            r'\b(?:nachfolge|nachfolger(?:in)?)\b.*?\b(?:geregelt|benannt|bestellt|geklärt|gesichert)\b',
+            r'\bappointment\s+of\b.*?\bas\s+(?:new\s+)?(?:ceo|cfo|cro)\b',
+            r'\bnamed\s+(?:as\s+)?(?:new\s+)?(?:ceo|cfo|cro)\b',
+            r'wird\s+neue[rn]?\s+cfo',
+            r'ist\s+neue[rn]?\s+cfo',
+            r'tritt\s+cfo-amt\s+an',
+            r'wird\s+neue[rn]?\s+ceo',
+            r'ist\s+neue[rn]?\s+ceo',
+            r'zum\s+neuen\s+ceo\s+bestellt',
+            r'neuer\s+vorstandsvorsitzender\s+bestellt'
+        ]
+        is_already_staffed = any(re.search(pat, combined_text, re.IGNORECASE) for pat in staffed_patterns)
 
         # Fremdverwaltung / Regelinsolvenz (Organe entmachtet)
         is_regular_insolvency = (
@@ -193,8 +200,8 @@ class MandateRealityCheckEngine:
             rationale = f"Problem ist durch vollzogene Transaktion oder Sanierungslösung bereits gelöst. Kein offener externer Restrukturierungsbedarf für {company}."
         elif is_already_staffed:
             status = CLASS_VERWERFEN
-            counter_indicators.append("Führungsposition wurde in der Meldung bereits fest neu besetzt.")
-            rationale = f"Die gemeldete Führungsposition bei {company} ist nicht mehr vakant, sondern wurde personell bereits nachbesetzt."
+            counter_indicators.append("Führungsposition wurde in der Meldung bereits fest neu besetzt (auch bei künftigem Amtsantritt).")
+            rationale = f"Die gemeldete Führungsposition bei {company} ist personell bereits fest nachbesetzt. Kein akutes externes Interim-Mandat ableitbar."
         elif "auftrag" in combined_text and not any(k in combined_text for k in ["krise", "sanierung", "restrukturierung", "insolvenz"]):
             status = CLASS_VERWERFEN
             counter_indicators.append("Reine operative Auftrags- oder Produktmeldung ohne Krisen- oder Vakanzdruck.")
@@ -229,10 +236,9 @@ class MandateRealityCheckEngine:
             missing_information.append("Sachverhalt indiziert Sondersituation, reicht aber für eine spezifische Mandatshypothese nicht aus.")
             rationale = f"Relevantes Marktsignal, das jedoch zunächst weiter beobachtet werden muss."
 
-        # Wenn der Status nicht plausibel oder belegt ist, Rolle auf KEINE setzen
-        if status in (CLASS_BEOBACHTEN, CLASS_VERWERFEN) and not is_regular_insolvency:
-            if not is_solved and not is_already_staffed:
-                target_role = "KEINE"
+        # Wenn der Status verworfen oder beobachten ist, keine fiktive Organrolle vortäuschen
+        if status in (CLASS_BEOBACHTEN, CLASS_VERWERFEN):
+            target_role = "KEINE"
 
         # Strukturierte Fakten vs. Schlussfolgerungen
         facts_proven = description or evidence_text

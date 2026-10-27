@@ -527,7 +527,8 @@ export default function EventExplorerPage() {
             city: rev.region || null,
             event_date: rev.event_date || rev.published_at || rev.captured_at,
             published_at: rev.published_at,
-            confidence: rev.axis_a_event_certainty === 'nachgewiesen' ? 0.98 : 0.85,
+            axis_a_event_certainty: rev.axis_a_event_certainty || 'nachgewiesen',
+            provenance_status: rev.provenance_status || 'real_source_verified',
             verification_status: rev.provenance_status === 'real_source_verified' ? 'verified' : 'unverified',
             source_url: rev.source_url,
             source_type: rev.source_type,
@@ -1302,7 +1303,6 @@ export default function EventExplorerPage() {
                   <div className="event-meta" style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', marginTop: '8px' }}>
                     <span><Building2 size={14} /> <strong>{evt.company_name || 'UNRESOLVED'}</strong></span>
                     {evt.country && <span><MapPin size={14} /> Land: {evt.country}</span>}
-                    {evt.confidence && <span><Sparkles size={14} /> Konfidenz: {Math.round(evt.confidence * 100)}%</span>}
                     {evt.source_url && (
                       <a
                         href={evt.source_url}
@@ -1314,6 +1314,22 @@ export default function EventExplorerPage() {
                         <Globe size={13} /> Primärbeleg öffnen ↗
                       </a>
                     )}
+                  </div>
+
+                  {/* Drei getrennte, sachlich korrekte Indikatoren statt falscher 98% Konfidenz */}
+                  <div className="event-factual-badges">
+                    <span className="factual-badge source-proof" title="Quellenbeleg der Primärquelle">
+                      <ShieldCheck size={13} />
+                      <span className="badge-label">Quellenbeleg:</span> {evt.verification_status === 'verified' || evt.provenance_status === 'real_source_verified' ? 'Amtlich / Öffentlich belegt' : 'Ausstehend'}
+                    </span>
+                    <span className="factual-badge event-facts" title="Belegter Ereignissachverhalt">
+                      <FileText size={13} />
+                      <span className="badge-label">Sachverhalt:</span> {evt.axis_a_event_certainty === 'nachgewiesen' ? 'Belegt' : 'In Prüfung'}
+                    </span>
+                    <span className={`factual-badge mandate-status ${status === 'MANDAT_PLAUSIBEL' ? 'status-plausibel' : (status === 'VERWERFEN' ? 'status-verworfen' : 'status-beobachten')}`} title="Aktueller Mandatsstatus nach Reality Check">
+                      <Sparkles size={13} />
+                      <span className="badge-label">Mandatsstatus:</span> {status === 'MANDAT_PLAUSIBEL' ? 'Plausibler Bedarf (Hypothese)' : (status === 'VERWERFEN' ? 'Kein Mandatsansatz (Besetzt/Gelöst)' : 'Watchlist (Kein Direktbedarf)')}
+                    </span>
                   </div>
 
                   {evt.id && (

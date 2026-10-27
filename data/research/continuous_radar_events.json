@@ -1,7 +1,7 @@
 {
   "version": "1.3.0",
-  "last_updated": "2026-10-27T21:55:19.164101+00:00",
-  "total_events": 29,
+  "last_updated": "2026-10-27T23:01:29.027564+00:00",
+  "total_events": 26,
   "events": [
     {
       "event_id": "3de62078-71c0-4a09-acda-e42b36882659",
@@ -16,7 +16,7 @@
       "source_type": "law_firm_press",
       "evidence_text": "Süddeutsche Gelenkscheibenfabrik GmbH &amp; Co. KG: Investorenprozess erfolgreich abgeschlossen",
       "captured_at": "2026-10-27T10:10:33.624590+00:00",
-      "last_checked_at": "2026-10-27T14:52:48.267Z",
+      "last_checked_at": "2026-10-27T23:00:39.353111+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [
         "Firmenname präzisiert: 'Süddeutsche Gelenkscheibenfabrik GmbH' -> 'Süddeutsche Gelenkscheibenfabrik GmbH & Co. KG'"
@@ -30,6 +30,16 @@
           "evidence_text": "Süddeutsche Gelenkscheibenfabrik GmbH &amp; Co. KG: Investorenprozess erfolgreich abgeschlossen",
           "description": "Süddeutsche Gelenkscheibenfabrik GmbH &amp; Co. KG: Investorenprozess erfolgreich abgeschlossen",
           "published_at": "2026-10-27T12:05:18.219769+00:00",
+          "event_date": null,
+          "report_type": "reconciled_duplicate"
+        },
+        {
+          "recorded_at": "2026-10-27T14:00:39.876566+00:00",
+          "source_url": "https://www.brinkmann-partner.de/sueddeutsche-gelenkscheibenfabrik-gmbh-co-kg-investorenprozess-erfolgreich-abgeschlossen/",
+          "source_type": "law_firm_press",
+          "evidence_text": "Süddeutsche Gelenkscheibenfabrik GmbH &amp; Co. KG: Investorenprozess erfolgreich abgeschlossen",
+          "description": "Süddeutsche Gelenkscheibenfabrik GmbH &amp; Co. KG: Investorenprozess erfolgreich abgeschlossen",
+          "published_at": "2026-10-27T14:00:39.876530+00:00",
           "event_date": null,
           "report_type": "reconciled_duplicate"
         }
@@ -59,7 +69,7 @@
           "Sanierung oder Investorenprozess bereits erfolgreich abgeschlossen bzw. Betrieb vollständig übernommen."
         ],
         "rationale": "Problem ist durch vollzogene Transaktion oder Sanierungslösung bereits gelöst. Kein offener externer Restrukturierungsbedarf für Süddeutsche Gelenkscheibenfabrik GmbH & Co. KG.",
-        "checked_at": "2026-10-27T14:06:03.194049+00:00",
+        "checked_at": "2026-10-27T23:01:28.986512+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "geloest",
@@ -89,7 +99,7 @@
       "source_type": "law_firm_press",
       "evidence_text": "Baiersbronn Frischfaser Karton GmbH – Mitglied der FOLBB Gruppe: Geschäftsbetrieb in Baiersbronn stabil, Investorenprozess angelaufen",
       "captured_at": "2026-10-27T10:10:33.624429+00:00",
-      "last_checked_at": "2026-10-27T21:54:47.150358+00:00",
+      "last_checked_at": "2026-10-27T23:00:39.352996+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [],
       "report_type": "initial_report",
@@ -119,7 +129,7 @@
         ],
         "counter_indicators": [],
         "rationale": "Relevantes Marktsignal, das jedoch zunächst weiter beobachtet werden muss.",
-        "checked_at": "2026-10-27T14:06:03.194476+00:00",
+        "checked_at": "2026-10-27T23:01:28.987742+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "mittel",
@@ -149,7 +159,7 @@
       "source_type": "law_firm_press",
       "evidence_text": "Baiersbronn Frischfaser Karton GmbH: Entscheidung über Fortführung steht bevor – Zukunft offen\n[Folgemeldung 2026-10-27]: Baiersbronn Frischfaser Karton GmbH stellt Insolvenzantrag – Sanierungsexperte Dr. Jan Markus Plathner von Brinkmann &amp; Partner zum vorläufigen Insolvenzverwalter bestellt\n[Folgemeldung 2026-10-27]: Baiersbronn Frischfaser Karton GmbH: Entscheidung über Fortführung steht bevor – Zukunft offen\n[Folgemeldung 2026-10-27]: Baiersbronn Frischfaser Karton GmbH stellt Insolvenzantrag – Sanierungsexperte Dr. Jan Markus Plathner von Brinkmann &amp; Partner zum vorläufigen Insolvenzverwalter bestellt",
       "captured_at": "2026-10-27T10:10:33.624371+00:00",
-      "last_checked_at": "2026-10-27T21:54:47.150383+00:00",
+      "last_checked_at": "2026-10-27T23:00:39.352953+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [],
       "report_type": "follow_up",
@@ -269,9 +279,9 @@
       "reality_check": {
         "status": "BEOBACHTEN",
         "status_label": "Beobachten (Frühes / generelles Signal auf Watchlist)",
-        "target_role": "TRANSFORMATION",
-        "target_role_label": "Transformations- / Restrukturierungsleitung",
-        "facts_proven": "Baiersbronn Frischfaser Karton GmbH: Entscheidung über Fortführung steht bevor – Zukunft offen | Baiersbronn Frischfaser Karton GmbH stellt Insolvenzantrag – Sanierungsexperte Dr. Jan Markus Plathner von Brinkmann &amp; Partner zum vorläufigen Insolvenzverwalter bestellt | Baiersbronn Frischfaser Karton GmbH: Entscheidung über Fortführung steht bevor – Zukunft offen | Baiersbronn Frischfaser Karton GmbH stellt Insolvenzantrag – Sanierungsexperte Dr. Jan Markus Plathner von Brinkmann &amp; Partner zum vorläufigen Insolvenzverwalter bestellt | Baiersbronn Frischfaser Karton GmbH stellt Insolvenzantrag – Sanierungsexperte Dr. Jan Markus Plathner von Brinkmann &amp; Partner zum vorläufigen Insolvenzverwalter bestellt",
+        "target_role": "KEINE",
+        "target_role_label": "Keine externe Organfunktion ableitbar",
+        "facts_proven": "Baiersbronn Frischfaser Karton GmbH: Entscheidung über Fortführung steht bevor – Zukunft offen | Baiersbronn Frischfaser Karton GmbH stellt Insolvenzantrag – Sanierungsexperte Dr. Jan Markus Plathner von Brinkmann &amp; Partner zum vorläufigen Insolvenzverwalter bestellt | Baiersbronn Frischfaser Karton GmbH: Entscheidung über Fortführung steht bevor – Zukunft offen | Baiersbronn Frischfaser Karton GmbH stellt Insolvenzantrag – Sanierungsexperte Dr. Jan Markus Plathner von Brinkmann &amp; Partner zum vorläufigen Insolvenzverwalter bestellt",
         "source_proof": "https://www.brinkmann-partner.de/baiersbronn-frischfaser-karton-gmbh-entscheidung-ueber-fortfuehrung-steht-bevor-zukunft-offen/",
         "source_date": "2026-10-27T10:10:33.624356+00:00",
         "mandate_hypothesis": "Beobachtungsfall auf der Watchlist; kein unmittelbarer externer Mandatsansatz.",
@@ -282,7 +292,7 @@
           "Regelinsolvenz mit Fremdverwaltung: Gerichtlich bestellter Insolvenzverwalter führt das Verfahren; Organe sind entmachtet."
         ],
         "rationale": "Regelinsolvenz mit Fremdverwaltung. Externe Mandate durch die Alt-Organe sind rechtlich ausgeschlossen; Verwalter führt das operative Verfahren. Als Marktfall auf der Watchlist.",
-        "checked_at": "2026-10-27T21:54:47.150498+00:00",
+        "checked_at": "2026-10-27T23:01:28.990735+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "mittel",
@@ -337,7 +347,7 @@
       "source_type": "capital_markets_press",
       "evidence_text": "Zinskupon steigt auf 10% p.a. – Rückzahlung zu 113% Die Gläubigerversammlung der PAUL Tech AG hat einer Verlängerung der 35 Mio. Euro-Anleihe (ISIN: DE000A3H2TU8) des […] Der Beitrag PAUL Tech-Gläubiger stimmen Laufzeit-Verlängerung der Anleihe bis 2028 zu erschien zuerst auf Anleihen-Finder.de .\n[Folgemeldung 2026-10-27]: Gläubigerversammlung am 26.10.26 in Mannheim Die PAUL Tech AG unterstützt einen alternativen Vorschlag zur Verlängerung ihrer 35-Mio.-Euro-Anleihe 2020/26 (ISIN: DE000A3H2TU8). Ein entsprechendes Ergänzungsverlangen eines Anleihegläubigers […] Der Beitrag PAUL Tech: Angepasster Vorschlag zu geplanter Anleihe-Verlängerung erschien zuerst auf Anleihen-Finder.de .",
       "captured_at": "2026-10-27T12:05:48.169920+00:00",
-      "last_checked_at": "2026-10-27T21:55:19.163430+00:00",
+      "last_checked_at": "2026-10-27T23:01:16.137048+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [],
       "report_type": "follow_up",
@@ -399,7 +409,7 @@
         "status_label": "Mandat plausibel (Bedarf plausibel, Suche unbestätigt)",
         "target_role": "INTERIM_CFO",
         "target_role_label": "Interim-CFO (Refinanzierung, SchVG-Verhandlung, Liquidität)",
-        "facts_proven": "PAUL Tech-Gläubiger stimmen Laufzeit-Verlängerung der Anleihe bis 2028 zu | PAUL Tech: Angepasster Vorschlag zu geplanter Anleihe-Verlängerung | PAUL Tech: Angepasster Vorschlag zu geplanter Anleihe-Verlängerung",
+        "facts_proven": "PAUL Tech-Gläubiger stimmen Laufzeit-Verlängerung der Anleihe bis 2028 zu | PAUL Tech: Angepasster Vorschlag zu geplanter Anleihe-Verlängerung",
         "source_proof": "https://www.anleihen-finder.de/paul-tech-glaeubiger-stimmen-laufzeit-verlaengerung-der-anleihe-bis-2028-zu-00074284.html",
         "source_date": "2026-10-27T06:18:28+00:00",
         "mandate_hypothesis": "Bedarf an externem Interim-CFO (Refinanzierung, SchVG-Verhandlung, Liquidität) plausibel abgeleitet aus: finanzierung_anleihen_restrukturierung. Hinweis: Ein plausibler Bedarf ist noch kein vergebenes Mandat.",
@@ -409,7 +419,7 @@
         ],
         "counter_indicators": [],
         "rationale": "Akuter Verhandlungsdruck mit Anleihegläubigern nach SchVG bzw. Stillhalteabkommen mit Banken. Erheblicher plausibler Bedarf an erfahrenem Interim-CFO (Refinanzierung, SchVG-Verhandlung, Liquidität) für Liquiditäts- und Sanierungskonzepte.",
-        "checked_at": "2026-10-27T21:55:19.163599+00:00",
+        "checked_at": "2026-10-27T23:01:28.993893+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "akut",
@@ -492,7 +502,7 @@
           "Mutation betrifft lediglich nachgeordnete Kollektivprokura unterhalb Organebene."
         ],
         "rationale": "Registeränderung im Schweizer Handelsamtsblatt betrifft nachgeordnete Zeichnungsberechtigung, kein offenes C-Level-Mandat.",
-        "checked_at": "2026-10-27T14:06:03.195654+00:00",
+        "checked_at": "2026-10-27T23:01:28.996026+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "mittel",
@@ -522,7 +532,7 @@
       "source_type": "law_firm_press",
       "evidence_text": "Markus Fauser, LL.M. (corp. restruc.) , Johannes Chrocziel , Alina Wallentin , Dr. David Blum, LL.M. (Aberdeen) Wasserburg am Inn, 26. Oktober 2026. Das Insolvenzverfahren in Eigenverwaltung der GWSPA Produktion GmbH (vormals: Wilhelm Gronbach GmbH) steht vor einem erfolgreichen Abschluss. Im Rahmen eines strukturierten internationalen Investorenprozesses ist es gelungen, mit der Demmel Gruppe aus Scheidegg im Westallgäu einen starken strategischen Investor für das bayerische Traditionsunternehmen zu gewinnen. Künftig wird das Unternehmen eigenständig unter dem neuen Namen Demmel GronTec GmbH",
       "captured_at": "2026-10-27T10:36:11.655851+00:00",
-      "last_checked_at": "2026-10-27T21:54:47.150214+00:00",
+      "last_checked_at": "2026-10-27T23:00:39.352511+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [
         "Mandatspotenzial präzisiert: Geschäftsführer bleibt im Amt; CRO-Bedarf gedeckt, PMI-Potenzial mittel.",
@@ -556,8 +566,8 @@
       "reality_check": {
         "status": "VERWERFEN",
         "status_label": "Verwerfen (Gelöst / Abgeschlossen / Ungeeignet)",
-        "target_role": "CRO",
-        "target_role_label": "Chief Restructuring Officer (CRO / Sanierungsvorstand)",
+        "target_role": "KEINE",
+        "target_role_label": "Keine externe Organfunktion ableitbar",
         "facts_proven": "Erfolgreiche Sanierung in Eigenverwaltung: Demmel Gruppe übernimmt Geschäftsbetrieb der GWSPA Produktion GmbH in Wasserburg",
         "source_proof": "https://www.anchor.eu/anchor/aktuelles/erfolgreiche-sanierung-in-eigenverwaltung-demmel-gruppe-uebernimmt-geschaeftsbetrieb-der-gwspa-produktion-gmbh-in-wasserburg/",
         "source_date": "2026-10-26T14:12:54+00:00",
@@ -567,7 +577,7 @@
           "Sanierung oder Investorenprozess bereits erfolgreich abgeschlossen bzw. Betrieb vollständig übernommen."
         ],
         "rationale": "Problem ist durch vollzogene Transaktion oder Sanierungslösung bereits gelöst. Kein offener externer Restrukturierungsbedarf für GWSPA Produktion GmbH.",
-        "checked_at": "2026-10-27T14:06:03.195927+00:00",
+        "checked_at": "2026-10-27T23:01:28.997508+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "akut",
@@ -641,7 +651,7 @@
           "Reine operative Auftrags- oder Produktmeldung ohne Krisen- oder Vakanzdruck."
         ],
         "rationale": "Meldung betrifft das reguläre operative Auftragsgeschäft (CeoTronics AG). Kein Mandatspotenzial.",
-        "checked_at": "2026-10-27T14:06:03.196135+00:00",
+        "checked_at": "2026-10-27T23:01:28.998213+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "mittel",
@@ -671,7 +681,7 @@
       "source_type": "capital_markets_press",
       "evidence_text": "Sanierungskonzept soll bis Ende 2026 in Kraft treten Die Anleihegläubiger der Branicks Group AG haben mit 99 % der abgegebenen Stimmen für die Restrukturierung der […] Der Beitrag Branicks-Gläubiger stimmen Restrukturierung und Laufzeitverlängerung zu erschien zuerst auf Anleihen-Finder.de .",
       "captured_at": "2026-10-27T12:05:50.371039+00:00",
-      "last_checked_at": "2026-10-27T21:55:19.163980+00:00",
+      "last_checked_at": "2026-10-27T23:01:16.137610+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [],
       "report_type": "initial_report",
@@ -702,7 +712,7 @@
         ],
         "counter_indicators": [],
         "rationale": "Akuter Verhandlungsdruck mit Anleihegläubigern nach SchVG bzw. Stillhalteabkommen mit Banken. Erheblicher plausibler Bedarf an erfahrenem Interim-CFO (Refinanzierung, SchVG-Verhandlung, Liquidität) für Liquiditäts- und Sanierungskonzepte.",
-        "checked_at": "2026-10-27T14:06:03.196358+00:00",
+        "checked_at": "2026-10-27T23:01:28.999042+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "akut",
@@ -732,7 +742,7 @@
       "source_type": "capital_markets_press",
       "evidence_text": "Mitteilung der pferdewetten.de AG: Aufsichtsrat bestellt Frank Hartmann zum CFO und Co-CEO – Berufung in den Vorstand ab 01.01.2027 – Verantwortung für Finanzen & Controlling, […] Der Beitrag pferdewetten.de AG: Frank Hartmann wird neuer CFO erschien zuerst auf Anleihen-Finder.de .",
       "captured_at": "2026-10-27T12:05:49.222098+00:00",
-      "last_checked_at": "2026-10-27T21:55:19.163665+00:00",
+      "last_checked_at": "2026-10-27T23:01:16.137279+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [],
       "report_type": "initial_report",
@@ -745,9 +755,9 @@
       "court_and_reg": "",
       "legal_form": "",
       "requires_manual_link_review": false,
-      "mandate_priority": "high_priority_action_required",
-      "mandate_priority_label": "High Priority / C-Level Action required",
-      "action_type": "c_level_organ_vakuum",
+      "mandate_priority": "watchlist_general_distress",
+      "mandate_priority_label": "Watchlist / General Distress",
+      "action_type": "passiv_nachfolge_besetzt",
       "reality_check": {
         "status": "VERWERFEN",
         "status_label": "Verwerfen (Gelöst / Abgeschlossen / Ungeeignet)",
@@ -759,10 +769,10 @@
         "mandate_hypothesis": "Kein Mandatsansatz; Ereignis verworfen (abgeschlossen, besetzt oder ungeeignet).",
         "missing_information": [],
         "counter_indicators": [
-          "Führungsposition wurde in der Meldung bereits fest neu besetzt."
+          "Führungsposition wurde in der Meldung bereits fest neu besetzt (auch bei künftigem Amtsantritt)."
         ],
-        "rationale": "Die gemeldete Führungsposition bei pferdewetten.de AG ist nicht mehr vakant, sondern wurde personell bereits nachbesetzt.",
-        "checked_at": "2026-10-27T14:06:03.196565+00:00",
+        "rationale": "Die gemeldete Führungsposition bei pferdewetten.de AG ist personell bereits fest nachbesetzt. Kein akutes externes Interim-Mandat ableitbar.",
+        "checked_at": "2026-10-27T23:01:28.999958+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "mittel",
@@ -792,7 +802,7 @@
       "source_type": "law_firm_press",
       "evidence_text": "Dr. Alexander Zarzitzky , Bianca-Maria Roth Königsbrunn/Augsburg, 12. Oktober 2026. Für den Geschäftsbetrieb der Weha Ludwig Werwein GmbH aus Königsbrunn bei Augsburg ist eine Investorenlösung umgesetzt worden. Im Rahmen des Eigenverwaltungsverfahrens wurde der Geschäftsbetrieb mit Wirkung zum 1. Oktober 2026 auf die neu gegründete Weha GmbH i. G. übertragen. Sämtliche 44 Arbeitnehmerinnen und Arbeitnehmer wurden von der Erwerberin übernommen.",
       "captured_at": "2026-10-27T10:36:14.045908+00:00",
-      "last_checked_at": "2026-10-27T21:54:47.150240+00:00",
+      "last_checked_at": "2026-10-27T23:00:39.352604+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [],
       "report_type": "initial_report",
@@ -834,7 +844,7 @@
         ],
         "counter_indicators": [],
         "rationale": "Eigenverwaltung / Schutzschirm erfordert zwingend erfahrene Sanierungsführung (Chief Restructuring Officer (CRO / Sanierungsvorstand)), da die Geschäftsführung im Amt bleibt. Hoher plausibler Bedarf, konkrete externe Suche noch unbestätigt.",
-        "checked_at": "2026-10-27T14:06:03.196918+00:00",
+        "checked_at": "2026-10-27T23:01:29.001084+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "akut",
@@ -864,7 +874,7 @@
       "source_type": "capital_markets_press",
       "evidence_text": "Mitteilung der ERWE Immobilien AG: Vollzug der ordentlichen Kapitalherabsetzung mit Wirkung zum 08. Oktober 2026 Die auf der außerordentlichen Hauptversammlung der ERWE Immobilien AG (ISIN […] Der Beitrag ERWE Immobilien AG: Kapitalherabsetzung im Verhältnis 7:1 vollzogen erschien zuerst auf Anleihen-Finder.de .",
       "captured_at": "2026-10-27T12:05:49.222371+00:00",
-      "last_checked_at": "2026-10-27T21:55:19.163694+00:00",
+      "last_checked_at": "2026-10-27T23:01:16.137341+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [],
       "report_type": "initial_report",
@@ -894,7 +904,7 @@
         ],
         "counter_indicators": [],
         "rationale": "Relevantes Marktsignal, das jedoch zunächst weiter beobachtet werden muss.",
-        "checked_at": "2026-10-27T14:06:03.197175+00:00",
+        "checked_at": "2026-10-27T23:01:29.002820+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "mittel",
@@ -924,7 +934,7 @@
       "source_type": "capital_markets_press",
       "evidence_text": "Mitteilung der Photon Energy N.V.: Photon Energy Group announces the appointment of Andrej Horansky as new CFO; Stanislav Zeman assumes COO position The Management Board […] Der Beitrag Photon Energy Group: Andrej Horansky ist neuer CFO erschien zuerst auf Anleihen-Finder.de .",
       "captured_at": "2026-10-27T12:05:49.222523+00:00",
-      "last_checked_at": "2026-10-27T21:55:19.163721+00:00",
+      "last_checked_at": "2026-10-27T23:01:16.137388+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [],
       "report_type": "initial_report",
@@ -937,9 +947,9 @@
       "court_and_reg": "",
       "legal_form": "",
       "requires_manual_link_review": false,
-      "mandate_priority": "high_priority_action_required",
-      "mandate_priority_label": "High Priority / C-Level Action required",
-      "action_type": "c_level_organ_vakuum",
+      "mandate_priority": "watchlist_general_distress",
+      "mandate_priority_label": "Watchlist / General Distress",
+      "action_type": "passiv_nachfolge_besetzt",
       "reality_check": {
         "status": "VERWERFEN",
         "status_label": "Verwerfen (Gelöst / Abgeschlossen / Ungeeignet)",
@@ -951,10 +961,10 @@
         "mandate_hypothesis": "Kein Mandatsansatz; Ereignis verworfen (abgeschlossen, besetzt oder ungeeignet).",
         "missing_information": [],
         "counter_indicators": [
-          "Führungsposition wurde in der Meldung bereits fest neu besetzt."
+          "Führungsposition wurde in der Meldung bereits fest neu besetzt (auch bei künftigem Amtsantritt)."
         ],
-        "rationale": "Die gemeldete Führungsposition bei Photon Energy Group ist nicht mehr vakant, sondern wurde personell bereits nachbesetzt.",
-        "checked_at": "2026-10-27T14:06:03.197417+00:00",
+        "rationale": "Die gemeldete Führungsposition bei Photon Energy Group ist personell bereits fest nachbesetzt. Kein akutes externes Interim-Mandat ableitbar.",
+        "checked_at": "2026-10-27T23:01:29.003836+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "mittel",
@@ -984,7 +994,7 @@
       "source_type": "law_firm_press",
       "evidence_text": "Tobias Wahl , Dr. David Blum, LL.M. (Aberdeen) , Jessica Schmechel , Remo Kruse , Hannes Rieger, LL.M. Ellwangen, 1. Oktober 2026. Bei der Sanierung der VARTA AG-Gruppe ist der nächste wichtige Meilenstein erreicht. Das Amtsgericht Stuttgart hat am 1. Oktober 2026 die Insolvenzverfahren über die vier betroffenen Gesellschaften – die VARTA AG, die VARTA Microbattery GmbH, die VARTA Storage GmbH und die VARTA Micro Production GmbH – eröffnet. Zum Insolvenzverwalter wurde Rechtsanwalt Tobias Wahl von Anchor Rechtsanwälte bestellt.",
       "captured_at": "2026-10-27T10:36:16.225321+00:00",
-      "last_checked_at": "2026-10-27T21:54:47.150259+00:00",
+      "last_checked_at": "2026-10-27T23:00:39.352674+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [],
       "report_type": "initial_report",
@@ -1025,7 +1035,7 @@
         ],
         "counter_indicators": [],
         "rationale": "Relevantes Marktsignal, das jedoch zunächst weiter beobachtet werden muss.",
-        "checked_at": "2026-10-27T14:06:03.197704+00:00",
+        "checked_at": "2026-10-27T23:01:29.005102+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "mittel",
@@ -1055,7 +1065,7 @@
       "source_type": "capital_markets_press",
       "evidence_text": "Mitteilung der BOOSTER Precision Components Holding GmbH: BOOSTER Precision Components Holding gibt Verlängerung der Stillhaltevereinbarung mit Ad-hoc-Gruppe bekannt Die BOOSTER Precision Components Holding GmbH („Gesellschaft„) […] Der Beitrag BOOSTER und Gläubigergruppe verlängern Stillhaltevereinbarung erschien zuerst auf Anleihen-Finder.de .",
       "captured_at": "2026-10-27T12:05:49.222811+00:00",
-      "last_checked_at": "2026-10-27T12:05:49.222811+00:00",
+      "last_checked_at": "2026-10-27T23:01:16.137431+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [],
       "report_type": "initial_report",
@@ -1086,7 +1096,7 @@
         ],
         "counter_indicators": [],
         "rationale": "Akuter Verhandlungsdruck mit Anleihegläubigern nach SchVG bzw. Stillhalteabkommen mit Banken. Erheblicher plausibler Bedarf an erfahrenem Interim-CFO (Refinanzierung, SchVG-Verhandlung, Liquidität) für Liquiditäts- und Sanierungskonzepte.",
-        "checked_at": "2026-10-27T14:06:03.197939+00:00",
+        "checked_at": "2026-10-27T23:01:29.007010+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "akut",
@@ -1116,7 +1126,7 @@
       "source_type": "capital_markets_press",
       "evidence_text": "Mitteilung der DEAG Deutsche Entertainment AG: Staffelübergabe bei DEAG: Markus Breitenecker übernimmt Vorstandsvorsitz von Detlef Kornett Mit dem erfahrenen Medienmanager Markus Breitenecker startet die DEAG […] Der Beitrag DEAG: Markus Breitenecker wird zum 01. November 2026 neuer CEO erschien zuerst auf Anleihen-Finder.de .",
       "captured_at": "2026-10-27T12:05:49.222962+00:00",
-      "last_checked_at": "2026-10-27T21:55:19.163952+00:00",
+      "last_checked_at": "2026-10-27T23:01:16.137469+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [],
       "report_type": "initial_report",
@@ -1129,29 +1139,28 @@
       "court_and_reg": "",
       "legal_form": "",
       "requires_manual_link_review": false,
-      "mandate_priority": "high_priority_action_required",
-      "mandate_priority_label": "High Priority / C-Level Action required",
-      "action_type": "c_level_organ_vakuum",
+      "mandate_priority": "watchlist_general_distress",
+      "mandate_priority_label": "Watchlist / General Distress",
+      "action_type": "passiv_nachfolge_besetzt",
       "reality_check": {
-        "status": "MANDAT_PLAUSIBEL",
-        "status_label": "Mandat plausibel (Bedarf plausibel, Suche unbestätigt)",
-        "target_role": "INTERIM_CEO",
-        "target_role_label": "Interim-CEO (Vorstandsvorsitzender ad interim)",
+        "status": "VERWERFEN",
+        "status_label": "Verwerfen (Gelöst / Abgeschlossen / Ungeeignet)",
+        "target_role": "KEINE",
+        "target_role_label": "Keine externe Organfunktion ableitbar",
         "facts_proven": "DEAG: Markus Breitenecker wird zum 01. November 2026 neuer CEO",
         "source_proof": "https://www.anleihen-finder.de/deag-markus-breitenecker-wird-zum-01-november-2026-neuer-ceo-00073962.html",
         "source_date": "2026-09-29T14:28:20+00:00",
-        "mandate_hypothesis": "Bedarf an externem Interim-CEO (Vorstandsvorsitzender ad interim) plausibel abgeleitet aus: c_level_vakanz. Hinweis: Ein plausibler Bedarf ist noch kein vergebenes Mandat.",
-        "missing_information": [
-          "Interne Nachfolgelösung oder Interimsüberbrückung durch Aufsichtsrat nicht ausgeschlossen.",
-          "Kein Beleg für Beauftragung eines Executive-Search- oder Interim-Providers."
+        "mandate_hypothesis": "Kein Mandatsansatz; Ereignis verworfen (abgeschlossen, besetzt oder ungeeignet).",
+        "missing_information": [],
+        "counter_indicators": [
+          "Führungsposition wurde in der Meldung bereits fest neu besetzt (auch bei künftigem Amtsantritt)."
         ],
-        "counter_indicators": [],
-        "rationale": "Akute Organvakanz auf C-Level bei DEAG Deutsche Entertainment AG. Externe Überbrückung durch Interim-CEO (Vorstandsvorsitzender ad interim) plausibel, tatsächliche externe Suche noch nicht belegt.",
-        "checked_at": "2026-10-27T14:06:03.198256+00:00",
+        "rationale": "Die gemeldete Führungsposition bei DEAG Deutsche Entertainment AG ist personell bereits fest nachbesetzt. Kein akutes externes Interim-Mandat ableitbar.",
+        "checked_at": "2026-10-27T23:01:29.008009+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
-          "action_pressure": "akut",
-          "mandate_feasibility": "plausibel",
+          "action_pressure": "mittel",
+          "mandate_feasibility": "ausgeschlossen",
           "concrete_mandate_proof": "nicht_belegt"
         },
         "human_review": {
@@ -1177,7 +1186,7 @@
       "source_type": "capital_markets_press",
       "evidence_text": "Mitteilung der Booster Precision Components Holding GmbH: Booster Precision Components Holding GmbH gibt den erfolgreichen Abschluss ihres schriftlichen Verfahrens zur Änderung von bestimmten Anleihebedingungen bekannt […] Der Beitrag BOOSTER-Anleihegläubiger stimmen Bond-Anpassungen zu erschien zuerst auf Anleihen-Finder.de .\n[Folgemeldung 2026-10-27]: Mitteilung der BOOSTER Precision Components Holding GmbH: BOOSTER Precision Components Holding gibt Verlängerung der Stillhaltevereinbarung mit Ad-hoc-Gruppe bekannt Die BOOSTER Precision Components Holding GmbH („Gesellschaft„) […] Der Beitrag BOOSTER und Gläubigergruppe verlängern Stillhaltevereinbarung erschien zuerst auf Anleihen-Finder.de .",
       "captured_at": "2026-10-27T12:05:51.502344+00:00",
-      "last_checked_at": "2026-10-27T21:55:19.163763+00:00",
+      "last_checked_at": "2026-10-27T23:01:16.137659+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [
         "Firmenname präzisiert: 'Booster Precision Components Holding' -> 'BOOSTER Precision Components GmbH'"
@@ -1213,6 +1222,16 @@
           "published_at": "2026-09-22T15:23:32+00:00",
           "event_date": null,
           "report_type": "follow_up"
+        },
+        {
+          "recorded_at": "2026-10-27T14:01:33.658190+00:00",
+          "source_url": "https://www.anleihen-finder.de/booster-anleiheglaeubiger-stimmen-bond-anpassungen-zu-00073785.html",
+          "source_type": "capital_markets_press",
+          "evidence_text": "Mitteilung der Booster Precision Components Holding GmbH: Booster Precision Components Holding GmbH gibt den erfolgreichen Abschluss ihres schriftlichen Verfahrens zur Änderung von bestimmten Anleihebedingungen bekannt […] Der Beitrag BOOSTER-Anleihegläubiger stimmen Bond-Anpassungen zu erschien zuerst auf Anleihen-Finder.de .",
+          "description": "BOOSTER-Anleihegläubiger stimmen Bond-Anpassungen zu",
+          "published_at": "2026-09-22T15:23:32+00:00",
+          "event_date": null,
+          "report_type": "reconciled_duplicate"
         }
       ],
       "axis_a_event_certainty": "nachgewiesen",
@@ -1229,9 +1248,9 @@
       "reality_check": {
         "status": "VERWERFEN",
         "status_label": "Verwerfen (Gelöst / Abgeschlossen / Ungeeignet)",
-        "target_role": "INTERIM_CFO",
-        "target_role_label": "Interim-CFO (Refinanzierung, SchVG-Verhandlung, Liquidität)",
-        "facts_proven": "BOOSTER-Anleihegläubiger stimmen Bond-Anpassungen zu | BOOSTER und Gläubigergruppe verlängern Stillhaltevereinbarung | BOOSTER und Gläubigergruppe verlängern Stillhaltevereinbarung",
+        "target_role": "KEINE",
+        "target_role_label": "Keine externe Organfunktion ableitbar",
+        "facts_proven": "BOOSTER-Anleihegläubiger stimmen Bond-Anpassungen zu | BOOSTER und Gläubigergruppe verlängern Stillhaltevereinbarung",
         "source_proof": "https://www.anleihen-finder.de/booster-anleiheglaeubiger-stimmen-bond-anpassungen-zu-00073785.html",
         "source_date": "2026-09-22T15:23:32+00:00",
         "mandate_hypothesis": "Kein Mandatsansatz; Ereignis verworfen (abgeschlossen, besetzt oder ungeeignet).",
@@ -1240,7 +1259,7 @@
           "Sanierung oder Investorenprozess bereits erfolgreich abgeschlossen bzw. Betrieb vollständig übernommen."
         ],
         "rationale": "Problem ist durch vollzogene Transaktion oder Sanierungslösung bereits gelöst. Kein offener externer Restrukturierungsbedarf für BOOSTER Precision Components GmbH.",
-        "checked_at": "2026-10-27T21:55:19.163902+00:00",
+        "checked_at": "2026-10-27T23:01:29.009464+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "akut",
@@ -1287,7 +1306,7 @@
       "source_type": "law_firm_press",
       "evidence_text": "Dr. Alexander Zarzitzky , Christian Keck , Hannes Rieger, LL.M. Bad Königshofen i. Grabfeld, 15. September 2026. Die BSH GmbH &amp; Co. KG hat aufgrund von Überschuldung und drohender Zahlungsunfähigkeit beim Amtsgericht Schweinfurt einen Antrag auf Eröffnung eines Insolvenzverfahrens gestellt. Das zuständige Insolvenzgericht ordnete daraufhin die vorläufige Insolvenzverwaltung an und bestellte Rechtsanwalt Dr. Alexander Zarzitzky von der Anchor Rechtsanwaltsgesellschaft mbH zum vorläufigen Insolvenzverwalter.",
       "captured_at": "2026-10-27T10:36:18.413891+00:00",
-      "last_checked_at": "2026-10-27T10:37:48.152948+00:00",
+      "last_checked_at": "2026-10-27T23:00:39.352728+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [
         "Firmenname präzisiert: 'Solarunternehmen BSH GmbH' -> 'BSH GmbH & Co. KG'",
@@ -1316,6 +1335,16 @@
           "published_at": "2026-09-17T07:12:53+00:00",
           "event_date": "2026-09-15",
           "report_type": "reconciled_duplicate"
+        },
+        {
+          "recorded_at": "2026-10-27T14:00:24.794594+00:00",
+          "source_url": "https://www.anchor.eu/anchor/aktuelles/solarunternehmen-bsh-gmbh-co-kg-stellt-insolvenzantrag/",
+          "source_type": "law_firm_press",
+          "evidence_text": "Dr. Alexander Zarzitzky , Christian Keck , Hannes Rieger, LL.M. Bad Königshofen i. Grabfeld, 15. September 2026. Die BSH GmbH &amp; Co. KG hat aufgrund von Überschuldung und drohender Zahlungsunfähigkeit beim Amtsgericht Schweinfurt einen Antrag auf Eröffnung eines Insolvenzverfahrens gestellt. Das zuständige Insolvenzgericht ordnete daraufhin die vorläufige Insolvenzverwaltung an und bestellte Rechtsanwalt Dr. Alexander Zarzitzky von der Anchor Rechtsanwaltsgesellschaft mbH zum vorläufigen Insolvenzverwalter.",
+          "description": "Solarunternehmen BSH GmbH &amp; Co. KG stellt Insolvenzantrag",
+          "published_at": "2026-09-17T07:12:53+00:00",
+          "event_date": "2026-09-15",
+          "report_type": "reconciled_duplicate"
         }
       ],
       "axis_a_event_certainty": "nachgewiesen",
@@ -1332,8 +1361,8 @@
       "reality_check": {
         "status": "BEOBACHTEN",
         "status_label": "Beobachten (Frühes / generelles Signal auf Watchlist)",
-        "target_role": "TRANSFORMATION",
-        "target_role_label": "Transformations- / Restrukturierungsleitung",
+        "target_role": "KEINE",
+        "target_role_label": "Keine externe Organfunktion ableitbar",
         "facts_proven": "Solarunternehmen BSH GmbH &amp; Co. KG stellt Insolvenzantrag",
         "source_proof": "https://www.anchor.eu/anchor/aktuelles/solarunternehmen-bsh-gmbh-co-kg-stellt-insolvenzantrag/",
         "source_date": "2026-09-17T07:12:53+00:00",
@@ -1345,7 +1374,7 @@
           "Regelinsolvenz mit Fremdverwaltung: Gerichtlich bestellter Insolvenzverwalter führt das Verfahren; Organe sind entmachtet."
         ],
         "rationale": "Regelinsolvenz mit Fremdverwaltung. Externe Mandate durch die Alt-Organe sind rechtlich ausgeschlossen; Verwalter führt das operative Verfahren. Als Marktfall auf der Watchlist.",
-        "checked_at": "2026-10-27T14:06:03.199016+00:00",
+        "checked_at": "2026-10-27T23:01:29.010535+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "mittel",
@@ -1375,7 +1404,7 @@
       "source_type": "capital_markets_press",
       "evidence_text": "Mitteilung der BOOSTER Precision Components Holding GmbH: BOOSTER Precision Components Holding GmbH veröffentlicht Ergebnisse für das erste Halbjahr 2026 Die BOOSTER Precision Components Holding GmbH (Anleihe; […] Der Beitrag BOOSTER: Restrukturierungskosten belasten Halbjahresergebnis erschien zuerst auf Anleihen-Finder.de .",
       "captured_at": "2026-10-27T12:05:51.502703+00:00",
-      "last_checked_at": "2026-10-27T21:55:19.164033+00:00",
+      "last_checked_at": "2026-10-27T23:01:16.137701+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [],
       "report_type": "initial_report",
@@ -1405,7 +1434,7 @@
         ],
         "counter_indicators": [],
         "rationale": "Relevantes Marktsignal, das jedoch zunächst weiter beobachtet werden muss.",
-        "checked_at": "2026-10-27T14:06:03.199447+00:00",
+        "checked_at": "2026-10-27T23:01:29.012410+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "mittel",
@@ -1435,7 +1464,7 @@
       "source_type": "law_firm_press",
       "evidence_text": "Johannes Chrocziel , Alexander Reus , Ole Brauer , Clemens Büchner Neuhaus am Inn / Passau, 26. August 2026. Die Wohnstift Innblick GmbH, Betreiberin des Seniorenzentrums in Neuhaus am Inn, hat beim Amtsgericht Passau einen Antrag auf Eröffnung eines Insolvenzverfahrens in Eigenverwaltung gestellt. Das Amtsgericht Passau ordnete daraufhin am 21. August 2026 die vorläufige Eigenverwaltung an. Zum vorläufigen Sachwalter wurde Rechtsanwalt Dr. Julian Hageböke von der Kanzlei BRL Boege Rohde Luebbehuesen bestellt. Die operative Geschäftsleitung bleibt im Eigenverwaltungsverfahren im Amt und führt",
       "captured_at": "2026-10-27T10:36:21.126271+00:00",
-      "last_checked_at": "2026-10-27T10:37:48.152975+00:00",
+      "last_checked_at": "2026-10-27T23:00:39.352777+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [
         "Firmenname präzisiert: 'August 2026. Die Wohnstift Innblick GmbH' -> 'Wohnstift Innblick GmbH'"
@@ -1447,6 +1476,16 @@
           "source_url": "https://www.anchor.eu/anchor/aktuelles/wohnstift-innblick-aus-neuhaus-am-inn-saniert-sich-in-eigenverwaltung/",
           "source_type": "law_firm_press",
           "evidence_text": "Johannes Chrocziel , Alexander Reus , Ole Brauer , Clemens Büchner Neuhaus am Inn / Passau, 26. August 2026. Die Wohnstift Innblick GmbH, Betreiberin des Seniorenzentrums in Neuhaus am Inn, hat beim Amtsgericht Passau einen Antrag auf Eröffnung eines Insolvenzverfahrens in Eigenverwaltung gestellt. ",
+          "description": "Wohnstift Innblick aus Neuhaus am Inn saniert sich in Eigenverwaltung",
+          "published_at": "2026-08-26T09:46:57+00:00",
+          "event_date": "2026-08-26",
+          "report_type": "reconciled_duplicate"
+        },
+        {
+          "recorded_at": "2026-10-27T14:00:27.448936+00:00",
+          "source_url": "https://www.anchor.eu/anchor/aktuelles/wohnstift-innblick-aus-neuhaus-am-inn-saniert-sich-in-eigenverwaltung/",
+          "source_type": "law_firm_press",
+          "evidence_text": "Johannes Chrocziel , Alexander Reus , Ole Brauer , Clemens Büchner Neuhaus am Inn / Passau, 26. August 2026. Die Wohnstift Innblick GmbH, Betreiberin des Seniorenzentrums in Neuhaus am Inn, hat beim Amtsgericht Passau einen Antrag auf Eröffnung eines Insolvenzverfahrens in Eigenverwaltung gestellt. Das Amtsgericht Passau ordnete daraufhin am 21. August 2026 die vorläufige Eigenverwaltung an. Zum vorläufigen Sachwalter wurde Rechtsanwalt Dr. Julian Hageböke von der Kanzlei BRL Boege Rohde Luebbehuesen bestellt. Die operative Geschäftsleitung bleibt im Eigenverwaltungsverfahren im Amt und führt",
           "description": "Wohnstift Innblick aus Neuhaus am Inn saniert sich in Eigenverwaltung",
           "published_at": "2026-08-26T09:46:57+00:00",
           "event_date": "2026-08-26",
@@ -1479,7 +1518,7 @@
         ],
         "counter_indicators": [],
         "rationale": "Eigenverwaltung / Schutzschirm erfordert zwingend erfahrene Sanierungsführung (Chief Restructuring Officer (CRO / Sanierungsvorstand)), da die Geschäftsführung im Amt bleibt. Hoher plausibler Bedarf, konkrete externe Suche noch unbestätigt.",
-        "checked_at": "2026-10-27T14:06:03.199866+00:00",
+        "checked_at": "2026-10-27T23:01:29.014544+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "akut",
@@ -1509,7 +1548,7 @@
       "source_type": "law_firm_press",
       "evidence_text": "Michael Verken , Dr. Robert Hänel , Gregorio Calocero , Deborah Walther, LL.M. Garmisch-Partenkirchen/Weilheim, 13. August 2026 . Die traditionsreichen Geschäftsbetriebe der Angerer Gesellschaft mit beschränkter Haftung Sägen und Bohren in Stahlbeton &amp; Co. Betriebs KG und der Angerer Gesellschaft mit beschränkter Haftung Sägen und Bohren in Stahlbeton haben eine Zukunft. Die Insolvenzverwalter Dr. Robert Hänel und Michael Verken von Anchor Rechtsanwälte haben die Geschäftsbetriebe an die Cutting Company GmbH aus Taufkirchen veräußert.",
       "captured_at": "2026-10-27T10:36:25.058999+00:00",
-      "last_checked_at": "2026-10-27T21:54:47.150304+00:00",
+      "last_checked_at": "2026-10-27T23:00:39.352822+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [],
       "report_type": "initial_report",
@@ -1528,8 +1567,8 @@
       "reality_check": {
         "status": "VERWERFEN",
         "status_label": "Verwerfen (Gelöst / Abgeschlossen / Ungeeignet)",
-        "target_role": "TRANSFORMATION",
-        "target_role_label": "Transformations- / Restrukturierungsleitung",
+        "target_role": "KEINE",
+        "target_role_label": "Keine externe Organfunktion ableitbar",
         "facts_proven": "Zukunft gesichert – Cutting Company übernimmt Angerer-Betriebe",
         "source_proof": "https://www.anchor.eu/anchor/aktuelles/zukunft-gesichert-cutting-company-uebernimmt-angerer-betriebe/",
         "source_date": "2026-08-12T11:57:17+00:00",
@@ -1539,7 +1578,7 @@
           "Sanierung oder Investorenprozess bereits erfolgreich abgeschlossen bzw. Betrieb vollständig übernommen."
         ],
         "rationale": "Problem ist durch vollzogene Transaktion oder Sanierungslösung bereits gelöst. Kein offener externer Restrukturierungsbedarf für Cutting Company GmbH.",
-        "checked_at": "2026-10-27T14:06:03.200240+00:00",
+        "checked_at": "2026-10-27T23:01:29.017221+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "geloest",
@@ -1569,7 +1608,7 @@
       "source_type": "law_firm_press",
       "evidence_text": "Wohnbauprojekt F40 in Stuttgarter Top-Lage erfolgreich fertiggestellt Stuttgart/Mannheim, 06. August 2026. Dem Team um Insolvenzverwalter Tobias Wahl von der Kanzlei Anchor Rechtsanwälte ist ein weiterer bedeutender Sanierungserfolg im Verfahren der Fiwoim GmbH &amp; Co. KG gelungen. Das Neubauprojekt „F40“ in der gut gelegenen und begehrten Stuttgarter Frauenkopfstraße konnte trotz des weiterlaufenden Insolvenzverfahrens fertiggestellt werden. „Unser vorrangiges Ziel war es, trotz des enormen Zeitdrucks und der insolvenzrechtlichen Hürden durch Verhandlungen mit allen Beteiligten sicherzustel",
       "captured_at": "2026-10-27T10:36:27.119637+00:00",
-      "last_checked_at": "2026-10-27T21:54:47.150316+00:00",
+      "last_checked_at": "2026-10-27T23:00:39.352867+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [],
       "report_type": "initial_report",
@@ -1588,8 +1627,8 @@
       "reality_check": {
         "status": "VERWERFEN",
         "status_label": "Verwerfen (Gelöst / Abgeschlossen / Ungeeignet)",
-        "target_role": "TRANSFORMATION",
-        "target_role_label": "Transformations- / Restrukturierungsleitung",
+        "target_role": "KEINE",
+        "target_role_label": "Keine externe Organfunktion ableitbar",
         "facts_proven": "Wohnbauprojekt F40 erfolgreich fertiggestellt",
         "source_proof": "https://www.anchor.eu/anchor/aktuelles/wohnbauprojekt-f40-erfolgreich-fertiggestellt/",
         "source_date": "2026-08-07T09:23:47+00:00",
@@ -1599,7 +1638,7 @@
           "Sanierung oder Investorenprozess bereits erfolgreich abgeschlossen bzw. Betrieb vollständig übernommen."
         ],
         "rationale": "Problem ist durch vollzogene Transaktion oder Sanierungslösung bereits gelöst. Kein offener externer Restrukturierungsbedarf für Fiwoim GmbH.",
-        "checked_at": "2026-10-27T14:06:03.200533+00:00",
+        "checked_at": "2026-10-27T23:01:29.018591+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "geloest",
@@ -1629,7 +1668,7 @@
       "source_type": "capital_markets_press",
       "evidence_text": "Adhoc-Mitteilung der ABO Energy GmbH & Co. KGaA: ABO Energy GmbH & Co. KGaA einigt sich mit Finanzierungspartnern auf Verlängerung der Stillhaltevereinbarung und Fortsetzung des […] Der Beitrag ABO Energy: Stillhaltevereinbarung mit Finanzierungspartnern bis 30.11.2026 verlängert erschien zuerst auf Anleihen-Finder.de .",
       "captured_at": "2026-10-27T12:05:51.502920+00:00",
-      "last_checked_at": "2026-10-27T21:55:19.164058+00:00",
+      "last_checked_at": "2026-10-27T23:01:16.137742+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [],
       "report_type": "initial_report",
@@ -1660,7 +1699,7 @@
         ],
         "counter_indicators": [],
         "rationale": "Akuter Verhandlungsdruck mit Anleihegläubigern nach SchVG bzw. Stillhalteabkommen mit Banken. Erheblicher plausibler Bedarf an erfahrenem Interim-CFO (Refinanzierung, SchVG-Verhandlung, Liquidität) für Liquiditäts- und Sanierungskonzepte.",
-        "checked_at": "2026-10-27T14:06:03.200777+00:00",
+        "checked_at": "2026-10-27T23:01:29.020572+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "akut",
@@ -1690,7 +1729,7 @@
       "source_type": "capital_markets_press",
       "evidence_text": "Grundsatzeinigung mit Anleihegläubigern erzielt Die BOOSTER Precision Components Holding GmbH hat beschlossen, beim zuständigen Restrukturierungsgericht in Hannover einen Restrukturierungsplan nach dem Unternehmensstabilisierungs- und -restrukturierungsgesetz (StaRUG) […] Der Beitrag BOOSTER Precision leitet StaRUG-Verfahren ein erschien zuerst auf Anleihen-Finder.de .",
       "captured_at": "2026-10-27T12:05:51.503607+00:00",
-      "last_checked_at": "2026-10-27T21:55:19.164083+00:00",
+      "last_checked_at": "2026-10-27T23:01:16.137782+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [],
       "report_type": "initial_report",
@@ -1721,7 +1760,7 @@
         ],
         "counter_indicators": [],
         "rationale": "Eigenverwaltung / Schutzschirm erfordert zwingend erfahrene Sanierungsführung (Chief Restructuring Officer (CRO / Sanierungsvorstand)), da die Geschäftsführung im Amt bleibt. Hoher plausibler Bedarf, konkrete externe Suche noch unbestätigt.",
-        "checked_at": "2026-10-27T14:06:03.201017+00:00",
+        "checked_at": "2026-10-27T23:01:29.022244+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "akut",
@@ -1751,7 +1790,7 @@
       "source_type": "law_firm_press",
       "evidence_text": "Sarah Wolf , Nicole Ulfkotte-Bohnke , Dr. Christof Schiller , Roxana Schurgacz, LL.B. Duisburg, 23. Juli 2026. &nbsp;Dem Diagnostik-Startup Noscendo GmbH steht ein Neustart bevor. Im Zuge des Insolvenzverfahrens ist es der vorläufigen Insolvenzverwalterin Sarah Wolf von der Kanzlei Anchor Rechtsanwälte gelungen, eine nachhaltige Sanierungslösung zu realisieren. Bruker, ein weltweit führendes Unternehmen im Bereich analytischer Technologien und Life Sciences, übernimmt die DISQVER® Plattform sowie ausgewählte Vermögenswerte am Standort Duisburg. Eine entsprechende Vereinbarung im Rahmen einer ü",
       "captured_at": "2026-10-27T10:36:34.352242+00:00",
-      "last_checked_at": "2026-10-27T10:37:48.153043+00:00",
+      "last_checked_at": "2026-10-27T23:00:39.352910+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [
         "Firmenname präzisiert: 'Dem Diagnostik-Startup Noscendo GmbH' -> 'Noscendo GmbH'"
@@ -1763,6 +1802,16 @@
           "source_url": "https://www.anchor.eu/anchor/aktuelles/anchor-sichert-zukunftsloesung-fuer-die-disqver-plattform-von-noscendo/",
           "source_type": "law_firm_press",
           "evidence_text": "Sarah Wolf , Nicole Ulfkotte-Bohnke , Dr. Christof Schiller , Roxana Schurgacz, LL.B. Duisburg, 23. Juli 2026. &nbsp;Dem Diagnostik-Startup Noscendo GmbH steht ein Neustart bevor. Im Zuge des Insolvenzverfahrens ist es der vorläufigen Insolvenzverwalterin Sarah Wolf von der Kanzlei Anchor Rechtsanwä",
+          "description": "Anchor sichert Zukunftslösung für die DISQVER® Plattform von Noscendo",
+          "published_at": "2026-07-24T10:02:50+00:00",
+          "event_date": "2026-07-23",
+          "report_type": "reconciled_duplicate"
+        },
+        {
+          "recorded_at": "2026-10-27T14:00:39.355027+00:00",
+          "source_url": "https://www.anchor.eu/anchor/aktuelles/anchor-sichert-zukunftsloesung-fuer-die-disqver-plattform-von-noscendo/",
+          "source_type": "law_firm_press",
+          "evidence_text": "Sarah Wolf , Nicole Ulfkotte-Bohnke , Dr. Christof Schiller , Roxana Schurgacz, LL.B. Duisburg, 23. Juli 2026. &nbsp;Dem Diagnostik-Startup Noscendo GmbH steht ein Neustart bevor. Im Zuge des Insolvenzverfahrens ist es der vorläufigen Insolvenzverwalterin Sarah Wolf von der Kanzlei Anchor Rechtsanwälte gelungen, eine nachhaltige Sanierungslösung zu realisieren. Bruker, ein weltweit führendes Unternehmen im Bereich analytischer Technologien und Life Sciences, übernimmt die DISQVER® Plattform sowie ausgewählte Vermögenswerte am Standort Duisburg. Eine entsprechende Vereinbarung im Rahmen einer ü",
           "description": "Anchor sichert Zukunftslösung für die DISQVER® Plattform von Noscendo",
           "published_at": "2026-07-24T10:02:50+00:00",
           "event_date": "2026-07-23",
@@ -1783,8 +1832,8 @@
       "reality_check": {
         "status": "VERWERFEN",
         "status_label": "Verwerfen (Gelöst / Abgeschlossen / Ungeeignet)",
-        "target_role": "TRANSFORMATION",
-        "target_role_label": "Transformations- / Restrukturierungsleitung",
+        "target_role": "KEINE",
+        "target_role_label": "Keine externe Organfunktion ableitbar",
         "facts_proven": "Anchor sichert Zukunftslösung für die DISQVER® Plattform von Noscendo",
         "source_proof": "https://www.anchor.eu/anchor/aktuelles/anchor-sichert-zukunftsloesung-fuer-die-disqver-plattform-von-noscendo/",
         "source_date": "2026-07-24T10:02:50+00:00",
@@ -1794,7 +1843,7 @@
           "Sanierung oder Investorenprozess bereits erfolgreich abgeschlossen bzw. Betrieb vollständig übernommen."
         ],
         "rationale": "Problem ist durch vollzogene Transaktion oder Sanierungslösung bereits gelöst. Kein offener externer Restrukturierungsbedarf für Noscendo GmbH.",
-        "checked_at": "2026-10-27T14:06:03.201287+00:00",
+        "checked_at": "2026-10-27T23:01:29.024171+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "geloest",
@@ -1812,19 +1861,19 @@
       "reality_check_history": []
     },
     {
-      "event_id": "39297647-89e6-4b02-ac64-5271368e5c1c",
-      "company_name": "Solarunternehmen BSH GmbH",
+      "event_id": "a837ff47-d37b-4880-92db-323de72b44cb",
+      "company_name": "Baiersbronn Frischfaser Karton GmbH",
       "country": "DE",
       "region": "Deutschland",
       "category": "unternehmenskrise_restrukturierung",
-      "description": "Solarunternehmen BSH GmbH &amp; Co. KG stellt Insolvenzantrag",
-      "event_date": "2026-09-15",
-      "published_at": "2026-09-17T07:12:53+00:00",
-      "source_url": "https://www.anchor.eu/anchor/aktuelles/solarunternehmen-bsh-gmbh-co-kg-stellt-insolvenzantrag/",
+      "description": "Baiersbronn Frischfaser Karton GmbH stellt Insolvenzantrag – Sanierungsexperte Dr. Jan Markus Plathner von Brinkmann &amp; Partner zum vorläufigen Insolvenzverwalter bestellt",
+      "event_date": null,
+      "published_at": "2026-10-27T23:00:39.349546+00:00",
+      "source_url": "https://www.brinkmann-partner.de/baiersbronn-frischfaser-karton-gmbh-stellt-insolvenzantrag-sanierungsexperte-dr-jan-markus-plathner-von-brinkmann-partner-zum-vorlaeufigen-insolvenzverwalter-bestellt/",
       "source_type": "law_firm_press",
-      "evidence_text": "Dr. Alexander Zarzitzky , Christian Keck , Hannes Rieger, LL.M. Bad Königshofen i. Grabfeld, 15. September 2026. Die BSH GmbH &amp; Co. KG hat aufgrund von Überschuldung und drohender Zahlungsunfähigkeit beim Amtsgericht Schweinfurt einen Antrag auf Eröffnung eines Insolvenzverfahrens gestellt. Das zuständige Insolvenzgericht ordnete daraufhin die vorläufige Insolvenzverwaltung an und bestellte Rechtsanwalt Dr. Alexander Zarzitzky von der Anchor Rechtsanwaltsgesellschaft mbH zum vorläufigen Insolvenzverwalter.",
-      "captured_at": "2026-10-27T14:00:24.794594+00:00",
-      "last_checked_at": "2026-10-27T21:54:47.150275+00:00",
+      "evidence_text": "Baiersbronn Frischfaser Karton GmbH stellt Insolvenzantrag – Sanierungsexperte Dr. Jan Markus Plathner von Brinkmann &amp; Partner zum vorläufigen Insolvenzverwalter bestellt",
+      "captured_at": "2026-10-27T23:00:39.349567+00:00",
+      "last_checked_at": "2026-10-27T23:00:39.349567+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [],
       "report_type": "initial_report",
@@ -1843,11 +1892,11 @@
       "reality_check": {
         "status": "BEOBACHTEN",
         "status_label": "Beobachten (Frühes / generelles Signal auf Watchlist)",
-        "target_role": "TRANSFORMATION",
-        "target_role_label": "Transformations- / Restrukturierungsleitung",
-        "facts_proven": "Solarunternehmen BSH GmbH &amp; Co. KG stellt Insolvenzantrag",
-        "source_proof": "https://www.anchor.eu/anchor/aktuelles/solarunternehmen-bsh-gmbh-co-kg-stellt-insolvenzantrag/",
-        "source_date": "2026-09-17T07:12:53+00:00",
+        "target_role": "KEINE",
+        "target_role_label": "Keine externe Organfunktion ableitbar",
+        "facts_proven": "Baiersbronn Frischfaser Karton GmbH stellt Insolvenzantrag – Sanierungsexperte Dr. Jan Markus Plathner von Brinkmann &amp; Partner zum vorläufigen Insolvenzverwalter bestellt",
+        "source_proof": "https://www.brinkmann-partner.de/baiersbronn-frischfaser-karton-gmbh-stellt-insolvenzantrag-sanierungsexperte-dr-jan-markus-plathner-von-brinkmann-partner-zum-vorlaeufigen-insolvenzverwalter-bestellt/",
+        "source_date": "2026-10-27T23:00:39.349546+00:00",
         "mandate_hypothesis": "Beobachtungsfall auf der Watchlist; kein unmittelbarer externer Mandatsansatz.",
         "missing_information": [
           "Kein Hinweis auf geplante Überführung in eine Eigenverwaltung oder Beauftragung externer Organe."
@@ -1856,7 +1905,7 @@
           "Regelinsolvenz mit Fremdverwaltung: Gerichtlich bestellter Insolvenzverwalter führt das Verfahren; Organe sind entmachtet."
         ],
         "rationale": "Regelinsolvenz mit Fremdverwaltung. Externe Mandate durch die Alt-Organe sind rechtlich ausgeschlossen; Verwalter führt das operative Verfahren. Als Marktfall auf der Watchlist.",
-        "checked_at": "2026-10-27T14:06:03.201589+00:00",
+        "checked_at": "2026-10-27T23:01:29.025114+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "mittel",
@@ -1874,200 +1923,19 @@
       "reality_check_history": []
     },
     {
-      "event_id": "791e59bd-0850-416c-9786-e6a56aec401e",
-      "company_name": "August 2026. Die Wohnstift Innblick GmbH",
-      "country": "DE",
-      "region": "Deutschland",
-      "category": "insolvenzantrag_eigenverwaltung",
-      "description": "Wohnstift Innblick aus Neuhaus am Inn saniert sich in Eigenverwaltung",
-      "event_date": "2026-08-26",
-      "published_at": "2026-08-26T09:46:57+00:00",
-      "source_url": "https://www.anchor.eu/anchor/aktuelles/wohnstift-innblick-aus-neuhaus-am-inn-saniert-sich-in-eigenverwaltung/",
-      "source_type": "law_firm_press",
-      "evidence_text": "Johannes Chrocziel , Alexander Reus , Ole Brauer , Clemens Büchner Neuhaus am Inn / Passau, 26. August 2026. Die Wohnstift Innblick GmbH, Betreiberin des Seniorenzentrums in Neuhaus am Inn, hat beim Amtsgericht Passau einen Antrag auf Eröffnung eines Insolvenzverfahrens in Eigenverwaltung gestellt. Das Amtsgericht Passau ordnete daraufhin am 21. August 2026 die vorläufige Eigenverwaltung an. Zum vorläufigen Sachwalter wurde Rechtsanwalt Dr. Julian Hageböke von der Kanzlei BRL Boege Rohde Luebbehuesen bestellt. Die operative Geschäftsleitung bleibt im Eigenverwaltungsverfahren im Amt und führt",
-      "captured_at": "2026-10-27T14:00:27.448936+00:00",
-      "last_checked_at": "2026-10-27T21:54:47.150291+00:00",
-      "provenance_status": "real_source_verified",
-      "uncertainties": [],
-      "report_type": "initial_report",
-      "history": [],
-      "axis_a_event_certainty": "nachgewiesen",
-      "axis_b_transformation_need": "akut",
-      "axis_c_mandate_potential": "hoch",
-      "mandate_rationale": "Eigenverwaltungs-/Schutzschirmverfahren erfordern erfahrene Restrukturierungsorgane (CRO / Sanierungs-Geschäftsführer).",
-      "counter_indicators": [],
-      "court_and_reg": "",
-      "legal_form": "",
-      "requires_manual_link_review": false,
-      "mandate_priority": "high_priority_action_required",
-      "mandate_priority_label": "High Priority / C-Level Action required",
-      "action_type": "cro_eigenverwaltung",
-      "reality_check": {
-        "status": "MANDAT_PLAUSIBEL",
-        "status_label": "Mandat plausibel (Bedarf plausibel, Suche unbestätigt)",
-        "target_role": "CRO",
-        "target_role_label": "Chief Restructuring Officer (CRO / Sanierungsvorstand)",
-        "facts_proven": "Wohnstift Innblick aus Neuhaus am Inn saniert sich in Eigenverwaltung",
-        "source_proof": "https://www.anchor.eu/anchor/aktuelles/wohnstift-innblick-aus-neuhaus-am-inn-saniert-sich-in-eigenverwaltung/",
-        "source_date": "2026-08-26T09:46:57+00:00",
-        "mandate_hypothesis": "Bedarf an externem Chief Restructuring Officer (CRO / Sanierungsvorstand) plausibel abgeleitet aus: insolvenzantrag_eigenverwaltung. Hinweis: Ein plausibler Bedarf ist noch kein vergebenes Mandat.",
-        "missing_information": [
-          "Konkrete Ausschreibung oder externe Mandatsvergabe ist öffentlich noch nicht belegt.",
-          "Bestehende Sanierungsberater oder CRO-Besetzung im Schutzschirmantrag noch nicht namentlich verifiziert."
-        ],
-        "counter_indicators": [],
-        "rationale": "Eigenverwaltung / Schutzschirm erfordert zwingend erfahrene Sanierungsführung (Chief Restructuring Officer (CRO / Sanierungsvorstand)), da die Geschäftsführung im Amt bleibt. Hoher plausibler Bedarf, konkrete externe Suche noch unbestätigt.",
-        "checked_at": "2026-10-27T14:06:03.201879+00:00",
-        "criteria_eval": {
-          "event_validity": "bestaetigt",
-          "action_pressure": "akut",
-          "mandate_feasibility": "plausibel",
-          "concrete_mandate_proof": "nicht_belegt"
-        },
-        "human_review": {
-          "reviewed": false,
-          "reviewed_at": null,
-          "reviewer_decision": null,
-          "reviewer_notes": "",
-          "confirmed": false
-        }
-      },
-      "reality_check_history": []
-    },
-    {
-      "event_id": "289a779c-a352-4eef-b828-e004be1e627b",
-      "company_name": "Dem Diagnostik-Startup Noscendo GmbH",
-      "country": "DE",
-      "region": "Deutschland",
-      "category": "unternehmenskrise_restrukturierung",
-      "description": "Anchor sichert Zukunftslösung für die DISQVER® Plattform von Noscendo",
-      "event_date": "2026-07-23",
-      "published_at": "2026-07-24T10:02:50+00:00",
-      "source_url": "https://www.anchor.eu/anchor/aktuelles/anchor-sichert-zukunftsloesung-fuer-die-disqver-plattform-von-noscendo/",
-      "source_type": "law_firm_press",
-      "evidence_text": "Sarah Wolf , Nicole Ulfkotte-Bohnke , Dr. Christof Schiller , Roxana Schurgacz, LL.B. Duisburg, 23. Juli 2026. &nbsp;Dem Diagnostik-Startup Noscendo GmbH steht ein Neustart bevor. Im Zuge des Insolvenzverfahrens ist es der vorläufigen Insolvenzverwalterin Sarah Wolf von der Kanzlei Anchor Rechtsanwälte gelungen, eine nachhaltige Sanierungslösung zu realisieren. Bruker, ein weltweit führendes Unternehmen im Bereich analytischer Technologien und Life Sciences, übernimmt die DISQVER® Plattform sowie ausgewählte Vermögenswerte am Standort Duisburg. Eine entsprechende Vereinbarung im Rahmen einer ü",
-      "captured_at": "2026-10-27T14:00:39.355027+00:00",
-      "last_checked_at": "2026-10-27T21:54:47.150330+00:00",
-      "provenance_status": "real_source_verified",
-      "uncertainties": [],
-      "report_type": "initial_report",
-      "history": [],
-      "axis_a_event_certainty": "nachgewiesen",
-      "axis_b_transformation_need": "akut",
-      "axis_c_mandate_potential": "spekulativ",
-      "mandate_rationale": "Restrukturierungsmeldung vorhanden; Mandatsbedarf hängt von bestehender Beraterbesetzung ab.",
-      "counter_indicators": [],
-      "court_and_reg": "",
-      "legal_form": "",
-      "requires_manual_link_review": false,
-      "mandate_priority": "watchlist_general_distress",
-      "mandate_priority_label": "Watchlist / General Distress",
-      "action_type": "passiv_m_and_a_abschluss",
-      "reality_check": {
-        "status": "VERWERFEN",
-        "status_label": "Verwerfen (Gelöst / Abgeschlossen / Ungeeignet)",
-        "target_role": "TRANSFORMATION",
-        "target_role_label": "Transformations- / Restrukturierungsleitung",
-        "facts_proven": "Anchor sichert Zukunftslösung für die DISQVER® Plattform von Noscendo",
-        "source_proof": "https://www.anchor.eu/anchor/aktuelles/anchor-sichert-zukunftsloesung-fuer-die-disqver-plattform-von-noscendo/",
-        "source_date": "2026-07-24T10:02:50+00:00",
-        "mandate_hypothesis": "Kein Mandatsansatz; Ereignis verworfen (abgeschlossen, besetzt oder ungeeignet).",
-        "missing_information": [],
-        "counter_indicators": [
-          "Sanierung oder Investorenprozess bereits erfolgreich abgeschlossen bzw. Betrieb vollständig übernommen."
-        ],
-        "rationale": "Problem ist durch vollzogene Transaktion oder Sanierungslösung bereits gelöst. Kein offener externer Restrukturierungsbedarf für Dem Diagnostik-Startup Noscendo GmbH.",
-        "checked_at": "2026-10-27T14:06:03.202166+00:00",
-        "criteria_eval": {
-          "event_validity": "bestaetigt",
-          "action_pressure": "geloest",
-          "mandate_feasibility": "unwahrscheinlich",
-          "concrete_mandate_proof": "nicht_belegt"
-        },
-        "human_review": {
-          "reviewed": false,
-          "reviewed_at": null,
-          "reviewer_decision": null,
-          "reviewer_notes": "",
-          "confirmed": false
-        }
-      },
-      "reality_check_history": []
-    },
-    {
-      "event_id": "22ed30e3-4de3-4767-9c4a-9b2ebddc4f2e",
-      "company_name": "Süddeutsche Gelenkscheibenfabrik GmbH",
-      "country": "DE",
-      "region": "Deutschland",
-      "category": "fusion_uebernahme_unternehmensverkauf",
-      "description": "Süddeutsche Gelenkscheibenfabrik GmbH &amp; Co. KG: Investorenprozess erfolgreich abgeschlossen",
-      "event_date": null,
-      "published_at": "2026-10-27T14:00:39.876530+00:00",
-      "source_url": "https://www.brinkmann-partner.de/sueddeutsche-gelenkscheibenfabrik-gmbh-co-kg-investorenprozess-erfolgreich-abgeschlossen/",
-      "source_type": "law_firm_press",
-      "evidence_text": "Süddeutsche Gelenkscheibenfabrik GmbH &amp; Co. KG: Investorenprozess erfolgreich abgeschlossen",
-      "captured_at": "2026-10-27T14:00:39.876566+00:00",
-      "last_checked_at": "2026-10-27T21:54:47.150533+00:00",
-      "provenance_status": "real_source_verified",
-      "uncertainties": [],
-      "report_type": "initial_report",
-      "history": [],
-      "axis_a_event_certainty": "nachgewiesen",
-      "axis_b_transformation_need": "mittel",
-      "axis_c_mandate_potential": "mittel",
-      "mandate_rationale": "Laufender M&A-/Investorenprozess in Sondersituation bietet Potenzial für PM/M&A-Interim-Unterstützung.",
-      "counter_indicators": [],
-      "court_and_reg": "",
-      "legal_form": "",
-      "requires_manual_link_review": false,
-      "mandate_priority": "watchlist_general_distress",
-      "mandate_priority_label": "Watchlist / General Distress",
-      "action_type": "passiv_m_and_a_abschluss",
-      "reality_check": {
-        "status": "VERWERFEN",
-        "status_label": "Verwerfen (Gelöst / Abgeschlossen / Ungeeignet)",
-        "target_role": "KEINE",
-        "target_role_label": "Keine externe Organfunktion ableitbar",
-        "facts_proven": "Süddeutsche Gelenkscheibenfabrik GmbH &amp; Co. KG: Investorenprozess erfolgreich abgeschlossen",
-        "source_proof": "https://www.brinkmann-partner.de/sueddeutsche-gelenkscheibenfabrik-gmbh-co-kg-investorenprozess-erfolgreich-abgeschlossen/",
-        "source_date": "2026-10-27T14:00:39.876530+00:00",
-        "mandate_hypothesis": "Kein Mandatsansatz; Ereignis verworfen (abgeschlossen, besetzt oder ungeeignet).",
-        "missing_information": [],
-        "counter_indicators": [
-          "Sanierung oder Investorenprozess bereits erfolgreich abgeschlossen bzw. Betrieb vollständig übernommen."
-        ],
-        "rationale": "Problem ist durch vollzogene Transaktion oder Sanierungslösung bereits gelöst. Kein offener externer Restrukturierungsbedarf für Süddeutsche Gelenkscheibenfabrik GmbH.",
-        "checked_at": "2026-10-27T14:06:03.202382+00:00",
-        "criteria_eval": {
-          "event_validity": "bestaetigt",
-          "action_pressure": "geloest",
-          "mandate_feasibility": "ausgeschlossen",
-          "concrete_mandate_proof": "nicht_belegt"
-        },
-        "human_review": {
-          "reviewed": false,
-          "reviewed_at": null,
-          "reviewer_decision": null,
-          "reviewer_notes": "",
-          "confirmed": false
-        }
-      },
-      "reality_check_history": []
-    },
-    {
-      "event_id": "5ec06df1-078c-4cbb-b80c-62d023645235",
-      "company_name": "Booster Precision Components Holding",
+      "event_id": "a15d9754-d6d8-48c7-a9c8-e6ed4906fca7",
+      "company_name": "PAUL Tech AG",
       "country": "DE",
       "region": "DACH",
       "category": "finanzierung_anleihen_restrukturierung",
-      "description": "BOOSTER-Anleihegläubiger stimmen Bond-Anpassungen zu",
+      "description": "PAUL Tech: Angepasster Vorschlag zu geplanter Anleihe-Verlängerung",
       "event_date": null,
-      "published_at": "2026-09-22T15:23:32+00:00",
-      "source_url": "https://www.anleihen-finder.de/booster-anleiheglaeubiger-stimmen-bond-anpassungen-zu-00073785.html",
+      "published_at": "2026-10-20T11:25:04+00:00",
+      "source_url": "https://www.anleihen-finder.de/paul-tech-angepasster-vorschlag-zu-geplanter-anleihe-verlaengerung-00074232.html",
       "source_type": "capital_markets_press",
-      "evidence_text": "Mitteilung der Booster Precision Components Holding GmbH: Booster Precision Components Holding GmbH gibt den erfolgreichen Abschluss ihres schriftlichen Verfahrens zur Änderung von bestimmten Anleihebedingungen bekannt […] Der Beitrag BOOSTER-Anleihegläubiger stimmen Bond-Anpassungen zu erschien zuerst auf Anleihen-Finder.de .",
-      "captured_at": "2026-10-27T14:01:33.658190+00:00",
-      "last_checked_at": "2026-10-27T21:55:19.164007+00:00",
+      "evidence_text": "Gläubigerversammlung am 26.10.26 in Mannheim Die PAUL Tech AG unterstützt einen alternativen Vorschlag zur Verlängerung ihrer 35-Mio.-Euro-Anleihe 2020/26 (ISIN: DE000A3H2TU8). Ein entsprechendes Ergänzungsverlangen eines Anleihegläubigers […] Der Beitrag PAUL Tech: Angepasster Vorschlag zu geplanter Anleihe-Verlängerung erschien zuerst auf Anleihen-Finder.de .",
+      "captured_at": "2026-10-27T23:01:15.084590+00:00",
+      "last_checked_at": "2026-10-27T23:01:15.084590+00:00",
       "provenance_status": "real_source_verified",
       "uncertainties": [],
       "report_type": "initial_report",
@@ -2080,24 +1948,25 @@
       "court_and_reg": "",
       "legal_form": "",
       "requires_manual_link_review": false,
-      "mandate_priority": "watchlist_general_distress",
-      "mandate_priority_label": "Watchlist / General Distress",
-      "action_type": "passiv_m_and_a_abschluss",
+      "mandate_priority": "high_priority_action_required",
+      "mandate_priority_label": "High Priority / C-Level Action required",
+      "action_type": "schvg_glaeubiger_druck",
       "reality_check": {
-        "status": "VERWERFEN",
-        "status_label": "Verwerfen (Gelöst / Abgeschlossen / Ungeeignet)",
+        "status": "MANDAT_PLAUSIBEL",
+        "status_label": "Mandat plausibel (Bedarf plausibel, Suche unbestätigt)",
         "target_role": "INTERIM_CFO",
         "target_role_label": "Interim-CFO (Refinanzierung, SchVG-Verhandlung, Liquidität)",
-        "facts_proven": "BOOSTER-Anleihegläubiger stimmen Bond-Anpassungen zu",
-        "source_proof": "https://www.anleihen-finder.de/booster-anleiheglaeubiger-stimmen-bond-anpassungen-zu-00073785.html",
-        "source_date": "2026-09-22T15:23:32+00:00",
-        "mandate_hypothesis": "Kein Mandatsansatz; Ereignis verworfen (abgeschlossen, besetzt oder ungeeignet).",
-        "missing_information": [],
-        "counter_indicators": [
-          "Sanierung oder Investorenprozess bereits erfolgreich abgeschlossen bzw. Betrieb vollständig übernommen."
+        "facts_proven": "PAUL Tech: Angepasster Vorschlag zu geplanter Anleihe-Verlängerung",
+        "source_proof": "https://www.anleihen-finder.de/paul-tech-angepasster-vorschlag-zu-geplanter-anleihe-verlaengerung-00074232.html",
+        "source_date": "2026-10-20T11:25:04+00:00",
+        "mandate_hypothesis": "Bedarf an externem Interim-CFO (Refinanzierung, SchVG-Verhandlung, Liquidität) plausibel abgeleitet aus: finanzierung_anleihen_restrukturierung. Hinweis: Ein plausibler Bedarf ist noch kein vergebenes Mandat.",
+        "missing_information": [
+          "Öffentliche Quelle belegt Gläubigerabstimmung / Stillhalteabkommen, jedoch keine externe Personalberatung.",
+          "Unklar, ob bestehendes CFO-Team Verhandlungen führt oder Interims-Experten hinzugezogen werden."
         ],
-        "rationale": "Problem ist durch vollzogene Transaktion oder Sanierungslösung bereits gelöst. Kein offener externer Restrukturierungsbedarf für Booster Precision Components Holding.",
-        "checked_at": "2026-10-27T14:06:03.202605+00:00",
+        "counter_indicators": [],
+        "rationale": "Akuter Verhandlungsdruck mit Anleihegläubigern nach SchVG bzw. Stillhalteabkommen mit Banken. Erheblicher plausibler Bedarf an erfahrenem Interim-CFO (Refinanzierung, SchVG-Verhandlung, Liquidität) für Liquiditäts- und Sanierungskonzepte.",
+        "checked_at": "2026-10-27T23:01:29.026661+00:00",
         "criteria_eval": {
           "event_validity": "bestaetigt",
           "action_pressure": "akut",
