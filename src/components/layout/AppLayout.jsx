@@ -46,7 +46,14 @@ function TopNavigationHeader() {
     '/nexus/lead-intelligence': 'Lead Intelligence Desk'
   }
 
-  const currentTitle = routeTitles[location.pathname] || 'NeXus Origination Desk'
+  let currentTitle = routeTitles[location.pathname] || 'NeXus Origination Desk'
+  if (location.pathname === '/nexus/mandats-archiv') {
+    if (location.search.includes('tab=contracts')) {
+      currentTitle = 'Kooperationsverträge & Partner'
+    } else {
+      currentTitle = 'Mandats-Archiv & Kundenschutz'
+    }
+  }
 
   const handleBack = () => {
     if (window.history.length > 1) {

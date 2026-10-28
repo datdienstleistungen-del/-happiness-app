@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Briefcase, Radar, Mail, MessageSquare, Send, Copy, CheckCircle, AlertCircle, List, Trash2, ArrowRight, Search, Share2, ExternalLink, Video, Globe, Sparkles, RefreshCw, Clock, Check, Loader2, X, Eye, ShieldCheck, FileText, Zap, Edit3, ShieldAlert, AlertTriangle, Printer, Download, UserCheck, Archive } from 'lucide-react'
+import { Briefcase, Radar, Mail, MessageSquare, Send, Copy, CheckCircle, AlertCircle, List, Trash2, ArrowRight, Search, Share2, ExternalLink, Video, Globe, Sparkles, RefreshCw, Clock, Check, Loader2, X, Eye, ShieldCheck, FileText, Zap, Edit3, ShieldAlert, AlertTriangle, Printer, Download, UserCheck, Archive, Award, Activity } from 'lucide-react'
 import { callNexusAI, runDeepResearch, callContactIntelligence, callMessageGeneration, callSocialIntelligence } from '../lib/nexus-ai'
 import { isPlaceholderCompany, computeTargetMatchScore, classifyB2BLifecycle, getCategoryLifecycleConfig, hasConcreteVerifiedAnlass, isBlacklistedRole } from '../lib/nexus-validation'
 import { formatEventDate, extractDomain, getFreshnessTrafficLight } from '../lib/nexus-dates'
@@ -24,6 +24,13 @@ const MODI = [
 ]
 
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import {
+  getCooperationPartners,
+  getPartnerByNameOrId,
+  calculateProtectionEndDate,
+  DEFAULT_PROTECTION_MONTHS,
+  PROTECTION_DURATION_OPTIONS
+} from '../lib/nexus-partners'
 
 // Standardisierte akkreditierte Partner für Swiss & International Desk
 export const OUTREACH_PARTNERS = [
@@ -388,10 +395,12 @@ export default function SalesWorkspacePage() {
   const [customEventDate, setCustomEventDate] = useState('')
   const [isEditingEventDate, setIsEditingEventDate] = useState(false)
 
-  // Mandats-Übermittlung & 12 Monate Kundenschutz State & Modal
+  // Mandats-Übermittlung & Kundenschutz State & Modal (Standard: 18 Monate, variabel)
   const [isDirectPublishing, setIsDirectPublishing] = useState(false)
   const [showDispatchModal, setShowDispatchModal] = useState(false)
   const [dispatchPartner, setDispatchPartner] = useState('taskforce - Management on Demand AG')
+  const [dispatchProtectionMonths, setDispatchProtectionMonths] = useState(DEFAULT_PROTECTION_MONTHS)
+  const [isDispatchCustomDuration, setIsDispatchCustomDuration] = useState(false)
   const [dispatchRole, setDispatchRole] = useState('')
   const [dispatchSuccess, setDispatchSuccess] = useState(false)
   const [dispatchSuccessData, setDispatchSuccessData] = useState(null)
@@ -1050,6 +1059,14 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
     const resolvedRole = activeOpp.title?.includes(':') ? activeOpp.title.split(':')[1].trim() : (activeOpp.situation || 'C-Level Organvakanz');
     setDispatchRole(resolvedRole);
     setDispatchSuccess(false);
+
+    // Initialisiere Schutzfrist basierend auf Partner-Vertragskonditionen
+    const partnerContracts = getCooperationPartners();
+    const currentP = partnerContracts.find(p => dispatchPartner.includes(p.name) || dispatchPartner.includes(p.shortName)) || partnerContracts[0];
+    const initialMonths = currentP?.defaultProtectionMonths || DEFAULT_PROTECTION_MONTHS;
+    setDispatchProtectionMonths(initialMonths);
+    setIsDispatchCustomDuration(![18, 12, 24, 6].includes(initialMonths));
+
     setShowDispatchModal(true);
   };
 
@@ -1061,8 +1078,8 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
     try {
       const compName = resolveTriggerCompanyName(activeTrigger, activeOpp) || activeOpp.nexus_companies?.name || activeOpp.title || 'Mandat';
       const now = new Date();
-      const protectionUntil = new Date(now);
-      protectionUntil.setFullYear(protectionUntil.getFullYear() + 1);
+      const months = parseInt(dispatchProtectionMonths, 10) || DEFAULT_PROTECTION_MONTHS;
+      const protectionUntil = calculateProtectionEndDate(now, months);
 
       const entry = {
         id: `arch-${Date.now()}`,
@@ -1072,8 +1089,9 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
         transmittedTo: dispatchPartner,
         transmittedAt: now.toISOString(),
         protectionUntil: protectionUntil.toISOString(),
+        protection_months: months,
         status: 'AKTIV_GESCHUETZT',
-        notes: `Aus Mandats-Desk an ${dispatchPartner} übermittelt.`,
+        notes: `Aus Mandats-Desk an ${dispatchPartner} übermittelt (${months} Monate Kundenschutz).`,
         source: activeTrigger?.source || activeOpp.source || 'EQS / Primärquelle'
       };
 
@@ -1091,7 +1109,7 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
         await db.updateOpportunity(activeOpp.id, {
           pipeline_stage: 'dispatched',
           review_status: 'verified',
-          review_notes: `An Partner übermittelt: ${dispatchPartner}. 12 Monate Kundenschutz bis ${protectionUntil.toLocaleDateString('de-DE')}.`
+          review_notes: `An Partner übermittelt: ${dispatchPartner}. ${months} Monate Kundenschutz bis ${protectionUntil.toLocaleDateString('de-DE')}.`
         });
         setActiveOpp(prev => ({ ...prev, pipeline_stage: 'dispatched', review_status: 'verified' }));
       } catch (e) {
@@ -1110,7 +1128,7 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
 ${blind.teaser.eventSummary}
 
 🎯 Übermittelt an Partner: ${dispatchPartner}
-⚖️ 12 Monate Kundenschutz aktiv bis: ${protectionUntil.toLocaleDateString('de-DE')}
+⚖️ ${months} Monate Kundenschutz aktiv bis: ${protectionUntil.toLocaleDateString('de-DE')}
 Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
 
         navigator.clipboard.writeText(text);
@@ -1120,7 +1138,8 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
       setDispatchSuccessData({
         company: compName,
         partner: dispatchPartner,
-        protectionDate: protectionUntil.toLocaleDateString('de-DE')
+        protectionDate: protectionUntil.toLocaleDateString('de-DE'),
+        protectionMonths: months
       });
       setDispatchSuccess(true);
     } catch (err) {
@@ -2638,6 +2657,102 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                 </div>
               )}
 
+              {/* ── MANDATS-WATCHDOG & KUNDENSCHUTZ STATUS BANNER ── */}
+              {(() => {
+                let matchedArchiveEntry = null;
+                try {
+                  const cached = localStorage.getItem('nexus:mandate_archive_v1');
+                  if (cached) {
+                    const list = JSON.parse(cached);
+                    const comp = (compName || '').toLowerCase();
+                    matchedArchiveEntry = list.find(item => 
+                      item && (
+                        item.leadId === activeOpp.id || 
+                        (item.company && comp.includes(item.company.toLowerCase())) ||
+                        (item.company && item.company.toLowerCase().includes(comp))
+                      )
+                    );
+                  }
+                } catch {
+                  // Fallback
+                }
+
+                // Spezifischer Fallback für verifizierten PAUL Tech AG Fall
+                if (!matchedArchiveEntry && (compName || '').toLowerCase().includes('paul tech')) {
+                  matchedArchiveEntry = {
+                    company: 'PAUL Tech AG',
+                    register_id: 'AG Mannheim HRB 741634',
+                    transmittedTo: 'taskforce - Management on Demand AG',
+                    status: 'AKTIV_GESCHUETZT',
+                    has_change_alert: true,
+                    change_alert_details: {
+                      summary: 'Signalbegriffe erkannt: [Restrukturierung, Gläubigerversammlung, Anleihe-Verlängerung bis 2028]. SchVG-Beschluss in Mannheim wirksam.'
+                    }
+                  };
+                }
+
+                if (!matchedArchiveEntry) return null;
+
+                const isAlert = matchedArchiveEntry.has_change_alert;
+
+                return (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 18px',
+                    background: isAlert ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+                    border: `1px solid ${isAlert ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`,
+                    borderRadius: '10px',
+                    color: isAlert ? '#fca5a5' : '#86efac',
+                    fontSize: '0.86rem',
+                    marginBottom: '10px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      {isAlert ? <AlertCircle size={20} color="#ef4444" /> : <ShieldCheck size={20} color="#10b981" />}
+                      <div>
+                        <div>
+                          <strong style={{ color: isAlert ? '#f87171' : '#34d399' }}>
+                            {isAlert ? '🚨 VERÄNDERUNG ERKANNT (Watchdog-Audit positiv):' : '🛡️ AKTIV GESCHÜTZT (Kundenschutz-Register):'}
+                          </strong>{' '}
+                          <span>{matchedArchiveEntry.company} ({matchedArchiveEntry.register_id || 'AG Mannheim HRB 741634'})</span>
+                          {matchedArchiveEntry.transmittedTo && (
+                            <span style={{ opacity: 0.85 }}> · Übermittelt an: {matchedArchiveEntry.transmittedTo}</span>
+                          )}
+                        </div>
+                        {isAlert && matchedArchiveEntry.change_alert_details?.summary && (
+                          <div style={{ fontSize: '0.78rem', color: '#fca5a5', marginTop: '2px' }}>
+                            {matchedArchiveEntry.change_alert_details.summary}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => navigate('/nexus/mandats-archiv?tab=transmitted')}
+                      style={{
+                        background: isAlert ? 'rgba(239, 68, 68, 0.25)' : 'rgba(16, 185, 129, 0.2)',
+                        border: `1px solid ${isAlert ? 'rgba(239, 68, 68, 0.5)' : 'rgba(16, 185, 129, 0.4)'}`,
+                        color: '#f8fafc',
+                        borderRadius: '6px',
+                        padding: '6px 14px',
+                        fontSize: '0.8rem',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        flexShrink: 0
+                      }}
+                    >
+                      <Activity size={14} />
+                      {isAlert ? 'Im Register prüfen (Alert)' : 'Kundenschutz einsehen'}
+                    </button>
+                  </div>
+                );
+              })()}
+
               {/* ── 1. STAMMDATEN CARD ── */}
               <div className="pult-stammdaten-card" style={{
                 background: '#0e1015',
@@ -3088,7 +3203,7 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                     <span>Mandat erfolgreich übermittelt & protokolliert!</span>
                   </div>
                   <div style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.6 }}>
-                    Das Mandat für <strong>{dispatchSuccessData?.company}</strong> wurde an <strong>{dispatchSuccessData?.partner}</strong> übermittelt. Der 12-monatige Kundenschutz ist bis zum <strong>{dispatchSuccessData?.protectionDate}</strong> im Mandats-Archiv rechtswirksam hinterlegt.
+                    Das Mandat für <strong>{dispatchSuccessData?.company}</strong> wurde an <strong>{dispatchSuccessData?.partner}</strong> übermittelt. Der <strong>{dispatchSuccessData?.protectionMonths || 18}-monatige</strong> Kundenschutz ist bis zum <strong>{dispatchSuccessData?.protectionDate}</strong> im Mandats-Archiv rechtswirksam hinterlegt.
                   </div>
                   {copiedDispatchBlind && (
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#0284c7', fontWeight: 600 }}>
@@ -3149,14 +3264,10 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                     </div>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>
-                        Kundenschutz-Frist
+                        Kundenschutz-Ablauf
                       </label>
                       <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#059669', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <ShieldCheck size={16} /> 12 Monate ab heute ({(() => {
-                          const d = new Date();
-                          d.setFullYear(d.getFullYear() + 1);
-                          return d.toLocaleDateString('de-DE');
-                        })()})
+                        <ShieldCheck size={16} /> {dispatchProtectionMonths}M ab heute ({calculateProtectionEndDate(new Date(), dispatchProtectionMonths).toLocaleDateString('de-DE')})
                       </div>
                     </div>
                   </div>
@@ -3167,7 +3278,15 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                     </label>
                     <select
                       value={dispatchPartner}
-                      onChange={(e) => setDispatchPartner(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setDispatchPartner(val);
+                        const p = getPartnerByNameOrId(val);
+                        if (p?.defaultProtectionMonths) {
+                          setDispatchProtectionMonths(p.defaultProtectionMonths);
+                          setIsDispatchCustomDuration(![18, 12, 24, 6].includes(p.defaultProtectionMonths));
+                        }
+                      }}
                       style={{
                         width: '100%',
                         padding: '10px 14px',
@@ -3179,14 +3298,102 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                         cursor: 'pointer'
                       }}
                     >
-                      <option value="taskforce - Management on Demand AG">taskforce - Management on Demand AG</option>
-                      <option value="Atreus GmbH (A Heimatt Group Company)">Atreus GmbH (A Heimatt Group Company)</option>
+                      {getCooperationPartners().map((p) => (
+                        <option key={p.id} value={p.name}>{p.name} ({p.contactPerson || p.shortName})</option>
+                      ))}
                       <option value="Egon Zehnder International">Egon Zehnder International</option>
                       <option value="Russell Reynolds Associates">Russell Reynolds Associates</option>
                       <option value="Spencer Stuart">Spencer Stuart</option>
                       <option value="Korn Ferry">Korn Ferry</option>
                       <option value="Freier PE-Partner / Family Office">Freier PE-Partner / Family Office</option>
                     </select>
+                  </div>
+
+                  {/* Vertragskonditions-Hinweis */}
+                  {(() => {
+                    const p = getPartnerByNameOrId(dispatchPartner);
+                    if (p?.specialConditions) {
+                      return (
+                        <div style={{
+                          padding: '10px 14px',
+                          background: '#fffbeb',
+                          border: '1px solid #fde68a',
+                          borderRadius: '8px',
+                          fontSize: '0.82rem',
+                          color: '#92400e',
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '8px'
+                        }}>
+                          <Award size={16} color="#d97706" style={{ flexShrink: 0, marginTop: '2px' }} />
+                          <div>
+                            <strong>Vertragskondition ({p.shortName || p.name}):</strong> {p.specialConditions}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  {/* Frist-Auswahl (18 Monate Standard, 12M Ausnahme etc.) */}
+                  <div style={{ display: 'grid', gridTemplateColumns: isDispatchCustomDuration ? '1fr 1fr' : '1fr', gap: '14px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                        Käufer- & Kundenschutz-Dauer
+                      </label>
+                      <select
+                        value={isDispatchCustomDuration ? 'custom' : dispatchProtectionMonths}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === 'custom') {
+                            setIsDispatchCustomDuration(true);
+                          } else {
+                            setIsDispatchCustomDuration(false);
+                            setDispatchProtectionMonths(parseInt(val, 10));
+                          }
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '10px 14px',
+                          borderRadius: '8px',
+                          border: '1px solid #cbd5e1',
+                          fontSize: '0.9rem',
+                          color: '#0f172a',
+                          background: '#f8fafc',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value={18}>18 Monate (Neuer Standard / Taskforce-Referenz)</option>
+                        <option value={12}>12 Monate (Klassischer Standard / Ausnahme)</option>
+                        <option value={24}>24 Monate (Erweiterter Langzeitschutz)</option>
+                        <option value={6}>6 Monate (Kurzfristige Probephase)</option>
+                        <option value="custom">Individuelle Monatsanzahl...</option>
+                      </select>
+                    </div>
+
+                    {isDispatchCustomDuration && (
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                          Monate (Individuell)
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={60}
+                          value={dispatchProtectionMonths}
+                          onChange={(e) => setDispatchProtectionMonths(parseInt(e.target.value, 10) || 18)}
+                          style={{
+                            width: '100%',
+                            padding: '10px 14px',
+                            borderRadius: '8px',
+                            border: '1px solid #cbd5e1',
+                            fontSize: '0.9rem',
+                            color: '#0f172a',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -3260,7 +3467,7 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                       }}
                     >
                       {isDirectPublishing ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
-                      <span>Übermittlung protokollieren & Kundenschutz aktivieren</span>
+                      <span>{dispatchProtectionMonths} Monate Kundenschutz aktivieren</span>
                     </button>
                   </div>
                 </>

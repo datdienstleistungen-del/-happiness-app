@@ -15,6 +15,7 @@
     "check:syntax": "node scripts/check-syntax.mjs",
     "check:leak": "node scripts/check-bundle-leak.mjs",
     "purge:db": "node scripts/purge-database.mjs",
+    "watchdog": "node scripts/watchdog_protected_leads.js",
     "test": "npx playwright test",
     "test:e2e:api": "npx playwright test --project=api",
     "test:e2e:ui": "npx playwright test --project=chromium",

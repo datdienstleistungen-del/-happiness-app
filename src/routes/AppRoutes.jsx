@@ -74,6 +74,9 @@ export default function AppRoutes() {
         <Route path="/outreach" element={<ProtectedRoute><OutreachJournalPage /></ProtectedRoute>} />
         <Route path="/nexus/mandats-archiv" element={<ProtectedRoute><MandateArchivePage /></ProtectedRoute>} />
         <Route path="/mandats-archiv" element={<ProtectedRoute><MandateArchivePage /></ProtectedRoute>} />
+        <Route path="/nexus/partner-vertraege" element={<Navigate to="/nexus/mandats-archiv?tab=contracts" replace />} />
+        <Route path="/nexus/kooperationen" element={<Navigate to="/nexus/mandats-archiv?tab=contracts" replace />} />
+        <Route path="/nexus/vertraege" element={<Navigate to="/nexus/mandats-archiv?tab=contracts" replace />} />
         <Route path="/nexus/lead-radar" element={<Navigate to="/nexus/mandats-archiv" replace />} />
         <Route path="/lead-radar" element={<Navigate to="/nexus/mandats-archiv" replace />} />
         <Route path="/nexus/dashboard" element={<ProtectedRoute><NexusDashboard /></ProtectedRoute>} />

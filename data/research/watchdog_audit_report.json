@@ -1,0 +1,42 @@
+{
+  "executed_at": "2026-10-28T21:07:51.310Z",
+  "total_audited": 2,
+  "alerts_count": 0,
+  "alerts": [],
+  "mandates_summary": [
+    {
+      "company": "PAUL Tech AG",
+      "register_id": "AG Mannheim HRB 743304",
+      "status": "AKTIV_GESCHUETZT",
+      "match_level": "VERIFIED_STABLE",
+      "has_change_alert": false,
+      "changeDetected": false,
+      "last_audit_check": "2026-10-28T21:07:51.312Z",
+      "deadlines": {
+        "isAuditDue": false,
+        "nextAuditDate": "10.11.2026",
+        "review30Days": 29,
+        "followup60Days": 59,
+        "protectionDays": 547,
+        "protectionUntilDate": "27.04.2028"
+      }
+    },
+    {
+      "company": "cosquare AG",
+      "register_id": "Kanton Zug CHE-457.384.964",
+      "status": "ANGEBOTEN_RESERVIERT",
+      "match_level": "VERIFIED_STABLE",
+      "has_change_alert": false,
+      "changeDetected": false,
+      "last_audit_check": "2026-10-28T21:07:51.318Z",
+      "deadlines": {
+        "isAuditDue": false,
+        "nextAuditDate": "09.11.2026",
+        "review30Days": 28,
+        "followup60Days": 58,
+        "protectionDays": 13,
+        "protectionUntilDate": "09.11.2026"
+      }
+    }
+  ]
+}
