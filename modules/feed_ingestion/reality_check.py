@@ -33,6 +33,36 @@ REALITY_CHECK_LABELS = {
     CLASS_VERWERFEN: "Verwerfen (Gelöst / Abgeschlossen / Ungeeignet)"
 }
 
+# Freshness-Klassen für den kommerziellen Vertrieb an Interim-Provider
+FRESHNESS_HOT = "HOT_FIRST_MOVER"
+FRESHNESS_MONITORING = "MONITORING"
+FRESHNESS_ARCHIVE = "ARCHIVE"
+
+VALID_FRESHNESS_CLASSES = {
+    FRESHNESS_HOT,
+    FRESHNESS_MONITORING,
+    FRESHNESS_ARCHIVE
+}
+
+FRESHNESS_LABELS = {
+    FRESHNESS_HOT: "🔥 HOT / FIRST-MOVER (< 7 Tage)",
+    FRESHNESS_MONITORING: "⏳ MONITORING (7–30 Tage)",
+    FRESHNESS_ARCHIVE: "📁 ARCHIV (> 30 Tage)"
+}
+
+ADVISOR_PATTERNS = [
+    r'sanierungsgeschäftsführer(?:\s+bestellt|\s+berufen)?',
+    r'sachwalter(?:\s+bestellt|\s+eingesetzt|\s+wurde)?',
+    r'restrukturierungsberater\s+mandatiert',
+    r'eigenverwaltung\s+unter\s+führung\s+von',
+    r'generalbevollmächtigte[rn]?',
+    r'sanierungsexperte\s+.*?\b(?:bestellt|berufen|begleitet|als)',
+    r'(?:kanzlei|sozietät|rechtsanwalt|ra|dr\.)\s+.*?\b(?:als\s+sanierungsgeschäftsführer|sachwalter|generalbevollmächtigter)',
+    r'mandatierte\s+(?:kanzlei|beratung)',
+    r'begleitet\s+von\s+.*?\b(?:kanzlei|beratung|sanierungsexperten|rechtsanwält)',
+    r'unter\s+führung\s+von\s+.*?\b(?:kanzlei|sanierungsberater|rechtsanwalt)'
+]
+
 # Zielfunktionen
 ROLES = {
     "CRO": "Chief Restructuring Officer (CRO / Sanierungsvorstand)",
@@ -84,8 +114,36 @@ class MandateRealityCheckEngine:
         validity_status = "bestaetigt" if (has_source and has_dates and is_substantive) else "zweifelhaft"
 
         # =====================================================================
-        # KRITERIUM B: Tatsächlicher Handlungsdruck
+        # KRITERIUM B: Tatsächlicher Handlungsdruck & Frische-Scoring
         # =====================================================================
+        # Freshness / Alters-Scoring auf Basis des Original-Publikationsdatums
+        reference_date_str = pub_at or event_date or d.get("captured_at")
+        age_days = None
+        if reference_date_str:
+            try:
+                clean_dt_str = str(reference_date_str).replace("Z", "+00:00")
+                dt = datetime.fromisoformat(clean_dt_str)
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                age_days = max(0.0, round((datetime.now(timezone.utc) - dt).total_seconds() / 86400.0, 1))
+            except Exception:
+                age_days = None
+
+        if age_days is not None:
+            if age_days <= 7.0:
+                freshness_category = FRESHNESS_HOT
+            elif age_days <= 30.0:
+                freshness_category = FRESHNESS_MONITORING
+            else:
+                freshness_category = FRESHNESS_ARCHIVE
+        else:
+            freshness_category = FRESHNESS_HOT
+
+        freshness_label = FRESHNESS_LABELS.get(freshness_category, freshness_category)
+
+        # Volltext-Prüfung auf bereits mandatierte Sanierungsberater / Sachwalter
+        is_advisor_mandated = any(re.search(pat, combined_text, re.IGNORECASE) for pat in ADVISOR_PATTERNS)
+
         # Gegenindikatoren für gelöste oder abgeschlossene Situationen
         is_solved = any(k in combined_text for k in [
             "investorenprozess erfolgreich abgeschlossen",
@@ -158,7 +216,7 @@ class MandateRealityCheckEngine:
         target_role = "KEINE"
         mandate_feasibility = "ausgeschlossen"
 
-        if is_eigenverwaltung:
+        if is_eigenverwaltung and not is_advisor_mandated:
             target_role = "CRO"
             mandate_feasibility = "plausibel"
         elif is_schvg_debt:
@@ -175,7 +233,7 @@ class MandateRealityCheckEngine:
             mandate_feasibility = "plausibel"
         elif category in ("unternehmenskrise_restrukturierung", "transformation_sanierung"):
             target_role = "TRANSFORMATION"
-            mandate_feasibility = "plausibel" if not is_solved and not is_regular_insolvency else "unwahrscheinlich"
+            mandate_feasibility = "plausibel" if not is_solved and not is_regular_insolvency and not is_advisor_mandated else "unwahrscheinlich"
 
         # =====================================================================
         # KRITERIUM D: Konkrete Mandatschance (Synthese in die 4 Klassen)
@@ -190,6 +248,12 @@ class MandateRealityCheckEngine:
         # Listen für Begründung
         missing_information = []
         counter_indicators = []
+
+        # Gegenindikatoren systematisch registrieren
+        if is_advisor_mandated:
+            counter_indicators.append("Sanierungsführung / Berater / Sachwalter in der Primärquelle bereits benannt. Kein offenes First-Mover-Mandat.")
+        if freshness_category == FRESHNESS_ARCHIVE:
+            counter_indicators.append(f"Meldung liegt über 30 Tage zurück ({int(age_days) if age_days is not None else '>30'} Tage). Akutes First-Mover-Mandatsfenster geschlossen; Fall im Archiv zur Beobachtung von Folgephasen.")
 
         if has_explicit_mandate_proof:
             status = CLASS_MANDAT_BELEGT
@@ -206,6 +270,12 @@ class MandateRealityCheckEngine:
             status = CLASS_VERWERFEN
             counter_indicators.append("Reine operative Auftrags- oder Produktmeldung ohne Krisen- oder Vakanzdruck.")
             rationale = f"Meldung betrifft das reguläre operative Auftragsgeschäft ({company}). Kein Mandatspotenzial."
+        elif is_advisor_mandated:
+            status = CLASS_BEOBACHTEN
+            rationale = f"Sanierungsführung oder rechtlicher Berater / Sachwalter ist für {company} in der Primärquelle bereits benannt. Kein offenes First-Mover-Mandat für externe Provider; Verbleib auf Watchlist."
+        elif freshness_category == FRESHNESS_ARCHIVE:
+            status = CLASS_BEOBACHTEN
+            rationale = f"Veröffentlichung liegt über 30 Tage zurück ({int(age_days) if age_days is not None else '>30'} Tage, Archiv/Historie). Mandate für CRO/CFO sind in dieser Phase typischerweise bereits besetzt. Kein akutes First-Mover-Mandat; Fall im Archiv."
         elif is_regular_insolvency:
             status = CLASS_BEOBACHTEN
             counter_indicators.append("Regelinsolvenz mit Fremdverwaltung: Gerichtlich bestellter Insolvenzverwalter führt das Verfahren; Organe sind entmachtet.")
@@ -277,10 +347,14 @@ class MandateRealityCheckEngine:
             "missing_information": missing_information,
             "counter_indicators": counter_indicators,
             "rationale": rationale,
+            "freshness_category": freshness_category,
+            "freshness_label": freshness_label,
+            "age_days": age_days,
+            "is_advisor_mandated": is_advisor_mandated,
             "checked_at": now_iso,
             "criteria_eval": {
                 "event_validity": validity_status,
-                "action_pressure": "akut" if (is_eigenverwaltung or is_schvg_debt or is_c_level_vacant) else ("geloest" if is_solved else "mittel"),
+                "action_pressure": "akut" if (is_eigenverwaltung or is_schvg_debt or is_c_level_vacant) and not is_advisor_mandated and freshness_category != FRESHNESS_ARCHIVE else ("geloest" if is_solved else "mittel"),
                 "mandate_feasibility": mandate_feasibility,
                 "concrete_mandate_proof": "belegt" if has_explicit_mandate_proof else "nicht_belegt"
             },

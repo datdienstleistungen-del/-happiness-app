@@ -127,22 +127,33 @@ class TriggerEvent:
         self.legal_form = (legal_form or "").strip()
         self.requires_manual_link_review = bool(requires_manual_link_review)
 
-        # Lead Qualification: Acute Action Pressure vs Passive / Watchlist
-        if mandate_priority in VALID_MANDATE_PRIORITIES:
-            self.mandate_priority = mandate_priority
-            self.action_type = action_type or "unspecified"
-        else:
-            calc_pri, calc_act = self.determine_mandate_priority()
-            self.mandate_priority = calc_pri
-            self.action_type = action_type or calc_act
-            
-        self.mandate_priority_label = mandate_priority_label or MANDATE_PRIORITY_LABELS.get(self.mandate_priority, "Watchlist / General Distress")
+        # Pre-initialize priority fields so to_dict is always safe
+        self.mandate_priority = mandate_priority
+        self.mandate_priority_label = mandate_priority_label
+        self.action_type = action_type
+        self.freshness_category = None
+        self.freshness_label = None
+        self.age_days = None
+        self.is_advisor_mandated = False
 
         # Mandate Reality Check Corrective
         self.reality_check_history = reality_check_history or []
         self.reality_check = reality_check if (reality_check and isinstance(reality_check, dict)) else None
         if self.reality_check is None:
             self.reality_check = MandateRealityCheckEngine.evaluate(self)
+
+        self.freshness_category = self.reality_check.get("freshness_category", "HOT_FIRST_MOVER")
+        self.freshness_label = self.reality_check.get("freshness_label", "🔥 HOT / FIRST-MOVER (< 7 Tage)")
+        self.age_days = self.reality_check.get("age_days")
+        self.is_advisor_mandated = self.reality_check.get("is_advisor_mandated", False)
+
+        # Lead Qualification: Acute Action Pressure vs Passive / Watchlist
+        if mandate_priority not in VALID_MANDATE_PRIORITIES:
+            calc_pri, calc_act = self.determine_mandate_priority()
+            self.mandate_priority = calc_pri
+            self.action_type = action_type or calc_act
+            
+        self.mandate_priority_label = mandate_priority_label or MANDATE_PRIORITY_LABELS.get(self.mandate_priority, "Watchlist / General Distress")
 
     def determine_mandate_priority(self):
         """
@@ -152,6 +163,14 @@ class TriggerEvent:
         text = f"{self.company_name} {self.category} {self.description} {self.evidence_text}".lower()
         
         # 1. Negative / Passive filters (Watchlist / General Distress)
+        # Advisor / Restructuring leader already named in primary source
+        if getattr(self, "is_advisor_mandated", False) or (self.reality_check and self.reality_check.get("is_advisor_mandated")):
+            return "watchlist_general_distress", "passiv_berater_benannt"
+
+        # Signal older than 30 days (Archive cases - acute interim window closed)
+        if getattr(self, "freshness_category", None) == "ARCHIVE" or (getattr(self, "age_days", None) is not None and self.age_days > 30.0):
+            return "watchlist_general_distress", "passiv_archiv_aelter_30d"
+
         # Routine order / contract / project completion
         if any(k in text for k in ["auftrag", "fertiggestellt"]) and not any(k in text for k in ["krise", "restrukturierung", "insolvenz"]):
             return "watchlist_general_distress", "passiv_auftrag_routine"
@@ -307,16 +326,20 @@ class TriggerEvent:
             "court_and_reg": self.court_and_reg,
             "legal_form": self.legal_form,
             "requires_manual_link_review": self.requires_manual_link_review,
-            "mandate_priority": self.mandate_priority,
-            "mandate_priority_label": self.mandate_priority_label,
-            "action_type": self.action_type,
+            "mandate_priority": getattr(self, "mandate_priority", None),
+            "mandate_priority_label": getattr(self, "mandate_priority_label", None),
+            "action_type": getattr(self, "action_type", None),
+            "freshness_category": getattr(self, "freshness_category", None),
+            "freshness_label": getattr(self, "freshness_label", None),
+            "age_days": getattr(self, "age_days", None),
+            "is_advisor_mandated": getattr(self, "is_advisor_mandated", False),
             "reality_check": getattr(self, "reality_check", None),
             "reality_check_history": getattr(self, "reality_check_history", [])
         }
 
     @classmethod
     def from_dict(cls, data):
-        return cls(
+        obj = cls(
             event_id=data.get("event_id"),
             company_name=data.get("company_name", ""),
             country=data.get("country", "DE"),
@@ -348,3 +371,12 @@ class TriggerEvent:
             reality_check=data.get("reality_check"),
             reality_check_history=data.get("reality_check_history")
         )
+        if "freshness_category" in data:
+            obj.freshness_category = data["freshness_category"]
+        if "freshness_label" in data:
+            obj.freshness_label = data["freshness_label"]
+        if "age_days" in data:
+            obj.age_days = data["age_days"]
+        if "is_advisor_mandated" in data:
+            obj.is_advisor_mandated = data["is_advisor_mandated"]
+        return obj

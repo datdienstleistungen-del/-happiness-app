@@ -250,5 +250,65 @@ class TestMandateRealityCheck(unittest.TestCase):
         self.assertEqual(rc["status"], CLASS_VERWERFEN)
         self.assertEqual(rc["target_role"], "KEINE")
 
+    def test_restructuring_advisor_counter_indicator_and_downgrade(self):
+        """Sachwalter / Sanierungsberater bereits benannt -> BEOBACHTEN, KEINE, passiv_berater_benannt."""
+        ev = TriggerEvent(
+            company_name="Wohnstift Innblick GmbH",
+            country="DE",
+            category="insolvenzantrag_eigenverwaltung",
+            description="Wohnstift Innblick saniert sich in Eigenverwaltung",
+            source_url="https://www.anchor.eu/wohnstift-innblick",
+            source_type="law_firm_press",
+            evidence_text="Zum vorläufigen Sachwalter wurde Rechtsanwalt Dr. Julian Hageböke bestellt. Die Anchor-Sanierungsexperten begleiten das Verfahren.",
+            published_at="2026-10-26T10:00:00+00:00"
+        )
+        rc = ev.reality_check
+        self.assertEqual(rc["status"], CLASS_BEOBACHTEN)
+        self.assertEqual(rc["target_role"], "KEINE")
+        self.assertTrue(ev.is_advisor_mandated)
+        self.assertTrue(any("Sanierungsführung / Berater / Sachwalter" in ci for ci in rc["counter_indicators"]))
+        self.assertEqual(ev.mandate_priority, "watchlist_general_distress")
+        self.assertEqual(ev.action_type, "passiv_berater_benannt")
+
+    def test_archive_scoring_older_than_30_days(self):
+        """Signal älter als 30 Tage (z.B. ABO Energy August 2026) -> ARCHIVE, BEOBACHTEN, KEINE, passiv_archiv_aelter_30d."""
+        ev = TriggerEvent(
+            company_name="ABO Energy GmbH & Co. KGaA",
+            country="DE",
+            category="finanzierung_anleihen_restrukturierung",
+            description="ABO Energy: Stillhaltevereinbarung mit Finanzierungspartnern bis 30.11.2026 verlängert",
+            source_url="https://www.anleihen-finder.de/abo-energy-stillhaltevereinbarung",
+            source_type="ad_hoc",
+            evidence_text="Adhoc-Mitteilung: Stillhaltevereinbarung verlängert und Restrukturierungskonzept fortgesetzt.",
+            published_at="2026-08-01T06:50:47+00:00"
+        )
+        rc = ev.reality_check
+        self.assertEqual(ev.freshness_category, "ARCHIVE")
+        self.assertGreater(ev.age_days, 30.0)
+        self.assertEqual(rc["status"], CLASS_BEOBACHTEN)
+        self.assertEqual(rc["target_role"], "KEINE")
+        self.assertTrue(any("über 30 Tage zurück" in ci for ci in rc["counter_indicators"]))
+        self.assertEqual(ev.mandate_priority, "watchlist_general_distress")
+        self.assertEqual(ev.action_type, "passiv_archiv_aelter_30d")
+
+    def test_hot_first_mover_scoring_within_7_days(self):
+        """Frische Meldung der letzten Tage (< 7 Tage) ohne Berater -> HOT_FIRST_MOVER, MANDAT_PLAUSIBEL."""
+        ev = TriggerEvent(
+            company_name="PAUL Tech AG",
+            country="DE",
+            category="finanzierung_anleihen_restrukturierung",
+            description="Einladung zur Abstimmung ohne Versammlung nach SchVG für Anleihe 2020/2025",
+            source_url="https://www.eqs-news.com/paul-tech-abstimmung",
+            source_type="ad_hoc",
+            evidence_text="Die PAUL Tech AG lädt die Anleihegläubiger zu einer Abstimmung ohne Versammlung ein. Stillhalteabkommen vereinbart.",
+            published_at="2026-10-27T12:00:00+00:00"
+        )
+        rc = ev.reality_check
+        self.assertEqual(ev.freshness_category, "HOT_FIRST_MOVER")
+        self.assertLessEqual(ev.age_days, 7.0)
+        self.assertEqual(rc["status"], CLASS_MANDAT_PLAUSIBEL)
+        self.assertEqual(rc["target_role"], "INTERIM_CFO")
+        self.assertEqual(ev.mandate_priority, "high_priority_action_required")
+
 if __name__ == "__main__":
     unittest.main()

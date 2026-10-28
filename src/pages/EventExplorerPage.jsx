@@ -197,7 +197,7 @@ export default function EventExplorerPage() {
   const navigate = useNavigate()
 
   const [eventTypes] = useState(MANDATE_EVENT_TYPES)
-  const [selectedType, setSelectedType] = useState(MANDATE_EVENT_TYPES[0])
+  const [selectedType, setSelectedType] = useState(null)
   const [selectedRegionId, setSelectedRegionId] = useState('EU_UK')
   const [customKeyword, setCustomKeyword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -207,8 +207,45 @@ export default function EventExplorerPage() {
   const [existingEvents, setExistingEvents] = useState([])
   const [enrichingId, setEnrichingId] = useState(null)
   const [enrichedPackages, setEnrichedPackages] = useState({})
+  const [freshnessFilter, setFreshnessFilter] = useState('HOT') // 'HOT' | 'MONITORING' | 'ARCHIVE' | 'ALL'
   const [realityFilter, setRealityFilter] = useState('ALL')
+  const [sortField, setSortField] = useState('date') // 'date' | 'priority' | 'company'
+  const [sortDirection, setSortDirection] = useState('desc') // 'desc' | 'asc'
   const [reviewDrafts, setReviewDrafts] = useState({})
+
+  function getEventFreshness(evt) {
+    const pubStr = evt.published_at || evt.event_date
+    let ageDays = evt.age_days
+    if (ageDays === undefined || ageDays === null) {
+      if (pubStr) {
+        const pubDate = new Date(pubStr)
+        ageDays = Math.max(0, (Date.now() - pubDate.getTime()) / (1000 * 60 * 60 * 24))
+      } else {
+        ageDays = 0
+      }
+    }
+
+    let category = 'HOT_FIRST_MOVER'
+    let label = '🔥 HOT / FIRST-MOVER (< 7 Tage)'
+    let badgeClass = 'freshness-hot'
+
+    if (ageDays > 30) {
+      category = 'ARCHIVE'
+      label = '📁 ARCHIV (> 30 Tage)'
+      badgeClass = 'freshness-archive'
+    } else if (ageDays > 7) {
+      category = 'MONITORING'
+      label = '⏳ MONITORING (7–30 Tage)'
+      badgeClass = 'freshness-monitoring'
+    }
+
+    return {
+      category,
+      label,
+      badgeClass,
+      ageDays: Math.round(ageDays * 10) / 10
+    }
+  }
 
   // NeXus Search Execution Phase & Source Diagnostics
   const [searchStatus, setSearchStatus] = useState('IDLE')
@@ -422,8 +459,6 @@ export default function EventExplorerPage() {
   }
 
   async function handleSearch() {
-    if (!selectedType) return
-
     const startTime = performance.now()
     setLoading(true)
     setSearchStatus('FILTERING_STORED')
@@ -472,7 +507,7 @@ export default function EventExplorerPage() {
         }
       }
 
-      const matchingCategories = RADAR_CATEGORY_MAP[selectedType.event_key] || []
+      const matchingCategories = selectedType ? (RADAR_CATEGORY_MAP[selectedType.event_key] || []) : null
       const kw = customKeyword.trim().toLowerCase()
       const loadedEvents = []
 
@@ -481,7 +516,7 @@ export default function EventExplorerPage() {
 
       // Normalisiere und filtere Continuous Radar Events
       for (const rev of radarEvents) {
-        const catMatch = matchingCategories.includes(rev.category)
+        const catMatch = matchingCategories === null || matchingCategories.includes(rev.category)
         if (catMatch) matchedCategoryCount++
 
         const compCountry = (rev.country || 'DE').toUpperCase()
@@ -519,7 +554,7 @@ export default function EventExplorerPage() {
 
           loadedEvents.push({
             id: rev.event_id,
-            event_type: selectedType.event_key,
+            event_type: rev.category || (selectedType ? selectedType.event_key : 'mandat_signal'),
             title: rev.description || `${rev.company_name}: ${rev.category}`,
             description: rev.evidence_text || rev.description,
             company_name: rev.company_name,
@@ -527,6 +562,10 @@ export default function EventExplorerPage() {
             city: rev.region || null,
             event_date: rev.event_date || rev.published_at || rev.captured_at,
             published_at: rev.published_at,
+            freshness_category: rev.freshness_category,
+            freshness_label: rev.freshness_label,
+            age_days: rev.age_days,
+            is_advisor_mandated: rev.is_advisor_mandated,
             axis_a_event_certainty: rev.axis_a_event_certainty || 'nachgewiesen',
             provenance_status: rev.provenance_status || 'real_source_verified',
             verification_status: rev.provenance_status === 'real_source_verified' ? 'verified' : 'unverified',
@@ -721,7 +760,8 @@ export default function EventExplorerPage() {
         if (customKeyword.trim()) {
           setError(`Kein verifiziertes Primär-Signal zu "${customKeyword.trim()}" unter ${totalQueried} gespeicherten Ereignissen gefunden. Sie können dieses Unternehmen direkt im Live-Recherche-Desk tiefenprüfen:`)
         } else {
-          setError(`Keine passenden Ereignisse für diese Filterkombination: Im Datenbestand existieren ${totalQueried} verifizierte Signale (${matchedCategoryCount} für "${selectedType.label_de}"), davon aber 0 in der Region "${selectedGeo.label}".`)
+          const categoryLabel = selectedType ? `"${selectedType.label_de}"` : 'alle Kategorien'
+          setError(`Keine passenden Ereignisse für diese Filterkombination: Im Datenbestand existieren ${totalQueried} verifizierte Signale (${matchedCategoryCount} für ${categoryLabel}), davon aber 0 in der Region "${selectedGeo.label}".`)
         }
       }
 
@@ -788,81 +828,95 @@ export default function EventExplorerPage() {
 
       {activeTab === 'events' ? (
         <>
-          {/* Mandate Event Type Selection (6 Cards) */}
-          <div className="event-type-grid">
-        {eventTypes.map((type) => {
-          const Icon = getEventIcon(type.icon)
-          const isSelected = selectedType?.id === type.id
-          return (
+          {/* Mandate Event Type Selection (6 Cards + Alle Button) */}
+          <div className="event-type-grid-header">
+            <div className="event-type-headline" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#94a3b8', fontWeight: '600' }}>
+              <Filter size={14} />
+              <span>Mandats-Ereignistyp filtern:</span>
+            </div>
             <button
-              key={type.id}
               type="button"
-              className={`event-type-card ${isSelected ? 'selected' : ''}`}
-              onClick={() => setSelectedType(type)}
+              className={`event-type-all-btn ${selectedType === null ? 'active' : ''}`}
+              onClick={() => setSelectedType(null)}
+              title="Alle Mandatskategorien gleichzeitig anzeigen"
             >
-              <div className="event-type-card-top">
-                <div className="event-type-icon-wrapper">
-                  <Icon size={20} />
-                </div>
-                {type.badge && <span className="event-badge-tag">{type.badge}</span>}
-              </div>
-              <span className="event-type-label">{type.label_de}</span>
-              <span className="event-type-desc">{type.description_de}</span>
+              🌐 Alle 6 Kategorien {selectedType === null ? '✓ (Standard)' : ''}
             </button>
-          )
-        })}
-      </div>
-
-      {/* European Geography & Search Controls */}
-      <div className="event-search-controls">
-        <div className="event-search-select-wrapper">
-          <label htmlFor="geo-select" className="search-control-label">
-            <Globe size={15} />
-            <span>Geografie-Filter (Primärquellen-Fokus)</span>
-          </label>
-          <div className="event-search-select-group">
-            <select
-              id="geo-select"
-              value={selectedRegionId}
-              onChange={(e) => setSelectedRegionId(e.target.value)}
-              className="event-region-select"
-            >
-              {GEOGRAPHY_OPTIONS.map((geo) => (
-                <option key={geo.id} value={geo.id}>
-                  {geo.label}
-                </option>
-              ))}
-            </select>
           </div>
-        </div>
+          <div className="event-type-grid">
+            {eventTypes.map((type) => {
+              const Icon = getEventIcon(type.icon)
+              const isSelected = selectedType?.id === type.id
+              return (
+                <button
+                  key={type.id}
+                  type="button"
+                  className={`event-type-card ${isSelected ? 'selected' : ''}`}
+                  onClick={() => setSelectedType(isSelected ? null : type)}
+                >
+                  <div className="event-type-card-top">
+                    <div className="event-type-icon-wrapper">
+                      <Icon size={20} />
+                    </div>
+                    {type.badge && <span className="event-badge-tag">{type.badge}</span>}
+                  </div>
+                  <span className="event-type-label">{type.label_de}</span>
+                  <span className="event-type-desc">{type.description_de}</span>
+                </button>
+              )
+            })}
+          </div>
 
-        <div className="event-search-custom-wrapper">
-          <label htmlFor="custom-kw-input" className="search-control-label">
-            <Search size={15} />
-            <span>Zusatzbegriff / Unternehmen (optional)</span>
-          </label>
-          <input
-            id="custom-kw-input"
-            type="text"
-            value={customKeyword}
-            onChange={(e) => setCustomKeyword(e.target.value)}
-            placeholder="z.B. DAX, MDAX, FTSE, Vorstand, StaRUG..."
-            className="event-custom-input"
-          />
-        </div>
+          {/* European Geography & Search Controls */}
+          <div className="event-search-controls">
+            <div className="event-search-select-wrapper">
+              <label htmlFor="geo-select" className="search-control-label">
+                <Globe size={15} />
+                <span>Geografie-Filter (Primärquellen-Fokus)</span>
+              </label>
+              <div className="event-search-select-group">
+                <select
+                  id="geo-select"
+                  value={selectedRegionId}
+                  onChange={(e) => setSelectedRegionId(e.target.value)}
+                  className="event-region-select"
+                >
+                  {GEOGRAPHY_OPTIONS.map((geo) => (
+                    <option key={geo.id} value={geo.id}>
+                      {geo.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-        <div className="event-search-action-wrapper">
-          <button
-            type="button"
-            className="event-search-button"
-            onClick={handleSearch}
-            disabled={!selectedType || loading}
-            title="Filtert die im 3-Stunden-Takt vorgespeicherten Mandats-Events im lokalen Cache"
-          >
-            {loading ? (
-              <><Loader2 size={18} className="spin" /> Filtere Radar-Bestand...</>
-            ) : (
-              <><Search size={18} /> Gespeicherte Events filtern</>
+            <div className="event-search-custom-wrapper">
+              <label htmlFor="custom-kw-input" className="search-control-label">
+                <Search size={15} />
+                <span>Zusatzbegriff / Unternehmen (optional)</span>
+              </label>
+              <input
+                id="custom-kw-input"
+                type="text"
+                value={customKeyword}
+                onChange={(e) => setCustomKeyword(e.target.value)}
+                placeholder="z.B. DAX, MDAX, FTSE, Vorstand, StaRUG..."
+                className="event-custom-input"
+              />
+            </div>
+
+            <div className="event-search-action-wrapper">
+              <button
+                type="button"
+                className="event-search-button"
+                onClick={handleSearch}
+                disabled={loading}
+                title="Filtert die im 3-Stunden-Takt vorgespeicherten Mandats-Events im lokalen Cache"
+              >
+                {loading ? (
+                  <><Loader2 size={18} className="spin" /> Filtere Radar-Bestand...</>
+                ) : (
+                  <><Search size={18} /> Gespeicherte Events filtern</>
             )}
           </button>
         </div>
@@ -1030,23 +1084,98 @@ export default function EventExplorerPage() {
 
       {/* Results */}
       {events.length > 0 && (() => {
-        const counts = {
-          all: events.length,
-          plausibel: events.filter(e => e.reality_check?.status === 'MANDAT_PLAUSIBEL').length,
-          beobachten: events.filter(e => e.reality_check?.status === 'BEOBACHTEN').length,
-          verwerfen: events.filter(e => e.reality_check?.status === 'VERWERFEN').length,
-          belegt: events.filter(e => e.reality_check?.status === 'MANDAT_BELEGT').length
+        const eventsWithFreshness = events.map(evt => {
+          const fn = getEventFreshness(evt)
+          return { ...evt, _freshness: fn }
+        })
+
+        const freshnessCounts = {
+          hot: eventsWithFreshness.filter(e => e._freshness.category === 'HOT_FIRST_MOVER').length,
+          monitoring: eventsWithFreshness.filter(e => e._freshness.category === 'MONITORING').length,
+          archive: eventsWithFreshness.filter(e => e._freshness.category === 'ARCHIVE').length,
+          all: eventsWithFreshness.length
         }
 
-        const displayedEvents = events.filter(evt => {
+        const freshnessFiltered = eventsWithFreshness.filter(evt => {
+          if (freshnessFilter === 'ALL') return true
+          if (freshnessFilter === 'HOT') return evt._freshness.category === 'HOT_FIRST_MOVER'
+          if (freshnessFilter === 'MONITORING') return evt._freshness.category === 'MONITORING'
+          if (freshnessFilter === 'ARCHIVE') return evt._freshness.category === 'ARCHIVE'
+          return true
+        })
+
+        const counts = {
+          all: freshnessFiltered.length,
+          plausibel: freshnessFiltered.filter(e => e.reality_check?.status === 'MANDAT_PLAUSIBEL').length,
+          beobachten: freshnessFiltered.filter(e => e.reality_check?.status === 'BEOBACHTEN').length,
+          verwerfen: freshnessFiltered.filter(e => e.reality_check?.status === 'VERWERFEN').length,
+          belegt: freshnessFiltered.filter(e => e.reality_check?.status === 'MANDAT_BELEGT').length
+        }
+
+        let displayedEvents = freshnessFiltered.filter(evt => {
           if (realityFilter === 'ALL') return true
           const st = evt.reality_check?.status || 'BEOBACHTEN'
           return st === realityFilter
         })
 
+        displayedEvents.sort((a, b) => {
+          if (sortField === 'date') {
+            const timeA = new Date(a.published_at || a.event_date || 0).getTime()
+            const timeB = new Date(b.published_at || b.event_date || 0).getTime()
+            return sortDirection === 'desc' ? timeB - timeA : timeA - timeB
+          } else if (sortField === 'priority') {
+            const isPrioA = a.mandate_priority === 'high_priority_action_required' ? 1 : 0
+            const isPrioB = b.mandate_priority === 'high_priority_action_required' ? 1 : 0
+            return sortDirection === 'desc' ? isPrioB - isPrioA : isPrioA - isPrioB
+          } else {
+            return (a.company_name || '').localeCompare(b.company_name || '')
+          }
+        })
+
         return (
           <div className="event-results">
-            {/* Reality Check Filter Bar */}
+            {/* 1. Signal-Frische Filter-Leiste (Striktes Frische-Scoring) */}
+            <div className="freshness-filter-bar">
+              <div className="freshness-filter-title">
+                <Clock size={17} style={{ color: '#10b981' }} />
+                <span>Signal-Frische (Publikations-Alter):</span>
+              </div>
+              <div className="freshness-filter-buttons">
+                <button
+                  type="button"
+                  className={`freshness-filter-btn hot ${freshnessFilter === 'HOT' ? 'active' : ''}`}
+                  onClick={() => setFreshnessFilter('HOT')}
+                  title="Neu eingegangene Signale der letzten 3-7 Tage - Standardansicht für den Vertrieb"
+                >
+                  🔥 HOT / FIRST-MOVER (&lt; 7 Tage) ({freshnessCounts.hot})
+                </button>
+                <button
+                  type="button"
+                  className={`freshness-filter-btn monitoring ${freshnessFilter === 'MONITORING' ? 'active' : ''}`}
+                  onClick={() => setFreshnessFilter('MONITORING')}
+                  title="Laufende Verfahren für Follow-Up Beobachtung (8 bis 30 Tage)"
+                >
+                  ⏳ MONITORING (7–30 Tage) ({freshnessCounts.monitoring})
+                </button>
+                <button
+                  type="button"
+                  className={`freshness-filter-btn archive ${freshnessFilter === 'ARCHIVE' ? 'active' : ''}`}
+                  onClick={() => setFreshnessFilter('ARCHIVE')}
+                  title="Ältere Signale (> 30 Tage) im Mandats-Archiv"
+                >
+                  📁 ARCHIV (&gt; 30 Tage) ({freshnessCounts.archive})
+                </button>
+                <button
+                  type="button"
+                  className={`freshness-filter-btn ${freshnessFilter === 'ALL' ? 'active' : ''}`}
+                  onClick={() => setFreshnessFilter('ALL')}
+                >
+                  🌐 Alle anzeigen ({freshnessCounts.all})
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Reality Check Filter Bar */}
             <div className="reality-check-filter-bar">
               <div className="rc-filter-title">
                 <ShieldCheck size={18} />
@@ -1091,7 +1220,34 @@ export default function EventExplorerPage() {
               </div>
             </div>
 
-            <h2>Gefundene Mandats-Events ({displayedEvents.length} von {events.length})</h2>
+            {/* 3. Results Header & Sort Controls */}
+            <div className="results-toolbar">
+              <div className="results-toolbar-title">
+                Gefundene Mandats-Events ({displayedEvents.length} von {events.length})
+                {freshnessFilter === 'HOT' && <span style={{ fontSize: '13px', color: '#10b981', fontWeight: '600', marginLeft: '10px' }}>• Filter: Nur akute Hot / First-Mover Signale (&lt; 7 Tage)</span>}
+                {freshnessFilter === 'MONITORING' && <span style={{ fontSize: '13px', color: '#f59e0b', fontWeight: '600', marginLeft: '10px' }}>• Filter: Monitoring / In Progress (7–30 Tage)</span>}
+                {freshnessFilter === 'ARCHIVE' && <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '600', marginLeft: '10px' }}>• Filter: Archiv / Historie (&gt; 30 Tage)</span>}
+              </div>
+
+              <div className="results-toolbar-sort">
+                <label htmlFor="sort-select"><Clock size={13} /> Sortierung:</label>
+                <select
+                  id="sort-select"
+                  className="sort-select"
+                  value={`${sortField}_${sortDirection}`}
+                  onChange={(e) => {
+                    const [field, dir] = e.target.value.split('_')
+                    setSortField(field)
+                    setSortDirection(dir)
+                  }}
+                >
+                  <option value="date_desc">📅 Publikationsdatum (Neueste zuerst)</option>
+                  <option value="date_asc">📅 Publikationsdatum (Älteste zuerst)</option>
+                  <option value="priority_desc">⚡ Mandats-Priorität (High Priority zuerst)</option>
+                  <option value="company_asc">🏢 Unternehmen (A-Z)</option>
+                </select>
+              </div>
+            </div>
 
             {displayedEvents.map((evt, i) => {
               const rc = evt.reality_check
@@ -1099,6 +1255,7 @@ export default function EventExplorerPage() {
               const statusClass = status.toLowerCase()
               const isReviewed = rc?.human_review?.reviewed
               const draft = reviewDrafts[evt.id] || {}
+              const fn = evt._freshness || getEventFreshness(evt)
 
               return (
                 <div key={evt.id || i} className="event-result-card">
@@ -1106,6 +1263,20 @@ export default function EventExplorerPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span className={`event-type-badge ${evt.verification_status || 'verified'}`}>
                         {evt.event_type}
+                      </span>
+
+                      {/* Prominenter farbcodierter Original-Publikations-Badge */}
+                      <span className={`freshness-badge ${fn.badgeClass}`} title={`Original-Publikationsdatum: ${evt.published_at || evt.event_date}`}>
+                        <Calendar size={12} />
+                        <span>
+                          {fn.category === 'HOT_FIRST_MOVER' && '🔥 HOT (< 7 Tage)'}
+                          {fn.category === 'MONITORING' && '⏳ MONITORING (7–30 Tage)'}
+                          {fn.category === 'ARCHIVE' && '📁 ARCHIV (> 30 Tage)'}
+                          {' • '}
+                          {evt.published_at ? new Date(evt.published_at).toLocaleDateString('de-DE') : 'Echtzeit'}
+                          {' '}
+                          <span className="freshness-days-ago">({fn.ageDays < 1 ? 'vor wenigen Stunden' : `vor ${Math.floor(fn.ageDays)} Tagen`})</span>
+                        </span>
                       </span>
 
                       {/* Mandate Priority Signal Badge */}
@@ -1339,6 +1510,30 @@ export default function EventExplorerPage() {
                           <AlertCircle size={14} color="#64748b" />
                           <span>Mandatsgenerierung gesperrt: Fall im Reality Check verworfen ({rc?.counter_indicators?.[0] || 'Kein aktiver Handlungsdruck'}).</span>
                         </div>
+                      ) : fn.category === 'ARCHIVE' ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '12px', flexWrap: 'wrap' }}>
+                          <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Clock size={14} color="#64748b" />
+                            <span>Archivierter Fall ({Math.floor(fn.ageDays)} Tage alt): Akute First-Mover-Phase verstrichen. Auf Watchlist für Folgephasen.</span>
+                          </div>
+                          {enrichedPackages[evt.id] ? (
+                            <span className={`elite-status ${enrichedPackages[evt.id].status}`}>
+                              {enrichedPackages[evt.id].status === 'elite' && <><CheckCircle size={14} /> Elite: {enrichedPackages[evt.id].contact?.name || 'Enriched'}</>}
+                              {enrichedPackages[evt.id].status === 'no_email' && <><AlertCircle size={14} /> Keine E-Mail</>}
+                              {enrichedPackages[evt.id].status === 'error' && <><AlertCircle size={14} /> Fehler: {enrichedPackages[evt.id].error}</>}
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              className="elite-button secondary"
+                              onClick={() => handleCreateAndEnrich(evt)}
+                              disabled={enrichingId === evt.id}
+                              style={{ background: '#1e293b', border: '1px solid #334155', color: '#cbd5e1', padding: '6px 12px', fontSize: '12px' }}
+                            >
+                              <FileText size={13} /> {enrichingId === evt.id ? 'Lade...' : 'Watchlist-Case ansehen'}
+                            </button>
+                          )}
+                        </div>
                       ) : enrichedPackages[evt.id] ? (
                         <span className={`elite-status ${enrichedPackages[evt.id].status}`}>
                           {enrichedPackages[evt.id].status === 'elite' && <><CheckCircle size={14} /> Elite: {enrichedPackages[evt.id].contact?.name || 'Enriched'}</>}
@@ -1355,7 +1550,7 @@ export default function EventExplorerPage() {
                           {enrichingId === evt.id ? (
                             <><Loader2 size={14} className="spin" /> Anreichern...</>
                           ) : (
-                            <><Crown size={14} /> {status === 'MANDAT_PLAUSIBEL' ? 'Mandats-Package explorieren (Plausibler Bedarf)' : 'Mandats-Package generieren'}</>
+                            <><Crown size={14} /> {status === 'MANDAT_PLAUSIBEL' ? '⚡ Mandats-Package explorieren (Plausibler First-Mover)' : 'Mandats-Package generieren'}</>
                           )}
                         </button>
                       )}

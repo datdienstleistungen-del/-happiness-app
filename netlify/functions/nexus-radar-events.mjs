@@ -183,15 +183,21 @@ export const handler = async (event) => {
       // Persist to primary data and mirror to public if filesystem allows
       let writeSuccess = false;
       let writeError = null;
+      const targetWritePath = loadedFromPath || candidatePaths[0];
       try {
-        fs.writeFileSync(primaryPath, JSON.stringify(rawData, null, 2), 'utf-8');
-        writeSuccess = true;
+        if (targetWritePath) {
+          fs.writeFileSync(targetWritePath, JSON.stringify(rawData, null, 2), 'utf-8');
+          writeSuccess = true;
+        }
       } catch (err) {
         writeError = err.message;
         console.warn('Primary file write skipped/failed (expected on Netlify read-only runtime):', err.message);
       }
       try {
-        fs.writeFileSync(publicPath, JSON.stringify(rawData, null, 2), 'utf-8');
+        const publicWritePath = candidatePaths.find(p => p.includes('public')) || candidatePaths[0];
+        if (publicWritePath && publicWritePath !== targetWritePath) {
+          fs.writeFileSync(publicWritePath, JSON.stringify(rawData, null, 2), 'utf-8');
+        }
       } catch (err) {
         // secondary mirror
       }
@@ -239,6 +245,7 @@ export const handler = async (event) => {
     const category = params.category;
     const priority = params.priority;
     const realityCheckStatus = params.reality_check_status;
+    const freshness = params.freshness;
     const q = (params.q || '').toLowerCase().trim();
 
     if (category) {
@@ -251,6 +258,11 @@ export const handler = async (event) => {
 
     if (realityCheckStatus) {
       events = events.filter(e => e.reality_check && e.reality_check.status === realityCheckStatus);
+    }
+
+    if (freshness) {
+      const targetFreshness = (freshness === 'HOT' || freshness === 'HOT_FIRST_MOVER') ? 'HOT_FIRST_MOVER' : freshness;
+      events = events.filter(e => e.freshness_category === targetFreshness);
     }
 
     if (q) {
