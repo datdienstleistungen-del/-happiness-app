@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Search,
   Building2,
@@ -195,11 +195,23 @@ export const RADAR_CATEGORY_MAP = {
 export default function EventExplorerPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const highlightParam = searchParams.get('highlight')
+  const companyParam = searchParams.get('company')
 
   const [eventTypes] = useState(MANDATE_EVENT_TYPES)
-  const [selectedType, setSelectedType] = useState(null)
-  const [selectedRegionId, setSelectedRegionId] = useState('EU_UK')
-  const [customKeyword, setCustomKeyword] = useState('')
+  const [selectedType, setSelectedType] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('nexus_radar_selected_type')
+      return saved ? JSON.parse(saved) : null
+    } catch { return null }
+  })
+  const [selectedRegionId, setSelectedRegionId] = useState(() => {
+    return sessionStorage.getItem('nexus_radar_region') || 'EU_UK'
+  })
+  const [customKeyword, setCustomKeyword] = useState(() => {
+    return companyParam || sessionStorage.getItem('nexus_radar_keyword') || ''
+  })
   const [loading, setLoading] = useState(false)
   const [events, setEvents] = useState([])
   const [stats, setStats] = useState(null)
@@ -207,11 +219,45 @@ export default function EventExplorerPage() {
   const [existingEvents, setExistingEvents] = useState([])
   const [enrichingId, setEnrichingId] = useState(null)
   const [enrichedPackages, setEnrichedPackages] = useState({})
-  const [freshnessFilter, setFreshnessFilter] = useState('HOT') // 'HOT' | 'MONITORING' | 'ARCHIVE' | 'ALL'
+  const [freshnessFilter, setFreshnessFilter] = useState(() => {
+    return sessionStorage.getItem('nexus_radar_freshness_filter') || 'HOT'
+  })
   const [realityFilter, setRealityFilter] = useState('ALL')
   const [sortField, setSortField] = useState('date') // 'date' | 'priority' | 'company'
   const [sortDirection, setSortDirection] = useState('desc') // 'desc' | 'asc'
   const [reviewDrafts, setReviewDrafts] = useState({})
+  const [highlightedEventId, setHighlightedEventId] = useState(() => {
+    return highlightParam || sessionStorage.getItem('nexus_radar_active_event_id') || null
+  })
+
+  // Synchronisiere Filter in sessionStorage
+  useEffect(() => {
+    try {
+      if (selectedType) {
+        sessionStorage.setItem('nexus_radar_selected_type', JSON.stringify(selectedType))
+      } else {
+        sessionStorage.removeItem('nexus_radar_selected_type')
+      }
+    } catch (e) {}
+  }, [selectedType])
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('nexus_radar_freshness_filter', freshnessFilter)
+    } catch (e) {}
+  }, [freshnessFilter])
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('nexus_radar_region', selectedRegionId)
+    } catch (e) {}
+  }, [selectedRegionId])
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('nexus_radar_keyword', customKeyword)
+    } catch (e) {}
+  }, [customKeyword])
 
   function getEventFreshness(evt) {
     const pubStr = evt.published_at || evt.event_date
@@ -413,6 +459,80 @@ export default function EventExplorerPage() {
     handleSearch()
     loadRadarHistory()
   }, [user, selectedType, selectedRegionId])
+
+  // Automatischer Fokus auf den hervorgehobenen Fall (z. B. PAUL Tech AG)
+  useEffect(() => {
+    if (highlightedEventId && events.length > 0) {
+      setTimeout(() => {
+        const el = document.getElementById(`event-card-${highlightedEventId}`)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 350)
+    }
+  }, [highlightedEventId, events])
+
+  // 1-Klick-Übertragung: Aus dem Radar direkt in den Mandats-Desk
+  function handleTransferToSalesWorkspace(evt) {
+    if (!evt) return
+    const oppId = `radar_opp_${evt.id || Date.now()}`
+    const oppData = {
+      id: oppId,
+      title: evt.title || `${evt.company_name}: ${evt.event_type}`,
+      situation: evt.description || evt.evidence_text || evt.mandate_rationale || '',
+      source: evt.source_url || 'Primär-Radar',
+      event_date: evt.published_at || evt.event_date || new Date().toISOString(),
+      published_at: evt.published_at,
+      pipeline_stage: 'opportunity',
+      review_status: 'verified',
+      priority: evt.mandate_priority === 'high_priority_action_required' ? 'TIER_1_TOP' : 'TIER_2_MID',
+      tags: ['taskforce', 'Radar_Import', evt.reality_check?.target_role || 'INTERIM_MANDAT'].filter(Boolean),
+      lead_score: evt.mandate_priority === 'high_priority_action_required' ? 95 : 75,
+      nexus_companies: {
+        id: `comp_${evt.id || Date.now()}`,
+        name: evt.company_name,
+        country: evt.country || 'DE'
+      },
+      triggers: [{
+        id: `trig_${evt.id || Date.now()}`,
+        company_id: `comp_${evt.id || Date.now()}`,
+        nexus_trigger_events: {
+          content: evt.description || evt.evidence_text || evt.title,
+          event_date: evt.published_at || evt.event_date,
+          source_url: evt.source_url,
+          source: evt.source_type || 'Primär-Radar'
+        }
+      }],
+      reality_check: evt.reality_check,
+      _fromRadar: true,
+      _radarEventId: evt.id,
+      created_at: new Date().toISOString()
+    }
+
+    try {
+      const LOCAL_OPPS_KEY = 'nexus_local_radar_opportunities'
+      const existing = JSON.parse(localStorage.getItem(LOCAL_OPPS_KEY) || '[]')
+      const filtered = existing.filter(o => o.id !== oppId && o.nexus_companies?.name !== evt.company_name)
+      filtered.unshift(oppData)
+      localStorage.setItem(LOCAL_OPPS_KEY, JSON.stringify(filtered))
+
+      const lastCase = {
+        name: evt.company_name,
+        eventId: evt.id,
+        oppId: oppId,
+        targetUrl: `/nexus/sales-workspace?opportunityId=${encodeURIComponent(oppId)}&fromRadar=true`
+      }
+      sessionStorage.setItem('nexus_last_viewed_company', JSON.stringify(lastCase))
+      localStorage.setItem('nexus_last_viewed_company', JSON.stringify(lastCase))
+      sessionStorage.setItem('nexus_radar_active_event_id', evt.id)
+      setHighlightedEventId(evt.id)
+
+      navigate(`/nexus/sales-workspace?opportunityId=${encodeURIComponent(oppId)}&fromRadar=true`)
+    } catch (err) {
+      console.error('Fehler bei der Mandats-Übertragung:', err)
+      navigate('/nexus/sales-workspace')
+    }
+  }
 
   async function loadExistingEvents() {
     if (!user) return
@@ -843,6 +963,43 @@ export default function EventExplorerPage() {
               🌐 Alle 6 Kategorien {selectedType === null ? '✓ (Standard)' : ''}
             </button>
           </div>
+
+          {selectedType && (
+            <div className="active-category-banner" style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 16px',
+              background: 'rgba(56, 189, 248, 0.1)',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              borderRadius: '8px',
+              marginBottom: '14px',
+              color: '#38bdf8',
+              fontSize: '0.85rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Filter size={15} />
+                <span>Gefilterte Sparte: <strong>{selectedType.label_de}</strong> (Andere Sparten sind aktuell ausgeblendet)</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedType(null)}
+                style={{
+                  background: 'rgba(56, 189, 248, 0.2)',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  color: '#f8fafc',
+                  borderRadius: '5px',
+                  padding: '4px 12px',
+                  fontSize: '0.8rem',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                ✕ Filter aufheben (Alle 6 Sparten anzeigen)
+              </button>
+            </div>
+          )}
+
           <div className="event-type-grid">
             {eventTypes.map((type) => {
               const Icon = getEventIcon(type.icon)
@@ -1258,7 +1415,12 @@ export default function EventExplorerPage() {
               const fn = evt._freshness || getEventFreshness(evt)
 
               return (
-                <div key={evt.id || i} className="event-result-card">
+                <div
+                  key={evt.id || i}
+                  id={`event-card-${evt.id}`}
+                  className={`event-result-card ${highlightedEventId === evt.id ? 'highlighted-case' : ''}`}
+                  style={highlightedEventId === evt.id ? { border: '2px solid #38bdf8', boxShadow: '0 0 20px rgba(56, 189, 248, 0.35)' } : {}}
+                >
                   <div className="event-result-header">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span className={`event-type-badge ${evt.verification_status || 'verified'}`}>
@@ -1541,18 +1703,43 @@ export default function EventExplorerPage() {
                           {enrichedPackages[evt.id].status === 'error' && <><AlertCircle size={14} /> Fehler: {enrichedPackages[evt.id].error}</>}
                         </span>
                       ) : (
-                        <button
-                          type="button"
-                          className="elite-button"
-                          onClick={() => handleCreateAndEnrich(evt)}
-                          disabled={enrichingId === evt.id}
-                        >
-                          {enrichingId === evt.id ? (
-                            <><Loader2 size={14} className="spin" /> Anreichern...</>
-                          ) : (
-                            <><Crown size={14} /> {status === 'MANDAT_PLAUSIBEL' ? '⚡ Mandats-Package explorieren (Plausibler First-Mover)' : 'Mandats-Package generieren'}</>
-                          )}
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            className="elite-button primary transfer-desk-btn"
+                            onClick={() => handleTransferToSalesWorkspace(evt)}
+                            title="Erstellt ein vollständiges Arbeitsdossier im Mandats-Desk und wechselt nahtlos dorthin"
+                            style={{
+                              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                              color: '#ffffff',
+                              border: '1px solid rgba(56, 189, 248, 0.4)',
+                              boxShadow: '0 2px 8px rgba(2, 132, 199, 0.35)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              fontWeight: '700',
+                              padding: '8px 14px',
+                              borderRadius: '6px',
+                              fontSize: '0.85rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <Briefcase size={15} /> 💼 Als Dossier im Mandats-Desk öffnen →
+                          </button>
+
+                          <button
+                            type="button"
+                            className="elite-button"
+                            onClick={() => handleCreateAndEnrich(evt)}
+                            disabled={enrichingId === evt.id}
+                          >
+                            {enrichingId === evt.id ? (
+                              <><Loader2 size={14} className="spin" /> Anreichern...</>
+                            ) : (
+                              <><Crown size={14} /> {status === 'MANDAT_PLAUSIBEL' ? '⚡ Mandats-Package explorieren (Plausibler First-Mover)' : 'Mandats-Package generieren'}</>
+                            )}
+                          </button>
+                        </div>
                       )}
                     </div>
                   )}

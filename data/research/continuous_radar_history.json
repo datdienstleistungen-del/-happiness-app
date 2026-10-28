@@ -1,8 +1,1233 @@
 {
   "version": "1.3.0",
-  "last_updated": "2026-10-28T00:41:47.173088+00:00",
-  "total_runs": 22,
+  "last_updated": "2026-10-28T19:09:20.377881+00:00",
+  "total_runs": 29,
   "runs": [
+    {
+      "run_id": "run_20261028_190920_f8e994",
+      "started_at": "2026-10-28T19:09:20.235743+00:00",
+      "finished_at": "2026-10-28T19:09:20.342240+00:00",
+      "duration_seconds": 0.11,
+      "status": "SUCCESS",
+      "trigger": "manual",
+      "application_version": "c38f829 (v1.3.0)",
+      "sources_configured": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "sources_attempted": [],
+      "sources_succeeded": [],
+      "sources_failed": [],
+      "queries_executed": [],
+      "items_retrieved": 0,
+      "items_after_deduplication": 0,
+      "items_checked": 0,
+      "events_created": 0,
+      "events_updated": 0,
+      "events_rejected": 0,
+      "events_published": 0,
+      "duplicates_detected": 0,
+      "errors": [],
+      "events_summary": [],
+      "technical_success": true,
+      "run_completed_at": "2026-10-28T19:09:20.342240+00:00",
+      "sources_queried": [],
+      "new_events_found": 0,
+      "events_with_proof_saved": 0,
+      "unverified_events_count": 0,
+      "follow_ups_updated": 0
+    },
+    {
+      "run_id": "run_20261028_170001_a596f4",
+      "started_at": "2026-10-28T17:00:01.183117+00:00",
+      "finished_at": "2026-10-28T17:00:02.146948+00:00",
+      "duration_seconds": 0.96,
+      "status": "SUCCESS",
+      "trigger": "scheduled",
+      "application_version": "c38f829 (v1.3.0)",
+      "sources_configured": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "sources_attempted": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "sources_succeeded": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "sources_failed": [],
+      "queries_executed": [
+        {
+          "source": "de_restructuring_press",
+          "query_name": "Sanierungs- & Insolvenzverwalter Primärmeldungen (Anchor, Brinkmann)",
+          "endpoint": "https://www.anchor.eu/ & https://www.brinkmann-partner.de/",
+          "executed_at": "2026-10-28T17:00:02.056300+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 2,
+          "items_filtered_out": 0,
+          "items_passed": 0,
+          "error": null
+        },
+        {
+          "source": "swiss_shab",
+          "query_name": "SECO Schweizerisches Handelsamtsblatt (HR02 Mutationen)",
+          "endpoint": "https://amtsblattportal.ch/api/v1/publications?publicationStates=PUBLISHED&subRubrics=HR02&page=0&size=50",
+          "executed_at": "2026-10-28T17:00:02.122477+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 0,
+          "items_filtered_out": 0,
+          "items_passed": 0,
+          "error": null
+        },
+        {
+          "source": "dach_eqs",
+          "query_name": "EQS News Corporate Disclosures & Ad-hoc (DACH)",
+          "endpoint": "https://www.eqs-news.com/de/",
+          "executed_at": "2026-10-28T17:00:02.123264+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 0,
+          "items_filtered_out": 0,
+          "items_passed": 0,
+          "error": null
+        },
+        {
+          "source": "dach_debt_and_bonds",
+          "query_name": "DACH Anleihen-Finder Restrukturierungen & SchVG-Gläubigerabstimmungen",
+          "endpoint": "https://www.anleihen-finder.de/feed",
+          "executed_at": "2026-10-28T17:00:02.140391+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 0,
+          "items_filtered_out": 0,
+          "items_passed": 0,
+          "error": null
+        }
+      ],
+      "items_retrieved": 0,
+      "items_after_deduplication": 28,
+      "items_checked": 0,
+      "events_created": 0,
+      "events_updated": 0,
+      "events_rejected": 0,
+      "events_published": 0,
+      "duplicates_detected": 0,
+      "errors": [
+        {
+          "source": "de_restructuring_press",
+          "timestamp": "2026-10-28T17:00:02.122459+00:00",
+          "description": "Anchor Rechtsanwälte fetch error: <urlopen error [Errno 11001] getaddrinfo failed>"
+        },
+        {
+          "source": "de_restructuring_press",
+          "timestamp": "2026-10-28T17:00:02.122472+00:00",
+          "description": "Brinkmann & Partner fetch error: <urlopen error [Errno 11001] getaddrinfo failed>"
+        }
+      ],
+      "events_summary": [],
+      "technical_success": true,
+      "run_completed_at": "2026-10-28T17:00:02.146948+00:00",
+      "sources_queried": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "new_events_found": 0,
+      "events_with_proof_saved": 0,
+      "unverified_events_count": 0,
+      "follow_ups_updated": 0
+    },
+    {
+      "run_id": "run_20261028_165812_dbd6e8",
+      "started_at": "2026-10-28T16:58:12.459585+00:00",
+      "finished_at": "2026-10-28T16:58:13.869113+00:00",
+      "duration_seconds": 1.41,
+      "status": "SUCCESS",
+      "trigger": "scheduled",
+      "application_version": "c38f829 (v1.3.0)",
+      "sources_configured": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "sources_attempted": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "sources_succeeded": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "sources_failed": [],
+      "queries_executed": [
+        {
+          "source": "de_restructuring_press",
+          "query_name": "Sanierungs- & Insolvenzverwalter Primärmeldungen (Anchor, Brinkmann)",
+          "endpoint": "https://www.anchor.eu/ & https://www.brinkmann-partner.de/",
+          "executed_at": "2026-10-28T16:58:13.734959+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 2,
+          "items_filtered_out": 0,
+          "items_passed": 0,
+          "error": null
+        },
+        {
+          "source": "swiss_shab",
+          "query_name": "SECO Schweizerisches Handelsamtsblatt (HR02 Mutationen)",
+          "endpoint": "https://amtsblattportal.ch/api/v1/publications?publicationStates=PUBLISHED&subRubrics=HR02&page=0&size=50",
+          "executed_at": "2026-10-28T16:58:13.836595+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 0,
+          "items_filtered_out": 0,
+          "items_passed": 0,
+          "error": null
+        },
+        {
+          "source": "dach_eqs",
+          "query_name": "EQS News Corporate Disclosures & Ad-hoc (DACH)",
+          "endpoint": "https://www.eqs-news.com/de/",
+          "executed_at": "2026-10-28T16:58:13.838005+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 0,
+          "items_filtered_out": 0,
+          "items_passed": 0,
+          "error": null
+        },
+        {
+          "source": "dach_debt_and_bonds",
+          "query_name": "DACH Anleihen-Finder Restrukturierungen & SchVG-Gläubigerabstimmungen",
+          "endpoint": "https://www.anleihen-finder.de/feed",
+          "executed_at": "2026-10-28T16:58:13.861051+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 0,
+          "items_filtered_out": 0,
+          "items_passed": 0,
+          "error": null
+        }
+      ],
+      "items_retrieved": 0,
+      "items_after_deduplication": 28,
+      "items_checked": 0,
+      "events_created": 0,
+      "events_updated": 0,
+      "events_rejected": 0,
+      "events_published": 0,
+      "duplicates_detected": 0,
+      "errors": [
+        {
+          "source": "de_restructuring_press",
+          "timestamp": "2026-10-28T16:58:13.836578+00:00",
+          "description": "Anchor Rechtsanwälte fetch error: <urlopen error [Errno 11001] getaddrinfo failed>"
+        },
+        {
+          "source": "de_restructuring_press",
+          "timestamp": "2026-10-28T16:58:13.836590+00:00",
+          "description": "Brinkmann & Partner fetch error: <urlopen error [Errno 11001] getaddrinfo failed>"
+        }
+      ],
+      "events_summary": [],
+      "technical_success": true,
+      "run_completed_at": "2026-10-28T16:58:13.869113+00:00",
+      "sources_queried": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "new_events_found": 0,
+      "events_with_proof_saved": 0,
+      "unverified_events_count": 0,
+      "follow_ups_updated": 0
+    },
+    {
+      "run_id": "run_20261028_114335_ae2c81",
+      "started_at": "2026-10-28T11:43:35.707776+00:00",
+      "finished_at": "2026-10-28T11:43:36.688204+00:00",
+      "duration_seconds": 0.98,
+      "status": "SUCCESS",
+      "trigger": "scheduled",
+      "application_version": "c38f829 (v1.3.0)",
+      "sources_configured": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "sources_attempted": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "sources_succeeded": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "sources_failed": [],
+      "queries_executed": [
+        {
+          "source": "de_restructuring_press",
+          "query_name": "Sanierungs- & Insolvenzverwalter Primärmeldungen (Anchor, Brinkmann)",
+          "endpoint": "https://www.anchor.eu/ & https://www.brinkmann-partner.de/",
+          "executed_at": "2026-10-28T11:43:36.541970+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 2,
+          "items_filtered_out": 0,
+          "items_passed": 0,
+          "error": null
+        },
+        {
+          "source": "swiss_shab",
+          "query_name": "SECO Schweizerisches Handelsamtsblatt (HR02 Mutationen)",
+          "endpoint": "https://amtsblattportal.ch/api/v1/publications?publicationStates=PUBLISHED&subRubrics=HR02&page=0&size=50",
+          "executed_at": "2026-10-28T11:43:36.658350+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 0,
+          "items_filtered_out": 0,
+          "items_passed": 0,
+          "error": null
+        },
+        {
+          "source": "dach_eqs",
+          "query_name": "EQS News Corporate Disclosures & Ad-hoc (DACH)",
+          "endpoint": "https://www.eqs-news.com/de/",
+          "executed_at": "2026-10-28T11:43:36.659534+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 0,
+          "items_filtered_out": 0,
+          "items_passed": 0,
+          "error": null
+        },
+        {
+          "source": "dach_debt_and_bonds",
+          "query_name": "DACH Anleihen-Finder Restrukturierungen & SchVG-Gläubigerabstimmungen",
+          "endpoint": "https://www.anleihen-finder.de/feed",
+          "executed_at": "2026-10-28T11:43:36.680007+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 0,
+          "items_filtered_out": 0,
+          "items_passed": 0,
+          "error": null
+        }
+      ],
+      "items_retrieved": 0,
+      "items_after_deduplication": 28,
+      "items_checked": 0,
+      "events_created": 0,
+      "events_updated": 0,
+      "events_rejected": 0,
+      "events_published": 0,
+      "duplicates_detected": 0,
+      "errors": [
+        {
+          "source": "de_restructuring_press",
+          "timestamp": "2026-10-28T11:43:36.658337+00:00",
+          "description": "Anchor Rechtsanwälte fetch error: <urlopen error [Errno 11001] getaddrinfo failed>"
+        },
+        {
+          "source": "de_restructuring_press",
+          "timestamp": "2026-10-28T11:43:36.658347+00:00",
+          "description": "Brinkmann & Partner fetch error: <urlopen error [Errno 11001] getaddrinfo failed>"
+        }
+      ],
+      "events_summary": [],
+      "technical_success": true,
+      "run_completed_at": "2026-10-28T11:43:36.688204+00:00",
+      "sources_queried": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "new_events_found": 0,
+      "events_with_proof_saved": 0,
+      "unverified_events_count": 0,
+      "follow_ups_updated": 0
+    },
+    {
+      "run_id": "run_20261028_100131_db242d",
+      "started_at": "2026-10-28T10:01:31.431055+00:00",
+      "finished_at": "2026-10-28T10:01:35.297752+00:00",
+      "duration_seconds": 3.87,
+      "status": "SUCCESS",
+      "trigger": "scheduled",
+      "application_version": "c38f829 (v1.3.0)",
+      "sources_configured": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "sources_attempted": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "sources_succeeded": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "sources_failed": [],
+      "queries_executed": [
+        {
+          "source": "de_restructuring_press",
+          "query_name": "Sanierungs- & Insolvenzverwalter Primärmeldungen (Anchor, Brinkmann)",
+          "endpoint": "https://www.anchor.eu/ & https://www.brinkmann-partner.de/",
+          "executed_at": "2026-10-28T10:01:33.274736+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 2,
+          "items_filtered_out": 0,
+          "items_passed": 0,
+          "error": null
+        },
+        {
+          "source": "swiss_shab",
+          "query_name": "SECO Schweizerisches Handelsamtsblatt (HR02 Mutationen)",
+          "endpoint": "https://amtsblattportal.ch/api/v1/publications?publicationStates=PUBLISHED&subRubrics=HR02&page=0&size=50",
+          "executed_at": "2026-10-28T10:01:34.521566+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 0,
+          "items_filtered_out": 0,
+          "items_passed": 0,
+          "error": null
+        },
+        {
+          "source": "dach_eqs",
+          "query_name": "EQS News Corporate Disclosures & Ad-hoc (DACH)",
+          "endpoint": "https://www.eqs-news.com/de/",
+          "executed_at": "2026-10-28T10:01:34.647527+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 0,
+          "items_filtered_out": 0,
+          "items_passed": 0,
+          "error": null
+        },
+        {
+          "source": "dach_debt_and_bonds",
+          "query_name": "DACH Anleihen-Finder Restrukturierungen & SchVG-Gläubigerabstimmungen",
+          "endpoint": "https://www.anleihen-finder.de/feed",
+          "executed_at": "2026-10-28T10:01:35.268273+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 0,
+          "items_filtered_out": 0,
+          "items_passed": 0,
+          "error": null
+        }
+      ],
+      "items_retrieved": 0,
+      "items_after_deduplication": 28,
+      "items_checked": 0,
+      "events_created": 0,
+      "events_updated": 0,
+      "events_rejected": 0,
+      "events_published": 0,
+      "duplicates_detected": 0,
+      "errors": [
+        {
+          "source": "de_restructuring_press",
+          "timestamp": "2026-10-28T10:01:34.521522+00:00",
+          "description": "Anchor Rechtsanwälte fetch error: <urlopen error [Errno 11001] getaddrinfo failed>"
+        },
+        {
+          "source": "de_restructuring_press",
+          "timestamp": "2026-10-28T10:01:34.521552+00:00",
+          "description": "Brinkmann & Partner fetch error: <urlopen error [Errno 11001] getaddrinfo failed>"
+        }
+      ],
+      "events_summary": [],
+      "technical_success": true,
+      "run_completed_at": "2026-10-28T10:01:35.297752+00:00",
+      "sources_queried": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "new_events_found": 0,
+      "events_with_proof_saved": 0,
+      "unverified_events_count": 0,
+      "follow_ups_updated": 0
+    },
+    {
+      "run_id": "run_20261028_070807_3943fb",
+      "started_at": "2026-10-28T07:08:07.926334+00:00",
+      "finished_at": "2026-10-28T07:10:43.266165+00:00",
+      "duration_seconds": 155.34,
+      "status": "SUCCESS",
+      "trigger": "scheduled",
+      "application_version": "c38f829 (v1.3.0)",
+      "sources_configured": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "sources_attempted": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "sources_succeeded": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "sources_failed": [],
+      "queries_executed": [
+        {
+          "source": "de_restructuring_press",
+          "query_name": "Sanierungs- & Insolvenzverwalter Primärmeldungen (Anchor, Brinkmann)",
+          "endpoint": "https://www.anchor.eu/ & https://www.brinkmann-partner.de/",
+          "executed_at": "2026-10-28T07:08:08.686090+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 2,
+          "items_filtered_out": 0,
+          "items_passed": 0,
+          "error": null
+        },
+        {
+          "source": "swiss_shab",
+          "query_name": "SECO Schweizerisches Handelsamtsblatt (HR02 Mutationen)",
+          "endpoint": "https://amtsblattportal.ch/api/v1/publications?publicationStates=PUBLISHED&subRubrics=HR02&page=0&size=50",
+          "executed_at": "2026-10-28T07:08:46.656542+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 0,
+          "items_filtered_out": 0,
+          "items_passed": 0,
+          "error": null
+        },
+        {
+          "source": "dach_eqs",
+          "query_name": "EQS News Corporate Disclosures & Ad-hoc (DACH)",
+          "endpoint": "https://www.eqs-news.com/de/",
+          "executed_at": "2026-10-28T07:08:58.827130+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 0,
+          "items_filtered_out": 0,
+          "items_passed": 0,
+          "error": null
+        },
+        {
+          "source": "dach_debt_and_bonds",
+          "query_name": "DACH Anleihen-Finder Restrukturierungen & SchVG-Gläubigerabstimmungen",
+          "endpoint": "https://www.anleihen-finder.de/feed",
+          "executed_at": "2026-10-28T07:09:23.209482+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 0,
+          "items_filtered_out": 0,
+          "items_passed": 0,
+          "error": null
+        }
+      ],
+      "items_retrieved": 0,
+      "items_after_deduplication": 28,
+      "items_checked": 0,
+      "events_created": 0,
+      "events_updated": 0,
+      "events_rejected": 0,
+      "events_published": 0,
+      "duplicates_detected": 0,
+      "errors": [
+        {
+          "source": "de_restructuring_press",
+          "timestamp": "2026-10-28T07:08:46.656470+00:00",
+          "description": "Anchor Rechtsanwälte fetch error: The read operation timed out"
+        },
+        {
+          "source": "de_restructuring_press",
+          "timestamp": "2026-10-28T07:08:46.656520+00:00",
+          "description": "Brinkmann & Partner fetch error: The read operation timed out"
+        }
+      ],
+      "events_summary": [],
+      "technical_success": true,
+      "run_completed_at": "2026-10-28T07:10:43.266165+00:00",
+      "sources_queried": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "new_events_found": 0,
+      "events_with_proof_saved": 0,
+      "unverified_events_count": 0,
+      "follow_ups_updated": 0
+    },
+    {
+      "run_id": "run_20261028_020001_663603",
+      "started_at": "2026-10-28T02:00:01.784529+00:00",
+      "finished_at": "2026-10-28T02:01:02.557531+00:00",
+      "duration_seconds": 60.77,
+      "status": "SUCCESS",
+      "trigger": "scheduled",
+      "application_version": "c38f829 (v1.3.0)",
+      "sources_configured": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "sources_attempted": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "sources_succeeded": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "sources_failed": [],
+      "queries_executed": [
+        {
+          "source": "de_restructuring_press",
+          "query_name": "Sanierungs- & Insolvenzverwalter Primärmeldungen (Anchor, Brinkmann)",
+          "endpoint": "https://www.anchor.eu/ & https://www.brinkmann-partner.de/",
+          "executed_at": "2026-10-28T02:00:02.161572+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 12,
+          "items_filtered_out": 0,
+          "items_passed": 12,
+          "error": null
+        },
+        {
+          "source": "swiss_shab",
+          "query_name": "SECO Schweizerisches Handelsamtsblatt (HR02 Mutationen)",
+          "endpoint": "https://amtsblattportal.ch/api/v1/publications?publicationStates=PUBLISHED&subRubrics=HR02&page=0&size=50",
+          "executed_at": "2026-10-28T02:00:34.464799+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 1,
+          "items_filtered_out": 0,
+          "items_passed": 1,
+          "error": null
+        },
+        {
+          "source": "dach_eqs",
+          "query_name": "EQS News Corporate Disclosures & Ad-hoc (DACH)",
+          "endpoint": "https://www.eqs-news.com/de/",
+          "executed_at": "2026-10-28T02:00:57.212497+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 30,
+          "items_filtered_out": 0,
+          "items_passed": 30,
+          "error": null
+        },
+        {
+          "source": "dach_debt_and_bonds",
+          "query_name": "DACH Anleihen-Finder Restrukturierungen & SchVG-Gläubigerabstimmungen",
+          "endpoint": "https://www.anleihen-finder.de/feed",
+          "executed_at": "2026-10-28T02:00:58.092246+00:00",
+          "reachable": true,
+          "http_status": 200,
+          "items_retrieved": 41,
+          "items_filtered_out": 29,
+          "items_passed": 12,
+          "error": null
+        }
+      ],
+      "items_retrieved": 84,
+      "items_after_deduplication": 28,
+      "items_checked": 26,
+      "events_created": 2,
+      "events_updated": 0,
+      "events_rejected": 9,
+      "events_published": 17,
+      "duplicates_detected": 24,
+      "errors": [],
+      "events_summary": [
+        {
+          "id": "fbf808bd-2a1a-41f9-ac89-1c539cfcb8bd",
+          "company": "GWSPA Produktion GmbH",
+          "category": "insolvenzantrag_eigenverwaltung",
+          "source": "de_restructuring_press",
+          "source_url": "https://www.anchor.eu/anchor/aktuelles/erfolgreiche-sanierung-in-eigenverwaltung-demmel-gruppe-uebernimmt-geschaeftsbetrieb-der-gwspa-produktion-gmbh-in-wasserburg/",
+          "source_type": "law_firm_press",
+          "event_date": "2026-10-26",
+          "published_at": "2026-10-26T14:12:54+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "VERWERFEN",
+          "target_role": "KEINE",
+          "facts_proven": "Erfolgreiche Sanierung in Eigenverwaltung: Demmel Gruppe übernimmt Geschäftsbetrieb der GWSPA Produktion GmbH in Wasserburg",
+          "mandate_hypothesis": "Kein Mandatsansatz; Ereignis verworfen (abgeschlossen, besetzt oder ungeeignet).",
+          "missing_information": [],
+          "counter_indicators": [
+            "Sanierung oder Investorenprozess bereits erfolgreich abgeschlossen bzw. Betrieb vollständig übernommen."
+          ],
+          "rationale": "Problem ist durch vollzogene Transaktion oder Sanierungslösung bereits gelöst. Kein offener externer Restrukturierungsbedarf für GWSPA Produktion GmbH."
+        },
+        {
+          "id": "5e4cdaf1-0f00-4f20-8a52-bd31c1d31fac",
+          "company": "Weha Ludwig Werwein GmbH",
+          "category": "insolvenzantrag_eigenverwaltung",
+          "source": "de_restructuring_press",
+          "source_url": "https://www.anchor.eu/anchor/aktuelles/investorenloesung-fuer-traditionsunternehmen-weha-ludwig-werwein-gmbh-gerettet/",
+          "source_type": "law_firm_press",
+          "event_date": "2026-10-12",
+          "published_at": "2026-10-12T13:51:03+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "MANDAT_PLAUSIBEL",
+          "target_role": "CRO",
+          "facts_proven": "Investorenlösung für Traditionsunternehmen: Weha Ludwig Werwein GmbH gerettet",
+          "mandate_hypothesis": "Bedarf an externem Chief Restructuring Officer (CRO / Sanierungsvorstand) plausibel abgeleitet aus: insolvenzantrag_eigenverwaltung. Hinweis: Ein plausibler Bedarf ist noch kein vergebenes Mandat.",
+          "missing_information": [
+            "Konkrete Ausschreibung oder externe Mandatsvergabe ist öffentlich noch nicht belegt.",
+            "Bestehende Sanierungsberater oder CRO-Besetzung im Schutzschirmantrag noch nicht namentlich verifiziert."
+          ],
+          "counter_indicators": [],
+          "rationale": "Eigenverwaltung / Schutzschirm erfordert zwingend erfahrene Sanierungsführung (Chief Restructuring Officer (CRO / Sanierungsvorstand)), da die Geschäftsführung im Amt bleibt. Hoher plausibler Bedarf, konkrete externe Suche noch unbestätigt."
+        },
+        {
+          "id": "6628c9fd-28e5-427d-b296-35cecfd64783",
+          "company": "VARTA AG",
+          "category": "fusion_uebernahme_unternehmensverkauf",
+          "source": "de_restructuring_press",
+          "source_url": "https://www.anchor.eu/anchor/aktuelles/varta-ag-verkaufsprozess-laeuft-planmaessig/",
+          "source_type": "law_firm_press",
+          "event_date": "2026-10-01",
+          "published_at": "2026-10-01T09:47:47+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "BEOBACHTEN",
+          "target_role": "KEINE",
+          "facts_proven": "VARTA AG: Verkaufsprozess läuft planmäßig",
+          "mandate_hypothesis": "Beobachtungsfall auf der Watchlist; kein unmittelbarer externer Mandatsansatz.",
+          "missing_information": [
+            "Sachverhalt indiziert Sondersituation, reicht aber für eine spezifische Mandatshypothese nicht aus."
+          ],
+          "counter_indicators": [],
+          "rationale": "Relevantes Marktsignal, das jedoch zunächst weiter beobachtet werden muss."
+        },
+        {
+          "id": "32eab0e7-622f-4fd2-9cb0-a96fc0a1481f",
+          "company": "BSH GmbH",
+          "category": "unternehmenskrise_restrukturierung",
+          "source": "de_restructuring_press",
+          "source_url": "https://www.anchor.eu/anchor/aktuelles/solarunternehmen-bsh-gmbh-co-kg-stellt-insolvenzantrag/",
+          "source_type": "law_firm_press",
+          "event_date": "2026-09-15",
+          "published_at": "2026-09-17T07:12:53+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "BEOBACHTEN",
+          "target_role": "KEINE",
+          "facts_proven": "Solarunternehmen BSH GmbH &amp; Co. KG stellt Insolvenzantrag",
+          "mandate_hypothesis": "Beobachtungsfall auf der Watchlist; kein unmittelbarer externer Mandatsansatz.",
+          "missing_information": [],
+          "counter_indicators": [
+            "Meldung liegt über 30 Tage zurück (40 Tage). Akutes First-Mover-Mandatsfenster geschlossen; Fall im Archiv zur Beobachtung von Folgephasen."
+          ],
+          "rationale": "Veröffentlichung liegt über 30 Tage zurück (40 Tage, Archiv/Historie). Mandate für CRO/CFO sind in dieser Phase typischerweise bereits besetzt. Kein akutes First-Mover-Mandat; Fall im Archiv."
+        },
+        {
+          "id": "09d6936a-2b6b-47c6-9492-879fe5b4db2b",
+          "company": "Wohnstift Innblick GmbH",
+          "category": "insolvenzantrag_eigenverwaltung",
+          "source": "de_restructuring_press",
+          "source_url": "https://www.anchor.eu/anchor/aktuelles/wohnstift-innblick-aus-neuhaus-am-inn-saniert-sich-in-eigenverwaltung/",
+          "source_type": "law_firm_press",
+          "event_date": "2026-08-26",
+          "published_at": "2026-08-26T09:46:57+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "BEOBACHTEN",
+          "target_role": "KEINE",
+          "facts_proven": "Wohnstift Innblick aus Neuhaus am Inn saniert sich in Eigenverwaltung",
+          "mandate_hypothesis": "Beobachtungsfall auf der Watchlist; kein unmittelbarer externer Mandatsansatz.",
+          "missing_information": [],
+          "counter_indicators": [
+            "Sanierungsführung / Berater / Sachwalter in der Primärquelle bereits benannt. Kein offenes First-Mover-Mandat.",
+            "Meldung liegt über 30 Tage zurück (62 Tage). Akutes First-Mover-Mandatsfenster geschlossen; Fall im Archiv zur Beobachtung von Folgephasen."
+          ],
+          "rationale": "Sanierungsführung oder rechtlicher Berater / Sachwalter ist für Wohnstift Innblick GmbH in der Primärquelle bereits benannt. Kein offenes First-Mover-Mandat für externe Provider; Verbleib auf Watchlist."
+        },
+        {
+          "id": "c71871af-308e-4523-8bbf-20ae2950e1f5",
+          "company": "Cutting Company GmbH",
+          "category": "unternehmenskrise_restrukturierung",
+          "source": "de_restructuring_press",
+          "source_url": "https://www.anchor.eu/anchor/aktuelles/zukunft-gesichert-cutting-company-uebernimmt-angerer-betriebe/",
+          "source_type": "law_firm_press",
+          "event_date": "2026-08-13",
+          "published_at": "2026-08-12T11:57:17+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "VERWERFEN",
+          "target_role": "KEINE",
+          "facts_proven": "Zukunft gesichert – Cutting Company übernimmt Angerer-Betriebe",
+          "mandate_hypothesis": "Kein Mandatsansatz; Ereignis verworfen (abgeschlossen, besetzt oder ungeeignet).",
+          "missing_information": [],
+          "counter_indicators": [
+            "Meldung liegt über 30 Tage zurück (76 Tage). Akutes First-Mover-Mandatsfenster geschlossen; Fall im Archiv zur Beobachtung von Folgephasen.",
+            "Sanierung oder Investorenprozess bereits erfolgreich abgeschlossen bzw. Betrieb vollständig übernommen."
+          ],
+          "rationale": "Problem ist durch vollzogene Transaktion oder Sanierungslösung bereits gelöst. Kein offener externer Restrukturierungsbedarf für Cutting Company GmbH."
+        },
+        {
+          "id": "222c0283-cc82-454d-975b-739a3bf33baa",
+          "company": "Fiwoim GmbH",
+          "category": "transformation_sanierung",
+          "source": "de_restructuring_press",
+          "source_url": "https://www.anchor.eu/anchor/aktuelles/wohnbauprojekt-f40-erfolgreich-fertiggestellt/",
+          "source_type": "law_firm_press",
+          "event_date": "2026-08-06",
+          "published_at": "2026-08-07T09:23:47+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "VERWERFEN",
+          "target_role": "KEINE",
+          "facts_proven": "Wohnbauprojekt F40 erfolgreich fertiggestellt",
+          "mandate_hypothesis": "Kein Mandatsansatz; Ereignis verworfen (abgeschlossen, besetzt oder ungeeignet).",
+          "missing_information": [],
+          "counter_indicators": [
+            "Meldung liegt über 30 Tage zurück (81 Tage). Akutes First-Mover-Mandatsfenster geschlossen; Fall im Archiv zur Beobachtung von Folgephasen.",
+            "Sanierung oder Investorenprozess bereits erfolgreich abgeschlossen bzw. Betrieb vollständig übernommen."
+          ],
+          "rationale": "Problem ist durch vollzogene Transaktion oder Sanierungslösung bereits gelöst. Kein offener externer Restrukturierungsbedarf für Fiwoim GmbH."
+        },
+        {
+          "id": "419480cf-f6f4-443a-8c26-f8879c7cf804",
+          "company": "Noscendo GmbH",
+          "category": "unternehmenskrise_restrukturierung",
+          "source": "de_restructuring_press",
+          "source_url": "https://www.anchor.eu/anchor/aktuelles/anchor-sichert-zukunftsloesung-fuer-die-disqver-plattform-von-noscendo/",
+          "source_type": "law_firm_press",
+          "event_date": "2026-07-23",
+          "published_at": "2026-07-24T10:02:50+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "VERWERFEN",
+          "target_role": "KEINE",
+          "facts_proven": "Anchor sichert Zukunftslösung für die DISQVER® Plattform von Noscendo",
+          "mandate_hypothesis": "Kein Mandatsansatz; Ereignis verworfen (abgeschlossen, besetzt oder ungeeignet).",
+          "missing_information": [],
+          "counter_indicators": [
+            "Meldung liegt über 30 Tage zurück (95 Tage). Akutes First-Mover-Mandatsfenster geschlossen; Fall im Archiv zur Beobachtung von Folgephasen.",
+            "Sanierung oder Investorenprozess bereits erfolgreich abgeschlossen bzw. Betrieb vollständig übernommen."
+          ],
+          "rationale": "Problem ist durch vollzogene Transaktion oder Sanierungslösung bereits gelöst. Kein offener externer Restrukturierungsbedarf für Noscendo GmbH."
+        },
+        {
+          "id": "2cabc62f-35e9-44f9-9dd9-8480d0d0c48a",
+          "company": "Baiersbronn Frischfaser Karton GmbH",
+          "category": "unternehmenskrise_restrukturierung",
+          "source": "de_restructuring_press",
+          "source_url": "https://www.brinkmann-partner.de/baiersbronn-frischfaser-karton-gmbh-entscheidung-ueber-fortfuehrung-steht-bevor-zukunft-offen/",
+          "source_type": "law_firm_press",
+          "event_date": null,
+          "published_at": "2026-10-28T02:00:34.461385+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "BEOBACHTEN",
+          "target_role": "KEINE",
+          "facts_proven": "Baiersbronn Frischfaser Karton GmbH: Entscheidung über Fortführung steht bevor – Zukunft offen",
+          "mandate_hypothesis": "Beobachtungsfall auf der Watchlist; kein unmittelbarer externer Mandatsansatz.",
+          "missing_information": [
+            "Sachverhalt indiziert Sondersituation, reicht aber für eine spezifische Mandatshypothese nicht aus."
+          ],
+          "counter_indicators": [],
+          "rationale": "Relevantes Marktsignal, das jedoch zunächst weiter beobachtet werden muss."
+        },
+        {
+          "id": "8b6414ce-0f98-4b2f-9836-8121f19e83ef",
+          "company": "Baiersbronn Frischfaser Karton GmbH",
+          "category": "fusion_uebernahme_unternehmensverkauf",
+          "source": "de_restructuring_press",
+          "source_url": "https://www.brinkmann-partner.de/baiersbronn-frischfaser-karton-gmbh-mitglied-der-folbb-gruppe-geschaeftsbetrieb-in-baiersbronn-stabil-investorenprozess-angelaufen/",
+          "source_type": "law_firm_press",
+          "event_date": null,
+          "published_at": "2026-10-28T02:00:34.462166+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "BEOBACHTEN",
+          "target_role": "KEINE",
+          "facts_proven": "Baiersbronn Frischfaser Karton GmbH – Mitglied der FOLBB Gruppe: Geschäftsbetrieb in Baiersbronn stabil, Investorenprozess angelaufen",
+          "mandate_hypothesis": "Beobachtungsfall auf der Watchlist; kein unmittelbarer externer Mandatsansatz.",
+          "missing_information": [
+            "Sachverhalt indiziert Sondersituation, reicht aber für eine spezifische Mandatshypothese nicht aus."
+          ],
+          "counter_indicators": [],
+          "rationale": "Relevantes Marktsignal, das jedoch zunächst weiter beobachtet werden muss."
+        },
+        {
+          "id": "a837ff47-d37b-4880-92db-323de72b44cb",
+          "company": "Baiersbronn Frischfaser Karton GmbH",
+          "category": "unternehmenskrise_restrukturierung",
+          "source": "de_restructuring_press",
+          "source_url": "https://www.brinkmann-partner.de/baiersbronn-frischfaser-karton-gmbh-stellt-insolvenzantrag-sanierungsexperte-dr-jan-markus-plathner-von-brinkmann-partner-zum-vorlaeufigen-insolvenzverwalter-bestellt/",
+          "source_type": "law_firm_press",
+          "event_date": null,
+          "published_at": "2026-10-28T02:00:34.463290+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "BEOBACHTEN",
+          "target_role": "KEINE",
+          "facts_proven": "Baiersbronn Frischfaser Karton GmbH stellt Insolvenzantrag – Sanierungsexperte Dr. Jan Markus Plathner von Brinkmann &amp; Partner zum vorläufigen Insolvenzverwalter bestellt",
+          "mandate_hypothesis": "Beobachtungsfall auf der Watchlist; kein unmittelbarer externer Mandatsansatz.",
+          "missing_information": [],
+          "counter_indicators": [
+            "Sanierungsführung / Berater / Sachwalter in der Primärquelle bereits benannt. Kein offenes First-Mover-Mandat."
+          ],
+          "rationale": "Sanierungsführung oder rechtlicher Berater / Sachwalter ist für Baiersbronn Frischfaser Karton GmbH in der Primärquelle bereits benannt. Kein offenes First-Mover-Mandat für externe Provider; Verbleib auf Watchlist."
+        },
+        {
+          "id": "3de62078-71c0-4a09-acda-e42b36882659",
+          "company": "Süddeutsche Gelenkscheibenfabrik GmbH",
+          "category": "fusion_uebernahme_unternehmensverkauf",
+          "source": "de_restructuring_press",
+          "source_url": "https://www.brinkmann-partner.de/sueddeutsche-gelenkscheibenfabrik-gmbh-co-kg-investorenprozess-erfolgreich-abgeschlossen/",
+          "source_type": "law_firm_press",
+          "event_date": null,
+          "published_at": "2026-10-28T02:00:34.463903+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "VERWERFEN",
+          "target_role": "KEINE",
+          "facts_proven": "Süddeutsche Gelenkscheibenfabrik GmbH &amp; Co. KG: Investorenprozess erfolgreich abgeschlossen",
+          "mandate_hypothesis": "Kein Mandatsansatz; Ereignis verworfen (abgeschlossen, besetzt oder ungeeignet).",
+          "missing_information": [],
+          "counter_indicators": [
+            "Sanierung oder Investorenprozess bereits erfolgreich abgeschlossen bzw. Betrieb vollständig übernommen."
+          ],
+          "rationale": "Problem ist durch vollzogene Transaktion oder Sanierungslösung bereits gelöst. Kein offener externer Restrukturierungsbedarf für Süddeutsche Gelenkscheibenfabrik GmbH."
+        },
+        {
+          "id": "35f3d169-25eb-41bb-8219-978a11f4e376",
+          "company": "Stäubli Sargans AG",
+          "category": "c_level_vakanz_ch",
+          "source": "swiss_shab",
+          "source_url": "https://amtsblattportal.ch/api/v1/publications/8dc4cd22-4896-4e0e-bdd5-edf14e7efae4/pdf",
+          "source_type": "official_api",
+          "event_date": null,
+          "published_at": "2026-10-28T00:00:00+00:00",
+          "status": "NEW",
+          "reality_check_status": "BEOBACHTEN",
+          "target_role": "KEINE",
+          "facts_proven": "Stäubli Sargans AG: Mutation Stäubli Sargans AG, Sargans",
+          "mandate_hypothesis": "Beobachtungsfall auf der Watchlist; kein unmittelbarer externer Mandatsansatz.",
+          "missing_information": [
+            "Kein Board- oder C-Level-Vakuum belegt."
+          ],
+          "counter_indicators": [
+            "Mutation betrifft lediglich nachgeordnete Kollektivprokura unterhalb Organebene."
+          ],
+          "rationale": "Registeränderung im Schweizer Handelsamtsblatt betrifft nachgeordnete Zeichnungsberechtigung, kein offenes C-Level-Mandat."
+        },
+        {
+          "id": "640983b0-66b3-4d9f-a770-4047510db1ce",
+          "company": "Dexus Finance Pty",
+          "category": "c_level_vakanz",
+          "source": "dach_eqs",
+          "source_url": "https://www.eqs-news.com/de/news/ad-hoc/dexus-finance-pty-limited-2026-agm-chair-and-group-ceo-address/d1403678-e913-4e32-8475-8541c9351163_en",
+          "source_type": "ad_hoc_disclosure",
+          "event_date": null,
+          "published_at": "2026-10-27T02:25:00+00:00",
+          "status": "NEW",
+          "reality_check_status": "MANDAT_PLAUSIBEL",
+          "target_role": "INTERIM_CEO",
+          "facts_proven": "Dexus Finance Pty: 25 Ad-hoc EN Dexus Finance Pty Limited Ad-hoc EN Dexus Finance Pty Limited: 2026 AGM Chair and Group CEO address",
+          "mandate_hypothesis": "Bedarf an externem Interim-CEO (Vorstandsvorsitzender ad interim) plausibel abgeleitet aus: c_level_vakanz. Hinweis: Ein plausibler Bedarf ist noch kein vergebenes Mandat.",
+          "missing_information": [
+            "Interne Nachfolgelösung oder Interimsüberbrückung durch Aufsichtsrat nicht ausgeschlossen.",
+            "Kein Beleg für Beauftragung eines Executive-Search- oder Interim-Providers."
+          ],
+          "counter_indicators": [],
+          "rationale": "Akute Organvakanz auf C-Level bei Dexus Finance Pty. Externe Überbrückung durch Interim-CEO (Vorstandsvorsitzender ad interim) plausibel, tatsächliche externe Suche noch nicht belegt."
+        },
+        {
+          "id": "7ab80289-4093-42ad-9d98-4518068f58d9",
+          "company": "PAUL Tech AG",
+          "category": "finanzierung_anleihen_restrukturierung",
+          "source": "dach_debt_and_bonds",
+          "source_url": "https://www.anleihen-finder.de/paul-tech-glaeubiger-stimmen-laufzeit-verlaengerung-der-anleihe-bis-2028-zu-00074284.html",
+          "source_type": "capital_markets_press",
+          "event_date": null,
+          "published_at": "2026-10-27T06:18:28+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "MANDAT_PLAUSIBEL",
+          "target_role": "INTERIM_CFO",
+          "facts_proven": "PAUL Tech-Gläubiger stimmen Laufzeit-Verlängerung der Anleihe bis 2028 zu",
+          "mandate_hypothesis": "Bedarf an externem Interim-CFO (Refinanzierung, SchVG-Verhandlung, Liquidität) plausibel abgeleitet aus: finanzierung_anleihen_restrukturierung. Hinweis: Ein plausibler Bedarf ist noch kein vergebenes Mandat.",
+          "missing_information": [
+            "Öffentliche Quelle belegt Gläubigerabstimmung / Stillhalteabkommen, jedoch keine externe Personalberatung.",
+            "Unklar, ob bestehendes CFO-Team Verhandlungen führt oder Interims-Experten hinzugezogen werden."
+          ],
+          "counter_indicators": [],
+          "rationale": "Akuter Verhandlungsdruck mit Anleihegläubigern nach SchVG bzw. Stillhalteabkommen mit Banken. Erheblicher plausibler Bedarf an erfahrenem Interim-CFO (Refinanzierung, SchVG-Verhandlung, Liquidität) für Liquiditäts- und Sanierungskonzepte."
+        },
+        {
+          "id": "a15d9754-d6d8-48c7-a9c8-e6ed4906fca7",
+          "company": "PAUL Tech AG",
+          "category": "finanzierung_anleihen_restrukturierung",
+          "source": "dach_debt_and_bonds",
+          "source_url": "https://www.anleihen-finder.de/paul-tech-angepasster-vorschlag-zu-geplanter-anleihe-verlaengerung-00074232.html",
+          "source_type": "capital_markets_press",
+          "event_date": null,
+          "published_at": "2026-10-20T11:25:04+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "MANDAT_PLAUSIBEL",
+          "target_role": "INTERIM_CFO",
+          "facts_proven": "PAUL Tech: Angepasster Vorschlag zu geplanter Anleihe-Verlängerung",
+          "mandate_hypothesis": "Bedarf an externem Interim-CFO (Refinanzierung, SchVG-Verhandlung, Liquidität) plausibel abgeleitet aus: finanzierung_anleihen_restrukturierung. Hinweis: Ein plausibler Bedarf ist noch kein vergebenes Mandat.",
+          "missing_information": [
+            "Öffentliche Quelle belegt Gläubigerabstimmung / Stillhalteabkommen, jedoch keine externe Personalberatung.",
+            "Unklar, ob bestehendes CFO-Team Verhandlungen führt oder Interims-Experten hinzugezogen werden."
+          ],
+          "counter_indicators": [],
+          "rationale": "Akuter Verhandlungsdruck mit Anleihegläubigern nach SchVG bzw. Stillhalteabkommen mit Banken. Erheblicher plausibler Bedarf an erfahrenem Interim-CFO (Refinanzierung, SchVG-Verhandlung, Liquidität) für Liquiditäts- und Sanierungskonzepte."
+        },
+        {
+          "id": "ded3d1b1-d299-4ec7-92d1-1cc8c28bccc1",
+          "company": "pferdewetten.de AG",
+          "category": "c_level_vakanz",
+          "source": "dach_debt_and_bonds",
+          "source_url": "https://www.anleihen-finder.de/pferdewetten-de-ag-frank-hartmann-wird-neuer-cfo-00074184.html",
+          "source_type": "capital_markets_press",
+          "event_date": null,
+          "published_at": "2026-10-15T09:59:05+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "VERWERFEN",
+          "target_role": "KEINE",
+          "facts_proven": "pferdewetten.de AG: Frank Hartmann wird neuer CFO",
+          "mandate_hypothesis": "Kein Mandatsansatz; Ereignis verworfen (abgeschlossen, besetzt oder ungeeignet).",
+          "missing_information": [],
+          "counter_indicators": [
+            "Führungsposition wurde in der Meldung bereits fest neu besetzt (auch bei künftigem Amtsantritt)."
+          ],
+          "rationale": "Die gemeldete Führungsposition bei pferdewetten.de AG ist personell bereits fest nachbesetzt. Kein akutes externes Interim-Mandat ableitbar."
+        },
+        {
+          "id": "ac1c6249-02fe-48de-b8b1-44dc26fd301f",
+          "company": "ERWE Immobilien AG",
+          "category": "unternehmenskrise_restrukturierung",
+          "source": "dach_debt_and_bonds",
+          "source_url": "https://www.anleihen-finder.de/erwe-immobilien-ag-kapitalherabsetzung-im-verhaeltnis-71-vollzogen-00074097.html",
+          "source_type": "capital_markets_press",
+          "event_date": "2026-10-08",
+          "published_at": "2026-10-08T10:01:15+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "BEOBACHTEN",
+          "target_role": "KEINE",
+          "facts_proven": "ERWE Immobilien AG: Kapitalherabsetzung im Verhältnis 7:1 vollzogen",
+          "mandate_hypothesis": "Beobachtungsfall auf der Watchlist; kein unmittelbarer externer Mandatsansatz.",
+          "missing_information": [
+            "Sachverhalt indiziert Sondersituation, reicht aber für eine spezifische Mandatshypothese nicht aus."
+          ],
+          "counter_indicators": [],
+          "rationale": "Relevantes Marktsignal, das jedoch zunächst weiter beobachtet werden muss."
+        },
+        {
+          "id": "6215b25a-8654-4f7c-a34a-e56bb1ca5aad",
+          "company": "Photon Energy Group",
+          "category": "c_level_vakanz",
+          "source": "dach_debt_and_bonds",
+          "source_url": "https://www.anleihen-finder.de/photon-energy-group-andrej-horansky-ist-neuer-cfo-00074067.html",
+          "source_type": "capital_markets_press",
+          "event_date": null,
+          "published_at": "2026-10-03T06:50:17+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "VERWERFEN",
+          "target_role": "KEINE",
+          "facts_proven": "Photon Energy Group: Andrej Horansky ist neuer CFO",
+          "mandate_hypothesis": "Kein Mandatsansatz; Ereignis verworfen (abgeschlossen, besetzt oder ungeeignet).",
+          "missing_information": [],
+          "counter_indicators": [
+            "Führungsposition wurde in der Meldung bereits fest neu besetzt (auch bei künftigem Amtsantritt)."
+          ],
+          "rationale": "Die gemeldete Führungsposition bei Photon Energy Group ist personell bereits fest nachbesetzt. Kein akutes externes Interim-Mandat ableitbar."
+        },
+        {
+          "id": "a0d338a4-513b-4432-bdb7-c7adaeb05ead",
+          "company": "BOOSTER Precision Components GmbH",
+          "category": "finanzierung_anleihen_restrukturierung",
+          "source": "dach_debt_and_bonds",
+          "source_url": "https://www.anleihen-finder.de/booster-und-glaeubigergruppe-verlaengern-stillhaltevereinbarung-00074016.html",
+          "source_type": "capital_markets_press",
+          "event_date": null,
+          "published_at": "2026-09-30T18:29:00+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "MANDAT_PLAUSIBEL",
+          "target_role": "INTERIM_CFO",
+          "facts_proven": "BOOSTER und Gläubigergruppe verlängern Stillhaltevereinbarung",
+          "mandate_hypothesis": "Bedarf an externem Interim-CFO (Refinanzierung, SchVG-Verhandlung, Liquidität) plausibel abgeleitet aus: finanzierung_anleihen_restrukturierung. Hinweis: Ein plausibler Bedarf ist noch kein vergebenes Mandat.",
+          "missing_information": [
+            "Öffentliche Quelle belegt Gläubigerabstimmung / Stillhalteabkommen, jedoch keine externe Personalberatung.",
+            "Unklar, ob bestehendes CFO-Team Verhandlungen führt oder Interims-Experten hinzugezogen werden."
+          ],
+          "counter_indicators": [],
+          "rationale": "Akuter Verhandlungsdruck mit Anleihegläubigern nach SchVG bzw. Stillhalteabkommen mit Banken. Erheblicher plausibler Bedarf an erfahrenem Interim-CFO (Refinanzierung, SchVG-Verhandlung, Liquidität) für Liquiditäts- und Sanierungskonzepte."
+        },
+        {
+          "id": "5a3f4200-01bd-4dea-b372-b553fe211210",
+          "company": "DEAG Deutsche Entertainment AG",
+          "category": "c_level_vakanz",
+          "source": "dach_debt_and_bonds",
+          "source_url": "https://www.anleihen-finder.de/deag-markus-breitenecker-wird-zum-01-november-2026-neuer-ceo-00073962.html",
+          "source_type": "capital_markets_press",
+          "event_date": "2026-11-01",
+          "published_at": "2026-09-29T14:28:20+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "VERWERFEN",
+          "target_role": "KEINE",
+          "facts_proven": "DEAG: Markus Breitenecker wird zum 01. November 2026 neuer CEO",
+          "mandate_hypothesis": "Kein Mandatsansatz; Ereignis verworfen (abgeschlossen, besetzt oder ungeeignet).",
+          "missing_information": [],
+          "counter_indicators": [
+            "Führungsposition wurde in der Meldung bereits fest neu besetzt (auch bei künftigem Amtsantritt)."
+          ],
+          "rationale": "Die gemeldete Führungsposition bei DEAG Deutsche Entertainment AG ist personell bereits fest nachbesetzt. Kein akutes externes Interim-Mandat ableitbar."
+        },
+        {
+          "id": "bee7ff66-d9d4-402a-8f33-571603054e32",
+          "company": "Branicks Group AG",
+          "category": "finanzierung_anleihen_restrukturierung",
+          "source": "dach_debt_and_bonds",
+          "source_url": "https://www.anleihen-finder.de/branicks-glaeubiger-stimmen-restrukturierung-und-laufzeitverlaengerung-zu-00074225.html",
+          "source_type": "capital_markets_press",
+          "event_date": null,
+          "published_at": "2026-10-20T09:06:42+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "MANDAT_PLAUSIBEL",
+          "target_role": "INTERIM_CFO",
+          "facts_proven": "Branicks-Gläubiger stimmen Restrukturierung und Laufzeitverlängerung zu",
+          "mandate_hypothesis": "Bedarf an externem Interim-CFO (Refinanzierung, SchVG-Verhandlung, Liquidität) plausibel abgeleitet aus: finanzierung_anleihen_restrukturierung. Hinweis: Ein plausibler Bedarf ist noch kein vergebenes Mandat.",
+          "missing_information": [
+            "Öffentliche Quelle belegt Gläubigerabstimmung / Stillhalteabkommen, jedoch keine externe Personalberatung.",
+            "Unklar, ob bestehendes CFO-Team Verhandlungen führt oder Interims-Experten hinzugezogen werden."
+          ],
+          "counter_indicators": [],
+          "rationale": "Akuter Verhandlungsdruck mit Anleihegläubigern nach SchVG bzw. Stillhalteabkommen mit Banken. Erheblicher plausibler Bedarf an erfahrenem Interim-CFO (Refinanzierung, SchVG-Verhandlung, Liquidität) für Liquiditäts- und Sanierungskonzepte."
+        },
+        {
+          "id": "e8b02ffc-1b72-4dbd-a5ce-8d4ded62f1cd",
+          "company": "Booster Precision Components Holding",
+          "category": "finanzierung_anleihen_restrukturierung",
+          "source": "dach_debt_and_bonds",
+          "source_url": "https://www.anleihen-finder.de/booster-anleiheglaeubiger-stimmen-bond-anpassungen-zu-00073785.html",
+          "source_type": "capital_markets_press",
+          "event_date": null,
+          "published_at": "2026-09-22T15:23:32+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "VERWERFEN",
+          "target_role": "KEINE",
+          "facts_proven": "BOOSTER-Anleihegläubiger stimmen Bond-Anpassungen zu",
+          "mandate_hypothesis": "Kein Mandatsansatz; Ereignis verworfen (abgeschlossen, besetzt oder ungeeignet).",
+          "missing_information": [],
+          "counter_indicators": [
+            "Meldung liegt über 30 Tage zurück (35 Tage). Akutes First-Mover-Mandatsfenster geschlossen; Fall im Archiv zur Beobachtung von Folgephasen.",
+            "Sanierung oder Investorenprozess bereits erfolgreich abgeschlossen bzw. Betrieb vollständig übernommen."
+          ],
+          "rationale": "Problem ist durch vollzogene Transaktion oder Sanierungslösung bereits gelöst. Kein offener externer Restrukturierungsbedarf für Booster Precision Components Holding."
+        },
+        {
+          "id": "ac47abb3-bd70-4ef9-9edb-d1156d592f6f",
+          "company": "BOOSTER Precision Components GmbH",
+          "category": "unternehmenskrise_restrukturierung",
+          "source": "dach_debt_and_bonds",
+          "source_url": "https://www.anleihen-finder.de/booster-restrukturierungskosten-belasten-halbjahresergebnis-00073445.html",
+          "source_type": "capital_markets_press",
+          "event_date": null,
+          "published_at": "2026-08-31T09:52:08+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "BEOBACHTEN",
+          "target_role": "KEINE",
+          "facts_proven": "BOOSTER: Restrukturierungskosten belasten Halbjahresergebnis",
+          "mandate_hypothesis": "Beobachtungsfall auf der Watchlist; kein unmittelbarer externer Mandatsansatz.",
+          "missing_information": [],
+          "counter_indicators": [
+            "Meldung liegt über 30 Tage zurück (57 Tage). Akutes First-Mover-Mandatsfenster geschlossen; Fall im Archiv zur Beobachtung von Folgephasen."
+          ],
+          "rationale": "Veröffentlichung liegt über 30 Tage zurück (57 Tage, Archiv/Historie). Mandate für CRO/CFO sind in dieser Phase typischerweise bereits besetzt. Kein akutes First-Mover-Mandat; Fall im Archiv."
+        },
+        {
+          "id": "688c67be-fe0d-4cc5-a6cf-2dca8e23870a",
+          "company": "ABO Energy GmbH & Co. KGaA",
+          "category": "finanzierung_anleihen_restrukturierung",
+          "source": "dach_debt_and_bonds",
+          "source_url": "https://www.anleihen-finder.de/abo-energy-stillhaltevereinbarung-bis-30-11-2026-verlaengert-00073118.html",
+          "source_type": "capital_markets_press",
+          "event_date": null,
+          "published_at": "2026-08-01T06:50:47+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "BEOBACHTEN",
+          "target_role": "KEINE",
+          "facts_proven": "ABO Energy: Stillhaltevereinbarung mit Finanzierungspartnern bis 30.11.2026 verlängert",
+          "mandate_hypothesis": "Beobachtungsfall auf der Watchlist; kein unmittelbarer externer Mandatsansatz.",
+          "missing_information": [],
+          "counter_indicators": [
+            "Meldung liegt über 30 Tage zurück (87 Tage). Akutes First-Mover-Mandatsfenster geschlossen; Fall im Archiv zur Beobachtung von Folgephasen."
+          ],
+          "rationale": "Veröffentlichung liegt über 30 Tage zurück (87 Tage, Archiv/Historie). Mandate für CRO/CFO sind in dieser Phase typischerweise bereits besetzt. Kein akutes First-Mover-Mandat; Fall im Archiv."
+        },
+        {
+          "id": "1d5c9832-ca91-49d4-ba36-87e65b974a21",
+          "company": "BOOSTER Precision Components GmbH",
+          "category": "unternehmenskrise_restrukturierung",
+          "source": "dach_debt_and_bonds",
+          "source_url": "https://www.anleihen-finder.de/booster-precision-leitet-starug-verfahren-ein-00073099.html",
+          "source_type": "capital_markets_press",
+          "event_date": null,
+          "published_at": "2026-07-31T12:23:09+00:00",
+          "status": "DUPLICATE_IDENTICAL",
+          "reality_check_status": "BEOBACHTEN",
+          "target_role": "KEINE",
+          "facts_proven": "BOOSTER Precision leitet StaRUG-Verfahren ein",
+          "mandate_hypothesis": "Beobachtungsfall auf der Watchlist; kein unmittelbarer externer Mandatsansatz.",
+          "missing_information": [],
+          "counter_indicators": [
+            "Meldung liegt über 30 Tage zurück (88 Tage). Akutes First-Mover-Mandatsfenster geschlossen; Fall im Archiv zur Beobachtung von Folgephasen."
+          ],
+          "rationale": "Veröffentlichung liegt über 30 Tage zurück (88 Tage, Archiv/Historie). Mandate für CRO/CFO sind in dieser Phase typischerweise bereits besetzt. Kein akutes First-Mover-Mandat; Fall im Archiv."
+        }
+      ],
+      "technical_success": true,
+      "run_completed_at": "2026-10-28T02:01:02.557531+00:00",
+      "sources_queried": [
+        "de_restructuring_press",
+        "swiss_shab",
+        "dach_eqs",
+        "dach_debt_and_bonds"
+      ],
+      "new_events_found": 2,
+      "events_with_proof_saved": 17,
+      "unverified_events_count": 0,
+      "follow_ups_updated": 0
+    },
     {
       "run_id": "run_20261028_004147_a04435",
       "started_at": "2026-10-28T00:41:47.056039+00:00",

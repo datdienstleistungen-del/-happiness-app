@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Briefcase, Mail, MessageSquare, Send, Copy, CheckCircle, AlertCircle, List, Trash2, ArrowRight, Search, Share2, ExternalLink, Video, Globe, Sparkles, RefreshCw, Clock, Check, Loader2, X, Eye, ShieldCheck, FileText, Zap, Edit3, ShieldAlert, AlertTriangle, Printer, Download, UserCheck, Archive } from 'lucide-react'
+import React, { useState, useEffect, useMemo } from 'react'
+import { Briefcase, Radar, Mail, MessageSquare, Send, Copy, CheckCircle, AlertCircle, List, Trash2, ArrowRight, Search, Share2, ExternalLink, Video, Globe, Sparkles, RefreshCw, Clock, Check, Loader2, X, Eye, ShieldCheck, FileText, Zap, Edit3, ShieldAlert, AlertTriangle, Printer, Download, UserCheck, Archive } from 'lucide-react'
 import { callNexusAI, runDeepResearch, callContactIntelligence, callMessageGeneration, callSocialIntelligence } from '../lib/nexus-ai'
 import { isPlaceholderCompany, computeTargetMatchScore, classifyB2BLifecycle, getCategoryLifecycleConfig, hasConcreteVerifiedAnlass, isBlacklistedRole } from '../lib/nexus-validation'
 import { formatEventDate, extractDomain, getFreshnessTrafficLight } from '../lib/nexus-dates'
@@ -345,7 +345,30 @@ export default function SalesWorkspacePage() {
   const oppIdFromUrl = searchParams.get('opportunityId')
   const { t, lang } = useLanguage()
   const { user } = useAuth()
-  const { opportunities, triggers, deleteOpportunity, refreshData, activeOffering } = useLead()
+  const { opportunities: rawDbOpportunities, triggers, deleteOpportunity, refreshData, activeOffering } = useLead()
+
+  // Kombiniere Datenbank-Opportunities mit lokal übertragenen Radar-Opportunities (z.B. PAUL Tech AG)
+  const [localRadarOpps, setLocalRadarOpps] = useState(() => {
+    try {
+      const LOCAL_OPPS_KEY = 'nexus_local_radar_opportunities'
+      return JSON.parse(localStorage.getItem(LOCAL_OPPS_KEY) || '[]')
+    } catch {
+      return []
+    }
+  })
+
+  // Verschmelze Opportunities ohne Dubletten (lokale Radar-Imports haben Vorrang)
+  const opportunities = useMemo(() => {
+    const dbList = Array.isArray(rawDbOpportunities) ? rawDbOpportunities : []
+    const combined = [...localRadarOpps]
+    dbList.forEach(dbOpp => {
+      const dbCompName = dbOpp.nexus_companies?.name || dbOpp.company?.name || dbOpp.title
+      if (!combined.some(o => o.id === dbOpp.id || (dbCompName && (o.nexus_companies?.name === dbCompName || o.title?.includes(dbCompName))))) {
+        combined.push(dbOpp)
+      }
+    })
+    return combined
+  }, [rawDbOpportunities, localRadarOpps])
   
   const [selectedMode, setSelectedMode] = useState('sales_pitch')
   const [activeOppId, setActiveOppId] = useState(oppIdFromUrl || null)
@@ -525,10 +548,17 @@ export default function SalesWorkspacePage() {
 
 
   useEffect(() => {
-    if (oppIdFromUrl && oppIdFromUrl !== activeOppId) {
+    if (oppIdFromUrl) {
       setActiveOppId(oppIdFromUrl)
+      const target = opportunities.find(o => o.id === oppIdFromUrl)
+      if (target) {
+        setActiveOpp(target)
+        if (target.review_status === 'verified' || target.pipeline_stage === 'opportunity') {
+          setQueueFilter('relevant')
+        }
+      }
     }
-  }, [oppIdFromUrl])
+  }, [oppIdFromUrl, opportunities])
 
   // Einmalige Bereinigung alter spanischer Test-Caches
   useEffect(() => {
@@ -2565,6 +2595,49 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
               minWidth: 0,
               position: 'relative'
             }}>
+              {/* ── RADAR-HERKUNFT BANNER MIT ZURÜCK-BUTTON ── */}
+              {activeOpp?._fromRadar && (
+                <div className="radar-imported-banner" style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 18px',
+                  background: 'rgba(56, 189, 248, 0.1)',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  borderRadius: '10px',
+                  color: '#38bdf8',
+                  fontSize: '0.86rem',
+                  marginBottom: '10px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Radar size={18} />
+                    <span>
+                      Echtzeit-Signal aus Primär-Radar importiert: <strong>{resolveOppCompanyHelper(activeOpp)}</strong>
+                      {' '}(Publiziert am {dateFormatted})
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/nexus/events')}
+                    style={{
+                      background: 'rgba(56, 189, 248, 0.2)',
+                      border: '1px solid rgba(56, 189, 248, 0.4)',
+                      color: '#f8fafc',
+                      borderRadius: '6px',
+                      padding: '5px 12px',
+                      fontSize: '0.8rem',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <ArrowRight size={14} style={{ transform: 'rotate(180deg)' }} /> Zurück zum Primär-Radar (Beleg)
+                  </button>
+                </div>
+              )}
+
               {/* ── 1. STAMMDATEN CARD ── */}
               <div className="pult-stammdaten-card" style={{
                 background: '#0e1015',

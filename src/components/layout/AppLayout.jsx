@@ -9,11 +9,102 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  Send
+  Send,
+  ArrowLeft
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useLanguage } from '../../i18n/translations.jsx'
 import Logo from '../Logo'
+
+function TopNavigationHeader() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [lastCompany, setLastCompany] = useState(null)
+
+  useEffect(() => {
+    const checkLast = () => {
+      try {
+        const stored = sessionStorage.getItem('nexus_last_viewed_company') || localStorage.getItem('nexus_last_viewed_company')
+        if (stored) {
+          const parsed = typeof stored === 'string' && stored.startsWith('{') ? JSON.parse(stored) : { name: stored }
+          setLastCompany(parsed)
+        }
+      } catch (e) {}
+    }
+    checkLast()
+    window.addEventListener('storage', checkLast)
+    return () => window.removeEventListener('storage', checkLast)
+  }, [location.pathname])
+
+  const routeTitles = {
+    '/nexus/sales-workspace': 'Mandats-Desk',
+    '/nexus/events': 'Primär-Radar',
+    '/nexus/outreach': 'Outreach / Gesendete E-Mails',
+    '/nexus/mandats-archiv': 'Mandats-Archiv',
+    '/coach': 'DealCoach',
+    '/nexus/dashboard': 'Executive Dashboard',
+    '/nexus/lead-intelligence': 'Lead Intelligence Desk'
+  }
+
+  const currentTitle = routeTitles[location.pathname] || 'NeXus Origination Desk'
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1)
+    } else {
+      navigate('/nexus/events')
+    }
+  }
+
+  const handleJumpToLastCase = () => {
+    if (!lastCompany) return
+    if (lastCompany.targetUrl) {
+      navigate(lastCompany.targetUrl)
+    } else if (lastCompany.eventId) {
+      navigate(`/nexus/events?highlight=${encodeURIComponent(lastCompany.eventId)}`)
+    } else {
+      navigate(`/nexus/events?company=${encodeURIComponent(lastCompany.name || lastCompany)}`)
+    }
+  }
+
+  return (
+    <header className="nexus-top-nav-bar">
+      <div className="nexus-top-nav-left">
+        <button
+          type="button"
+          onClick={handleBack}
+          className="nexus-nav-back-btn"
+          title="Einen Schritt zurück zur vorherigen Arbeitsstation"
+        >
+          <ArrowLeft size={15} />
+          <span>Zurück</span>
+        </button>
+
+        <div className="nexus-nav-breadcrumbs">
+          <span className="crumb-root">NeXus</span>
+          <span className="crumb-sep">/</span>
+          <span className="crumb-current">{currentTitle}</span>
+        </div>
+      </div>
+
+      <div className="nexus-top-nav-right">
+        {lastCompany && (
+          <button
+            type="button"
+            onClick={handleJumpToLastCase}
+            className="nexus-quick-return-pill"
+            title={`Sofort zurück zu ${lastCompany.name || lastCompany} springen`}
+          >
+            <span className="pill-pulse" />
+            <Briefcase size={13} />
+            <span>Zuletzt geöffnet: <strong>{lastCompany.name || lastCompany}</strong></span>
+            <ChevronRight size={13} />
+          </button>
+        )}
+      </div>
+    </header>
+  )
+}
 
 function Sidebar({ mobileOpen, setMobileOpen }) {
   const { user, profile, signOut } = useAuth()
@@ -213,6 +304,8 @@ export default function AppLayout({ children }) {
           </button>
         )}
         
+        {shouldShowSidebar && <TopNavigationHeader />}
+
         {children}
       </main>
 
