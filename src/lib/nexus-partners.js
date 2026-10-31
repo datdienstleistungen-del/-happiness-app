@@ -238,3 +238,95 @@ export function calculateProtectionEndDate(startDate, months = DEFAULT_PROTECTIO
   return addCalendarMonthsUtc(startDate, months);
 }
 
+/**
+ * Verbindliches Kanonisches Mandats-Statusmodell (Single Source of Truth)
+ */
+export const MANDATE_STATUS = Object.freeze({
+  ANGEBOTEN_RESERVIERT: 'ANGEBOTEN_RESERVIERT',
+  AKTIV_GESCHUETZT: 'AKTIV_GESCHUETZT',
+  IN_VERHANDLUNG: 'IN_VERHANDLUNG',
+  MANDATIERT: 'MANDATIERT',
+  ABGELAUFEN: 'ABGELAUFEN',
+  STORNIERT: 'STORNIERT'
+});
+
+/**
+ * Bekannte Legacy- und Sprach-Aliase, die deterministisch auf das kanonische Statusmodell abgebildet werden.
+ */
+export const MANDATE_STATUS_ALIASES = Object.freeze({
+  'ACTIVE_PROTECTED': MANDATE_STATUS.AKTIV_GESCHUETZT,
+  'MANDATED': MANDATE_STATUS.MANDATIERT,
+  'EXPIRED': MANDATE_STATUS.ABGELAUFEN,
+  'OFFERED_RESERVED': MANDATE_STATUS.ANGEBOTEN_RESERVIERT
+});
+
+/**
+ * Fehlerklasse für unbekannte oder ungültige Mandatsstatuswerte.
+ * Verhindert das stillschweigende Durchwinken oder fehlerhafte Zuordnen ungültiger Werte.
+ */
+export class InvalidMandateStatusError extends Error {
+  constructor(status, message) {
+    const detailMsg = message || `Unbekannter oder ungültiger Mandatsstatus: '${status}'. Erlaubte Werte: ${Object.values(MANDATE_STATUS).join(', ')}`;
+    super(detailMsg);
+    this.name = 'InvalidMandateStatusError';
+    this.rawStatus = status;
+  }
+}
+
+/**
+ * Prüft, ob ein Statuswert bereits ein gültiger kanonischer Statuswert ist.
+ * 
+ * @param {any} rawStatus 
+ * @returns {boolean}
+ */
+export function isValidMandateStatus(rawStatus) {
+  if (typeof rawStatus !== 'string') return false;
+  const trimmed = rawStatus.trim().toUpperCase();
+  return Object.values(MANDATE_STATUS).includes(trimmed);
+}
+
+/**
+ * Normalisiert einen Mandatsstatus deterministisch auf das kanonische Statusmodell.
+ * 
+ * Regeln:
+ * 1. Bereits gültige kanonische Statuswerte bleiben unverändert.
+ * 2. Bekannte Legacy-Werte werden explizit transformiert:
+ *    - ACTIVE_PROTECTED -> AKTIV_GESCHUETZT
+ *    - MANDATED -> MANDATIERT
+ *    - EXPIRED -> ABGELAUFEN
+ *    - OFFERED_RESERVED -> ANGEBOTEN_RESERVIERT
+ * 3. Whitespace und Groß-/Kleinschreibung werden tolerant bereinigt.
+ * 4. Unbekannte oder nicht-stringbasierte Werte werden NIEMALS stillschweigend
+ *    umgewandelt, sondern lösen eine nachvollziehbare InvalidMandateStatusError-Ausnahme aus.
+ * 
+ * @param {string} rawStatus 
+ * @returns {string} Kanonischer Statuswert aus MANDATE_STATUS
+ * @throws {InvalidMandateStatusError} wenn der Status ungültig oder unbekannt ist
+ */
+export function normalizeMandateStatus(rawStatus) {
+  if (typeof rawStatus !== 'string') {
+    throw new InvalidMandateStatusError(
+      rawStatus,
+      `Ungültiger Typ für Mandatsstatus: Erwartet wurde ein String, erhalten: ${rawStatus === null ? 'null' : typeof rawStatus}`
+    );
+  }
+
+  const trimmed = rawStatus.trim().toUpperCase();
+  if (!trimmed) {
+    throw new InvalidMandateStatusError(rawStatus, 'Ungültiger Mandatsstatus: Der übergebene Status ist leer.');
+  }
+
+  // 1. Bereits gültiger kanonischer Statuswert
+  if (Object.values(MANDATE_STATUS).includes(trimmed)) {
+    return trimmed;
+  }
+
+  // 2. Bekannte Legacy-Zuordnungen
+  if (MANDATE_STATUS_ALIASES[trimmed]) {
+    return MANDATE_STATUS_ALIASES[trimmed];
+  }
+
+  // 3. Unbekannter oder nicht unterstützter Statuswert -> nachvollziehbar zurückweisen
+  throw new InvalidMandateStatusError(rawStatus);
+}
+

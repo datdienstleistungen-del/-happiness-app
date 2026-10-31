@@ -1,0 +1,330 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-10-31T16:00:00Z",
+  "description": "Zentrales NeXus Provider- & Boutiquen-Verzeichnis für C-Level, Restrukturierung, StaRUG und Sanierungsmandate im DACH-Raum.",
+  "active_contract_partner_id": "taskforce",
+  "providers": [
+    {
+      "id": "taskforce",
+      "name": "taskforce - Management on Demand AG",
+      "short_name": "taskforce AG",
+      "tier": "TIER_1",
+      "tier_label": "Groß-Provider (Exklusiv-Partner)",
+      "tier_rank": 1,
+      "status": "ACTIVE_CONTRACT",
+      "contract_ref": "TF-DAT-2026-KV01",
+      "protection_months": 18,
+      "commission_rate": 0.05,
+      "commission_label": "5% Vermittlungsprovision / 18 Monate Kundenschutz",
+      "domain": "taskforce.net",
+      "location": "München, Deutschland 🇩🇪",
+      "primary_contact": {
+        "name": "Frank Sieger",
+        "role": "Vorstand / Partner Management",
+        "email": "frank.sieger@taskforce.net",
+        "phone": "+49 89 244 147 0"
+      },
+      "focus_tags": [
+        "C-Level",
+        "Sanierung",
+        "StaRUG",
+        "Finanzen",
+        "Automotive",
+        "Industrie",
+        "CRO",
+        "Interim CEO",
+        "Restrukturierungs-PMO",
+        "Not-Governance"
+      ],
+      "suitable_situations": [
+        "Anleiheverlängerung",
+        "Gläubigerverhandlung",
+        "StaRUG",
+        "Konzernrestrukturierung",
+        "Organvakanz Großunternehmen"
+      ],
+      "notes": "Einziger rechtsverbindlich gezeichneter Rahmenvertrag (TF-DAT-2026-KV01). Prio 1 für alle Standard-Organ- und C-Level-Mandate."
+    },
+    {
+      "id": "atreus",
+      "name": "Atreus GmbH (A Heidrick & Struggles Company)",
+      "short_name": "Atreus",
+      "tier": "TIER_1",
+      "tier_label": "Groß-Provider",
+      "tier_rank": 1,
+      "status": "PROSPECT_TEST",
+      "contract_ref": null,
+      "protection_months": 12,
+      "commission_rate": 0.05,
+      "commission_label": "Test-Phase (12M Schutzfrist avisiert)",
+      "domain": "atreus.de",
+      "location": "München, Deutschland 🇩🇪",
+      "primary_contact": {
+        "name": "Dr. Harald Linné",
+        "role": "Director Restructuring & Transformation",
+        "email": "linne@atreus.de",
+        "phone": "+49 89 452 249 0"
+      },
+      "focus_tags": [
+        "C-Level",
+        "Restrukturierung",
+        "Carve-Out",
+        "Transformation",
+        "M&A",
+        "Turnaround",
+        "Großunternehmen"
+      ],
+      "suitable_situations": [
+        "Carve-Out Großkonzern",
+        "Internationale Transformation",
+        "PMO Neuausrichtung"
+      ],
+      "notes": "Test-Adressat für C-Level Zweitverwertung bei Nicht-Rückmeldung von taskforce."
+    },
+    {
+      "id": "management-angels",
+      "name": "Management Angels GmbH",
+      "short_name": "Management Angels",
+      "tier": "TIER_1",
+      "tier_label": "Groß-Provider",
+      "tier_rank": 1,
+      "status": "PROSPECT_TEST",
+      "contract_ref": null,
+      "protection_months": 12,
+      "commission_rate": 0.05,
+      "commission_label": "Test-Phase (12M Schutzfrist avisiert)",
+      "domain": "managementangels.com",
+      "location": "Hamburg / Frankfurt, Deutschland 🇩🇪",
+      "primary_contact": {
+        "name": "Klaus Neuhaus",
+        "role": "Managing Director Executive Interim",
+        "email": "klaus.neuhaus@managementangels.com",
+        "phone": "+49 40 441 955 0"
+      },
+      "focus_tags": [
+        "Executive Interim",
+        "C-Level",
+        "Maschinenbau",
+        "Technologie",
+        "DACH",
+        "Finanzrestrukturierung"
+      ],
+      "suitable_situations": [
+        "Maschinen- und Anlagenbau Vakanzen",
+        "Überbrückung CEO/COO im gehobenen Mittelstand"
+      ],
+      "notes": "Test-Adressat für Nord-/Westdeutschland Industrie-Vakanzen."
+    },
+    {
+      "id": "bie-executive",
+      "name": "BIE Executive",
+      "short_name": "BIE Executive",
+      "tier": "TIER_1",
+      "tier_label": "Groß-Provider (International)",
+      "tier_rank": 1,
+      "status": "PROSPECT_TEST",
+      "contract_ref": null,
+      "protection_months": 12,
+      "commission_rate": 0.05,
+      "commission_label": "Test-Phase / 48h First-Look Regelung",
+      "domain": "bie-executive.com",
+      "location": "London, UK 🇬🇧",
+      "primary_contact": {
+        "name": "Byron Tarboton",
+        "role": "Director & Practice Lead Interim Executive",
+        "email": "byron.tarboton@bie-executive.com",
+        "phone": "+44 20 3800 1400"
+      },
+      "focus_tags": [
+        "Cross-Border",
+        "Board Advisory",
+        "UK/International",
+        "Private Equity",
+        "Governance",
+        "Tech Scale-up"
+      ],
+      "suitable_situations": [
+        "Internationale Mandate mit UK/London-Bezug",
+        "Cross-Border Private Equity Beteiligungen"
+      ],
+      "notes": "Akkreditierter Partner für grenzüberschreitende Mandate (z. B. cosquare UK First-Look)."
+    },
+    {
+      "id": "fp-executive",
+      "name": "F&P Executive Solutions AG",
+      "short_name": "F&P Executive",
+      "tier": "TIER_2",
+      "tier_label": "Mittelstands-Sozietät",
+      "tier_rank": 2,
+      "status": "PROSPECT_TEST",
+      "contract_ref": null,
+      "protection_months": 12,
+      "commission_rate": 0.05,
+      "commission_label": "Probe-Ballon (12M Schutzfrist avisiert)",
+      "domain": "fp-executive.com",
+      "location": "Frankfurt am Main, Deutschland 🇩🇪",
+      "primary_contact": {
+        "name": "Bernd Frank",
+        "role": "Vorstandsvorsitzender",
+        "email": "bernd.frank@fp-executive.com",
+        "phone": "+49 69 959 325 0"
+      },
+      "focus_tags": [
+        "Mittelstand",
+        "Sanierung",
+        "Turnaround",
+        "Operations",
+        "Finance",
+        "Krise",
+        "Restrukturierung"
+      ],
+      "suitable_situations": [
+        "Mittelständische Sanierung 20–150 Mio. €",
+        "Operative Restrukturierung",
+        "Zweitverwertung nach taskforce-Timeout"
+      ],
+      "notes": "Führende deutsche Sozietät für mittelständische Krisen- und Sanierungsmandate."
+    },
+    {
+      "id": "falkensteg",
+      "name": "FalkenSteg Real Estate & Restructuring",
+      "short_name": "FalkenSteg",
+      "tier": "TIER_2",
+      "tier_label": "Mittelstands-Sozietät",
+      "tier_rank": 2,
+      "status": "PROSPECT_TEST",
+      "contract_ref": null,
+      "protection_months": 12,
+      "commission_rate": 0.05,
+      "commission_label": "Probe-Ballon (12M Schutzfrist avisiert)",
+      "domain": "falkensteg.com",
+      "location": "Düsseldorf / Frankfurt, Deutschland 🇩🇪",
+      "primary_contact": {
+        "name": "Johannes von Neumann-Cosel",
+        "role": "Partner Restructuring",
+        "email": "johannes.vonneumann@falkensteg.com",
+        "phone": "+49 211 547 663 0"
+      },
+      "focus_tags": [
+        "Insolvenznah",
+        "StaRUG",
+        "Distressed M&A",
+        "Mittelstand",
+        "Krisenberatung",
+        "Schutzschirm"
+      ],
+      "suitable_situations": [
+        "StaRUG-Restrukturierungen",
+        "Eigenverwaltung und Schutzschirmverfahren",
+        "Distressed M&A Investorensuche"
+      ],
+      "notes": "Hervorragend vernetzt bei Insolvenzverwaltern und StaRUG-Restrukturierungsbeauftragten."
+    },
+    {
+      "id": "centuros",
+      "name": "Centuros Consult GmbH",
+      "short_name": "Centuros",
+      "tier": "TIER_2",
+      "tier_label": "Mittelstands-Sozietät",
+      "tier_rank": 2,
+      "status": "PROSPECT_TEST",
+      "contract_ref": null,
+      "protection_months": 12,
+      "commission_rate": 0.05,
+      "commission_label": "Probe-Ballon (12M Schutzfrist avisiert)",
+      "domain": "centuros.de",
+      "location": "Berlin / Potsdam, Deutschland 🇩🇪",
+      "primary_contact": {
+        "name": "Sven Peters",
+        "role": "Managing Partner",
+        "email": "s.peters@centuros.de",
+        "phone": "+49 30 206 141 0"
+      },
+      "focus_tags": [
+        "M&A Beratung",
+        "Unternehmensnachfolge",
+        "Distressed M&A",
+        "Eigenverwaltung",
+        "KMU",
+        "Ostdeutschland"
+      ],
+      "suitable_situations": [
+        "Insolvenznahe M&A Prozesse",
+        "Unternehmensnachfolge in Sondersituationen"
+      ],
+      "notes": "Spezialisiert auf Distressed M&A im gehobenen KMU-Sektor."
+    },
+    {
+      "id": "curacon-wmc",
+      "name": "Curacon / WMC Healthcare",
+      "short_name": "Curacon Healthcare",
+      "tier": "TIER_3",
+      "tier_label": "Spezial-Boutique (Healthcare)",
+      "tier_rank": 3,
+      "status": "PROSPECT_TEST",
+      "contract_ref": null,
+      "protection_months": 12,
+      "commission_rate": 0.05,
+      "commission_label": "Probe-Ballon Nische (Healthcare)",
+      "domain": "curacon.de",
+      "location": "Münster / München, Deutschland 🇩🇪",
+      "primary_contact": {
+        "name": "Christian Kanzler",
+        "role": "Bereichsleiter Sanierung & Restrukturierung Healthcare",
+        "email": "christian.kanzler@curacon.de",
+        "phone": "+49 251 922 080"
+      },
+      "focus_tags": [
+        "Healthcare",
+        "Klinik",
+        "Krankenhaus",
+        "Reha",
+        "Pflege",
+        "Gesundheitswirtschaft",
+        "Medizinische Zentren"
+      ],
+      "suitable_situations": [
+        "Kliniksanierungen",
+        "Insolvenzen von Reha-Zentren (z. B. Bruckmühl)",
+        "Pflegeheim-Restrukturierung",
+        "Krankenhausreform-Begleitung"
+      ],
+      "notes": "Exklusive Nischen-Boutique für Klinik- & Reha-Mandate. Direktempfehlung bei allen Healthcare-Fällen."
+    },
+    {
+      "id": "cvm-capital",
+      "name": "CVM Capital Value Management GmbH",
+      "short_name": "CVM Capital",
+      "tier": "TIER_3",
+      "tier_label": "Spezial-Boutique (Distressed M&A)",
+      "tier_rank": 3,
+      "status": "PROSPECT_TEST",
+      "contract_ref": null,
+      "protection_months": 12,
+      "commission_rate": 0.05,
+      "commission_label": "Probe-Ballon Nische (Verwertung)",
+      "domain": "cvm-gmbh.de",
+      "location": "München, Deutschland 🇩🇪",
+      "primary_contact": {
+        "name": "Christian Hörner",
+        "role": "Managing Partner Distressed Asset Sales",
+        "email": "hoerner@cvm-gmbh.de",
+        "phone": "+49 89 208 039 50"
+      },
+      "focus_tags": [
+        "Distressed M&A",
+        "Asset-Verwertung",
+        "Insolvenzverwalter",
+        "Maschinenverwertung",
+        "Sondersituationen",
+        "Investorensuche"
+      ],
+      "suitable_situations": [
+        "Zerschlagung oder übertragende Sanierung",
+        "Verwertung von Anlagevermögen",
+        "Reine Investorenlösung"
+      ],
+      "notes": "Spezialist für Verwertungs- und Distressed M&A Prozesse bei akuten Insolvenzverfahren."
+    }
+  ]
+}

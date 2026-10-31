@@ -3,10 +3,15 @@ import { searchWithFallback } from './_shared/search-core.mjs';
 import { isBlockedUrl } from './_shared/url-rules.mjs';
 
 export async function handler(event, context) {
-  // 0. Security Guard: Nur autorisierte Cron-Trigger zulassen
-  const cronSecret = event.headers['x-cron-secret'] || event.queryStringParameters?.secret;
+  // 0. Security Guard: Autorisierte Cron-Trigger & Netlify Scheduler zulassen
+  const cronSecret = event.headers?.['x-cron-secret'] || event.queryStringParameters?.secret;
   const expectedSecret = process.env.CRON_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-  if (!cronSecret || cronSecret !== expectedSecret) {
+  const userAgent = (event.headers?.['user-agent'] || '').toLowerCase();
+  const isNetlifyScheduler = userAgent.includes('netlify') || 
+                             Boolean(event.headers?.['x-nf-event'] === 'schedule') || 
+                             Boolean(context?.clientContext?.custom?.netlify);
+
+  if (expectedSecret && !isNetlifyScheduler && cronSecret !== expectedSecret) {
     return {
       statusCode: 403,
       headers: { 'Content-Type': 'application/json' },

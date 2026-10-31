@@ -31,6 +31,13 @@ import {
   DEFAULT_PROTECTION_MONTHS,
   PROTECTION_DURATION_OPTIONS
 } from '../lib/nexus-partners'
+import {
+  recommendPartnerForLead,
+  getOutreachTrackingStatus,
+  getNextPartnerForReroute,
+  getProviderDirectory,
+  getProviderById
+} from '../lib/partner-routing'
 
 // Standardisierte akkreditierte Partner für Swiss & International Desk
 export const OUTREACH_PARTNERS = [
@@ -1080,6 +1087,7 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
       const now = new Date();
       const months = parseInt(dispatchProtectionMonths, 10) || DEFAULT_PROTECTION_MONTHS;
       const protectionUntil = calculateProtectionEndDate(now, months);
+      const expiresAt48h = new Date(now.getTime() + 48 * 3600 * 1000);
 
       const entry = {
         id: `arch-${Date.now()}`,
@@ -1091,7 +1099,11 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
         protectionUntil: protectionUntil.toISOString(),
         protection_months: months,
         status: 'AKTIV_GESCHUETZT',
-        notes: `Aus Mandats-Desk an ${dispatchPartner} übermittelt (${months} Monate Kundenschutz).`,
+        outreach_status: 'SENT_PENDING',
+        sent_to_partner_id: dispatchPartner,
+        sent_at: now.toISOString(),
+        expires_at: expiresAt48h.toISOString(),
+        notes: `Aus Mandats-Desk an ${dispatchPartner} übermittelt (${months} Monate Kundenschutz, 48h Rückmeldefenster).`,
         source: activeTrigger?.source || activeOpp.source || 'EQS / Primärquelle'
       };
 
@@ -1106,12 +1118,30 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
 
       // Aktualisiere Status in Supabase
       try {
+        const existingTags = Array.isArray(activeOpp.tags) ? activeOpp.tags : [];
+        const updatedTags = Array.from(new Set([
+          ...existingTags,
+          'SENT_PENDING',
+          `sent_to:${dispatchPartner}`,
+          `sent_at:${now.toISOString()}`
+        ]));
+
         await db.updateOpportunity(activeOpp.id, {
           pipeline_stage: 'dispatched',
           review_status: 'verified',
-          review_notes: `An Partner übermittelt: ${dispatchPartner}. ${months} Monate Kundenschutz bis ${protectionUntil.toLocaleDateString('de-DE')}.`
+          tags: updatedTags,
+          review_notes: `An Partner übermittelt: ${dispatchPartner}. 48h-Rückmeldefenster bis ${expiresAt48h.toLocaleDateString('de-DE')} ${expiresAt48h.toLocaleTimeString('de-DE')}. ${months}M Kundenschutz bis ${protectionUntil.toLocaleDateString('de-DE')}.`
         });
-        setActiveOpp(prev => ({ ...prev, pipeline_stage: 'dispatched', review_status: 'verified' }));
+        setActiveOpp(prev => ({
+          ...prev,
+          pipeline_stage: 'dispatched',
+          review_status: 'verified',
+          tags: updatedTags,
+          outreach_status: 'SENT_PENDING',
+          sent_to_partner_id: dispatchPartner,
+          sent_at: now.toISOString(),
+          expires_at: expiresAt48h.toISOString()
+        }));
       } catch (e) {
         console.warn('DB update error on dispatch:', e);
       }
@@ -1201,14 +1231,18 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
         console.warn('nexus_activities insert warning:', e);
       }
 
-      // 2. nexus_opportunities updaten
+      // 2. nexus_opportunities updaten mit 48h-Versandsperre
+      const expiresAt48h = new Date(now.getTime() + 48 * 3600 * 1000);
       const existingTags = Array.isArray(activeOpp.tags) ? activeOpp.tags : [];
       const updatedTags = Array.from(new Set([
         ...existingTags,
         partner.status,
         partner.name.replace(/\s+/g, '_'),
         outreachRefCode,
-        'contacted'
+        'contacted',
+        'SENT_PENDING',
+        `sent_to:${partner.id}`,
+        `sent_at:${now.toISOString()}`
       ]));
 
       try {
@@ -1216,13 +1250,17 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
           pipeline_stage: 'contacted',
           review_status: 'verified',
           tags: updatedTags,
-          review_notes: `[Outreach Journal]: Angeboten an ${partner.contactPerson} (${partner.name}) · Ref: ${outreachRefCode} · Status: ${partner.status} bis ${protectionDate.toLocaleDateString('de-DE')}`
+          review_notes: `[Outreach Journal]: Angeboten an ${partner.contactPerson} (${partner.name}) · Ref: ${outreachRefCode} · Status: SENT_PENDING (48h-Frist bis ${expiresAt48h.toLocaleDateString('de-DE')} ${expiresAt48h.toLocaleTimeString('de-DE')})`
         });
         setActiveOpp(prev => ({
           ...prev,
           pipeline_stage: 'contacted',
           review_status: 'verified',
-          tags: updatedTags
+          tags: updatedTags,
+          outreach_status: 'SENT_PENDING',
+          sent_to_partner_id: partner.id,
+          sent_at: now.toISOString(),
+          expires_at: expiresAt48h.toISOString()
         }));
       } catch (e) {
         console.warn('db.updateOpportunity warning:', e);
@@ -2753,6 +2791,180 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                 );
               })()}
 
+              {/* ── 48H VERSAND-SPERRE & KOLLISIONS-WARNUNG BANNER ── */}
+              {(() => {
+                const tracking = getOutreachTrackingStatus(activeOpp);
+                const partnerRec = recommendPartnerForLead(activeOpp);
+
+                if (tracking.isLocked48h) {
+                  return (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 18px',
+                      background: 'rgba(234, 179, 8, 0.12)',
+                      border: '1px solid rgba(234, 179, 8, 0.4)',
+                      borderRadius: '10px',
+                      color: '#facc15',
+                      fontSize: '0.86rem',
+                      marginBottom: '10px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Clock size={20} color="#eab308" />
+                        <div>
+                          <div>
+                            <strong style={{ color: '#fef08a' }}>
+                              ⚠️ VERSANDT AN {tracking.partnerName.toUpperCase()}
+                            </strong>{' '}
+                            <span>(Wartet auf Rückmeldung - Noch {tracking.remainingHours}h{tracking.remainingMinutes > 0 && tracking.remainingHours < 6 ? ` ${tracking.remainingMinutes}m` : ''})</span>
+                          </div>
+                          <div style={{ fontSize: '0.78rem', color: '#fde047', marginTop: '2px' }}>
+                            48h-Sperrfrist aktiv bis {new Date(tracking.expiresAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr ({new Date(tracking.expiresAt).toLocaleDateString('de-DE')}). Weiterleitung ist blockiert, um versehentlichen Doppelversand zu verhindern.
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => navigate('/nexus/mandats-archiv?tab=transmitted')}
+                        style={{
+                          background: 'rgba(234, 179, 8, 0.2)',
+                          border: '1px solid rgba(234, 179, 8, 0.5)',
+                          color: '#fef08a',
+                          borderRadius: '6px',
+                          padding: '6px 14px',
+                          fontSize: '0.8rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          flexShrink: 0
+                        }}
+                      >
+                        <ShieldCheck size={14} /> Im Archiv einsehen
+                      </button>
+                    </div>
+                  );
+                }
+
+                if (tracking.isExpired48h) {
+                  return (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 18px',
+                      background: 'rgba(249, 115, 22, 0.14)',
+                      border: '1px solid rgba(249, 115, 22, 0.45)',
+                      borderRadius: '10px',
+                      color: '#fb923c',
+                      fontSize: '0.86rem',
+                      marginBottom: '10px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <RefreshCw size={20} color="#f97316" />
+                        <div>
+                          <div>
+                            <strong style={{ color: '#fed7aa' }}>
+                              🔄 KEINE RÜCKMELDUNG NACH 48H VON {tracking.partnerName.toUpperCase()}
+                            </strong>{' '}
+                            <span>– Freigegeben für Zweitverwertung</span>
+                          </div>
+                          <div style={{ fontSize: '0.78rem', color: '#fdba74', marginTop: '2px' }}>
+                            Schweigen = Freigabe: 48h abgelaufen. NeXus empfiehlt sofort den nächsten Partner: <strong>{tracking.nextRecommendedPartner?.name}</strong> ({tracking.nextRecommendedPartner?.tier}).
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (tracking.nextRecommendedPartner) {
+                            setDispatchPartner(tracking.nextRecommendedPartner.name);
+                            setOutreachPartnerId(tracking.nextRecommendedPartner.id);
+                          }
+                          setShowBlindProfileModal(true);
+                          setBlindProfileTab('outreach');
+                        }}
+                        style={{
+                          background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+                          border: 'none',
+                          color: '#ffffff',
+                          borderRadius: '6px',
+                          padding: '6px 14px',
+                          fontSize: '0.8rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          flexShrink: 0
+                        }}
+                      >
+                        <Send size={14} /> Weiterleiten an {tracking.nextRecommendedPartner?.short_name || 'Folge-Partner'}
+                      </button>
+                    </div>
+                  );
+                }
+
+                // Status NONE: Empfehlungs-Banner
+                return (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 16px',
+                    background: partnerRec.isSpecialtyMatch ? 'rgba(168, 85, 247, 0.1)' : 'rgba(56, 189, 248, 0.08)',
+                    border: `1px solid ${partnerRec.isSpecialtyMatch ? 'rgba(168, 85, 247, 0.3)' : 'rgba(56, 189, 248, 0.25)'}`,
+                    borderRadius: '10px',
+                    color: partnerRec.isSpecialtyMatch ? '#d8b4fe' : '#93c5fd',
+                    fontSize: '0.84rem',
+                    marginBottom: '10px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <Sparkles size={18} color={partnerRec.isSpecialtyMatch ? '#c084fc' : '#38bdf8'} />
+                      <div>
+                        <div>
+                          <strong>Empfohlener Partner: {partnerRec.partner?.name}</strong>{' '}
+                          <span style={{ opacity: 0.85 }}>({partnerRec.partner?.tier})</span>
+                          {partnerRec.partner?.id === 'taskforce' && (
+                            <span style={{ marginLeft: '6px', color: '#34d399', fontWeight: 600 }}>• Vertragspartner (18M Schutz)</span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '0.78rem', opacity: 0.9, marginTop: '2px' }}>
+                          {partnerRec.rationale}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDispatchPartner(partnerRec.partner?.name || 'taskforce - Management on Demand AG');
+                        setOutreachPartnerId(partnerRec.partner?.id || 'taskforce');
+                        setShowBlindProfileModal(true);
+                        setBlindProfileTab('outreach');
+                      }}
+                      style={{
+                        background: partnerRec.isSpecialtyMatch ? 'rgba(168, 85, 247, 0.2)' : 'rgba(56, 189, 248, 0.15)',
+                        border: `1px solid ${partnerRec.isSpecialtyMatch ? 'rgba(168, 85, 247, 0.4)' : 'rgba(56, 189, 248, 0.35)'}`,
+                        color: '#f8fafc',
+                        borderRadius: '6px',
+                        padding: '5px 12px',
+                        fontSize: '0.8rem',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        flexShrink: 0
+                      }}
+                    >
+                      <Send size={13} /> Für {partnerRec.partner?.short_name || 'Partner'} vorbereiten
+                    </button>
+                  </div>
+                );
+              })()}
+
               {/* ── 1. STAMMDATEN CARD ── */}
               <div className="pult-stammdaten-card" style={{
                 background: '#0e1015',
@@ -2971,121 +3183,136 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
               </div>
 
               {/* ── 3. VIER EINDEUTIGE AKTIONS-BUTTONS AM UNTEREN RAND ── */}
-              <div className="pult-action-bar" style={{
-                marginTop: 'auto',
-                paddingTop: '20px',
-                borderTop: '1px solid #1e232d',
-                display: 'grid',
-                gridTemplateColumns: '1.25fr 1fr 1.2fr 1.2fr',
-                gap: '12px'
-              }}>
-                {/* Button 0: Prominenter Teaser & Dossier Button */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowBlindProfileModal(true);
-                    setBlindProfileTab('teaser');
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    padding: '14px 18px',
-                    borderRadius: '10px',
-                    border: '1px solid #38bdf8',
-                    background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                    color: '#ffffff',
-                    fontSize: '0.95rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    boxShadow: '0 4px 16px rgba(2, 132, 199, 0.4)'
-                  }}
-                  title="Dossier & Teaser öffnen: 1-Page PDF, Blind-Profil & Outreach-Vorbereitung"
-                >
-                  <FileText size={18} />
-                  <span>📄 Dossier &amp; Teaser</span>
-                </button>
+              {(() => {
+                const tracking = getOutreachTrackingStatus(activeOpp);
+                return (
+                  <div className="pult-action-bar" style={{
+                    marginTop: 'auto',
+                    paddingTop: '20px',
+                    borderTop: '1px solid #1e232d',
+                    display: 'grid',
+                    gridTemplateColumns: '1.25fr 1fr 1.2fr 1.2fr',
+                    gap: '12px'
+                  }}>
+                    {/* Button 0: Prominenter Teaser & Dossier Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowBlindProfileModal(true);
+                        setBlindProfileTab('teaser');
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        padding: '14px 18px',
+                        borderRadius: '10px',
+                        border: '1px solid #38bdf8',
+                        background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                        color: '#ffffff',
+                        fontSize: '0.95rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 4px 16px rgba(2, 132, 199, 0.4)'
+                      }}
+                      title="Dossier & Teaser öffnen: 1-Page PDF, Blind-Profil & Outreach-Vorbereitung"
+                    >
+                      <FileText size={18} />
+                      <span>📄 Dossier &amp; Teaser</span>
+                    </button>
 
-                {/* Button 1: Verwerfen */}
-                <button
-                  type="button"
-                  onClick={() => handleTriageAction('dismiss', activeOpp)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    padding: '14px 18px',
-                    borderRadius: '10px',
-                    border: '1px solid rgba(239, 68, 68, 0.4)',
-                    background: 'rgba(239, 68, 68, 0.12)',
-                    color: '#f87171',
-                    fontSize: '0.95rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    boxShadow: '0 2px 10px rgba(239, 68, 68, 0.1)'
-                  }}
-                  title="Signal verwerfen und aus dem Posteingang entfernen (springt automatisch zum nächsten Fall)"
-                >
-                  <X size={18} />
-                  <span>❌ Verwerfen</span>
-                </button>
+                    {/* Button 1: Verwerfen */}
+                    <button
+                      type="button"
+                      onClick={() => handleTriageAction('dismiss', activeOpp)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        padding: '14px 18px',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(239, 68, 68, 0.4)',
+                        background: 'rgba(239, 68, 68, 0.12)',
+                        color: '#f87171',
+                        fontSize: '0.95rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 2px 10px rgba(239, 68, 68, 0.1)'
+                      }}
+                      title="Signal verwerfen und aus dem Posteingang entfernen (springt automatisch zum nächsten Fall)"
+                    >
+                      <X size={18} />
+                      <span>❌ Verwerfen</span>
+                    </button>
 
-                {/* Button 2: In Boutique-Pool (Tier 2) */}
-                <button
-                  type="button"
-                  onClick={() => handleTriageAction('boutique_tier2', activeOpp)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    padding: '14px 18px',
-                    borderRadius: '10px',
-                    border: '1px solid #3b82f6',
-                    background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
-                    color: '#ffffff',
-                    fontSize: '0.95rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    boxShadow: '0 4px 16px rgba(37, 99, 235, 0.3)'
-                  }}
-                  title="In den Boutique-Pool (Mandats-Archiv) für Zweitverwertung verschieben (springt automatisch zum nächsten Fall)"
-                >
-                  <Briefcase size={18} />
-                  <span>🏢 In Boutique-Pool (Tier 2)</span>
-                </button>
+                    {/* Button 2: In Boutique-Pool (Tier 2) */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (tracking.isLocked48h) return;
+                        handleTriageAction('boutique_tier2', activeOpp);
+                      }}
+                      disabled={tracking.isLocked48h}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        padding: '14px 18px',
+                        borderRadius: '10px',
+                        border: tracking.isLocked48h ? '1px solid #475569' : '1px solid #3b82f6',
+                        background: tracking.isLocked48h ? 'rgba(71, 85, 105, 0.25)' : 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                        color: tracking.isLocked48h ? '#94a3b8' : '#ffffff',
+                        fontSize: '0.95rem',
+                        fontWeight: 700,
+                        cursor: tracking.isLocked48h ? 'not-allowed' : 'pointer',
+                        opacity: tracking.isLocked48h ? 0.6 : 1,
+                        transition: 'all 0.2s ease',
+                        boxShadow: tracking.isLocked48h ? 'none' : '0 4px 16px rgba(37, 99, 235, 0.3)'
+                      }}
+                      title={tracking.isLocked48h ? `Gesperrt: 48h-Frist an ${tracking.partnerName} läuft (${tracking.remainingHours}h)` : "In den Boutique-Pool (Mandats-Archiv) für Zweitverwertung verschieben (springt automatisch zum nächsten Fall)"}
+                    >
+                      <Briefcase size={18} />
+                      <span>{tracking.isLocked48h ? `⛔ 48h gesperrt (${tracking.remainingHours}h)` : '🏢 In Boutique-Pool (Tier 2)'}</span>
+                    </button>
 
-                {/* Button 3: Als Tier-1 vormerken */}
-                <button
-                  type="button"
-                  onClick={() => handleTriageAction('priority_tier1', activeOpp)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    padding: '14px 18px',
-                    borderRadius: '10px',
-                    border: '1px solid #a855f7',
-                    background: 'linear-gradient(135deg, #6b21a8 0%, #9333ea 100%)',
-                    color: '#ffffff',
-                    fontSize: '0.95rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    boxShadow: '0 4px 16px rgba(147, 51, 234, 0.3)'
-                  }}
-                  title="Als Tier-1 für Groß-Provider (taskforce) vormerken (springt automatisch zum nächsten Fall)"
-                >
-                  <Sparkles size={18} />
-                  <span>👑 Als Tier-1 vormerken</span>
-                </button>
-              </div>
+                    {/* Button 3: Als Tier-1 vormerken */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (tracking.isLocked48h) return;
+                        handleTriageAction('priority_tier1', activeOpp);
+                      }}
+                      disabled={tracking.isLocked48h}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        padding: '14px 18px',
+                        borderRadius: '10px',
+                        border: tracking.isLocked48h ? '1px solid #475569' : '1px solid #a855f7',
+                        background: tracking.isLocked48h ? 'rgba(71, 85, 105, 0.25)' : 'linear-gradient(135deg, #6b21a8 0%, #9333ea 100%)',
+                        color: tracking.isLocked48h ? '#94a3b8' : '#ffffff',
+                        fontSize: '0.95rem',
+                        fontWeight: 700,
+                        cursor: tracking.isLocked48h ? 'not-allowed' : 'pointer',
+                        opacity: tracking.isLocked48h ? 0.6 : 1,
+                        transition: 'all 0.2s ease',
+                        boxShadow: tracking.isLocked48h ? 'none' : '0 4px 16px rgba(147, 51, 234, 0.3)'
+                      }}
+                      title={tracking.isLocked48h ? `Gesperrt: 48h-Frist an ${tracking.partnerName} läuft (${tracking.remainingHours}h)` : "Als Tier-1 für Groß-Provider (taskforce) vormerken (springt automatisch zum nächsten Fall)"}
+                    >
+                      <Sparkles size={18} />
+                      <span>{tracking.isLocked48h ? '⛔ 48h gesperrt' : '👑 Als Tier-1 vormerken'}</span>
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
           );
         })() : (
@@ -3281,11 +3508,10 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                       onChange={(e) => {
                         const val = e.target.value;
                         setDispatchPartner(val);
-                        const p = getPartnerByNameOrId(val);
-                        if (p?.defaultProtectionMonths) {
-                          setDispatchProtectionMonths(p.defaultProtectionMonths);
-                          setIsDispatchCustomDuration(![18, 12, 24, 6].includes(p.defaultProtectionMonths));
-                        }
+                        const p = getProviderById(val) || getPartnerByNameOrId(val);
+                        const dur = p?.default_protection_months || p?.defaultProtectionMonths || (val.toLowerCase().includes('taskforce') ? 18 : 12);
+                        setDispatchProtectionMonths(dur);
+                        setIsDispatchCustomDuration(![18, 12, 24, 6].includes(dur));
                       }}
                       style={{
                         width: '100%',
@@ -3298,14 +3524,29 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                         cursor: 'pointer'
                       }}
                     >
-                      {getCooperationPartners().map((p) => (
-                        <option key={p.id} value={p.name}>{p.name} ({p.contactPerson || p.shortName})</option>
-                      ))}
-                      <option value="Egon Zehnder International">Egon Zehnder International</option>
-                      <option value="Russell Reynolds Associates">Russell Reynolds Associates</option>
-                      <option value="Spencer Stuart">Spencer Stuart</option>
-                      <option value="Korn Ferry">Korn Ferry</option>
-                      <option value="Freier PE-Partner / Family Office">Freier PE-Partner / Family Office</option>
+                      <optgroup label="TIER 1 (Groß-Provider · DACH &amp; Int.)">
+                        <option value="taskforce - Management on Demand AG">taskforce AG (Vertragspartner · 18M Schutz, 5%)</option>
+                        <option value="Atreus GmbH">Atreus GmbH (Heidrick &amp; Struggles · Transformation)</option>
+                        <option value="Management Angels GmbH">Management Angels (Groß-Provider)</option>
+                        <option value="BIE Executive">BIE Executive (London / UK First-Look)</option>
+                      </optgroup>
+                      <optgroup label="TIER 2 (Mittelstands-Sozietäten · CRO &amp; Restrukturierung)">
+                        <option value="F&P Executive Solutions AG">F&P Executive Solutions (Mittelstand &amp; CRO)</option>
+                        <option value="FalkenSteg GmbH">FalkenSteg (StaRUG &amp; Insolvenzberatung)</option>
+                        <option value="Centuros GmbH">Centuros (Distressed &amp; Turnaround)</option>
+                      </optgroup>
+                      <optgroup label="TIER 3 (Spezial-Boutiquen · Nische)">
+                        <option value="Curacon / WMC Healthcare">Curacon / WMC Healthcare (Kliniken &amp; Healthcare)</option>
+                        <option value="CVM Capital Value Management GmbH">CVM Capital (Asset-Verwertung &amp; Distressed M&amp;A)</option>
+                      </optgroup>
+                      <optgroup label="Weitere akkreditierte Partner &amp; Whitelist">
+                        <option value="Top Fifty AG">Top Fifty AG (Baar/Zug · Schweiz)</option>
+                        <option value="Egon Zehnder International">Egon Zehnder International</option>
+                        <option value="Russell Reynolds Associates">Russell Reynolds Associates</option>
+                        <option value="Spencer Stuart">Spencer Stuart</option>
+                        <option value="Korn Ferry">Korn Ferry</option>
+                        <option value="Freier PE-Partner / Family Office">Freier PE-Partner / Family Office</option>
+                      </optgroup>
                     </select>
                   </div>
 
@@ -3448,27 +3689,34 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                     >
                       Abbrechen
                     </button>
-                    <button
-                      type="button"
-                      disabled={isDirectPublishing}
-                      onClick={handleConfirmDispatch}
-                      style={{
-                        padding: '10px 22px',
-                        borderRadius: '8px',
-                        background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                        color: '#ffffff',
-                        border: 'none',
-                        fontWeight: 700,
-                        fontSize: '0.88rem',
-                        cursor: isDirectPublishing ? 'not-allowed' : 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                      }}
-                    >
-                      {isDirectPublishing ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
-                      <span>{dispatchProtectionMonths} Monate Kundenschutz aktivieren</span>
-                    </button>
+                    {(() => {
+                      const tracking = getOutreachTrackingStatus(activeOpp);
+                      const isLocked = tracking.isLocked48h;
+                      return (
+                        <button
+                          type="button"
+                          disabled={isDirectPublishing || isLocked}
+                          onClick={handleConfirmDispatch}
+                          style={{
+                            padding: '10px 22px',
+                            borderRadius: '8px',
+                            background: isLocked ? '#94a3b8' : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                            color: '#ffffff',
+                            border: 'none',
+                            fontWeight: 700,
+                            fontSize: '0.88rem',
+                            cursor: (isDirectPublishing || isLocked) ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                          title={isLocked ? `Gesperrt: 48h-Frist an ${tracking.partnerName} läuft (${tracking.remainingHours}h)` : 'Kundenschutz aktivieren'}
+                        >
+                          {isDirectPublishing ? <Loader2 size={16} className="animate-spin" /> : isLocked ? <Clock size={16} /> : <ShieldCheck size={16} />}
+                          <span>{isLocked ? `⛔ 48h gesperrt (${tracking.partnerName})` : `${dispatchProtectionMonths} Monate Kundenschutz aktivieren`}</span>
+                        </button>
+                      );
+                    })()}
                   </div>
                 </>
               )}
@@ -3943,16 +4191,55 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                     </div>
                   ) : null}
 
+                  {/* 48h Sperr-Warnung im Outreach-Formular */}
+                  {(() => {
+                    const tracking = getOutreachTrackingStatus(activeOpp);
+                    if (tracking.isLocked48h) {
+                      return (
+                        <div style={{
+                          background: 'rgba(234, 179, 8, 0.15)',
+                          border: '1px solid #eab308',
+                          borderRadius: '10px',
+                          padding: '14px 18px',
+                          color: '#facc15',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          fontSize: '0.9rem',
+                          marginBottom: '10px'
+                        }}>
+                          <Clock size={22} color="#eab308" style={{ flexShrink: 0 }} />
+                          <div>
+                            <strong>⚠️ 48-Stunden-Versandsperre aktiv:</strong> Dieses Mandat wurde bereits an <strong>{tracking.partnerName}</strong> übermittelt.
+                            {' '}Noch <strong>{tracking.remainingHours}h{tracking.remainingMinutes > 0 && tracking.remainingHours < 6 ? ` ${tracking.remainingMinutes}m` : ''}</strong> bis zum Ablauf ({new Date(tracking.expiresAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr).
+                            <div style={{ fontSize: '0.8rem', color: '#fef08a', marginTop: '2px' }}>Der Weiterleitungs-Button ist blockiert, um versehentlichen Doppelversand zu verhindern.</div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+
                   {/* Partner Selection & Meta */}
                   <div style={{ background: '#0e131f', border: '1px solid #1e293b', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                       <div style={{ flex: 1, minWidth: '280px' }}>
                         <label style={{ display: 'block', fontSize: '0.84rem', color: '#94a3b8', marginBottom: '6px', fontWeight: 700 }}>
-                          Akkreditierten Partner auswählen:
+                          Akkreditierten Partner auswählen (DACH-Raum):
                         </label>
                         <select
                           value={outreachPartnerId}
-                          onChange={(e) => setOutreachPartnerId(e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setOutreachPartnerId(val);
+                            const p = getProviderById(val);
+                            if (p) {
+                              setDispatchPartner(p.name);
+                              if (p.default_protection_months) {
+                                setDispatchProtectionMonths(p.default_protection_months);
+                              }
+                            }
+                          }}
                           style={{
                             padding: '10px 14px',
                             borderRadius: '8px',
@@ -3965,30 +4252,51 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                             boxSizing: 'border-box'
                           }}
                         >
-                          {OUTREACH_PARTNERS.map(p => (
-                            <option key={p.id} value={p.id}>
-                              {p.name} ({p.location})
-                            </option>
-                          ))}
+                          <optgroup label="TIER 1 (Groß-Provider · DACH &amp; Int.)">
+                            <option value="taskforce">taskforce AG (Vertragspartner · 18M Schutz, 5%)</option>
+                            <option value="atreus">Atreus GmbH (Heidrick &amp; Struggles · Transformation)</option>
+                            <option value="management-angels">Management Angels GmbH (Groß-Provider)</option>
+                            <option value="bie-executive">BIE Executive (London / UK First-Look)</option>
+                          </optgroup>
+                          <optgroup label="TIER 2 (Mittelstands-Sozietäten · CRO &amp; Restrukturierung)">
+                            <option value="fp-executive">F&P Executive Solutions (Mittelstand &amp; CRO)</option>
+                            <option value="falkensteg">FalkenSteg GmbH (StaRUG &amp; Restrukturierung)</option>
+                            <option value="centuros">Centuros GmbH (Turnaround &amp; Distressed)</option>
+                          </optgroup>
+                          <optgroup label="TIER 3 (Spezial-Boutiquen · Nische)">
+                            <option value="curacon-wmc">Curacon / WMC Healthcare (Kliniken &amp; Healthcare)</option>
+                            <option value="cvm-capital">CVM Capital Value Management (Asset-Verwertung)</option>
+                          </optgroup>
+                          <optgroup label="Weitere akkreditierte Partner">
+                            <option value="topfifty">Top Fifty AG (Baar/Zug · Schweiz)</option>
+                          </optgroup>
                         </select>
                       </div>
 
                       {(() => {
-                        const currentP = OUTREACH_PARTNERS.find(p => p.id === outreachPartnerId) || OUTREACH_PARTNERS[0];
+                        const currentP = getProviderById(outreachPartnerId) || OUTREACH_PARTNERS.find(p => p.id === outreachPartnerId) || OUTREACH_PARTNERS[0];
+                        const contact = currentP.primary_contact || { name: currentP.contactPerson, email: currentP.email, phone: currentP.phone };
+                        const isContract = currentP.status === 'ACTIVE_CONTRACT' || currentP.id === 'taskforce';
                         return (
-                          <div style={{ display: 'flex', gap: '14px', background: '#070a12', border: '1px solid #1e293b', padding: '10px 16px', borderRadius: '8px', fontSize: '0.82rem' }}>
+                          <div style={{ display: 'flex', gap: '14px', background: '#070a12', border: '1px solid #1e293b', padding: '10px 16px', borderRadius: '8px', fontSize: '0.82rem', flexWrap: 'wrap' }}>
                             <div>
                               <div style={{ color: '#64748b' }}>Ansprechpartner:</div>
-                              <div style={{ color: '#f8fafc', fontWeight: 600 }}>{currentP.contactPerson}</div>
+                              <div style={{ color: '#f8fafc', fontWeight: 600 }}>{contact?.name || currentP.contactPerson || 'Partner-Desk'}</div>
                             </div>
                             <div style={{ borderLeft: '1px solid #1e293b', paddingLeft: '14px' }}>
                               <div style={{ color: '#64748b' }}>E-Mail:</div>
-                              <div style={{ color: '#38bdf8', fontWeight: 600 }}>{currentP.email}</div>
+                              <div style={{ color: '#38bdf8', fontWeight: 600 }}>{contact?.email || currentP.email || 'mandate@taskforce.net'}</div>
                             </div>
+                            {contact?.phone && (
+                              <div style={{ borderLeft: '1px solid #1e293b', paddingLeft: '14px' }}>
+                                <div style={{ color: '#64748b' }}>Telefon:</div>
+                                <div style={{ color: '#94a3b8', fontWeight: 600 }}>{contact.phone}</div>
+                              </div>
+                            )}
                             <div style={{ borderLeft: '1px solid #1e293b', paddingLeft: '14px' }}>
-                              <div style={{ color: '#64748b' }}>Exklusivität:</div>
-                              <div style={{ color: '#4ade80', fontWeight: 700 }}>
-                                {currentP.exclusivityHours ? `${currentP.exclusivityHours}h Exklusivrechte` : `${currentP.exclusivityDays} Tage`}
+                              <div style={{ color: '#64748b' }}>Status &amp; Schutz:</div>
+                              <div style={{ color: isContract ? '#4ade80' : '#facc15', fontWeight: 700 }}>
+                                {isContract ? '👑 Rahmenvertrag (18M Schutz)' : `${currentP.tier || 'TIER 2'} · Test-Probeballon (48h)`}
                               </div>
                             </div>
                           </div>
@@ -4077,28 +4385,41 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                         })()}
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={handleExecuteOutreach}
-                        disabled={isOutreachLogging}
-                        style={{
-                          background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-                          color: '#ffffff',
-                          border: 'none',
-                          padding: '10px 20px',
-                          borderRadius: '6px',
-                          fontWeight: 700,
-                          fontSize: '0.88rem',
-                          cursor: isOutreachLogging ? 'not-allowed' : 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          boxShadow: '0 0 14px rgba(34, 197, 94, 0.4)'
-                        }}
-                      >
-                        {isOutreachLogging ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
-                        <span>{isOutreachLogging ? 'Wird gespeichert...' : '💾 Outreach protokollieren &amp; Kundenschutz aktivieren'}</span>
-                      </button>
+                      {(() => {
+                        const tracking = getOutreachTrackingStatus(activeOpp);
+                        const isLocked = tracking.isLocked48h;
+                        return (
+                          <button
+                            type="button"
+                            onClick={handleExecuteOutreach}
+                            disabled={isOutreachLogging || isLocked}
+                            style={{
+                              background: isLocked ? '#475569' : 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                              color: '#ffffff',
+                              border: 'none',
+                              padding: '10px 20px',
+                              borderRadius: '6px',
+                              fontWeight: 700,
+                              fontSize: '0.88rem',
+                              cursor: (isOutreachLogging || isLocked) ? 'not-allowed' : 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              boxShadow: isLocked ? 'none' : '0 0 14px rgba(34, 197, 94, 0.4)'
+                            }}
+                            title={isLocked ? `48h-Sperrfrist an ${tracking.partnerName} aktiv (${tracking.remainingHours}h)` : 'Outreach speichern & Kundenschutz aktivieren'}
+                          >
+                            {isOutreachLogging ? <Loader2 size={16} className="animate-spin" /> : isLocked ? <Clock size={16} /> : <ShieldCheck size={16} />}
+                            <span>
+                              {isOutreachLogging
+                                ? 'Wird gespeichert...'
+                                : isLocked
+                                  ? `⛔ 48h-Frist aktiv (${tracking.remainingHours}h an ${tracking.partnerName})`
+                                  : '💾 Outreach protokollieren & Kundenschutz aktivieren'}
+                            </span>
+                          </button>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
