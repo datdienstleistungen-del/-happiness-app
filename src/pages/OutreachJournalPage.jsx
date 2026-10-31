@@ -26,7 +26,9 @@ import {
   Sparkles,
   Archive,
   RefreshCw,
-  Inbox
+  Inbox,
+  Trash2,
+  RotateCcw
 } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -214,6 +216,20 @@ export default function OutreachJournalPage() {
   const [emailSyncSuccessBanner, setEmailSyncSuccessBanner] = useState(null)
   const [emailDirectionFilter, setEmailDirectionFilter] = useState('ALL') // 'ALL' | 'INBOUND' | 'OUTBOUND'
   const [expandedEmailId, setExpandedEmailId] = useState('gmail-msg-20261028-005') // Neueste E-Mail direkt aufgeklappt
+
+  const DELETED_EMAILS_STORAGE_KEY = 'nexus:deleted_partner_email_ids_v1'
+
+  // Gelöschte E-Mail IDs (Permanent im localStorage persistiert)
+  const [deletedEmailIds, setDeletedEmailIds] = useState(() => {
+    try {
+      const raw = localStorage.getItem('nexus:deleted_partner_email_ids_v1')
+      return raw ? JSON.parse(raw) : ['imap-inbound-2906', 'imap-inbound-2892', 'imap-inbound-2883']
+    } catch (e) {
+      return ['imap-inbound-2906', 'imap-inbound-2892', 'imap-inbound-2883']
+    }
+  })
+  const [showTrashView, setShowTrashView] = useState(false)
+  const [emailDeleteNotice, setEmailDeleteNotice] = useState(null) // { mail: object, text: string }
 
   // Modals
   const [showNewOutreachModal, setShowNewOutreachModal] = useState(false)
@@ -492,7 +508,7 @@ export default function OutreachJournalPage() {
       if (updatedEmails) {
         setSyncedEmails(updatedEmails)
         setEmailSyncSuccessBanner({
-          count: updatedEmails.length,
+          count: updatedEmails.filter(e => !deletedEmailIds.includes(e.id)).length,
           time: new Date().toLocaleTimeString('de-DE')
         })
         setTimeout(() => setEmailSyncSuccessBanner(null), 8000)
@@ -502,9 +518,97 @@ export default function OutreachJournalPage() {
     }
   }
 
+  // E-Mail löschen / verwerfen
+  const handleDeleteEmail = (mailId, e = null) => {
+    if (e) e.stopPropagation()
+    const target = syncedEmails.find(m => m.id === mailId)
+    setDeletedEmailIds(prev => {
+      const next = Array.from(new Set([...prev, mailId]))
+      try {
+        localStorage.setItem(DELETED_EMAILS_STORAGE_KEY, JSON.stringify(next))
+      } catch (err) {}
+      return next
+    })
+    if (target) {
+      setEmailDeleteNotice({
+        mail: target,
+        text: `E-Mail „${(target.subject || 'Ohne Betreff').slice(0, 48)}...“ gelöscht.`
+      })
+      setTimeout(() => {
+        setEmailDeleteNotice(current => (current?.mail?.id === mailId ? null : current))
+      }, 7000)
+    }
+  }
+
+  // E-Mail wiederherstellen
+  const handleRestoreEmail = (mailId, e = null) => {
+    if (e) e.stopPropagation()
+    setDeletedEmailIds(prev => {
+      const next = prev.filter(id => id !== mailId)
+      try {
+        localStorage.setItem(DELETED_EMAILS_STORAGE_KEY, JSON.stringify(next))
+      } catch (err) {}
+      return next
+    })
+    setEmailDeleteNotice(null)
+  }
+
+  // 1-Klick Junk-Bereinigung (Bounces, System-Mails & Job-Alerts)
+  const handleCleanupJunkEmails = () => {
+    const junk = syncedEmails.filter(m => {
+      const from = (m.from || '').toLowerCase()
+      const subj = (m.subject || '').toLowerCase()
+      return from.includes('mailer-daemon') ||
+             from.includes('postmaster') ||
+             from.includes('linkedin.com') ||
+             subj.includes('delivery status notification') ||
+             subj.includes('undelivered mail') ||
+             subj.includes('job als ')
+    })
+    if (junk.length === 0) {
+      alert('Keine weiteren System-Bounces oder Spam-Mails gefunden.')
+      return
+    }
+    const junkIds = junk.map(j => j.id)
+    setDeletedEmailIds(prev => {
+      const next = Array.from(new Set([...prev, ...junkIds]))
+      try {
+        localStorage.setItem(DELETED_EMAILS_STORAGE_KEY, JSON.stringify(next))
+      } catch (err) {}
+      return next
+    })
+    setEmailDeleteNotice({
+      mail: null,
+      text: `${junk.length} nutzlose System- & Bounce-Mails bereinigt.`
+    })
+    setTimeout(() => setEmailDeleteNotice(null), 6000)
+  }
+
+  const activeSyncedEmails = useMemo(() => syncedEmails.filter(e => !deletedEmailIds.includes(e.id)), [syncedEmails, deletedEmailIds])
+  const trashedSyncedEmails = useMemo(() => syncedEmails.filter(e => deletedEmailIds.includes(e.id)), [syncedEmails, deletedEmailIds])
+  const potentialJunkCount = useMemo(() => {
+    return activeSyncedEmails.filter(m => {
+      const from = (m.from || '').toLowerCase()
+      const subj = (m.subject || '').toLowerCase()
+      return from.includes('mailer-daemon') ||
+             from.includes('postmaster') ||
+             from.includes('linkedin.com') ||
+             subj.includes('delivery status notification') ||
+             subj.includes('undelivered mail') ||
+             subj.includes('job als ')
+    }).length
+  }, [activeSyncedEmails])
+
   // Filterung Gmail Partner-E-Mails
   const filteredEmails = useMemo(() => {
     return syncedEmails.filter(item => {
+      const isDeleted = deletedEmailIds.includes(item.id)
+      if (showTrashView) {
+        if (!isDeleted) return false
+      } else {
+        if (isDeleted) return false
+      }
+
       const q = searchQuery.toLowerCase().trim()
       const matchesSearch = !q ||
         (item.subject || '').toLowerCase().includes(q) ||
@@ -519,7 +623,7 @@ export default function OutreachJournalPage() {
 
       return matchesSearch && matchesDirection
     })
-  }, [syncedEmails, searchQuery, emailDirectionFilter])
+  }, [syncedEmails, deletedEmailIds, showTrashView, searchQuery, emailDirectionFilter])
 
   // Status ändern
   const handleUpdateStatus = (id, newStatus) => {
@@ -734,30 +838,65 @@ export default function OutreachJournalPage() {
         )}
 
         {activeTab === 'emails' && (
-          <div className="gmail-filter-group">
+          <div className="gmail-filter-group" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <button
               type="button"
-              className={`gmail-filter-btn ${emailDirectionFilter === 'ALL' ? 'active' : ''}`}
-              onClick={() => setEmailDirectionFilter('ALL')}
+              className={`gmail-filter-btn ${!showTrashView && emailDirectionFilter === 'ALL' ? 'active' : ''}`}
+              onClick={() => {
+                setShowTrashView(false)
+                setEmailDirectionFilter('ALL')
+              }}
             >
-              Alle ({syncedEmails.length})
+              Alle ({activeSyncedEmails.length})
             </button>
             <button
               type="button"
-              className={`gmail-filter-btn ${emailDirectionFilter === 'INBOUND' ? 'active' : ''}`}
-              onClick={() => setEmailDirectionFilter('INBOUND')}
+              className={`gmail-filter-btn ${!showTrashView && emailDirectionFilter === 'INBOUND' ? 'active' : ''}`}
+              onClick={() => {
+                setShowTrashView(false)
+                setEmailDirectionFilter('INBOUND')
+              }}
             >
-              <ArrowDownLeft size={13} color={emailDirectionFilter === 'INBOUND' ? '#fff' : '#16a34a'} />
-              Eingang ({syncedEmails.filter(e => e.direction === 'INBOUND').length})
+              <ArrowDownLeft size={13} color={(!showTrashView && emailDirectionFilter === 'INBOUND') ? '#fff' : '#16a34a'} />
+              Eingang ({activeSyncedEmails.filter(e => e.direction === 'INBOUND').length})
             </button>
             <button
               type="button"
-              className={`gmail-filter-btn ${emailDirectionFilter === 'OUTBOUND' ? 'active' : ''}`}
-              onClick={() => setEmailDirectionFilter('OUTBOUND')}
+              className={`gmail-filter-btn ${!showTrashView && emailDirectionFilter === 'OUTBOUND' ? 'active' : ''}`}
+              onClick={() => {
+                setShowTrashView(false)
+                setEmailDirectionFilter('OUTBOUND')
+              }}
             >
-              <ArrowUpRight size={13} color={emailDirectionFilter === 'OUTBOUND' ? '#fff' : '#2563eb'} />
-              Ausgang ({syncedEmails.filter(e => e.direction === 'OUTBOUND').length})
+              <ArrowUpRight size={13} color={(!showTrashView && emailDirectionFilter === 'OUTBOUND') ? '#fff' : '#2563eb'} />
+              Ausgang ({activeSyncedEmails.filter(e => e.direction === 'OUTBOUND').length})
             </button>
+
+            {potentialJunkCount > 0 && (
+              <button
+                type="button"
+                className="gmail-filter-btn"
+                style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                onClick={handleCleanupJunkEmails}
+                title="Alle System-Bounces und Job-Meldungen mit einem Klick entfernen"
+              >
+                <Trash2 size={13} color="#ef4444" />
+                🧹 {potentialJunkCount} Bounces / Spam bereinigen
+              </button>
+            )}
+
+            {trashedSyncedEmails.length > 0 && (
+              <button
+                type="button"
+                className={`gmail-filter-btn ${showTrashView ? 'trash-active' : ''}`}
+                style={showTrashView ? { background: '#ef4444', color: '#fff', borderColor: '#dc2626' } : { color: '#64748b' }}
+                onClick={() => setShowTrashView(prev => !prev)}
+                title="Gelöschte E-Mails anzeigen / wiederherstellen"
+              >
+                <Trash2 size={13} />
+                {showTrashView ? 'Zurück zur Postfach-Ansicht' : `Papierkorb (${trashedSyncedEmails.length})`}
+              </button>
+            )}
           </div>
         )}
 
@@ -1069,12 +1208,36 @@ export default function OutreachJournalPage() {
             </div>
           </div>
 
+          {emailDeleteNotice && (
+            <div className="gmail-delete-toast">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Trash2 size={16} color="#ef4444" />
+                <span style={{ fontWeight: 600 }}>{emailDeleteNotice.text}</span>
+              </div>
+              {emailDeleteNotice.mail && (
+                <button
+                  type="button"
+                  className="btn-undo-delete"
+                  onClick={() => handleRestoreEmail(emailDeleteNotice.mail.id)}
+                >
+                  <RotateCcw size={13} /> <span>Rückgängig machen</span>
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="gmail-emails-list">
             {filteredEmails.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px 20px', background: '#fff', border: '1px dashed #cbd5e1', borderRadius: '10px', color: '#64748b' }}>
                 <Mail size={32} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
-                <div style={{ fontWeight: 600 }}>Keine E-Mails für den aktuellen Filter gefunden</div>
-                <div style={{ fontSize: '0.84rem', marginTop: '4px' }}>Klicken Sie oben auf „E-Mails synchronisieren“, um neue Nachrichten abzurufen.</div>
+                <div style={{ fontWeight: 600 }}>
+                  {showTrashView ? 'Der Papierkorb ist leer' : 'Keine E-Mails für den aktuellen Filter gefunden'}
+                </div>
+                <div style={{ fontSize: '0.84rem', marginTop: '4px' }}>
+                  {showTrashView
+                    ? 'Gelöschte Nachrichten werden hier aufgelistet und können jederzeit wiederhergestellt werden.'
+                    : 'Klicken Sie oben auf „E-Mails synchronisieren“, um neue Nachrichten abzurufen.'}
+                </div>
               </div>
             ) : (
               filteredEmails.map(mail => {
@@ -1119,6 +1282,29 @@ export default function OutreachJournalPage() {
                           <div>{mailDate.toLocaleDateString('de-DE')}</div>
                           <div style={{ fontSize: '0.74rem' }}>{mailDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr</div>
                         </div>
+
+                        {showTrashView ? (
+                          <button
+                            type="button"
+                            className="btn-restore-email-quick"
+                            onClick={(e) => handleRestoreEmail(mail.id, e)}
+                            title="E-Mail wiederherstellen"
+                          >
+                            <RotateCcw size={14} color="#16a34a" />
+                            <span>Wiederherstellen</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn-delete-email-quick"
+                            onClick={(e) => handleDeleteEmail(mail.id, e)}
+                            title="Diese E-Mail aus NeXus löschen / verwerfen"
+                          >
+                            <Trash2 size={14} />
+                            <span>Löschen</span>
+                          </button>
+                        )}
+
                         <button
                           type="button"
                           className="btn-preview-toggle"
@@ -1158,26 +1344,51 @@ export default function OutreachJournalPage() {
                           </div>
                         )}
 
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '14px', paddingTop: '10px', borderTop: '1px solid #e2e8f0' }}>
-                          <button
-                            type="button"
-                            className="preview-copy-btn"
-                            onClick={() => handleCopyText(`Betreff: ${mail.subject}\n\n${mail.bodyText}`, `gmail-${mail.id}`)}
-                          >
-                            {copiedField === `gmail-${mail.id}` ? (
-                              <><Check size={14} color="#16a34a" /> <strong>Text kopiert!</strong></>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginTop: '14px', paddingTop: '10px', borderTop: '1px solid #e2e8f0' }}>
+                          <div>
+                            {showTrashView ? (
+                              <button
+                                type="button"
+                                className="btn-restore-email-quick"
+                                onClick={(e) => handleRestoreEmail(mail.id, e)}
+                              >
+                                <RotateCcw size={14} color="#16a34a" />
+                                <span>E-Mail wiederherstellen</span>
+                              </button>
                             ) : (
-                              <><Copy size={14} /> <span>E-Mail kopieren</span></>
+                              <button
+                                type="button"
+                                className="btn-delete-email-action"
+                                onClick={(e) => handleDeleteEmail(mail.id, e)}
+                                title="Diese E-Mail aus NeXus löschen"
+                              >
+                                <Trash2 size={14} />
+                                <span>Diese E-Mail löschen</span>
+                              </button>
                             )}
-                          </button>
+                          </div>
 
-                          <Link
-                            to="/nexus/mandats-archiv"
-                            className="preview-link-btn"
-                            title="Im Mandats-Archiv öffnen"
-                          >
-                            <Archive size={14} /> <span>Im Mandats-Archiv prüfen</span>
-                          </Link>
+                          <div style={{ display: 'flex', gap: '10px' }}>
+                            <button
+                              type="button"
+                              className="preview-copy-btn"
+                              onClick={() => handleCopyText(`Betreff: ${mail.subject}\n\n${mail.bodyText}`, `gmail-${mail.id}`)}
+                            >
+                              {copiedField === `gmail-${mail.id}` ? (
+                                <><Check size={14} color="#16a34a" /> <strong>Text kopiert!</strong></>
+                              ) : (
+                                <><Copy size={14} /> <span>E-Mail kopieren</span></>
+                              )}
+                            </button>
+
+                            <Link
+                              to="/nexus/mandats-archiv"
+                              className="preview-link-btn"
+                              title="Im Mandats-Archiv prüfen"
+                            >
+                              <Archive size={14} /> <span>Im Mandats-Archiv prüfen</span>
+                            </Link>
+                          </div>
                         </div>
                       </div>
                     )}

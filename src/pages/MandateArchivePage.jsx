@@ -399,6 +399,27 @@ export default function MandateArchivePage() {
   const [emailFilterMode, setEmailFilterMode] = useState('mandate') // 'mandate' | 'all'
   const [expandedEmailId, setExpandedEmailId] = useState(null)
 
+  // Gelöschte E-Mail IDs (Permanent im localStorage persistiert)
+  const [deletedEmailIds, setDeletedEmailIds] = useState(() => {
+    try {
+      const raw = localStorage.getItem('nexus:deleted_partner_email_ids_v1')
+      return raw ? JSON.parse(raw) : ['imap-inbound-2906', 'imap-inbound-2892', 'imap-inbound-2883']
+    } catch (e) {
+      return ['imap-inbound-2906', 'imap-inbound-2892', 'imap-inbound-2883']
+    }
+  })
+
+  const handleDeletePartnerEmail = (mailId, e = null) => {
+    if (e) e.stopPropagation()
+    setDeletedEmailIds(prev => {
+      const next = Array.from(new Set([...prev, mailId]))
+      try {
+        localStorage.setItem('nexus:deleted_partner_email_ids_v1', JSON.stringify(next))
+      } catch (err) {}
+      return next
+    })
+  }
+
   // Initiales Laden synchronisierter Partner-E-Mails aus JSON-Storage
   useEffect(() => {
     fetch('/data/partner_emails.json')
@@ -2677,7 +2698,8 @@ Primärnachweis: ${item.source || item.notes}`
 
           {auditModalTab === 'emails' && (() => {
             const comp = (selectedAuditMandate.company || '').toLowerCase();
-            const mandateEmails = syncedEmails.filter(email => {
+            const activeEmails = syncedEmails.filter(e => !deletedEmailIds.includes(e.id));
+            const mandateEmails = activeEmails.filter(email => {
               if (!email) return false;
               const mName = (email.mandateName || '').toLowerCase();
               const subj = (email.subject || '').toLowerCase();
@@ -2688,7 +2710,7 @@ Primärnachweis: ${item.source || item.notes}`
               );
             });
 
-            const displayList = emailFilterMode === 'all' ? syncedEmails : mandateEmails;
+            const displayList = emailFilterMode === 'all' ? activeEmails : mandateEmails;
 
             return (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -2735,7 +2757,7 @@ Primärnachweis: ${item.source || item.notes}`
                         cursor: 'pointer'
                       }}
                     >
-                      Alle Partner-Mails ({syncedEmails.length})
+                      Alle Partner-Mails ({activeEmails.length})
                     </button>
                   </div>
 
@@ -2852,9 +2874,31 @@ Primärnachweis: ${item.source || item.notes}`
                               </span>
                             </div>
 
-                            <div style={{ fontSize: '0.76rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                              <Calendar size={13} color="#94a3b8" />
-                              <span>{new Date(email.date).toLocaleString('de-DE')}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ fontSize: '0.76rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <Calendar size={13} color="#94a3b8" />
+                                <span>{new Date(email.date).toLocaleString('de-DE')}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => handleDeletePartnerEmail(email.id, e)}
+                                title="Diese E-Mail aus NeXus löschen"
+                                style={{
+                                  background: 'transparent',
+                                  border: '1px solid transparent',
+                                  color: '#94a3b8',
+                                  cursor: 'pointer',
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  fontSize: '0.74rem'
+                                }}
+                              >
+                                <Trash2 size={13} />
+                                <span>Löschen</span>
+                              </button>
                             </div>
                           </div>
 

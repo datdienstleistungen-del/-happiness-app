@@ -30,8 +30,28 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 const DATA_PARTNERS_DIR = path.join(PROJECT_ROOT, 'data', 'partners');
 const EMAILS_FILE = path.join(DATA_PARTNERS_DIR, 'partner_emails.json');
 const PUBLIC_EMAILS_FILE = path.join(PROJECT_ROOT, 'public', 'data', 'partner_emails.json');
+const DELETED_EMAILS_FILE = path.join(DATA_PARTNERS_DIR, 'deleted_email_ids.json');
 
 const DEFAULT_USER_ID = '976e6211-8931-425a-a171-0c062290181b';
+
+/**
+ * Filtert nutzlose System-Mails (Mailer-Daemon Bounces, Job-Alerts etc.) aus
+ */
+function isJunkEmail(fromHeader = '', toHeader = '', subject = '', bodyText = '') {
+  const lowerFrom = (fromHeader || '').toLowerCase();
+  const lowerSubj = (subject || '').toLowerCase();
+
+  if (lowerFrom.includes('mailer-daemon') || lowerFrom.includes('postmaster') || lowerFrom.includes('jobalerts-noreply@linkedin.com') || lowerFrom.includes('noreply@')) {
+    return true;
+  }
+  if (lowerSubj.includes('delivery status notification') || lowerSubj.includes('undelivered mail') || lowerSubj.includes('failure notice')) {
+    return true;
+  }
+  if (lowerFrom.includes('linkedin.com') && (lowerSubj.includes('job als') || lowerSubj.includes('jobangebot') || lowerSubj.includes('recruiting'))) {
+    return true;
+  }
+  return false;
+}
 
 // Automatisches Einlesen der .env-Datei falls process.env noch nicht befüllt ist
 function loadEnv() {
@@ -188,7 +208,15 @@ export async function syncPartnerEmails(options = {}) {
 
   fs.mkdirSync(DATA_PARTNERS_DIR, { recursive: true });
 
-  // 1. Lade bestehenden Mail-Bestand aus Datei
+  // 1. Lade bestehenden Mail-Bestand aus Datei & gelöschte IDs
+  let deletedIds = new Set();
+  if (fs.existsSync(DELETED_EMAILS_FILE)) {
+    try {
+      const raw = JSON.parse(fs.readFileSync(DELETED_EMAILS_FILE, 'utf-8'));
+      if (Array.isArray(raw)) deletedIds = new Set(raw);
+    } catch (e) {}
+  }
+
   let existingEmails = [];
   if (fs.existsSync(EMAILS_FILE)) {
     try {
@@ -200,11 +228,15 @@ export async function syncPartnerEmails(options = {}) {
     }
   }
 
-  // 2. Führe Backfill zusammen (Deduplizierung nach ID)
+  // 2. Führe Backfill zusammen (Deduplizierung nach ID & Filterung gelöschter/nutzloser Mails)
   const emailMap = new Map();
-  existingEmails.forEach(e => { if (e.id) emailMap.set(e.id, e); });
+  existingEmails.forEach(e => {
+    if (e.id && !deletedIds.has(e.id) && !isJunkEmail(e.from, e.to, e.subject, e.bodyText)) {
+      emailMap.set(e.id, e);
+    }
+  });
   HISTORICAL_BACKFILL_EMAILS.forEach(e => {
-    if (!emailMap.has(e.id)) {
+    if (!emailMap.has(e.id) && !deletedIds.has(e.id) && !isJunkEmail(e.from, e.to, e.subject, e.bodyText)) {
       emailMap.set(e.id, e);
     }
   });
@@ -279,6 +311,12 @@ export async function syncPartnerEmails(options = {}) {
                 const dateVal = parsed.date ? new Date(parsed.date).toISOString() : (message.internalDate ? new Date(message.internalDate).toISOString() : new Date().toISOString());
                 const bodyText = (parsed.text || parsed.textAsHtml || '').trim();
 
+                // 0. Nutzlose Mails (Bounces, Job-Alerts) oder manuell gelöschte Mails überspringen
+                const entryId = `imap-${targetBox.direction.toLowerCase()}-${message.uid}`;
+                if (deletedIds.has(entryId) || isJunkEmail(fromHeader, toHeader, subject, bodyText)) {
+                  continue;
+                }
+
                 // Partner-Prüfung: Gehört Absender oder Empfänger zu akkreditierten Provider-Domains?
                 const isPartnerRelated = Object.keys(PROVIDER_DOMAINS).some(domain => 
                   fromHeader.toLowerCase().includes(domain) || 
@@ -291,7 +329,6 @@ export async function syncPartnerEmails(options = {}) {
                   const isOutbound = targetBox.direction === 'OUTBOUND';
                   const classification = classifyMandateAndCategory(subject, bodyText, isOutbound);
 
-                  const entryId = `imap-${targetBox.direction.toLowerCase()}-${message.uid}`;
                   const entry = {
                     id: entryId,
                     threadId: message.envelope?.messageId || entryId,

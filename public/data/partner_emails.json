@@ -16,26 +16,8 @@
     "cvm-capital.de",
     "top50interim.com"
   ],
-  "total_emails": 19,
+  "total_emails": 16,
   "emails": [
-    {
-      "id": "imap-inbound-2906",
-      "threadId": "<6ae5e8a7.d3152f10.96e97.dce0.GMR@mx.google.com>",
-      "date": "2026-10-31T13:09:59.000Z",
-      "from": "\"Mail Delivery Subsystem\" <mailer-daemon@googlemail.com>",
-      "to": "datdienstleistungen@gmail.com",
-      "subject": "Delivery Status Notification (Failure)",
-      "domain": "taskforce.net",
-      "partnerId": "taskforce",
-      "partnerName": "taskforce - Management on Demand AG",
-      "mandateId": null,
-      "mandateName": "Allgemeine Partner-Kommunikation",
-      "category": "MANDATE_CONFIRMATION",
-      "direction": "INBOUND",
-      "status": "CONFIRMED",
-      "bodyText": "** Die Nachricht wurde blockiert **\n\nIhre Nachricht an jenschristophers@taskforce.net wurde blockiert. Weitere Informationen finden Sie unter \"Technische Details\" weiter unten.\n\nHier erfahren Sie mehr: https://aka.ms/EXOSmtpErrors (Warnung: Sie werden über diesen Link zur Website eines Drittanbieters weitergeleitet.)\n\nDie Antwort vom Remoteserver ist:\n550 5.4.1 Recipient address rejected: Access denied. For more information see https://aka.ms/EXOSmtpErrors [DB1PEPF000509E5.eurprd03.prod.outlook.com 2026-10-31T13:09:59.424Z 08DF368BE8EC0933]\n\nReporting-MTA: dns; googlemail.com\nArrival-Date: Sat, 31 Oct 2026 06:09:58 -0700 (PDT)\nX-Original-Message-ID: <CAATtpgzMjYgVWwL653mpA3Ufw9_pp9=_CRxV7A-cft0m3pF_qw@mail.gmail.com>\n\nFinal-Recipient: rfc822; jenschristophers@taskforce.net\nAction: failed\nStatus: 5.4.1\nRemote-MTA: dns; taskforce-net.mail.protection.outlook.com.\n (2a01:111:f403:ca04::b, the server for the domain taskforce.net.)\nDiagnostic-Code: smtp; 550 5.4.1 Recipient address rejected: Access denied. For more information see https://aka.ms/EXOSmtpErrors [DB1PEPF000509E5.eurprd03.prod.outlook.com 2026-10-31T13:09:59.424Z 08DF368BE8EC0933]\nLast-Attempt-Date: Sat, 31 Oct 2026 06:09:59 -0700 (PDT)",
-      "matchedKeywords": []
-    },
     {
       "id": "imap-outbound-111",
       "threadId": "<CAATtpgzMjYgVWwL653mpA3Ufw9_pp9=_CRxV7A-cft0m3pF_qw@mail.gmail.com>",
@@ -78,44 +60,6 @@
         "Kooperationsvereinbarung",
         "TF-DAT-2026-KV01"
       ]
-    },
-    {
-      "id": "imap-inbound-2892",
-      "threadId": "<56750414.2792979.1793347209582@lva2-app68032.prod.linkedin.com>",
-      "date": "2026-10-30T08:00:09.000Z",
-      "from": "\"LinkedIn Jobbenachrichtigungen\" <jobalerts-noreply@linkedin.com>",
-      "to": "\"Harro Goerndt\" <datdienstleistungen@gmail.com>",
-      "subject": "Job als Bauleiter SHK (m/w/d) bei PAUL Tech AG Aktives Recruiting",
-      "domain": "taskforce.net",
-      "partnerId": "taskforce",
-      "partnerName": "taskforce - Management on Demand AG",
-      "mandateId": "pt-man-2026-01",
-      "mandateName": "PAUL Tech AG",
-      "category": "MANDATE_CONFIRMATION",
-      "direction": "INBOUND",
-      "status": "CONFIRMED",
-      "bodyText": "Ihre Jobbenachrichtigung für Baustellenkoordinator in Deutschland            \nBauleiter SHK (m/w/d)\nPAUL Tech AG\nDeutschland\n\nDieses Unternehmen ist aktiv auf Personalsuche.\nJobangebot ansehen: https://www.linkedin.com/comm/jobs/view/4484463413/?trackingId=Q4De1jTvOY3OiDSRM7Sd8Q%3D%3D&refId=kkb5CZK78ARLlH%2Bc2FsAjA%3D%3D&lipi=urn%3Ali%3Apage%3Aemail_email_job_alert_digest_01%3B9hLdlpuWQIu87uxmEjRqwA%3D%3D&midToken=AQFZyu8KruzpyQ&midSig=2JU9lBAURw4Iw1&trk=eml-email_job_alert_digest_01-primary_job_list-0-jobcard_body_text_0_jobid_4484463413_ssid_4889202881_fmid_o525gb~mvuomhnd~cq&trkEmail=eml-email_job_alert_digest_01-primary_job_list-0-jobcard_body_text_0_jobid_4484463413_ssid_4889202881_fmid_o525gb~mvuomhnd~cq-null-o525gb~mvuomhnd~cq-null-null&eid=o525gb-mvuomhnd-cq&otpToken=MTBlZWM1ZDZhNWNlYTgxNDhjMDRlODA0NzU5OTM1NTZlY2NkOTI4MzMyNDYwNTdjZWE1ZTE2MjdmNjY3MTAxYmJmODI3YWY4MjVmOWZiNTBkZjQxMDJmNmM3YjgzMjdhMWM0MTQ2NmFmNmVjZjJiYTZkZmM1OWY1YTg2ODE5ZDM2YWE2OTQyODI0ZjZlNWE3LDIsMQ%3D%3D\n\n---------------------------------------------------------\n  \n            \nBauleiter SHK (m/w/d)\nPAUL Tech AG\nDeutschland\n\nDieses Unternehmen ist aktiv auf Personalsuche.\nJobangebot ansehen: https://www.linkedin.com/comm/jobs/view/4484460392/?trackingId=RQEaiwaYbUDG%2BUdK8F3%2FNg%3D%3D&refId=kkb5CZK78ARLlH%2Bc2FsAjA%3D%3D&lipi=urn%3Ali%3Apage%3Aemail_email_job_alert_digest_01%3B9hLdlpuWQIu87uxmEjRqwA%3D%3D&midToken=AQFZyu8KruzpyQ&midSig=2JU9lBAURw4Iw1&trk=eml-email_job_alert_digest_01-primary_job_list-0-jobcard_body_text_1_jobid_4484460392_ssid_4889202881_fmid_o525gb~mvuomhnd~cq&trkEmail=eml-email_job_alert_digest_01-primary_job_list-0-jobcard_body_text_1_jobid_4484460392_ssid_4889202881_fmid_o525gb~mvuomhnd~cq-null-o525gb~mvuomhnd~cq-null-null&eid=o525gb-mvuomhnd-cq&otpToken=MTBlZWM1ZDZhNWNlYTgxNDhjMDRlODA0NzU5OTM1NTZlY2NkOTI4MzMyNDYwNTdjZWE1ZTE2MjdmNjY3MTAxYmJmODI3YWY4MjVmOWZiNTBkZjQxMDJmNmM3YjgzMjdhMWM0MTQ2NmFmNmVjZjJiYTZkZmM1OWY1YTg2ODE5ZDM2YWE2OTQyODI0ZjZlNWE3LDIsMQ%3D%3D\n\n---------------------------------------------------------\n  \n            \nBauleiter SHK (m/w/d)\nPAUL Tech AG\nDeutschland\n\nDieses Unternehmen ist aktiv auf Personalsuche.\nJobangebot ansehen: https://www.linkedin.com/comm/jobs/view/4484464324/?trackingId=J%2FVrTFZbC5NZ1m67T7VGeA%3D%3D&refId=kkb5CZK78ARLlH%2Bc2FsAjA%3D%3D&lipi=urn%3Ali%3Apage%3Aemail_email_job_alert_digest_01%3B9hLdlpuWQIu87uxmEjRqwA%3D%3D&midToken=AQFZyu8KruzpyQ&midSig=2JU9lBAURw4Iw1&trk=eml-email_job_alert_digest_01-primary_job_list-0-jobcard_body_text_2_jobid_4484464324_ssid_4889202881_fmid_o525gb~mvuomhnd~cq&trkEmail=eml-email_job_alert_digest_01-primary_job_list-0-jobcard_body_text_2_jobid_4484464324_ssid_4889202881_fmid_o525gb~mvuomhnd~cq-null-o525gb~mvuomhnd~cq-null-null&eid=o525gb-mvuomhnd-cq&otpToken=MTBlZWM1ZDZhNWNlYTgxNDhjMDRlODA0NzU5OTM1NTZlY2NkOTI4MzMyNDYwNTdjZWE1ZTE2MjdmNjY3MTAxYmJmODI3YWY4MjVmOWZiNTBkZjQxMDJmNmM3YjgzMjdhMWM0MTQ2NmFmNmVjZjJiYTZkZmM1OWY1YTg2ODE5ZDM2YWE2OTQyODI0ZjZlNWE3LDIsMQ%3D%3D\n\n--------------------------",
-      "matchedKeywords": [
-        "PAUL Tech"
-      ]
-    },
-    {
-      "id": "imap-inbound-2883",
-      "threadId": "<6ae2376e.760bfb91.1d8a0d.70e7.GMR@mx.google.com>",
-      "date": "2026-10-28T17:57:02.000Z",
-      "from": "\"Mail Delivery Subsystem\" <mailer-daemon@googlemail.com>",
-      "to": "datdienstleistungen@gmail.com",
-      "subject": "Delivery Status Notification (Failure)",
-      "domain": "taskforce.net",
-      "partnerId": "taskforce",
-      "partnerName": "taskforce - Management on Demand AG",
-      "mandateId": null,
-      "mandateName": "Allgemeine Partner-Kommunikation",
-      "category": "MANDATE_CONFIRMATION",
-      "direction": "INBOUND",
-      "status": "CONFIRMED",
-      "bodyText": "** Die Nachricht wurde blockiert **\n\nIhre Nachricht an jenschristophers@taskforce.net wurde blockiert. Weitere Informationen finden Sie unter \"Technische Details\" weiter unten.\n\nHier erfahren Sie mehr: https://aka.ms/EXOSmtpErrors (Warnung: Sie werden über diesen Link zur Website eines Drittanbieters weitergeleitet.)\n\nDie Antwort vom Remoteserver ist:\n550 5.4.1 Recipient address rejected: Access denied. For more information see https://aka.ms/EXOSmtpErrors [AM2PEPF00070CF7.eurprd02.prod.outlook.com 2026-10-28T17:57:02.321Z 08DF3145EC634E3C]\n\nReporting-MTA: dns; googlemail.com\nArrival-Date: Wed, 28 Oct 2026 10:57:01 -0700 (PDT)\nX-Original-Message-ID: <CAATtpgxwvCW75WUcGv6CmVkmeMeyav8dw9Z+vFEUVBoBefRZFg@mail.gmail.com>\n\nFinal-Recipient: rfc822; jenschristophers@taskforce.net\nAction: failed\nStatus: 5.4.1\nRemote-MTA: dns; taskforce-net.mail.protection.outlook.com.\n (2a01:111:f403:ca09::28, the server for the domain taskforce.net.)\nDiagnostic-Code: smtp; 550 5.4.1 Recipient address rejected: Access denied. For more information see https://aka.ms/EXOSmtpErrors [AM2PEPF00070CF7.eurprd02.prod.outlook.com 2026-10-28T17:57:02.321Z 08DF3145EC634E3C]\nLast-Attempt-Date: Wed, 28 Oct 2026 10:57:02 -0700 (PDT)",
-      "matchedKeywords": []
     },
     {
       "id": "imap-outbound-108",

@@ -1214,3 +1214,112 @@
   border-radius: 4px;
   border: 1px solid #e2e8f0;
 }
+
+/* ==========================================================================
+   GMAIL EMAIL DELETION & TRASH STYLES
+   ========================================================================== */
+
+.gmail-delete-toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 0.86rem;
+  animation: slideDown 0.2s ease;
+  flex-wrap: wrap;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.btn-undo-delete {
+  background: #ffffff;
+  border: 1px solid #f87171;
+  color: #b91c1c;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+
+.btn-undo-delete:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+.btn-delete-email-quick {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #94a3b8;
+  padding: 6px 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.btn-delete-email-quick:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.btn-restore-email-quick {
+  background: rgba(22, 163, 74, 0.1);
+  border: 1px solid rgba(22, 163, 74, 0.3);
+  border-radius: 6px;
+  color: #15803d;
+  padding: 6px 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  transition: all 0.15s ease;
+}
+
+.btn-restore-email-quick:hover {
+  background: #16a34a;
+  color: #ffffff;
+  border-color: #15803d;
+}
+
+.btn-delete-email-action {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #dc2626;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.btn-delete-email-action:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
