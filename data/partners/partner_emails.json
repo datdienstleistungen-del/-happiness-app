@@ -1,6 +1,6 @@
 {
   "version": "1.1.0",
-  "last_synced_at": "2026-10-31T16:20:27.928Z",
+  "last_synced_at": "2026-10-31T16:29:37.987Z",
   "user": "datdienstleistungen@gmail.com",
   "target_partner_domains": [
     "taskforce.net",
@@ -16,7 +16,7 @@
     "cvm-capital.de",
     "top50interim.com"
   ],
-  "total_emails": 24,
+  "total_emails": 19,
   "emails": [
     {
       "id": "imap-inbound-2906",
@@ -162,28 +162,6 @@
       ]
     },
     {
-      "id": "gmail-msg-20261028-005",
-      "threadId": "gmail-th-booster-01",
-      "date": "2026-10-28T16:05:00Z",
-      "from": "Frank Sieger <frank.sieger@taskforce.net>",
-      "to": "Harro Goerndt <datdienstleistungen@gmail.com>",
-      "subject": "Re: Mandats-Opportunität Automotive: BOOSTER Precision Components GmbH",
-      "domain": "taskforce.net",
-      "partnerId": "taskforce",
-      "partnerName": "taskforce - Management on Demand AG",
-      "mandateId": "c34144fa-48dc-4cbb-a0e3-3198df72c441",
-      "mandateName": "BOOSTER Precision Components GmbH",
-      "category": "MANDATE_CONFIRMATION",
-      "direction": "INBOUND",
-      "status": "CONFIRMED",
-      "bodyText": "Lieber Herr Goerndt,\n\nFall erhalten. Wir prüfen die Passung mit zwei verfügbaren CFO/CRO-Partnern aus dem Automotive-Cluster.\n\nRückmeldung zur Mandatsübernahme folgt kurzfristig.\n\nBeste Grüße,\nFrank Sieger",
-      "matchedKeywords": [
-        "BOOSTER",
-        "Automotive-Cluster",
-        "CFO/CRO"
-      ]
-    },
-    {
       "id": "imap-inbound-2881",
       "threadId": "<AM0PR05MB12477C48205490D58B67A5D5FE36F2@AM0PR05MB12477.eurprd05.prod.outlook.com>",
       "date": "2026-10-28T15:56:07.000Z",
@@ -204,30 +182,6 @@
       ]
     },
     {
-      "id": "gmail-msg-20261028-004",
-      "threadId": "gmail-th-booster-01",
-      "date": "2026-10-28T11:20:00Z",
-      "from": "Harro Goerndt <datdienstleistungen@gmail.com>",
-      "to": "Frank Sieger <frank.sieger@taskforce.net>",
-      "subject": "Mandats-Opportunität Automotive: BOOSTER Precision Components GmbH (Stillhalteabkommen & StaRUG-Verfahren)",
-      "domain": "taskforce.net",
-      "partnerId": "taskforce",
-      "partnerName": "taskforce - Management on Demand AG",
-      "mandateId": "c34144fa-48dc-4cbb-a0e3-3198df72c441",
-      "mandateName": "BOOSTER Precision Components GmbH",
-      "category": "MANDATE_DISPATCH",
-      "direction": "OUTBOUND",
-      "status": "SENT_PENDING",
-      "bodyText": "Lieber Herr Sieger,\n\nals Folgefall zur laufenden StaRUG-Restrukturierung bei BOOSTER Precision Components GmbH (Automotive Zulieferer) hat die Gläubigergruppe soeben die Stillhaltevereinbarung verlängert.\n\nEs zeichnet sich ein konkreter Bedarf für operative Restrukturierung und Finance/Controlling ab.\n\nBitte um kurze Bestätigung innerhalb von 48 Stunden zur weiteren Allokation.\n\nViele Grüße,\nHarro Goerndt",
-      "matchedKeywords": [
-        "Automotive",
-        "BOOSTER",
-        "Stillhalteabkommen",
-        "StaRUG",
-        "48 Stunden"
-      ]
-    },
-    {
       "id": "imap-outbound-107",
       "threadId": "<CAATtpgw2xt8UOrk5-8SW5OToJkaQzEDRfDochJ6m494Ap53EQQ@mail.gmail.com>",
       "date": "2026-10-28T07:00:00.000Z",
@@ -245,29 +199,6 @@
       "bodyText": "Hallo Herr Christophers,\n\nZur operativen Ergänzung unseres Austauschs gebe ich Ihnen hier direkt\neinen Einblick in ein tagesaktuelles Signal aus unserem Monitoring.\n\nWir erfassen Sondersituationen mit erheblichem Steuerungs- und\nHandlungsdruck, die sich ideal als konkreter Akquise-Anlass für Ihre\nPraxisgruppe Restrukturierung & Financial Advisory eignen:\n\nBLIND PROFILE – AKTUELLES MANDATS-SIGNAL (REFINANZIERUNG & SchVG)\n\n• Sektor & Profil:\nWachstumsstarker deutscher Mittelständler / Technologieunternehmen\n(PropTech & digitale Gebäudetechnik, Anleiheemittent).\n\n• Ausgangslage & Timing (vor 24 bis 48 Stunden):\nDie Gläubigerversammlung hat soeben einer Laufzeitverlängerung der\n35-Mio.-Euro-Mittelstandsanleihe bis 2028 zugestimmt. Allerdings passierte\ndies nicht zu den ursprünglichen Bedingungen der Geschäftsführung, sondern\nüber ein durchgesetztes Ergänzungsverlangen eines Gläubigers.\n\n• Der konkrete Handlungsdruck / Pain Point:\nDie Einigung verschafft dem Unternehmen Zeit, erkauft dies jedoch mit\ndrastischen Auflagen:\n- Der Zinskupon steigt auf 10 % p.a. (entspricht 3,5 Mio. Euro jährlicher\nZinslast).\n- Die Rückzahlung erfolgt bei Fälligkeit zu 113 % (zusätzliche\nTilgungsprämie von über 4,5 Mio. Euro).\n- Das Management steht ab sofort unter engmaschigem Monitoring durch die\nGläubigerseite.\n\n• Akquise-Anlass & Einsatzfelder für Ihr Management-Netzwerk:\nEs handelt sich um keinen formal vergebenen Beratungsauftrag, sondern um\neinen akuten Initiativ-Anlass direkt bei Vorstand / Geschäftsführung:\n1. Restrukturierungs-PMO / Covenant-Monitoring: Laufende Überwachung der\nLiquiditätslinien und Erfüllung der verschärften Gläubigerauflagen.\n2. Operatives Cash-Management: Sofortige Working-Capital-Optimierung zur\nSicherung des massiv gestiegenen Zinsdienstes.\n3. Vorstands-Entlastung bei der Sanierungsbegleitung: Fachliche Begleitung\nder operativen Maßnahmen, während das bestehende Kernteam das Tagesgeschäft\nabsichert.\n\nDie Primärbelege und die Unternehmensidentität liegen uns vollständig vor.\nSobald der Austausch für Sie von Interesse ist, gehen wir direkt in die\nKlardaten.\n\nBeste Grüße\n\nHarro Goerndt\nD.A.T. Dienstleistungen\n0174 8969137",
       "matchedKeywords": [
         "48h-Frist"
-      ]
-    },
-    {
-      "id": "gmail-msg-20261027-003",
-      "threadId": "gmail-th-paul-01",
-      "date": "2026-10-27T14:40:00Z",
-      "from": "Frank Sieger <frank.sieger@taskforce.net>",
-      "to": "Harro Goerndt <datdienstleistungen@gmail.com>",
-      "subject": "Re: Vertraulich: Mandats-Signal PAUL Tech AG (35 Mio. Anleihe-Laufzeitverlängerung & SchVG-Restrukturierung)",
-      "domain": "taskforce.net",
-      "partnerId": "taskforce",
-      "partnerName": "taskforce - Management on Demand AG",
-      "mandateId": "pt-man-2026-01",
-      "mandateName": "PAUL Tech AG",
-      "category": "MANDATE_CONFIRMATION",
-      "direction": "INBOUND",
-      "status": "CONFIRMED",
-      "bodyText": "Hallo Herr Goerndt,\n\nvielen Dank für die zügige Übermittlung. Wir haben den Fall intern gesichtet und in unsere Akquise-Pipeline für Interim-Management aufgenommen.\n\nUnser Practice Lead Restrukturierung prüft derzeit die Besetzung für das Sanierungs-PMO. Wir bestätigen den 18-monatigen Kundenschutz gemäß Rahmenvertrag bis 27.04.2028.\n\nHerzliche Grüße,\nFrank Sieger\ntaskforce AG",
-      "matchedKeywords": [
-        "PAUL Tech",
-        "Bestätigung",
-        "18-monatigen Kundenschutz",
-        "27.04.2028"
       ]
     },
     {
@@ -330,30 +261,6 @@
       "status": "CONFIRMED",
       "bodyText": "Hallo,\n\nja, lassen Sie uns das so machen. Senden Sie gerne die Vereinbarung zu.\n\nHerzliche Grüße / Kind regards\n\nJens Christophers\nCEO\n\nHier Termin buchen!<https://bookings.cloud.microsoft/book/taskforceTermineinladung@taskforce.net/s/E1UbDKo7iUyuf5StFCEO6Q2?ismsaljsauthenabled>\n\njens.christophers@taskforce.net<mailto:jens.christophers@taskforce.net>\n+49 173 722 3333\ntaskforce – Management on Demand AG | www.taskforce.net<https://go.taskforce.net/lnk/AV0AADTNkdwAAAAQDtAAAA_3i5AAAAAA4GoAAmPLABxaFgBlw2Lc6_Dafkz9RRSXidzBG-UATwAYs7s/2/FBlY8RvVqD0RFZJr_Xeicw/aHR0cHM6Ly93d3cudGFza2ZvcmNlLm5ldA>\nExecutive Board: Jens Christophers & Kristin Gölkel\nChairman of the Supervisory Board: Carsten Cramer\nAmtsgericht München HRB 283 862\nBeethovenplatz 2 | 80336 München\n\n\n\n\n\n\nVon: Harro Goerndt <datdienstleistungen@gmail.com>\nDatum: Freitag, 23. Oktober 2026 um 13:47\nAn: Jens Christophers <jens.christophers@taskforce.net>\nBetreff: Re: Zu Ihrer Rückmeldung: Exklusiv-Option Mandats-Signal Baustoffe & Bau\n\nSie erhalten nicht häufig E-Mails von datdienstleistungen@gmail.com. Erfahren Sie, warum dies wichtig ist<https://aka.ms/LearnAboutSenderIdentification>\nSehr geehrter Herr Christophers,\n\nBezug nehmend auf unseren bisherigen Austausch unterbreite ich Ihnen hiermit zwei aktuelle Mandats-Signale zur Prüfung auf vorläufig anonymisierter Basis:\n\nDossier 1: Tiefbau & Entwässerungstechnik (Südwestdeutschland)\n* Gegenstand: Vakanz der Vertriebsleitung Deutschland (Verantwortung für Fachhandel, Großprojekte und Regionalvertrieb).\n* Handlungsdruck: Unmittelbare Vakanzkosten im laufenden Geschäftsjahr; operativer Bedarf an sofortiger Interim-Führung bis zur endgültigen Neubesetzung.\n* Status: Unberührt und exklusiv verfügbar.\n\nDossier 2: Handelsgruppe / SB-Warenhäuser & Märkte (Saarland, ca. 20.000 MA)\n* Gegenstand: Neubesetzung der IT-Spitze / CIO.\n* Handlungsdruck: Anstehende Neuausrichtung und Restrukturierung der IT-Infrastruktur; Folgebedarf an Interim-Programm-Management und Transformationsbegleitung in der Übergangsphase.\n\nWir sind gerne bereit, die Belieferung mit derartigen Vorab-Signalen für Ihr Haus auf exklusiver Basis zu gestalten.\n\nDie vollständige Offenlegung der Unternehmensidentität (Klarname der Gesellschaft sowie verifizierte Primärquellen) erfolgt im Rahmen einer individuellen Bereitstellungs- bzw. Exklusivvereinbarung für den Mandatsfall.\n\nBitte teilen Sie mir kurz mit, ob eines der vorliegenden Profile für taskforce von Interesse ist, damit wir die entsprechende Vereinbarung zur Datenfreigabe aufsetzen können.\n\nMit freundlichen Grüßen\n\nHarro Goerndt\nD.A.T. Dienstleistungen · B2B Trigger Intelligence",
       "matchedKeywords": []
-    },
-    {
-      "id": "gmail-msg-20261027-002",
-      "threadId": "gmail-th-paul-01",
-      "date": "2026-10-27T09:15:00Z",
-      "from": "Harro Goerndt <datdienstleistungen@gmail.com>",
-      "to": "Frank Sieger <frank.sieger@taskforce.net>",
-      "subject": "Vertraulich: Mandats-Signal PAUL Tech AG (35 Mio. Anleihe-Laufzeitverlängerung & SchVG-Restrukturierung)",
-      "domain": "taskforce.net",
-      "partnerId": "taskforce",
-      "partnerName": "taskforce - Management on Demand AG",
-      "mandateId": "pt-man-2026-01",
-      "mandateName": "PAUL Tech AG",
-      "category": "MANDATE_DISPATCH",
-      "direction": "OUTBOUND",
-      "status": "ACTIVE_PROTECTED",
-      "bodyText": "Lieber Herr Sieger,\n\nanbei übermittle ich Ihnen exklusiv das vorläufige Blind-Dossier zur PAUL Tech AG (Mannheim).\n\nHintergrund: Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. € Anleihe. Es besteht akuter Bedarf an Restrukturierungs-PMO und Begleitung der Vorstands-Governance.\n\nGemäß unserem Rahmenvertrag (TF-DAT-2026-KV01) gilt der vereinbarte 18-monatige Kundenschutz ab Übermittlung bis zum 27.04.2028.\n\nBeste Grüße,\nHarro Goerndt\nD.A.T. Dienstleistungen",
-      "matchedKeywords": [
-        "PAUL Tech",
-        "35 Mio",
-        "SchVG",
-        "Laufzeitverlängerung",
-        "Gläubigerversammlung"
-      ]
     },
     {
       "id": "imap-outbound-105",
@@ -483,29 +390,6 @@
       "status": "SENT_PENDING",
       "bodyText": "Sehr geehrte Damen und Herren,\n\nüber unser B2B-Trigger-Radar haben wir ein zeitkritisches Signal im Bereich\nBaustoffe & Bauzulieferindustrie (Südwestdeutschland) erfasst:\n\nEin führender deutscher Hersteller von Bau- und Infrastrukturprojekten\nbesetzt zeitkritisch die Position der Vertriebsleitung Deutschland neu. Die\nVakanz umfasst die bundesweite Gesamtverantwortung für den mehrstufigen\nBaustoff-Fachhandel, Key-Account-Partnerschaften sowie die Führung der\nregionalen Vertriebsteams.\n\nAufgrund der drohenden Vakanz Kosten im laufenden Geschäftsjahr ist dieses\nSignal hoch relevant für spezialisierte Personalberater (Bau/Industrie),\nInterim-Management-Provider sowie vertriebs fokussierte Unternehmensberater.\n\nDas Dossier liefert das konkrete Zielunternehmen, die\nPrimärquellen-Nachweise, das funktionale Rollen-Targeting (Geschäftsführung\n& HR-Leitung inkl. Telefonzentrale) sowie einen praxiserprobten\nGesprächseinstieg.\n\nDetails & Freischaltung (max. 5 Marktzugriffe für 78,00 € zzgl. USt.):\n https://dat-dat.de/signal/baustoff-vertriebsleitung\n\nMit freundlichen Grüßen\n\nHarro Goerndt\nD.A.T. Dienstleistungen · B2B Trigger Intelligence\nWebsite: https://dat-dat.de",
       "matchedKeywords": []
-    },
-    {
-      "id": "gmail-msg-20261020-001",
-      "threadId": "gmail-th-kv-01",
-      "date": "2026-10-20T10:00:00Z",
-      "from": "Frank Sieger <frank.sieger@taskforce.net>",
-      "to": "Harro Goerndt <datdienstleistungen@gmail.com>",
-      "subject": "Finalisierung Rahmen-Kooperationsvereinbarung (TF-DAT-2026-KV01) & 18M Kundenschutz",
-      "domain": "taskforce.net",
-      "partnerId": "taskforce",
-      "partnerName": "taskforce - Management on Demand AG",
-      "mandateId": null,
-      "mandateName": "Partner-Akte taskforce AG",
-      "category": "PARTNER_CONTRACT",
-      "direction": "INBOUND",
-      "status": "CONFIRMED",
-      "bodyText": "Lieber Herr Goerndt,\n\nanbei erhalten Sie das von unserem Vorstand gegengezeichnete Vertragsexemplar unserer Rahmenvereinbarung (TF-DAT-2026-KV01).\n\nWir freuen uns auf die Zusammenarbeit im Rahmen Ihres NeXus Mandate Desks. Die 18-monatige Schutzfrist für qualifizierte Primärsignale und 5% Vermittlungsprovision sind wie vereinbart fixiert.\n\nAuf erfolgreiche gemeinsame Mandate!\n\nMit besten Grüßen,\nFrank Sieger\nVorstand\ntaskforce - Management on Demand AG\nMaximilianstraße 35a, 80539 München",
-      "matchedKeywords": [
-        "Kooperationsvereinbarung",
-        "TF-DAT-2026-KV01",
-        "18M Kundenschutz",
-        "5% Vermittlungsprovision"
-      ]
     }
   ]
 }
