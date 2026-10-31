@@ -1238,3 +1238,214 @@
 
 
 
+
+
+/* ==========================================================================
+   HUMAN-IN-THE-LOOP QUALITY GATE & AUDIT CHECKLIST
+   ========================================================================== */
+
+.quality-gate-card {
+  background: #0b0f17;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: all 0.2s ease;
+}
+
+.quality-gate-card.verified {
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.12);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, #0b0f17 100%);
+}
+
+.quality-gate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.quality-gate-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.quality-gate-title {
+  margin: 0;
+  font-size: 0.96rem;
+  font-weight: 800;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quality-gate-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge-pending-audit {
+  background: rgba(234, 179, 8, 0.15);
+  border: 1px solid rgba(234, 179, 8, 0.4);
+  color: #facc15;
+}
+
+.badge-audited-verified {
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  color: #34d399;
+}
+
+.btn-discard-scrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #f87171;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-discard-scrap:hover {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #ef4444;
+  transform: translateY(-1px);
+}
+
+.quality-gate-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quality-gate-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #06090e;
+  border: 1px solid #1e2533;
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.quality-gate-item:hover {
+  border-color: #334155;
+  background: #090d14;
+}
+
+.quality-gate-item.checked {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.04);
+}
+
+.quality-gate-checkbox {
+  width: 19px;
+  height: 19px;
+  border-radius: 5px;
+  border: 2px solid #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  background: #0b0f17;
+}
+
+.quality-gate-item.checked .quality-gate-checkbox {
+  background: #10b981;
+  border-color: #10b981;
+  color: #ffffff;
+}
+
+.quality-gate-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.quality-gate-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.quality-gate-item.checked .quality-gate-label {
+  color: #a7f3d0;
+}
+
+.quality-gate-subtext {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.quality-gate-hint-box {
+  background: rgba(2, 132, 199, 0.06);
+  border: 1px solid rgba(2, 132, 199, 0.25);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.82rem;
+  color: #7dd3fc;
+  line-height: 1.45;
+}
+
+.quality-gate-stamp-banner {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.08) 100%);
+  border: 1px solid #10b981;
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.stamp-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stamp-text-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #34d399;
+  letter-spacing: 0.02em;
+}
+
+.stamp-text-meta {
+  font-size: 0.76rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}

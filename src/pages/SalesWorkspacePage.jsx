@@ -438,31 +438,300 @@ export default function SalesWorkspacePage() {
   // DealCoach Stufe 2: Übertrag in Harros Prüf-Inbox
   const [isSubmittingReview, setIsSubmittingReview] = useState(false)
 
+  // ── Interaktives Quality Gate & Human-in-the-Loop Audit (Harro Goerndt) ──
+  const [humanAudits, setHumanAudits] = useState(() => {
+    try {
+      const cached = localStorage.getItem('nexus:human_audit_checklist_v1')
+      if (cached) return JSON.parse(cached)
+    } catch (e) {}
+    return {}
+  })
+
+  const getOppAudit = (opp) => {
+    if (!opp?.id) {
+      return {
+        legal_form_plausible: false,
+        restructuring_pressure: false,
+        budget_capacity: false,
+        status: 'PENDING_AUDIT',
+        audited_at: null,
+        audited_by: null
+      }
+    }
+    return humanAudits[opp.id] || {
+      legal_form_plausible: false,
+      restructuring_pressure: false,
+      budget_capacity: false,
+      status: 'PENDING_AUDIT',
+      audited_at: null,
+      audited_by: null
+    }
+  }
+
+  const handleToggleAuditCheck = (opp, criterionKey) => {
+    if (!opp?.id) return
+    const prevAudit = getOppAudit(opp)
+    const updatedCriteria = {
+      ...prevAudit,
+      [criterionKey]: !prevAudit[criterionKey]
+    }
+
+    const allVerified = Boolean(
+      updatedCriteria.legal_form_plausible &&
+      updatedCriteria.restructuring_pressure &&
+      updatedCriteria.budget_capacity
+    )
+
+    const nowIso = new Date().toISOString()
+    const newAudit = {
+      ...updatedCriteria,
+      status: allVerified ? 'AUDITED_VERIFIED' : 'PENDING_AUDIT',
+      audited_at: allVerified ? (prevAudit.audited_at || nowIso) : null,
+      audited_by: allVerified ? 'Harro Goerndt (D.A.T. Mandats-Desk)' : null
+    }
+
+    setHumanAudits(prev => {
+      const next = { ...prev, [opp.id]: newAudit }
+      try {
+        localStorage.setItem('nexus:human_audit_checklist_v1', JSON.stringify(next))
+      } catch (e) {}
+      return next
+    })
+
+    if (allVerified) {
+      try {
+        db.updateOpportunity(opp.id, {
+          review_status: 'verified',
+          review_notes: 'Qualitäts-Audit bestanden: Verifiziert durch Harro Goerndt (D.A.T. Mandats-Desk)',
+          reviewed_at: newAudit.audited_at
+        }).catch(() => {})
+      } catch (e) {}
+    }
+  }
+
+  const handleDiscardAsInvalid = async (opp = null) => {
+    const target = opp || activeOpp
+    if (!target?.id) return
+    const compName = resolveOppCompanyHelper(target)
+
+    // 1. Trainiere Ausschluss-Liste in localStorage
+    try {
+      const raw = localStorage.getItem('nexus:exclusion_patterns_v1')
+      const list = raw ? JSON.parse(raw) : []
+      if (compName && !list.includes(compName.toLowerCase())) {
+        list.push(compName.toLowerCase())
+        localStorage.setItem('nexus:exclusion_patterns_v1', JSON.stringify(list))
+      }
+    } catch (e) {}
+
+    // 2. Setze Audit-Status auf DISCARDED_INVALID
+    const nowIso = new Date().toISOString()
+    setHumanAudits(prev => {
+      const next = {
+        ...prev,
+        [target.id]: {
+          legal_form_plausible: false,
+          restructuring_pressure: false,
+          budget_capacity: false,
+          status: 'DISCARDED_INVALID',
+          discarded_at: nowIso,
+          discarded_by: 'Harro Goerndt (D.A.T. Mandats-Desk)',
+          reason: 'Als Schrott / Unqualifiziert verworfen'
+        }
+      }
+      try {
+        localStorage.setItem('nexus:human_audit_checklist_v1', JSON.stringify(next))
+      } catch (e) {}
+      return next
+    })
+
+    // 3. Modals schließen
+    setShowBlindProfileModal(false)
+    setShowDispatchModal(false)
+
+    // 4. In DB als DISCARDED_INVALID speichern
+    try {
+      await db.updateOpportunity(target.id, {
+        review_status: 'DISCARDED_INVALID',
+        status: 'DISCARDED_INVALID',
+        pipeline_stage: 'discarded',
+        review_notes: 'Signal als Schrott / Unqualifiziert verworfen - Harro Goerndt',
+        reviewed_at: nowIso
+      })
+    } catch (e) {}
+
+    // 5. Automatisch zum nächsten Fall springen
+    await handleTriageAction('dismiss', target)
+  }
+
+  // ── Reusable Component: Human-in-the-Loop Quality Gate (Harro Goerndt) ──
+  const renderQualityGate = (opp, compact = false) => {
+    if (!opp) return null;
+    const audit = getOppAudit(opp);
+    const isVerified = audit.status === 'AUDITED_VERIFIED';
+    const isDiscarded = audit.status === 'DISCARDED_INVALID';
+
+    return (
+      <div
+        className={`quality-gate-card ${compact ? 'compact' : ''}`}
+        style={compact ? { padding: '16px', background: '#0a0d14', border: '1px solid #1e293b', borderRadius: '10px' } : undefined}
+      >
+        <div className="quality-gate-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '1.05rem' }}>🛡️</span>
+            <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#f1f5f9', letterSpacing: '0.02em' }}>
+              Quality Gate: Human-in-the-Loop Audit (Harro Goerndt)
+            </span>
+            {isVerified ? (
+              <span className="badge-audited-verified">
+                <Check size={12} strokeWidth={3} /> AUDITED_VERIFIED
+              </span>
+            ) : isDiscarded ? (
+              <span style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', border: '1px solid #ef4444', borderRadius: '4px', padding: '2px 8px', fontSize: '0.74rem', fontWeight: 700 }}>
+                🗑️ DISCARDED_INVALID
+              </span>
+            ) : (
+              <span className="badge-pending-audit">
+                ⏳ 3-Punkte-Check ausstehend
+              </span>
+            )}
+          </div>
+
+          <button
+            type="button"
+            className="btn-discard-scrap"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDiscardAsInvalid(opp);
+            }}
+            title="Signal als unqualifizierten Schrott verwerfen, aus dem Posteingang entfernen und Ausschluss-Filter trainieren"
+          >
+            <Trash2 size={14} />
+            <span>🗑️ Als Schrott verwerfen</span>
+          </button>
+        </div>
+
+        {/* 3 Kriterien Checkliste */}
+        <div className="quality-gate-checklist" style={compact ? { gap: '8px' } : undefined}>
+          {/* Kriterium 1 */}
+          <div
+            className={`quality-gate-item ${audit.legal_form_plausible ? 'checked' : ''}`}
+            onClick={() => handleToggleAuditCheck(opp, 'legal_form_plausible')}
+          >
+            <div className="quality-gate-checkbox">
+              {audit.legal_form_plausible && <Check size={13} strokeWidth={3} />}
+            </div>
+            <div className="quality-gate-content">
+              <span className="quality-gate-label">
+                1. Rechtsform &amp; Sitz plausibel?
+              </span>
+              <span className="quality-gate-subtext">
+                Echter Rechtsträger (GmbH, AG, SE, KGaA) im DACH-Raum – kein Titel-Fragment oder Schein-Entity.
+              </span>
+            </div>
+          </div>
+
+          {/* Kriterium 2 */}
+          <div
+            className={`quality-gate-item ${audit.restructuring_pressure ? 'checked' : ''}`}
+            onClick={() => handleToggleAuditCheck(opp, 'restructuring_pressure')}
+          >
+            <div className="quality-gate-checkbox">
+              {audit.restructuring_pressure && <Check size={13} strokeWidth={3} />}
+            </div>
+            <div className="quality-gate-content">
+              <span className="quality-gate-label">
+                2. Konkreter Sanierungs- / Vakanz-Druck?
+              </span>
+              <span className="quality-gate-subtext">
+                StaRUG, Anleihe-Restrukturierung, Gläubigerabstimmung, CRO/CFO-Vakuum oder Schutzschirm – keine Banal-News.
+              </span>
+            </div>
+          </div>
+
+          {/* Kriterium 3 */}
+          <div
+            className={`quality-gate-item ${audit.budget_capacity ? 'checked' : ''}`}
+            onClick={() => handleToggleAuditCheck(opp, 'budget_capacity')}
+          >
+            <div className="quality-gate-checkbox">
+              {audit.budget_capacity && <Check size={13} strokeWidth={3} />}
+            </div>
+            <div className="quality-gate-content">
+              <span className="quality-gate-label">
+                3. Honorar-Fähigkeit gegeben?
+              </span>
+              <span className="quality-gate-subtext">
+                Mittelstand oder Konzern mit Budget für Interim-Management (Tagessatz ab 1.800–2.800 €).
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Nachweis-Stempel bei Freigabe */}
+        {isVerified && (
+          <div className="quality-gate-stamp-banner">
+            <div className="stamp-content">
+              <ShieldCheck size={22} color="#10b981" />
+              <div>
+                <div className="stamp-text-title">
+                  Qualitäts-Audit bestanden: Verifiziert durch Harro Goerndt (D.A.T. Mandats-Desk)
+                </div>
+                <div className="stamp-text-meta">
+                  Freigegeben zur Partner-Übermittlung · Zeitstempel:{' '}
+                  {audit.audited_at ? new Date(audit.audited_at).toLocaleString('de-DE') : new Date().toLocaleString('de-DE')}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Orientierungshilfe / Tooltip-Box */}
+        <div className="quality-gate-hint-box">
+          <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div>
+            <strong>Orientierungshilfe:</strong> Echte Mandate zeichnen sich durch institutionellen Handlungsdruck (Vorstands-Vakanz, Anleihe-Restrukturierung, StaRUG, Schutzschirm) und nachweisbare Rechtsträger aus. Bloße Image-Meldungen oder Personalwechsel im Mittelbau aussortieren.
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const resolveOppCompanyHelper = (o) => {
-    if (!o) return '';
+    if (!o) return ''
     let name = resolveTriggerCompanyName(
       o.triggers?.[0]?.nexus_trigger_events,
       o,
       o.nexus_companies?.name || o.company?.name || ''
-    );
+    )
     if (!name || name === 'Unternehmen' || name === 'Unbekanntes Unternehmen') {
-      const m = (o.title || '').match(/^\[[A-Z0-9_\-]+\]\s*([^:]+):/i);
+      const m = (o.title || '').match(/^\[[A-Z0-9_\-]+\]\s*([^:]+):/i)
       if (m && m[1].trim()) {
-        name = m[1].trim();
+        name = m[1].trim()
       }
     }
-    return (name && name !== 'Unternehmen' && name !== 'Unbekanntes Unternehmen') ? name.trim() : '';
-  };
+    return (name && name !== 'Unternehmen' && name !== 'Unbekanntes Unternehmen') ? name.trim() : ''
+  }
 
   const isStrictValidOpportunityHelper = (o) => {
-    if (!o) return false;
-    const comp = resolveOppCompanyHelper(o);
-    if (!comp || isPlaceholderCompany(comp)) return false;
-    const eventText = (o.triggers?.[0]?.nexus_trigger_events?.content || o.situation || o.title || '').trim();
-    if (!eventText || eventText.toLowerCase() === 'keine angabe' || eventText.length < 5) return false;
-    if (o.source && (o.source.endsWith('...') || o.source.endsWith('…'))) return false;
-    return true;
-  };
+    if (!o) return false
+    const comp = resolveOppCompanyHelper(o)
+    if (!comp || isPlaceholderCompany(comp)) return false
+
+    // Ausschluss-Liste prüfen
+    try {
+      const raw = localStorage.getItem('nexus:exclusion_patterns_v1')
+      const patterns = raw ? JSON.parse(raw) : []
+      if (patterns.some(p => p && comp.toLowerCase().includes(p.toLowerCase()))) {
+        return false
+      }
+    } catch (e) {}
+
+    const eventText = (o.triggers?.[0]?.nexus_trigger_events?.content || o.situation || o.title || '').trim()
+    if (!eventText || eventText.toLowerCase() === 'keine angabe' || eventText.length < 5) return false
+    if (o.source && (o.source.endsWith('...') || o.source.endsWith('…'))) return false
+    return true
+  }
 
   // 1-Klick-Triage: Ausführung von Verwerfen, Boutique-Pool oder Tier-1 mit automatischem Sprung zum nächsten Fall
   const handleTriageAction = async (actionType, oppToProcess = null) => {
@@ -1081,6 +1350,11 @@ ${(t.targetBuyers || []).map(b => `• ${b}`).join('\n')}
 
   const handleConfirmDispatch = async () => {
     if (!activeOpp) return;
+    const oppAudit = getOppAudit(activeOpp);
+    if (oppAudit.status !== 'AUDITED_VERIFIED') {
+      alert('Quality Gate nicht bestanden: Bitte bestätigen Sie zuerst alle 3 Kriterien des Quality Gates (Rechtsform, Sanierungsdruck, Honorar-Fähigkeit), bevor der Kundenschutz aktiviert wird.');
+      return;
+    }
     setIsDirectPublishing(true);
     try {
       const compName = resolveTriggerCompanyName(activeTrigger, activeOpp) || activeOpp.nexus_companies?.name || activeOpp.title || 'Mandat';
@@ -1182,6 +1456,11 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
 
   const handleExecuteOutreach = async () => {
     if (!activeOpp) return;
+    const oppAudit = getOppAudit(activeOpp);
+    if (oppAudit.status !== 'AUDITED_VERIFIED') {
+      alert('Quality Gate nicht bestanden: Bitte bestätigen Sie zuerst alle 3 Kriterien des Quality Gates (Rechtsform & Sitz, Sanierungs-/Vakanz-Druck, Honorar-Fähigkeit), bevor das Blind-Profil freigegeben wird.');
+      return;
+    }
     setIsOutreachLogging(true);
     setOutreachSuccessMessage('');
     try {
@@ -3182,9 +3461,13 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                 </div>
               </div>
 
+              {/* ── 2b. QUALITY GATE / HUMAN-IN-THE-LOOP AUDIT (HARRO GOERNDT) ── */}
+              {renderQualityGate(activeOpp)}
+
               {/* ── 3. VIER EINDEUTIGE AKTIONS-BUTTONS AM UNTEREN RAND ── */}
               {(() => {
                 const tracking = getOutreachTrackingStatus(activeOpp);
+                const isAuditedVerified = getOppAudit(activeOpp).status === 'AUDITED_VERIFIED';
                 return (
                   <div className="pult-action-bar" style={{
                     marginTop: 'auto',
@@ -3208,25 +3491,27 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                         gap: '8px',
                         padding: '14px 18px',
                         borderRadius: '10px',
-                        border: '1px solid #38bdf8',
-                        background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                        border: isAuditedVerified ? '1px solid #10b981' : '1px solid #38bdf8',
+                        background: isAuditedVerified
+                          ? 'linear-gradient(135deg, #059669 0%, #047857 100%)'
+                          : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
                         color: '#ffffff',
                         fontSize: '0.95rem',
                         fontWeight: 700,
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
-                        boxShadow: '0 4px 16px rgba(2, 132, 199, 0.4)'
+                        boxShadow: isAuditedVerified ? '0 4px 16px rgba(16, 185, 129, 0.4)' : '0 4px 16px rgba(2, 132, 199, 0.4)'
                       }}
                       title="Dossier & Teaser öffnen: 1-Page PDF, Blind-Profil & Outreach-Vorbereitung"
                     >
                       <FileText size={18} />
-                      <span>📄 Dossier &amp; Teaser</span>
+                      <span>📄 Dossier &amp; Teaser {isAuditedVerified ? '(✓ Auditiert)' : ''}</span>
                     </button>
 
-                    {/* Button 1: Verwerfen */}
+                    {/* Button 1: Als Schrott verwerfen */}
                     <button
                       type="button"
-                      onClick={() => handleTriageAction('dismiss', activeOpp)}
+                      onClick={() => handleDiscardAsInvalid(activeOpp)}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -3243,10 +3528,10 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                         transition: 'all 0.2s ease',
                         boxShadow: '0 2px 10px rgba(239, 68, 68, 0.1)'
                       }}
-                      title="Signal verwerfen und aus dem Posteingang entfernen (springt automatisch zum nächsten Fall)"
+                      title="Signal als unqualifizierten Schrott verwerfen, aus dem Posteingang entfernen und Ausschluss-Filter trainieren"
                     >
-                      <X size={18} />
-                      <span>❌ Verwerfen</span>
+                      <Trash2 size={18} />
+                      <span>🗑️ Als Schrott verwerfen</span>
                     </button>
 
                     {/* Button 2: In Boutique-Pool (Tier 2) */}
@@ -3499,6 +3784,9 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                     </div>
                   </div>
 
+                  {/* Quality Gate Checkliste vor Freigabe */}
+                  {renderQualityGate(activeOpp, true)}
+
                   <div>
                     <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
                       Partner-Organisation (Empfänger) *
@@ -3692,28 +3980,51 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                     {(() => {
                       const tracking = getOutreachTrackingStatus(activeOpp);
                       const isLocked = tracking.isLocked48h;
+                      const oppAudit = getOppAudit(activeOpp);
+                      const isAuditedVerified = oppAudit.status === 'AUDITED_VERIFIED';
+                      const isGated = !isAuditedVerified;
                       return (
                         <button
                           type="button"
-                          disabled={isDirectPublishing || isLocked}
+                          disabled={isDirectPublishing || isLocked || isGated}
                           onClick={handleConfirmDispatch}
                           style={{
                             padding: '10px 22px',
                             borderRadius: '8px',
-                            background: isLocked ? '#94a3b8' : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                            background: isGated ? '#475569' : isLocked ? '#94a3b8' : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
                             color: '#ffffff',
                             border: 'none',
                             fontWeight: 700,
                             fontSize: '0.88rem',
-                            cursor: (isDirectPublishing || isLocked) ? 'not-allowed' : 'pointer',
+                            cursor: (isDirectPublishing || isLocked || isGated) ? 'not-allowed' : 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '6px'
                           }}
-                          title={isLocked ? `Gesperrt: 48h-Frist an ${tracking.partnerName} läuft (${tracking.remainingHours}h)` : 'Kundenschutz aktivieren'}
+                          title={
+                            isGated
+                              ? 'Gesperrt: 3-Punkte Quality-Audit (Rechtsform, Sanierungsdruck, Honorar-Fähigkeit) muss vorher bestätigt werden'
+                              : isLocked
+                                ? `Gesperrt: 48h-Frist an ${tracking.partnerName} läuft (${tracking.remainingHours}h)`
+                                : 'Kundenschutz aktivieren'
+                          }
                         >
-                          {isDirectPublishing ? <Loader2 size={16} className="animate-spin" /> : isLocked ? <Clock size={16} /> : <ShieldCheck size={16} />}
-                          <span>{isLocked ? `⛔ 48h gesperrt (${tracking.partnerName})` : `${dispatchProtectionMonths} Monate Kundenschutz aktivieren`}</span>
+                          {isDirectPublishing ? (
+                            <Loader2 size={16} className="animate-spin" />
+                          ) : isGated ? (
+                            <AlertTriangle size={16} color="#eab308" />
+                          ) : isLocked ? (
+                            <Clock size={16} />
+                          ) : (
+                            <ShieldCheck size={16} />
+                          )}
+                          <span>
+                            {isGated
+                              ? '🔒 3-Punkte-Audit erforderlich'
+                              : isLocked
+                                ? `⛔ 48h gesperrt (${tracking.partnerName})`
+                                : `${dispatchProtectionMonths} Monate Kundenschutz aktivieren`}
+                          </span>
                         </button>
                       );
                     })()}
@@ -3894,6 +4205,9 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
               {/* Tab 1: 1-Page Teaser Vorschau & Print Layout */}
               {blindProfileTab === 'teaser' && (
                 <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {/* Quality Gate Checkliste */}
+                  {renderQualityGate(activeOpp, true)}
+
                   {/* Quick Action Bar for Teaser */}
                   <div className="no-print" style={{
                     display: 'flex',
@@ -4220,6 +4534,9 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                     return null;
                   })()}
 
+                  {/* Quality Gate Checkliste vor Freigabe */}
+                  {renderQualityGate(activeOpp, true)}
+
                   {/* Partner Selection & Meta */}
                   <div style={{ background: '#0e131f', border: '1px solid #1e293b', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
@@ -4359,27 +4676,36 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                         {(() => {
                           const currentP = OUTREACH_PARTNERS.find(p => p.id === outreachPartnerId) || OUTREACH_PARTNERS[0];
                           const mailtoHref = `mailto:${encodeURIComponent(currentP.email)}?subject=${encodeURIComponent(outreachSubject)}&body=${encodeURIComponent(outreachBody)}`;
+                          const oppAudit = getOppAudit(activeOpp);
+                          const isAuditedVerified = oppAudit.status === 'AUDITED_VERIFIED';
                           return (
                             <a
-                              href={mailtoHref}
-                              target="_blank"
+                              href={isAuditedVerified ? mailtoHref : '#'}
+                              onClick={(e) => {
+                                if (!isAuditedVerified) {
+                                  e.preventDefault();
+                                  alert('Quality Gate nicht bestanden: Bitte bestätigen Sie zuerst alle 3 Kriterien (Rechtsform & Sitz, Sanierungs-/Vakanz-Druck, Honorar-Fähigkeit), bevor das Blind-Profil freigegeben wird.');
+                                }
+                              }}
+                              target={isAuditedVerified ? "_blank" : undefined}
                               rel="noopener noreferrer"
                               style={{
-                                background: '#0284c7',
-                                color: '#ffffff',
-                                border: 'none',
+                                background: isAuditedVerified ? '#0284c7' : '#1e293b',
+                                color: isAuditedVerified ? '#ffffff' : '#64748b',
+                                border: '1px solid #334155',
                                 padding: '10px 16px',
                                 borderRadius: '6px',
                                 fontWeight: 700,
                                 fontSize: '0.84rem',
-                                cursor: 'pointer',
+                                cursor: isAuditedVerified ? 'pointer' : 'not-allowed',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '6px',
                                 textDecoration: 'none'
                               }}
+                              title={isAuditedVerified ? 'In Standard-Mailclient öffnen' : 'Gesperrt: 3-Punkte Quality-Audit erforderlich'}
                             >
-                              <span>✉️ In Standard-Mailclient öffnen</span>
+                              <span>{isAuditedVerified ? '✉️ In Standard-Mailclient öffnen' : '🔒 Mailclient (Audit erforderlich)'}</span>
                             </a>
                           );
                         })()}
@@ -4388,34 +4714,57 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                       {(() => {
                         const tracking = getOutreachTrackingStatus(activeOpp);
                         const isLocked = tracking.isLocked48h;
+                        const oppAudit = getOppAudit(activeOpp);
+                        const isAuditedVerified = oppAudit.status === 'AUDITED_VERIFIED';
+                        const isGated = !isAuditedVerified;
                         return (
                           <button
                             type="button"
                             onClick={handleExecuteOutreach}
-                            disabled={isOutreachLogging || isLocked}
+                            disabled={isOutreachLogging || isLocked || isGated}
                             style={{
-                              background: isLocked ? '#475569' : 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-                              color: '#ffffff',
+                              background: isGated
+                                ? '#334155'
+                                : isLocked
+                                  ? '#475569'
+                                  : 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                              color: isGated ? '#94a3b8' : '#ffffff',
                               border: 'none',
                               padding: '10px 20px',
                               borderRadius: '6px',
                               fontWeight: 700,
                               fontSize: '0.88rem',
-                              cursor: (isOutreachLogging || isLocked) ? 'not-allowed' : 'pointer',
+                              cursor: (isOutreachLogging || isLocked || isGated) ? 'not-allowed' : 'pointer',
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: '6px',
-                              boxShadow: isLocked ? 'none' : '0 0 14px rgba(34, 197, 94, 0.4)'
+                              boxShadow: (isGated || isLocked) ? 'none' : '0 0 14px rgba(34, 197, 94, 0.4)'
                             }}
-                            title={isLocked ? `48h-Sperrfrist an ${tracking.partnerName} aktiv (${tracking.remainingHours}h)` : 'Outreach speichern & Kundenschutz aktivieren'}
+                            title={
+                              isGated
+                                ? 'Gesperrt: 3-Punkte Quality-Audit (Rechtsform, Sanierungsdruck, Honorar-Fähigkeit) muss vorher bestätigt werden'
+                                : isLocked
+                                  ? `48h-Sperrfrist an ${tracking.partnerName} aktiv (${tracking.remainingHours}h)`
+                                  : 'Outreach speichern & Kundenschutz aktivieren'
+                            }
                           >
-                            {isOutreachLogging ? <Loader2 size={16} className="animate-spin" /> : isLocked ? <Clock size={16} /> : <ShieldCheck size={16} />}
+                            {isOutreachLogging ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : isGated ? (
+                              <AlertTriangle size={16} color="#eab308" />
+                            ) : isLocked ? (
+                              <Clock size={16} />
+                            ) : (
+                              <ShieldCheck size={16} />
+                            )}
                             <span>
                               {isOutreachLogging
                                 ? 'Wird gespeichert...'
-                                : isLocked
-                                  ? `⛔ 48h-Frist aktiv (${tracking.remainingHours}h an ${tracking.partnerName})`
-                                  : '💾 Outreach protokollieren & Kundenschutz aktivieren'}
+                                : isGated
+                                  ? '🔒 Gesperrt: 3-Punkte-Audit erforderlich'
+                                  : isLocked
+                                    ? `⛔ 48h-Frist aktiv (${tracking.remainingHours}h an ${tracking.partnerName})`
+                                    : '💾 Outreach protokollieren & Kundenschutz aktivieren'}
                             </span>
                           </button>
                         );
