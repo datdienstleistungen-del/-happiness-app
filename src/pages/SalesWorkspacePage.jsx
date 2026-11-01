@@ -144,7 +144,40 @@ export function generateGermanOutreachEmail({ partner, refCode, region, segment,
   let subject = '';
   let body = '';
 
-  if (isEigenverwaltung && !isOrganVacant) {
+  if (isOrganVacant) {
+    // ── FALL C: ECHTES ORGAN-VAKUUM (z.B. cosquare AG / SHAB Mutation) ──
+    subject = `Diskretes Mandatssignal: Organ-Vakuum ${role || 'Verwaltungsrat / C-Level'} (${region} · ${segment})`;
+    body = `${salutation}
+
+über unseren Mandate Desk identifizieren wir tagesaktuell signifikante Organ-Vakanzen und Führungslücken im europäischen Markt.
+
+Am Standort ${region} liegt uns ein akutes Organ-Vakuum bei einem etablierten Unternehmen (${legalForm || 'AG'}) vor: Ein Mitglied der Leitungsebene (${role}) ist per sofort ausgeschieden, ohne dass eine Nachfolge geregelt ist.
+
+Da hier unmittelbarer Handlungsdruck bezüglich Board-Governance, Organvertretung und Handlungsfähigkeit besteht, stellen wir diesen Anlass einem ausgewählten Partner zur Verfügung.
+
+Ihnen sichern wir für diesen Fall absolute Exklusivität zu – das Signal wird an keinen weiteren Provider im relevanten Markt herausgegeben.
+
+Anonymisiertes Mandats-Profil zur Ersteinschätzung:
+- Referenz: ${refCode}
+- Region & Rechtsform: ${region} · ${legalForm || 'Aktiengesellschaft (AG)'}
+- Branche / Segment: ${segment}
+- Anlass: ${incident}
+- Mandatshebel / Bedarf: ${role}
+- Organ-Vakuum: BESTANDEN (Vakante Organposition nachgewiesen)
+- Mandats-Qualifizierung: ${audit?.qualification_stage || 'STUFE 2 – PLAUSIBLE MANDATSCHANCE'}
+- Status: Vakant / Frei zur Erstansprache
+
+Weitere Informationen zu unserem Mandate Desk finden Sie unter:
+https://dat-dat.de
+
+Bei Interesse an den verifizierten Klardaten und Organ-Details für Ihre Mandatsansprache freue ich mich über Ihre kurze Rückmeldung.
+
+Mit freundlichen Grüßen
+
+Harro Goerndt
+D.A.T. Dienstleistungen · Executive Mandate Desk
+Weserstraße 16 · 26382 Wilhelmshaven`;
+  } else if (isEigenverwaltung) {
     // ── FALL A: EIGENVERWALTUNG / SANIERUNG (z.B. Weha Ludwig Werwein GmbH) ──
     subject = `Vertraulich: Mandats-Signal ${legalForm || 'Mittelstand'} (${role || 'CRO / Interim-Management'} · ${region})`;
     body = `${salutation}
@@ -178,7 +211,7 @@ Mit freundlichen Grüßen
 Harro Goerndt
 D.A.T. Dienstleistungen · Executive Mandate Desk
 Weserstraße 16 · 26382 Wilhelmshaven`;
-  } else if (isSchvg && !isOrganVacant) {
+  } else if (isSchvg) {
     // ── FALL B: ANLEIHE-RESTRUKTURIERUNG / SchVG (z.B. PAUL Tech AG) ──
     subject = `Vertraulich: Mandats-Signal Anleihe-Restrukturierung & CFO-Bedarf (${region} · ${segment})`;
     body = `${salutation}
@@ -211,32 +244,31 @@ Harro Goerndt
 D.A.T. Dienstleistungen · Executive Mandate Desk
 Weserstraße 16 · 26382 Wilhelmshaven`;
   } else {
-    // ── FALL C: ECHTES ORGAN-VAKUUM (z.B. cosquare AG / SHAB Mutation) ──
-    subject = `Diskretes Mandatssignal: Organ-Vakuum ${role || 'Verwaltungsrat / C-Level'} (${region} · ${segment})`;
+    // ── FALL D: OPERATIVE TRANSFORMATION & SONDERSITUATION ──
+    subject = `Vertraulich: Mandats-Signal ${legalForm || 'Unternehmen'} (${role || 'COO / operative Transformation'} · ${region})`;
     body = `${salutation}
 
-über unseren Mandate Desk identifizieren wir tagesaktuell signifikante Organ-Vakanzen und Führungslücken im europäischen Markt.
+über unseren Mandate Desk monitoren wir tagesaktuell signifikante Unternehmensereignisse und operative Sondersituationen im europäischen Markt.
 
-Am Standort ${region} liegt uns ein akutes Organ-Vakuum bei einem etablierten Unternehmen (${legalForm || 'AG'}) vor: Ein Mitglied der Leitungsebene (${role}) ist per sofort ausgeschieden, ohne dass eine Nachfolge geregelt ist.
+Am Standort ${region} liegt ein verifiziertes Unternehmensereignis vor: Ein etabliertes Unternehmen (${legalForm || 'Unternehmen'}) durchläuft eine operative Restrukturierungs- oder Transformationsphase (${role || 'COO / operative Transformation'}).
 
-Da hier unmittelbarer Handlungsdruck bezüglich Board-Governance, Organvertretung und Handlungsfähigkeit besteht, stellen wir diesen Anlass einem ausgewählten Partner zur Verfügung.
+Wichtiger Hinweis zur Mandatsqualifizierung:
+Die bestehende Organ- und Führungsebene bleibt im Amt; ein Organvakuum liegt nicht vor. Aus dem operativen Handlungsdruck ergibt sich eine plausible Mandatschance für operative Interimsbegleitung (${role || 'COO / operative Transformation'}); eine externe Mandatierung ist bisher unbestätigt.
 
-Ihnen sichern wir für diesen Fall absolute Exklusivität zu – das Signal wird an keinen weiteren Provider im relevanten Markt herausgegeben.
+Ihnen sichern wir für diesen Fall den vereinbarten Kundenschutz zu.
 
-Anonymisiertes Mandats-Profil zur Ersteinschätzung:
+Anonymisiertes Mandats-Profil:
 - Referenz: ${refCode}
-- Region & Rechtsform: ${region} · ${legalForm || 'Aktiengesellschaft (AG)'}
+- Region & Rechtsform: ${region} · ${legalForm || 'Unternehmen'}
 - Branche / Segment: ${segment}
 - Anlass: ${incident}
-- Mandatshebel / Bedarf: ${role}
-- Organ-Vakuum: BESTANDEN (Vakante Organposition nachgewiesen)
+- Mandatshebel / Bedarf: ${role || 'COO / operative Transformation'}
+- Organ-Vakuum: NICHT NACHGEWIESEN (Führungsebene im Amt)
 - Mandats-Qualifizierung: ${audit?.qualification_stage || 'STUFE 2 – PLAUSIBLE MANDATSCHANCE'}
-- Status: Vakant / Frei zur Erstansprache
+- Status: Offen zur Erstansprache
 
 Weitere Informationen zu unserem Mandate Desk finden Sie unter:
 https://dat-dat.de
-
-Bei Interesse an den verifizierten Klardaten und Organ-Details für Ihre Mandatsansprache freue ich mich über Ihre kurze Rückmeldung.
 
 Mit freundlichen Grüßen
 
@@ -261,7 +293,37 @@ export function generateEnglishOutreachEmail({ partner, refCode, region, segment
   let subject = '';
   let body = '';
 
-  if (isEigenverwaltung && !isOrganVacant) {
+  if (isOrganVacant) {
+    subject = `Mandate Opportunity: Executive / Board Vacancy (${region})`;
+    body = `${salutation}
+
+Through our European Mandate Desk, we monitor primary statutory registers for acute C-level and board-level transitions across key European jurisdictions.
+
+We have identified an immediate governance and leadership vacancy at an established corporation (${legalForm || 'AG'}) located within ${region}. A senior board director or executive has stepped down with immediate effect, leaving an unstaffed organ vacancy.
+
+Due to interim governance requirements, we are presenting this event to an established executive interim partner. We grant you exclusive first-look rights on this lead for your market.
+
+Anonymised Mandate Overview:
+- Reference: ${refCode}
+- Region & Entity: ${region} · ${legalForm || 'Corporation (AG)'}
+- Industry: ${segment}
+- Trigger: ${incident}
+- Requirement: ${role}
+- Organ Vacuum: PROVEN (Unstaffed organ vacancy)
+- Qualification Stage: ${audit?.qualification_stage || 'STAGE 2 – PLAUSIBLE MANDATE CHANCE'}
+- Status: Open for primary outreach
+
+Further information about our executive desk:
+https://dat-dat.de
+
+To receive the verified corporate entity details, primary filing records, and source documentation, please confirm your interest by replying directly to this email.
+
+Best regards,
+
+Harro Goerndt
+D.A.T. Dienstleistungen · Executive Mandate Desk
+Weserstraße 16 · 26382 Wilhelmshaven, Germany`;
+  } else if (isEigenverwaltung) {
     subject = `Confidential Mandate Signal: Restructuring & Interim Management (${region})`;
     body = `${salutation}
 
@@ -295,29 +357,30 @@ Harro Goerndt
 D.A.T. Dienstleistungen · Executive Mandate Desk
 Weserstraße 16 · 26382 Wilhelmshaven, Germany`;
   } else {
-    subject = `Mandate Opportunity: Executive / Board Vacancy (${region})`;
+    subject = `Confidential Mandate Signal: Operational Transformation (${region})`;
     body = `${salutation}
 
-Through our European Mandate Desk, we monitor primary statutory registers for acute C-level and board-level transitions across key European jurisdictions.
+Through our European Mandate Desk, we monitor primary corporate events and operational transformations across key European jurisdictions.
 
-We have identified an immediate governance and leadership vacancy at an established corporation (${legalForm || 'AG'}) located within ${region}. A senior board director or executive has stepped down with immediate effect, leaving an unstaffed organ vacancy.
+We have identified a verified corporate event in ${region}: An established enterprise (${legalForm || 'Corporation'}) is undergoing an operative transformation and restructuring program (${role || 'COO / operative Transformation'}).
 
-Due to interim governance requirements, we are presenting this event to an established executive interim partner. We grant you exclusive first-look rights on this lead for your market.
+Note on Mandate Stage (Stage 2 – Plausible Mandate Chance):
+Existing corporate leadership remains in power; no organ vacancy has occurred. However, operational restructuring requirements establish a plausible mandate chance for external interim transformation management (${role || 'COO / operative Transformation'}). Formal external procurement has not yet been confirmed.
+
+We grant you exclusive first-look protection on this lead for your market.
 
 Anonymised Mandate Overview:
 - Reference: ${refCode}
-- Region & Entity: ${region} · ${legalForm || 'Corporation (AG)'}
+- Region & Entity: ${region} · ${legalForm || 'Corporation'}
 - Industry: ${segment}
 - Trigger: ${incident}
-- Requirement: ${role}
-- Organ Vacuum: ${isOrganVacant ? 'PROVEN (Unstaffed organ vacancy)' : 'NOT PROVEN'}
+- Requirement: ${role || 'COO / operative Transformation'}
+- Organ Vacuum: NOT PROVEN (Management in office)
 - Qualification Stage: ${audit?.qualification_stage || 'STAGE 2 – PLAUSIBLE MANDATE CHANCE'}
 - Status: Open for primary outreach
 
 Further information about our executive desk:
 https://dat-dat.de
-
-To receive the verified corporate entity details, primary filing records, and source documentation, please confirm your interest by replying directly to this email.
 
 Best regards,
 

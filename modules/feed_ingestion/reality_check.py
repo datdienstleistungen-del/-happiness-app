@@ -176,14 +176,13 @@ class MandateRealityCheckEngine:
         # Gegenindikatoren für gelöste oder abgeschlossene Situationen
         is_solved = any(k in combined_text for k in [
             "investorenprozess erfolgreich abgeschlossen",
-            "übernahme vollzogen",
-            "geschäftsbetrieb übernommen",
-            "übernimmt geschäftsbetrieb",
-            "fortführung gesichert",
+            "übernahme vollzogen", "uebernahme vollzogen",
+            "geschäftsbetrieb übernommen", "geschaeftsbetrieb uebernommen",
+            "übernimmt geschäftsbetrieb", "uebernimmt geschaeftsbetrieb",
+            "fortführung gesichert", "fortfuehrung gesichert",
             "zukunft gesichert",
-            "zukunftslösung",
-            "veräußert an",
-            "veräussert an",
+            "zukunftslösung", "zukunftsloesung",
+            "veräußert an", "veräussert an", "veraeussert an", "veraeußert an",
             "erfolgreichen abschluss",
             "fertiggestellt"
         ])
@@ -249,8 +248,10 @@ class MandateRealityCheckEngine:
         # - Sonstige nachweisbare Führungslücke auf Organebene.
         # Fehlen solche Belege, lautet das Ergebnis: NICHT NACHGEWIESEN.
         organ_exit_patterns = [
-            r'\b(?:nicht mehr|ausgeschieden als|abberufen als)\s+(?:geschäftsführer(?:in)?|vorstand|vorstandsmitglied|verwaltungsrat[a-z]*|vr-mitglied|ceo|cfo|cro|coo|director|board)\b',
-            r'\b(?:vorstand|geschäftsführer|verwaltungsrat[a-z]*|ceo|cfo|cro|coo|director|board member)\s+(?:scheidet aus|legt amt nieder|tritt zurück|verlässt das unternehmen|wurde abberufen|stepped down)\b',
+            r'\b(?:nicht mehr|ausgeschieden als|abberufen als|scheidet als)\s+(?:geschäftsführer(?:in)?|vorstand|vorstandsmitglied|verwaltungsrat[a-z]*|vr-mitglied|ceo|cfo|cro|coo|director|board)\b',
+            r'\b(?:vorstand|geschäftsführer|verwaltungsrat[a-z]*|vr-mitglied|ceo|cfo|cro|coo|director|board member)(?:\s+[a-zäöüß\.\-]+){0,4}\s+(?:scheidet aus|legt amt nieder|tritt zurück|verlässt das unternehmen|wurde abberufen|stepped down)\b',
+            r'\b(?:tritt per sofort zurück|tritt mit sofortiger wirkung zurück|scheidet per sofort aus|scheidet mit sofortiger wirkung aus)\b',
+            r'\b(?:scheidet|ausgeschieden)\s+(?:aus\s+dem\s+vorstand|aus\s+der\s+geschäftsführung|aus\s+der\s+geschäftsleitung)\b',
             r'\b(?:vorstandsmandat|geschäftsführungsmandat|verwaltungsratsmandat)\s+erloschen\b',
             r'\berloschene unterschriften\b.*?\b(?:geschäftsführer|vorstand|verwaltungsrat[a-z]*|direktor)\b',
             r'\bausgeschiedene personen\b.*?\b(?:geschäftsführer|vorstand|verwaltungsrat[a-z]*|direktor)\b',
@@ -295,32 +296,75 @@ class MandateRealityCheckEngine:
         target_role = "KEINE"
         mandate_feasibility = "ausgeschlossen"
 
-        # Prüfe Schweizer Verwaltungsrats-Vakanz zuerst:
+        # Prüfe Schweizer Verwaltungsrats-Vakanz:
+        # Nur wenn tatsächlich das Organ des Verwaltungsrats / Aufsichtsrats vakant ist,
+        # und NICHT wenn der Verwaltungsrat lediglich den Rücktritt eines CEOs oder CFOs verkündet.
         is_swiss_board = (
-            (category == "c_level_vakanz_ch" or "verwaltungsrat" in combined_text or "board member" in combined_text or "vr-mitglied" in combined_text) and
+            (
+                "vr-präsident" in combined_text or "vr-mitglied" in combined_text or
+                "mitglied des verwaltungsrat" in combined_text or "verwaltungsratsmitglied" in combined_text or
+                "board director" in combined_text or
+                (category == "c_level_vakanz_ch" and not any(k in combined_text for k in ["ceo", "cfo", "cro", "coo", "geschäftsführer"])) or
+                (("verwaltungsrat" in combined_text or "aufsichtsrat" in combined_text) and not any(k in combined_text for k in ["ceo", "cfo", "cro", "coo", "geschäftsführer", "eigenverwaltung"]))
+            ) and
             not any(k in combined_text for k in ["eigenverwaltung", "starug", "cro", "sanierungsgeschäftsführer"])
         )
 
-        if is_eigenverwaltung and not is_advisor_mandated:
+        # Operative Transformation (Werksschließung, Standortverlagerung, Carve-Out)
+        is_ops_transformation = (
+            any(k in combined_text for k in [
+                "werksschließung", "werksschliessung", "standortschließung", "standortschliessung",
+                "betriebsschließung", "betriebsschliessung", "produktionsverlagerung", "betriebsverlagerung",
+                "carve-out", "post-merger integration", "post-merger"
+            ]) and not is_solved and not is_regular_insolvency and not is_advisor_mandated
+        )
+
+        # 1. Belegtes Mandat (Konkrete externe Suche oder Ausschreibung durch Quelle belegt)
+        has_explicit_mandate_proof = any(k in combined_text for k in [
+            "sucht externen interim", "sucht interim cro", "sucht interim cfo",
+            "mandatierte personalberatung mit suche", "interim management mandatiert",
+            "ad-interim leitung ausgeschrieben"
+        ])
+
+        if has_explicit_mandate_proof:
+            if "cro" in combined_text or "sanierung" in combined_text or "restrukturierung" in combined_text:
+                target_role = "CRO_ORGAN" if (has_proven_organ_exit and "gmbh" not in combined_text.lower()) else "CRO_INTERIM"
+            elif "cfo" in combined_text or "finanz" in combined_text:
+                target_role = "INTERIM_CFO"
+            elif "coo" in combined_text or "betrieb" in combined_text:
+                target_role = "INTERIM_COO"
+            elif "ceo" in combined_text or "geschäftsführer" in combined_text:
+                target_role = "INTERIM_CEO"
+            elif "verwaltungsrat" in combined_text or "aufsichtsrat" in combined_text:
+                target_role = "BOARD_MEMBER"
+            else:
+                target_role = "CRO_INTERIM"
+            mandate_feasibility = "belegt"
+        elif is_eigenverwaltung and not is_advisor_mandated:
             target_role = "CRO_ORGAN" if (has_proven_organ_exit and "gmbh" not in combined_text.lower()) else "CRO_INTERIM"
             mandate_feasibility = "plausibel"
         elif is_schvg_debt:
             target_role = "INTERIM_CFO"  # CFO / Finanzrestrukturierung
             mandate_feasibility = "plausibel"
-        elif is_swiss_board:
-            target_role = "BOARD_MEMBER"  # Verwaltungsrat / Aufsichtsrat
-            mandate_feasibility = "plausibel"
         elif is_c_level_vacant or has_proven_organ_exit:
-            if "cfo" in combined_text or "finanz" in combined_text:
+            if "ceo" in combined_text or "geschäftsführer" in combined_text or "vorstandsvorsitz" in combined_text:
+                target_role = "INTERIM_CEO"
+            elif "cfo" in combined_text or "finanz" in combined_text:
                 target_role = "INTERIM_CFO"
             elif "coo" in combined_text or "betrieb" in combined_text or "produktion" in combined_text or "werk" in combined_text:
                 target_role = "INTERIM_COO"
             elif "cro" in combined_text or "sanierung" in combined_text or "restrukturierung" in combined_text:
                 target_role = "CRO_ORGAN" if (has_proven_organ_exit and "gmbh" not in combined_text.lower()) else "CRO_INTERIM"
-            elif "verwaltungsrat" in combined_text or "aufsichtsrat" in combined_text:
+            elif "verwaltungsrat" in combined_text or "aufsichtsrat" in combined_text or is_swiss_board:
                 target_role = "BOARD_MEMBER"
             else:
                 target_role = "INTERIM_CEO"
+            mandate_feasibility = "plausibel"
+        elif is_swiss_board:
+            target_role = "BOARD_MEMBER"  # Verwaltungsrat / Aufsichtsrat
+            mandate_feasibility = "plausibel"
+        elif is_ops_transformation:
+            target_role = "COO_OPS"
             mandate_feasibility = "plausibel"
         elif "post-merger" in combined_text or "carve-out" in combined_text:
             target_role = "COO_OPS" if "operations" in combined_text else "PMI_LEAD"
@@ -332,12 +376,6 @@ class MandateRealityCheckEngine:
         # =====================================================================
         # KRITERIUM D: Konkrete Mandatschance (Synthese in die 4 Klassen)
         # =====================================================================
-        # 1. Belegtes Mandat (Konkrete externe Suche oder Ausschreibung durch Quelle belegt)
-        has_explicit_mandate_proof = any(k in combined_text for k in [
-            "sucht externen interim", "sucht interim cro", "sucht interim cfo",
-            "mandatierte personalberatung mit suche", "interim management mandatiert",
-            "ad-interim leitung ausgeschrieben"
-        ])
 
         # Listen für Begründung
         missing_information = []
@@ -395,6 +433,11 @@ class MandateRealityCheckEngine:
             missing_information.append("Interne Nachfolgelösung oder Interimsüberbrückung durch Aufsichtsrat nicht ausgeschlossen.")
             missing_information.append("Kein Beleg für Beauftragung eines Executive-Search- oder Interim-Providers.")
             rationale = f"Akute Organvakanz ({ROLES.get(target_role)}) bei {company}. Externe Überbrückung plausibel, tatsächliche externe Suche noch nicht belegt."
+        elif is_ops_transformation:
+            status = CLASS_MANDAT_PLAUSIBEL
+            missing_information.append("Konkrete Ausschreibung oder externe Mandatsvergabe für Transformationsleitung öffentlich noch nicht belegt.")
+            missing_information.append("Unbestätigt, ob operative Maßnahmen (Standortschließung / Verlagerung / Carve-Out) rein intern geführt oder durch Interims-Manager begleitet werden.")
+            rationale = f"Operative Transformationsmaßnahme (Werksschließung, Standortverlagerung oder Carve-Out) bei {company}. Plausibler Bedarf an erfahrenem {ROLES.get(target_role, target_role)}, externe Suche unbestätigt."
         else:
             status = CLASS_BEOBACHTEN
             missing_information.append("Sachverhalt indiziert Sondersituation, reicht aber für eine spezifische Mandatshypothese nicht aus.")
@@ -422,6 +465,8 @@ class MandateRealityCheckEngine:
                 professional_deduction = "Verhandlungsdruck mit Anleihegläubigern nach SchVG erfordert Finanz- & Sanierungs-Expertise (Interim-CFO). Externe Beauftragung ist unbestätigt."
             elif is_c_level_vacant or has_proven_organ_exit:
                 professional_deduction = f"Organvakanz ({ROLES.get(target_role, target_role)}) begründet akuten Überbrückungs- und Nachfolgebedarf. Externe Mandatierung noch unbestätigt."
+            elif is_ops_transformation:
+                professional_deduction = f"Operative Transformationsmaßnahme (Standortschließung, Produktionsverlagerung oder Carve-Out) begründet plausiblen Bedarf an {ROLES.get(target_role, target_role)}. Externe Suche unbestätigt."
             else:
                 professional_deduction = f"Wirtschaftlicher Handlungsdruck begründet plausiblen externen Managementbedarf ({ROLES.get(target_role, target_role)}). Externe Suche unbestätigt."
         elif status == CLASS_BEOBACHTEN:

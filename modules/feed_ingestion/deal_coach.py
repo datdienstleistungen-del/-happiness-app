@@ -239,7 +239,7 @@ def audit_mandate_lead(item, eval_result):
                 return False, f"KO_FAIL_CLOSED_LEGAL_FORM: {form_label}", parsed
 
     # K.O. C: Reine Registerroutine ohne Vakanz oder Restrukturierung
-    has_real_organ_exit = bool(re.search(r'\b(nicht mehr geschäftsführer|nicht mehr vorstand|vorstand ausgeschieden|ausgeschieden als geschäftsführer|ausgeschieden als vorstand|abberufen als|erloschene unterschriften|ausgeschiedene personen|vorstandsmandat.*?erloschen|amtsniederlegung)\b', raw_eval_lower))
+    has_real_organ_exit = bool(re.search(r'\b(nicht mehr geschäftsführer|nicht mehr vorstand|vorstand ausgeschieden|ausgeschieden als geschäftsführer|ausgeschieden als vorstand|scheidet als vorstand aus|scheidet als geschäftsführer aus|abberufen als|erloschene unterschriften|ausgeschiedene personen|vorstandsmandat.*?erloschen|amtsniederlegung|tritt per sofort zurück|scheidet aus|tritt zurück|verlässt das unternehmen|stepped down)\b', raw_eval_lower))
     has_real_restructuring = bool(re.search(r'\b(vorläufige insolvenzverwaltung|vorläufigen insolvenzverwalter|eigenverwaltung|schutzschirmverfahren|270 inso|270a inso|270b inso|sachwalter|starug)\b', raw_eval_lower))
 
     routine_register_events = [
@@ -682,8 +682,16 @@ Antworte AUSSCHLIESSLICH in diesem JSON-Format:
         parsed['mandate_certainty'] = "Unbestätigt (Stufe 1)"
         parsed['audit_verdict'] = "VERIFIZIERTES EREIGNIS (MANDATSBEDARF UNKLAR)"
 
-    # Saubere Rollenzuordnung
-    if "verwaltungsrat" in raw_eval_lower or "board member" in raw_eval_lower or (region == "CH" and "vr" in raw_eval_lower):
+    # Saubere Rollenzuordnung nach den 7 verbindlichen Rollenkategorien
+    if has_explicit_search and ("cro" in raw_eval_lower or "sanierung" in raw_eval_lower):
+        parsed['role'] = "CRO / Interim-Management"
+    elif "ceo" in raw_eval_lower and (has_real_organ_exit or "nachfolge" in raw_eval_lower or "chef" in raw_eval_lower):
+        parsed['role'] = "CEO / Geschäftsführer"
+    elif "cfo" in raw_eval_lower and (has_real_organ_exit or "finanz" in raw_eval_lower):
+        parsed['role'] = "CFO / Finanzrestrukturierung"
+    elif any(k in raw_eval_lower for k in ["werksschließung", "werksschliessung", "produktionsverlagerung", "standortschließung", "coo"]):
+        parsed['role'] = "COO / operative Transformation"
+    elif "verwaltungsrat" in raw_eval_lower or "board member" in raw_eval_lower or (region == "CH" and "vr" in raw_eval_lower):
         parsed['role'] = "Verwaltungsrat / Aufsichtsrat"
     elif "eigenverwaltung" in raw_eval_lower or "starug" in raw_eval_lower or "cro" in raw_eval_lower:
         # Harros Differenzierung: Ein Sanierungsvorstand ist ein Organamt. Ohne belegten Organabgang oder bei einer GmbH handelt es sich um CRO / Interim-Management!
