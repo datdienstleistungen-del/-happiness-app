@@ -402,8 +402,8 @@ class ContinuousRadarEngine:
                 run_record["sources_attempted"].append("de_restructuring_press")
                 q_info = {
                     "source": "de_restructuring_press",
-                    "query_name": "Sanierungs- & Insolvenzverwalter Primärmeldungen (Anchor, Brinkmann)",
-                    "endpoint": "https://www.anchor.eu/ & https://www.brinkmann-partner.de/",
+                    "query_name": "Sanierungs- & Insolvenzverwalter Primärmeldungen (Anchor, Brinkmann, PLUTA, Schultze & Braun, BBL)",
+                    "endpoint": "Top-5 Kanzlei-Portale (Anchor, Brinkmann, PLUTA, Schultze & Braun, BBL)",
                     "executed_at": datetime.now(timezone.utc).isoformat(),
                     "reachable": False,
                     "http_status": None,
@@ -790,6 +790,88 @@ class ContinuousRadarEngine:
                         "source": "dach_debt_and_bonds",
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                         "description": f"Source dach_debt_and_bonds failed: {e}"
+                    })
+                run_record["queries_executed"].append(q_info)
+
+            # 5. Source: Official German Insolvency Register / Court Filings (§ 9 InsO)
+            if not sources_filter or "de_insolvency_register" in sources_filter:
+                run_record["sources_attempted"].append("de_insolvency_register")
+                q_info = {
+                    "source": "de_insolvency_register",
+                    "query_name": "Justizportal Insolvenzbekanntmachungen (§ 9 InsO Sicherungsmaßnahmen)",
+                    "endpoint": "https://neu.insolvenzbekanntmachungen.de/ap/suche.jsf",
+                    "executed_at": datetime.now(timezone.utc).isoformat(),
+                    "reachable": False,
+                    "http_status": None,
+                    "items_retrieved": 0,
+                    "items_filtered_out": 0,
+                    "items_passed": 0,
+                    "error": None
+                }
+                try:
+                    from modules.feed_ingestion.sources.de_insolvency_register import fetch_de_insolvency_register
+                    inso_events, inso_errs = fetch_de_insolvency_register(days_back=3)
+                    q_info["reachable"] = True
+                    q_info["http_status"] = 200
+                    q_info["items_retrieved"] = len(inso_events) + len(inso_errs)
+                    q_info["items_passed"] = len(inso_events)
+                    run_record["items_retrieved"] += len(inso_events)
+
+                    for err in inso_errs:
+                        run_record["errors"].append({
+                            "source": "de_insolvency_register",
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "description": err
+                        })
+
+                    for ev in inso_events:
+                        run_record["items_checked"] += 1
+                        status, ev_id = self.process_incoming_event(ev)
+                        rc = ev.reality_check or {}
+                        rc_status = rc.get("status", "BEOBACHTEN")
+
+                        if status == "NEW":
+                            run_record["events_created"] += 1
+                        elif status == "UPDATED_FOLLOW_UP":
+                            run_record["events_updated"] += 1
+                        elif status == "DUPLICATE_IDENTICAL":
+                            run_record["duplicates_detected"] += 1
+
+                        if rc_status == "VERWERFEN":
+                            run_record["events_rejected"] += 1
+                        else:
+                            run_record["events_published"] += 1
+
+                        run_record["events_summary"].append({
+                            "id": ev_id,
+                            "company": ev.company_name,
+                            "category": ev.category,
+                            "source": "de_insolvency_register",
+                            "source_url": ev.source_url,
+                            "source_type": ev.source_type,
+                            "event_date": ev.event_date,
+                            "published_at": ev.published_at,
+                            "status": status,
+                            "reality_check_status": rc_status,
+                            "target_role": rc.get("target_role"),
+                            "facts_proven": rc.get("facts_proven"),
+                            "mandate_hypothesis": rc.get("mandate_hypothesis"),
+                            "missing_information": rc.get("missing_information", []),
+                            "counter_indicators": rc.get("counter_indicators", []),
+                            "rationale": rc.get("rationale")
+                        })
+                    run_record["sources_succeeded"].append("de_insolvency_register")
+                except Exception as e:
+                    q_info["error"] = str(e)
+                    run_record["sources_failed"].append({
+                        "source": "de_insolvency_register",
+                        "error": str(e),
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    })
+                    run_record["errors"].append({
+                        "source": "de_insolvency_register",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "description": f"Source de_insolvency_register failed: {e}"
                     })
                 run_record["queries_executed"].append(q_info)
 

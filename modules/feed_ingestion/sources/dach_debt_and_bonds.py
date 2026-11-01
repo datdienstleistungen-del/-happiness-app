@@ -29,7 +29,12 @@ FEED_URLS = [
     'https://www.anleihen-finder.de/?s=glaeubiger&feed=rss2',
     'https://www.anleihen-finder.de/?s=restrukturierung&feed=rss2',
     'https://www.anleihen-finder.de/?s=stillhaltevereinbarung&feed=rss2',
-    'https://www.anleihen-finder.de/?s=laufzeitverlaengerung&feed=rss2'
+    'https://www.anleihen-finder.de/?s=laufzeitverlaengerung&feed=rss2',
+    'https://www.anleihen-finder.de/?s=schvg&feed=rss2',
+    'https://www.anleihen-finder.de/?s=kuponschnitt&feed=rss2',
+    'https://www.anleihen-finder.de/?s=covenant&feed=rss2',
+    'https://www.anleihen-finder.de/?s=starug&feed=rss2',
+    'https://www.anleihen-finder.de/?s=finanzrestrukturierung&feed=rss2'
 ]
 
 # Exclusion keywords for generic editorial overviews, interviews or opinion columns
