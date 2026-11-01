@@ -12,7 +12,7 @@ import { useLanguage } from '../i18n/translations.jsx'
 import CoachChatPage from './CoachChatPage'
 import NexusLiveProgressBar from '../components/NexusLiveProgressBar'
 import { ContextHelpButton } from '../components/ContextHelpButton'
-import { resolveTriggerCompanyName, extractCompanyNameFromText, buildSignalPayload } from '../lib/nexus-signal-publisher'
+import { resolveTriggerCompanyName, extractCompanyNameFromText, buildSignalPayload, detectIndustry } from '../lib/nexus-signal-publisher'
 import { trackSocialOutreachGenerated, trackSocialCommentCopied, trackSocialDmCopied, trackSocialOriginalOpened } from '../lib/nexus-analytics'
 import './SalesWorkspacePage.css'
 
