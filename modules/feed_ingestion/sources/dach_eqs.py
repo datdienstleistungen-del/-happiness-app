@@ -73,25 +73,54 @@ def fetch_eqs_feed(url='https://www.eqs-news.com/de/rss/'):
                 if href in seen_urls:
                     continue
 
+                comp_match = re.search(r'class="news__company"[^>]*>([^<]+)<', inner)
+                heading_match = re.search(r'class="news__heading"[^>]*>([^<]+)<', inner)
+                type_match = re.search(r'class="news__type"[^>]*>([^<]+)<', inner)
+                time_match = re.search(r'class="news__time"[^>]*>([^<]+)<', inner)
+
                 clean_text = ' '.join(re.sub(r'<[^>]+>', ' ', inner).split())
                 clean_text = html.unescape(clean_text)
-                clean_text = re.sub(r'[\ue000-\uf8ff]', '', clean_text).strip()
+                clean_text = re.sub(r'[\ue000-\uf8ff\u200b-\u200f\ufeff]', '', clean_text).strip()
 
                 if len(clean_text) < 12 or href.rstrip('/').endswith('/news'):
                     continue
 
                 seen_urls.add(href)
 
-                # Parse time from text e.g. "16:20 Ad-hoc DE ..."
-                time_match = re.match(r'^(\d{1,2}):(\d{2})\b', clean_text)
-                if time_match:
-                    hh, mm = int(time_match.group(1)), int(time_match.group(2))
-                    item_dt = now_utc.replace(hour=hh, minute=mm, second=0, microsecond=0)
-                    if item_dt > now_utc:
-                        # Happened yesterday at this time
-                        item_dt = item_dt - timedelta(days=1)
+                if comp_match:
+                    company = html.unescape(comp_match.group(1)).strip()
+                    company = re.sub(r'[\ue000-\uf8ff\u200b-\u200f\ufeff]', '', company).strip()
                 else:
-                    item_dt = now_utc
+                    company = extract_company_from_eqs_text(clean_text, href)
+
+                if heading_match:
+                    heading = html.unescape(heading_match.group(1)).strip()
+                    heading = re.sub(r'[\ue000-\uf8ff\u200b-\u200f\ufeff]', '', heading).strip()
+                    title = f"{company}: {heading}"
+                else:
+                    title = clean_text
+                    if ':' in title:
+                        title_part = title.split(':', 1)[1].strip()
+                        if len(title_part) > 10:
+                            title = f"{company}: {title_part}"
+
+                # Parse time from time_match or text
+                item_dt = now_utc
+                if time_match:
+                    t_str = time_match.group(1).strip()
+                    tm = re.match(r'^(\d{1,2}):(\d{2})\b', t_str)
+                    if tm:
+                        hh, mm = int(tm.group(1)), int(tm.group(2))
+                        item_dt = now_utc.replace(hour=hh, minute=mm, second=0, microsecond=0)
+                        if item_dt > now_utc:
+                            item_dt = item_dt - timedelta(days=1)
+                else:
+                    tm = re.match(r'^(\d{1,2}):(\d{2})\b', clean_text)
+                    if tm:
+                        hh, mm = int(tm.group(1)), int(tm.group(2))
+                        item_dt = now_utc.replace(hour=hh, minute=mm, second=0, microsecond=0)
+                        if item_dt > now_utc:
+                            item_dt = item_dt - timedelta(days=1)
 
                 pub_iso = item_dt.isoformat()
                 is_fresh, age_hours, _ = is_signal_fresh(pub_iso, max_hours=48)
@@ -99,12 +128,14 @@ def fetch_eqs_feed(url='https://www.eqs-news.com/de/rss/'):
                     dropped_age_count += 1
                     continue
 
-                company = extract_company_from_eqs_text(clean_text, href)
-                title = clean_text
-                if ':' in title:
-                    title_part = title.split(':', 1)[1].strip()
-                    if len(title_part) > 10:
-                        title = f"{company}: {title_part}"
+                # DACH Relevance & Country Detection:
+                is_german_slug = href.endswith('_de')
+                is_dach_legal = bool(re.search(r'\b(?:ag|se|gmbh|kgaa|co\.?\s*kg|holding|stiftung)\b', company, re.I))
+                is_dach_title = bool(re.search(r'\b(?:deutschland|österreich|schweiz|bafin|fma|finma|vorstand|geschäftsführung|amtsgericht)\b', title, re.I))
+
+                if not is_german_slug and not is_dach_legal and not is_dach_title:
+                    # Non-DACH international wire release -> Skip from DACH radar
+                    continue
 
                 fresh_items.append({
                     'source_name': 'EQS News (DACH)',

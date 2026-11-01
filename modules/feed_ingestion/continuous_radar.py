@@ -635,11 +635,25 @@ class ContinuousRadarEngine:
                         axis_c = "hoch" if "rücktritt" in lower_title or "vorstandswechsel" in lower_title else "mittel"
                         mandate_rat = "Börsennotierte Ad-hoc / Corporate News mit Transformations- oder Organrelevanz."
 
+                        # Smart Category & Country Determination
+                        if any(k in lower_title for k in ["vorstand", "geschäftsführung", "cfo", "ceo", "rücktritt", "vorstandswechsel", "abberufung", "neuer cfo", "neuer ceo", "amtsniederlegung"]):
+                            detected_cat = "c_level_vakanz"
+                        elif any(k in lower_title for k in ["verkauf", "übernahme", "carve-out", "fusion", "merger", "unternehmensverkauf", "beteiligung"]):
+                            detected_cat = "fusion_uebernahme_unternehmensverkauf"
+                        elif any(k in lower_title for k in ["anleihe", "gläubiger", "refinanzierung", "stillhalte", "schvg"]):
+                            detected_cat = "finanzierung_anleihen_restrukturierung"
+                        elif any(k in lower_title for k in ["insolvenz", "eigenverwaltung", "schutzschirm"]):
+                            detected_cat = "insolvenzantrag_eigenverwaltung"
+                        else:
+                            detected_cat = "unternehmenskrise_restrukturierung"
+
+                        detected_country = "CH" if (" ag" in company.lower() and "schweiz" in lower_title) else "DE"
+
                         ev = TriggerEvent(
                             company_name=company,
-                            country="DE",
+                            country=detected_country,
                             region="DACH",
-                            category="unternehmenskrise_restrukturierung" if "insolvenz" in lower_title else "c_level_vakanz",
+                            category=detected_cat,
                             description=title,
                             event_date=None,
                             published_at=item.get("published_at"),

@@ -24,9 +24,16 @@ from datetime import datetime, timezone
 try:
     from modules.feed_ingestion.date_utils import parse_date
     from modules.feed_ingestion.config import LEGAL_FORM_WHITELIST
+    from modules.feed_ingestion.reality_check import analyze_organ_mutations
 except ImportError:
-    from .date_utils import parse_date
-    from .config import LEGAL_FORM_WHITELIST
+    try:
+        from .date_utils import parse_date
+        from .config import LEGAL_FORM_WHITELIST
+        from .reality_check import analyze_organ_mutations
+    except ImportError:
+        from date_utils import parse_date
+        from config import LEGAL_FORM_WHITELIST
+        from reality_check import analyze_organ_mutations
 
 def load_env():
     """Load environment variables from .env file."""
@@ -238,8 +245,36 @@ def audit_mandate_lead(item, eval_result):
                 }
                 return False, f"KO_FAIL_CLOSED_LEGAL_FORM: {form_label}", parsed
 
+    mutation_analysis = analyze_organ_mutations(raw_eval_text) if 'analyze_organ_mutations' in globals() else None
+
     # K.O. C: Reine Registerroutine ohne Vakanz oder Restrukturierung
     has_real_organ_exit = bool(re.search(r'\b(nicht mehr geschäftsführer|nicht mehr vorstand|vorstand ausgeschieden|ausgeschieden als geschäftsführer|ausgeschieden als vorstand|scheidet als vorstand aus|scheidet als geschäftsführer aus|abberufen als|erloschene unterschriften|ausgeschiedene personen|vorstandsmandat.*?erloschen|amtsniederlegung|tritt per sofort zurück|scheidet aus|tritt zurück|verlässt das unternehmen|stepped down)\b', raw_eval_lower))
+
+    # K.O. C1: Simultaner Organwechsel (Nachbesetzung auf gleicher Organebene im Register)
+    if mutation_analysis:
+        if mutation_analysis.get('is_simultaneous_succession'):
+            parsed = {
+                'status': 'discarded',
+                'tier': 'TIER_3',
+                'is_valid_mandate_event': False,
+                'is_fresh': True,
+                'company_name': company,
+                'role': 'Keine externe Organfunktion ableitbar',
+                'event_type': 'Simultaner Organwechsel / Nachfolge geregelt',
+                'vacuum_check': 'K.O. DROP: Simultaner Organwechsel im Register. Ausgeschiedenes Organ wurde in derselben Publikation nachbesetzt.',
+                'urgency_check': '0 € Mandatswert (Kein Führungsvakuum / Nachfolge geregelt)',
+                'audit_verdict': 'DISCARDED_SIMULTANEOUS_SUCCESSION',
+                'audit_rationale': f"Automatischer Drop auf Tier 3: In derselben Registermeldung für {company} wurde gleichzeitig ein Nachfolger auf Organebene bestellt.",
+                'rejection_reason': 'Simultaneous_Succession_Staffed',
+                'estimated_budget': '-',
+                'confidence': 0.99
+            }
+            return False, "KO_FAIL_CLOSED_SIMULTANEOUS_SUCCESSION: Simultaner Organwechsel ohne Führungsvakuum", parsed
+        elif mutation_analysis.get('organ_vacuum_status') == 'NICHT NACHGEWIESEN':
+            has_real_organ_exit = False
+        elif mutation_analysis.get('organ_vacuum_status') == 'BESTANDEN':
+            has_real_organ_exit = True
+
     is_completed_restructuring = bool(re.search(r'\b(investorenlösung umgesetzt|investorenloesung umgesetzt|investorenlösung gefunden|investorenloesung gefunden|geschäftsbetrieb übertragen|geschaeftsbetrieb uebertragen|betrieb übertragen|betrieb uebertragen|sanierung erfolgreich abgeschlossen|erfolgreich saniert|gerettet|übertragende sanierung|uebertragende sanierung|investorenprozess erfolgreich abgeschlossen|geschäftsbetrieb übernommen|geschaeftsbetrieb uebernommen)\b', raw_eval_lower))
     has_real_restructuring = bool(re.search(r'\b(vorläufige insolvenzverwaltung|vorläufigen insolvenzverwalter|eigenverwaltung|schutzschirmverfahren|270 inso|270a inso|270b inso|sachwalter|starug)\b', raw_eval_lower)) and not is_completed_restructuring
 
@@ -681,7 +716,10 @@ Antworte AUSSCHLIESSLICH in diesem JSON-Format:
         "ad-interim leitung ausgeschrieben"
     ])
 
-    if has_real_organ_exit:
+    if mutation_analysis:
+        parsed['organ_vacuum_status'] = mutation_analysis.get('organ_vacuum_status', 'NICHT NACHGEWIESEN')
+        parsed['vacuum_check'] = mutation_analysis.get('details', 'NICHT NACHGEWIESEN')
+    elif has_real_organ_exit:
         parsed['organ_vacuum_status'] = "BESTANDEN"
         parsed['vacuum_check'] = "BESTANDEN: Reale Organvakanz / Ausscheiden ohne geregelte Nachfolge belegt."
     else:
@@ -693,6 +731,7 @@ Antworte AUSSCHLIESSLICH in diesem JSON-Format:
 
     # Unterscheide angekündigte Transaktion / Spartenverkauf von operativer Transformation
     is_announced_transaction = bool(re.search(r'\b(verkauft geschäftsbereich|verkauft verlustbringenden geschäftsbereich|spartenverkauf|verkauf der sparte|divestment)\b', raw_eval_lower)) and not any(k in raw_eval_lower for k in ["werksschließung", "werksschliessung", "produktionsverlagerung", "operative trennung", "operative entflechtung"])
+    has_ops_transformation = bool(re.search(r'\b(werksschließung|werksschliessung|produktionsverlagerung|standortschließung|standortschliessung|operative trennung|operative entflechtung|operativer carve-out)\b', raw_eval_lower))
 
     # 3 Qualifizierungsstufen zuweisen
     if has_explicit_search:
@@ -708,7 +747,7 @@ Antworte AUSSCHLIESSLICH in diesem JSON-Format:
         parsed['mandate_certainty'] = "Unbestätigt (Stufe 1)"
         parsed['audit_verdict'] = "VERIFIZIERTES EREIGNIS (MANDATSBEDARF UNKLAR)"
         parsed['role'] = "Keine externe Organfunktion ableitbar"
-    elif tier in ('TIER_1_TOP', 'TIER_2_MID') or has_real_restructuring or has_real_organ_exit:
+    elif has_real_restructuring or has_real_organ_exit or has_ops_transformation:
         parsed['qualification_stage'] = "STUFE 2 – PLAUSIBLE MANDATSCHANCE"
         parsed['stage_level'] = "STUFE 2"
         parsed['external_search_status'] = "NICHT BESTÄTIGT"
@@ -720,6 +759,7 @@ Antworte AUSSCHLIESSLICH in diesem JSON-Format:
         parsed['external_search_status'] = "NICHT BESTÄTIGT"
         parsed['mandate_certainty'] = "Unbestätigt (Stufe 1)"
         parsed['audit_verdict'] = "VERIFIZIERTES EREIGNIS (MANDATSBEDARF UNKLAR)"
+        parsed['role'] = "Keine externe Organfunktion ableitbar"
 
     # Saubere Rollenzuordnung nach den 7 verbindlichen Rollenkategorien
     if is_announced_transaction:

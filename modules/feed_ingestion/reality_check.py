@@ -103,6 +103,263 @@ ROLES = {
     "KEINE": "Keine externe Organfunktion ableitbar"
 }
 
+def analyze_organ_mutations(combined_text):
+    """
+    Präzisionsanalyse für Handelsregistermutationen und Organwechsel:
+    Prüft innerhalb derselben Veröffentlichung und auf derselben Organebene:
+    - Ausscheiden eines Organmitglieds
+    - gleichzeitige Bestellung eines Nachfolgers auf derselben Organebene
+    - verbleibende Organmitglieder
+    - tatsächliche Auflösung oder vollständige Neubestellung eines Organs
+    - unvollständige oder widersprüchliche Meldungen
+    """
+    t = combined_text.lower()
+
+    # 0. Widersprüchliche oder unklare Registermeldung -> Nicht nachgewiesen
+    ambiguity_patterns = [
+        r'\bwidersprüchlich\b',
+        r'\bunklare\s+registermeldung\b',
+        r'\bwiderspruch\s+in\s+den\b',
+        r'\bnicht\s+eindeutige\s+vertretung\b',
+        r'\bunklare\s+vertretungsbefugnis\b'
+    ]
+    if any(re.search(p, t) for p in ambiguity_patterns):
+        return {
+            'is_mutation_event': True,
+            'is_simultaneous_succession': False,
+            'has_remaining_organs': False,
+            'is_ambiguous_or_contradictory': True,
+            'organ_vacuum_status': 'NICHT NACHGEWIESEN',
+            'details': 'NICHT NACHGEWIESEN: Unvollständige oder widersprüchliche Registermeldung; Zuordnung nicht eindeutig.'
+        }
+
+    # 1. Verbleibende Organmitglieder (Kollektivorgan bleibt handlungsfähig)
+    remaining_patterns = [
+        r'\bübrigen\s+mitglieder\b.*?\b(?:bleiben|verbleiben)\b.*?\bim\s+amt\b',
+        r'\bweitere\s+mitglieder\b.*?\b(?:bleiben|verbleiben)\b.*?\bim\s+amt\b',
+        r'\bkollegialorgan\s+bleibt\s+beschlussfähig\b',
+        r'\bgeschäftsführung\s+durch\s+die\s+verbleibenden\b',
+        r'\bverbleibende[rn]?\s+(?:geschäftsführ|vorst|verwaltungsrat)\b'
+    ]
+    has_explicit_remaining_organs = any(re.search(p, t) for p in remaining_patterns)
+
+    # 2. Schweizer SHAB / FOSC / FUSC Abschnitte
+    exit_markers = [
+        r'\bausgeschiedene personen und erloschene unterschriften\s*:',
+        r'\bausgeschiedene personen\s*:',
+        r'\berloschene unterschriften\s*:',
+        r'\bpersonnes radiées\s*:',
+        r'\bpersonnes et signatures radiées\s*:',
+        r'\bpersone cancellate\s*:'
+    ]
+    entry_markers = [
+        r'\beingetragene personen neu oder mutierend\s*:',
+        r'\beingetragene personen neu\s*:',
+        r'\binscriptions nouvelles ou modifications\s*:',
+        r'\binscriptions nouvelles\s*:',
+        r'\bnuove persone iscritte o modifiche\s*:',
+        r'\bnuove persone iscritte\s*:'
+    ]
+
+    # Deutsche Registerbekanntmachungen (HRB / HRA)
+    de_exit_patterns = [
+        r'\bnicht mehr geschäftsführer(?:in)?\s*:',
+        r'\bnicht mehr vorstand\s*:',
+        r'\bausgeschieden als geschäftsführer(?:in)?\s*:',
+        r'\bausgeschieden als vorstand\s*:',
+        r'\babberufen als geschäftsführer(?:in)?\s*:',
+        r'\babberufen als vorstand\s*:'
+    ]
+    de_entry_patterns = [
+        r'\bbestellt als geschäftsführer(?:in)?\s*:',
+        r'\bbestellt als vorstand\s*:',
+        r'\bbestellt zum geschäftsführer(?:in)?\s*:',
+        r'\bbestellt zum vorstand\s*:',
+        r'\bzum geschäftsführer bestellt\s*:',
+        r'\bzum vorstand bestellt\s*:'
+    ]
+
+    c_level_kw = [
+        'geschäftsführer', 'geschäftsführerin', 'geschäftsleitung',
+        'vorstand', 'vorstandsmitglied', 'vorstandsvorsitzende', 'vorstandsvorsitzender',
+        'ceo', 'cfo', 'cro', 'coo', 'direktor', 'direktorin', 'direktion',
+        'delegierte des verwaltungsrates', 'delegierter des verwaltungsrates',
+        'delegierte des verwaltungsrats', 'delegierter des verwaltungsrats',
+        'administrateur délégué', 'gérant'
+    ]
+    board_kw = [
+        'verwaltungsrat', 'verwaltungsrats', 'verwaltungsrates', 'verwaltungsrätin', 'verwaltungsrätinnen',
+        'mitglied des verwaltungsrates', 'mitglied des verwaltungsrats',
+        'präsident des verwaltungsrates', 'präsident des verwaltungsrats', 'präsidentin des verwaltungsrates',
+        'vizepräsident des verwaltungsrates', 'vizepräsident des verwaltungsrats', 'vizepräsidentin des verwaltungsrates',
+        'vizepräsident', 'vizepräsidentin',
+        'vr-präsident', 'vr-mitglied', 'mitglied vr', 'präsident vr', 'vizepräsident vr', 'vr',
+        'aufsichtsrat', 'aufsichtsratsmitglied',
+        'board member', 'board director', 'administrateur', "conseil d'administration",
+        'delegierte des verwaltungsrates', 'delegierter des verwaltungsrates'
+    ]
+
+    def get_organ_levels(slice_text):
+        levels = set()
+        s_lower = slice_text.lower()
+        has_prokura = any(p in s_lower for p in ["prokura", "kollektivprokura", "einzelprokura"])
+        has_real_organ = any(re.search(r'\b' + re.escape(kw) + r'\b', s_lower) for kw in [
+            'verwaltungsrat', 'verwaltungsrats', 'verwaltungsrates', 'verwaltungsrätin', 'verwaltungsrätinnen',
+            'mitglied des verwaltungsrates', 'mitglied des verwaltungsrats',
+            'präsident des verwaltungsrates', 'präsident des verwaltungsrats', 'präsidentin des verwaltungsrates',
+            'vizepräsident des verwaltungsrates', 'vizepräsident des verwaltungsrats',
+            'delegierte des verwaltungsrates', 'delegierter des verwaltungsrates',
+            'delegierte des verwaltungsrats', 'delegierter des verwaltungsrats',
+            'geschäftsführer', 'geschäftsführerin', 'vorstand', 'vorstandsmitglied', 'ceo', 'cfo', 'cro'
+        ])
+        if has_prokura and not has_real_organ:
+            return levels
+
+        for kw in c_level_kw:
+            if re.search(r'\b' + re.escape(kw) + r'\b', slice_text):
+                levels.add('C_LEVEL')
+                break
+        for kw in board_kw:
+            if re.search(r'\b' + re.escape(kw) + r'\b', slice_text):
+                levels.add('BOARD')
+                break
+        return levels
+
+    has_exit_marker = any(re.search(p, t) for p in exit_markers)
+    has_entry_marker = any(re.search(p, t) for p in entry_markers)
+
+    # 1. SHAB Fall
+    if has_exit_marker:
+        exit_match = None
+        for p in exit_markers:
+            m = re.search(p, t)
+            if m and (exit_match is None or m.start() < exit_match.start()):
+                exit_match = m
+
+        entry_match = None
+        for p in entry_markers:
+            m = re.search(p, t)
+            if m and (entry_match is None or m.start() < entry_match.start()):
+                entry_match = m
+
+        if exit_match and entry_match:
+            if exit_match.start() < entry_match.start():
+                exit_slice = t[exit_match.end():entry_match.start()]
+                entry_slice = t[entry_match.end():]
+            else:
+                entry_slice = t[entry_match.end():exit_match.start()]
+                exit_slice = t[exit_match.end():]
+
+            exit_levels = get_organ_levels(exit_slice)
+            entry_levels = get_organ_levels(entry_slice)
+
+            # Prüfung auf simultanen Stabwechsel auf derselben Organebene
+            is_covered = False
+            if exit_levels and entry_levels:
+                if exit_levels <= entry_levels:
+                    is_covered = True
+                elif 'BOARD' in exit_levels and 'BOARD' in entry_levels:
+                    # Tonisi-Fall: Board ausgeschieden (inkl. Delegierter), neues Board (Präsident, VP) bestellt
+                    if 'delegiert' in exit_slice and not any(k in exit_slice for k in ['geschäftsführer', 'vorstand', 'ceo', 'cfo', 'cro', 'direktor']):
+                        is_covered = True
+
+            if is_covered:
+                return {
+                    'is_mutation_event': True,
+                    'is_simultaneous_succession': True,
+                    'has_remaining_organs': False,
+                    'is_ambiguous_or_contradictory': False,
+                    'organ_vacuum_status': 'NICHT NACHGEWIESEN',
+                    'details': f"NICHT NACHGEWIESEN: Simultaner Organwechsel im Handelsregister. Ausgeschiedene Organe ({', '.join(exit_levels)}) wurden in derselben Publikation durch neue Organe ({', '.join(entry_levels)}) nachbesetzt; kein Führungsvakuum."
+                }
+            elif exit_levels:
+                unfilled = exit_levels - entry_levels
+                return {
+                    'is_mutation_event': True,
+                    'is_simultaneous_succession': False,
+                    'has_remaining_organs': False,
+                    'is_ambiguous_or_contradictory': False,
+                    'organ_vacuum_status': 'BESTANDEN',
+                    'details': f"BESTANDEN: Reale Organvakanz im Handelsregister. Organfunktion(en) {', '.join(unfilled)} ausgeschieden ohne Nachbesetzung auf derselben Organebene."
+                }
+        elif exit_match and not entry_match:
+            exit_slice = t[exit_match.end():]
+            exit_levels = get_organ_levels(exit_slice)
+            if has_explicit_remaining_organs:
+                return {
+                    'is_mutation_event': True,
+                    'is_simultaneous_succession': False,
+                    'has_remaining_organs': True,
+                    'is_ambiguous_or_contradictory': False,
+                    'organ_vacuum_status': 'NICHT NACHGEWIESEN',
+                    'details': f"NICHT NACHGEWIESEN: Organmitglied ausgeschieden ({', '.join(exit_levels)}), jedoch verbleiben weitere Organmitglieder handlungsfähig im Amt."
+                }
+            if exit_levels:
+                return {
+                    'is_mutation_event': True,
+                    'is_simultaneous_succession': False,
+                    'has_remaining_organs': False,
+                    'is_ambiguous_or_contradictory': False,
+                    'organ_vacuum_status': 'BESTANDEN',
+                    'details': f"BESTANDEN: Reale Organvakanz im Handelsregister. Organfunktion(en) {', '.join(exit_levels)} ausgeschieden ohne registrierte Nachfolge."
+                }
+
+    # 2. Deutscher Handelsregister-Fall (HRB / HRA)
+    de_exits = set()
+    de_entries = set()
+    if any(re.search(p, t) for p in de_exit_patterns):
+        if re.search(r'\bnicht mehr geschäftsführer\b|\bausgeschieden als geschäftsführer\b|\babberufen als geschäftsführer\b', t):
+            de_exits.add('C_LEVEL')
+        if re.search(r'\bnicht mehr vorstand\b|\bausgeschieden als vorstand\b|\babberufen als vorstand\b', t):
+            de_exits.add('C_LEVEL')
+
+    if any(re.search(p, t) for p in de_entry_patterns):
+        if re.search(r'\bbestellt als geschäftsführer\b|\bbestellt zum geschäftsführer\b|\bzum geschäftsführer bestellt\b', t):
+            de_entries.add('C_LEVEL')
+        if re.search(r'\bbestellt als vorstand\b|\bbestellt zum vorstand\b|\bzum vorstand bestellt\b', t):
+            de_entries.add('C_LEVEL')
+
+    if de_exits:
+        if has_explicit_remaining_organs:
+            return {
+                'is_mutation_event': True,
+                'is_simultaneous_succession': False,
+                'has_remaining_organs': True,
+                'is_ambiguous_or_contradictory': False,
+                'organ_vacuum_status': 'NICHT NACHGEWIESEN',
+                'details': "NICHT NACHGEWIESEN: Organmitglied ausgeschieden, jedoch verbleiben weitere Organmitglieder im Amt."
+            }
+        if de_exits <= de_entries:
+            return {
+                'is_mutation_event': True,
+                'is_simultaneous_succession': True,
+                'has_remaining_organs': False,
+                'is_ambiguous_or_contradictory': False,
+                'details': f"NICHT NACHGEWIESEN: Simultaner Organwechsel im Register. {', '.join(de_exits)} zeitgleich neu bestellt; kein Organvakuum.",
+                'organ_vacuum_status': 'NICHT NACHGEWIESEN'
+            }
+        else:
+            return {
+                'is_mutation_event': True,
+                'is_simultaneous_succession': False,
+                'has_remaining_organs': False,
+                'is_ambiguous_or_contradictory': False,
+                'details': f"BESTANDEN: Reale Organvakanz im Register. {', '.join(de_exits - de_entries)} ohne Nachbesetzung.",
+                'organ_vacuum_status': 'BESTANDEN'
+            }
+
+    if has_explicit_remaining_organs:
+        return {
+            'is_mutation_event': True,
+            'is_simultaneous_succession': False,
+            'has_remaining_organs': True,
+            'is_ambiguous_or_contradictory': False,
+            'organ_vacuum_status': 'NICHT NACHGEWIESEN',
+            'details': "NICHT NACHGEWIESEN: Weitere Mitglieder bleiben im Amt; Kollegialorgan bleibt handlungsfähig."
+        }
+
+    return None
+
 class MandateRealityCheckEngine:
     """
     Führt die 4 Prüfschritte durch:
@@ -212,9 +469,18 @@ class MandateRealityCheckEngine:
             r'wird\s+neue[rn]?\s+ceo',
             r'ist\s+neue[rn]?\s+ceo',
             r'zum\s+neuen\s+ceo\s+bestellt',
-            r'neuer\s+vorstandsvorsitzender\s+bestellt'
+            r'neuer\s+vorstandsvorsitzender\s+bestellt',
+            r'bestellt\s+als\s+(?:geschäftsführer(?:in)?|vorstand)',
+            r'bestellt\s+zum\s+(?:geschäftsführer(?:in)?|vorstand)',
+            r'zum\s+(?:geschäftsführer|vorstand)\s+bestellt'
         ]
         is_already_staffed = any(re.search(pat, combined_text, re.IGNORECASE) for pat in staffed_patterns)
+
+        # ── HANDELSREGISTER-MUTATIONSANALYSE (STABWECHSEL & EBENEN-PRÜFUNG) ──
+        mutation_analysis = analyze_organ_mutations(combined_text)
+        if mutation_analysis:
+            if mutation_analysis.get('is_simultaneous_succession'):
+                is_already_staffed = True
 
         # Fremdverwaltung / Regelinsolvenz (Organe entmachtet)
         is_regular_insolvency = (
@@ -288,7 +554,16 @@ class MandateRealityCheckEngine:
         ]
         has_proven_organ_exit = any(re.search(pat, combined_text, re.IGNORECASE) for pat in organ_exit_patterns) and not is_already_staffed
 
-        if has_proven_organ_exit:
+        if mutation_analysis:
+            organ_vacuum_status = mutation_analysis.get('organ_vacuum_status', 'NICHT NACHGEWIESEN')
+            organ_vacuum_details = mutation_analysis.get('details', 'NICHT NACHGEWIESEN: Organmutation geprüft.')
+            if organ_vacuum_status == "NICHT NACHGEWIESEN":
+                has_proven_organ_exit = False
+            elif organ_vacuum_status == "BESTANDEN":
+                has_proven_organ_exit = not is_already_staffed
+                if is_already_staffed:
+                    organ_vacuum_status = "NICHT NACHGEWIESEN"
+        elif has_proven_organ_exit:
             organ_vacuum_status = "BESTANDEN"
             organ_vacuum_details = "BESTANDEN: Reale Organvakanz / Ausscheiden von Organmitgliedern ohne geregelte Nachfolge belegt."
         else:
@@ -406,7 +681,7 @@ class MandateRealityCheckEngine:
             else:
                 target_role = "INTERIM_CEO"
             mandate_feasibility = "plausibel"
-        elif is_swiss_board:
+        elif is_swiss_board and has_proven_organ_exit:
             target_role = "BOARD_MEMBER"  # Verwaltungsrat / Aufsichtsrat
             mandate_feasibility = "plausibel"
         elif is_ops_transformation:
@@ -442,8 +717,12 @@ class MandateRealityCheckEngine:
             rationale = f"Problem ist durch vollzogene Transaktion oder Sanierungslösung bereits gelöst. Kein offener externer Restrukturierungsbedarf für {company}."
         elif is_already_staffed:
             status = CLASS_VERWERFEN
-            counter_indicators.append("Führungsposition wurde in der Meldung bereits fest neu besetzt (auch bei künftigem Amtsantritt).")
-            rationale = f"Die gemeldete Führungsposition bei {company} ist personell bereits fest nachbesetzt. Kein akutes externes Interim-Mandat ableitbar."
+            if mutation_analysis and mutation_analysis.get('is_simultaneous_succession'):
+                counter_indicators.append("Simultaner Stabwechsel / Neubesetzung auf Organebene in derselben Publikation belegt.")
+                rationale = f"Simultaner Organwechsel bei {company}: Ausgeschiedenes Organ wurde in derselben Publikation neu bestellt. Kein Führungsvakuum."
+            else:
+                counter_indicators.append("Führungsposition wurde in der Meldung bereits fest neu besetzt (auch bei künftigem Amtsantritt).")
+                rationale = f"Die gemeldete Führungsposition bei {company} ist personell bereits fest nachbesetzt. Kein akutes externes Interim-Mandat ableitbar."
         elif is_routine_speech_or_conference:
             status = CLASS_VERWERFEN
             counter_indicators.append("Reine Hauptversammlungsrede, Investorenkonferenz oder Interview ohne personelle Veränderung auf Organebene.")
@@ -463,7 +742,7 @@ class MandateRealityCheckEngine:
             counter_indicators.append("Regelinsolvenz mit Fremdverwaltung: Gerichtlich bestellter Insolvenzverwalter führt das Verfahren; Organe sind entmachtet.")
             missing_information.append("Kein Hinweis auf geplante Überführung in eine Eigenverwaltung oder Beauftragung externer Organe.")
             rationale = f"Regelinsolvenz mit Fremdverwaltung. Externe Mandate durch die Alt-Organe sind rechtlich ausgeschlossen; Verwalter führt das operative Verfahren. Als Marktfall auf der Watchlist."
-        elif category == "c_level_vakanz_ch" and any(k in combined_text for k in ["kollektivprokura", "prokura erloschen", "unterschrift zu zweit"]):
+        elif category == "c_level_vakanz_ch" and any(k in combined_text for k in ["kollektivprokura", "prokura erloschen", "unterschrift zu zweit"]) and not has_proven_organ_exit:
             status = CLASS_BEOBACHTEN
             counter_indicators.append("Mutation betrifft lediglich nachgeordnete Kollektivprokura unterhalb Organebene.")
             missing_information.append("Kein Board- oder C-Level-Vakuum belegt.")
@@ -495,8 +774,15 @@ class MandateRealityCheckEngine:
             rationale = f"Operative Transformationsmaßnahme (Werksschließung, Standortverlagerung oder Carve-Out) bei {company}. Plausibler Bedarf an erfahrenem {ROLES.get(target_role, target_role)}, externe Suche unbestätigt."
         else:
             status = CLASS_BEOBACHTEN
-            missing_information.append("Sachverhalt indiziert Sondersituation, reicht aber für eine spezifische Mandatshypothese nicht aus.")
-            rationale = f"Relevantes Marktsignal, das jedoch zunächst weiter beobachtet werden muss."
+            if mutation_analysis and mutation_analysis.get('has_remaining_organs'):
+                counter_indicators.append("Kollegialorgan bleibt beschlussfähig; weitere Organmitglieder verbleiben im Amt.")
+                rationale = f"Registermutation bei {company}: Ein Organmitglied ist ausgeschieden, jedoch verbleiben weitere Mitglieder im Amt. Kein akutes Führungsvakuum (Stufe 1)."
+            elif mutation_analysis and mutation_analysis.get('is_ambiguous_or_contradictory'):
+                counter_indicators.append("Unvollständige oder widersprüchliche Angaben im Registereintrag.")
+                rationale = f"Unvollständige oder widersprüchliche Registermeldung bei {company}. Vertretungsverhältnisse unklar; Organvakanz nicht nachgewiesen (Stufe 1)."
+            else:
+                missing_information.append("Sachverhalt indiziert Sondersituation, reicht aber für eine spezifische Mandatshypothese nicht aus.")
+                rationale = f"Relevantes Marktsignal, das jedoch zunächst weiter beobachtet werden muss."
 
         # Wenn der Status verworfen oder beobachten ist, keine fiktive Organrolle vortäuschen
         if status in (CLASS_BEOBACHTEN, CLASS_VERWERFEN):
