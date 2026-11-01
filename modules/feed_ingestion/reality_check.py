@@ -93,12 +93,13 @@ ROLES = {
     "BOARD_MEMBER": "Verwaltungsrat / Aufsichtsrat",
     "C_LEVEL_OTHER": "Sonstige C-Level-Funktionen",
     # Abwärtskompatible Aliase
-    "CRO": "Chief Restructuring Officer (CRO / Sanierungsvorstand)",
-    "INTERIM_CFO": "Interim-CFO (Refinanzierung, SchVG-Verhandlung, Liquidität)",
-    "INTERIM_CEO": "Interim-CEO (Vorstandsvorsitzender ad interim)",
-    "INTERIM_COO": "Interim-COO (Werks- & Operations-Sanierung)",
-    "PMI_LEAD": "PMI-Leitung (Post-Merger-Integration / Carve-Out)",
-    "TRANSFORMATION": "Transformations- / Restrukturierungsleitung",
+    "CRO": "CRO / Interim-Management",
+    "INTERIM_CFO": "CFO / Finanzrestrukturierung",
+    "INTERIM_CEO": "CEO / Geschäftsführer",
+    "INTERIM_COO": "COO / operative Transformation",
+    "BOARD": "Verwaltungsrat / Aufsichtsrat",
+    "PMI_LEAD": "COO / operative Transformation",
+    "TRANSFORMATION": "COO / operative Transformation",
     "KEINE": "Keine externe Organfunktion ableitbar"
 }
 
@@ -301,13 +302,13 @@ class MandateRealityCheckEngine:
         )
 
         if is_eigenverwaltung and not is_advisor_mandated:
-            target_role = "CRO"  # ROLES["CRO"] = "CRO / Sanierungsvorstand"
+            target_role = "CRO_ORGAN" if (has_proven_organ_exit and "gmbh" not in combined_text.lower()) else "CRO_INTERIM"
             mandate_feasibility = "plausibel"
         elif is_schvg_debt:
-            target_role = "INTERIM_CFO"  # ROLES["INTERIM_CFO"] = "CFO / Finanzrestrukturierung"
+            target_role = "INTERIM_CFO"  # CFO / Finanzrestrukturierung
             mandate_feasibility = "plausibel"
         elif is_swiss_board:
-            target_role = "BOARD_MEMBER"  # ROLES["BOARD_MEMBER"] = "Verwaltungsrat / Aufsichtsrat"
+            target_role = "BOARD_MEMBER"  # Verwaltungsrat / Aufsichtsrat
             mandate_feasibility = "plausibel"
         elif is_c_level_vacant or has_proven_organ_exit:
             if "cfo" in combined_text or "finanz" in combined_text:
@@ -315,7 +316,7 @@ class MandateRealityCheckEngine:
             elif "coo" in combined_text or "betrieb" in combined_text or "produktion" in combined_text or "werk" in combined_text:
                 target_role = "INTERIM_COO"
             elif "cro" in combined_text or "sanierung" in combined_text or "restrukturierung" in combined_text:
-                target_role = "CRO"
+                target_role = "CRO_ORGAN" if (has_proven_organ_exit and "gmbh" not in combined_text.lower()) else "CRO_INTERIM"
             elif "verwaltungsrat" in combined_text or "aufsichtsrat" in combined_text:
                 target_role = "BOARD_MEMBER"
             else:

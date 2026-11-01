@@ -27,7 +27,7 @@ class TestMandateRealityCheck(unittest.TestCase):
         Referenzfall Weha Ludwig Werwein GmbH (Anforderung 6):
         - Restrukturierungsereignis: VERIFIZIERT (bestaetigt)
         - Organvakuum: NICHT NACHGEWIESEN (GF bleibt im Amt)
-        - CRO-Bedarf: PLAUSIBLE MANDATSCHANCE (CRO / Sanierungsvorstand)
+        - CRO-Bedarf: PLAUSIBLE MANDATSCHANCE (CRO / Interim-Management)
         - Externe Suche: NICHT BESTÄTIGT
         - Gesamtqualifizierung: STUFE 2
         """
@@ -42,7 +42,8 @@ class TestMandateRealityCheck(unittest.TestCase):
         )
         rc = ev.reality_check
         self.assertEqual(rc["status"], CLASS_MANDAT_PLAUSIBEL)
-        self.assertEqual(rc["target_role"], "CRO")
+        self.assertIn(rc["target_role"], ("CRO", "CRO_INTERIM"))
+        self.assertEqual(rc["target_role_label"], "CRO / Interim-Management")
         self.assertEqual(rc["criteria_eval"]["event_validity"], "bestaetigt")
         self.assertEqual(rc["criteria_eval"]["action_pressure"], "akut")
         self.assertEqual(rc["criteria_eval"]["mandate_feasibility"], "plausibel")

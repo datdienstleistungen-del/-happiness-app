@@ -121,34 +121,117 @@ export const OUTREACH_PARTNERS = [
   }
 ];
 
-export function generateGermanOutreachEmail({ partner, refCode, region, segment, role, incident }) {
+export function generateGermanOutreachEmail({ partner, refCode, region, segment, role, incident, opp, audit, legalForm, compName }) {
   const pName = partner?.contactPerson || 'Damen und Herren';
-  const salutation = pName.includes('Frau') || pName.includes('Pierina') || pName.includes('Tannò')
-    ? `Sehr geehrte Frau ${pName.split(' ').pop()},`
-    : pName.includes('Herr') || pName.includes('Byron')
-      ? `Sehr geehrter Herr ${pName.split(' ').pop()},`
-      : `Sehr geehrte Damen und Herren,`;
+  const lastName = pName.split(' ').pop();
+  let salutation = 'Sehr geehrte Damen und Herren,';
+  if (partner?.id === 'taskforce' || pName.includes('Sieger')) {
+    salutation = 'Lieber Herr Sieger,';
+  } else if (pName.includes('Frau') || pName.includes('Pierina') || pName.includes('Tannò')) {
+    salutation = `Sehr geehrte Frau ${lastName},`;
+  } else if (pName.includes('Herr') || ['Tarboton', 'Sieger', 'Götze', 'Metzger'].includes(lastName)) {
+    salutation = `Sehr geehrter Herr ${lastName},`;
+  }
 
-  const subject = `Diskretes Mandatssignal: Organ-Vakuum VR / C-Level (${region} · ${segment})`;
+  const isOrganVacant = audit?.organ_vacuum_status === 'BESTANDEN';
+  const isEigenverwaltung = /(eigenverwaltung|schutzschirm|§ 270|restrukturierung|sanierung)/i.test(
+    `${incident || ''} ${opp?.situation || ''} ${opp?.title || ''}`
+  );
+  const isSchvg = /(anleihe|schvg|gläubigerabstimmung|laufzeitverlängerung)/i.test(
+    `${incident || ''} ${opp?.situation || ''} ${opp?.title || ''}`
+  );
 
-  const body = `${salutation}
+  let subject = '';
+  let body = '';
+
+  if (isEigenverwaltung && !isOrganVacant) {
+    // ── FALL A: EIGENVERWALTUNG / SANIERUNG (z.B. Weha Ludwig Werwein GmbH) ──
+    subject = `Vertraulich: Mandats-Signal ${legalForm || 'Mittelstand'} (${role || 'CRO / Interim-Management'} · ${region})`;
+    body = `${salutation}
+
+über unseren Mandate Desk monitoren wir tagesaktuell amtliche Register und Restrukturierungsmitteilungen auf akuten Managementbedarf im gehobenen Mittelstand.
+
+Am Standort ${region} liegt ein verifiziertes Unternehmensereignis vor: Ein etabliertes Unternehmen (${legalForm || 'GmbH'}) hat ein Sanierungsverfahren in Eigenverwaltung eingeleitet.
+
+Wichtiger Hinweis zur Mandatsqualifizierung (Stufe 2 – Plausible Mandatschance):
+Die bestehende Geschäftsführung führt den Geschäftsbetrieb in Eigenverwaltung fort; ein Organvakuum liegt nicht vor. Aus dem Sanierungsanlass ergibt sich eine plausible Mandatschance für operative Restrukturierungsbegleitung (${role || 'CRO / Interim-Management'}) und Unterstützung bei der Gläubiger- und Verfahrenskoordination. Eine externe Mandatsvergabe ist bisher unbestätigt (First-Look für autorisierte Partner).
+
+Gemäß unserem Standard sichern wir Ihnen für diesen Fall exklusiven Kundenschutz zu.
+
+Anonymisiertes Mandats-Profil:
+- Referenz: ${refCode}
+- Region & Rechtsform: ${region} · ${legalForm || 'GmbH'}
+- Branche / Segment: ${segment}
+- Anlass: ${incident}
+- Mandatshebel / Bedarf: ${role || 'CRO / Interim-Management'} (Operativer Interims-Einsatz, keine Organfunktion)
+- Organ-Vakuum: NICHT NACHGEWIESEN (Geschäftsführung im Amt)
+- Mandats-Qualifizierung: ${audit?.qualification_stage || 'STUFE 2 – PLAUSIBLE MANDATSCHANCE'} (Externe Suche unbestätigt)
+- Status: Offen zur Erstansprache
+
+Weitere Informationen zu unserem Mandate Desk finden Sie unter:
+https://dat-dat.de
+
+Bei Interesse an den verifizierten Klardaten und den Verfahrensdetails für Ihre Ansprache freue ich mich über Ihre kurze Rückmeldung.
+
+Mit freundlichen Grüßen
+
+Harro Goerndt
+D.A.T. Dienstleistungen · Executive Mandate Desk
+Weserstraße 16 · 26382 Wilhelmshaven`;
+  } else if (isSchvg && !isOrganVacant) {
+    // ── FALL B: ANLEIHE-RESTRUKTURIERUNG / SchVG (z.B. PAUL Tech AG) ──
+    subject = `Vertraulich: Mandats-Signal Anleihe-Restrukturierung & CFO-Bedarf (${region} · ${segment})`;
+    body = `${salutation}
+
+anbei übermittle ich Ihnen exklusiv das vorläufige Blind-Dossier zur anstehenden Anleihe-Restrukturierung (${segment} · ${region}).
+
+Hintergrund: Gläubigerabstimmung nach SchVG (Laufzeitverlängerung und Restrukturierungskonzept). Es besteht akuter Bedarf an CFO-Finanzrestrukturierung, Restrukturierungs-PMO und Begleitung der Gläubiger-Governance.
+
+Wichtiger Hinweis zur Mandatsqualifizierung (Stufe 2 – Plausible Mandatschance):
+Das Unternehmensereignis ist über Primärquellen verifiziert. Ein Organvakuum liegt nicht vor. Es besteht eine plausible Mandatschance für externes Interims-Management; eine externe Mandatierung ist bisher unbestätigt.
+
+Ihnen sichern wir für diesen Fall den vereinbarten Kundenschutz zu.
+
+Anonymisiertes Mandats-Profil:
+- Referenz: ${refCode}
+- Region & Rechtsform: ${region} · ${legalForm || 'AG'}
+- Branche / Segment: ${segment}
+- Anlass: ${incident}
+- Mandatshebel / Bedarf: ${role || 'CFO / Finanzrestrukturierung'}
+- Organ-Vakuum: NICHT NACHGEWIESEN
+- Mandats-Qualifizierung: ${audit?.qualification_stage || 'STUFE 2 – PLAUSIBLE MANDATSCHANCE'}
+- Status: Offen zur Erstansprache
+
+Weitere Informationen zu unserem Mandate Desk finden Sie unter:
+https://dat-dat.de
+
+Beste Grüße
+
+Harro Goerndt
+D.A.T. Dienstleistungen · Executive Mandate Desk
+Weserstraße 16 · 26382 Wilhelmshaven`;
+  } else {
+    // ── FALL C: ECHTES ORGAN-VAKUUM (z.B. cosquare AG / SHAB Mutation) ──
+    subject = `Diskretes Mandatssignal: Organ-Vakuum ${role || 'Verwaltungsrat / C-Level'} (${region} · ${segment})`;
+    body = `${salutation}
 
 über unseren Mandate Desk identifizieren wir tagesaktuell signifikante Organ-Vakanzen und Führungslücken im europäischen Markt.
 
-Am Standort ${region} liegt uns ein akutes Organ-Vakuum bei einer schweizerischen Technologie-AG vor: Ein vollwertiges Mitglied des Verwaltungsrates mit Einzelunterschrift ist per sofort ausgeschieden, ohne dass eine Nachfolge geregelt ist.
+Am Standort ${region} liegt uns ein akutes Organ-Vakuum bei einem etablierten Unternehmen (${legalForm || 'AG'}) vor: Ein Mitglied der Leitungsebene (${role}) ist per sofort ausgeschieden, ohne dass eine Nachfolge geregelt ist.
 
-Da hier unmittelbarer Handlungsdruck bezüglich Board-Governance, Organvertretung und operativer Handlungsfähigkeit besteht, stellen wir diesen Anlass einem ausgewählten Partner zur Mandatierung zur Verfügung.
+Da hier unmittelbarer Handlungsdruck bezüglich Board-Governance, Organvertretung und Handlungsfähigkeit besteht, stellen wir diesen Anlass einem ausgewählten Partner zur Verfügung.
 
-Ihnen sichern wir für diesen Fall absolute Exklusivität zu – das Signal wird von uns an keinen weiteren Provider oder Wettbewerber im Schweizer Markt herausgegeben.
+Ihnen sichern wir für diesen Fall absolute Exklusivität zu – das Signal wird an keinen weiteren Provider im relevanten Markt herausgegeben.
 
-Das anonymisierte Blind-Profil zur Ersteinschätzung:
-
-Referenz: ${refCode}
-Region & Rechtsform: ${region} · Aktiengesellschaft (AG)
-Segment: ${segment}
-Anlass: ${incident}
-Bedarf: ${role}
-Status: Vakant / Frei zur Erstansprache
+Anonymisiertes Mandats-Profil zur Ersteinschätzung:
+- Referenz: ${refCode}
+- Region & Rechtsform: ${region} · ${legalForm || 'Aktiengesellschaft (AG)'}
+- Branche / Segment: ${segment}
+- Anlass: ${incident}
+- Mandatshebel / Bedarf: ${role}
+- Organ-Vakuum: BESTANDEN (Vakante Organposition nachgewiesen)
+- Mandats-Qualifizierung: ${audit?.qualification_stage || 'STUFE 2 – PLAUSIBLE MANDATSCHANCE'}
+- Status: Vakant / Frei zur Erstansprache
 
 Weitere Informationen zu unserem Mandate Desk finden Sie unter:
 https://dat-dat.de
@@ -160,30 +243,75 @@ Mit freundlichen Grüßen
 Harro Goerndt
 D.A.T. Dienstleistungen · Executive Mandate Desk
 Weserstraße 16 · 26382 Wilhelmshaven`;
+  }
 
   return { subject, body };
 }
 
-export function generateEnglishOutreachEmail({ partner, refCode, region, segment, role, incident }) {
+export function generateEnglishOutreachEmail({ partner, refCode, region, segment, role, incident, opp, audit, legalForm, compName }) {
   const pName = partner?.contactPerson || 'Executive';
   const lastName = pName.split(' ').pop();
   const salutation = `Dear Mr ${lastName},`;
-  const subject = `Mandate Opportunity: Executive / Board Transition (Greater Zurich Area)`;
 
-  const body = `${salutation}
+  const isOrganVacant = audit?.organ_vacuum_status === 'BESTANDEN';
+  const isEigenverwaltung = /(eigenverwaltung|schutzschirm|§ 270|restrukturierung|sanierung)/i.test(
+    `${incident || ''} ${opp?.situation || ''} ${opp?.title || ''}`
+  );
 
-Through our European Mandate Desk, we monitor primary statutory registers for acute C-level and board-level transitions across key European jurisdictions.
+  let subject = '';
+  let body = '';
 
-We have identified an immediate governance and leadership vacancy at a Swiss digital technology corporation (Aktiengesellschaft) located within the greater Zurich / Central Switzerland economic area. A senior board director has stepped down with immediate effect, leaving an unstaffed organ vacancy.
+  if (isEigenverwaltung && !isOrganVacant) {
+    subject = `Confidential Mandate Signal: Restructuring & Interim Management (${region})`;
+    body = `${salutation}
 
-Due to interim governance requirements, we are presenting this event to an established executive interim partner. We grant you exclusive first-look rights for the UK market on this lead until Wednesday, 28 October 2026, 17:00 BST. Should you decline or not confirm by this deadline, exclusivity expires.
+Through our European Mandate Desk, we monitor primary statutory registers and formal restructuring proceedings across key European jurisdictions.
+
+We have identified a verified corporate event in ${region}: An established enterprise (${legalForm || 'GmbH'}) has initiated debtor-in-possession proceedings (Eigenverwaltung).
+
+Note on Mandate Stage (Stage 2 – Plausible Mandate Chance):
+Existing management remains in power; no organ vacancy has occurred. However, acute operational turnaround requirements establish a plausible mandate chance for external interim management (${role || 'CRO / Interim-Management'}) and PMO support. Formal external procurement has not yet been confirmed.
+
+We grant you exclusive first-look protection on this lead for your market.
 
 Anonymised Mandate Overview:
 - Reference: ${refCode}
-- Region & Entity: Greater Zurich Area / Central Switzerland · Swiss Corporation (AG)
+- Region & Entity: ${region} · ${legalForm || 'GmbH'}
+- Industry: ${segment}
+- Trigger: ${incident}
+- Requirement: ${role || 'CRO / Interim-Management'} (Operational interim management, no statutory organ liability)
+- Organ Vacuum: NOT PROVEN (Management in office)
+- Qualification Stage: ${audit?.qualification_stage || 'STAGE 2 – PLAUSIBLE MANDATE CHANCE'}
+- Status: Open for primary outreach
+
+Further information about our executive desk:
+https://dat-dat.de
+
+To receive the verified corporate entity details and proceeding documentation, please confirm your interest by replying directly to this email.
+
+Best regards,
+
+Harro Goerndt
+D.A.T. Dienstleistungen · Executive Mandate Desk
+Weserstraße 16 · 26382 Wilhelmshaven, Germany`;
+  } else {
+    subject = `Mandate Opportunity: Executive / Board Vacancy (${region})`;
+    body = `${salutation}
+
+Through our European Mandate Desk, we monitor primary statutory registers for acute C-level and board-level transitions across key European jurisdictions.
+
+We have identified an immediate governance and leadership vacancy at an established corporation (${legalForm || 'AG'}) located within ${region}. A senior board director or executive has stepped down with immediate effect, leaving an unstaffed organ vacancy.
+
+Due to interim governance requirements, we are presenting this event to an established executive interim partner. We grant you exclusive first-look rights on this lead for your market.
+
+Anonymised Mandate Overview:
+- Reference: ${refCode}
+- Region & Entity: ${region} · ${legalForm || 'Corporation (AG)'}
 - Industry: ${segment}
 - Trigger: ${incident}
 - Requirement: ${role}
+- Organ Vacuum: ${isOrganVacant ? 'PROVEN (Unstaffed organ vacancy)' : 'NOT PROVEN'}
+- Qualification Stage: ${audit?.qualification_stage || 'STAGE 2 – PLAUSIBLE MANDATE CHANCE'}
 - Status: Open for primary outreach
 
 Further information about our executive desk:
@@ -196,6 +324,7 @@ Best regards,
 Harro Goerndt
 D.A.T. Dienstleistungen · Executive Mandate Desk
 Weserstraße 16 · 26382 Wilhelmshaven, Germany`;
+  }
 
   return { subject, body };
 }
@@ -371,16 +500,22 @@ export function extractDealCoachAudit(opp) {
     } else if (isBondSchvg) {
       target_role = 'CFO / Finanzrestrukturierung';
     } else if (isEigenverwaltung) {
-      target_role = 'CRO / Sanierungsvorstand';
+      target_role = (organ_vacuum_status === 'BESTANDEN' && !/gmbh/i.test(fullText)) ? 'CRO / Sanierungsvorstand' : 'CRO / Interim-Management';
     } else if (isFinance) {
       target_role = 'CFO / Finanzrestrukturierung';
     } else if (isOps) {
       target_role = 'COO / operative Transformation';
-    } else if (isTier1) {
+    } else if (isTier1 && organ_vacuum_status === 'BESTANDEN' && !/gmbh/i.test(fullText)) {
       target_role = 'CRO / Sanierungsvorstand';
     } else {
       target_role = 'CRO / Interim-Management';
     }
+  }
+
+  // Strikte fachliche Trennung: Sanierungsvorstand ist eine Organfunktion.
+  // Ohne belegtes Organausscheiden oder bei einer GmbH handelt es sich um CRO / Interim-Management!
+  if (target_role === 'CRO / Sanierungsvorstand' && (organ_vacuum_status === 'NICHT NACHGEWIESEN' || /gmbh/i.test(fullText))) {
+    target_role = 'CRO / Interim-Management';
   }
 
   // 8. 5-Punkte Transparenz-Matrix
@@ -1044,41 +1179,54 @@ export default function SalesWorkspacePage() {
   useEffect(() => {
     if (!activeOpp) return;
     const partner = OUTREACH_PARTNERS.find(p => p.id === outreachPartnerId) || OUTREACH_PARTNERS[0];
-    const isSwiss = (activeOpp.country === 'CH' || (activeOpp.title || '').includes('[CH]') || (activeOpp.situation || '').includes('Zug') || (activeOpp.situation || '').includes('Schweiz'));
+    const compName = resolveOppCompanyHelper(activeOpp);
+    const country = getCountryFlag(activeOpp);
+    const legalForm = getLegalForm(compName, activeOpp);
+    const audit = extractDealCoachAudit(activeOpp);
+
+    const isSwiss = country.code === 'CH' || (activeOpp.source || '').includes('shab.ch') || (activeOpp.title || '').includes('[CH]') || (activeOpp.situation || '').includes('Zug') || (activeOpp.situation || '').includes('Schweiz');
+    const isUK = country.code === 'UK' || (activeOpp.source || '').includes('londonstockexchange');
     
     // Bestehenden RefCode aus Tags suchen oder generieren
-    const existingRefTag = Array.isArray(activeOpp.tags) ? activeOpp.tags.find(t => t.startsWith('CH-') || t.startsWith('INT-')) : null;
+    const existingRefTag = Array.isArray(activeOpp.tags) ? activeOpp.tags.find(t => t.startsWith('CH-') || t.startsWith('INT-') || t.startsWith('DAT-') || t.startsWith('UK-')) : null;
     let refCode = existingRefTag;
     if (!refCode) {
-      if (partner.lang === 'en') {
-        refCode = `INT-CH-2026-${activeOpp.id ? activeOpp.id.slice(0, 3).toUpperCase() : '081'}`;
+      if (isSwiss) {
+        refCode = partner.lang === 'en'
+          ? `INT-CH-2026-${activeOpp.id ? activeOpp.id.slice(0, 3).toUpperCase() : '081'}`
+          : `CH-ZG-2026-VR-${activeOpp.id ? activeOpp.id.slice(0, 2).toUpperCase() : '01'}`;
+      } else if (isUK) {
+        refCode = `UK-LSE-2026-${activeOpp.id ? activeOpp.id.slice(0, 3).toUpperCase() : '050'}`;
       } else {
-        refCode = `CH-ZG-2026-VR-${activeOpp.id ? activeOpp.id.slice(0, 2).toUpperCase() : '01'}`;
+        refCode = `DAT-DE-2026-${activeOpp.id ? activeOpp.id.slice(0, 3).toUpperCase() : '101'}`;
       }
     }
 
-    // Role aus Trigger/Situation parsen
-    const parsedRole = (() => {
+    // Role aus Audit oder Trigger/Situation parsen
+    const parsedRole = audit?.target_role || (() => {
       const sit = activeOpp.situation || '';
       const mRole = sit.match(/\[ROLE\]:\s*([^\n\r]+)/i);
       if (mRole) return mRole[1].trim();
       const mOrgan = sit.match(/\b(Mitglied des Verwaltungsrates|Präsident des Verwaltungsrates|Verwaltungsrat|Vorstand|CEO|CFO|CRO)\b/i);
-      return mOrgan ? mOrgan[0].trim() : 'Interim Board Member / Governance & Transition Lead';
+      return mOrgan ? mOrgan[0].trim() : 'CRO / Interim-Management';
     })();
     setOutreachRole(parsedRole);
     setOutreachRefCode(refCode);
 
-    // Segment & Incident
-    const segment = (activeOpp.industry && activeOpp.industry !== 'B2B & Industrie') ? activeOpp.industry : 'Digital Commerce / Video-Tech (Scale-up)';
-    const region = isSwiss ? 'Kanton Zug (Schweiz)' : 'DACH / Zentraleuropa';
-    const incident = 'Akutes Ausscheiden Verwaltungsrat mit Einzelunterschrift per sofort / Vakanz';
+    // Segment & Incident dynamisch bestimmen
+    const segment = (activeOpp.industry && activeOpp.industry !== 'B2B & Industrie') ? activeOpp.industry : detectIndustry(compName, activeTrigger, activeOpp, activeOpp.situation || '');
+    const region = country.label || (isSwiss ? 'Kanton Zug (Schweiz)' : 'DACH / Zentraleuropa');
+
+    const rawSit = activeOpp.situation || activeTrigger?.content || activeOpp.title || '';
+    const cleanAnn = extractCleanAnnouncementText(rawSit, activeOpp.title);
+    const incident = audit?.facts_proven || (cleanAnn ? cleanAnn.split('\n')[0].slice(0, 140) : activeOpp.title || 'Unternehmensereignis');
 
     if (partner.lang === 'en') {
-      const { subject, body } = generateEnglishOutreachEmail({ partner, refCode, region, segment, role: parsedRole, incident });
+      const { subject, body } = generateEnglishOutreachEmail({ partner, refCode, region, segment, role: parsedRole, incident, opp: activeOpp, audit, legalForm, compName });
       setOutreachSubject(subject);
       setOutreachBody(body);
     } else {
-      const { subject, body } = generateGermanOutreachEmail({ partner, refCode, region, segment, role: parsedRole, incident });
+      const { subject, body } = generateGermanOutreachEmail({ partner, refCode, region, segment, role: parsedRole, incident, opp: activeOpp, audit, legalForm, compName });
       setOutreachSubject(subject);
       setOutreachBody(body);
     }
@@ -4630,13 +4778,17 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                     {/* Title Bar */}
                     <div className="teaser-title-bar">
                       <div>
-                        <div className="teaser-doc-type">MANDATS-BRIEFING · C-LEVEL / BOARD VACANCY</div>
-                        <div className="teaser-doc-headline">{t.headline}</div>
+                        <div className="teaser-doc-type">
+                          {audit?.organ_vacuum_status === 'BESTANDEN'
+                            ? 'MANDATS-BRIEFING · C-LEVEL / ORGAN-VAKANZ'
+                            : 'MANDATS-BRIEFING · RESTRUKTURIERUNG & INTERIM-MANAGEMENT'}
+                        </div>
+                        <div className="teaser-doc-headline">{t.headline || `${legalForm || 'Mittelstand'} (${region}): ${outreachRole || 'CRO / Interim-Management'}`}</div>
                       </div>
                       <div className="teaser-meta-pills">
-                        <div><strong>Referenz:</strong> {outreachRefCode || `CH-ZG-2026-VR-${activeOpp?.id ? activeOpp.id.slice(0, 4).toUpperCase() : '01'}`}</div>
+                        <div><strong>Referenz:</strong> {outreachRefCode || 'REF-2026-01'}</div>
                         <div><strong>Datum:</strong> {activeTrigger?.event_date || activeOpp?.event_date || new Date().toISOString().split('T')[0]}</div>
-                        <div><strong>Status:</strong> Freigegeben zur Erstansprache</div>
+                        <div><strong>Qualifizierung:</strong> {audit?.qualification_stage || 'STUFE 2 – PLAUSIBLE MANDATSCHANCE'}</div>
                       </div>
                     </div>
 
@@ -4645,20 +4797,30 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                       <tbody>
                         <tr>
                           <td className="tf-label">Zielbranche / Segment</td>
-                          <td className="tf-val"><strong>{t.industry}</strong></td>
+                          <td className="tf-val"><strong>{t.industry || (activeOpp.industry && activeOpp.industry !== 'B2B & Industrie' ? activeOpp.industry : 'Gehobener Mittelstand')}</strong></td>
                           <td className="tf-label">Standort / Region</td>
-                          <td className="tf-val"><strong>{t.region}</strong></td>
+                          <td className="tf-val"><strong>{t.region || country.label || 'DACH / Zentraleuropa'}</strong></td>
                         </tr>
                         <tr>
                           <td className="tf-label">Rechtsform &amp; Größe</td>
-                          <td className="tf-val">{d.company?.legalForm || 'Aktiengesellschaft (AG)'} · {d.company?.employeesCount || 'k. A. / nicht erfasst'} MA</td>
-                          <td className="tf-label">Ziel-Organ / Vakanz</td>
-                          <td className="tf-val"><strong>{d.roleTargeting?.primaryRole || outreachRole || 'Verwaltungsrat / C-Level'}</strong></td>
+                          <td className="tf-val">{legalForm || d.company?.legalForm || 'GmbH / AG'} · {d.company?.employeesCount || 'Gehobener Mittelstand'}</td>
+                          <td className="tf-label">Mandatshebel / Bedarf</td>
+                          <td className="tf-val"><strong>{audit?.target_role || outreachRole || 'CRO / Interim-Management'}</strong></td>
+                        </tr>
+                        <tr>
+                          <td className="tf-label">Organ-Vakuum Status</td>
+                          <td className="tf-val">
+                            <span style={{ fontWeight: 700, color: audit?.organ_vacuum_status === 'BESTANDEN' ? '#15803d' : '#b45309' }}>
+                              {audit?.organ_vacuum_status === 'BESTANDEN' ? '🟢 BESTANDEN (Vakant)' : '🟡 NICHT NACHGEWIESEN (GF im Amt)'}
+                            </span>
+                          </td>
+                          <td className="tf-label">Mandats-Status</td>
+                          <td className="tf-val"><strong>{audit?.external_search_status === 'BESTÄTIGT' ? '🟢 Externe Suche bestätigt' : '🟡 Externe Suche unbestätigt (First-Look)'}</strong></td>
                         </tr>
                         <tr>
                           <td className="tf-label">Primärquelle / Nachweis</td>
                           <td className="tf-val" colSpan="3">
-                            Amtliche Registerpublikation ({d.primarySource?.url ? 'SHAB Schweizerisches Handelsamtsblatt' : 'Handelsregister'}) · Verifiziert durch Harro Goerndt am {new Date().toLocaleDateString('de-DE')}
+                            {audit?.facts_proven || (d.primarySource?.url ? `Amtliche Registerpublikation (${d.primarySource.url})` : 'Amtliche Primärquelle')} · Verifiziert durch Harro Goerndt am {new Date().toLocaleDateString('de-DE')}
                           </td>
                         </tr>
                       </tbody>
@@ -4676,11 +4838,19 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                     <div className="teaser-section-title">
                       <span>🎯</span> MANDATS-FOKUS &amp; PROVIDER-EINSATZOPTIONEN
                     </div>
-                    <div className="teaser-scope-list">
-                      <div>• <strong>Sofortige Organ-Vertretung:</strong> Besetzung der vakanten Organposition zur Sicherung der Handlungsfähigkeit und Einzelzeichnungsberechtigung.</div>
-                      <div>• <strong>Corporate Governance &amp; Transformation:</strong> Begleitung von Nachfolge, Neuausrichtung oder Gesellschafterwechsel auf VR-/C-Level-Ebene.</div>
-                      <div>• <strong>Exklusiver Erstansprache-Vorteil:</strong> Unmittelbarer zeitlicher Vorteil vor öffentlicher Marktausschreibung.</div>
-                    </div>
+                    {audit?.organ_vacuum_status === 'BESTANDEN' ? (
+                      <div className="teaser-scope-list">
+                        <div>• <strong>Sofortige Organ-Vertretung:</strong> Besetzung der vakanten Organposition zur Sicherung der Handlungsfähigkeit und Vertretungsbefugnis.</div>
+                        <div>• <strong>Corporate Governance &amp; Transition:</strong> Begleitung von Nachfolge, Neuausrichtung oder Gesellschafterwechsel auf Organebene ({audit?.target_role || 'Organbesetzung'}).</div>
+                        <div>• <strong>Exklusiver Erstansprache-Vorteil:</strong> Unmittelbarer zeitlicher Vorteil vor öffentlicher Marktausschreibung.</div>
+                      </div>
+                    ) : (
+                      <div className="teaser-scope-list">
+                        <div>• <strong>Operative Restrukturierungsbegleitung:</strong> Externer CRO / Interim-Manager zur Steuerung des Sanierungskonzepts ohne Übernahme von Organhaftung.</div>
+                        <div>• <strong>Liquiditäts- &amp; Gläubiger-Koordination:</strong> Entlastung der bestehenden Geschäftsführung gegenüber Sachwalter und Gläubigerausschuss.</div>
+                        <div>• <strong>First-Look Mandatschance (Stufe 2):</strong> Proaktive Positionierung des Interims-Providers vor formaler Ausschreibung.</div>
+                      </div>
+                    )}
 
                     {/* Target Partners / Buyers */}
                     <div style={{ marginBottom: '14px' }}>

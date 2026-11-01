@@ -683,10 +683,14 @@ Antworte AUSSCHLIESSLICH in diesem JSON-Format:
         parsed['audit_verdict'] = "VERIFIZIERTES EREIGNIS (MANDATSBEDARF UNKLAR)"
 
     # Saubere Rollenzuordnung
-    if "verwaltungsrat" in raw_eval_lower or "board member" in raw_eval_lower or region == "CH" and "vr" in raw_eval_lower:
+    if "verwaltungsrat" in raw_eval_lower or "board member" in raw_eval_lower or (region == "CH" and "vr" in raw_eval_lower):
         parsed['role'] = "Verwaltungsrat / Aufsichtsrat"
     elif "eigenverwaltung" in raw_eval_lower or "starug" in raw_eval_lower or "cro" in raw_eval_lower:
-        parsed['role'] = "CRO / Sanierungsvorstand"
+        # Harros Differenzierung: Ein Sanierungsvorstand ist ein Organamt. Ohne belegten Organabgang oder bei einer GmbH handelt es sich um CRO / Interim-Management!
+        if has_real_organ_exit and "gmbh" not in raw_eval_lower:
+            parsed['role'] = "CRO / Sanierungsvorstand"
+        else:
+            parsed['role'] = "CRO / Interim-Management"
     elif "anleihe" in raw_eval_lower or "schvg" in raw_eval_lower or "gläubiger" in raw_eval_lower or "cfo" in raw_eval_lower:
         parsed['role'] = "CFO / Finanzrestrukturierung"
 
