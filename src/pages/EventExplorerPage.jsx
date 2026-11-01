@@ -30,7 +30,11 @@ import {
   Terminal,
   Filter,
   Check,
-  Info
+  Info,
+  Eye,
+  Copy,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -192,6 +196,128 @@ export const RADAR_CATEGORY_MAP = {
   finanz_sondersituation: ['finanzierung_anleihen_restrukturierung', 'finanz_sondersituation']
 }
 
+export function parseMandateEventCard(evt) {
+  const rawText = evt.description || evt.evidence_text || evt.situation || evt.title || ''
+  
+  // 1. Matches for tags
+  const ratMatch = rawText.match(/\[MANDATS-BEGRÜNDUNG\]:\s*([^\[]+)/i) || rawText.match(/\[MANDATS-HYPOTHESE\]:\s*([^\[]+)/i)
+  const urgMatch = rawText.match(/\[DRINGLICHKEIT\]:\s*([^\[]+)/i)
+  const roleMatch = rawText.match(/\[MANDATSHEBEL\]:\s*([^\[]+)/i) || rawText.match(/\[ROLE\]:\s*([^\[]+)/i)
+  const compMatch = rawText.match(/\[COMPANY\]:\s*([^\[]+)/i)
+  const buyMatch = rawText.match(/\[KAUFSIGNAL\]:\s*([^\[]+)/i)
+  
+  // 2. Strip all DealCoach / Audit tags from text to get pure narrative
+  let cleanNarrative = rawText
+    .replace(/\[DEALCOACH AUDIT\]:[^\[]*/gi, '')
+    .replace(/\[VAKUUM-CHECK\]:[^\[]*/gi, '')
+    .replace(/\[DRINGLICHKEIT\]:[^\[]*/gi, '')
+    .replace(/\[MANDATS-BEGRÜNDUNG\]:[^\[]*/gi, '')
+    .replace(/\[BUDGET-SCHÄTZUNG\]:[^\[]*/gi, '')
+    .replace(/\[COMPANY\]:[^\[]*/gi, '')
+    .replace(/\[KAUFSIGNAL\]:[^\[]*/gi, '')
+    .replace(/\[EREIGNISDATUM\]:[^\[]*/gi, '')
+    .replace(/\[QUALIFIZIERUNGS-STUFE\]:[^\[]*/gi, '')
+    .replace(/\[ORGAN-VAKUUM\]:[^\[]*/gi, '')
+    .replace(/\[EXTERNE-SUCHE\]:[^\[]*/gi, '')
+    .replace(/\[FAKTEN-BELEG\]:[^\[]*/gi, '')
+    .replace(/\[SCHLUSSFOLGERUNG\]:[^\[]*/gi, '')
+    .replace(/\[MANDATS-HYPOTHESE\]:[^\[]*/gi, '')
+    .replace(/\[FEHLENDE-INFO\]:[^\[]*/gi, '')
+    .replace(/\[SICHERHEIT\]:[^\[]*/gi, '')
+    .replace(/\[MANDATSHEBEL\]:[^\[]*/gi, '')
+    .replace(/\[ROLE\]:[^\[]*/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+
+  // Clean company name
+  let cleanCompName = evt.company_name
+  if ((!cleanCompName || cleanCompName === 'UNRESOLVED') && compMatch) {
+    cleanCompName = compMatch[1].trim()
+  }
+  cleanCompName = (cleanCompName || 'UNRESOLVED').replace(/^\[[A-Za-z0-9_\-\s]+\]\s*/i, '').trim()
+
+  // Clean headline / title
+  let cleanTitle = (evt.title || (buyMatch ? buyMatch[1].trim() : ''))
+    .replace(/^\[(Deutschland|DACH|CH|UK|FR|ES|EU|Österreich)\]\s*/i, '')
+    .replace(/^(Deutschland|DACH|Schweiz|Österreich):\s*/i, '')
+    .trim()
+
+  if (cleanCompName && cleanCompName !== 'UNRESOLVED' && cleanTitle.toLowerCase().startsWith(cleanCompName.toLowerCase() + ':')) {
+    cleanTitle = cleanTitle.substring(cleanCompName.length + 1).trim()
+  }
+
+  // Fallback narrative and rationale
+  const mandateRationale = ratMatch ? ratMatch[1].trim() : (evt.reality_check?.mandate_hypothesis || evt.mandate_rationale || '')
+  
+  if (!cleanNarrative) {
+    cleanNarrative = evt.reality_check?.facts_proven || cleanTitle || 'Verifiziertes Sondersituations-Signal'
+  }
+
+  // Determine Target Role & Color Pill
+  let targetRole = evt.reality_check?.target_role || (roleMatch ? roleMatch[1].trim() : null)
+  let roleLabel = evt.reality_check?.target_role_label || ''
+  let roleColor = 'cro'
+  
+  const combinedUpper = `${cleanTitle} ${cleanNarrative} ${mandateRationale} ${evt.event_type || ''} ${targetRole || ''}`.toUpperCase()
+
+  if (targetRole && targetRole !== 'KEINE') {
+    if (targetRole.includes('CRO') || targetRole.includes('SAN')) {
+      roleColor = 'cro'
+      roleLabel = 'CRO / Sanierungs-GF'
+    } else if (targetRole.includes('CFO') || targetRole.includes('FIN') || targetRole.includes('DEBT')) {
+      roleColor = 'cfo'
+      roleLabel = 'Interim-CFO / Refinanzierung'
+    } else if (targetRole.includes('CEO') || targetRole.includes('VORSTAND') || targetRole.includes('BOARD')) {
+      roleColor = 'ceo'
+      roleLabel = 'Interim-CEO / Board-Vakuum'
+    } else if (targetRole.includes('PMI') || targetRole.includes('M&A') || targetRole.includes('CARVE')) {
+      roleColor = 'pmi'
+      roleLabel = 'PMI / M&A-Lead'
+    } else {
+      roleColor = 'cro'
+      roleLabel = targetRole
+    }
+  } else {
+    if (combinedUpper.includes('EIGENVERWALTUNG') || combinedUpper.includes('SCHUTZSCHIRM') || combinedUpper.includes('INSOLVENZ') || combinedUpper.includes('STARUG') || combinedUpper.includes('SANIERUNG')) {
+      roleColor = 'cro'
+      roleLabel = 'CRO / Sanierungs-GF'
+    } else if (combinedUpper.includes('ANLEIHE') || combinedUpper.includes('GLÄUBIGER') || combinedUpper.includes('SCHVG') || combinedUpper.includes('REFINANZIERUNG') || combinedUpper.includes('COVENANT') || combinedUpper.includes('CFO')) {
+      roleColor = 'cfo'
+      roleLabel = 'Interim-CFO / Refinanzierung'
+    } else if (combinedUpper.includes('RÜCKTRITT') || combinedUpper.includes('ABBERUFUNG') || combinedUpper.includes('AUFSICHTSRAT ÜBERNIMMT') || combinedUpper.includes('VAKUUM') || combinedUpper.includes('CEO')) {
+      roleColor = 'ceo'
+      roleLabel = 'Interim-CEO / Board-Vakuum'
+    } else if (combinedUpper.includes('CARVE-OUT') || combinedUpper.includes('INVESTORENLÖSUNG') || combinedUpper.includes('SPIN-OFF') || combinedUpper.includes('POST-MERGER')) {
+      roleColor = 'pmi'
+      roleLabel = 'PMI / M&A-Lead'
+    } else {
+      roleColor = 'interim'
+      roleLabel = 'Executive Interim Mandat'
+    }
+  }
+
+  // Country Flag
+  const countryCode = (evt.country || 'DE').toUpperCase()
+  let countryFlag = '🇪🇺'
+  if (countryCode === 'DE' || countryCode === 'DEUTSCHLAND') countryFlag = '🇩🇪'
+  else if (countryCode === 'AT' || countryCode === 'ÖSTERREICH') countryFlag = '🇦🇹'
+  else if (countryCode === 'CH' || countryCode === 'SCHWEIZ') countryFlag = '🇨🇭'
+  else if (countryCode === 'UK' || countryCode === 'GB') countryFlag = '🇬🇧'
+  else if (countryCode === 'FR' || countryCode === 'FRANKREICH') countryFlag = '🇫🇷'
+  else if (countryCode === 'ES' || countryCode === 'SPANIEN') countryFlag = '🇪🇸'
+  else if (countryCode === 'IT' || countryCode === 'ITALIEN') countryFlag = '🇮🇹'
+
+  return {
+    cleanNarrative,
+    cleanTitle,
+    cleanCompName,
+    mandateRationale,
+    targetRole: roleLabel,
+    roleColor,
+    countryFlag
+  }
+}
+
 export default function EventExplorerPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -229,6 +355,76 @@ export default function EventExplorerPage() {
   const [highlightedEventId, setHighlightedEventId] = useState(() => {
     return highlightParam || sessionStorage.getItem('nexus_radar_active_event_id') || null
   })
+  const [copiedId, setCopiedId] = useState(null)
+  const [expandedDetails, setExpandedDetails] = useState({})
+  const [openNoteId, setOpenNoteId] = useState(null)
+
+  function fallbackCopyText(text, id) {
+    try {
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      textArea.style.position = 'fixed'
+      textArea.style.opacity = '0'
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      setCopiedId(id)
+      setTimeout(() => setCopiedId(null), 3500)
+    } catch (e) {
+      console.error('Fallback copy failed:', e)
+    }
+  }
+
+  function copyEventForAiAudit(evt, parsed) {
+    const rc = evt.reality_check || {}
+    const compName = parsed.cleanCompName || evt.company_name || 'Unbekannt'
+    const country = evt.country || 'DACH'
+    const dateStr = evt.published_at || evt.event_date ? new Date(evt.published_at || evt.event_date).toLocaleDateString('de-DE') : 'Aktuell'
+    const sourceUrl = evt.source_url || 'Amtliche Primärquelle'
+    
+    const promptText = `=== MANDATS-AUDIT & RECHERCHE-AUFTRAG (NeXus HIT) ===
+UNTERNEHMEN: ${compName} (${country})
+DATUM / EREIGNIS: ${dateStr}
+ZIELROLLE: ${parsed.targetRole}
+MANDATS-PRIORITÄT: ${evt.mandate_priority === 'high_priority_action_required' ? 'AKUTER HANDLUNGSDRUCK (First-Mover)' : 'WATCHLIST'}
+PRIMÄRQUELLE: ${sourceUrl}
+
+BELEGTER SACHVERHALT (FAKTEN):
+${parsed.cleanNarrative || 'Keine Detailbeschreibung verfügbar.'}
+
+MANDATSHYPOTHESE & SANIERUNGSBEDARF:
+${parsed.mandateRationale || 'Organvakuum / Restrukturierungsbedarf plausibel.'}
+
+OFFENE PUNKTE & GEGENINDIKATOREN:
+- Fehlende Infos: ${(rc.missing_information && rc.missing_information.length > 0) ? rc.missing_information.join('; ') : 'Keine registriert'}
+- Gegenindikatoren: ${(rc.counter_indicators && rc.counter_indicators.length > 0) ? rc.counter_indicators.join('; ') : 'Keine'}
+
+HUMAN-IN-THE-LOOP STATUS:
+${rc.human_review?.reviewed ? `Verifiziert durch Harro Goerndt am ${new Date(rc.human_review.reviewed_at).toLocaleDateString('de-DE')} als: ${rc.human_review.reviewer_decision}` : 'KI-Vorprüfung (Menschliche Freigabe ausstehend)'}
+${rc.human_review?.reviewer_notes ? `Prüfnotiz: "${rc.human_review.reviewer_notes}"` : ''}
+
+PRÜFAUFTRAG AN DIE KI:
+1. Validiere die Akutsituation: Wird bei ${compName} nach aktuellem Stand (Eigenverwaltung / StaRUG / Board-Umbau / Sanierung) ein externer Executive Interim Manager (z.B. TaskForce, Atreus) benötigt?
+2. Wer sind die relevanten Entscheider (Vorstand/GF, Sachwalter, Restrukturierungsbeauftragter, Gläubigerausschuss, Aufsichtsrat)?
+3. Formuliere ein messerscharfes 3-Punkte-Intro für den Erstkontakt durch den Interim-Provider.`
+
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(promptText).then(() => {
+        setCopiedId(evt.id)
+        setTimeout(() => setCopiedId(null), 3500)
+      }).catch(() => {
+        fallbackCopyText(promptText, evt.id)
+      })
+    } else {
+      fallbackCopyText(promptText, evt.id)
+    }
+  }
+
+  function toggleAccordion(id) {
+    setExpandedDetails(prev => ({ ...prev, [id]: !prev[id] }))
+  }
 
   // Synchronisiere Filter in sessionStorage
   useEffect(() => {
@@ -1413,334 +1609,282 @@ export default function EventExplorerPage() {
               const isReviewed = rc?.human_review?.reviewed
               const draft = reviewDrafts[evt.id] || {}
               const fn = evt._freshness || getEventFreshness(evt)
+              const parsed = parseMandateEventCard(evt)
+              const isExpanded = Boolean(expandedDetails[evt.id])
+              const isHighPrio = evt.mandate_priority === 'high_priority_action_required'
 
               return (
                 <div
                   key={evt.id || i}
                   id={`event-card-${evt.id}`}
-                  className={`event-result-card ${highlightedEventId === evt.id ? 'highlighted-case' : ''}`}
-                  style={highlightedEventId === evt.id ? { border: '2px solid #38bdf8', boxShadow: '0 0 20px rgba(56, 189, 248, 0.35)' } : {}}
+                  className={`executive-deal-card ${highlightedEventId === evt.id ? 'highlighted-case' : ''} ${isHighPrio ? 'priority-high' : ''}`}
                 >
-                  <div className="event-result-header">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <span className={`event-type-badge ${evt.verification_status || 'verified'}`}>
-                        {evt.event_type}
+                  {/* TOP ROW: Country Flag, Company Name, City, Role Pill, Freshness */}
+                  <div className="deal-card-header">
+                    <div className="deal-card-identity">
+                      <span className="deal-country-flag" title={`Land: ${evt.country || 'DACH'}`}>
+                        {parsed.countryFlag}
                       </span>
-
-                      {/* Prominenter farbcodierter Original-Publikations-Badge */}
-                      <span className={`freshness-badge ${fn.badgeClass}`} title={`Original-Publikationsdatum: ${evt.published_at || evt.event_date}`}>
-                        <Calendar size={12} />
-                        <span>
-                          {fn.category === 'HOT_FIRST_MOVER' && '🔥 HOT (< 7 Tage)'}
-                          {fn.category === 'MONITORING' && '⏳ MONITORING (7–30 Tage)'}
-                          {fn.category === 'ARCHIVE' && '📁 ARCHIV (> 30 Tage)'}
-                          {' • '}
-                          {evt.published_at ? new Date(evt.published_at).toLocaleDateString('de-DE') : 'Echtzeit'}
-                          {' '}
-                          <span className="freshness-days-ago">({fn.ageDays < 1 ? 'vor wenigen Stunden' : `vor ${Math.floor(fn.ageDays)} Tagen`})</span>
-                        </span>
-                      </span>
-
-                      {/* Mandate Priority Signal Badge */}
-                      {evt.mandate_priority === 'high_priority_action_required' ? (
-                        <span className="mandate-priority-badge high" style={{ background: '#b91c1c', color: '#fff', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '700' }}>
-                          ⚡ HIGH PRIORITY: C-Level Action required
-                        </span>
-                      ) : (
-                        <span className="mandate-priority-badge watchlist" style={{ background: '#334155', color: '#cbd5e1', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600' }}>
-                          👁 WATCHLIST: General Distress
-                        </span>
-                      )}
-
-                      {/* Reality Check Corrective Badge */}
-                      <span className={`rc-badge rc-badge-${statusClass}`}>
-                        {status === 'MANDAT_BELEGT' && '🎯 MANDAT_BELEGT (Suche nachgewiesen)'}
-                        {status === 'MANDAT_PLAUSIBEL' && '⚡ MANDAT_PLAUSIBEL (Bedarf plausibel)'}
-                        {status === 'BEOBACHTEN' && '👁 BEOBACHTEN (Watchlist)'}
-                        {status === 'VERWERFEN' && '✕ VERWERFEN (Kein Mandatsansatz)'}
-                      </span>
-
-                      {/* Target Role Tag */}
-                      {rc?.target_role && rc.target_role !== 'KEINE' && (
-                        <span className="rc-role-tag">
-                          Organ: {rc.target_role_label || rc.target_role}
-                        </span>
-                      )}
-
-                      {/* Human-in-the-Loop Verification Tag */}
-                      {isReviewed && (
-                        <span className="rc-human-verified-pill">
-                          <CheckCircle size={12} /> Geprüft durch Mensch
-                        </span>
-                      )}
+                      <div className="deal-company-wrapper">
+                        <h3 className="deal-company-name">
+                          {parsed.cleanCompName || evt.company_name || 'UNRESOLVED'}
+                          {evt.city && <span className="deal-company-city">• {evt.city}</span>}
+                        </h3>
+                        {parsed.cleanTitle && parsed.cleanTitle !== (parsed.cleanCompName || evt.company_name) && (
+                          <div className="deal-headline-subtitle">{parsed.cleanTitle}</div>
+                        )}
+                      </div>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '12px', color: '#94a3b8' }}>
-                      <span className="event-date">
-                        <Calendar size={13} style={{ display: 'inline', marginRight: 4, verticalAlign: 'text-top' }} />
-                        {evt.event_date ? new Date(evt.event_date).toLocaleDateString('de-DE') : 'Echtzeit-Signal'}
+                    <div className="deal-header-badges">
+                      {/* Prominent Colored Role Pill */}
+                      <span className={`deal-role-pill role-${parsed.roleColor}`}>
+                        {parsed.roleColor === 'cro' && '🔴 '}
+                        {parsed.roleColor === 'cfo' && '🔵 '}
+                        {parsed.roleColor === 'ceo' && '🟣 '}
+                        {parsed.roleColor === 'pmi' && '🟢 '}
+                        {parsed.roleColor === 'interim' && '⚡ '}
+                        {parsed.targetRole}
                       </span>
-                      {evt.published_at && evt.published_at !== evt.event_date && (
-                        <span style={{ fontSize: '11px', color: '#64748b' }}>
-                          Veröffentlicht: {new Date(evt.published_at).toLocaleDateString('de-DE')}
+
+                      {/* Freshness Badge */}
+                      <span className={`deal-freshness-pill ${fn.badgeClass}`} title={`Original-Publikationsdatum: ${evt.published_at || evt.event_date}`}>
+                        <Calendar size={12} />
+                        <span>
+                          {fn.category === 'HOT_FIRST_MOVER' && '🔥 Hot (< 7T)'}
+                          {fn.category === 'MONITORING' && '⏳ In Progress (7–30T)'}
+                          {fn.category === 'ARCHIVE' && '📁 Archiv (> 30T)'}
+                          {' • '}
+                          {fn.ageDays < 1 ? 'vor wenigen Stunden' : `vor ${Math.floor(fn.ageDays)} Tagen`}
+                        </span>
+                      </span>
+
+                      {/* High Priority Pill */}
+                      {isHighPrio && (
+                        <span className="deal-priority-pill high" title="Akuter Handlungsdruck C-Level">
+                          ⚡ Akut
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <h3>{evt.title}</h3>
-                  {evt.description && <p className="event-description">{evt.description}</p>}
-
-                  {/* MANDATE REALITY CHECK PRÜFBLOCK */}
-                  {rc && (
-                    <div className="mandate-reality-check-box">
-                      <div className="rc-box-header">
-                        <div className="rc-box-title">
-                          <ShieldCheck size={16} style={{ color: '#38bdf8' }} />
-                          <span>Mandate Reality Check Prüfbefund</span>
-                        </div>
-                        <span style={{ fontSize: '11px', color: '#94a3b8' }}>
-                          Letzte Prüfung: {rc.checked_at ? new Date(rc.checked_at).toLocaleDateString('de-DE', { hour: '2-digit', minute: '2-digit' }) : 'Initiale Ingestion'}
-                        </span>
+                  {/* MIDDLE ROW: Clean Narrative (Lage) & Mandate Rationale */}
+                  <div className="deal-card-body">
+                    {/* Lage & Ereignissachverhalt */}
+                    <div className="deal-situation-box">
+                      <div className="deal-situation-label">
+                        <Activity size={13} /> <span>Lage & Ereignis</span>
                       </div>
-
-                      {/* Trennung: Fakten vs. Hypothese */}
-                      <div className="rc-evidence-grid">
-                        <div className="rc-fact-block facts">
-                          <div className="rc-block-label facts-label">
-                            <FileText size={13} /> Belegter Quellsachverhalt (Fakten)
-                          </div>
-                          <div>{rc.facts_proven || evt.description}</div>
-                        </div>
-
-                        <div className="rc-fact-block hypothesis">
-                          <div className="rc-block-label hypothesis-label">
-                            <Sparkles size={13} /> Mandatshypothese (System-Schlussfolgerung)
-                          </div>
-                          <div>{rc.mandate_hypothesis || evt.mandate_rationale}</div>
-                          <div style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '6px', fontStyle: 'italic' }}>
-                            Grundsatz: Ein plausibler Mandatsbedarf ist noch kein verfügbares Mandat.
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Fehlende Informationen & Gegenindikatoren */}
-                      <div className="rc-details-columns">
-                        <div className="rc-list-box">
-                          <div className="rc-list-title missing">
-                            <AlertTriangle size={13} /> Fehlende Informationen ({rc.missing_information?.length || 0})
-                          </div>
-                          {rc.missing_information && rc.missing_information.length > 0 ? (
-                            <ul className="rc-list">
-                              {rc.missing_information.map((item, idx) => (
-                                <li key={idx}>{item}</li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <span style={{ fontSize: '11px', color: '#64748b' }}>Keine offenen Informationslücken verzeichnet.</span>
-                          )}
-                        </div>
-
-                        <div className="rc-list-box">
-                          <div className="rc-list-title counters">
-                            <AlertCircle size={13} /> Mögliche Gegenindikatoren ({rc.counter_indicators?.length || 0})
-                          </div>
-                          {rc.counter_indicators && rc.counter_indicators.length > 0 ? (
-                            <ul className="rc-list">
-                              {rc.counter_indicators.map((item, idx) => (
-                                <li key={idx}>{item}</li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <span style={{ fontSize: '11px', color: '#64748b' }}>Keine Gegenindikatoren registriert.</span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Begründung der Klassifizierung */}
-                      {rc.rationale && (
-                        <div className="rc-rationale-box">
-                          <strong>Klassifizierungsbegründung:</strong> {rc.rationale}
-                        </div>
-                      )}
-
-                      {/* Human-in-the-Loop Interaktionsleiste */}
-                      <div className="rc-human-review-box">
-                        <div className="rc-human-review-header">
-                          <span>👤 Human-in-the-Loop Prüfung & Freigabe:</span>
-                          {rc.human_review?.reviewed && (
-                            <span className="rc-reviewed-notice">
-                              Bestätigt am {new Date(rc.human_review.reviewed_at).toLocaleDateString('de-DE')} als {rc.human_review.reviewer_decision}
-                            </span>
-                          )}
-                        </div>
-
-                        {rc.human_review?.reviewer_notes && (
-                          <div style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
-                            Gespeicherte Prüfnotiz: "{rc.human_review.reviewer_notes}"
-                          </div>
-                        )}
-
-                        <div className="rc-human-review-controls">
-                          <select
-                            className="rc-decision-select"
-                            value={draft.decision !== undefined ? draft.decision : rc.status}
-                            onChange={(e) => setReviewDrafts(prev => ({
-                              ...prev,
-                              [evt.id]: { ...(prev[evt.id] || {}), decision: e.target.value }
-                            }))}
-                          >
-                            <option value="MANDAT_PLAUSIBEL">⚡ MANDAT_PLAUSIBEL (Bedarf plausibel)</option>
-                            <option value="BEOBACHTEN">👁 BEOBACHTEN (Watchlist)</option>
-                            <option value="VERWERFEN">✕ VERWERFEN (Gelöst / Ungeeignet)</option>
-                            <option value="MANDAT_BELEGT">🎯 MANDAT_BELEGT (Suche nachgewiesen)</option>
-                          </select>
-
-                          <input
-                            type="text"
-                            className="rc-note-input"
-                            placeholder="Eigene Prüfnotiz zur menschlichen Begründung erfassen..."
-                            value={draft.notes !== undefined ? draft.notes : (rc.human_review?.reviewer_notes || '')}
-                            onChange={(e) => setReviewDrafts(prev => ({
-                              ...prev,
-                              [evt.id]: { ...(prev[evt.id] || {}), notes: e.target.value }
-                            }))}
-                          />
-
-                          <button
-                            type="button"
-                            className="rc-confirm-btn"
-                            onClick={() => handleSaveReview(evt, rc.status, true)}
-                            disabled={draft.saving}
-                          >
-                            <CheckCircle size={13} /> Einstufung bestätigen
-                          </button>
-
-                          <button
-                            type="button"
-                            className="rc-save-btn"
-                            onClick={() => handleSaveReview(evt, draft.decision || rc.status, false)}
-                            disabled={draft.saving}
-                          >
-                            {draft.saving ? 'Speichern...' : 'Entscheidung speichern'}
-                          </button>
-                        </div>
-
-                        {draft.success && (
-                          <div style={{ fontSize: '11px', color: '#34d399' }}>✓ Entscheidung erfolgreich gespeichert & im Audit-Trail archiviert.</div>
-                        )}
-                      </div>
+                      <p className="deal-situation-text">{parsed.cleanNarrative}</p>
                     </div>
-                  )}
 
-                  <div className="event-meta" style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', marginTop: '8px' }}>
-                    <span><Building2 size={14} /> <strong>{evt.company_name || 'UNRESOLVED'}</strong></span>
-                    {evt.country && <span><MapPin size={14} /> Land: {evt.country}</span>}
-                    {evt.source_url && (
-                      <a
-                        href={evt.source_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="event-source-link"
-                        style={{ color: '#38bdf8', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: '600', fontSize: '12px' }}
-                      >
-                        <Globe size={13} /> Primärbeleg öffnen ↗
-                      </a>
+                    {/* Mandatshebel / Sanierungsbedarf */}
+                    {parsed.mandateRationale && (
+                      <div className="deal-rationale-box">
+                        <div className="deal-rationale-label">
+                          <Sparkles size={13} /> <span>Mandats-Hebel (Executive Interim)</span>
+                        </div>
+                        <p className="deal-rationale-text">{parsed.mandateRationale}</p>
+                      </div>
                     )}
                   </div>
 
-                  {/* Drei getrennte, sachlich korrekte Indikatoren statt falscher 98% Konfidenz */}
-                  <div className="event-factual-badges">
-                    <span className="factual-badge source-proof" title="Quellenbeleg der Primärquelle">
-                      <ShieldCheck size={13} />
-                      <span className="badge-label">Quellenbeleg:</span> {evt.verification_status === 'verified' || evt.provenance_status === 'real_source_verified' ? 'Amtlich / Öffentlich belegt' : 'Ausstehend'}
-                    </span>
-                    <span className="factual-badge event-facts" title="Belegter Ereignissachverhalt">
-                      <FileText size={13} />
-                      <span className="badge-label">Sachverhalt:</span> {evt.axis_a_event_certainty === 'nachgewiesen' ? 'Belegt' : 'In Prüfung'}
-                    </span>
-                    <span className={`factual-badge mandate-status ${status === 'MANDAT_PLAUSIBEL' ? 'status-plausibel' : (status === 'VERWERFEN' ? 'status-verworfen' : 'status-beobachten')}`} title="Aktueller Mandatsstatus nach Reality Check">
-                      <Sparkles size={13} />
-                      <span className="badge-label">Mandatsstatus:</span> {status === 'MANDAT_PLAUSIBEL' ? 'Plausibler Bedarf (Hypothese)' : (status === 'VERWERFEN' ? 'Kein Mandatsansatz (Besetzt/Gelöst)' : 'Watchlist (Kein Direktbedarf)')}
-                    </span>
-                  </div>
-
-                  {evt.id && (
-                    <div className="event-actions">
-                      {status === 'VERWERFEN' ? (
-                        <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 0' }}>
-                          <AlertCircle size={14} color="#64748b" />
-                          <span>Mandatsgenerierung gesperrt: Fall im Reality Check verworfen ({rc?.counter_indicators?.[0] || 'Kein aktiver Handlungsdruck'}).</span>
-                        </div>
-                      ) : fn.category === 'ARCHIVE' ? (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '12px', flexWrap: 'wrap' }}>
-                          <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Clock size={14} color="#64748b" />
-                            <span>Archivierter Fall ({Math.floor(fn.ageDays)} Tage alt): Akute First-Mover-Phase verstrichen. Auf Watchlist für Folgephasen.</span>
-                          </div>
-                          {enrichedPackages[evt.id] ? (
-                            <span className={`elite-status ${enrichedPackages[evt.id].status}`}>
-                              {enrichedPackages[evt.id].status === 'elite' && <><CheckCircle size={14} /> Elite: {enrichedPackages[evt.id].contact?.name || 'Enriched'}</>}
-                              {enrichedPackages[evt.id].status === 'no_email' && <><AlertCircle size={14} /> Keine E-Mail</>}
-                              {enrichedPackages[evt.id].status === 'error' && <><AlertCircle size={14} /> Fehler: {enrichedPackages[evt.id].error}</>}
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              className="elite-button secondary"
-                              onClick={() => handleCreateAndEnrich(evt)}
-                              disabled={enrichingId === evt.id}
-                              style={{ background: '#1e293b', border: '1px solid #334155', color: '#cbd5e1', padding: '6px 12px', fontSize: '12px' }}
-                            >
-                              <FileText size={13} /> {enrichingId === evt.id ? 'Lade...' : 'Watchlist-Case ansehen'}
-                            </button>
-                          )}
-                        </div>
-                      ) : enrichedPackages[evt.id] ? (
-                        <span className={`elite-status ${enrichedPackages[evt.id].status}`}>
-                          {enrichedPackages[evt.id].status === 'elite' && <><CheckCircle size={14} /> Elite: {enrichedPackages[evt.id].contact?.name || 'Enriched'}</>}
-                          {enrichedPackages[evt.id].status === 'no_email' && <><AlertCircle size={14} /> Keine E-Mail gefunden</>}
-                          {enrichedPackages[evt.id].status === 'error' && <><AlertCircle size={14} /> Fehler: {enrichedPackages[evt.id].error}</>}
+                  {/* HUMAN-IN-THE-LOOP SEAL & CONTROLS */}
+                  <div className="deal-hitl-strip">
+                    <div className="deal-hitl-status">
+                      {isReviewed ? (
+                        <span className="hitl-seal verified">
+                          <ShieldCheck size={14} />
+                          <span>
+                            Verifiziert durch Harro Goerndt • {status === 'MANDAT_PLAUSIBEL' ? '⚡ Plausibel freigegeben' : (status === 'VERWERFEN' ? '✕ Verworfen' : '👁 Auf Watchlist')}
+                          </span>
                         </span>
                       ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                          <button
-                            type="button"
-                            className="elite-button primary transfer-desk-btn"
-                            onClick={() => handleTransferToSalesWorkspace(evt)}
-                            title="Erstellt ein vollständiges Arbeitsdossier im Mandats-Desk und wechselt nahtlos dorthin"
-                            style={{
-                              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                              color: '#ffffff',
-                              border: '1px solid rgba(56, 189, 248, 0.4)',
-                              boxShadow: '0 2px 8px rgba(2, 132, 199, 0.35)',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              fontWeight: '700',
-                              padding: '8px 14px',
-                              borderRadius: '6px',
-                              fontSize: '0.85rem',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            <Briefcase size={15} /> 💼 Als Dossier im Mandats-Desk öffnen →
-                          </button>
-
-                          <button
-                            type="button"
-                            className="elite-button"
-                            onClick={() => handleCreateAndEnrich(evt)}
-                            disabled={enrichingId === evt.id}
-                          >
-                            {enrichingId === evt.id ? (
-                              <><Loader2 size={14} className="spin" /> Anreichern...</>
-                            ) : (
-                              <><Crown size={14} /> {status === 'MANDAT_PLAUSIBEL' ? '⚡ Mandats-Package explorieren (Plausibler First-Mover)' : 'Mandats-Package generieren'}</>
-                            )}
-                          </button>
-                        </div>
+                        <span className="hitl-seal pending">
+                          <Clock size={14} />
+                          <span>⏳ KI-Vorprüfung • Menschliche Freigabe ausstehend</span>
+                        </span>
                       )}
+                      {rc?.human_review?.reviewer_notes && (
+                        <span className="hitl-note-chip" title={rc.human_review.reviewer_notes}>
+                          💬 "{rc.human_review.reviewer_notes}"
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="deal-hitl-buttons">
+                      <button
+                        type="button"
+                        className={`hitl-btn hitl-btn-plausibel ${status === 'MANDAT_PLAUSIBEL' ? 'active' : ''}`}
+                        onClick={() => handleSaveReview(evt, 'MANDAT_PLAUSIBEL', true)}
+                        title="Bedarf als plausibles Mandat freigeben"
+                      >
+                        <CheckCircle size={13} />
+                        <span>{status === 'MANDAT_PLAUSIBEL' ? '✓ Freigegeben' : 'Freigeben'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={`hitl-btn hitl-btn-watch ${status === 'BEOBACHTEN' ? 'active' : ''}`}
+                        onClick={() => handleSaveReview(evt, 'BEOBACHTEN', false)}
+                        title="Auf Watchlist für spätere Prüfung setzen"
+                      >
+                        <Eye size={13} />
+                        <span>Watchlist</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={`hitl-btn hitl-btn-reject ${status === 'VERWERFEN' ? 'active' : ''}`}
+                        onClick={() => handleSaveReview(evt, 'VERWERFEN', false)}
+                        title="Kein Mandatsbedarf / Fall verwerfen"
+                      >
+                        <X size={13} />
+                        <span>Verwerfen</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="hitl-btn hitl-btn-note"
+                        onClick={() => setOpenNoteId(openNoteId === evt.id ? null : evt.id)}
+                        title="Eigene Prüfnotiz erfassen"
+                      >
+                        <FileText size={13} />
+                        <span>{rc?.human_review?.reviewer_notes ? 'Notiz bearbeiten' : '+ Notiz'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Inline Note Drawer if open */}
+                  {openNoteId === evt.id && (
+                    <div className="deal-hitl-note-drawer">
+                      <input
+                        type="text"
+                        className="deal-note-input"
+                        placeholder="Eigene Prüfnotiz zur menschlichen Begründung erfassen..."
+                        value={draft.notes !== undefined ? draft.notes : (rc?.human_review?.reviewer_notes || '')}
+                        onChange={(e) => setReviewDrafts(prev => ({
+                          ...prev,
+                          [evt.id]: { ...(prev[evt.id] || {}), notes: e.target.value }
+                        }))}
+                      />
+                      <button
+                        type="button"
+                        className="deal-note-save-btn"
+                        onClick={() => {
+                          handleSaveReview(evt, draft.decision || status, isReviewed)
+                          setOpenNoteId(null)
+                        }}
+                      >
+                        Notiz speichern
+                      </button>
+                    </div>
+                  )}
+
+                  {/* ACTION BAR: Mandats-Desk, 1-Click AI Copy, Evidence Accordion */}
+                  <div className="deal-action-bar">
+                    <div className="deal-action-left">
+                      <button
+                        type="button"
+                        className="deal-btn-desk"
+                        onClick={() => handleTransferToSalesWorkspace(evt)}
+                        title="Erstellt ein vollständiges Arbeitsdossier im Mandats-Desk und wechselt nahtlos dorthin"
+                      >
+                        <Briefcase size={14} />
+                        <span>Als Dossier im Mandats-Desk öffnen →</span>
+                      </button>
+
+                      {/* 1-Click AI Prompt Copy Button */}
+                      <button
+                        type="button"
+                        className={`deal-btn-ai-copy ${copiedId === evt.id ? 'copied' : ''}`}
+                        onClick={() => copyEventForAiAudit(evt, parsed)}
+                        title="Kopiert einen fertigen Prompt mit allen Fakten für die externe KI-Prüfung (ChatGPT, Claude, DealCoach) in die Zwischenablage"
+                      >
+                        {copiedId === evt.id ? (
+                          <><Check size={14} style={{ color: '#34d399' }} /> <strong>✓ Prompt für KI kopiert!</strong></>
+                        ) : (
+                          <><Sparkles size={14} /> <span>📋 Fall für KI kopieren</span></>
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="deal-action-right">
+                      {evt.source_url && (
+                        <a
+                          href={evt.source_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="deal-link-source"
+                          title="Offizielle Original-Mitteilung öffnen"
+                        >
+                          <ExternalLink size={13} />
+                          <span>Primärbeleg ↗</span>
+                        </a>
+                      )}
+
+                      <button
+                        type="button"
+                        className="deal-btn-accordion"
+                        onClick={() => toggleAccordion(evt.id)}
+                        title="Detaillierte Beweisquellen, Aktenzeichen und Reality-Check-Befund anzeigen"
+                      >
+                        <Info size={13} />
+                        <span>{isExpanded ? 'Beweise verbergen ▲' : 'Beweise & Details ▼'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* ACCORDION: Forensic Evidence, Missing Info, Docket & Raw Proof */}
+                  {isExpanded && (
+                    <div className="deal-accordion-content">
+                      <div className="accordion-grid">
+                        <div className="accordion-item">
+                          <strong><FileText size={12} /> Primärquellen-Nachweis:</strong>
+                          <div className="accordion-text">
+                            Quelle: {evt.source_type || 'Amtliche Bekanntmachung / Kanzlei'}
+                            {evt.source_url ? (
+                              <a href={evt.source_url} target="_blank" rel="noopener noreferrer" style={{ color: '#38bdf8', marginLeft: 6 }}>
+                                Direktlink zum Primärbeleg ↗
+                              </a>
+                            ) : ' (Kein Direktlink hinterlegt)'}
+                          </div>
+                        </div>
+
+                        {rc?.checked_at && (
+                          <div className="accordion-item">
+                            <strong><Clock size={12} /> Letzter Prüfzeitpunkt:</strong>
+                            <div className="accordion-text">
+                              {new Date(rc.checked_at).toLocaleDateString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </div>
+                        )}
+
+                        {rc?.missing_information && rc.missing_information.length > 0 && (
+                          <div className="accordion-item">
+                            <strong><AlertTriangle size={12} color="#fbbf24" /> Offene Informationslücken:</strong>
+                            <ul className="accordion-list">
+                              {rc.missing_information.map((m, idx) => <li key={idx}>{m}</li>)}
+                            </ul>
+                          </div>
+                        )}
+
+                        {rc?.counter_indicators && rc.counter_indicators.length > 0 && (
+                          <div className="accordion-item">
+                            <strong><AlertCircle size={12} color="#f87171" /> Gegenindikatoren / Risiken:</strong>
+                            <ul className="accordion-list">
+                              {rc.counter_indicators.map((c, idx) => <li key={idx}>{c}</li>)}
+                            </ul>
+                          </div>
+                        )}
+
+                        {rc?.rationale && (
+                          <div className="accordion-item full-width">
+                            <strong><ShieldCheck size={12} /> Audit-Klassifizierung:</strong>
+                            <div className="accordion-text">{rc.rationale}</div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

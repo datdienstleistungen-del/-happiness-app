@@ -107,12 +107,12 @@ class ConcurrencyLock:
                 return False
 
 class ContinuousRadarEngine:
-    def __init__(self, storage_file=EVENTS_STORAGE_FILE, state_file=RADAR_STATE_FILE, history_file=HISTORY_STORAGE_FILE, allow_supabase=False):
+    def __init__(self, storage_file=EVENTS_STORAGE_FILE, state_file=RADAR_STATE_FILE, history_file=HISTORY_STORAGE_FILE, allow_supabase=False, lock_file=LOCK_FILE):
         self.storage_file = storage_file
         self.state_file = state_file
         self.history_file = history_file
         self.allow_supabase = allow_supabase
-        self.lock = ConcurrencyLock()
+        self.lock = ConcurrencyLock(lock_file)
         os.makedirs(os.path.dirname(self.storage_file), exist_ok=True)
         self._load_existing_events()
 

@@ -33,7 +33,8 @@ class TestContinuousRadar(unittest.TestCase):
         self.test_dir = tempfile.mkdtemp()
         self.storage_file = os.path.join(self.test_dir, "test_radar_events.json")
         self.state_file = os.path.join(self.test_dir, "test_radar_state.json")
-        self.engine = ContinuousRadarEngine(storage_file=self.storage_file, state_file=self.state_file)
+        self.lock_file = os.path.join(self.test_dir, "test_radar.lock")
+        self.engine = ContinuousRadarEngine(storage_file=self.storage_file, state_file=self.state_file, lock_file=self.lock_file)
 
     def tearDown(self):
         shutil.rmtree(self.test_dir, ignore_errors=True)
