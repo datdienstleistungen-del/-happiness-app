@@ -599,20 +599,23 @@ Antworte AUSSCHLIESSLICH in diesem JSON-Format:
             'company_name': company,
             'role': 'Vorstand / Geschäftsführung / Board',
             'event_type': 'Primärmeldung',
-            'vacuum_check': 'Manuelle Prüfung erforderlich',
+            'vacuum_check': 'NICHT NACHGEWIESEN: Manuelle Prüfung erforderlich',
+            'organ_vacuum_status': 'NICHT NACHGEWIESEN',
             'urgency_check': 'Primärmeldung zur Chefsache-Prüfung',
             'audit_verdict': 'OPERATIVER INTERIM- & LEITUNGSBEDARF',
             'audit_rationale': 'Primärmeldung aus Primärquelle. Zur manuellen Sichtung im Mandats-Desk vorgelegt.',
+            'qualification_stage': 'STUFE 2 – PLAUSIBLE MANDATSCHANCE',
+            'stage_level': 'STUFE 2',
+            'external_search_status': 'NICHT BESTÄTIGT',
+            'proven_facts': f"{title} {snippet}".strip()[:300],
+            'professional_deduction': 'Meldung deutet auf wirtschaftlichen Handlungsdruck hin; externe Mandatssuche unbestätigt.',
+            'mandate_certainty': 'Plausibel (Stufe 2)',
             'estimated_budget': '-',
             'confidence': 0.75
         }
-        return True, "DEALCOACH_MANUELLE_PRÜFUNG", parsed
 
     raw_tier = parsed.get('tier', 'TIER_2_MID')
     if raw_tier in ('TIER_1_TOP', 'TIER_1'):
-        # Validierung der Tier 1 Kriterien:
-        # 1. Mindestens 1 weiteres handelndes Organ oder aktiver Gesellschafterkreis vorhanden
-        # 2. Reale Führungslücke bei bestehendem Geschäftsbetrieb
         if parsed.get('has_remaining_organ') is False or item.get('sole_organ_exit'):
             tier = 'TIER_3'
             parsed['status'] = 'discarded'
@@ -640,7 +643,65 @@ Antworte AUSSCHLIESSLICH in diesem JSON-Format:
 
     parsed['is_valid_mandate_event'] = True
     parsed['is_fresh'] = True
+
+    # ── STRIKTE VAKUUM-KORREKTUR & QUALIFIZIERUNGSSTUFEN (ANFORDERUNG 1-4) ──
+    # Restrukturierung, Eigenverwaltung oder Insolvenzantrag begründet allein KEIN Organvakuum
+    has_explicit_search = any(k in raw_eval_lower for k in [
+        "sucht externen interim", "sucht interim cro", "sucht interim cfo",
+        "mandatierte personalberatung mit suche", "interim management mandatiert",
+        "ad-interim leitung ausgeschrieben"
+    ])
+
+    if has_real_organ_exit:
+        parsed['organ_vacuum_status'] = "BESTANDEN"
+        parsed['vacuum_check'] = "BESTANDEN: Reale Organvakanz / Ausscheiden ohne geregelte Nachfolge belegt."
+    else:
+        parsed['organ_vacuum_status'] = "NICHT NACHGEWIESEN"
+        if has_real_restructuring or "eigenverwaltung" in raw_eval_lower or "starug" in raw_eval_lower:
+            parsed['vacuum_check'] = "NICHT NACHGEWIESEN: Geschäftsführung führt Betrieb in Eigenverwaltung fort; Restrukturierung begründet allein kein Organvakuum."
+        else:
+            parsed['vacuum_check'] = "NICHT NACHGEWIESEN: Kein Organausscheiden und keine vakante Organposition belegt."
+
+    # 3 Qualifizierungsstufen zuweisen
+    if has_explicit_search:
+        parsed['qualification_stage'] = "STUFE 3 – BESTÄTIGTER MANDATSBEDARF"
+        parsed['stage_level'] = "STUFE 3"
+        parsed['external_search_status'] = "BESTÄTIGT"
+        parsed['mandate_certainty'] = "Bestätigt (Stufe 3)"
+        parsed['audit_verdict'] = "BESTÄTIGTER MANDATSBEDARF (SUCHE BELEGT)"
+    elif tier in ('TIER_1_TOP', 'TIER_2_MID') or has_real_restructuring or has_real_organ_exit:
+        parsed['qualification_stage'] = "STUFE 2 – PLAUSIBLE MANDATSCHANCE"
+        parsed['stage_level'] = "STUFE 2"
+        parsed['external_search_status'] = "NICHT BESTÄTIGT"
+        parsed['mandate_certainty'] = "Plausibel (Stufe 2)"
+        parsed['audit_verdict'] = "PLAUSIBLE MANDATSCHANCE (SUCHE UNBESTÄTIGT)"
+    else:
+        parsed['qualification_stage'] = "STUFE 1 – VERIFIZIERTES EREIGNIS"
+        parsed['stage_level'] = "STUFE 1"
+        parsed['external_search_status'] = "NICHT BESTÄTIGT"
+        parsed['mandate_certainty'] = "Unbestätigt (Stufe 1)"
+        parsed['audit_verdict'] = "VERIFIZIERTES EREIGNIS (MANDATSBEDARF UNKLAR)"
+
+    # Saubere Rollenzuordnung
+    if "verwaltungsrat" in raw_eval_lower or "board member" in raw_eval_lower or region == "CH" and "vr" in raw_eval_lower:
+        parsed['role'] = "Verwaltungsrat / Aufsichtsrat"
+    elif "eigenverwaltung" in raw_eval_lower or "starug" in raw_eval_lower or "cro" in raw_eval_lower:
+        parsed['role'] = "CRO / Sanierungsvorstand"
+    elif "anleihe" in raw_eval_lower or "schvg" in raw_eval_lower or "gläubiger" in raw_eval_lower or "cfo" in raw_eval_lower:
+        parsed['role'] = "CFO / Finanzrestrukturierung"
+
+    parsed['proven_facts'] = f"{title}. {snippet}".strip()[:350]
+    parsed['professional_deduction'] = (
+        "Eigenverwaltung / Sanierungsdruck erfordert operative Restrukturierungsbegleitung (CRO/Interim-Management), Geschäftsführung bleibt jedoch im Amt."
+        if has_real_restructuring else
+        "Organmutation / Vakanz belegt institutionellen Handlungsdruck; externe Besetzung ist unbestätigt."
+    )
+    parsed['missing_information'] = [
+        "Keine öffentlich belegte Beauftragung einer Personalberatung / Interim-Providers.",
+        "Unbestätigt, ob Mandat extern vergeben oder intern überbrückt wird."
+    ]
+
     if not parsed.get('audit_rationale'):
         parsed['audit_rationale'] = 'Zur manuellen Prüfung durch Harro im Mandats-Desk vorgelegt.'
 
-    return True, f"DEALCOACH_QUALIFIZIERT ({tier}): {parsed.get('audit_rationale')[:80]}", parsed
+    return True, f"DEALCOACH_QUALIFIZIERT ({parsed.get('stage_level', tier)}): {parsed.get('audit_rationale')[:80]}", parsed

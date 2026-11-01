@@ -42,7 +42,13 @@ try:
         CLASS_MANDAT_BELEGT,
         CLASS_MANDAT_PLAUSIBEL,
         CLASS_BEOBACHTEN,
-        CLASS_VERWERFEN
+        CLASS_VERWERFEN,
+        STAGE_1_VERIFIED_EVENT,
+        STAGE_2_PLAUSIBLE_CHANCE,
+        STAGE_3_CONFIRMED_NEED,
+        STAGE_DISCARDED,
+        VALID_STAGES,
+        STAGE_LABELS
     )
 except ImportError:
     from .reality_check import (
@@ -52,7 +58,13 @@ except ImportError:
         CLASS_MANDAT_BELEGT,
         CLASS_MANDAT_PLAUSIBEL,
         CLASS_BEOBACHTEN,
-        CLASS_VERWERFEN
+        CLASS_VERWERFEN,
+        STAGE_1_VERIFIED_EVENT,
+        STAGE_2_PLAUSIBLE_CHANCE,
+        STAGE_3_CONFIRMED_NEED,
+        STAGE_DISCARDED,
+        VALID_STAGES,
+        STAGE_LABELS
     )
 
 class TriggerEvent:
@@ -146,6 +158,10 @@ class TriggerEvent:
         self.freshness_label = self.reality_check.get("freshness_label", "🔥 HOT / FIRST-MOVER (< 7 Tage)")
         self.age_days = self.reality_check.get("age_days")
         self.is_advisor_mandated = self.reality_check.get("is_advisor_mandated", False)
+        self.qualification_stage = self.reality_check.get("qualification_stage", "STUFE 2 – PLAUSIBLE MANDATSCHANCE")
+        self.stage_level = self.reality_check.get("stage_level", "STUFE 2")
+        self.organ_vacuum_status = self.reality_check.get("organ_vacuum_status", "NICHT NACHGEWIESEN")
+        self.external_search_status = self.reality_check.get("external_search_status", "NICHT BESTÄTIGT")
 
         # Lead Qualification: Acute Action Pressure vs Passive / Watchlist
         if mandate_priority not in VALID_MANDATE_PRIORITIES:
@@ -333,6 +349,10 @@ class TriggerEvent:
             "freshness_label": getattr(self, "freshness_label", None),
             "age_days": getattr(self, "age_days", None),
             "is_advisor_mandated": getattr(self, "is_advisor_mandated", False),
+            "qualification_stage": getattr(self, "qualification_stage", None),
+            "stage_level": getattr(self, "stage_level", None),
+            "organ_vacuum_status": getattr(self, "organ_vacuum_status", None),
+            "external_search_status": getattr(self, "external_search_status", None),
             "reality_check": getattr(self, "reality_check", None),
             "reality_check_history": getattr(self, "reality_check_history", [])
         }

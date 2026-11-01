@@ -218,6 +218,101 @@ class ContinuousRadarEngine:
         with open(self.state_file, "w", encoding="utf-8") as f:
             json.dump(state, f, indent=2, ensure_ascii=False)
 
+    def _sync_to_supabase(self):
+        """
+        Synchronisiert qualifizierte Mandats- und Restrukturierungskandidaten
+        (MANDAT_PLAUSIBEL & BEOBACHTEN) direkt in Harros Supabase-Posteingang.
+        Schlägt bei fehlenden Credentials oder Netzwerkunterbrechung leise fehl.
+        """
+        try:
+            from modules.feed_ingestion.config import DEFAULT_USER_ID
+            from modules.feed_ingestion.db_client import SupabaseClient
+
+            db = SupabaseClient()
+            synced = 0
+            for ev in self.events_by_id.values():
+                rc = ev.reality_check or {}
+                rc_status = rc.get("status")
+                if rc_status not in ("MANDAT_PLAUSIBEL", "BEOBACHTEN"):
+                    continue
+
+                comp_name = (ev.company_name or "").strip()
+                desc = (ev.description or ev.evidence_text or "").strip()
+                source_url = (ev.source_url or "").strip()
+                pub_at = ev.published_at or ev.event_date or datetime.now(timezone.utc).isoformat()
+                title = desc[:200] if len(desc) > 200 else desc
+                if not title:
+                    title = f"Restrukturierungs-Signal {comp_name}"
+
+                if db.opportunity_exists(source_url, title):
+                    continue
+
+                is_plausible = (rc_status == "MANDAT_PLAUSIBEL")
+                tier = "TIER_1_TOP" if is_plausible else "TIER_2_MID"
+                lead_score = 90 if is_plausible else 75
+                confidence = 0.90 if is_plausible else 0.75
+
+                organ_vacuum_val = rc.get("organ_vacuum_status") or ("BESTANDEN" if rc.get("organ_vacuum_proven") else "NICHT NACHGEWIESEN")
+                if organ_vacuum_val == "BESTANDEN":
+                    vacuum = "BESTANDEN: Organposition vakant / Ausscheiden belegt"
+                else:
+                    vacuum = "NICHT NACHGEWIESEN: Eigenverwaltung / Restrukturierung begründet allein kein Organvakuum"
+
+                urgency = rc.get("criteria_eval", {}).get("action_pressure") or ("akut" if is_plausible else "erhöht")
+                rationale = rc.get("rationale") or ev.mandate_rationale or "Geprüfter Restrukturierungsfall im Continuous Radar"
+
+                deal_audit = {
+                    "tier": tier,
+                    "status": "pending",
+                    "company_name": comp_name,
+                    "legal_form": ev.legal_form or "",
+                    "event_type": title,
+                    "event_date": pub_at[:10] if pub_at else None,
+                    "vacuum_check": vacuum,
+                    "urgency_check": urgency,
+                    "audit_rationale": rationale,
+                    "audit_verdict": "QUALIFIZIERT_MANDATSBEDARF" if is_plausible else "QUALIFIZIERT_BEOBACHTUNG",
+                    "qualification_stage": rc.get("qualification_stage") or ("STUFE 2 – PLAUSIBLE MANDATSCHANCE" if is_plausible else "STUFE 1 – VERIFIZIERTES EREIGNIS"),
+                    "stage_level": rc.get("stage_level", 2 if is_plausible else 1),
+                    "organ_vacuum_status": organ_vacuum_val,
+                    "external_search_status": rc.get("external_search_status") or "NICHT BESTÄTIGT",
+                    "facts_proven": rc.get("facts_proven") or "Unternehmensereignis in Primärquelle belegt",
+                    "deduction": rc.get("deduction") or "Akuter Handlungsdruck",
+                    "hypothesis": rc.get("hypothesis") or f"Bedarf an {rc.get('mandate_role', 'CRO / Interim-Management')}",
+                    "missing_info": rc.get("missing_info") or "Externe Mandatsausschreibung unbestätigt",
+                    "certainty": rc.get("mandate_certainty") or ("MITTEL (Plausible Mandatschance)" if is_plausible else "GERING"),
+                    "target_role": rc.get("mandate_role") or "CRO / Interim-Management",
+                    "estimated_budget": "-",
+                    "confidence": confidence
+                }
+
+                item = {
+                    "company": comp_name,
+                    "title": title,
+                    "url": source_url,
+                    "snippet": ev.evidence_text or desc,
+                    "region": ev.region or "DACH",
+                    "event_date": pub_at[:10] if pub_at else None,
+                    "published_at": pub_at
+                }
+
+                eval_result = {
+                    "category": "RESTRUKTURIERUNG & MANDAT",
+                    "confidence_score": confidence,
+                    "lead_score": lead_score,
+                    "strategic_angle": rationale,
+                    "matched_keywords": [rc_status, ev.action_type or "Sanierung", tier, f"Vakuum_{organ_vacuum_val.replace(' ', '_')}"]
+                }
+
+                rec, status = db.insert_opportunity(item, eval_result, user_id=DEFAULT_USER_ID, deal_audit=deal_audit, max_age_hours=720)
+                if status == "INSERTED":
+                    synced += 1
+
+            if synced > 0:
+                print(f"[Continuous Radar] 📥 {synced} neue Signale in Supabase Posteingang synchronisiert.")
+        except Exception as e:
+            sys.stderr.write(f"[Continuous Radar] Supabase Sync Hinweis: {e}\n")
+
     def process_incoming_event(self, incoming_event):
         """
         Processes an incoming TriggerEvent:
@@ -686,6 +781,7 @@ class ContinuousRadarEngine:
 
             # Persist updated radar events
             self._save_events()
+            self._sync_to_supabase()
 
         except Exception as top_level_err:
             run_record["status"] = "FAILED"

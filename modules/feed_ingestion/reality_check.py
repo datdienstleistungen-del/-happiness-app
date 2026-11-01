@@ -33,6 +33,26 @@ REALITY_CHECK_LABELS = {
     CLASS_VERWERFEN: "Verwerfen (Gelöst / Abgeschlossen / Ungeeignet)"
 }
 
+# ── DREI VERBINDLICHE QUALIFIZIERUNGSSTUFEN ──
+STAGE_1_VERIFIED_EVENT = "STUFE 1 – VERIFIZIERTES EREIGNIS"
+STAGE_2_PLAUSIBLE_CHANCE = "STUFE 2 – PLAUSIBLE MANDATSCHANCE"
+STAGE_3_CONFIRMED_NEED = "STUFE 3 – BESTÄTIGTER MANDATSBEDARF"
+STAGE_DISCARDED = "VERWORFEN"
+
+VALID_STAGES = {
+    STAGE_1_VERIFIED_EVENT,
+    STAGE_2_PLAUSIBLE_CHANCE,
+    STAGE_3_CONFIRMED_NEED,
+    STAGE_DISCARDED
+}
+
+STAGE_LABELS = {
+    STAGE_1_VERIFIED_EVENT: "Stufe 1 – Verifiziertes Ereignis (Unternehmensereignis belegt, Mandatsbedarf unklar)",
+    STAGE_2_PLAUSIBLE_CHANCE: "Stufe 2 – Plausible Mandatschance (Konkreter Handlungsdruck, Suche unbestätigt)",
+    STAGE_3_CONFIRMED_NEED: "Stufe 3 – Bestätigter Mandatsbedarf (Konkrete externe Suche / Ausschreibung nachgewiesen)",
+    STAGE_DISCARDED: "Verworfen (Gelöst / Nachfolge besetzt / Routine)"
+}
+
 # Freshness-Klassen für den kommerziellen Vertrieb an Interim-Provider
 FRESHNESS_HOT = "HOT_FIRST_MOVER"
 FRESHNESS_MONITORING = "MONITORING"
@@ -63,8 +83,16 @@ ADVISOR_PATTERNS = [
     r'unter\s+führung\s+von\s+.*?\b(?:kanzlei|sanierungsberater|rechtsanwalt)'
 ]
 
-# Zielfunktionen
+# ── ORGANBEDARF UND OPERATIVER MANAGEMENTBEDARF (7 ZIELFUNKTIONEN) ──
 ROLES = {
+    "CRO_ORGAN": "CRO / Sanierungsvorstand",
+    "CRO_INTERIM": "CRO / Interim-Management",
+    "CEO_ORGAN": "CEO / Geschäftsführer",
+    "CFO_FINANCE": "CFO / Finanzrestrukturierung",
+    "COO_OPS": "COO / operative Transformation",
+    "BOARD_MEMBER": "Verwaltungsrat / Aufsichtsrat",
+    "C_LEVEL_OTHER": "Sonstige C-Level-Funktionen",
+    # Abwärtskompatible Aliase
     "CRO": "Chief Restructuring Officer (CRO / Sanierungsvorstand)",
     "INTERIM_CFO": "Interim-CFO (Refinanzierung, SchVG-Verhandlung, Liquidität)",
     "INTERIM_CEO": "Interim-CEO (Vorstandsvorsitzender ad interim)",
@@ -210,26 +238,91 @@ class MandateRealityCheckEngine:
             not is_already_staffed
         )
 
+        # ── ORGANVAKUUM-PRÜFUNG (ANFORDERUNG 1) ──
+        # Ein Restrukturierungsereignis, eine Eigenverwaltung oder ein Insolvenzverfahren
+        # begründet allein noch kein Organvakuum.
+        # Ein Organvakuum darf nur als BESTANDEN ausgewiesen werden, wenn konkrete Belege vorliegen für:
+        # - Ausscheiden eines Geschäftsführers oder Vorstandsmitglieds ohne geregelte Nachfolge.
+        # - Vakante Organposition.
+        # - Dokumentierte Suche nach einer neuen Organbesetzung.
+        # - Sonstige nachweisbare Führungslücke auf Organebene.
+        # Fehlen solche Belege, lautet das Ergebnis: NICHT NACHGEWIESEN.
+        organ_exit_patterns = [
+            r'\b(?:nicht mehr|ausgeschieden als|abberufen als)\s+(?:geschäftsführer(?:in)?|vorstand|vorstandsmitglied|verwaltungsrat[a-z]*|vr-mitglied|ceo|cfo|cro|coo|director|board)\b',
+            r'\b(?:vorstand|geschäftsführer|verwaltungsrat[a-z]*|ceo|cfo|cro|coo|director|board member)\s+(?:scheidet aus|legt amt nieder|tritt zurück|verlässt das unternehmen|wurde abberufen|stepped down)\b',
+            r'\b(?:vorstandsmandat|geschäftsführungsmandat|verwaltungsratsmandat)\s+erloschen\b',
+            r'\berloschene unterschriften\b.*?\b(?:geschäftsführer|vorstand|verwaltungsrat[a-z]*|direktor)\b',
+            r'\bausgeschiedene personen\b.*?\b(?:geschäftsführer|vorstand|verwaltungsrat[a-z]*|direktor)\b',
+            r'\bamtsniederlegung\s+(?:des|der)?\s*(?:vorstand|geschäftsführ|verwaltungsrat[a-z]*|ceo|cfo)\b',
+            r'\brücktritt\s+(?:per sofort|mit sofortiger wirkung)\b',
+            r'\bausscheiden\s+(?:eines|einer)?\s*(?:mitglieds|vorstands|geschäftsführers|verwaltungsrats|mitgliedes)\b',
+            r'\bstepped down\b.*?\b(?:board|director|executive|vacancy)\b',
+            r'\bunstaffed organ vacancy\b',
+            r'\b(?:vakante|offene|unbesetzte)\s+(?:organposition|vorstandsposition|geschäftsführerposition|führungsposition auf organebene)\b',
+            r'\b(?:führungsvakuum|organ-?vakuum)\b',
+            r'\bsucht\s+(?:neue[rn]?|nachfolge für)\s+(?:vorstand|geschäftsführer|ceo|cfo|cro|verwaltungsrat[a-z]*)\b',
+            r'\b(?:suche nach|ausschreibung)\s+.*?\b(?:organbesetzung|vorstandsnachfolge|geschäftsführungsnachfolge)\b'
+        ]
+        has_proven_organ_exit = any(re.search(pat, combined_text, re.IGNORECASE) for pat in organ_exit_patterns) and not is_already_staffed
+
+        if has_proven_organ_exit:
+            organ_vacuum_status = "BESTANDEN"
+            organ_vacuum_details = "BESTANDEN: Reale Organvakanz / Ausscheiden von Organmitgliedern ohne geregelte Nachfolge belegt."
+        else:
+            organ_vacuum_status = "NICHT NACHGEWIESEN"
+            if is_eigenverwaltung:
+                organ_vacuum_details = "NICHT NACHGEWIESEN: Geschäftsführung führt den Betrieb in Eigenverwaltung fort; Eigenverwaltung begründet allein kein Organvakuum."
+            elif is_schvg_debt:
+                organ_vacuum_details = "NICHT NACHGEWIESEN: SchVG-Gläubigerabstimmung betrifft Anleihe-Restrukturierung; kein Organausscheiden belegt."
+            elif is_regular_insolvency:
+                organ_vacuum_details = "NICHT NACHGEWIESEN: Regelinsolvenz mit Fremdverwaltung (Insolvenzverwalter bestellt; kein C-Level-Organvakuum im Sinne einer Interimssuche)."
+            else:
+                organ_vacuum_details = "NICHT NACHGEWIESEN: Keine konkreten Belege für ein Organausscheiden oder eine vakante Organposition vorhanden."
+
         # =====================================================================
         # KRITERIUM C: Externe Mandatsfähigkeit & Zielfunktion
+        # Zwingende Differenzierung der 7 Rollenkategorien (Anforderung 3):
+        # - CRO / Sanierungsvorstand
+        # - CRO / Interim-Management
+        # - CEO / Geschäftsführer
+        # - CFO / Finanzrestrukturierung
+        # - COO / operative Transformation
+        # - Verwaltungsrat / Aufsichtsrat
+        # - Sonstige C-Level-Funktionen
+        # (Ein Verwaltungsratsvakuum darf nicht automatisch als CRO-Bedarf klassifiziert werden!)
         # =====================================================================
         target_role = "KEINE"
         mandate_feasibility = "ausgeschlossen"
 
+        # Prüfe Schweizer Verwaltungsrats-Vakanz zuerst:
+        is_swiss_board = (
+            (category == "c_level_vakanz_ch" or "verwaltungsrat" in combined_text or "board member" in combined_text or "vr-mitglied" in combined_text) and
+            not any(k in combined_text for k in ["eigenverwaltung", "starug", "cro", "sanierungsgeschäftsführer"])
+        )
+
         if is_eigenverwaltung and not is_advisor_mandated:
-            target_role = "CRO"
+            target_role = "CRO"  # ROLES["CRO"] = "CRO / Sanierungsvorstand"
             mandate_feasibility = "plausibel"
         elif is_schvg_debt:
-            target_role = "INTERIM_CFO"
+            target_role = "INTERIM_CFO"  # ROLES["INTERIM_CFO"] = "CFO / Finanzrestrukturierung"
             mandate_feasibility = "plausibel"
-        elif is_c_level_vacant:
+        elif is_swiss_board:
+            target_role = "BOARD_MEMBER"  # ROLES["BOARD_MEMBER"] = "Verwaltungsrat / Aufsichtsrat"
+            mandate_feasibility = "plausibel"
+        elif is_c_level_vacant or has_proven_organ_exit:
             if "cfo" in combined_text or "finanz" in combined_text:
                 target_role = "INTERIM_CFO"
+            elif "coo" in combined_text or "betrieb" in combined_text or "produktion" in combined_text or "werk" in combined_text:
+                target_role = "INTERIM_COO"
+            elif "cro" in combined_text or "sanierung" in combined_text or "restrukturierung" in combined_text:
+                target_role = "CRO"
+            elif "verwaltungsrat" in combined_text or "aufsichtsrat" in combined_text:
+                target_role = "BOARD_MEMBER"
             else:
                 target_role = "INTERIM_CEO"
             mandate_feasibility = "plausibel"
         elif "post-merger" in combined_text or "carve-out" in combined_text:
-            target_role = "PMI_LEAD"
+            target_role = "COO_OPS" if "operations" in combined_text else "PMI_LEAD"
             mandate_feasibility = "plausibel"
         elif category in ("unternehmenskrise_restrukturierung", "transformation_sanierung"):
             target_role = "TRANSFORMATION"
@@ -296,11 +389,11 @@ class MandateRealityCheckEngine:
             missing_information.append("Öffentliche Quelle belegt Gläubigerabstimmung / Stillhalteabkommen, jedoch keine externe Personalberatung.")
             missing_information.append("Unklar, ob bestehendes CFO-Team Verhandlungen führt oder Interims-Experten hinzugezogen werden.")
             rationale = f"Akuter Verhandlungsdruck mit Anleihegläubigern nach SchVG bzw. Stillhalteabkommen mit Banken. Erheblicher plausibler Bedarf an erfahrenem {ROLES.get(target_role)} für Liquiditäts- und Sanierungskonzepte."
-        elif is_c_level_vacant:
+        elif is_c_level_vacant or has_proven_organ_exit:
             status = CLASS_MANDAT_PLAUSIBEL
             missing_information.append("Interne Nachfolgelösung oder Interimsüberbrückung durch Aufsichtsrat nicht ausgeschlossen.")
             missing_information.append("Kein Beleg für Beauftragung eines Executive-Search- oder Interim-Providers.")
-            rationale = f"Akute Organvakanz auf C-Level bei {company}. Externe Überbrückung durch {ROLES.get(target_role)} plausibel, tatsächliche externe Suche noch nicht belegt."
+            rationale = f"Akute Organvakanz ({ROLES.get(target_role)}) bei {company}. Externe Überbrückung plausibel, tatsächliche externe Suche noch nicht belegt."
         else:
             status = CLASS_BEOBACHTEN
             missing_information.append("Sachverhalt indiziert Sondersituation, reicht aber für eine spezifische Mandatshypothese nicht aus.")
@@ -309,6 +402,39 @@ class MandateRealityCheckEngine:
         # Wenn der Status verworfen oder beobachten ist, keine fiktive Organrolle vortäuschen
         if status in (CLASS_BEOBACHTEN, CLASS_VERWERFEN):
             target_role = "KEINE"
+
+        # ── QUALIFIZIERUNGSSTUFE BESTIMMEN (ANFORDERUNG 2 & 4) ──
+        if has_explicit_mandate_proof:
+            qualification_stage = STAGE_3_CONFIRMED_NEED
+            stage_level = "STUFE 3"
+            external_search_status = "BESTÄTIGT"
+            mandate_certainty = "Bestätigt (Stufe 3)"
+            professional_deduction = "Dokumentierte externe Suche oder Ausschreibung durch Primärquelle nachgewiesen."
+        elif status == CLASS_MANDAT_PLAUSIBEL:
+            qualification_stage = STAGE_2_PLAUSIBLE_CHANCE
+            stage_level = "STUFE 2"
+            external_search_status = "NICHT BESTÄTIGT"
+            mandate_certainty = "Plausibel (Stufe 2)"
+            if is_eigenverwaltung:
+                professional_deduction = "Eigenverwaltung / Schutzschirm erfordert typischerweise erfahrene Sanierungsführung (CRO/Sanierungsbegleitung), da das Management im Amt bleibt. Externe Suche ist jedoch unbestätigt."
+            elif is_schvg_debt:
+                professional_deduction = "Verhandlungsdruck mit Anleihegläubigern nach SchVG erfordert Finanz- & Sanierungs-Expertise (Interim-CFO). Externe Beauftragung ist unbestätigt."
+            elif is_c_level_vacant or has_proven_organ_exit:
+                professional_deduction = f"Organvakanz ({ROLES.get(target_role, target_role)}) begründet akuten Überbrückungs- und Nachfolgebedarf. Externe Mandatierung noch unbestätigt."
+            else:
+                professional_deduction = f"Wirtschaftlicher Handlungsdruck begründet plausiblen externen Managementbedarf ({ROLES.get(target_role, target_role)}). Externe Suche unbestätigt."
+        elif status == CLASS_BEOBACHTEN:
+            qualification_stage = STAGE_1_VERIFIED_EVENT
+            stage_level = "STUFE 1"
+            external_search_status = "NICHT BESTÄTIGT"
+            mandate_certainty = "Unbestätigt (Stufe 1)"
+            professional_deduction = "Relevantes Unternehmensereignis durch Primärquelle nachgewiesen. Ein konkreter externer Mandatsbedarf ist noch nicht erkennbar (Beobachtung)."
+        else: # VERWERFEN
+            qualification_stage = STAGE_DISCARDED
+            stage_level = "VERWORFEN"
+            external_search_status = "NICHT BESTÄTIGT"
+            mandate_certainty = "Ausgeschlossen"
+            professional_deduction = "Ereignis begründet keinen Mandatsbedarf (bereits gelöst, nachbesetzt oder ungeeignet)."
 
         # Strukturierte Fakten vs. Schlussfolgerungen
         facts_proven = description or evidence_text
@@ -338,14 +464,22 @@ class MandateRealityCheckEngine:
         return {
             "status": status,
             "status_label": REALITY_CHECK_LABELS.get(status, status),
+            "qualification_stage": qualification_stage,
+            "stage_level": stage_level,
+            "stage_label": STAGE_LABELS.get(qualification_stage, qualification_stage),
+            "organ_vacuum_status": organ_vacuum_status,
+            "organ_vacuum_details": organ_vacuum_details,
+            "external_search_status": external_search_status,
             "target_role": target_role,
             "target_role_label": ROLES.get(target_role, target_role),
             "facts_proven": facts_proven,
             "source_proof": source_url,
             "source_date": pub_at or event_date,
+            "professional_deduction": professional_deduction,
             "mandate_hypothesis": mandate_hypothesis,
             "missing_information": missing_information,
             "counter_indicators": counter_indicators,
+            "mandate_certainty": mandate_certainty,
             "rationale": rationale,
             "freshness_category": freshness_category,
             "freshness_label": freshness_label,
@@ -356,7 +490,9 @@ class MandateRealityCheckEngine:
                 "event_validity": validity_status,
                 "action_pressure": "akut" if (is_eigenverwaltung or is_schvg_debt or is_c_level_vacant) and not is_advisor_mandated and freshness_category != FRESHNESS_ARCHIVE else ("geloest" if is_solved else "mittel"),
                 "mandate_feasibility": mandate_feasibility,
-                "concrete_mandate_proof": "belegt" if has_explicit_mandate_proof else "nicht_belegt"
+                "concrete_mandate_proof": "belegt" if has_explicit_mandate_proof else "nicht_belegt",
+                "organ_vacuum": organ_vacuum_status,
+                "qualification_stage": stage_level
             },
             "human_review": human_review
         }

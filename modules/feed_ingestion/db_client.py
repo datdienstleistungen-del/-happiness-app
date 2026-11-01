@@ -151,7 +151,7 @@ class SupabaseClient:
         except Exception as e:
             print(f"[DB Rollback Delete Error on {table}] {e}")
 
-    def insert_opportunity(self, item, evaluation, user_id=DEFAULT_USER_ID, deal_audit=None):
+    def insert_opportunity(self, item, evaluation, user_id=DEFAULT_USER_ID, deal_audit=None, max_age_hours=None):
         """
         Insert vetted signal into nexus_opportunities as PENDING_REVIEW (inbox status)
         with DealCoach audit results (Tier 1 vs Tier 2, Vakuum-Check, Dringlichkeit)
@@ -179,14 +179,15 @@ class SupabaseClient:
             return None, "ABORTED_INVALID_URL"
 
         # ── 3-KLINGEN-FILTER VOR DB-INSERT ──
-        # Klinge 1 (Zeit): Strikt <= 48h bezogen auf Publikation oder Vorfall
+        # Klinge 1 (Zeit): Frischebezug (Standard: bis 30 Tage / 720h für Restrukturierungs- & Mandatsmandate)
+        allowed_hours = max_age_hours if max_age_hours is not None else 720
         event_date_val = (deal_audit.get('event_date') if deal_audit else None) or item.get('event_date') or item.get('published_at') or datetime.now(timezone.utc).strftime('%Y-%m-%d')
         pub_val = item.get('published_at') or event_date_val
-        is_fresh, age_hours, parsed_dt = is_signal_fresh(pub_val, max_hours=48)
+        is_fresh, age_hours, parsed_dt = is_signal_fresh(pub_val, max_hours=allowed_hours)
         if not is_fresh:
-            is_fresh, age_hours, _ = is_signal_fresh(event_date_val, max_hours=48)
+            is_fresh, age_hours, _ = is_signal_fresh(event_date_val, max_hours=allowed_hours)
             if not is_fresh:
-                return None, f"DROPPED_STALE_EVENT_DATE (>48h: {age_hours:.1f}h)"
+                return None, f"DROPPED_STALE_EVENT_DATE (>{allowed_hours}h: {age_hours:.1f}h)"
 
         # Klinge 2 (Rechtsform): Enterprise / Kapitalgesellschaften Check
         detected_form = (deal_audit.get('legal_form') or '').upper().strip() if deal_audit else ''
@@ -232,24 +233,39 @@ class SupabaseClient:
         is_discarded = audit_info.get('status') == 'discarded' or tier == 'TIER_3'
         rejection_reason = audit_info.get('rejection_reason', 'K.O._Filter')
 
+        qual_stage = audit_info.get('qualification_stage') or ('STUFE 2 – PLAUSIBLE MANDATSCHANCE' if tier in ('TIER_1_TOP', 'TIER_2_MID') else 'STUFE 1 – VERIFIZIERTES EREIGNIS')
+        organ_vacuum_val = audit_info.get('organ_vacuum_status') or ('BESTANDEN' if 'BESTANDEN' in vacuum_check.upper() else 'NICHT NACHGEWIESEN')
+        ext_search_val = audit_info.get('external_search_status') or ('BESTÄTIGT' if str(qual_stage).startswith('STUFE 3') else 'NICHT BESTÄTIGT')
+        facts_proven_val = audit_info.get('proven_facts') or snippet[:300]
+        deduction_val = audit_info.get('professional_deduction') or audit_rationale
+        certainty_val = audit_info.get('mandate_certainty') or ('Plausibel (Stufe 2)' if str(qual_stage).startswith('STUFE 2') else 'Unbestätigt')
+
         if is_discarded:
             review_status = 'rejected'
             tier = 'TIER_3'
             tags = ['TIER_3', 'Auto_Discarded', rejection_reason]
         else:
             review_status = STATUS_PENDING_REVIEW
-            tags = [tier, 'DealCoach_Audited', 'Vakuum_Geprueft']
-            if vacuum_check and 'BESTANDEN' in vacuum_check.upper():
+            tags = [tier, 'DealCoach_Audited', 'Vakuum_Geprueft', qual_stage.split('–')[0].strip()]
+            if organ_vacuum_val == 'BESTANDEN':
                 tags.append('Vakuum_Bestanden')
+            else:
+                tags.append('Vakuum_Nicht_Nachgewiesen')
 
-        relevance_logic_text = f"DealCoach [{tier}]: {audit_verdict} | Vakuum: {vacuum_check} | Dringlichkeit: {urgency_check}"
+        relevance_logic_text = f"DealCoach [{tier} | {qual_stage}]: {audit_verdict} | Organvakuum: {organ_vacuum_val} | Dringlichkeit: {urgency_check}"
         strategic_angle_text = audit_rationale or evaluation.get('strategic_angle', '')
 
         situation_text = (
             f"[DEALCOACH AUDIT]: {tier}\n"
+            f"[QUALIFIZIERUNGS-STUFE]: {qual_stage}\n"
+            f"[ORGAN-VAKUUM]: {organ_vacuum_val}\n"
+            f"[EXTERNE-SUCHE]: {ext_search_val}\n"
             f"[VAKUUM-CHECK]: {vacuum_check}\n"
             f"[DRINGLICHKEIT]: {urgency_check}\n"
             f"[MANDATS-BEGRÜNDUNG]: {audit_rationale}\n"
+            f"[FAKTEN-BELEG]: {facts_proven_val}\n"
+            f"[SCHLUSSFOLGERUNG]: {deduction_val}\n"
+            f"[SICHERHEIT]: {certainty_val}\n"
             f"[BUDGET-SCHÄTZUNG]: {estimated_budget}\n"
             f"[COMPANY]: {company_name}\n"
             f"[KAUFSIGNAL]: {title}\n"
@@ -260,11 +276,17 @@ class SupabaseClient:
         review_notes_data = json.dumps({
             'deal_coach': {
                 'tier': tier,
+                'qualification_stage': qual_stage,
+                'organ_vacuum_status': organ_vacuum_val,
+                'external_search_status': ext_search_val,
                 'status': 'discarded' if is_discarded else 'pending',
                 'verdict': audit_verdict,
                 'vacuum_check': vacuum_check,
                 'urgency_check': urgency_check,
                 'rationale': audit_rationale,
+                'proven_facts': facts_proven_val,
+                'professional_deduction': deduction_val,
+                'mandate_certainty': certainty_val,
                 'rejection_reason': rejection_reason if is_discarded else None,
                 'estimated_budget': estimated_budget,
                 'audited_at': datetime.now(timezone.utc).isoformat()
@@ -429,19 +451,10 @@ class SupabaseClient:
                 is_invalid = True
                 drop_reason = "NOISE_KEYWORD"
 
-            # Check 5: Age > max_hours
-            elif created_at_str:
-                try:
-                    iso_clean = created_at_str.replace('Z', '+00:00')
-                    dt = datetime.fromisoformat(iso_clean)
-                    if dt.tzinfo is None:
-                        dt = dt.replace(tzinfo=timezone.utc)
-                    age_hours = (now_utc - dt.astimezone(timezone.utc)).total_seconds() / 3600.0
-                    if age_hours > max_hours:
-                        is_invalid = True
-                        drop_reason = f"AGE_OVER_{max_hours}H"
-                except Exception:
-                    pass
+            # Check 5: Veraltungsschutz deaktiviert (Human-in-the-Loop Chefsache):
+            # Echte Kaufsignale im Posteingang (pending) werden NICHT mehr nach 48h gelöscht,
+            # sondern bleiben erhalten, bis Harro sie manuell bewertet (1-Klick-Triage).
+            pass
 
             if is_invalid and opp_id:
                 to_delete_ids.append(opp_id)

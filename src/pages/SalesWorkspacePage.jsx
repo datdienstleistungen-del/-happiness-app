@@ -231,29 +231,54 @@ export function extractTriggerMeta(content = '') {
   };
 }
 
+export function hasProvenOrganExitEvidence(text) {
+  if (!text) return false;
+  const t = text.toLowerCase();
+  if (t.includes('bleibt im amt') || t.includes('bleibt an bord') || t.includes('bestehende geschäftsführung bleibt')) {
+    return false;
+  }
+  return (
+    /abberufung|ausscheiden|ausgeschieden|tritt zurück|zurückgetreten|mandatsniederlegung|amtsniederlegung|abberufen|vorstandsvakanz|vakante(?:n)? organposition|führungsvakuum|geschäftsführervakanz|abgang des vorstands|abgang der geschäftsführung|sucht einen cro|sucht geschäftsführer|stepped down|unstaffed organ vacancy/.test(t) ||
+    /mitglied des verwaltungsrat(?:es)? ausgeschieden/.test(t)
+  );
+}
+
 export function extractDealCoachAudit(opp) {
   if (!opp) return null;
 
+  let dcData = {};
   // 1. Aus review_notes JSON extrahieren falls vorhanden
   if (opp.review_notes) {
     try {
       const parsed = typeof opp.review_notes === 'string' ? JSON.parse(opp.review_notes) : opp.review_notes;
       if (parsed?.deal_coach) {
-        return parsed.deal_coach;
+        dcData = parsed.deal_coach;
       }
     } catch (e) {}
   }
 
   // 2. Aus situation-Text parsen
   const situation = opp.situation || '';
+  const fullText = `${opp.title || ''} ${opp.company?.name || opp.nexus_companies?.name || ''} ${situation} ${opp.strategic_angle || ''} ${opp.notes || ''}`;
+
   const tierMatch = situation.match(/\[DEALCOACH AUDIT\]:\s*([^\n\r]+)/i);
   const vacMatch = situation.match(/\[VAKUUM-CHECK\]:\s*([^\n\r]+)/i);
   const urgMatch = situation.match(/\[DRINGLICHKEIT\]:\s*([^\n\r]+)/i);
   const ratMatch = situation.match(/\[MANDATS-BEGRÜNDUNG\]:\s*([^\n\r]+)/i);
   const budMatch = situation.match(/\[BUDGET-SCHÄTZUNG\]:\s*([^\n\r]+)/i);
 
+  const stageMatch = situation.match(/\[QUALIFIZIERUNGS-STUFE\]:\s*([^\n\r]+)/i);
+  const organVacMatch = situation.match(/\[ORGAN-VAKUUM\]:\s*([^\n\r]+)/i);
+  const extSearchMatch = situation.match(/\[EXTERNE-SUCHE\]:\s*([^\n\r]+)/i);
+  const factsMatch = situation.match(/\[FAKTEN-BELEG\]:\s*([^\n\r]+)/i);
+  const dedMatch = situation.match(/\[SCHLUSSFOLGERUNG\]:\s*([^\n\r]+)/i);
+  const hypMatch = situation.match(/\[MANDATS-HYPOTHESE\]:\s*([^\n\r]+)/i);
+  const missMatch = situation.match(/\[FEHLENDE-INFO\]:\s*([^\n\r]+)/i);
+  const certMatch = situation.match(/\[SICHERHEIT\]:\s*([^\n\r]+)/i);
+  const roleMatch = situation.match(/\[MANDATSHEBEL\]:\s*([^\n\r]+)/i) || situation.match(/\[ROLE\]:\s*([^\n\r]+)/i);
+
   // 3. Fallback auf priority oder tags
-  let tier = tierMatch ? tierMatch[1].trim() : null;
+  let tier = dcData.tier || (tierMatch ? tierMatch[1].trim() : null);
   if (!tier && opp.priority) {
     if (opp.priority.toUpperCase().includes('TIER_1')) tier = 'TIER_1_TOP';
     else if (opp.priority.toUpperCase().includes('TIER_2')) tier = 'TIER_2_MID';
@@ -282,13 +307,121 @@ export function extractDealCoachAudit(opp) {
   const isTier2 = tier === 'TIER_2_MID';
   const isTier3 = tier === 'TIER_3';
 
+  // 4. Organ-Vakuum Status (BESTANDEN vs. NICHT NACHGEWIESEN)
+  const hasProvenExit = hasProvenOrganExitEvidence(fullText);
+  let organ_vacuum_status = dcData.organ_vacuum_status;
+  if (!organ_vacuum_status) {
+    if (organVacMatch) {
+      organ_vacuum_status = organVacMatch[1].trim().toUpperCase().includes('BESTANDEN') ? 'BESTANDEN' : 'NICHT NACHGEWIESEN';
+    } else if (Array.isArray(opp.tags) && opp.tags.includes('Vakuum_Nicht_Nachgewiesen')) {
+      organ_vacuum_status = 'NICHT NACHGEWIESEN';
+    } else if (Array.isArray(opp.tags) && opp.tags.includes('Vakuum_Bestanden')) {
+      organ_vacuum_status = 'BESTANDEN';
+    } else if (hasProvenExit) {
+      organ_vacuum_status = 'BESTANDEN';
+    } else {
+      organ_vacuum_status = 'NICHT NACHGEWIESEN';
+    }
+  }
+
+  // 5. Externe Suche Status (BESTÄTIGT vs. NICHT BESTÄTIGT)
+  let external_search_status = dcData.external_search_status;
+  if (!external_search_status) {
+    if (extSearchMatch) {
+      external_search_status = extSearchMatch[1].trim().toUpperCase().includes('BESTÄTIGT') && !extSearchMatch[1].trim().toUpperCase().includes('NICHT') ? 'BESTÄTIGT' : 'NICHT BESTÄTIGT';
+    } else {
+      const hasSearchNotice = /(sucht einen cro|ausschreibung interim|mandatierung bestätigt|beauftragt personalberater|externe besetzungsabsicht belegt)/i.test(fullText);
+      external_search_status = hasSearchNotice ? 'BESTÄTIGT' : 'NICHT BESTÄTIGT';
+    }
+  }
+
+  // 6. Qualifizierungsstufe (STUFE 1, STUFE 2, STUFE 3)
+  let qualification_stage = dcData.qualification_stage;
+  let stage_level = dcData.stage_level;
+  if (!qualification_stage) {
+    if (stageMatch) {
+      qualification_stage = stageMatch[1].trim();
+      stage_level = qualification_stage.includes('3') ? 3 : qualification_stage.includes('2') ? 2 : qualification_stage.includes('1') ? 1 : 0;
+    } else if (isTier3) {
+      qualification_stage = 'STUFE 0 – AUSGESONDERT';
+      stage_level = 0;
+    } else if (external_search_status === 'BESTÄTIGT') {
+      qualification_stage = 'STUFE 3 – BESTÄTIGTER MANDATSBEDARF';
+      stage_level = 3;
+    } else if (isTier1 || isTier2 || /(eigenverwaltung|schutzschirm|starug|sanierung|insolvenz|anleihe|schvg|restrukturierung|liquiditätskrise)/i.test(fullText)) {
+      qualification_stage = 'STUFE 2 – PLAUSIBLE MANDATSCHANCE';
+      stage_level = 2;
+    } else {
+      qualification_stage = 'STUFE 1 – VERIFIZIERTES EREIGNIS';
+      stage_level = 1;
+    }
+  }
+
+  // 7. Zielrolle (Differenzierung der 7 Rollenkategorien)
+  let target_role = dcData.target_role || (roleMatch ? roleMatch[1].trim() : null);
+  if (!target_role) {
+    const isSwissVR = /(shab\.ch|verwaltungsrat|cosquare|mutation verwaltungsrat)/i.test(fullText);
+    const isBondSchvg = /(anleihe|schvg|gläubigerversammlung|laufzeitverlängerung|kupon|zinszahlung)/i.test(fullText);
+    const isEigenverwaltung = /(eigenverwaltung|schutzschirm|§ 270|restrukturierungsbeauftragt)/i.test(fullText);
+    const isFinance = /(cfo|liquidität|kreditlinie|refinanzierung|finanzrestrukturierung)/i.test(fullText);
+    const isOps = /(coo|produktionsstillstand|supply chain|betriebsschließung|werksschließung)/i.test(fullText);
+
+    if (isSwissVR) {
+      target_role = 'Verwaltungsrat / Aufsichtsrat';
+    } else if (isBondSchvg) {
+      target_role = 'CFO / Finanzrestrukturierung';
+    } else if (isEigenverwaltung) {
+      target_role = 'CRO / Sanierungsvorstand';
+    } else if (isFinance) {
+      target_role = 'CFO / Finanzrestrukturierung';
+    } else if (isOps) {
+      target_role = 'COO / operative Transformation';
+    } else if (isTier1) {
+      target_role = 'CRO / Sanierungsvorstand';
+    } else {
+      target_role = 'CRO / Interim-Management';
+    }
+  }
+
+  // 8. 5-Punkte Transparenz-Matrix
+  const facts_proven = dcData.facts_proven || (factsMatch ? factsMatch[1].trim() : null) || 'Unternehmensereignis in Primärquelle belegt';
+  const deduction = dcData.deduction || (dedMatch ? dedMatch[1].trim() : null) || (isTier1 ? 'Akuter Leitungs- und Sanierungsdruck erfordert operative Not-Governance' : 'Erhöhter Restrukturierungs- und Sanierungsdruck begründet externe Unterstützungschance');
+  const hypothesis = dcData.hypothesis || (hypMatch ? hypMatch[1].trim() : null) || `Bedarf an ${target_role} zur Stabilisierung der Führung`;
+  const missing_info = dcData.missing_info || (missMatch ? missMatch[1].trim() : null) || (external_search_status === 'BESTÄTIGT' ? 'Keine wesentliche Evidenzlücke' : 'Konkrete externe Mandatsausschreibung oder Beraterbeauftragung bisher unbestätigt');
+  const certainty = dcData.certainty || (certMatch ? certMatch[1].trim() : null) || (stage_level === 3 ? 'HOCH (Mandatsbedarf belegt)' : stage_level === 2 ? 'MITTEL (Plausible Mandatschance)' : 'GERING (Lediglich Unternehmensereignis)');
+
+  // 9. Vakuum-Check Textbaustein
+  let vacuum_check = vacMatch ? vacMatch[1].trim() : dcData.vacuum_check;
+  if (!vacuum_check || (organ_vacuum_status === 'NICHT NACHGEWIESEN' && vacuum_check.includes('BESTANDEN'))) {
+    if (organ_vacuum_status === 'BESTANDEN') {
+      vacuum_check = 'BESTANDEN: Organposition vakant / Ausscheiden ohne geregelte Nachfolge belegt';
+    } else {
+      vacuum_check = 'NICHT NACHGEWIESEN: Eigenverwaltung / Restrukturierung begründet allein kein Organvakuum';
+    }
+  }
+
+  const verdict = dcData.verdict || (isTier1 ? 'AKUTER C-LEVEL / ORGAN-MANDATSBEDARF' : isTier2 ? 'OPERATIVER INTERIM- & LEITUNGSBEDARF' : isTier3 ? 'AUSGESONDERT: MANTEL / KEIN AUFTRAGGEBER' : 'VOREINSCHÄTZUNG DEALCOACH (ZUR PRÜFUNG)');
+  const urgency_check = dcData.urgency_check || (urgMatch ? urgMatch[1].trim() : (isTier1 ? 'HOCH: Akute Not-Governance / Überbrückungsbedarf per sofort' : isTier2 ? 'HOCH: Operativer Handlungsdruck' : isTier3 ? '0 € Mandatswert (Karteileiche ohne laufenden Geschäftsbetrieb)' : 'ROUTINE: Regulatorische Pflichtmitteilung zur Vorlage'));
+  const rationale = dcData.rationale || (ratMatch ? ratMatch[1].trim() : (opp.strategic_angle || opp.notes || 'DealCoach-Voreinschätzung zur manuellen Prüfung durch Harro im Mandats-Desk.'));
+  const estimated_budget = dcData.estimated_budget || (budMatch && budMatch[1].trim() && budMatch[1].trim() !== 'Auf Anfrage' && !budMatch[1].trim().includes('150.000') && !budMatch[1].trim().includes('80.000') ? budMatch[1].trim() : '-');
+
   return {
     tier,
-    verdict: isTier1 ? 'AKUTER C-LEVEL / ORGAN-MANDATSBEDARF' : isTier2 ? 'OPERATIVER INTERIM- & LEITUNGSBEDARF' : isTier3 ? 'AUSGESONDERT: MANTEL / KEIN AUFTRAGGEBER' : 'VOREINSCHÄTZUNG DEALCOACH (ZUR PRÜFUNG)',
-    vacuum_check: vacMatch ? vacMatch[1].trim() : (isTier1 ? 'BESTANDEN: Reale Führungslücke bei bestehendem Geschäftsbetrieb' : isTier2 ? 'BESTANDEN: Organ-Position vakant / Stillstand droht' : isTier3 ? 'K.O. DROP: Organmangel / inaktive Hülle' : 'HINWEIS: Manuelle Sichtung durch Harro'),
-    urgency_check: urgMatch ? urgMatch[1].trim() : (isTier1 ? 'HOCH: Akute Not-Governance / Überbrückungsbedarf per sofort' : isTier2 ? 'HOCH: Operativer Handlungsdruck' : isTier3 ? '0 € Mandatswert (Karteileiche ohne laufenden Geschäftsbetrieb)' : 'ROUTINE: Regulatorische Pflichtmitteilung zur Vorlage'),
-    rationale: ratMatch ? ratMatch[1].trim() : (opp.strategic_angle || opp.notes || 'DealCoach-Voreinschätzung zur manuellen Prüfung durch Harro im Mandats-Desk.'),
-    estimated_budget: budMatch && budMatch[1].trim() && budMatch[1].trim() !== 'Auf Anfrage' && !budMatch[1].trim().includes('150.000') && !budMatch[1].trim().includes('80.000') ? budMatch[1].trim() : '-'
+    verdict,
+    vacuum_check,
+    urgency_check,
+    rationale,
+    estimated_budget,
+    qualification_stage,
+    stage_level: Number(stage_level) || (qualification_stage.includes('3') ? 3 : qualification_stage.includes('2') ? 2 : qualification_stage.includes('1') ? 1 : 0),
+    organ_vacuum_status,
+    external_search_status,
+    facts_proven,
+    deduction,
+    hypothesis,
+    missing_info,
+    certainty,
+    target_role
   };
 }
 
@@ -675,10 +808,10 @@ export default function SalesWorkspacePage() {
               <ShieldCheck size={22} color="#10b981" />
               <div>
                 <div className="stamp-text-title">
-                  Qualitäts-Audit bestanden: Verifiziert durch Harro Goerndt (D.A.T. Mandats-Desk)
+                  Qualitäts-Audit bestanden: Ereignis &amp; Belege verifiziert durch Harro Goerndt (D.A.T. Mandats-Desk)
                 </div>
                 <div className="stamp-text-meta">
-                  Freigegeben zur Partner-Übermittlung · Zeitstempel:{' '}
+                  Unternehmensereignis &amp; Belege geprüft. Externe Mandatsvergabe unbestätigt (Human-in-the-Loop Audit) · Zeitstempel:{' '}
                   {audit.audited_at ? new Date(audit.audited_at).toLocaleString('de-DE') : new Date().toLocaleString('de-DE')}
                 </div>
               </div>
@@ -2873,6 +3006,63 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                         >
                           {isT1 ? '👑 TIER 1' : isT2 ? '🏢 TIER 2' : '⚖️ Zur Prüfung'}
                         </span>
+
+                        {/* Stufen-Badge */}
+                        {audit?.stage_level && (
+                          <span 
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              fontSize: '0.70rem',
+                              fontWeight: 700,
+                              background: audit.stage_level === 3 ? 'rgba(34, 197, 94, 0.2)' : audit.stage_level === 2 ? 'rgba(59, 130, 246, 0.2)' : 'rgba(148, 163, 184, 0.2)',
+                              color: audit.stage_level === 3 ? '#4ade80' : audit.stage_level === 2 ? '#93c5fd' : '#cbd5e1',
+                              border: `1px solid ${audit.stage_level === 3 ? '#22c55e' : audit.stage_level === 2 ? '#3b82f6' : '#94a3b8'}`
+                            }}
+                            title={`Qualifizierungsstufe: ${audit.qualification_stage}`}
+                          >
+                            {audit.stage_level === 3 ? '🎯 Stufe 3' : audit.stage_level === 2 ? '⚡ Stufe 2' : '📄 Stufe 1'}
+                          </span>
+                        )}
+
+                        {/* Organvakuum Status */}
+                        {audit?.organ_vacuum_status === 'BESTANDEN' ? (
+                          <span 
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              padding: '2px 5px',
+                              borderRadius: '4px',
+                              fontSize: '0.68rem',
+                              fontWeight: 700,
+                              background: 'rgba(34, 197, 94, 0.15)',
+                              color: '#4ade80',
+                              border: '1px solid rgba(34, 197, 94, 0.3)'
+                            }}
+                            title="Vakante Organposition nachgewiesen"
+                          >
+                            ⚡ Organvakuum
+                          </span>
+                        ) : (
+                          <span 
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              padding: '2px 5px',
+                              borderRadius: '4px',
+                              fontSize: '0.68rem',
+                              fontWeight: 600,
+                              background: 'rgba(234, 179, 8, 0.12)',
+                              color: '#fde047',
+                              border: '1px solid rgba(234, 179, 8, 0.25)'
+                            }}
+                            title="Restrukturierung begründet allein kein Organvakuum"
+                          >
+                            Vakuum n.n.
+                          </span>
+                        )}
                       </div>
                     </div>
                     <button 
@@ -3369,26 +3559,48 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                 gap: '18px'
               }}>
                 {/* Audit Header Banner */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                    {/* Tier Badge */}
                     <div style={{
                       background: isTier1 ? 'rgba(168, 85, 247, 0.25)' : isTier2 ? 'rgba(59, 130, 246, 0.25)' : isTier3 ? 'rgba(239, 68, 68, 0.25)' : 'rgba(148, 163, 184, 0.2)',
                       border: `1px solid ${isTier1 ? '#a855f7' : isTier2 ? '#3b82f6' : isTier3 ? '#ef4444' : '#94a3b8'}`,
                       borderRadius: '8px',
                       padding: '6px 14px',
-                      fontSize: '0.92rem',
+                      fontSize: '0.90rem',
                       fontWeight: 800,
                       color: isTier1 ? '#f3e8ff' : isTier2 ? '#dbeafe' : isTier3 ? '#fecaca' : '#f1f5f9',
                       letterSpacing: '0.03em'
                     }}>
                       {isTier1 ? '👑 TIER 1 TOP' : isTier2 ? '🏢 TIER 2 MID' : isTier3 ? '🗑️ TIER 3 (AUSGESONDERT)' : '⚖️ PRÜFUNG EMPFOHLEN'}
                     </div>
+
+                    {/* Verbindliche Qualifizierungsstufe */}
+                    <div style={{
+                      background: audit?.stage_level === 3 ? 'rgba(34, 197, 94, 0.2)' : audit?.stage_level === 2 ? 'rgba(59, 130, 246, 0.2)' : 'rgba(148, 163, 184, 0.2)',
+                      border: `1px solid ${audit?.stage_level === 3 ? '#22c55e' : audit?.stage_level === 2 ? '#3b82f6' : '#94a3b8'}`,
+                      borderRadius: '8px',
+                      padding: '6px 14px',
+                      fontSize: '0.90rem',
+                      fontWeight: 800,
+                      color: audit?.stage_level === 3 ? '#bbf7d0' : audit?.stage_level === 2 ? '#bfdbfe' : '#e2e8f0',
+                      letterSpacing: '0.02em'
+                    }}>
+                      {audit?.stage_level === 3 
+                        ? '🎯 STUFE 3 – BESTÄTIGTER MANDATSBEDARF' 
+                        : audit?.stage_level === 2 
+                        ? '⚡ STUFE 2 – PLAUSIBLE MANDATSCHANCE' 
+                        : '📄 STUFE 1 – VERIFIZIERTES EREIGNIS'}
+                    </div>
+
                     <div>
-                      <div style={{ fontSize: '1rem', fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.01em' }}>
+                      <div style={{ fontSize: '0.96rem', fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.01em' }}>
                         DealCoach Revisions-Urteil: <span style={{ color: isTier1 ? '#c084fc' : isTier2 ? '#60a5fa' : isTier3 ? '#f87171' : '#cbd5e1' }}>{audit?.verdict || 'VORLÄUFIGE VOREINSCHÄTZUNG'}</span>
                       </div>
-                      <div style={{ fontSize: '0.82rem', color: '#94a3b8', marginTop: '2px' }}>
-                        Geschätztes Budgetvolumen: <strong style={{ color: isTier3 ? '#f87171' : '#cbd5e1' }}>{audit?.estimated_budget && audit.estimated_budget !== 'Auf Anfrage' && audit.estimated_budget !== '-' ? audit.estimated_budget : '-'}</strong>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '0.82rem', color: '#94a3b8', marginTop: '3px' }}>
+                        <span>Zielrolle / Organhebel: <strong style={{ color: '#38bdf8' }}>{audit?.target_role || 'CRO / Interim-Management'}</strong></span>
+                        <span>·</span>
+                        <span>Geschätztes Honorarvolumen: <strong style={{ color: isTier3 ? '#f87171' : '#cbd5e1' }}>{audit?.estimated_budget && audit.estimated_budget !== 'Auf Anfrage' && audit.estimated_budget !== '-' ? audit.estimated_budget : '-'}</strong></span>
                       </div>
                     </div>
                   </div>
@@ -3420,29 +3632,97 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                 </div>
 
                 {/* Warum brennt es? (Vakuum- & Dringlichkeits-Audit) */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#facc15', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    🔥 Warum brennt es? (DealCoach Vakuum- & Dringlichkeits-Audit)
+                    🔥 Warum brennt es? (DealCoach Vakuum-, Suchstatus- &amp; Dringlichkeits-Audit)
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
                     {/* Vakuum-Check Kachel */}
-                    <div style={{ background: '#0a0c0f', border: '1px solid #1e232d', borderRadius: '8px', padding: '12px 16px' }}>
-                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' }}>
-                        ⚡ Vakuum-Check (Organ-Vakanz)
+                    <div style={{
+                      background: '#0a0c0f',
+                      border: `1px solid ${audit?.organ_vacuum_status === 'BESTANDEN' ? 'rgba(34, 197, 94, 0.4)' : 'rgba(234, 179, 8, 0.35)'}`,
+                      borderRadius: '8px',
+                      padding: '14px 16px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <div style={{ fontSize: '0.76rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                          ⚡ Organvakuum-Audit
+                        </div>
+                        <span style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          background: audit?.organ_vacuum_status === 'BESTANDEN' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(234, 179, 8, 0.18)',
+                          color: audit?.organ_vacuum_status === 'BESTANDEN' ? '#4ade80' : '#facc15',
+                          border: `1px solid ${audit?.organ_vacuum_status === 'BESTANDEN' ? '#22c55e' : '#eab308'}`
+                        }}>
+                          {audit?.organ_vacuum_status === 'BESTANDEN' ? '🟢 BESTANDEN' : '🟡 NICHT NACHGEWIESEN'}
+                        </span>
                       </div>
-                      <div style={{ fontSize: '0.9rem', color: '#f1f5f9', fontWeight: 600 }}>
-                        {audit?.vacuum_check || 'Organ-Position vakant / Stillstand droht'}
+                      <div style={{ fontSize: '0.88rem', color: '#f1f5f9', fontWeight: 600, lineHeight: 1.45 }}>
+                        {audit?.vacuum_check || (audit?.organ_vacuum_status === 'BESTANDEN' ? 'Organposition vakant / Ausscheiden belegt' : 'Eigenverwaltung / Restrukturierung begründet allein kein Organvakuum')}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '6px' }}>
+                        {audit?.organ_vacuum_status === 'BESTANDEN' ? 'Konkreter Beleg für vakanzbegründenden Abgang liegt vor.' : 'Geschäftsführung bleibt im Amt oder kein Abgang belegt.'}
+                      </div>
+                    </div>
+
+                    {/* Externe Mandatssuche Kachel */}
+                    <div style={{
+                      background: '#0a0c0f',
+                      border: `1px solid ${audit?.external_search_status === 'BESTÄTIGT' ? 'rgba(34, 197, 94, 0.4)' : 'rgba(59, 130, 246, 0.35)'}`,
+                      borderRadius: '8px',
+                      padding: '14px 16px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <div style={{ fontSize: '0.76rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                          🔍 Externe Mandatssuche
+                        </div>
+                        <span style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          background: audit?.external_search_status === 'BESTÄTIGT' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(59, 130, 246, 0.18)',
+                          color: audit?.external_search_status === 'BESTÄTIGT' ? '#4ade80' : '#93c5fd',
+                          border: `1px solid ${audit?.external_search_status === 'BESTÄTIGT' ? '#22c55e' : '#3b82f6'}`
+                        }}>
+                          {audit?.external_search_status === 'BESTÄTIGT' ? '🟢 BESTÄTIGT' : '🟡 NICHT BESTÄTIGT'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.88rem', color: '#f1f5f9', fontWeight: 600, lineHeight: 1.45 }}>
+                        {audit?.external_search_status === 'BESTÄTIGT' ? 'Dokumentierte externe Ausschreibung oder Mandatierung' : 'Externe Suche nicht bestätigt (Plausible Mandatschance)'}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '6px' }}>
+                        {audit?.external_search_status === 'BESTÄTIGT' ? 'Belegbare Mandatsvergabe aktiv.' : 'Konkrete Mandatierung durch Partner-Desk zu verifizieren.'}
                       </div>
                     </div>
 
                     {/* Dringlichkeit Kachel */}
-                    <div style={{ background: '#0a0c0f', border: '1px solid #1e232d', borderRadius: '8px', padding: '12px 16px' }}>
-                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' }}>
-                        🚨 Dringlichkeit & Not-Governance
+                    <div style={{ background: '#0a0c0f', border: '1px solid #1e232d', borderRadius: '8px', padding: '14px 16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <div style={{ fontSize: '0.76rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                          🚨 Dringlichkeit &amp; Governance
+                        </div>
+                        <span style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          background: isTier1 ? 'rgba(168, 85, 247, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                          color: isTier1 ? '#c084fc' : '#60a5fa',
+                          border: `1px solid ${isTier1 ? '#a855f7' : '#3b82f6'}`
+                        }}>
+                          {isTier1 ? 'AKUT' : 'HOCH'}
+                        </span>
                       </div>
-                      <div style={{ fontSize: '0.9rem', color: '#f1f5f9', fontWeight: 600 }}>
+                      <div style={{ fontSize: '0.88rem', color: '#f1f5f9', fontWeight: 600, lineHeight: 1.45 }}>
                         {audit?.urgency_check || 'Akute Überbrückung / Ad-hoc Mandatsbedarf per sofort'}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '6px' }}>
+                        Interventionsfenster: Zeitnahe Kontaktaufnahme empfohlen.
                       </div>
                     </div>
                   </div>
@@ -3458,6 +3738,68 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                       </div>
                     </div>
                   )}
+
+                  {/* ── 5-PUNKTE TRANSPARENZ-MATRIX (DEALCOACH-URTEILE) ── */}
+                  <div style={{
+                    background: '#07090c',
+                    border: '1px solid #1b2028',
+                    borderRadius: '8px',
+                    padding: '16px 18px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px'
+                  }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      📊 DealCoach Transparenz-Matrix: Fakten, Schlussfolgerungen &amp; Hypothesen
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px' }}>
+                      <div style={{ background: '#0d1017', border: '1px solid #1e2430', borderRadius: '6px', padding: '10px 12px' }}>
+                        <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '3px' }}>
+                          1. Tatsächlich nachgewiesen
+                        </div>
+                        <div style={{ fontSize: '0.86rem', color: '#f1f5f9', lineHeight: 1.4 }}>
+                          {audit?.facts_proven || 'Unternehmensereignis durch Primärquelle nachgewiesen.'}
+                        </div>
+                      </div>
+
+                      <div style={{ background: '#0d1017', border: '1px solid #1e2430', borderRadius: '6px', padding: '10px 12px' }}>
+                        <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '3px' }}>
+                          2. Fachliche Schlussfolgerung
+                        </div>
+                        <div style={{ fontSize: '0.86rem', color: '#f1f5f9', lineHeight: 1.4 }}>
+                          {audit?.deduction || 'Akuter Restrukturierungs- und Sanierungsdruck.'}
+                        </div>
+                      </div>
+
+                      <div style={{ background: '#0d1017', border: '1px solid #1e2430', borderRadius: '6px', padding: '10px 12px' }}>
+                        <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '3px' }}>
+                          3. Mandats-Hypothese
+                        </div>
+                        <div style={{ fontSize: '0.86rem', color: '#38bdf8', lineHeight: 1.4 }}>
+                          {audit?.hypothesis || `Bedarf an ${audit?.target_role || 'Interim Management'}`}
+                        </div>
+                      </div>
+
+                      <div style={{ background: '#0d1017', border: '1px solid #1e2430', borderRadius: '6px', padding: '10px 12px' }}>
+                        <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '3px' }}>
+                          4. Fehlende Information
+                        </div>
+                        <div style={{ fontSize: '0.86rem', color: '#facc15', lineHeight: 1.4 }}>
+                          {audit?.missing_info || 'Konkrete externe Mandatsausschreibung unbestätigt.'}
+                        </div>
+                      </div>
+
+                      <div style={{ background: '#0d1017', border: '1px solid #1e2430', borderRadius: '6px', padding: '10px 12px', gridColumn: '1 / -1' }}>
+                        <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '3px' }}>
+                          5. Sicherheitsgrad der Mandatschance
+                        </div>
+                        <div style={{ fontSize: '0.88rem', fontWeight: 700, color: audit?.stage_level === 3 ? '#4ade80' : audit?.stage_level === 2 ? '#60a5fa' : '#cbd5e1' }}>
+                          {audit?.certainty || (audit?.stage_level === 3 ? 'HOCH (Mandatsbedarf belegt)' : audit?.stage_level === 2 ? 'MITTEL (Plausible Mandatschance)' : 'GERING (Unternehmensereignis)')} · {audit?.qualification_stage || 'Stufe 2'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 

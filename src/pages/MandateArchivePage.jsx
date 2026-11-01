@@ -303,7 +303,11 @@ function extractDealCoachDetails(opp) {
   let estimatedBudget = '80.000 € – 150.000 €'
   let vacuumCheck = 'Vakuum-Prüfung erfolgt'
   let urgencyCheck = 'Operativer Handlungsdruck'
-  let role = 'Interim Manager / Operative Leitung'
+  let role = 'CRO / Interim-Management'
+  let qualificationStage = 'STUFE 2 – PLAUSIBLE MANDATSCHANCE'
+  let stageLevel = 2
+  let organVacuumStatus = 'NICHT NACHGEWIESEN'
+  let externalSearchStatus = 'NICHT BESTÄTIGT'
 
   if (opp.review_notes) {
     try {
@@ -315,6 +319,11 @@ function extractDealCoachDetails(opp) {
         estimatedBudget = dc.estimated_budget || estimatedBudget
         vacuumCheck = dc.vacuum_check || vacuumCheck
         urgencyCheck = dc.urgency_check || urgencyCheck
+        role = dc.target_role || role
+        qualificationStage = dc.qualification_stage || qualificationStage
+        stageLevel = Number(dc.stage_level) || stageLevel
+        organVacuumStatus = dc.organ_vacuum_status || organVacuumStatus
+        externalSearchStatus = dc.external_search_status || externalSearchStatus
       }
     } catch {
       // Ignoriere JSON Parse Fehler
@@ -322,7 +331,28 @@ function extractDealCoachDetails(opp) {
   }
 
   const situation = opp.situation || ''
-  const roleMatch = situation.match(/\[ROLE\]:\s*([^\n\r]+)/i) || opp.title?.match(/:\s*(.*)/)
+
+  const stageMatch = situation.match(/\[QUALIFIZIERUNGS-STUFE\]:\s*([^\n\r]+)/i)
+  if (stageMatch) {
+    qualificationStage = stageMatch[1].trim()
+    stageLevel = qualificationStage.includes('3') ? 3 : qualificationStage.includes('2') ? 2 : 1
+  }
+
+  const organVacMatch = situation.match(/\[ORGAN-VAKUUM\]:\s*([^\n\r]+)/i)
+  if (organVacMatch) {
+    organVacuumStatus = organVacMatch[1].trim().toUpperCase().includes('BESTANDEN') ? 'BESTANDEN' : 'NICHT NACHGEWIESEN'
+  } else if (Array.isArray(opp.tags) && opp.tags.includes('Vakuum_Nicht_Nachgewiesen')) {
+    organVacuumStatus = 'NICHT NACHGEWIESEN'
+  } else if (Array.isArray(opp.tags) && opp.tags.includes('Vakuum_Bestanden')) {
+    organVacuumStatus = 'BESTANDEN'
+  }
+
+  const extSearchMatch = situation.match(/\[EXTERNE-SUCHE\]:\s*([^\n\r]+)/i)
+  if (extSearchMatch) {
+    externalSearchStatus = extSearchMatch[1].trim().toUpperCase().includes('BESTÄTIGT') && !extSearchMatch[1].trim().toUpperCase().includes('NICHT') ? 'BESTÄTIGT' : 'NICHT BESTÄTIGT'
+  }
+
+  const roleMatch = situation.match(/\[MANDATSHEBEL\]:\s*([^\n\r]+)/i) || situation.match(/\[ROLE\]:\s*([^\n\r]+)/i) || opp.title?.match(/:\s*(.*)/)
   if (roleMatch && roleMatch[1]) {
     role = roleMatch[1].trim()
   }
@@ -336,10 +366,14 @@ function extractDealCoachDetails(opp) {
   const vacMatch = situation.match(/\[VAKUUM-CHECK\]:\s*([^\n\r]+)/i)
   if (vacMatch) vacuumCheck = vacMatch[1].trim()
 
+  if (organVacuumStatus === 'NICHT NACHGEWIESEN' && (!vacuumCheck || vacuumCheck.includes('BESTANDEN'))) {
+    vacuumCheck = 'NICHT NACHGEWIESEN: Eigenverwaltung / Restrukturierung begründet allein kein Organvakuum'
+  }
+
   const urgMatch = situation.match(/\[DRINGLICHKEIT\]:\s*([^\n\r]+)/i)
   if (urgMatch) urgencyCheck = urgMatch[1].trim()
 
-  return { tier, rationale, estimatedBudget, vacuumCheck, urgencyCheck, role }
+  return { tier, rationale, estimatedBudget, vacuumCheck, urgencyCheck, role, qualificationStage, stageLevel, organVacuumStatus, externalSearchStatus }
 }
 
 export default function MandateArchivePage() {
@@ -1345,8 +1379,19 @@ Primärnachweis: ${item.source || item.notes}`
                   <div key={lead.id} className="boutique-card">
                     <div className="boutique-card-header">
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
                           <span className="tier-tag-mid">TIER 2 MID</span>
+                          <span style={{
+                            fontSize: '0.74rem',
+                            fontWeight: 700,
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            background: details.stageLevel === 3 ? 'rgba(34, 197, 94, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                            color: details.stageLevel === 3 ? '#15803d' : '#1d4ed8',
+                            border: `1px solid ${details.stageLevel === 3 ? 'rgba(34, 197, 94, 0.35)' : 'rgba(59, 130, 246, 0.35)'}`
+                          }}>
+                            {details.stageLevel === 3 ? '🎯 Stufe 3 (Bestätigt)' : '⚡ Stufe 2 (Plausibel)'}
+                          </span>
                           <span className="region-badge">{region}</span>
                           <span className="budget-tag">{details.estimatedBudget}</span>
                         </div>
@@ -1356,6 +1401,15 @@ Primärnachweis: ${item.source || item.notes}`
                     </div>
 
                     <div className="boutique-body">
+                      <div className="boutique-meta-row">
+                        <span className="meta-label">Organ-Vakuum:</span>
+                        <span className="meta-value" style={{
+                          color: details.organVacuumStatus === 'BESTANDEN' ? '#16a34a' : '#d97706',
+                          fontWeight: 700
+                        }}>
+                          {details.organVacuumStatus === 'BESTANDEN' ? '🟢 BESTANDEN' : '🟡 NICHT NACHGEWIESEN'}
+                        </span>
+                      </div>
                       <div className="boutique-meta-row">
                         <span className="meta-label">DealCoach Audit:</span>
                         <span className="meta-value">{details.vacuumCheck}</span>

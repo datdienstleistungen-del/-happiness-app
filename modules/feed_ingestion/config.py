@@ -251,19 +251,19 @@ FEED_SOURCES = {
         "url": "https://amtsblattportal.ch/api/v1/publications?publicationStates=PUBLISHED&subRubrics=HR02&page=0&size=50",
         "enabled": True
     },
-    # ── DEAKTIVIERTE CORPORATE-PR- UND BÖRSEN-FEEDS (ZERO-JUNK POLICY) ──
-    # "eqs_news_dach": {
-    #     "name": "EQS News & Ad-hoc (DACH)",
-    #     "region": "DACH",
-    #     "url": "https://www.eqs-news.com/de/rss/",
-    #     "enabled": False
-    # },
-    # "uk_rns": {
-    #     "name": "London Stock Exchange Regulatory News Service (UK)",
-    #     "region": "UK",
-    #     "url": "https://www.investegate.co.uk/Rss.aspx",
-    #     "enabled": False
-    # },
+    # ── LIVE AD-HOC & REGULATORY FEEDS (DACH & UK) ──
+    "eqs_news_dach": {
+        "name": "EQS News & Ad-hoc (DACH)",
+        "region": "DACH",
+        "url": "https://www.eqs-news.com/de/rss/",
+        "enabled": True
+    },
+    "uk_rns": {
+        "name": "London Stock Exchange Regulatory News Service (UK)",
+        "region": "UK",
+        "url": "https://www.investegate.co.uk/Rss.aspx",
+        "enabled": True
+    },
     # "eu_markets_es": {
     #     "name": "CNMV Información Privilegiada & OIR (Spanien)",
     #     "region": "ES",

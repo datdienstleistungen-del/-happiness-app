@@ -23,7 +23,14 @@ from modules.feed_ingestion.reality_check import (
 class TestMandateRealityCheck(unittest.TestCase):
 
     def test_positive_eigenverwaltung_cro(self):
-        """Eigenverwaltung erfordert zwingend Sanierungsführung -> MANDAT_PLAUSIBEL mit CRO."""
+        """
+        Referenzfall Weha Ludwig Werwein GmbH (Anforderung 6):
+        - Restrukturierungsereignis: VERIFIZIERT (bestaetigt)
+        - Organvakuum: NICHT NACHGEWIESEN (GF bleibt im Amt)
+        - CRO-Bedarf: PLAUSIBLE MANDATSCHANCE (CRO / Sanierungsvorstand)
+        - Externe Suche: NICHT BESTÄTIGT
+        - Gesamtqualifizierung: STUFE 2
+        """
         ev = TriggerEvent(
             company_name="Weha Ludwig Werwein GmbH",
             country="DE",
@@ -40,8 +47,39 @@ class TestMandateRealityCheck(unittest.TestCase):
         self.assertEqual(rc["criteria_eval"]["action_pressure"], "akut")
         self.assertEqual(rc["criteria_eval"]["mandate_feasibility"], "plausibel")
         self.assertEqual(rc["criteria_eval"]["concrete_mandate_proof"], "nicht_belegt")
+        
+        # Strenge Prüfung der 5 Kriterien:
+        self.assertEqual(rc["organ_vacuum_status"], "NICHT NACHGEWIESEN")
+        self.assertIn("Eigenverwaltung begründet allein kein Organvakuum", rc["organ_vacuum_details"])
+        self.assertEqual(rc["external_search_status"], "NICHT BESTÄTIGT")
+        self.assertEqual(rc["stage_level"], "STUFE 2")
+        self.assertEqual(rc["qualification_stage"], "STUFE 2 – PLAUSIBLE MANDATSCHANCE")
         self.assertTrue(len(rc["missing_information"]) > 0)
         self.assertIn("Ein plausibler Bedarf", rc["mandate_hypothesis"])
+
+    def test_cosquare_actual_organ_vacancy(self):
+        """
+        Referenzfall echtes Organvakuum (cosquare AG):
+        - Organvakuum: BESTANDEN (Ausscheiden eines Verwaltungsratsmitglieds belegt)
+        - Zielfunktion: BOARD_MEMBER (Verwaltungsrat / Aufsichtsrat, keinesfalls fälschlich CRO!)
+        - Gesamtqualifizierung: STUFE 2 (plausible Mandatschance, externe Suche unbestätigt)
+        """
+        ev = TriggerEvent(
+            company_name="cosquare AG",
+            country="CH",
+            category="c_level_vakanz_ch",
+            description="Ausscheiden eines Mitglieds des Verwaltungsrats mit sofortiger Wirkung",
+            source_url="https://www.shab.ch/cosquare",
+            source_type="gazette",
+            evidence_text="Senior board director stepped down with immediate effect, leaving an unstaffed organ vacancy. Ausgeschiedene Personen: Lanfranconi, Mitglied des Verwaltungsrates, Unterschrift erloschen."
+        )
+        rc = ev.reality_check
+        self.assertEqual(rc["organ_vacuum_status"], "BESTANDEN")
+        self.assertIn("Reale Organvakanz", rc["organ_vacuum_details"])
+        self.assertEqual(rc["target_role"], "BOARD_MEMBER")
+        self.assertEqual(rc["target_role_label"], "Verwaltungsrat / Aufsichtsrat")
+        self.assertEqual(rc["stage_level"], "STUFE 2")
+        self.assertEqual(rc["external_search_status"], "NICHT BESTÄTIGT")
 
     def test_positive_schvg_debt_restructuring_cfo(self):
         """SchVG Gläubigerabstimmung / Stillhalteabkommen -> MANDAT_PLAUSIBEL mit INTERIM_CFO."""
