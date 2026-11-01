@@ -173,19 +173,30 @@ class MandateRealityCheckEngine:
         # Volltext-Prüfung auf bereits mandatierte Sanierungsberater / Sachwalter
         is_advisor_mandated = any(re.search(pat, combined_text, re.IGNORECASE) for pat in ADVISOR_PATTERNS)
 
-        # Gegenindikatoren für gelöste oder abgeschlossene Situationen
-        is_solved = any(k in combined_text for k in [
+        # Gegenindikatoren für gelöste oder abgeschlossene Situationen (z.B. übertragende Sanierung umgesetzt)
+        completed_restructuring_patterns = [
             "investorenprozess erfolgreich abgeschlossen",
+            "investorenlösung umgesetzt", "investorenloesung umgesetzt",
+            "investorenlösung gefunden", "investorenloesung gefunden",
+            "investorenlösung für", "investorenloesung fuer",
             "übernahme vollzogen", "uebernahme vollzogen",
             "geschäftsbetrieb übernommen", "geschaeftsbetrieb uebernommen",
             "übernimmt geschäftsbetrieb", "uebernimmt geschaeftsbetrieb",
+            "geschäftsbetrieb übertragen", "geschaeftsbetrieb uebertragen",
+            "betrieb übertragen", "betrieb uebertragen",
+            "von der erwerberin übernommen", "von der erwerberin uebernommen",
+            "übertragende sanierung", "uebertragende sanierung",
+            "sanierung erfolgreich abgeschlossen",
+            "erfolgreich saniert",
+            "gerettet",
             "fortführung gesichert", "fortfuehrung gesichert",
             "zukunft gesichert",
             "zukunftslösung", "zukunftsloesung",
             "veräußert an", "veräussert an", "veraeussert an", "veraeußert an",
             "erfolgreichen abschluss",
             "fertiggestellt"
-        ])
+        ]
+        is_solved = any(k in combined_text for k in completed_restructuring_patterns)
 
         # Prüfen, ob Führungsposition bereits fest neu besetzt wurde (auch bei künftigem Amtsantritt)
         staffed_patterns = [
@@ -220,9 +231,11 @@ class MandateRealityCheckEngine:
         )
 
         # Akuter Handlungsdruck vorhanden?
+        # Eine abgeschlossene Sanierung / übertragene Sanierung ist keine aktive Eigenverwaltung mehr
         is_eigenverwaltung = (
-            any(k in combined_text for k in ["eigenverwaltung", "schutzschirm", "starug", "sanierungsgeschäftsführer"]) or
-            category == "insolvenzantrag_eigenverwaltung"
+            (any(k in combined_text for k in ["eigenverwaltung", "schutzschirm", "starug", "sanierungsgeschäftsführer"]) or
+             category == "insolvenzantrag_eigenverwaltung") and
+            not is_solved
         )
         is_schvg_debt = (
             category == "finanzierung_anleihen_restrukturierung" or
@@ -232,11 +245,19 @@ class MandateRealityCheckEngine:
                 "covenant breach", "restrukturierungskonzept", "anleihebedingungen"
             ])
         )
-        is_c_level_vacant = (
-            (category in ("c_level_vakanz", "organ_vakanz") or
-             any(k in combined_text for k in ["amtsniederlegung", "rücktritt per sofort", "abberufen", "vorstand scheidet aus", "organ-vakuum"])) and
-            not is_already_staffed
-        )
+
+        # Routine-Meldungen: Hauptversammlungsreden, Investorenkonferenzen, Präsentationen ohne Organvakanz/Krise
+        routine_speech_conference_patterns = [
+            r'\b(?:agm|annual\s+general\s+meeting|hauptversammlung)\b.*?\b(?:address|rede|speech|statement)\b',
+            r'\b(?:investor|technology|capital\s+markets)\s+conference\b',
+            r'\binvestorenkonferenz\b',
+            r'\bmeet\s+institutional\s+investors\b',
+            r'\bfireside\s+chat\b',
+            r'\bcorporate\s+presentation\b',
+            r'\bpräsentation\s+auf\s+der\b',
+            r'\binterview\s+mit\s+(?:dem|der)?\s*(?:ceo|cfo|cro|vorstand)\b'
+        ]
+        is_routine_speech_or_conference = any(re.search(pat, combined_text, re.IGNORECASE) for pat in routine_speech_conference_patterns)
 
         # ── ORGANVAKUUM-PRÜFUNG (ANFORDERUNG 1) ──
         # Ein Restrukturierungsereignis, eine Eigenverwaltung oder ein Insolvenzverfahren
@@ -278,6 +299,8 @@ class MandateRealityCheckEngine:
                 organ_vacuum_details = "NICHT NACHGEWIESEN: SchVG-Gläubigerabstimmung betrifft Anleihe-Restrukturierung; kein Organausscheiden belegt."
             elif is_regular_insolvency:
                 organ_vacuum_details = "NICHT NACHGEWIESEN: Regelinsolvenz mit Fremdverwaltung (Insolvenzverwalter bestellt; kein C-Level-Organvakuum im Sinne einer Interimssuche)."
+            elif is_routine_speech_or_conference:
+                organ_vacuum_details = "NICHT NACHGEWIESEN: Routine-Hauptversammlungsrede oder Konferenzmeldung; Nennung von Funktionsträgern begründet kein Organvakuum."
             else:
                 organ_vacuum_details = "NICHT NACHGEWIESEN: Keine konkreten Belege für ein Organausscheiden oder eine vakante Organposition vorhanden."
 
@@ -310,13 +333,34 @@ class MandateRealityCheckEngine:
             not any(k in combined_text for k in ["eigenverwaltung", "starug", "cro", "sanierungsgeschäftsführer"])
         )
 
-        # Operative Transformation (Werksschließung, Standortverlagerung, Carve-Out)
+        # C-Level-Vakanz: Zwingend echtes Organausscheiden / Nachfolgesuche erforderlich
+        # Eine Funktionsbezeichnung allein ("CEO", "Vorstand") darf niemals eine Vakanz auslösen.
+        is_c_level_vacant = has_proven_organ_exit and not is_swiss_board and not is_already_staffed
+
+        # Operative Transformation: Zwingend konkreter Nachweis für operative Trennung, Verlagerung, Schließung oder operative Transformation
+        ops_transformation_concrete_patterns = [
+            "werksschließung", "werksschliessung", "standortschließung", "standortschliessung",
+            "betriebsschließung", "betriebsschliessung", "produktionsverlagerung", "betriebsverlagerung",
+            "operative trennung", "operative entflechtung", "komplexe entflechtung", "operativer carve-out",
+            "post-merger operations", "post-merger integration", "integrationsmanagement", "operative transformation"
+        ]
         is_ops_transformation = (
+            any(k in combined_text for k in ops_transformation_concrete_patterns) and
+            not is_solved and not is_regular_insolvency and not is_advisor_mandated
+        )
+
+        # Angekündigte Transaktion oder Spartenverkauf ohne belegte operative Trennung
+        is_announced_transaction = (
             any(k in combined_text for k in [
-                "werksschließung", "werksschliessung", "standortschließung", "standortschliessung",
-                "betriebsschließung", "betriebsschliessung", "produktionsverlagerung", "betriebsverlagerung",
-                "carve-out", "post-merger integration", "post-merger"
-            ]) and not is_solved and not is_regular_insolvency and not is_advisor_mandated
+                "verkauft geschäftsbereich", "verkauft verlustbringenden geschäftsbereich",
+                "spartenverkauf", "verkauf der sparte", "divestment",
+                "carve-out", "übernahmeangebot", "uebernahmeangebot",
+                "post-merger"
+            ]) and
+            not is_ops_transformation and
+            not is_solved and
+            not is_regular_insolvency and
+            not is_advisor_mandated
         )
 
         # 1. Belegtes Mandat (Konkrete externe Suche oder Ausschreibung durch Quelle belegt)
@@ -346,8 +390,10 @@ class MandateRealityCheckEngine:
         elif is_schvg_debt:
             target_role = "INTERIM_CFO"  # CFO / Finanzrestrukturierung
             mandate_feasibility = "plausibel"
-        elif is_c_level_vacant or has_proven_organ_exit:
-            if "ceo" in combined_text or "geschäftsführer" in combined_text or "vorstandsvorsitz" in combined_text:
+        elif has_proven_organ_exit:
+            if is_swiss_board:
+                target_role = "BOARD_MEMBER"
+            elif "ceo" in combined_text or "geschäftsführer" in combined_text or "vorstandsvorsitz" in combined_text:
                 target_role = "INTERIM_CEO"
             elif "cfo" in combined_text or "finanz" in combined_text:
                 target_role = "INTERIM_CFO"
@@ -355,7 +401,7 @@ class MandateRealityCheckEngine:
                 target_role = "INTERIM_COO"
             elif "cro" in combined_text or "sanierung" in combined_text or "restrukturierung" in combined_text:
                 target_role = "CRO_ORGAN" if (has_proven_organ_exit and "gmbh" not in combined_text.lower()) else "CRO_INTERIM"
-            elif "verwaltungsrat" in combined_text or "aufsichtsrat" in combined_text or is_swiss_board:
+            elif "verwaltungsrat" in combined_text or "aufsichtsrat" in combined_text:
                 target_role = "BOARD_MEMBER"
             else:
                 target_role = "INTERIM_CEO"
@@ -366,9 +412,9 @@ class MandateRealityCheckEngine:
         elif is_ops_transformation:
             target_role = "COO_OPS"
             mandate_feasibility = "plausibel"
-        elif "post-merger" in combined_text or "carve-out" in combined_text:
-            target_role = "COO_OPS" if "operations" in combined_text else "PMI_LEAD"
-            mandate_feasibility = "plausibel"
+        elif is_announced_transaction:
+            target_role = "KEINE"
+            mandate_feasibility = "ausgeschlossen"
         elif category in ("unternehmenskrise_restrukturierung", "transformation_sanierung"):
             target_role = "TRANSFORMATION"
             mandate_feasibility = "plausibel" if not is_solved and not is_regular_insolvency and not is_advisor_mandated else "unwahrscheinlich"
@@ -392,12 +438,16 @@ class MandateRealityCheckEngine:
             rationale = "Externe Mandatssuche oder Vergabe ist durch die Primärquelle ausdrücklich belegt."
         elif is_solved:
             status = CLASS_VERWERFEN
-            counter_indicators.append("Sanierung oder Investorenprozess bereits erfolgreich abgeschlossen bzw. Betrieb vollständig übernommen.")
+            counter_indicators.append("Sanierung oder Investorenprozess bereits erfolgreich abgeschlossen bzw. Betrieb im Rahmen übertragender Sanierung übernommen.")
             rationale = f"Problem ist durch vollzogene Transaktion oder Sanierungslösung bereits gelöst. Kein offener externer Restrukturierungsbedarf für {company}."
         elif is_already_staffed:
             status = CLASS_VERWERFEN
             counter_indicators.append("Führungsposition wurde in der Meldung bereits fest neu besetzt (auch bei künftigem Amtsantritt).")
             rationale = f"Die gemeldete Führungsposition bei {company} ist personell bereits fest nachbesetzt. Kein akutes externes Interim-Mandat ableitbar."
+        elif is_routine_speech_or_conference:
+            status = CLASS_VERWERFEN
+            counter_indicators.append("Reine Hauptversammlungsrede, Investorenkonferenz oder Interview ohne personelle Veränderung auf Organebene.")
+            rationale = f"Meldung betrifft eine reguläre Investorenkonferenz oder Versammlungsrede ({company}) ohne Organvakanz oder Restrukturierungsdruck. Kein Mandatsansatz."
         elif "auftrag" in combined_text and not any(k in combined_text for k in ["krise", "sanierung", "restrukturierung", "insolvenz"]):
             status = CLASS_VERWERFEN
             counter_indicators.append("Reine operative Auftrags- oder Produktmeldung ohne Krisen- oder Vakanzdruck.")
@@ -418,6 +468,11 @@ class MandateRealityCheckEngine:
             counter_indicators.append("Mutation betrifft lediglich nachgeordnete Kollektivprokura unterhalb Organebene.")
             missing_information.append("Kein Board- oder C-Level-Vakuum belegt.")
             rationale = f"Registeränderung im Schweizer Handelsamtsblatt betrifft nachgeordnete Zeichnungsberechtigung, kein offenes C-Level-Mandat."
+        elif is_announced_transaction:
+            status = CLASS_BEOBACHTEN
+            counter_indicators.append("Angekündigte M&A-Transaktion oder Spartenverkauf ohne belegte operative Trennung oder Vakanz.")
+            missing_information.append("Unbestätigt, ob operative Entflechtung externes Management erfordert.")
+            rationale = f"Angekündigte Transaktion oder Spartenverkauf bei {company}. Kein offener Organ- oder operativer Interimsbedarf belegt; Beobachtung auf der Watchlist."
         elif is_eigenverwaltung:
             status = CLASS_MANDAT_PLAUSIBEL
             missing_information.append("Konkrete Ausschreibung oder externe Mandatsvergabe ist öffentlich noch nicht belegt.")
@@ -428,7 +483,7 @@ class MandateRealityCheckEngine:
             missing_information.append("Öffentliche Quelle belegt Gläubigerabstimmung / Stillhalteabkommen, jedoch keine externe Personalberatung.")
             missing_information.append("Unklar, ob bestehendes CFO-Team Verhandlungen führt oder Interims-Experten hinzugezogen werden.")
             rationale = f"Akuter Verhandlungsdruck mit Anleihegläubigern nach SchVG bzw. Stillhalteabkommen mit Banken. Erheblicher plausibler Bedarf an erfahrenem {ROLES.get(target_role)} für Liquiditäts- und Sanierungskonzepte."
-        elif is_c_level_vacant or has_proven_organ_exit:
+        elif has_proven_organ_exit:
             status = CLASS_MANDAT_PLAUSIBEL
             missing_information.append("Interne Nachfolgelösung oder Interimsüberbrückung durch Aufsichtsrat nicht ausgeschlossen.")
             missing_information.append("Kein Beleg für Beauftragung eines Executive-Search- oder Interim-Providers.")
@@ -463,7 +518,7 @@ class MandateRealityCheckEngine:
                 professional_deduction = "Eigenverwaltung / Schutzschirm erfordert typischerweise erfahrene Sanierungsführung (CRO/Sanierungsbegleitung), da das Management im Amt bleibt. Externe Suche ist jedoch unbestätigt."
             elif is_schvg_debt:
                 professional_deduction = "Verhandlungsdruck mit Anleihegläubigern nach SchVG erfordert Finanz- & Sanierungs-Expertise (Interim-CFO). Externe Beauftragung ist unbestätigt."
-            elif is_c_level_vacant or has_proven_organ_exit:
+            elif has_proven_organ_exit:
                 professional_deduction = f"Organvakanz ({ROLES.get(target_role, target_role)}) begründet akuten Überbrückungs- und Nachfolgebedarf. Externe Mandatierung noch unbestätigt."
             elif is_ops_transformation:
                 professional_deduction = f"Operative Transformationsmaßnahme (Standortschließung, Produktionsverlagerung oder Carve-Out) begründet plausiblen Bedarf an {ROLES.get(target_role, target_role)}. Externe Suche unbestätigt."

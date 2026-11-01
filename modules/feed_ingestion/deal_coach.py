@@ -240,7 +240,30 @@ def audit_mandate_lead(item, eval_result):
 
     # K.O. C: Reine Registerroutine ohne Vakanz oder Restrukturierung
     has_real_organ_exit = bool(re.search(r'\b(nicht mehr geschäftsführer|nicht mehr vorstand|vorstand ausgeschieden|ausgeschieden als geschäftsführer|ausgeschieden als vorstand|scheidet als vorstand aus|scheidet als geschäftsführer aus|abberufen als|erloschene unterschriften|ausgeschiedene personen|vorstandsmandat.*?erloschen|amtsniederlegung|tritt per sofort zurück|scheidet aus|tritt zurück|verlässt das unternehmen|stepped down)\b', raw_eval_lower))
-    has_real_restructuring = bool(re.search(r'\b(vorläufige insolvenzverwaltung|vorläufigen insolvenzverwalter|eigenverwaltung|schutzschirmverfahren|270 inso|270a inso|270b inso|sachwalter|starug)\b', raw_eval_lower))
+    is_completed_restructuring = bool(re.search(r'\b(investorenlösung umgesetzt|investorenloesung umgesetzt|investorenlösung gefunden|investorenloesung gefunden|geschäftsbetrieb übertragen|geschaeftsbetrieb uebertragen|betrieb übertragen|betrieb uebertragen|sanierung erfolgreich abgeschlossen|erfolgreich saniert|gerettet|übertragende sanierung|uebertragende sanierung|investorenprozess erfolgreich abgeschlossen|geschäftsbetrieb übernommen|geschaeftsbetrieb uebernommen)\b', raw_eval_lower))
+    has_real_restructuring = bool(re.search(r'\b(vorläufige insolvenzverwaltung|vorläufigen insolvenzverwalter|eigenverwaltung|schutzschirmverfahren|270 inso|270a inso|270b inso|sachwalter|starug)\b', raw_eval_lower)) and not is_completed_restructuring
+
+    # K.O. C2: Abgeschlossene Sanierung / übertragende Sanierung bereits umgesetzt
+    if is_completed_restructuring:
+        has_explicit_search = bool(re.search(r'\b(sucht externen interim|sucht interim cro|sucht interim cfo|mandatierte personalberatung mit suche|interim management mandatiert|ad-interim leitung ausgeschrieben)\b', raw_eval_lower))
+        if not has_explicit_search:
+            parsed = {
+                'status': 'discarded',
+                'tier': 'TIER_3',
+                'is_valid_mandate_event': False,
+                'is_fresh': True,
+                'company_name': company,
+                'role': 'Keine externe Organfunktion ableitbar',
+                'event_type': 'Abgeschlossene Sanierung / Übertragende Sanierung',
+                'vacuum_check': 'K.O. DROP: Sanierung oder Investorenprozess bereits erfolgreich abgeschlossen bzw. Betrieb übertragen.',
+                'urgency_check': '0 € Mandatswert (Problem bereits gelöst)',
+                'audit_verdict': 'DISCARDED_SOLVED_OR_COMPLETED_RESTRUCTURING',
+                'audit_rationale': f"Automatischer Drop auf Tier 3: Sanierung für {company} ist durch vollzogene Transaktion/Übertragung bereits abgeschlossen.",
+                'rejection_reason': 'Completed_Restructuring_Solved',
+                'estimated_budget': '-',
+                'confidence': 0.99
+            }
+            return False, "KO_FAIL_CLOSED_COMPLETED_RESTRUCTURING: Abgeschlossene Sanierung", parsed
 
     routine_register_events = [
         (r'\b(berichtigung|korrektur des registereintrags|uebersetzungen der firma neu|übersetzungen der firma neu|schreibfehlerberichtigung)\b', 'Reine Register-Berichtigung / Formalie'),
@@ -286,7 +309,13 @@ def audit_mandate_lead(item, eval_result):
         r'\bwe are pleased to announce\b',
         r'\bquarterly results\b',
         r'\btrading update\b',
-        r'\bpressemitteilung\b'
+        r'\bpressemitteilung\b',
+        r'\b(?:agm|annual\s+general\s+meeting|hauptversammlung)\b.*?\b(?:address|rede|speech|statement)\b',
+        r'\b(?:investor|technology|capital\s+markets)\s+conference\b',
+        r'\binvestorenkonferenz\b',
+        r'\bmeet\s+institutional\s+investors\b',
+        r'\bfireside\s+chat\b',
+        r'\bcorporate\s+presentation\b'
     ]
     if not has_real_organ_exit and not has_real_restructuring:
         for pr_pat in pr_phrases:
@@ -662,6 +691,9 @@ Antworte AUSSCHLIESSLICH in diesem JSON-Format:
         else:
             parsed['vacuum_check'] = "NICHT NACHGEWIESEN: Kein Organausscheiden und keine vakante Organposition belegt."
 
+    # Unterscheide angekündigte Transaktion / Spartenverkauf von operativer Transformation
+    is_announced_transaction = bool(re.search(r'\b(verkauft geschäftsbereich|verkauft verlustbringenden geschäftsbereich|spartenverkauf|verkauf der sparte|divestment)\b', raw_eval_lower)) and not any(k in raw_eval_lower for k in ["werksschließung", "werksschliessung", "produktionsverlagerung", "operative trennung", "operative entflechtung"])
+
     # 3 Qualifizierungsstufen zuweisen
     if has_explicit_search:
         parsed['qualification_stage'] = "STUFE 3 – BESTÄTIGTER MANDATSBEDARF"
@@ -669,6 +701,13 @@ Antworte AUSSCHLIESSLICH in diesem JSON-Format:
         parsed['external_search_status'] = "BESTÄTIGT"
         parsed['mandate_certainty'] = "Bestätigt (Stufe 3)"
         parsed['audit_verdict'] = "BESTÄTIGTER MANDATSBEDARF (SUCHE BELEGT)"
+    elif is_announced_transaction:
+        parsed['qualification_stage'] = "STUFE 1 – VERIFIZIERTES EREIGNIS"
+        parsed['stage_level'] = "STUFE 1"
+        parsed['external_search_status'] = "NICHT BESTÄTIGT"
+        parsed['mandate_certainty'] = "Unbestätigt (Stufe 1)"
+        parsed['audit_verdict'] = "VERIFIZIERTES EREIGNIS (MANDATSBEDARF UNKLAR)"
+        parsed['role'] = "Keine externe Organfunktion ableitbar"
     elif tier in ('TIER_1_TOP', 'TIER_2_MID') or has_real_restructuring or has_real_organ_exit:
         parsed['qualification_stage'] = "STUFE 2 – PLAUSIBLE MANDATSCHANCE"
         parsed['stage_level'] = "STUFE 2"
@@ -683,7 +722,9 @@ Antworte AUSSCHLIESSLICH in diesem JSON-Format:
         parsed['audit_verdict'] = "VERIFIZIERTES EREIGNIS (MANDATSBEDARF UNKLAR)"
 
     # Saubere Rollenzuordnung nach den 7 verbindlichen Rollenkategorien
-    if has_explicit_search and ("cro" in raw_eval_lower or "sanierung" in raw_eval_lower):
+    if is_announced_transaction:
+        parsed['role'] = "Keine externe Organfunktion ableitbar"
+    elif has_explicit_search and ("cro" in raw_eval_lower or "sanierung" in raw_eval_lower):
         parsed['role'] = "CRO / Interim-Management"
     elif "ceo" in raw_eval_lower and (has_real_organ_exit or "nachfolge" in raw_eval_lower or "chef" in raw_eval_lower):
         parsed['role'] = "CEO / Geschäftsführer"
