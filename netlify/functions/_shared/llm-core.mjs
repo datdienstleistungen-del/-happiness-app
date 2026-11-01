@@ -12,6 +12,7 @@ import {
   GROQ_JSON_HEAVY,
   GROQ_COACH,
   GROQ_VISION_MODELS,
+  OPENROUTER_MODELS,
   OPENROUTER_FREE_MODELS,
   MISTRAL_DEFAULT_MODEL,
   MISTRAL_FALLBACK_MODELS,
@@ -149,10 +150,11 @@ async function stageGroq(ctx) {
 async function stageOpenRouter(ctx) {
   const keys = [process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY, process.env.OPENROUTER_API_KEY_2].filter(Boolean);
   if (keys.length === 0) { ctx.fail('openrouter:kein-key'); return null; }
+  const models = OPENROUTER_MODELS || OPENROUTER_FREE_MODELS;
   for (const key of keys) {
-    for (const model of OPENROUTER_FREE_MODELS) {
+    for (const model of models) {
       if (ctx.skipModels.has(model)) continue;
-      if (await isCooling('openrouter', model)) { ctx.fail('openrouter:cooldown'); continue; }
+      if (await isCooling('openrouter', model)) { ctx.fail(`openrouter:cooldown:${model}`); continue; }
       if (ctx.remaining() < 1200) { ctx.fail('openrouter:budget'); return null; }
       try {
         const res = await postJSON(
@@ -162,11 +164,11 @@ async function stageOpenRouter(ctx) {
             'HTTP-Referer': 'https://nexus-hit.netlify.app',
             'X-Title': ctx.xTitle,
           },
-          chatBody(model, ctx.messages, ctx.temperature, ctx.max_tokens, false, ctx.extraBody),
-          Math.min(4000, ctx.remaining())
+          chatBody(model, ctx.messages, ctx.temperature, ctx.max_tokens, ctx.jsonMode, ctx.extraBody),
+          Math.min(9000, ctx.remaining())
         );
         await noteQuotaStatus('openrouter', model, res.status, res);
-        if (res.status === 429) { ctx.fail(`openrouter:429-${model}`); break; }
+        if (res.status === 429) { ctx.fail(`openrouter:429-${model}`); continue; }
         if (!res.ok) { ctx.fail(`openrouter:${model}:${res.status}`); continue; }
         const data = await res.json();
         const text = data?.choices?.[0]?.message?.content || data?.choices?.[0]?.message?.reasoning;
@@ -293,7 +295,7 @@ const STAGES = {
   deepseek: stageDeepSeek,
 };
 
-export const DEFAULT_PROVIDERS = ['groq', 'deepseek', 'openrouter', 'mistral', 'openai'];
+export const DEFAULT_PROVIDERS = ['openrouter', 'groq', 'deepseek', 'mistral', 'openai'];
 
 /**
  * Fuehrt die Kette aus. Wirft mit aggregiertem Fehler-Protokoll, wenn alle

@@ -58,7 +58,7 @@ async function callAI(messages, temperature = 0.3, hasImage = false, testOptions
 
   const baseProviders = hasImage
     ? ['openrouter', 'groq', 'mistral', 'deepseek', 'openai']
-    : ['deepseek', 'mistral', 'openrouter', 'groq', 'openai'];
+    : ['openrouter', 'deepseek', 'mistral', 'groq', 'openai'];
   const providers = baseProviders.filter(p => !disabled.has(p));
 
   const profile = hasImage ? 'vision' : (testOptions.preferJsonModels ? 'json' : 'free');

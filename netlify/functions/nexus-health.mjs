@@ -8,6 +8,7 @@
  */
 
 import { getProviderHealthSnapshot } from './_shared/quota.mjs';
+import { isPaidApiKillswitchTripped, resetPaidApiKillswitch } from './_shared/circuit-breaker.mjs';
 
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
@@ -21,6 +22,14 @@ export const handler = async (event) => {
   }
 
   try {
+    const q = event.queryStringParameters || {};
+    let resetDone = false;
+    if (q.reset === '1' || q.reset === 'true' || q.reset_killswitch === '1') {
+      await resetPaidApiKillswitch();
+      resetDone = true;
+    }
+
+    const killswitchStatus = await isPaidApiKillswitchTripped();
     const health = await getProviderHealthSnapshot();
     const allProvidersHealthy = Object.values(health).every(p => p.status === 'HEALTHY');
 
@@ -32,6 +41,8 @@ export const handler = async (event) => {
       },
       body: JSON.stringify({
         status: allProvidersHealthy ? 'OK' : 'DEGRADED',
+        killswitch: killswitchStatus,
+        resetTriggered: resetDone,
         timestamp: new Date().toISOString(),
         system: {
           name: 'NeXus Revenue OS',

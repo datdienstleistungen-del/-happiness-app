@@ -33,7 +33,17 @@ export const GROQ_COACH = [
   'openai/gpt-oss-20b'
 ];
 
-// 5. OpenRouter Free Tier Fallback Models (Aktualisiert auf aktive Modelle)
+// 5. OpenRouter Models (Primary paid tier models followed by free fallbacks)
+// Mit OpenRouter-Guthaben: Priorisiere DeepSeek-Chat, Llama 3.3 70B, Mistral Small & Qwen 2.5
+export const OPENROUTER_MODELS = [
+  'deepseek/deepseek-chat',
+  'meta-llama/llama-3.3-70b-instruct',
+  'mistralai/mistral-small-24b-instruct-2501',
+  'qwen/qwen-2.5-72b-instruct',
+  'nvidia/nemotron-3.5-super-vl:free',
+  'liquid/lfm-2.5-2.6b:free'
+];
+
 export const OPENROUTER_FREE_MODELS = [
   'nvidia/nemotron-3.5-super-vl:free',
   'recursive/flint-v1.0:free',
