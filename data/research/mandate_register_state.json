@@ -12,7 +12,7 @@
     "register_id": "AG Mannheim HRB 743304",
     "company_domain": "paul.group",
     "ir_news_url": "https://paul.group/news/",
-    "last_audit_check": "2026-10-28T21:07:51.312Z",
+    "last_audit_check": "2026-11-02T11:45:56.717Z",
     "has_change_alert": false,
     "has_change_hint": false,
     "changeDetected": false,
@@ -21,7 +21,7 @@
     "last_acknowledged_snapshot": {
       "hash": "h_07c2a6a30b80e5",
       "substantiveText": "gläubigerversammlung nach schvg zur laufzeitverlängerung der 35 mio | vertretungsbefugnis vorstand unverändert --- gläubigerversammlung mannheim verlängerung der 35 mio",
-      "timestamp": "2026-10-28T21:07:50.644Z",
+      "timestamp": "2026-11-02T11:45:56.013Z",
       "reviewer": "Persistenz-Prüfer-Prozess-A",
       "decision": "ACKNOWLEDGE_STABLE",
       "notes": "Automatische Test-Quittierung zur Verifikation des Speicherlebenszyklus"
@@ -29,7 +29,7 @@
     "last_scraped_snapshot": {
       "hash": "h_07c2a6a30b80e5",
       "substantiveText": "gläubigerversammlung nach schvg zur laufzeitverlängerung der 35 mio | vertretungsbefugnis vorstand unverändert --- gläubigerversammlung mannheim verlängerung der 35 mio",
-      "timestamp": "2026-10-28T21:07:51.312Z",
+      "timestamp": "2026-11-02T11:45:56.717Z",
       "matchedKeywords": [
         "Vorstand",
         "Gläubigerversammlung",
@@ -38,8 +38,8 @@
     },
     "audit_log": [
       {
-        "id": "audit-1793221671317-707",
-        "timestamp": "2026-10-28T21:07:51.312Z",
+        "id": "audit-1793619956721-233",
+        "timestamp": "2026-11-02T11:45:56.717Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
         "sourceUrl": "https://www.handelsregister.de",
@@ -56,8 +56,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-1793221670843-399",
-        "timestamp": "2026-10-28T21:07:50.839Z",
+        "id": "audit-1793619956215-967",
+        "timestamp": "2026-11-02T11:45:56.211Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
         "sourceUrl": "https://www.handelsregister.de",
@@ -74,8 +74,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-ack-1793221670645",
-        "timestamp": "2026-10-28T21:07:50.644Z",
+        "id": "audit-ack-1793619956014",
+        "timestamp": "2026-11-02T11:45:56.013Z",
         "sourceType": "HUMAN_AUDIT_REVIEW",
         "sourceTitle": "Menschliche Quittierung: Status stabil",
         "sourceUrl": "",
@@ -93,8 +93,8 @@
         "acknowledgedHash": "h_07c2a6a30b80e5"
       },
       {
-        "id": "audit-1793221663867-594",
-        "timestamp": "2026-10-28T21:07:43.862Z",
+        "id": "audit-1793619889474-861",
+        "timestamp": "2026-11-02T11:44:49.470Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
         "sourceUrl": "https://www.handelsregister.de",
@@ -111,8 +111,26 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-ack-1793221663653",
-        "timestamp": "2026-10-28T21:07:43.652Z",
+        "id": "audit-1793619888774-32",
+        "timestamp": "2026-11-02T11:44:48.771Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-ack-1793619888569",
+        "timestamp": "2026-11-02T11:44:48.568Z",
         "sourceType": "HUMAN_AUDIT_REVIEW",
         "sourceTitle": "Menschliche Quittierung: Status stabil",
         "sourceUrl": "",
@@ -130,8 +148,8 @@
         "acknowledgedHash": "h_07c2a6a30b80e5"
       },
       {
-        "id": "audit-1793221487365-522",
-        "timestamp": "2026-10-28T21:04:47.362Z",
+        "id": "audit-1793552560589-348",
+        "timestamp": "2026-11-01T17:02:40.585Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
         "sourceUrl": "https://www.handelsregister.de",
@@ -148,8 +166,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-1793221486924-831",
-        "timestamp": "2026-10-28T21:04:46.921Z",
+        "id": "audit-1793552560155-510",
+        "timestamp": "2026-11-01T17:02:40.152Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
         "sourceUrl": "https://www.handelsregister.de",
@@ -166,8 +184,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-ack-1793221486744",
-        "timestamp": "2026-10-28T21:04:46.744Z",
+        "id": "audit-ack-1793552559998",
+        "timestamp": "2026-11-01T17:02:39.997Z",
         "sourceType": "HUMAN_AUDIT_REVIEW",
         "sourceTitle": "Menschliche Quittierung: Status stabil",
         "sourceUrl": "",
@@ -185,8 +203,8 @@
         "acknowledgedHash": "h_07c2a6a30b80e5"
       },
       {
-        "id": "audit-1793221477285-459",
-        "timestamp": "2026-10-28T21:04:37.282Z",
+        "id": "audit-1793552530602-85",
+        "timestamp": "2026-11-01T17:02:10.599Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
         "sourceUrl": "https://www.handelsregister.de",
@@ -203,8 +221,26 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-ack-1793221477051",
-        "timestamp": "2026-10-28T21:04:37.050Z",
+        "id": "audit-1793552530175-377",
+        "timestamp": "2026-11-01T17:02:10.171Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-ack-1793552530004",
+        "timestamp": "2026-11-01T17:02:10.004Z",
         "sourceType": "HUMAN_AUDIT_REVIEW",
         "sourceTitle": "Menschliche Quittierung: Status stabil",
         "sourceUrl": "",
@@ -222,8 +258,8 @@
         "acknowledgedHash": "h_07c2a6a30b80e5"
       },
       {
-        "id": "audit-1793221471925-637",
-        "timestamp": "2026-10-28T21:04:31.922Z",
+        "id": "audit-1793552465231-361",
+        "timestamp": "2026-11-01T17:01:05.227Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
         "sourceUrl": "https://www.handelsregister.de",
@@ -240,8 +276,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-1793221471427-705",
-        "timestamp": "2026-10-28T21:04:31.424Z",
+        "id": "audit-1793552464753-708",
+        "timestamp": "2026-11-01T17:01:04.749Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
         "sourceUrl": "https://www.handelsregister.de",
@@ -258,8 +294,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-ack-1793221471229",
-        "timestamp": "2026-10-28T21:04:31.228Z",
+        "id": "audit-ack-1793552464590",
+        "timestamp": "2026-11-01T17:01:04.589Z",
         "sourceType": "HUMAN_AUDIT_REVIEW",
         "sourceTitle": "Menschliche Quittierung: Status stabil",
         "sourceUrl": "",
@@ -277,8 +313,8 @@
         "acknowledgedHash": "h_07c2a6a30b80e5"
       },
       {
-        "id": "audit-1793221459093-546",
-        "timestamp": "2026-10-28T21:04:19.090Z",
+        "id": "audit-1793550342471-786",
+        "timestamp": "2026-11-01T16:25:42.469Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
         "sourceUrl": "https://www.handelsregister.de",
@@ -295,8 +331,26 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-ack-1793221458876",
-        "timestamp": "2026-10-28T21:04:18.875Z",
+        "id": "audit-1793550342066-921",
+        "timestamp": "2026-11-01T16:25:42.063Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-ack-1793550341918",
+        "timestamp": "2026-11-01T16:25:41.918Z",
         "sourceType": "HUMAN_AUDIT_REVIEW",
         "sourceTitle": "Menschliche Quittierung: Status stabil",
         "sourceUrl": "",
@@ -314,8 +368,8 @@
         "acknowledgedHash": "h_07c2a6a30b80e5"
       },
       {
-        "id": "audit-1793221343070-516",
-        "timestamp": "2026-10-28T21:02:23.067Z",
+        "id": "audit-1793550306494-22",
+        "timestamp": "2026-11-01T16:25:06.491Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
         "sourceUrl": "https://www.handelsregister.de",
@@ -332,8 +386,26 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-ack-1793221336177",
-        "timestamp": "2026-10-28T21:02:16.176Z",
+        "id": "audit-1793550306101-530",
+        "timestamp": "2026-11-01T16:25:06.098Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-ack-1793550305956",
+        "timestamp": "2026-11-01T16:25:05.956Z",
         "sourceType": "HUMAN_AUDIT_REVIEW",
         "sourceTitle": "Menschliche Quittierung: Status stabil",
         "sourceUrl": "",
@@ -351,8 +423,8 @@
         "acknowledgedHash": "h_07c2a6a30b80e5"
       },
       {
-        "id": "audit-1793219907194-944",
-        "timestamp": "2026-10-28T20:38:27.191Z",
+        "id": "audit-1793549499504-580",
+        "timestamp": "2026-11-01T16:11:39.501Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
         "sourceUrl": "https://www.handelsregister.de",
@@ -369,8 +441,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-1793219897475-594",
-        "timestamp": "2026-10-28T20:38:17.472Z",
+        "id": "audit-1793549499101-769",
+        "timestamp": "2026-11-01T16:11:39.097Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
         "sourceUrl": "https://www.handelsregister.de",
@@ -387,109 +459,499 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-1793219881562-74",
-        "timestamp": "2026-10-28T20:38:01.559Z",
-        "sourceType": "HANDELSREGISTER",
-        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
-        "sourceUrl": "https://www.handelsregister.de",
-        "matchLevel": "VERIFIED_STABLE",
-        "matchedKeywords": [
-          "Vorstand",
-          "Gläubigerversammlung",
-          "SchVG"
-        ],
-        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
-        "substantiveHash": "h_07c2a6a30b80e5",
-        "changeDetected": false,
-        "hasChangeHint": false,
-        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
-      },
-      {
-        "id": "audit-1793219601567-607",
-        "timestamp": "2026-10-28T20:33:21.564Z",
-        "sourceType": "HANDELSREGISTER",
-        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
-        "sourceUrl": "https://www.handelsregister.de",
-        "matchLevel": "VERIFIED_STABLE",
-        "matchedKeywords": [
-          "Gläubigerversammlung",
-          "SchVG"
-        ],
-        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028.",
-        "substantiveHash": "h_041008440692a2",
-        "changeDetected": false,
-        "hasChangeHint": false,
-        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
-      },
-      {
-        "id": "audit-1793219595416-499",
-        "timestamp": "2026-10-28T20:33:15.412Z",
-        "sourceType": "HANDELSREGISTER",
-        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
-        "sourceUrl": "https://www.handelsregister.de",
-        "matchLevel": "VERIFIED_STABLE",
-        "matchedKeywords": [
-          "Gläubigerversammlung",
-          "SchVG"
-        ],
-        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028.",
-        "substantiveHash": "h_041008440692a2",
-        "changeDetected": false,
-        "hasChangeHint": false,
-        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
-      },
-      {
-        "id": "audit-ack-pt-01",
-        "timestamp": "2026-10-28T20:00:00.000Z",
+        "id": "audit-ack-1793549498952",
+        "timestamp": "2026-11-01T16:11:38.952Z",
         "sourceType": "HUMAN_AUDIT_REVIEW",
         "sourceTitle": "Menschliche Quittierung: Status stabil",
-        "sourceUrl": "https://paul.group/news/",
+        "sourceUrl": "",
         "matchLevel": "VERIFIED_STABLE",
         "matchedKeywords": [
           "Geprüft",
           "ACKNOWLEDGE_STABLE"
         ],
-        "snippet": "Entscheidung durch Administrator: SchVG-Anleiheverlängerung bis 2028 bekannt und im Mandat bei taskforce aktiv begleitet.",
+        "snippet": "Entscheidung durch Persistenz-Prüfer-Prozess-A: Automatische Test-Quittierung zur Verifikation des Speicherlebenszyklus",
         "changeDetected": false,
         "actionRequired": false,
-        "note": "SchVG-Anleiheverlängerung bis 2028 bekannt und im Mandat bei taskforce aktiv begleitet.",
-        "reviewer": "Administrator",
+        "note": "Automatische Test-Quittierung zur Verifikation des Speicherlebenszyklus",
+        "reviewer": "Persistenz-Prüfer-Prozess-A",
         "decision": "ACKNOWLEDGE_STABLE",
-        "acknowledgedHash": "h_041008440692a2"
+        "acknowledgedHash": "h_07c2a6a30b80e5"
       },
       {
-        "id": "audit-pt-01",
-        "timestamp": "2026-10-28T18:00:00Z",
-        "sourceType": "CORPORATE_NEWS",
-        "sourceTitle": "PAUL Tech AG: Angepasster Vorschlag zur Anleihe-Restrukturierung angenommen",
-        "sourceUrl": "https://paul.group/news/",
-        "matchLevel": "SEARCH_HIT",
-        "matchedKeywords": [
-          "Restrukturierung",
-          "Gläubigerversammlung",
-          "CFO",
-          "Vorstand"
-        ],
-        "snippet": "Gläubigerversammlung am 26.10.2026 in Mannheim: Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028 beschlossen. Operatives Restrukturierungskonzept in Umsetzung.",
-        "changeDetected": false,
-        "actionRequired": false,
-        "note": "SchVG-Beschluss gefasst. Begleitung der Anschlussfinanzierung und Restrukturierung durch externen Interim-CFO / PMO geboten."
-      },
-      {
-        "id": "audit-pt-00",
-        "timestamp": "2026-10-27T09:00:00Z",
+        "id": "audit-1793549370326-868",
+        "timestamp": "2026-11-01T16:09:30.322Z",
         "sourceType": "HANDELSREGISTER",
-        "sourceTitle": "Amtsgericht Mannheim HRB 743304 - Amtliche Registerbekanntmachung",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
         "sourceUrl": "https://www.handelsregister.de",
-        "matchLevel": "SEARCH_HIT",
+        "matchLevel": "VERIFIED_STABLE",
         "matchedKeywords": [
           "Vorstand",
-          "Satzungsänderung"
+          "Gläubigerversammlung",
+          "SchVG"
         ],
-        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028.",
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793549369785-40",
+        "timestamp": "2026-11-01T16:09:29.782Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-ack-1793549369620",
+        "timestamp": "2026-11-01T16:09:29.620Z",
+        "sourceType": "HUMAN_AUDIT_REVIEW",
+        "sourceTitle": "Menschliche Quittierung: Status stabil",
+        "sourceUrl": "",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Geprüft",
+          "ACKNOWLEDGE_STABLE"
+        ],
+        "snippet": "Entscheidung durch Persistenz-Prüfer-Prozess-A: Automatische Test-Quittierung zur Verifikation des Speicherlebenszyklus",
         "changeDetected": false,
         "actionRequired": false,
-        "note": "Register-Basisprüfung erfolgreich: HRB 743304 amtlich verifiziert."
+        "note": "Automatische Test-Quittierung zur Verifikation des Speicherlebenszyklus",
+        "reviewer": "Persistenz-Prüfer-Prozess-A",
+        "decision": "ACKNOWLEDGE_STABLE",
+        "acknowledgedHash": "h_07c2a6a30b80e5"
+      },
+      {
+        "id": "audit-1793545723346-263",
+        "timestamp": "2026-11-01T15:08:43.343Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793545722852-736",
+        "timestamp": "2026-11-01T15:08:42.843Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-ack-1793545722676",
+        "timestamp": "2026-11-01T15:08:42.675Z",
+        "sourceType": "HUMAN_AUDIT_REVIEW",
+        "sourceTitle": "Menschliche Quittierung: Status stabil",
+        "sourceUrl": "",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Geprüft",
+          "ACKNOWLEDGE_STABLE"
+        ],
+        "snippet": "Entscheidung durch Persistenz-Prüfer-Prozess-A: Automatische Test-Quittierung zur Verifikation des Speicherlebenszyklus",
+        "changeDetected": false,
+        "actionRequired": false,
+        "note": "Automatische Test-Quittierung zur Verifikation des Speicherlebenszyklus",
+        "reviewer": "Persistenz-Prüfer-Prozess-A",
+        "decision": "ACKNOWLEDGE_STABLE",
+        "acknowledgedHash": "h_07c2a6a30b80e5"
+      },
+      {
+        "id": "audit-1793545610317-552",
+        "timestamp": "2026-11-01T15:06:50.314Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793545609783-685",
+        "timestamp": "2026-11-01T15:06:49.780Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-ack-1793545609629",
+        "timestamp": "2026-11-01T15:06:49.629Z",
+        "sourceType": "HUMAN_AUDIT_REVIEW",
+        "sourceTitle": "Menschliche Quittierung: Status stabil",
+        "sourceUrl": "",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Geprüft",
+          "ACKNOWLEDGE_STABLE"
+        ],
+        "snippet": "Entscheidung durch Persistenz-Prüfer-Prozess-A: Automatische Test-Quittierung zur Verifikation des Speicherlebenszyklus",
+        "changeDetected": false,
+        "actionRequired": false,
+        "note": "Automatische Test-Quittierung zur Verifikation des Speicherlebenszyklus",
+        "reviewer": "Persistenz-Prüfer-Prozess-A",
+        "decision": "ACKNOWLEDGE_STABLE",
+        "acknowledgedHash": "h_07c2a6a30b80e5"
+      },
+      {
+        "id": "audit-1793543075841-646",
+        "timestamp": "2026-11-01T14:24:35.838Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793543075432-253",
+        "timestamp": "2026-11-01T14:24:35.429Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-ack-1793543075289",
+        "timestamp": "2026-11-01T14:24:35.288Z",
+        "sourceType": "HUMAN_AUDIT_REVIEW",
+        "sourceTitle": "Menschliche Quittierung: Status stabil",
+        "sourceUrl": "",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Geprüft",
+          "ACKNOWLEDGE_STABLE"
+        ],
+        "snippet": "Entscheidung durch Persistenz-Prüfer-Prozess-A: Automatische Test-Quittierung zur Verifikation des Speicherlebenszyklus",
+        "changeDetected": false,
+        "actionRequired": false,
+        "note": "Automatische Test-Quittierung zur Verifikation des Speicherlebenszyklus",
+        "reviewer": "Persistenz-Prüfer-Prozess-A",
+        "decision": "ACKNOWLEDGE_STABLE",
+        "acknowledgedHash": "h_07c2a6a30b80e5"
+      },
+      {
+        "id": "audit-1793543031522-281",
+        "timestamp": "2026-11-01T14:23:51.519Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793543031114-141",
+        "timestamp": "2026-11-01T14:23:51.111Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-ack-1793543030966",
+        "timestamp": "2026-11-01T14:23:50.965Z",
+        "sourceType": "HUMAN_AUDIT_REVIEW",
+        "sourceTitle": "Menschliche Quittierung: Status stabil",
+        "sourceUrl": "",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Geprüft",
+          "ACKNOWLEDGE_STABLE"
+        ],
+        "snippet": "Entscheidung durch Persistenz-Prüfer-Prozess-A: Automatische Test-Quittierung zur Verifikation des Speicherlebenszyklus",
+        "changeDetected": false,
+        "actionRequired": false,
+        "note": "Automatische Test-Quittierung zur Verifikation des Speicherlebenszyklus",
+        "reviewer": "Persistenz-Prüfer-Prozess-A",
+        "decision": "ACKNOWLEDGE_STABLE",
+        "acknowledgedHash": "h_07c2a6a30b80e5"
+      },
+      {
+        "id": "audit-1793542539464-536",
+        "timestamp": "2026-11-01T14:15:39.461Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793542539042-879",
+        "timestamp": "2026-11-01T14:15:39.040Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-ack-1793542538896",
+        "timestamp": "2026-11-01T14:15:38.895Z",
+        "sourceType": "HUMAN_AUDIT_REVIEW",
+        "sourceTitle": "Menschliche Quittierung: Status stabil",
+        "sourceUrl": "",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Geprüft",
+          "ACKNOWLEDGE_STABLE"
+        ],
+        "snippet": "Entscheidung durch Persistenz-Prüfer-Prozess-A: Automatische Test-Quittierung zur Verifikation des Speicherlebenszyklus",
+        "changeDetected": false,
+        "actionRequired": false,
+        "note": "Automatische Test-Quittierung zur Verifikation des Speicherlebenszyklus",
+        "reviewer": "Persistenz-Prüfer-Prozess-A",
+        "decision": "ACKNOWLEDGE_STABLE",
+        "acknowledgedHash": "h_07c2a6a30b80e5"
+      },
+      {
+        "id": "audit-1793541554157-538",
+        "timestamp": "2026-11-01T13:59:14.154Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793541553706-221",
+        "timestamp": "2026-11-01T13:59:13.703Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-ack-1793541553539",
+        "timestamp": "2026-11-01T13:59:13.539Z",
+        "sourceType": "HUMAN_AUDIT_REVIEW",
+        "sourceTitle": "Menschliche Quittierung: Status stabil",
+        "sourceUrl": "",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Geprüft",
+          "ACKNOWLEDGE_STABLE"
+        ],
+        "snippet": "Entscheidung durch Persistenz-Prüfer-Prozess-A: Automatische Test-Quittierung zur Verifikation des Speicherlebenszyklus",
+        "changeDetected": false,
+        "actionRequired": false,
+        "note": "Automatische Test-Quittierung zur Verifikation des Speicherlebenszyklus",
+        "reviewer": "Persistenz-Prüfer-Prozess-A",
+        "decision": "ACKNOWLEDGE_STABLE",
+        "acknowledgedHash": "h_07c2a6a30b80e5"
+      },
+      {
+        "id": "audit-1793541384956-341",
+        "timestamp": "2026-11-01T13:56:24.952Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793541384437-12",
+        "timestamp": "2026-11-01T13:56:24.434Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-ack-1793541384277",
+        "timestamp": "2026-11-01T13:56:24.277Z",
+        "sourceType": "HUMAN_AUDIT_REVIEW",
+        "sourceTitle": "Menschliche Quittierung: Status stabil",
+        "sourceUrl": "",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Geprüft",
+          "ACKNOWLEDGE_STABLE"
+        ],
+        "snippet": "Entscheidung durch Persistenz-Prüfer-Prozess-A: Automatische Test-Quittierung zur Verifikation des Speicherlebenszyklus",
+        "changeDetected": false,
+        "actionRequired": false,
+        "note": "Automatische Test-Quittierung zur Verifikation des Speicherlebenszyklus",
+        "reviewer": "Persistenz-Prüfer-Prozess-A",
+        "decision": "ACKNOWLEDGE_STABLE",
+        "acknowledgedHash": "h_07c2a6a30b80e5"
+      },
+      {
+        "id": "audit-1793541308122-337",
+        "timestamp": "2026-11-01T13:55:08.119Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793541307659-500",
+        "timestamp": "2026-11-01T13:55:07.656Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Amtsgericht Mannheim HRB 743304 – Amtliche Registerbekanntmachung",
+        "sourceUrl": "https://www.handelsregister.de",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Vorstand",
+          "Gläubigerversammlung",
+          "SchVG"
+        ],
+        "snippet": "Amtsgericht Mannheim HRB 743304: PAUL Tech AG (Theodor-Heuss-Anlage 12, 68165 Mannheim). Gläubigerversammlung nach SchVG zur Laufzeitverlängerung der 35 Mio. EUR Anleihe (DE000A3H2TU8) bis 2028. Vertretungsbefugnis Vorstand unverändert.",
+        "substantiveHash": "h_07c2a6a30b80e5",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       }
     ],
     "notes": "Übermittelt an taskforce (Frank Sieger). 18 Monate Käufer- & Kundenschutz verbindlich aktiviert. SchVG-Gläubigerabstimmung in Mannheim.",
@@ -512,7 +974,7 @@
     "register_id": "Kanton Zug CHE-457.384.964",
     "company_domain": "cosquare.com",
     "ir_news_url": "https://www.shab.ch",
-    "last_audit_check": "2026-10-28T21:07:51.318Z",
+    "last_audit_check": "2026-11-02T11:45:56.722Z",
     "has_change_alert": false,
     "has_change_hint": false,
     "changeDetected": false,
@@ -529,15 +991,15 @@
     "last_scraped_snapshot": {
       "hash": "h_0b2dcde163f0dd",
       "substantiveText": "shab mutation organvakanz im verwaltungsrat",
-      "timestamp": "2026-10-28T21:07:51.318Z",
+      "timestamp": "2026-11-02T11:45:56.722Z",
       "matchedKeywords": [
         "Organvakanz"
       ]
     },
     "audit_log": [
       {
-        "id": "audit-1793221671582-707",
-        "timestamp": "2026-10-28T21:07:51.318Z",
+        "id": "audit-1793619957020-608",
+        "timestamp": "2026-11-02T11:45:56.722Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
         "sourceUrl": "https://www.shab.ch",
@@ -552,8 +1014,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-1793221671112-124",
-        "timestamp": "2026-10-28T21:07:50.844Z",
+        "id": "audit-1793619956528-87",
+        "timestamp": "2026-11-02T11:45:56.216Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
         "sourceUrl": "https://www.shab.ch",
@@ -568,8 +1030,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-1793221664141-454",
-        "timestamp": "2026-10-28T21:07:43.868Z",
+        "id": "audit-1793619889768-244",
+        "timestamp": "2026-11-02T11:44:49.475Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
         "sourceUrl": "https://www.shab.ch",
@@ -584,8 +1046,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-1793221487626-250",
-        "timestamp": "2026-10-28T21:04:47.366Z",
+        "id": "audit-1793619889253-597",
+        "timestamp": "2026-11-02T11:44:48.775Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
         "sourceUrl": "https://www.shab.ch",
@@ -600,8 +1062,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-1793221487181-14",
-        "timestamp": "2026-10-28T21:04:46.926Z",
+        "id": "audit-1793552560878-299",
+        "timestamp": "2026-11-01T17:02:40.590Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
         "sourceUrl": "https://www.shab.ch",
@@ -616,8 +1078,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-1793221477607-40",
-        "timestamp": "2026-10-28T21:04:37.287Z",
+        "id": "audit-1793552560416-565",
+        "timestamp": "2026-11-01T17:02:40.156Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
         "sourceUrl": "https://www.shab.ch",
@@ -632,8 +1094,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-1793221472248-123",
-        "timestamp": "2026-10-28T21:04:31.925Z",
+        "id": "audit-1793552530871-669",
+        "timestamp": "2026-11-01T17:02:10.603Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
         "sourceUrl": "https://www.shab.ch",
@@ -648,8 +1110,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-1793221471718-72",
-        "timestamp": "2026-10-28T21:04:31.427Z",
+        "id": "audit-1793552530436-919",
+        "timestamp": "2026-11-01T17:02:10.175Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
         "sourceUrl": "https://www.shab.ch",
@@ -664,8 +1126,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-1793221459383-739",
-        "timestamp": "2026-10-28T21:04:19.094Z",
+        "id": "audit-1793552465488-727",
+        "timestamp": "2026-11-01T17:01:05.232Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
         "sourceUrl": "https://www.shab.ch",
@@ -680,8 +1142,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-1793221343465-487",
-        "timestamp": "2026-10-28T21:02:23.071Z",
+        "id": "audit-1793552465042-774",
+        "timestamp": "2026-11-01T17:01:04.753Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
         "sourceUrl": "https://www.shab.ch",
@@ -696,8 +1158,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-1793219907480-344",
-        "timestamp": "2026-10-28T20:38:27.195Z",
+        "id": "audit-1793550342722-455",
+        "timestamp": "2026-11-01T16:25:42.472Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
         "sourceUrl": "https://www.shab.ch",
@@ -712,8 +1174,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-1793219897750-320",
-        "timestamp": "2026-10-28T20:38:17.475Z",
+        "id": "audit-1793550342308-184",
+        "timestamp": "2026-11-01T16:25:42.066Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
         "sourceUrl": "https://www.shab.ch",
@@ -728,8 +1190,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-1793219881857-632",
-        "timestamp": "2026-10-28T20:38:01.563Z",
+        "id": "audit-1793550306762-505",
+        "timestamp": "2026-11-01T16:25:06.494Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
         "sourceUrl": "https://www.shab.ch",
@@ -744,8 +1206,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-1793219601822-13",
-        "timestamp": "2026-10-28T20:33:21.568Z",
+        "id": "audit-1793550306338-70",
+        "timestamp": "2026-11-01T16:25:06.102Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
         "sourceUrl": "https://www.shab.ch",
@@ -760,8 +1222,8 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-1793219595712-826",
-        "timestamp": "2026-10-28T20:33:15.416Z",
+        "id": "audit-1793549499769-250",
+        "timestamp": "2026-11-01T16:11:39.505Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
         "sourceUrl": "https://www.shab.ch",
@@ -776,39 +1238,564 @@
         "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       },
       {
-        "id": "audit-ack-cosq-01",
-        "timestamp": "2026-10-27T12:00:00Z",
-        "sourceType": "HUMAN_AUDIT_REVIEW",
-        "sourceTitle": "Menschliche Quittierung: Status stabil",
-        "sourceUrl": "https://www.shab.ch",
-        "matchLevel": "VERIFIED_STABLE",
-        "matchedKeywords": [
-          "Geprüft",
-          "ACKNOWLEDGE_STABLE"
-        ],
-        "snippet": "Entscheidung durch Administrator: Organvakanz im Verwaltungsrat bekannt; 14-tägige Exklusivität für Top Fifty AG aktiv.",
-        "changeDetected": false,
-        "actionRequired": false,
-        "note": "Organvakanz im Verwaltungsrat unbesetzt, 14-tägige Exklusivität für Top Fifty AG aktiv.",
-        "reviewer": "Administrator",
-        "decision": "ACKNOWLEDGE_STABLE",
-        "acknowledgedHash": "h_0b2dcde163f0dd"
-      },
-      {
-        "id": "audit-cosq-01",
-        "timestamp": "2026-10-27T12:00:00Z",
+        "id": "audit-1793549499364-253",
+        "timestamp": "2026-11-01T16:11:39.101Z",
         "sourceType": "HANDELSREGISTER",
         "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
         "sourceUrl": "https://www.shab.ch",
-        "matchLevel": "SEARCH_HIT",
+        "matchLevel": "VERIFIED_STABLE",
         "matchedKeywords": [
-          "Verwaltungsrat",
           "Organvakanz"
         ],
         "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
         "changeDetected": false,
-        "actionRequired": false,
-        "note": "Organvakanz im Verwaltungsrat unbesetzt, 14-tägige Exklusivität für Top Fifty AG aktiv."
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793549370549-884",
+        "timestamp": "2026-11-01T16:09:30.326Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793549370173-943",
+        "timestamp": "2026-11-01T16:09:29.785Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793545723637-870",
+        "timestamp": "2026-11-01T15:08:43.347Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793545723164-614",
+        "timestamp": "2026-11-01T15:08:42.853Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793545610620-596",
+        "timestamp": "2026-11-01T15:06:50.318Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793545610154-548",
+        "timestamp": "2026-11-01T15:06:49.783Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793543076110-693",
+        "timestamp": "2026-11-01T14:24:35.841Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793543075692-651",
+        "timestamp": "2026-11-01T14:24:35.432Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793543031859-131",
+        "timestamp": "2026-11-01T14:23:51.522Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793543031376-527",
+        "timestamp": "2026-11-01T14:23:51.115Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793542539721-153",
+        "timestamp": "2026-11-01T14:15:39.465Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793542539313-764",
+        "timestamp": "2026-11-01T14:15:39.043Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793541554460-315",
+        "timestamp": "2026-11-01T13:59:14.157Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793541553973-450",
+        "timestamp": "2026-11-01T13:59:13.706Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793541385232-674",
+        "timestamp": "2026-11-01T13:56:24.956Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793541384788-606",
+        "timestamp": "2026-11-01T13:56:24.438Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793541308359-453",
+        "timestamp": "2026-11-01T13:55:08.123Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793541307964-945",
+        "timestamp": "2026-11-01T13:55:07.659Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793541099018-708",
+        "timestamp": "2026-11-01T13:51:38.772Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793541098613-336",
+        "timestamp": "2026-11-01T13:51:38.345Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793540257771-157",
+        "timestamp": "2026-11-01T13:37:37.475Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793540257303-908",
+        "timestamp": "2026-11-01T13:37:37.005Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793538652430-663",
+        "timestamp": "2026-11-01T13:10:52.173Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793538652004-465",
+        "timestamp": "2026-11-01T13:10:51.730Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793538591469-67",
+        "timestamp": "2026-11-01T13:09:51.209Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793538591029-122",
+        "timestamp": "2026-11-01T13:09:50.706Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793538554304-586",
+        "timestamp": "2026-11-01T13:09:14.072Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793538553918-589",
+        "timestamp": "2026-11-01T13:09:13.653Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793538037320-218",
+        "timestamp": "2026-11-01T13:00:37.082Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793538036928-58",
+        "timestamp": "2026-11-01T13:00:36.690Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793536679405-120",
+        "timestamp": "2026-11-01T12:37:59.171Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793536679034-713",
+        "timestamp": "2026-11-01T12:37:58.780Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793536587887-89",
+        "timestamp": "2026-11-01T12:36:27.668Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
+      },
+      {
+        "id": "audit-1793536587521-531",
+        "timestamp": "2026-11-01T12:36:27.151Z",
+        "sourceType": "HANDELSREGISTER",
+        "sourceTitle": "Handelsregisteramt Kanton Zug – SHAB Mutation CHE-457.384.964",
+        "sourceUrl": "https://www.shab.ch",
+        "matchLevel": "VERIFIED_STABLE",
+        "matchedKeywords": [
+          "Organvakanz"
+        ],
+        "snippet": "Handelsregisteramt des Kantons Zug: cosquare AG (CHE-457.384.964, Bundesplatz 14, 6302 Zug). SHAB-Mutation: Organvakanz im Verwaltungsrat.",
+        "substantiveHash": "h_0b2dcde163f0dd",
+        "changeDetected": false,
+        "hasChangeHint": false,
+        "note": "Prüfstand identisch mit letzter menschlicher Quittierung (Re-Alert unterdrückt)."
       }
     ],
     "notes": "Exklusive 14-tägige Reservierung für Top Fifty AG / Pierina Tannò.",

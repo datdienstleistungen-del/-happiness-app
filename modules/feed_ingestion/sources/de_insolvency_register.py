@@ -42,8 +42,8 @@ def clean_company_name(raw_name):
 
 def is_eligible_commercial_entity(name, register):
     """
-    Ensures signal is an operative commercial business and not a private person or micro-UG.
-    Excludes private consumer bankruptcies and UG (haftungsbeschränkt).
+    Ensures signal is an operative commercial business and not a private person, micro-UG,
+    local micro-gastronomy/retail, or numbered shell company.
     """
     n_lower = name.lower()
     r_lower = register.lower()
@@ -54,6 +54,22 @@ def is_eligible_commercial_entity(name, register):
     # Reject private persons / natural persons
     if any(p in n_lower for p in [', herr', ', frau', 'nachlass', 'eheleute', 'geb.', 'geborene', 'verstorbene']):
         return False
+
+    # Reject numbered shell entities (e.g. "1962A GmbH", "4711 UG")
+    if re.match(r'^[0-9]+[a-z]?\s+(gmbh|ug|ag|kg)', n_lower):
+        return False
+
+    # Reject micro-gastronomy, local trades, small retail & personal services
+    micro_keywords = [
+        'gaststätte', 'gaststaette', 'restaurant', 'pizzeria', 'kneipe', 'gasthof',
+        'bistro', 'café', 'cafe', 'imbiss', 'döner', 'doener', 'bäckerei', 'baeckerei',
+        'konditorei', 'metzgerei', 'fleischerei', 'friseur', 'frisör', 'barbershop',
+        'kosmetik', 'nagelstudio', 'solarium', 'kiosk', 'spätkauf', 'spaeti',
+        'hotel garni', 'pension ', 'fahrschule', 'reinigung', 'autowäsche', 'autowaesche'
+    ]
+    if any(k in n_lower for k in micro_keywords):
+        return False
+
     # Must have legal form or official register (HRB / HRA)
     has_legal_form = any(lf in n_lower for lf in ['gmbh', ' ag', 'aktien', 'se', 'kgaa', 'kg', 'mbh'])
     has_hr = 'hrb' in r_lower or 'hra' in r_lower

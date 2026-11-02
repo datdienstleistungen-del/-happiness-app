@@ -435,6 +435,23 @@ export function hasProvenOrganExitEvidence(text) {
   );
 }
 
+export function getCleanRoleBadge(roleStr, text) {
+  const combined = ((roleStr || '') + ' ' + (text || '')).toLowerCase();
+  if (combined.includes('cro') || combined.includes('sanierung') || combined.includes('eigenverwaltung') || combined.includes('schutzschirm') || combined.includes('starug') || combined.includes('insolvenz')) {
+    return { label: '🔴 CRO-Bedarf', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.35)' };
+  }
+  if (combined.includes('cfo') || combined.includes('anleihe') || combined.includes('gläubiger') || combined.includes('schvg') || combined.includes('refinanzierung')) {
+    return { label: '🔵 Interim-CFO', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.15)', border: 'rgba(56, 189, 248, 0.35)' };
+  }
+  if (combined.includes('ceo') || combined.includes('organ') || combined.includes('nachfolge') || combined.includes('vakanz') || combined.includes('abberufung')) {
+    return { label: '🟣 Interim-CEO', color: '#c084fc', bg: 'rgba(192, 132, 252, 0.15)', border: 'rgba(192, 132, 252, 0.35)' };
+  }
+  if (combined.includes('m&a') || combined.includes('carve-out') || combined.includes('investor') || combined.includes('übernahme') || combined.includes('pmi')) {
+    return { label: '🟢 M&A / PMI', color: '#4ade80', bg: 'rgba(74, 222, 128, 0.15)', border: 'rgba(74, 222, 128, 0.35)' };
+  }
+  return { label: '🟠 Interim-Mandat', color: '#fb923c', bg: 'rgba(251, 146, 60, 0.15)', border: 'rgba(251, 146, 60, 0.35)' };
+}
+
 export function extractDealCoachAudit(opp) {
   if (!opp) return null;
 
@@ -765,6 +782,72 @@ export default function SalesWorkspacePage() {
 
   // Harter Reputationsschutz ('Kalter Kaffee' Warn-Modal vor Export / Weitergabe bei >48h)
   const [staleWarningModal, setStaleWarningModal] = useState(null)
+
+  // 1-Klick Perplexity / KI Recherche Export State
+  const [copiedPerplexity, setCopiedPerplexity] = useState(false)
+
+  function fallbackCopyDossier(text) {
+    try {
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      textArea.style.position = 'fixed'
+      textArea.style.opacity = '0'
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      setCopiedPerplexity(true)
+      setTimeout(() => setCopiedPerplexity(false), 3500)
+    } catch (e) {
+      console.error('Fallback copy failed:', e)
+    }
+  }
+
+  function copyDossierForPerplexity(opp, cName, text, role, dateStr, srcUrl) {
+    const audit = extractDealCoachAudit(opp)
+    const prompt = `Recherchiere und überprüfe folgenden Mandats-Fall für Executive Interim Management:
+
+UNTERNEHMEN: ${cName}
+GESUCHTE ROLLE: ${role || audit?.target_role || 'Chief Restructuring Officer (CRO) / Sanierungsvorstand'}
+SIGNAL-DATUM: ${dateStr || 'Aktuell'}
+PRIMÄRQUELLE: ${srcUrl || 'Amtliche Mitteilung'}
+
+BELEGTER SACHVERHALT:
+${text || opp.title || 'Keine Detailbeschreibung verfügbar.'}
+
+MANDATS-ANLASS:
+${audit?.mandate_rationale || audit?.hypothesis || 'Akute Sondersituation / Eigenverwaltung / StaRUG / Organvakuum erfordert externe Führung.'}
+
+RECHERCHE-AUFTRAG AN PERPLEXITY:
+1. Ist die Sanierung / Restrukturierung / Organvakanz bei ${cName} aktuell noch in der heißen Phase?
+2. Wurde bereits ein Chief Restructuring Officer (CRO), Interim-CFO oder Sanierungs-Geschäftsführer bestellt?
+3. Wer sind die entscheidenden Ansprechpartner (vorläufiger Sachwalter, Insolvenzverwalter, Aufsichtsratsvorsitzender oder federführende Kanzlei)?
+4. Liegt der Unternehmensumsatz über 10 Mio. € (Relevanz für Executive Interim Management)?`
+
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(prompt).then(() => {
+        setCopiedPerplexity(true)
+        setTimeout(() => setCopiedPerplexity(false), 3500)
+      }).catch(() => {
+        fallbackCopyDossier(prompt)
+      })
+    } else {
+      fallbackCopyDossier(prompt)
+    }
+  }
+
+  function handleDeleteOpportunity(oppId) {
+    if (deleteOpportunity) deleteOpportunity(oppId)
+    setLocalRadarOpps(prev => {
+      const updated = prev.filter(o => o.id !== oppId)
+      try {
+        localStorage.setItem('nexus_local_radar_opportunities', JSON.stringify(updated))
+      } catch (e) {}
+      return updated
+    })
+    if (activeOppId === oppId) setActiveOppId(null)
+  }
 
   // DealCoach Stufe 2: Übertrag in Harros Prüf-Inbox
   const [isSubmittingReview, setIsSubmittingReview] = useState(false)
@@ -3138,8 +3221,7 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                 const dateVal = opp.event_date || opp.triggers?.[0]?.nexus_trigger_events?.event_date || opp.published_at || opp.created_at;
                 const traffic = getFreshnessTrafficLight(dateVal);
                 const audit = extractDealCoachAudit(opp);
-                const isT1 = audit?.tier === 'TIER_1_TOP';
-                const isT2 = audit?.tier === 'TIER_2_MID';
+                const roleBadge = getCleanRoleBadge(audit?.target_role, (opp.situation || '') + ' ' + (opp.title || ''));
 
                 return (
                   <div 
@@ -3171,7 +3253,25 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                         </h4>
                       </div>
 
-                      <div className="queue-item-meta" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <div className="queue-item-meta" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        {/* Klare Zielrollen-Pille */}
+                        <span 
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '0.74rem',
+                            fontWeight: 700,
+                            background: roleBadge.bg,
+                            color: roleBadge.color,
+                            border: `1px solid ${roleBadge.border}`
+                          }}
+                        >
+                          {roleBadge.label}
+                        </span>
+
                         {/* Frische-Zeitstempel mit Ampel-Punkt */}
                         <span 
                           className={`queue-badge-freshness ${traffic.badgeClass}`}
@@ -3182,7 +3282,7 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                             padding: '2px 8px',
                             borderRadius: '4px',
                             fontSize: '0.74rem',
-                            fontWeight: 700,
+                            fontWeight: 600,
                             background: traffic.color === 'green' ? 'rgba(34, 197, 94, 0.15)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.18)' : 'rgba(239, 68, 68, 0.2)',
                             color: traffic.color === 'green' ? '#4ade80' : traffic.color === 'yellow' ? '#facc15' : '#f87171',
                             border: `1px solid ${traffic.color === 'green' ? 'rgba(34, 197, 94, 0.35)' : traffic.color === 'yellow' ? 'rgba(234, 179, 8, 0.4)' : 'rgba(239, 68, 68, 0.45)'}`
@@ -3198,92 +3298,15 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                           }} />
                           {traffic.label}
                         </span>
-
-                        {/* DealCoach Einstufung */}
-                        <span 
-                          className={`queue-badge-tier ${isT1 ? 'tier-1' : isT2 ? 'tier-2' : 'tier-review'}`}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            padding: '2px 8px',
-                            borderRadius: '4px',
-                            fontSize: '0.74rem',
-                            fontWeight: 700,
-                            background: isT1 ? 'rgba(168, 85, 247, 0.2)' : isT2 ? 'rgba(59, 130, 246, 0.2)' : 'rgba(148, 163, 184, 0.15)',
-                            color: isT1 ? '#c084fc' : isT2 ? '#60a5fa' : '#cbd5e1',
-                            border: `1px solid ${isT1 ? 'rgba(168, 85, 247, 0.45)' : isT2 ? 'rgba(59, 130, 246, 0.4)' : 'rgba(148, 163, 184, 0.3)'}`
-                          }}
-                        >
-                          {isT1 ? '👑 TIER 1' : isT2 ? '🏢 TIER 2' : '⚖️ Zur Prüfung'}
-                        </span>
-
-                        {/* Stufen-Badge */}
-                        {audit?.stage_level && (
-                          <span 
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              padding: '2px 6px',
-                              borderRadius: '4px',
-                              fontSize: '0.70rem',
-                              fontWeight: 700,
-                              background: audit.stage_level === 3 ? 'rgba(34, 197, 94, 0.2)' : audit.stage_level === 2 ? 'rgba(59, 130, 246, 0.2)' : 'rgba(148, 163, 184, 0.2)',
-                              color: audit.stage_level === 3 ? '#4ade80' : audit.stage_level === 2 ? '#93c5fd' : '#cbd5e1',
-                              border: `1px solid ${audit.stage_level === 3 ? '#22c55e' : audit.stage_level === 2 ? '#3b82f6' : '#94a3b8'}`
-                            }}
-                            title={`Qualifizierungsstufe: ${audit.qualification_stage}`}
-                          >
-                            {audit.stage_level === 3 ? '🎯 Stufe 3' : audit.stage_level === 2 ? '⚡ Stufe 2' : '📄 Stufe 1'}
-                          </span>
-                        )}
-
-                        {/* Organvakuum Status */}
-                        {audit?.organ_vacuum_status === 'BESTANDEN' ? (
-                          <span 
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              padding: '2px 5px',
-                              borderRadius: '4px',
-                              fontSize: '0.68rem',
-                              fontWeight: 700,
-                              background: 'rgba(34, 197, 94, 0.15)',
-                              color: '#4ade80',
-                              border: '1px solid rgba(34, 197, 94, 0.3)'
-                            }}
-                            title="Vakante Organposition nachgewiesen"
-                          >
-                            ⚡ Organvakuum
-                          </span>
-                        ) : (
-                          <span 
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              padding: '2px 5px',
-                              borderRadius: '4px',
-                              fontSize: '0.68rem',
-                              fontWeight: 600,
-                              background: 'rgba(234, 179, 8, 0.12)',
-                              color: '#fde047',
-                              border: '1px solid rgba(234, 179, 8, 0.25)'
-                            }}
-                            title="Restrukturierung begründet allein kein Organvakuum"
-                          >
-                            Vakuum n.n.
-                          </span>
-                        )}
                       </div>
                     </div>
                     <button 
                       className="delete-opp-btn"
-                      title="Lead löschen"
+                      title="Aus Pipeline löschen"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if(window.confirm('Lead wirklich löschen?')) {
-                          deleteOpportunity(opp.id);
-                          if(activeOppId === opp.id) setActiveOppId(null);
+                        if(window.confirm(`Mandat "${compName}" wirklich aus der Pipeline löschen?`)) {
+                          handleDeleteOpportunity(opp.id);
                         }
                       }}
                     >
@@ -3645,113 +3668,256 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
                 );
               })()}
 
-              {/* ── 1. STAMMDATEN CARD ── */}
-              <div className="pult-stammdaten-card" style={{
-                background: '#0e1015',
-                border: '1px solid #1e232d',
-                borderRadius: '12px',
-                padding: '20px 24px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '14px'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '1.75rem', lineHeight: 1 }} title={country.label}>{country.flag}</span>
-                      <h2 style={{
-                        margin: 0,
-                        fontSize: '1.45rem',
-                        fontWeight: 800,
-                        color: '#f8fafc',
-                        letterSpacing: '-0.02em',
-                        wordBreak: 'break-word',
-                        lineHeight: 1.25
-                      }}>
-                        {compName || '-'}
-                      </h2>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', fontSize: '0.88rem', color: '#94a3b8' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                        <Globe size={15} color="#60a5fa" />
-                        <strong style={{ color: '#cbd5e1' }}>Land:</strong> {country.label} ({country.code})
-                      </span>
-                      <span>•</span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                        <Briefcase size={15} color="#a855f7" />
-                        <strong style={{ color: '#cbd5e1' }}>Rechtsform:</strong> {legalForm}
-                      </span>
-                      <span>•</span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                        <Clock size={15} color="#facc15" />
-                        <strong style={{ color: '#cbd5e1' }}>Publikation:</strong> {dateFormatted} ({traffic.label})
-                      </span>
-                    </div>
-                  </div>
+              {/* ── 1. EXECUTIVE DOSSIER CARD (WER, WAS, WARUM, WANN) ── */}
+              {(() => {
+                const activeRoleBadge = getCleanRoleBadge(audit?.target_role, (activeOpp.situation || '') + ' ' + (activeOpp.title || ''));
+                return (
+                  <div className="pult-executive-dossier-card" style={{
+                    background: 'linear-gradient(145deg, #0e121a 0%, #131822 100%)',
+                    border: '1px solid rgba(56, 189, 248, 0.3)',
+                    borderRadius: '14px',
+                    padding: '24px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '18px',
+                    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.45)'
+                  }}>
+                    {/* Header: WER */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '1.9rem', lineHeight: 1 }} title={country.label}>{country.flag}</span>
+                          <h2 style={{
+                            margin: 0,
+                            fontSize: '1.6rem',
+                            fontWeight: 800,
+                            color: '#f8fafc',
+                            letterSpacing: '-0.02em',
+                            lineHeight: 1.2
+                          }}>
+                            {compName || '-'}
+                          </h2>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', fontSize: '0.9rem', color: '#94a3b8' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                            <Globe size={15} color="#60a5fa" />
+                            <strong style={{ color: '#cbd5e1' }}>Sitz:</strong> {country.label} ({country.code})
+                          </span>
+                          <span>•</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                            <Briefcase size={15} color="#a855f7" />
+                            <strong style={{ color: '#cbd5e1' }}>Rechtsform:</strong> {legalForm}
+                          </span>
+                          <span>•</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                            <Clock size={15} color="#facc15" />
+                            <strong style={{ color: '#cbd5e1' }}>Publikation:</strong> {dateFormatted} ({traffic.label})
+                          </span>
+                        </div>
+                      </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                    {/* Prominenter Action-Button: Dossier & Teaser öffnen */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowBlindProfileModal(true);
-                        setBlindProfileTab('teaser');
-                      }}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '9px 18px',
-                        background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                        border: '1px solid #38bdf8',
-                        borderRadius: '8px',
-                        color: '#ffffff',
-                        fontWeight: 700,
-                        fontSize: '0.88rem',
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 14px rgba(2, 132, 199, 0.4)',
-                        transition: 'all 0.2s ease'
-                      }}
-                      title="Dossier & Anonymisiertes 1-Page Blind-Profil öffnen"
-                    >
-                      <FileText size={16} />
-                      <span>📄 Dossier &amp; Teaser öffnen</span>
-                    </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span 
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '8px',
+                            fontSize: '0.86rem',
+                            fontWeight: 800,
+                            background: activeRoleBadge.bg,
+                            color: activeRoleBadge.color,
+                            border: `1px solid ${activeRoleBadge.border}`,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          {activeRoleBadge.label}
+                        </span>
+                      </div>
+                    </div>
 
-                    {/* Link zur Originalmeldung */}
-                    {hasValidSource ? (
-                      <a
-                        href={sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    {/* Grid: WAS & WARUM */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                      gap: '16px',
+                      background: 'rgba(15, 23, 42, 0.6)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '10px',
+                      padding: '16px 18px'
+                    }}>
+                      <div>
+                        <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#38bdf8', fontWeight: 700, marginBottom: '6px' }}>
+                          🎯 WAS (Mandatshebel)
+                        </div>
+                        <div style={{ fontSize: '0.94rem', fontWeight: 700, color: '#f1f5f9', lineHeight: 1.4 }}>
+                          {audit?.target_role || activeRoleBadge.label}
+                        </div>
+                        <div style={{ fontSize: '0.82rem', color: '#94a3b8', marginTop: '4px' }}>
+                          {audit?.hypothesis || 'Akute Sondersituation erfordert externe Organ- bzw. Sanierungsbegleitung.'}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#f59e0b', fontWeight: 700, marginBottom: '6px' }}>
+                          ⚡ WARUM (Sachverhalt &amp; Anlass)
+                        </div>
+                        <div style={{ fontSize: '0.88rem', color: '#e2e8f0', lineHeight: 1.5 }}>
+                          {cleanAnnouncement ? cleanAnnouncement.slice(0, 280) + (cleanAnnouncement.length > 280 ? '...' : '') : (activeOpp.title || 'Amtliche Veröffentlichung')}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* WANN & BELEG Bar */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', fontSize: '0.84rem' }}>
+                      <div style={{ color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>📅 <strong>Ereignis-Datum:</strong> {dateFormatted}</span>
+                        <span>•</span>
+                        <span style={{ color: '#4ade80', fontWeight: 600 }}>🛡️ Human-in-the-Loop verifiziert (Harro Goerndt)</span>
+                      </div>
+
+                      {hasValidSource && (
+                        <a
+                          href={sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            color: '#38bdf8',
+                            textDecoration: 'none',
+                            fontWeight: 600
+                          }}
+                        >
+                          <span>Originalquelle öffnen ({domain})</span>
+                          <ExternalLink size={14} />
+                        </a>
+                      )}
+                    </div>
+
+                    {/* 1-KLICK AKTIONEN: PERPLEXITY / TASKFORCE / DOSSIER / VERWERFEN */}
+                    <div style={{
+                      display: 'flex',
+                      gap: '12px',
+                      flexWrap: 'wrap',
+                      paddingTop: '16px',
+                      borderTop: '1px solid rgba(255, 255, 255, 0.08)'
+                    }}>
+                      {/* Perplexity Copy Button */}
+                      <button
+                        type="button"
+                        onClick={() => copyDossierForPerplexity(activeOpp, compName, cleanAnnouncement, activeRoleBadge.label, dateFormatted, sourceUrl)}
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '8px',
-                          padding: '9px 16px',
-                          background: 'rgba(56, 189, 248, 0.1)',
-                          border: '1px solid rgba(56, 189, 248, 0.4)',
+                          padding: '10px 18px',
+                          background: copiedPerplexity ? '#15803d' : 'rgba(56, 189, 248, 0.15)',
+                          border: `1px solid ${copiedPerplexity ? '#22c55e' : 'rgba(56, 189, 248, 0.5)'}`,
                           borderRadius: '8px',
-                          color: '#38bdf8',
+                          color: copiedPerplexity ? '#ffffff' : '#38bdf8',
                           fontWeight: 700,
-                          fontSize: '0.86rem',
-                          textDecoration: 'none',
+                          fontSize: '0.88rem',
+                          cursor: 'pointer',
                           transition: 'all 0.2s ease',
-                          boxShadow: '0 2px 10px rgba(56, 189, 248, 0.1)'
+                          boxShadow: copiedPerplexity ? '0 0 16px rgba(34, 197, 94, 0.4)' : '0 2px 10px rgba(56, 189, 248, 0.15)'
                         }}
-                        title={`Originalquelle öffnen (${domain})`}
+                        title="Kopiert präzisen Recherche-Prompt für Perplexity oder ChatGPT"
                       >
-                        <span>Originalmeldung öffnen ({domain})</span>
-                        <ExternalLink size={15} />
-                      </a>
-                    ) : (
-                      <span style={{ color: '#64748b', fontSize: '0.84rem', fontStyle: 'italic' }}>
-                        Keine externe Primärquelle
-                      </span>
-                    )}
+                        {copiedPerplexity ? <Check size={16} /> : <Copy size={16} />}
+                        <span>{copiedPerplexity ? 'Prompt kopiert! In Perplexity einfügen (Strg+V)' : '📋 Dossier für Perplexity kopieren'}</span>
+                      </button>
+
+                      {/* Freigeben für TaskForce */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDispatchPartner('taskforce - Management on Demand AG');
+                          setOutreachPartnerId('taskforce');
+                          setShowBlindProfileModal(true);
+                          setBlindProfileTab('outreach');
+                        }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '10px 18px',
+                          background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                          border: '1px solid #4ade80',
+                          borderRadius: '8px',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          fontSize: '0.88rem',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 14px rgba(22, 163, 74, 0.35)',
+                          transition: 'all 0.2s ease'
+                        }}
+                        title="Prüfen und an TaskForce übermitteln"
+                      >
+                        <CheckCircle size={16} />
+                        <span>✅ Für TaskForce freigeben</span>
+                      </button>
+
+                      {/* Dossier & Teaser öffnen */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowBlindProfileModal(true);
+                          setBlindProfileTab('teaser');
+                        }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '10px 16px',
+                          background: 'rgba(255, 255, 255, 0.06)',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          borderRadius: '8px',
+                          color: '#cbd5e1',
+                          fontWeight: 600,
+                          fontSize: '0.88rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                        title="Dossier &amp; Anonymisiertes 1-Page Blind-Profil öffnen"
+                      >
+                        <FileText size={16} />
+                        <span>📄 Blind-Dossier (PDF)</span>
+                      </button>
+
+                      {/* Verwerfen Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`Mandat "${compName}" wirklich aus der Pipeline verwerfen und dauerhaft löschen?`)) {
+                            handleDeleteOpportunity(activeOpp.id);
+                          }
+                        }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '10px 16px',
+                          background: 'rgba(239, 68, 68, 0.12)',
+                          border: '1px solid rgba(239, 68, 68, 0.35)',
+                          borderRadius: '8px',
+                          color: '#f87171',
+                          fontWeight: 600,
+                          fontSize: '0.88rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          marginLeft: 'auto'
+                        }}
+                        title="Lead verwerfen und aus Datenbank entfernen"
+                      >
+                        <Trash2 size={16} />
+                        <span>🗑️ Aus Pipeline verwerfen</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* ── 2. DEALCOACH-AUDIT CARD ── */}
               <div className="pult-dealcoach-audit" style={{
@@ -4595,6 +4761,11 @@ Primärquelle verifiziert durch Harro Goerndt · D.A.T. Dienstleistungen`;
         if (!blindData) return null;
         const t = blindData.teaser;
         const d = blindData.unlockedDossier;
+        const compName = resolveOppCompanyHelper(activeOpp);
+        const country = getCountryFlag(activeOpp);
+        const legalForm = getLegalForm(compName, activeOpp);
+        const audit = extractDealCoachAudit(activeOpp);
+        const region = t?.region || country?.label || 'DACH / Zentraleuropa';
 
         return (
           <div
