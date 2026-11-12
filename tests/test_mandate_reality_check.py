@@ -9,7 +9,7 @@ Verifies the mandatory corrective separating corporate trigger events from inter
 """
 
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from modules.feed_ingestion.event_model import TriggerEvent
 from modules.feed_ingestion.reality_check import (
@@ -340,7 +340,7 @@ class TestMandateRealityCheck(unittest.TestCase):
             source_url="https://www.eqs-news.com/paul-tech-abstimmung",
             source_type="ad_hoc",
             evidence_text="Die PAUL Tech AG lädt die Anleihegläubiger zu einer Abstimmung ohne Versammlung ein. Stillhalteabkommen vereinbart.",
-            published_at="2026-10-27T12:00:00+00:00"
+            published_at=(datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
         )
         rc = ev.reality_check
         self.assertEqual(ev.freshness_category, "HOT_FIRST_MOVER")

@@ -1,5 +1,5 @@
 {
-  "executed_at": "2026-11-02T11:45:56.715Z",
+  "executed_at": "2026-11-12T12:45:39.596Z",
   "total_audited": 2,
   "alerts_count": 0,
   "alerts": [],
@@ -11,13 +11,13 @@
       "match_level": "VERIFIED_STABLE",
       "has_change_alert": false,
       "changeDetected": false,
-      "last_audit_check": "2026-11-02T11:45:56.717Z",
+      "last_audit_check": "2026-11-12T12:45:39.597Z",
       "deadlines": {
         "isAuditDue": false,
-        "nextAuditDate": "10.11.2026",
-        "review30Days": 24,
-        "followup60Days": 54,
-        "protectionDays": 542,
+        "nextAuditDate": "24.11.2026",
+        "review30Days": 14,
+        "followup60Days": 44,
+        "protectionDays": 532,
         "protectionUntilDate": "27.04.2028"
       }
     },
@@ -28,13 +28,13 @@
       "match_level": "VERIFIED_STABLE",
       "has_change_alert": false,
       "changeDetected": false,
-      "last_audit_check": "2026-11-02T11:45:56.722Z",
+      "last_audit_check": "2026-11-12T12:45:39.600Z",
       "deadlines": {
         "isAuditDue": false,
-        "nextAuditDate": "09.11.2026",
-        "review30Days": 23,
-        "followup60Days": 53,
-        "protectionDays": 8,
+        "nextAuditDate": "23.11.2026",
+        "review30Days": 13,
+        "followup60Days": 43,
+        "protectionDays": -2,
         "protectionUntilDate": "09.11.2026"
       }
     }

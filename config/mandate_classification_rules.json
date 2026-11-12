@@ -1,0 +1,107 @@
+{
+  "version": "1.1.0",
+  "generated_at": "2026-11-11T14:00:00+00:00",
+  "description": "Fünfstufiges Evidenzmodell und Klassenregeln A/B/C/D für Interim-Mandats-Signale (Phase 6): 1 Ereignis, 2 wirtschaftlicher Kontext, 3 Managementaufgabe, 4 externer Interim-Nachweis, 5 Gegenkontext - erst nach getrennter Erfassung erfolgt die Gesamtklassifizierung. Referenzdokument; die operative finale Klassifizierung erfolgt ausschließlich in modules/feed_ingestion/reality_check.py. Keine Änderungen an Produktions-DB oder -Konfiguration erforderlich.",
+  "class_definitions": {
+    "A": {
+      "name": "Belegter externer Interim-Bedarf",
+      "description": "Dokumentierte Suche nach einem externen Interim-Manager oder nachgewiesene externe Interim-Beauftragung/Bestellung.",
+      "evidence_requirement": "Das `evidence`-Zitat muss entweder (a) eine dokumentierte Suche nach einem externen Interim-Manager belegen (Personalberatung/Ausschreibung mit Interim-Bezug, explizite Suche nach externem Interim-CRO/CFO/CEO/COO) oder (b) eine bestätigte externe Beauftragung/Bestellung belegen (ernannt/bestellt/beauftragt als externer Interim-Manager bzw. CRO/CFO/CEO/COO mit externem Bezug). Kontextindikatoren wie Insolvenz, Insolvenzantrag, Eigenverwaltung, Schutzschirm oder Sanierungsbedarf begründen allein niemals A.",
+      "vorrang_regel": "Ein belegter externer Interim-Nachweis (Ebene 4) hat Vorrang vor allen Gegenkontexten. Profitabilität, Liquidität, strategische Übernahme oder Governance-Verstärkung dürfen ein belegtes A niemals ausschließen.",
+      "counter_indicators": [
+        "ernannt_als_verstärkung",
+        "uebernahme_strategisch",
+        "geplanter_nachfolger",
+        "interne_nachfolge"
+      ],
+      "counter_indicators_hinweis": "Blockieren ausschließlich die automatische A-Hochstufung, solange kein Ebene-4-Nachweis vorliegt. Keine pauschalen Ausschlussregeln (siehe vorrang_regel).",
+      "example": "EQS-Ad-hoc: 'Die Geschäftsführung wurde um CRO Max Mustermann erweitert, um die Sanierung voranzutreiben.' Mit nachweisbarer CRO-Suche."
+    },
+    "B": {
+      "name": "Plausibler externer Interim-Bedarf",
+      "description": "Die wirtschaftliche Situation und konkrete Managementaufgaben sprechen nachvollziehbar für einen möglichen externen Interim-Einsatz. Eine tatsächliche Nachfrage ist jedoch nicht belegt.",
+      "evidence_requirement": "Mindestens ein Hinweis auf 'Managementaufgaben', die eine externe Unterstützung nahelegen, aber keinen direkten Nachweis erbringen. Kann ein Hinweis auf Liquiditätsengpass oder Restrukturierung enthalten sein, der aber nicht zwingend CRO erfordert.",
+      "counter_indicators": [],
+      "example": "EQS-Ad-hoc: 'Die Geschäftsführung kündigt Restrukturierungsmaßnahmen an. Es seien Gespräche mit Banken im Gange.' Ohne nachweisbaren CRO-Bedarf bleibt es bei B."
+    },
+    "C": {
+      "name": "Kein erkennbarer Interim-Bedarf",
+      "description": "Es bestehen wirtschaftliche Auffälligkeiten oder strukturelle Probleme, aber kein hinreichend konkreter Anhaltspunkt für einen externen Interim-Einsatz. Es ist etwas bekannt, aber der Schritt zum externen Management ist nicht nahegelegt.",
+      "evidence_requirement": "Dokumentation wirtschaftlicher Auffälligkeiten (z.B. fallende Margen, negatives EBIT, Liquiditätswarnungen), verbunden mit der Begründung, warum daraus kein externer Interim-Bedarf folgt (z.B. 'Unternehmen ist profitabel, Restrukturierung läuft intern', 'Übernahme dient strategischem Ausbau').",
+      "counter_indicators": [
+        "unternehmens_profitabel",
+        "liquide",
+        "strategische_übernahme",
+        "wachstumsphase",
+        "geplanter_nachfolger",
+        "interne_nachfolge",
+        "ernannt_als_verstärkung"
+      ],
+      "example": "EQS-Ad-hoc: 'Umsatz leicht rückläufig, EBIT leicht negativ. Unternehmensführung verweist auf fortgesetzte Wertsteigerungsmaßnahmen.' - Wirtschaftliches Problem erkennbar, aber keine externe Interim-Nachfrage."
+    },
+    "D": {
+      "name": "Datenlage unzureichend",
+      "description": "Die verfügbaren Informationen reichen für eine belastbare Bewertung nicht aus. Es ist unklar, ob wirtschaftliche Probleme bestehen, ob Bedarf besteht – man kann nichts beurteilen.",
+      "evidence_requirement": "Die Informationslücke muss explizit benannt werden: Welche Daten fehlen, um eine Bewertung zu treffen? Keine Schlussfolgerung als Tatsache darstellen. Klassifizierung D ist die ehrlichste Kennzeichnung, wenn die Datenbasis zu dünn ist.",
+      "counter_indicators": [],
+      "example": "EQS-Ad-hoc: Es liegen nur allgemeine Marktberichte vor. Keine firmenspezifischen Finanzkennzahlen, keine Aussagen zur Liquidität, keine Aussagen zur Führungssituation. Für eine Bewertung ist die Datenlage unzureichend."
+    }
+  },
+  "gegenindikatoren_globale_ausnahme": {
+    "beschreibung": "Diese Gegenkontexte blockieren ausschließlich die automatische Hochstufung auf A, solange kein belegter externer Interim-Nachweis (Ebene 4) vorliegt. Sie sind keine pauschalen Ausschlussregeln: Ein belegtes A wird durch keinen Gegenkontext unterdrückt. Kontextindikatoren (Insolvenz, Insolvenzantrag, Eigenverwaltung, Schutzschirm, Sanierungsbedarf) sind weder A-Nachweis noch Gegenindikatoren.",
+    "muster": [
+      {
+        "key": "ernannt_als_verstärkung",
+        "text_patterns": ["ernannt als Ergänzung", "ernannt zur Verstärkung", "Verstärkung des Vorstands", "Verstärkung der Geschäftsführung"],
+        "bedeutung": "Governance-Erweiterung, keine Vakanz. Verhindert A -> mind. C."
+      },
+      {
+        "key": "uebernahme_strategisch",
+        "text_patterns": ["strategische Übernahme", "Übernahme zur Stärkung der Marktposition", "Übernahme im Rahmen der Wachstumsstrategie", "Asset Deal zum Ausbau"],
+        "bedeutung": "Strategische Maßnahme, keine Krise. Verhindert A -> C."
+      },
+      {
+        "key": "unternehmens_profitabel",
+        "text_patterns": ["unternehmen ist profitabel", "profitables Geschäftsjahr", "gewinnbringendes Quartal", "EBIT deutlich positiv"],
+        "bedeutung": "Gute wirtschaftliche Basis. Verhindert A/B -> C."
+      },
+      {
+        "key": "liquide",
+        "text_patterns": ["Liquidität steht", "Liquidität ist gesichert", "ausreichende Liquidität", "keine Zahlungsengpässe"],
+        "bedeutung": "Finanzielle Ruhezone. Verhindert A/B -> C."
+      },
+      {
+        "key": "geplanter_nachfolger",
+        "text_patterns": ["geplante Nachfolge", "interne Nachfolge", "Nachfolge nach internen Regelung", "nachfolgekonform"],
+        "bedeutung": "Geplanter Wechsel, kein Krisenmanagement. Verhindert A -> C/D."
+      },
+      {
+        "key": "insolvenz_auch_ohne_A",
+        "text_patterns": ["Insolvenz anmelden", "Insolvenzverfahren eröffnen", "Schutzschirm beantragen"],
+        "bedeutung": "Kontextindikator Ebene 2: Insolvenz/Eigenverwaltung/Schutzschirm/Sanierungsbedarf kennzeichnen wirtschaftliche Situation; sie sind weder A-Nachweis noch Gegenindikator und beeinflussen die Klassifizierung nur zusammen mit den Ebenen 1–3. Ein belegtes A (Ebene 4) bleibt hiervon unberührt."
+      }
+    ]
+  },
+  "kontext_erkennung": {
+    "hinweis": "Die folgende Logik soll in das bestehende Validierungsmodul nexus-validation.js integriert werden. Sie ersetzt nicht die bestehenden A/B/C-D-Kriterien, sondern erweitert sie um kontextabhängige Prävention von Fehlklassifizierungen.",
+    "schritte": [
+      "1. Extrahiere `evidence`-Text aus dem Signal (1-2 Sätze).",
+      "2. Prüfe auf Ereignisindikatoren (E1): Abberufung, Ausscheiden, Amtsniederlegung, Vakanz.",
+      "3. Prüfe auf wirtschaftliche Kontextindikatoren (E2): Insolvenz/Eigenverwaltung/Schutzschirm/Sanierungsbedarf – als Kontext werten, niemals als A-Nachweis und niemals als alleiniger C-Auslöser.",
+      "4. Prüfe auf Managementaufgaben (E3): Konkrete Führungs- oder Veränderungsaufgaben, die externe Unterstützung nahelegen (z.B. Restrukturierung, PMI, operative Transformation).",
+      "5. Prüfe auf Bestätigungsindikatoren (E4): Dokumentierte Suche nach externem Interim-Manager (Personalberatung/Ausschreibung) oder bestätigte externe Beauftragung/Bestellung (ernannt/bestellt/beauftragt). E4 hat absolute Vorrang vor E5 – ein belegtes A wird durch keinen Gegenkontext unterdrückt.",
+      "6. Prüfe auf Gegenkontext (E5): Muster, die eine automatische Hochstufung auf A verhindern (mind. C) – blockieren nur ohne Ebene-4-Nachweis, sind keine pauschalen Ausschlussregeln.",
+      "7. Klassifizierung entscheiden (Reihenfolge):",
+      "   a) Liefert Ebene 4 (E4) einen belegten externen Interim-Nachweis? → A.",
+      "   b) Liefern Ebenen 2 (E2) und 3 (E3) einen plausiblen Bedarf ohne Ebene 4? → B.",
+      "   c) Liegt ein wirtschaftliches/strukturelles Problem vor (E2), aber kein plausibler externer Bedarf (auch nicht über E3)? → C.",
+      "   d) Anderenfalls, einschließlich unzureichender Datenlage? → D.",
+      "8. Dokumentiere die begründete Entscheidung im `review_notes`-Feld der Opportunity und speichere `bewertungsklasse` (A/B/C/D) als zentrales Ergebnis."
+    ]
+  },
+  "produktion_shield": {
+    "hinweis": "Diese Datei darf nicht direkt von den Netlify-Functions gelesen werden, um eine unbeabsichtigte Einflussnahme auf die Live-Entscheidungskette zu vermeiden. Sie dient als Referenzdokument für das Entwicklungsteam und für die manuelle Überprüfung von Signalen. Die tatsächliche Validierung erfolgt weiterhin über nexus-validation.js und reality_check.py.",
+    "source_verbindung": "Im Produktionsbetrieb werden die Regelwerke aus config/trigger_signatures.json und den Validierungslogiken von nexus-validation.js herangezogen. config/mandate_classification_rules.json ergänzt diese um die oben beschriebenen Belegpflicht- und Gegenindikator-Fallen.",
+    "file_schutz": "Darf nicht über automatisierte Importe in die Produktions-Logik einbezogen werden, ohne ausdrückliche Freigabe des Projektleiters."
+  }
+}

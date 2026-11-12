@@ -1,4 +1,4 @@
-"""
+﻿"""
 NeXus HIT - Mandate Reality Check Engine
 Verbindliches Korrektiv zur systematischen Validierung von Trigger-Events:
 Prüft nach der Ereigniserkennung und vor der Priorisierung, ob ein reales
@@ -837,6 +837,63 @@ class MandateRealityCheckEngine:
 
         now_iso = datetime.now(timezone.utc).isoformat()
 
+        # Fünfstufen-Entscheidung: bewertungsklasse (E4→A, E2+E3+Eignung→B, E2→C, sonst→D)
+        # Verbindliche Regeln (P1-P3):
+        # 1. E4 (echtes Interim-Mandat-Muster im Text) → A
+        # 2. E2 + E3 + Eignung, aber kein E4 → B
+        # 3. E2 allein → C
+        # 4. Ohne erkennbaren Problemkontext → D
+        # C und D müssen anhand der Evidenz unterschieden werden,
+        # nicht pauschal über den bestehenden Status (MANDAT_BELEGT/PLAUSIBEL/BEOBACHTEN/VERWERFEN).
+        if has_explicit_mandate_proof:
+            # E4 prüfen: echte Interim-Such-Muster im kombinierten Text
+            _interim_muster = [
+                "sucht externen interim", "sucht interim cro", "sucht interim cfo",
+                "mandatierte personalberatung mit suche", "interim management mandatiert",
+                "ad-interim leitung ausgeschrieben"
+            ]
+            _has_echter_interim_nachweis = any(m in combined_text for m in _interim_muster)
+            if _has_echter_interim_nachweis:
+                # E4 mit echtem Interim-Such-Muster → A
+                bewertungsklasse = "A"
+            elif is_eigenverwaltung or is_schvg_debt or has_proven_organ_exit:
+                # E4-Marke zwar vorhanden, aber kein echtes Interim-Such-Muster.
+                # Eigenverwaltung, SchVG/Gläubigerabstimmung, Organvakanz allein reichen nicht für A.
+                bewertungsklasse = "C"
+            else:
+                # Expliziter Mandatsnachweis ohne Interim-Muster-Match.
+                # Hier nicht einfach A verleihen, da E4 ohne Interim-Muster nicht vorliegt.
+                bewertungsklasse = "C"
+        # E2 + E3 + Eignung ohne E4 → B
+        elif (is_eigenverwaltung or is_schvg_debt or is_regular_insolvency or 
+              is_ops_transformation or has_proven_organ_exit):
+            # E2 prüfen: liegt ein wirtschaftliches/strukturelles Problem vor?
+            _einschlaegige_aufgaben = [
+                'restrukturierung', 'sanierung', 'transformationsmaßnahme',
+                'interim-cfo', 'interim-ceo', 'interim-cro',
+                'vakanz', 'nachfolge', 'übernahme', 'carve-out',
+                'betriebsverlagerung', 'standortschließung'
+            ]
+            _hat_konkrete_aufgabe = any(
+                a in (description or '') or a in (evidence_text or '') 
+                for a in _einschlaegige_aufgaben)
+            if _hat_konkrete_aufgabe:
+                # E2 (Wirtschafts-/Strukturproblem) + E3 (konkrete Aufgabe) + kein E4 → B
+                bewertungsklasse = "B"
+            else:
+                # E2 ohne konkrete Managementaufgabe → C
+                bewertungsklasse = "C"
+        # E2 allein (wirtschaftliches/strukturelles Problem erkennbar, aber keine konkrete Aufgabe) → C
+        elif (is_eigenverwaltung or is_schvg_debt or is_regular_insolvency or 
+              is_ops_transformation or has_proven_organ_exit):
+            bewertungsklasse = "C"
+        # Ohne erkennbaren Problemkontext → D
+        elif is_routine_speech_or_conference or "auftrag" in combined_text:
+            bewertungsklasse = "D"
+        else:
+            # Unzureichende Informationen für eine belastbare Bewertung
+            bewertungsklasse = "D"
+
         # Erhalte bestehende Human-Review-Entscheidungen, falls vorhanden
         human_review = {
             "reviewed": False,
@@ -872,7 +929,8 @@ class MandateRealityCheckEngine:
             "freshness_label": freshness_label,
             "age_days": age_days,
             "is_advisor_mandated": is_advisor_mandated,
-            "checked_at": now_iso,
+                        "bewertungsklasse": bewertungsklasse,
+"checked_at": now_iso,
             "criteria_eval": {
                 "event_validity": validity_status,
                 "action_pressure": "akut" if (is_eigenverwaltung or is_schvg_debt or is_c_level_vacant) and not is_advisor_mandated and freshness_category != FRESHNESS_ARCHIVE else ("geloest" if is_solved else "mittel"),
