@@ -233,10 +233,14 @@ class ContinuousRadarEngine:
             for ev in self.events_by_id.values():
                 rc = ev.reality_check or {}
                 rc_status = rc.get("status")
-                if rc_status not in ("MANDAT_PLAUSIBEL", "BEOBACHTEN"):
+                # STRIKTER FILTER: Ausschließlich verifizierte TIER-1-Mandatskandidaten synchronisieren (Kein BEOBACHTEN!)
+                if rc_status != "MANDAT_PLAUSIBEL":
                     continue
 
                 comp_name = (ev.company_name or "").strip()
+                comp_lower = comp_name.lower()
+                if any(k in comp_lower for k in ['stiftung', 'pensionskasse', 'vorsorge', 'fondation', 'fondazione', 'limmathof', 'cresta palace', '123fahrschule', 'hotel', 'gasthof', 'bruckmühl', 'processservices']):
+                    continue
                 desc = (ev.description or ev.evidence_text or "").strip()
                 source_url = (ev.source_url or "").strip()
                 pub_at = ev.published_at or ev.event_date or datetime.now(timezone.utc).isoformat()

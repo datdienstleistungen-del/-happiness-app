@@ -115,6 +115,41 @@ def analyze_organ_mutations(combined_text):
     """
     t = combined_text.lower()
 
+    # 0a. Stiftungen, Pensionskassen & Vorsorgefonds -> Kein kommerzielles Organvakuum
+    if re.search(r'stiftung|pensionskasse|vorsorge|fondation|fondazione|caisse\s+de\s+pension|wohlfahrtsfonds|freizügigkeit', t):
+        return {
+            'is_mutation_event': True,
+            'is_simultaneous_succession': False,
+            'has_remaining_organs': True,
+            'is_ambiguous_or_contradictory': False,
+            'organ_vacuum_status': 'NICHT NACHGEWIESEN',
+            'details': 'NICHT NACHGEWIESEN: Stiftung oder Pensionskasse. Routine-Mutation im Stiftungsrat/Vorsorgeorgan begründet keinen Executive-Interim-Bedarf.'
+        }
+
+    # 0b. Reiner Revisionsstellen-Wechsel -> Kein Organvakuum
+    has_auditor = bool(re.search(r'\b(revisionsstelle|organe de révision|organo di revisione|prüfgesellschaft)\b', t))
+    has_executive = bool(re.search(r'\b(verwaltungsrat|geschäftsführ|direktion|vorstand|ceo|cfo|cro)\b', t))
+    if has_auditor and not has_executive:
+        return {
+            'is_mutation_event': True,
+            'is_simultaneous_succession': False,
+            'has_remaining_organs': True,
+            'is_ambiguous_or_contradictory': False,
+            'organ_vacuum_status': 'NICHT NACHGEWIESEN',
+            'details': 'NICHT NACHGEWIESEN: Reiner Revisionsstellen- oder Prüferwechsel ohne C-Level / Board-Vakanz.'
+        }
+
+    # 0c. Directors' Dealings / Stimmrechte / PR-Webinare -> Kein Organvakuum
+    if re.search(r'\b(directors\'?\s*dealings|aktienzuteilung|stimmrechtsmitteilung|eigengeschäfte\s+von\s+führungskräften|zuteilung\s+von\s+\d+)\b', t):
+        return {
+            'is_mutation_event': False,
+            'is_simultaneous_succession': False,
+            'has_remaining_organs': True,
+            'is_ambiguous_or_contradictory': False,
+            'organ_vacuum_status': 'NICHT NACHGEWIESEN',
+            'details': "NICHT NACHGEWIESEN: Directors' Dealings / Aktienzuteilung begründet kein Organvakuum."
+        }
+
     # 0. Widersprüchliche oder unklare Registermeldung -> Nicht nachgewiesen
     ambiguity_patterns = [
         r'\bwidersprüchlich\b',

@@ -222,7 +222,7 @@ def audit_mandate_lead(item, eval_result):
         (r'\beinzelunternehmen\b|\beinzelkaufmann\b', 'Einzelunternehmen'),
         (r'\bpartg\b|\bpartgmbb\b|\bpartnerschaftsgesellschaft\b', 'PartG (Partnerschaft)'),
         (r'\bggmbh\b', 'gGmbH (Gemeinnützig)'),
-        (r'\bstiftung\b', 'Stiftung')
+        (r'stiftung|pensionskasse|vorsorge(?:fonds|kasse|stiftung|einrichtung)?|wohlfahrtsfonds|freizügigkeit|fondation|fondazione|caisse\s+de\s+pension|cassa\s+pensioni', 'Stiftung / Pensionskasse')
     ]
     for pattern, form_label in disallowed_forms:
         if re.search(pattern, comp_lower) or re.search(pattern, raw_eval_lower):
@@ -300,6 +300,91 @@ def audit_mandate_lead(item, eval_result):
             }
             return False, "KO_FAIL_CLOSED_COMPLETED_RESTRUCTURING: Abgeschlossene Sanierung", parsed
 
+    # K.O. C2b: Stiftungen & Pensionskassen (Vorsorgefonds / Stiftungsrat)
+    is_foundation_or_pension = bool(re.search(r'stiftung|pensionskasse|vorsorge|fondation|fondazione|caisse\s+de\s+pension', comp_lower)) or bool(re.search(r'\bstiftungsrat\b|\bmitglied des stiftungsrat(?:es)?\b', raw_eval_lower))
+    if is_foundation_or_pension and not has_real_restructuring:
+        parsed = {
+            'status': 'discarded',
+            'tier': 'TIER_3',
+            'is_valid_mandate_event': False,
+            'is_fresh': True,
+            'company_name': company,
+            'role': 'Stiftung / Pensionskasse (Kein Mandatsbedarf)',
+            'event_type': 'Pensionskasse / Vorsorgestiftung / Stiftungsrats-Mutation',
+            'vacuum_check': 'K.O. DROP: Stiftung oder Pensionskasse. Kein kommerzielles Executive-Interim Mandat.',
+            'urgency_check': '0 € Mandatswert (Vorsorgeeinrichtung / Non-Corporate)',
+            'audit_verdict': 'DISCARDED_FOUNDATION_PENSION',
+            'audit_rationale': f"Automatischer Drop auf Tier 3: {company} ist eine Stiftung oder Pensionskasse.",
+            'rejection_reason': 'Foundation_Pension_Non_Commercial',
+            'estimated_budget': '-',
+            'confidence': 0.99
+        }
+        return False, "KO_FAIL_CLOSED_FOUNDATION_PENSION: Stiftung oder Pensionskasse", parsed
+
+    # K.O. C2c: Reiner Revisionsstellen- / Prüferwechsel ohne C-Level Vakanz
+    has_auditor_kw = bool(re.search(r'\b(revisionsstelle|organe de révision|organo di revisione|prüfgesellschaft|wirtschaftsprüfer|abschlussprüfer)\b', raw_eval_lower))
+    has_c_level_exit = bool(re.search(r'\b(geschäftsführer|vorstand|ceo|cfo|cro|direktor|verwaltungsratspräsident|delegierter des verwaltungsrates)\b', raw_eval_lower))
+    if has_auditor_kw and not has_c_level_exit and not has_real_restructuring:
+        parsed = {
+            'status': 'discarded',
+            'tier': 'TIER_3',
+            'is_valid_mandate_event': False,
+            'is_fresh': True,
+            'company_name': company,
+            'role': 'Revisionsstellen-Wechsel',
+            'event_type': 'Reine Prüfer-/Revisionsstellen-Mutation',
+            'vacuum_check': 'K.O. DROP: Wechsel der Revisionsstelle/Prüfgesellschaft begründet kein Führungsvakuum und keinen CRO-Bedarf.',
+            'urgency_check': '0 € Mandatswert (Revisionswechsel / Routine)',
+            'audit_verdict': 'DISCARDED_AUDITOR_MUTATION',
+            'audit_rationale': f"Automatischer Drop auf Tier 3: Reine Revisionsstellen-Mutation bei {company}.",
+            'rejection_reason': 'Auditor_Mutation_Routine',
+            'estimated_budget': '-',
+            'confidence': 0.99
+        }
+        return False, "KO_FAIL_CLOSED_AUDITOR_MUTATION: Revisionsstellen-Wechsel", parsed
+
+    # K.O. C2d: Lokales Hotel- / Gastgewerbe / Thermalbäder ohne Restrukturierung
+    is_local_hospitality = bool(re.search(r'\b(hotel|gasthof|thermalbad|wellnesshotel|resort|limmathof|cresta palace)\b', comp_lower))
+    if is_local_hospitality and not has_real_restructuring:
+        parsed = {
+            'status': 'discarded',
+            'tier': 'TIER_3',
+            'is_valid_mandate_event': False,
+            'is_fresh': True,
+            'company_name': company,
+            'role': 'Lokales Hotel- / Gastgewerbe',
+            'event_type': 'Hotel- / Freizeitbetrieb ohne Insolvenz',
+            'vacuum_check': 'K.O. DROP: Lokales Gastgewerbe/Hotel ohne akute Sanierung/Insolvenz.',
+            'urgency_check': '0 € Mandatswert (Kleinstbetrieb / Hospitality)',
+            'audit_verdict': 'DISCARDED_LOCAL_HOSPITALITY',
+            'audit_rationale': f"Automatischer Drop auf Tier 3: {company} ist ein lokaler Beherbergungs-/Freizeitbetrieb.",
+            'rejection_reason': 'Local_Hospitality_Non_Corporate',
+            'estimated_budget': '-',
+            'confidence': 0.99
+        }
+        return False, "KO_FAIL_CLOSED_HOSPITALITY: Hotel/Gastgewerbe ohne Sanierung", parsed
+
+    # K.O. C2e: Directors' Dealings & Insider Transactions / Stimmrechte
+    is_directors_dealings = bool(re.search(r'\b(directors\'?\s*dealings|aktienzuteilung|stimmrechtsmitteilung|director\s+dealings|eigengeschäfte\s+von\s+führungskräften|zuteilung\s+von\s+\d+)\b', raw_eval_lower))
+    if is_directors_dealings and not has_real_restructuring:
+        parsed = {
+            'status': 'discarded',
+            'tier': 'TIER_3',
+            'is_valid_mandate_event': False,
+            'is_fresh': True,
+            'company_name': company,
+            'role': "Directors' Dealings (Kein Mandatsbedarf)",
+            'event_type': "Manager-Aktientransaktion / Directors' Dealings",
+            'vacuum_check': "K.O. DROP: Directors' Dealings / Aktienzuteilung begründet kein Organvakuum und kein Mandat.",
+            'urgency_check': '0 € Mandatswert (Eigengeschäfte Führungskräfte)',
+            'audit_verdict': 'DISCARDED_DIRECTORS_DEALINGS',
+            'audit_rationale': f"Automatischer Drop auf Tier 3: Directors' Dealings bei {company}.",
+            'rejection_reason': 'Directors_Dealings_Irrelevant',
+            'estimated_budget': '-',
+            'confidence': 0.99
+        }
+        return False, "KO_FAIL_CLOSED_DIRECTORS_DEALINGS: Manager-Aktientransaktion", parsed
+
     routine_register_events = [
         (r'\b(berichtigung|korrektur des registereintrags|uebersetzungen der firma neu|übersetzungen der firma neu|schreibfehlerberichtigung)\b', 'Reine Register-Berichtigung / Formalie'),
         (r'\b(kapitalerhöhung|erhöhung des grundkapitals|erhöhung des stammkapitals|genehmigtes kapital|stammkapital neu)\b', 'Reine Kapitalerhöhung ohne Organwechsel'),
@@ -350,7 +435,16 @@ def audit_mandate_lead(item, eval_result):
         r'\binvestorenkonferenz\b',
         r'\bmeet\s+institutional\s+investors\b',
         r'\bfireside\s+chat\b',
-        r'\bcorporate\s+presentation\b'
+        r'\bcorporate\s+presentation\b',
+        r'\bladen\s+(?:herzlich\s+)?(?:ein\s+)?zum\b',
+        r'\blädt\s+(?:herzlich\s+)?(?:ein\s+)?(?:zum|zur)\b',
+        r'\blädt\s+zur\s+telefonkonferenz\b',
+        r'\blädt\s+zum\s+webinar\b',
+        r'\bkapitalmarktforum\b',
+        r'\bkapitalmarkt-forum\b',
+        r'\bergebnispräsentation\b',
+        r'\bwebcast\b',
+        r'\bwebinar\b'
     ]
     if not has_real_organ_exit and not has_real_restructuring:
         for pr_pat in pr_phrases:

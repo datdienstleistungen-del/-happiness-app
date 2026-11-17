@@ -44,6 +44,15 @@ def check_shab_mutation_relevance(title_text, full_pdf_text=""):
 
     has_hard_insolvency = bool(re.search(r'\b(in liquidation\b|konkurs|konkurseröffnung|nachlassstundung)\b', combined))
 
+    # 0. Check disallowed entity types (Stiftungen, Pensionskassen, Vorsorgeeinrichtungen, Vereine)
+    if re.search(r'stiftung|pensionskasse|vorsorge|fondation|fondazione|caisse\s+de\s+pension|cassa\s+pensioni|wohlfahrtsfonds|verein\b|association\b', combined):
+        return False, "EXCLUDED_ENTITY_FOUNDATION_PENSION"
+
+    # 0b. Check routine auditor changes (Revisionsstelle, Organe de révision) without C-level exit
+    is_only_auditor = bool(re.search(r'\b(revisionsstelle|organe de révision|organo di revisione|prüfgesellschaft)\b', combined)) and not bool(re.search(r'\b(verwaltungsrat|geschäftsführ|direktion|vorstand|ceo|cfo|cro)\b', combined))
+    if is_only_auditor:
+        return False, "ROUTINE_AUDITOR_MUTATION"
+
     # 1. Check formal correction (Berichtigung)
     if 'berichtigung' in combined and not has_hard_insolvency:
         return False, "ROUTINE_ADMIN_CORRECTION"
@@ -103,6 +112,9 @@ def fetch_swiss_shab_feed(url=None):
             titles = meta.get('title', {})
             title_text = titles.get('de') or titles.get('fr') or titles.get('it') or titles.get('en') or 'Mutation Handelsregister'
             company = extract_swiss_company_from_title(title_text)
+            comp_lower = company.lower()
+            if any(k in comp_lower for k in ['stiftung', 'pensionskasse', 'vorsorge', 'fondation', 'fondazione', 'verein', 'caisse de pension', 'limmathof', 'cresta palace']):
+                continue
 
             pub_link = f"https://amtsblattportal.ch/api/v1/publications/{pub_id}/pdf"
             pdf_url = f"https://amtsblattportal.ch/api/v1/publications/{pub_id}/pdf"

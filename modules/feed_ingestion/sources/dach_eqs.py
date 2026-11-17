@@ -85,6 +85,10 @@ def fetch_eqs_feed(url='https://www.eqs-news.com/de/rss/'):
                 if len(clean_text) < 12 or href.rstrip('/').endswith('/news'):
                     continue
 
+                href_lower = href.lower()
+                if any(bad in href_lower for bad in ['directors-dealings', 'voting-rights', 'total-voting-rights', 'stimmrechte', 'zuteilung', 'dividende', 'aktienzuteilung']):
+                    continue
+
                 seen_urls.add(href)
 
                 if comp_match:
@@ -128,9 +132,24 @@ def fetch_eqs_feed(url='https://www.eqs-news.com/de/rss/'):
                     dropped_age_count += 1
                     continue
 
+                # K.O. Pre-Filter: Stiftungen, Pensionskassen, Directors' Dealings, Stimmrechte, PR-Webinare
+                comp_lower = company.lower()
+                if any(bad in comp_lower for bad in ['stiftung', 'pensionskasse', 'vorsorge', 'fondation', 'fondazione', 'caisse de pension', 'verein']):
+                    continue
+
+                full_text_lower = (title + ' ' + clean_text).lower()
+                if any(bad in full_text_lower for bad in [
+                    "directors' dealings", "directors dealings", "aktienzuteilung",
+                    "stimmrechtsmitteilung", "stimmrechte", "dividendenbekanntmachung",
+                    "zuteilung von", "kapitalmarktforum", "kapitalmarkt-forum",
+                    "ergebnispräsentation", "webinar", "webcast", "telefonkonferenz",
+                    "laden zum zürcher", "lädt zur telefonkonferenz", "lädt zum webinar"
+                ]):
+                    continue
+
                 # DACH Relevance & Country Detection:
                 is_german_slug = href.endswith('_de')
-                is_dach_legal = bool(re.search(r'\b(?:ag|se|gmbh|kgaa|co\.?\s*kg|holding|stiftung)\b', company, re.I))
+                is_dach_legal = bool(re.search(r'\b(?:ag|se|gmbh|kgaa|co\.?\s*kg|holding)\b', company, re.I))
                 is_dach_title = bool(re.search(r'\b(?:deutschland|österreich|schweiz|bafin|fma|finma|vorstand|geschäftsführung|amtsgericht)\b', title, re.I))
 
                 if not is_german_slug and not is_dach_legal and not is_dach_title:
